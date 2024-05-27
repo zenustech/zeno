@@ -257,7 +257,7 @@ namespace zeno {
 
         ParamGroup default;
         for (const SocketDescriptor& param_desc : desc.inputs) {
-            ParamInfo param;
+            ParamPrimitive param;
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
             param.defl = zeno::str2var(param_desc.defl, param.type);
@@ -283,7 +283,7 @@ namespace zeno {
             default.params.emplace_back(std::move(param));
         }
         for (const ParamDescriptor& param_desc : desc.params) {
-            ParamInfo param;
+            ParamPrimitive param;
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
             param.defl = zeno::str2var(param_desc.defl, param.type);
@@ -307,7 +307,7 @@ namespace zeno {
             default.params.emplace_back(std::move(param));
         }
         for (const SocketDescriptor& param_desc : desc.outputs) {
-            ParamInfo param;
+            ParamPrimitive param;
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
             param.socketType = PrimarySocket;
@@ -324,7 +324,7 @@ namespace zeno {
         {
             for (ParamGroup& group : tab.groups)
             {
-                for (ParamInfo& param : group.params)
+                for (ParamPrimitive& param : group.params)
                 {
                     if (param.type != Param_Null && param.control == NullControl)
                         param.control = getDefaultControl(param.type);
@@ -430,7 +430,7 @@ namespace zeno {
         return result;
     }
 
-    bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs) {
+    bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
         return false;
     }
 

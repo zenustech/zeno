@@ -123,7 +123,7 @@ namespace zenoio
 
     void CommonWriter::dumpCustomUI(zeno::CustomUI customUi, RAPIDJSON_WRITER& writer)
     {
-        auto customUiDumpParam = [](const zeno::ParamInfo& param, RAPIDJSON_WRITER& writer) {
+        auto customUiDumpParam = [](const zeno::ParamPrimitive& param, RAPIDJSON_WRITER& writer) {
             writer.Key(param.name.c_str());
             JsonObjScope scopeparams(writer);
             writer.Key("name");
@@ -180,7 +180,7 @@ namespace zenoio
         writer.Key("outputs");
         {
             JsonObjScope scopegroup(writer);
-            for (const zeno::ParamInfo& output : customUi.outputs)
+            for (const zeno::ParamPrimitive& output : customUi.outputs)
                 customUiDumpParam(output, writer);
         }
         writer.Key("tabs");
@@ -193,13 +193,13 @@ namespace zenoio
             {
                 writer.Key(group.name.c_str());
                 JsonObjScope scopegroup(writer);
-                for (const zeno::ParamInfo& param : group.params)
+                for (const zeno::ParamPrimitive& param : group.params)
                     customUiDumpParam(param, writer);
             }
         }
     }
 
-    void CommonWriter::dumpSocket(zeno::ParamInfo param, RAPIDJSON_WRITER& writer)
+    void CommonWriter::dumpSocket(zeno::ParamPrimitive param, RAPIDJSON_WRITER& writer)
     {
         //new io format for socket.
         writer.StartObject();

@@ -644,7 +644,7 @@ ZENO_API PrimitveParams INode::get_input_primitive_params() const {
     //TODO: deprecated node.
     PrimitveParams params;
     for (auto& [name, spParamObj] : m_inputPrims) {
-        ParamInfo param;
+        ParamPrimitive param;
         param.bInput = true;
         param.control = spParamObj->control;
         param.ctrlProps = spParamObj->optCtrlprops;
@@ -660,7 +660,7 @@ ZENO_API PrimitveParams INode::get_input_primitive_params() const {
 ZENO_API PrimitveParams INode::get_output_primitivie_params() const {
     PrimitveParams params;
     for (auto& [name, spParamObj] : m_inputPrims) {
-        ParamInfo param;
+        ParamPrimitive param;
         param.bInput = false;
         param.control = NullControl;
         param.ctrlProps = std::nullopt;
@@ -673,9 +673,9 @@ ZENO_API PrimitveParams INode::get_output_primitivie_params() const {
     return params;
 }
 
-ZENO_API ParamInfo INode::get_input_prim_param(std::string const& name) const {
+ZENO_API ParamPrimitive INode::get_input_prim_param(std::string const& name) const {
     auto& paramPrim = safe_at(m_inputPrims, name, "miss input param `" + name + "` on node `" + m_name + "`");
-    ParamInfo param = paramPrim->export();
+    ParamPrimitive param = paramPrim->export();
     return param;
 }
 
@@ -685,9 +685,9 @@ ZENO_API ParamObject INode::get_input_obj_param(std::string const& name) const {
     return param;
 }
 
-ZENO_API ParamInfo INode::get_output_prim_param(std::string const& name) const {
+ZENO_API ParamPrimitive INode::get_output_prim_param(std::string const& name) const {
     auto& paramObj = safe_at(m_outputPrims, name, "miss input param `" + name + "` on node `" + m_name + "`");
-    ParamInfo param = paramObj->export();
+    ParamPrimitive param = paramObj->export();
     return param;
 }
 
@@ -697,7 +697,7 @@ ZENO_API ParamObject INode::get_output_obj_param(std::string const& name) const 
     return param;
 }
 
-bool INode::add_input_prim_param(ParamInfo param) {
+bool INode::add_input_prim_param(ParamPrimitive param) {
     if (m_inputPrims.find(param.name) != m_inputPrims.end()) {
         return false;
     }
@@ -728,7 +728,7 @@ bool INode::add_input_obj_param(ParamObject param) {
     return true;
 }
 
-bool INode::add_output_prim_param(ParamInfo param) {
+bool INode::add_output_prim_param(ParamPrimitive param) {
     if (m_inputPrims.find(param.name) != m_inputPrims.end()) {
         return false;
     }
@@ -905,11 +905,11 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         add_input_obj_param(paramObj);
     }
-    for (const ParamInfo& param : dat.inputPrims)
+    for (const ParamPrimitive& param : dat.inputPrims)
     {
         add_input_prim_param(param);
     }
-    for (const ParamInfo& param : dat.outputPrims)
+    for (const ParamPrimitive& param : dat.outputPrims)
     {
         add_output_prim_param(param);
     }

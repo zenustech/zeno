@@ -25,7 +25,7 @@ struct SubnetNode : INode {
     ZENO_API std::vector<std::shared_ptr<CoreParam>> get_input_params() const override;
     ZENO_API std::vector<std::shared_ptr<CoreParam>> get_output_params() const override;
     ZENO_API params_change_info update_editparams(const ParamsUpdateInfo& params) override;
-    ZENO_API void add_param(bool bInput, const ParamInfo& param);
+    ZENO_API void add_param(bool bInput, const ParamPrimitive& param);
     ZENO_API void remove_param(bool bInput, const std::string& name);
     ZENO_API std::shared_ptr<Graph> get_graph() const;
     ZENO_API bool isAssetsNode() const;

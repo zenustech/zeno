@@ -52,7 +52,7 @@ ZGraphicsLayout* CameraNode::initCustomParamWidgets()
 
 void CameraNode::onEditClicked()
 {
-    zeno::ParamInfo param;
+    zeno::ParamPrimitive param;
 
     QPersistentModelIndex nodeIdx = index();
     ZASSERT_EXIT(nodeIdx.isValid());
@@ -90,7 +90,7 @@ void CameraNode::onEditClicked()
 
         auto camera = *(scene->camera.get());
 
-        zeno::ParamInfo& pos = inputs["pos"];
+        zeno::ParamPrimitive& pos = inputs["pos"];
         vec = {camera.m_lodcenter[0], camera.m_lodcenter[1], camera.m_lodcenter[2]};
         pos.defl = vec;
 

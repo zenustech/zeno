@@ -44,7 +44,7 @@ struct ImplNodeClass : INodeClass {
         {
             for (const ParamGroup& group : tab.groups)
             {
-                for (const ParamInfo& param : group.params)
+                for (const ParamPrimitive& param : group.params)
                 {
                     std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;
@@ -59,7 +59,7 @@ struct ImplNodeClass : INodeClass {
             }
         }
 
-        for (const ParamInfo& param : m_customui.outputs)
+        for (const ParamPrimitive& param : m_customui.outputs)
         {
             std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
             sparam->name = param.name;

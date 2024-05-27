@@ -19,8 +19,8 @@ namespace zenoio
     private:
         void _parseParams(
             const rapidjson::Value& paramsObj,
-            std::vector<zeno::ParamInfo>& inputs,
-            std::vector<zeno::ParamInfo>& outputs
+            std::vector<zeno::ParamPrimitive>& inputs,
+            std::vector<zeno::ParamPrimitive>& outputs
         );
 
         zeno::ZenoAsset m_asset;

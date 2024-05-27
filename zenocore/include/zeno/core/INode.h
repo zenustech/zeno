@@ -72,9 +72,9 @@ public:
     ZENO_API PrimitveParams get_input_primitive_params() const;
     ZENO_API PrimitveParams get_output_primitivie_params() const;
     //ZENO_API virtual std::vector<std::shared_ptr<CoreParam>> get_output_params() const;
-    ZENO_API ParamInfo get_input_prim_param(std::string const& name) const;
+    ZENO_API ParamPrimitive get_input_prim_param(std::string const& name) const;
     ZENO_API ParamObject get_input_obj_param(std::string const& name) const;
-    ZENO_API ParamInfo get_output_prim_param(std::string const& name) const;
+    ZENO_API ParamPrimitive get_output_prim_param(std::string const& name) const;
     ZENO_API ParamObject get_output_obj_param(std::string const& name) const;
     //ZENO_API std::shared_ptr<CoreParam> get_input_param(std::string const& name) const;
     //ZENO_API std::shared_ptr<CoreParam> get_output_param(std::string const& name) const;
@@ -101,9 +101,9 @@ public:
     void mark_previous_ref_dirty();
 
     //END new api
-    bool add_input_prim_param(ParamInfo param);
+    bool add_input_prim_param(ParamPrimitive param);
     bool add_input_obj_param(ParamObject param);
-    bool add_output_prim_param(ParamInfo param);
+    bool add_output_prim_param(ParamPrimitive param);
     bool add_output_obj_param(ParamObject param);
     void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink);
     void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink);

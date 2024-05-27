@@ -74,7 +74,7 @@ namespace zenoio {
         return false;
     }
 
-    zeno::ParamInfo ZsgReader::_parseSocket(
+    zeno::ParamPrimitive ZsgReader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
         const std::string& id,
@@ -83,7 +83,7 @@ namespace zenoio {
         const rapidjson::Value& sockObj,
         zeno::LinksData& links)
     {
-        zeno::ParamInfo info;
+        zeno::ParamPrimitive info;
         return info;
     }
 
@@ -128,14 +128,14 @@ namespace zenoio {
 
             if (inputObj.IsNull())
             {
-                zeno::ParamInfo param;
+                zeno::ParamPrimitive param;
                 param.name = inSock;
                 ret.inputs.push_back(param);
             }
             else if (inputObj.IsObject())
             {
                 bool bSubnet = ret.cls == "Subnet";
-                zeno::ParamInfo param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
+                zeno::ParamPrimitive param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
                 ret.inputs.push_back(param);
             }
             else
@@ -161,14 +161,14 @@ namespace zenoio {
             const auto& outObj = outParamObj.value;
             if (outObj.IsNull())
             {
-                zeno::ParamInfo param;
+                zeno::ParamPrimitive param;
                 param.name = outParam;
                 param.socketType = zeno::PrimarySocket;
                 ret.outputs.push_back(param);
             }
             else if (outObj.IsObject())
             {
-                zeno::ParamInfo param = _parseSocket(false, false, id, nodeName, outParam, outObj, links);
+                zeno::ParamPrimitive param = _parseSocket(false, false, id, nodeName, outParam, outObj, links);
                 ret.outputs.push_back(param);
             }
             else
@@ -224,7 +224,7 @@ namespace zenoio {
 
                             if (!socketName.empty())
                             {
-                                zeno::ParamInfo param;
+                                zeno::ParamPrimitive param;
                                 param.name = socketName;
                                 param.type = zeno::convertToType(socketDefl);
                                 param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
@@ -264,7 +264,7 @@ namespace zenoio {
 
                             if (!socketName.empty())
                             {
-                                zeno::ParamInfo param;
+                                zeno::ParamPrimitive param;
                                 param.name = socketName;
                                 param.type = zeno::convertToType(socketDefl);
                                 param.defl = socketDefl;    //不转了，太麻烦了。..反正普通节点的desc也只是参考
@@ -303,7 +303,7 @@ namespace zenoio {
 
                             if (!socketName.empty())
                             {
-                                zeno::ParamInfo param;
+                                zeno::ParamPrimitive param;
                                 param.name = socketName;
                                 param.type = zeno::convertToType(socketDefl);
                                 param.defl = socketDefl;

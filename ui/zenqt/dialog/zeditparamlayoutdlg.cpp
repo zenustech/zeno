@@ -940,11 +940,11 @@ void ZEditParamLayoutDlg::onApply()
     zeno::CustomUI customui;
     m_customUi = customui;
 
-    std::vector<zeno::ParamInfo> outputs;
+    std::vector<zeno::ParamPrimitive> outputs;
     for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
     {
         QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
-        zeno::ParamInfo param;
+        zeno::ParamPrimitive param;
 
         param.bInput = false;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
@@ -976,7 +976,7 @@ void ZEditParamLayoutDlg::onApply()
             for (int k = 0; k < groupItem->rowCount(); k++)
             {
                 auto paramItem = groupItem->child(k);
-                zeno::ParamInfo paramInfo;
+                zeno::ParamPrimitive paramInfo;
                 paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
                 paramInfo.defl = UiHelper::qvarToZVar(paramItem->data(ROLE_PARAM_VALUE), paramInfo.type);
                 paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();

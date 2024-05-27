@@ -21,7 +21,7 @@ ZENO_API SubnetNode::~SubnetNode() = default;
 
 ZENO_API void SubnetNode::initParams(const NodeData& dat)
 {
-    for (const ParamInfo& param : dat.inputs)
+    for (const ParamPrimitive& param : dat.inputs)
     {
         if (m_inputs.find(param.name) != m_inputs.end())
             continue;
@@ -37,7 +37,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         m_input_names.push_back(param.name);
     }
 
-    for (const ParamInfo& param : dat.outputs)
+    for (const ParamPrimitive& param : dat.outputs)
     {
         if (m_outputs.find(param.name) != m_outputs.end())
             continue;
@@ -56,7 +56,7 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
         subgraph->init(*dat.subgraph);
 }
 
-ZENO_API void SubnetNode::add_param(bool bInput, const ParamInfo& param)
+ZENO_API void SubnetNode::add_param(bool bInput, const ParamPrimitive& param)
 {
     std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
     sparam->name = param.name;
@@ -131,7 +131,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     params_change_info changes;
 
     for (auto _pair : params) {
-        const ParamInfo& param = _pair.param;
+        const ParamPrimitive& param = _pair.param;
         const std::string oldname = _pair.oldName;
         const std::string newname = param.name;
 

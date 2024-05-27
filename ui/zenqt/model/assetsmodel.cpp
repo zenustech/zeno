@@ -150,12 +150,12 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
 
     asset.optGraph = sample;
 
-    std::vector<zeno::ParamInfo>& inputs = asset.inputs;
-    std::vector<zeno::ParamInfo>& outputs = asset.outputs;
+    std::vector<zeno::ParamPrimitive>& inputs = asset.inputs;
+    std::vector<zeno::ParamPrimitive>& outputs = asset.outputs;
 
     zeno::ParamGroup defaultGroup;
 
-    zeno::ParamInfo param;
+    zeno::ParamPrimitive param;
     param.name = "input1";
     param.bInput = true;
     param.socketType = zeno::PrimarySocket;

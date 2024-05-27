@@ -14,7 +14,7 @@ namespace zenoio
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
 
-        zeno::ParamInfo _parseSocket(
+        zeno::ParamPrimitive _parseSocket(
             const bool bInput,
             const bool bSubnetNode,
             const std::string& id,

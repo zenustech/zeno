@@ -201,7 +201,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
             return QVariant();
     }
     case ROLE_PARAM_INFO: {
-        zeno::ParamInfo info;
+        zeno::ParamPrimitive info;
         info.name = param.name.toStdString();
         info.type = param.type;
         info.control = param.control;
@@ -263,7 +263,7 @@ PARAMS_INFO ParamsModel::getInputs()
     {
         if (item.bInput)
         {
-            zeno::ParamInfo info;
+            zeno::ParamPrimitive info;
             info.name = item.name.toStdString();
             info.type = item.type;
             info.control = item.control;
@@ -288,7 +288,7 @@ PARAMS_INFO ParamsModel::getOutputs()
     {
         if (!item.bInput)
         {
-            zeno::ParamInfo info;
+            zeno::ParamPrimitive info;
             info.name = item.name.toStdString();
             info.type = item.type;
             info.control = item.control;

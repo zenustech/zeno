@@ -16,7 +16,7 @@ namespace zenoio
     protected:
         virtual bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret);
 
-        virtual zeno::ParamInfo _parseSocket(
+        virtual zeno::ParamPrimitive _parseSocket(
             const bool bInput,
             const bool bSubnetNode,
             const std::string& id,

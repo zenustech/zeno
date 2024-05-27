@@ -157,7 +157,7 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     params_change_info changes;
 
     for (auto _pair : info) {
-        const ParamInfo& param = _pair.param;
+        const ParamPrimitive& param = _pair.param;
         const std::string oldname = _pair.oldName;
         const std::string newname = param.name;
 
@@ -342,7 +342,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     spNode->m_name = nodeName;
     spNode->m_customUi = assets.m_customui;
 
-    for (const ParamInfo& param : assets.inputs)
+    for (const ParamPrimitive& param : assets.inputs)
     {
         std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
@@ -355,7 +355,7 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
         spNode->m_input_names.push_back(param.name);
     }
 
-    for (const ParamInfo& param : assets.outputs)
+    for (const ParamPrimitive& param : assets.outputs)
     {
         std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
@@ -385,7 +385,7 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
 
     spNode->subgraph = assetGraph;
 
-    for (const ParamInfo& param : assets.inputs)
+    for (const ParamPrimitive& param : assets.inputs)
     {
         std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;
@@ -398,7 +398,7 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
         spNode->m_input_names.push_back(param.name);
     }
 
-    for (const ParamInfo& param : assets.outputs)
+    for (const ParamPrimitive& param : assets.outputs)
     {
         std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
         sparam->defl = param.defl;

@@ -39,7 +39,7 @@ namespace zeno {
 
             void initParams(const NodeData& dat) override
             {
-                for (const ParamInfo& param : dat.inputs)
+                for (const ParamPrimitive& param : dat.inputs)
                 {
                     std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;
@@ -50,7 +50,7 @@ namespace zeno {
                     add_input_param(sparam);
                     m_input_names.push_back(param.name);
                 }
-                for (const ParamInfo& param : dat.outputs)
+                for (const ParamPrimitive& param : dat.outputs)
                 {
                     std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;

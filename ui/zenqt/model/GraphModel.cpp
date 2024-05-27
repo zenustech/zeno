@@ -362,7 +362,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_KEYFRAMES: 
         {
            QVector<int> keys;
-            for (const zeno::ParamInfo& info : item->params->getInputs()) {
+            for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
                 QVariant value = UiHelper::zvarToQVar(info.defl);
                 auto curves = JsonHelper::parseCurves(value);
                 for (CURVE_DATA& curve : curves)
@@ -989,7 +989,7 @@ bool GraphModel::_removeNodeImpl(const QString& name, bool endTransaction)
         {
             PARAMS_INFO ioParams = item->params->getInputs();
             ioParams.insert(item->params->getOutputs());
-            for (zeno::ParamInfo& paramInfo : ioParams)
+            for (zeno::ParamPrimitive& paramInfo : ioParams)
             {
                 for (zeno::EdgeInfo& edge: paramInfo.links)
                 {

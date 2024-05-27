@@ -244,7 +244,7 @@ zeno::NodeData Zsg2Reader::_parseNode(
     return retNode;
 }
 
-zeno::ParamInfo Zsg2Reader::_parseSocket(
+zeno::ParamPrimitive Zsg2Reader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
         const std::string& id,
@@ -253,7 +253,7 @@ zeno::ParamInfo Zsg2Reader::_parseSocket(
         const rapidjson::Value& sockObj,
         zeno::LinksData& links)
 {
-    zeno::ParamInfo param;
+    zeno::ParamPrimitive param;
 
     std::string sockProp;
     if (sockObj.HasMember("property"))
@@ -410,7 +410,7 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
             if (!valueObj.IsObject() || !valueObj.HasMember(iotags::params::params_valueKey)) //compatible old version
                 return false;
 
-            zeno::ParamInfo param;
+            zeno::ParamPrimitive param;
 
             param.name = name;
 

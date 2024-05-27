@@ -64,8 +64,8 @@ struct PrimitiveParam : CoreParam {
     ParamControl control = NullControl;
     std::optional<ControlProperty> optCtrlprops;
 
-    ParamInfo export() const {
-        ParamInfo param;
+    ParamPrimitive export() const {
+        ParamPrimitive param;
         param.name = name;
         param.bInput = bInput;
         param.type = type;

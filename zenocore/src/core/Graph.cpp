@@ -661,7 +661,7 @@ ZENO_API LinksData Graph::exportLinks() const
     LinksData links;
     for (auto& [uuid, node] : m_nodes) {
         zeno::NodeData nodeinfo = node->exportInfo();
-        for (ParamInfo param : nodeinfo.inputs) {
+        for (ParamPrimitive param : nodeinfo.inputs) {
             links.insert(links.end(), param.links.begin(), param.links.end());
         }
     }

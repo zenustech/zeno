@@ -216,14 +216,14 @@ namespace zenoio
 
             if (inputObj.IsNull())
             {
-                zeno::ParamInfo param;
+                zeno::ParamPrimitive param;
                 param.name = inSock;
                 ret.inputs.push_back(param);
             }
             else if (inputObj.IsObject())
             {
                 bool bSubnet = ret.cls == "Subnet";
-                zeno::ParamInfo param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
+                zeno::ParamPrimitive param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
                 ret.inputs.push_back(param);
             }
             else
@@ -233,7 +233,7 @@ namespace zenoio
         }
     }
 
-    zeno::ParamInfo ZenReader::_parseSocket(
+    zeno::ParamPrimitive ZenReader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
         const std::string& id,
@@ -242,7 +242,7 @@ namespace zenoio
         const rapidjson::Value& sockObj,
         zeno::LinksData& links)
     {
-        zeno::ParamInfo param;
+        zeno::ParamPrimitive param;
 
         std::string sockProp;
         if (sockObj.HasMember("property"))
@@ -345,7 +345,7 @@ namespace zenoio
 
     zeno::CustomUI ZenReader::_parseCustomUI(const rapidjson::Value& customuiObj)
     {
-        auto readCustomUiParam = [](zeno::ParamInfo& paramInfo, const rapidjson::Value& param) {
+        auto readCustomUiParam = [](zeno::ParamPrimitive& paramInfo, const rapidjson::Value& param) {
             if (!param.IsNull()) {
                 auto paramValue = param.GetObject();
                 paramInfo.type = (zeno::ParamType)paramValue["type"].GetInt();
@@ -396,7 +396,7 @@ namespace zenoio
                                 auto params = group.value.GetObject();
                                 for (const auto& param : params)
                                 {
-                                    zeno::ParamInfo paramInfo;
+                                    zeno::ParamPrimitive paramInfo;
                                     paramInfo.name = param.name.GetString();
                                     readCustomUiParam(paramInfo, param.value);
                                     paramGroup.params.push_back(paramInfo);
@@ -414,7 +414,7 @@ namespace zenoio
                 auto outputs = cusomui["outputs"].GetObject();
                 for (const auto& output : outputs)
                 {
-                    zeno::ParamInfo paramInfo;
+                    zeno::ParamPrimitive paramInfo;
                     paramInfo.name = output.name.GetString();
                     readCustomUiParam(paramInfo, output.value);
                     ui.outputs.push_back(paramInfo);

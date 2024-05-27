@@ -66,8 +66,8 @@ namespace zenoio
 
     void ZdaReader::_parseParams(
         const rapidjson::Value& paramsObj,
-        std::vector<zeno::ParamInfo>& inputs,
-        std::vector<zeno::ParamInfo>& outputs)
+        std::vector<zeno::ParamPrimitive>& inputs,
+        std::vector<zeno::ParamPrimitive>& outputs)
     {
         if (paramsObj.HasMember("inputs"))
         {
@@ -82,14 +82,14 @@ namespace zenoio
 
                 if (inputObj.IsNull())
                 {
-                    zeno::ParamInfo param;
+                    zeno::ParamPrimitive param;
                     param.name = inSock;
                     inputs.push_back(param);
                 }
                 else if (inputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamInfo param = _parseSocket(true, false, "", "", inSock, inputObj, links);
+                    zeno::ParamPrimitive param = _parseSocket(true, false, "", "", inSock, inputObj, links);
                     inputs.push_back(param);
                 }
                 else
@@ -110,14 +110,14 @@ namespace zenoio
 
                 if (outputObj.IsNull())
                 {
-                    zeno::ParamInfo param;
+                    zeno::ParamPrimitive param;
                     param.name = outSock;
                     outputs.push_back(param);
                 }
                 else if (outputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamInfo param = _parseSocket(false, false, "", "", outSock, outputObj, links);
+                    zeno::ParamPrimitive param = _parseSocket(false, false, "", "", outSock, outputObj, links);
                     outputs.push_back(param);
                 }
                 else

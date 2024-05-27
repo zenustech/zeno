@@ -70,7 +70,7 @@ namespace zeno {
     };
 
     //primitive
-    struct ParamInfo {
+    struct ParamPrimitive {
         std::string name;
         ParamType type = Param_Null;
         SocketType socketType = NoSocket;
@@ -84,15 +84,15 @@ namespace zeno {
         std::string tooltip;
         bool bInput = true;
 
-        ParamInfo() {}
-        ParamInfo(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
+        ParamPrimitive() {}
+        ParamPrimitive(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
             : name(name)
             , type(type)
             , socketType(sockType)
             , tooltip(tooltip)
         {
         }
-        ParamInfo(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
+        ParamPrimitive(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
             : name(name)
             , type(type)
             , socketType(sockType)
@@ -106,7 +106,7 @@ namespace zeno {
 
     struct ParamGroup {
         std::string name = "Group1";
-        std::vector<ParamInfo> params;
+        std::vector<ParamPrimitive> params;
     };
 
     struct ParamTab {
@@ -124,7 +124,7 @@ namespace zeno {
     };
 
     struct ParamUpdateInfo {
-        zeno::ParamInfo param;
+        zeno::ParamPrimitive param;
         std::string oldName;
     };
 
@@ -163,7 +163,7 @@ namespace zeno {
     };
 
     using ObjectParams = std::vector<ParamObject>;
-    using PrimitveParams = std::vector<ParamInfo>;
+    using PrimitveParams = std::vector<ParamPrimitive>;
 
     struct NodeData {
         std::string name;
@@ -188,8 +188,8 @@ namespace zeno {
 
     struct NodeDesc {
         std::string name;
-        std::vector<ParamInfo> inputs;
-        std::vector<ParamInfo> outputs;
+        std::vector<ParamPrimitive> inputs;
+        std::vector<ParamPrimitive> outputs;
         std::vector<std::string> categories;
         bool is_subgraph = false;
     };
