@@ -31,6 +31,7 @@ struct PrimitiveParam;
 struct ObjectParam;
 struct ObjectLink;
 struct PrimitiveLink;
+struct SubnetNode;
 
 
 class INode : public std::enable_shared_from_this<INode>
@@ -146,12 +147,6 @@ public:
     ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
     ZENO_API zany get_output_obj(std::string const& sock_name);
 
-    ZENO_API bool has_keyframe(std::string const &id) const;
-    ZENO_API zany get_keyframe(std::string const &id) const;
-
-    ZENO_API bool has_formula(std::string const &id) const;
-    ZENO_API zany get_formula(std::string const &id) const;
-
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
@@ -218,6 +213,8 @@ private:
     std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
+
+    friend class SubnetNode;
 };
 
 }

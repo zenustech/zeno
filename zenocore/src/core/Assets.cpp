@@ -338,32 +338,18 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     }
 
     spNode->subgraph = assetGraph;
-    spNode->m_nodecls = assetName;
-    spNode->m_name = nodeName;
+    spNode->set_name(nodeName);
     spNode->m_customUi = assets.m_customui;
 
     for (const ParamPrimitive& param : assets.inputs)
     {
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->control = param.control;
-        sparam->socketType = param.socketType;
-        sparam->m_wpNode = spNode;
-        spNode->add_input_param(sparam);
+        spNode->add_input_prim_param(param);
         spNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamPrimitive& param : assets.outputs)
     {
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->m_wpNode = spNode;
-        sparam->socketType = PrimarySocket;
-        spNode->add_output_param(sparam);
+        spNode->add_output_prim_param(param);
         spNode->m_output_names.push_back(param.name);
     }
 
@@ -387,26 +373,13 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
 
     for (const ParamPrimitive& param : assets.inputs)
     {
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->control = param.control;
-        sparam->socketType = param.socketType;
-        sparam->m_wpNode = spNode;
-        spNode->add_input_param(sparam);
+        spNode->add_input_prim_param(param);
         spNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamPrimitive& param : assets.outputs)
     {
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->m_wpNode = spNode;
-        sparam->socketType = PrimarySocket;
-        spNode->add_output_param(sparam);
+        spNode->add_output_prim_param(param);
         spNode->m_output_names.push_back(param.name);
     }
 }

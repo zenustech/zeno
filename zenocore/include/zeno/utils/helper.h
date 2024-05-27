@@ -26,6 +26,7 @@ namespace zeno {
     ZENO_API std::string objPathToStr(ObjPath path);
     ObjPath strToObjPath(const std::string& str);
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs);
+    bool isPrimitiveType(const zeno::ParamType type);
     CustomUI descToCustomui(const Descriptor& desc);
     PrimitveParams customUiToParams(const CustomUIParams& customparams);
     void initControlsByType(CustomUI& ui);

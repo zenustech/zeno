@@ -21,64 +21,10 @@ ZENO_API SubnetNode::~SubnetNode() = default;
 
 ZENO_API void SubnetNode::initParams(const NodeData& dat)
 {
-    for (const ParamPrimitive& param : dat.inputs)
-    {
-        if (m_inputs.find(param.name) != m_inputs.end())
-            continue;
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->socketType = param.socketType;
-        sparam->control = param.control;
-        sparam->optCtrlprops = param.ctrlProps;
-        sparam->m_wpNode = shared_from_this();
-        add_input_param(sparam);
-        m_input_names.push_back(param.name);
-    }
-
-    for (const ParamPrimitive& param : dat.outputs)
-    {
-        if (m_outputs.find(param.name) != m_outputs.end())
-            continue;
-        std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-        sparam->defl = param.defl;
-        sparam->name = param.name;
-        sparam->type = param.type;
-        sparam->socketType = PrimarySocket;
-        sparam->m_wpNode = shared_from_this();
-        add_output_param(sparam);
-        m_output_names.push_back(param.name);
-    }
-
+    INode::initParams(dat);
     //需要检查SubInput/SubOutput是否对的上？
     if (dat.subgraph && subgraph->getNodes().empty())
         subgraph->init(*dat.subgraph);
-}
-
-ZENO_API void SubnetNode::add_param(bool bInput, const ParamPrimitive& param)
-{
-    std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
-    sparam->name = param.name;
-    sparam->m_wpNode = shared_from_this();
-    sparam->type = param.type;
-    sparam->defl = param.defl;
-    if (bInput) {
-        add_input_param(sparam);
-    }
-    else {
-        add_output_param(sparam);
-    }
-}
-
-ZENO_API void SubnetNode::remove_param(bool bInput, const std::string& name)
-{
-    if (bInput) {
-        m_inputs.erase(name);
-    }
-    else {
-        m_outputs.erase(name);
-    }
 }
 
 ZENO_API std::shared_ptr<Graph> SubnetNode::get_graph() const
@@ -90,36 +36,9 @@ ZENO_API bool SubnetNode::isAssetsNode() const {
     return subgraph->isAssets();
 }
 
-ZENO_API std::vector<std::shared_ptr<CoreParam>> SubnetNode::get_input_params() const
-{
-    std::vector<std::shared_ptr<CoreParam>> params;
-    for (auto param : m_input_names) {
-        auto it = m_inputs.find(param);
-        if (it == m_inputs.end()) {
-            zeno::log_warn("unknown param {}", param);
-            continue;
-        }
-        params.push_back(it->second);
-    }
-    return params;
-}
-
-ZENO_API std::vector<std::shared_ptr<CoreParam>> SubnetNode::get_output_params() const
-{
-    std::vector<std::shared_ptr<CoreParam>> params;
-    for (auto param : m_output_names) {
-        auto it = m_outputs.find(param);
-        if (it == m_outputs.end()) {
-            zeno::log_warn("unknown param {}", param);
-            continue;
-        }
-        params.push_back(it->second);
-    }
-    return params;
-}
-
 ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo& params)
 {
+    //TODO: 这里只有primitive参数类型的情况，还需要整合obj参数的情况。
     std::set<std::string> inputs_old, outputs_old;
     for (const auto& param_name : m_input_names) {
         inputs_old.insert(param_name);
@@ -135,7 +54,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         const std::string oldname = _pair.oldName;
         const std::string newname = param.name;
 
-        auto& in_outputs = param.bInput ? m_inputs : m_outputs;
+        auto& in_outputs = param.bInput ? m_inputPrims : m_outputPrims;
         auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
         auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
         auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
@@ -153,7 +72,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 remove_params.insert(newname);
             }
 
-            std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
+            std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
             sparam->defl = param.defl;
             sparam->name = newname;
             sparam->type = param.type;
@@ -161,14 +80,14 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             sparam->optCtrlprops = param.ctrlProps;
             sparam->socketType = param.socketType;
             sparam->m_wpNode = shared_from_this();
-            in_outputs[newname] = sparam;
+            in_outputs[newname] = std::move(sparam);
 
             new_params.insert(newname);
         }
         else if (in_outputs.find(oldname) != in_outputs.end()) {
             if (oldname != newname) {
                 //exist name changed.
-                in_outputs[newname] = in_outputs[oldname];
+                in_outputs[newname] = std::move(in_outputs[oldname]);
                 in_outputs.erase(oldname);
 
                 rename_params.insert({ oldname, newname });
@@ -182,7 +101,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             else
                 outputs_old.erase(oldname);
 
-            auto spParam = in_outputs[newname];
+            auto& spParam = in_outputs[newname];
             spParam->type = param.type;
             spParam->defl = param.defl;
             spParam->name = newname;
@@ -197,7 +116,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 
     //the left names are the names of params which will be removed.
     for (auto rem_name : inputs_old) {
-        m_inputs.erase(rem_name);
+        m_inputPrims.erase(rem_name);
         changes.remove_inputs.insert(rem_name);
     }
     //update the names.
@@ -209,7 +128,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     changes.inputs = m_input_names;
 
     for (auto rem_name : outputs_old) {
-        m_outputs.erase(rem_name);
+        m_outputPrims.erase(rem_name);
         changes.remove_outputs.insert(rem_name);
     }
     m_output_names.clear();
@@ -254,16 +173,27 @@ void SubnetNode::mark_subnetdirty(bool bOn)
 ZENO_API void SubnetNode::apply() {
     for (auto const &subinput_node: subgraph->getSubInputs()) {
         auto subinput = subgraph->getNode(subinput_node);
-        std::shared_ptr<CoreParam> spParam = get_input_param(subinput_node);
-        if (spParam) {
-            bool ret = subinput->set_output("port", spParam->result);
+        auto iter = m_inputObjs.find(subinput_node);
+        if (iter != m_inputObjs.end()) {
+            //object type.
+            bool ret = subinput->set_output("port", iter->second->spObject);
             assert(ret);
             ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
             assert(ret);
         }
         else {
-            subinput->set_output("port", std::make_shared<DummyObject>());
-            subinput->set_output("hasValue", std::make_shared<NumericObject>(false));
+            //primitive type
+            auto iter2 = m_inputPrims.find(subinput_node);
+            if (iter2 != m_inputPrims.end()) {
+                bool ret = subinput->set_primitive_output("port", iter2->second->result);
+                assert(ret);
+                ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
+                assert(ret);
+            }
+            else {
+                subinput->set_output("port", std::make_shared<DummyObject>());
+                subinput->set_output("hasValue", std::make_shared<NumericObject>(false));
+            }
         }
     }
 
