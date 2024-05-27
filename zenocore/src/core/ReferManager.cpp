@@ -29,12 +29,13 @@ namespace zeno {
             auto namePath = spNode->get_path();
             namePath.pop_back();
             auto currPath = zeno::objPathToStr(namePath);
-            for (auto& [key, spParam] : spNode->m_inputs)
+            PrimitveParams params = spNode->get_input_primitive_params();
+            for (ParamPrimitive& param : params)
             {
-                auto paths = referPaths(currPath, spParam->defl);
+                auto paths = referPaths(currPath, param.defl);
                 if (!paths.empty())
                 {
-                    auto uuid_param = uuid_path + "/" + spParam->name;
+                    auto uuid_param = uuid_path + "/" + param.name;
                     addReferInfo(paths, uuid_param);
                 }
             }
@@ -46,14 +47,17 @@ namespace zeno {
         auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
         if (!spNode)
             return;
-        auto spParam = spNode->get_input_param(param);
-        if (!spParam)
+
+        bool bExist = false;
+        ParamPrimitive paramprim = spNode->get_input_prim_param(param, &bExist);
+        if (!bExist)
             return;
+
         auto namePath = spNode->get_path();
         namePath.pop_back();
         auto currPath = zeno::objPathToStr(namePath);
         auto uuid_path = zeno::objPathToStr(objPath);
-        auto paths = referPaths(currPath, spParam->defl);
+        auto paths = referPaths(currPath, paramprim.defl);
         updateReferedInfo(uuid_path, param, paths);
         //被引用的参数数据更新时，引用该参数的节点需要标脏
         updateDirty(uuid_path, param);
@@ -105,12 +109,15 @@ namespace zeno {
             auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
             if (!spNode)
                 continue;
-            auto spParam = spNode->get_input_param(param);
-            if (!spParam)
+
+            bool bExist = false;
+            ParamPrimitive paramprim = spNode->get_input_prim_param(param, &bExist);
+            if (!bExist)
                 continue;
+
             std::string currPath = zeno::objPathToStr(spNode->get_path());
             currPath = currPath.substr(0, currPath.find_last_of("/"));
-            auto val = spParam->defl;
+            auto val = paramprim.defl;
             if (updateParamValue(path, "0", currPath, val))
             {
                 spNode->update_param(param, val);
@@ -228,21 +235,19 @@ namespace zeno {
             {
                 continue;
             }
-            auto spParam = spNode->get_input_param(param);
-            if (!spParam)
-            {
+            bool bExist = false;
+            ParamPrimitive primparam = spNode->get_input_prim_param(param, &bExist);
+            if (!bExist) {
                 continue;
             }
-            auto val = spParam->defl;
+            auto val = primparam.defl;
             std::string currentPath = zeno::objPathToStr(spNode->get_path());
             currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
             bool bUpate = updateParamValue(oldPath, newPath, currentPath, val);
             if (bUpate)
             {
                 //update param value
-                auto pNode = spParam->m_wpNode.lock();
-                if (pNode)
-                    pNode->update_param(spParam->name, val);
+                spNode->update_param(primparam.name, val);
             }
         }
     }

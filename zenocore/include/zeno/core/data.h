@@ -28,7 +28,6 @@ namespace zeno {
         std::string inParam;
         std::string inKey;
 
-        LinkFunction lnkfunc = Link_Copy;
         bool bObjLink = true;
 
         bool operator==(const EdgeInfo& rhs) const {
@@ -106,9 +105,12 @@ namespace zeno {
         }
     };
 
+    using ObjectParams = std::vector<ParamObject>;
+    using PrimitveParams = std::vector<ParamPrimitive>;
+
     struct ParamGroup {
         std::string name = "Group1";
-        std::vector<ParamPrimitive> params;
+        PrimitveParams params;
     };
 
     struct ParamTab {
@@ -116,9 +118,17 @@ namespace zeno {
         std::vector<ParamGroup> groups;
     };
 
+    struct CustomUIParams {
+        std::vector<ParamTab> tabs;   //custom ui for input primitive params
+    };
+
     //CustomUI is structure for input params of primitive types, like vec3f int string, etc.
     struct CustomUI {
-        std::vector<ParamTab> tabs;   //custom ui for input params
+        ObjectParams inputObjs;
+        CustomUIParams inputPrims;
+        PrimitveParams outputPrims;
+        ObjectParams outputObjs;
+
         std::string category;
         std::string nickname;
         std::string iconResPath;
@@ -164,18 +174,11 @@ namespace zeno {
         vec3f background;     //hex format
     };
 
-    using ObjectParams = std::vector<ParamObject>;
-    using PrimitveParams = std::vector<ParamPrimitive>;
-
     struct NodeData {
         std::string name;
         std::string cls;
 
-        ObjectParams inputObjs;
         CustomUI customUi;   //custom ui for input params,just a template or mapping of input params data.
-        PrimitveParams inputPrims;
-        PrimitveParams outputPrims;
-        ObjectParams outputObjs;
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         std::optional<GraphData> subgraph;

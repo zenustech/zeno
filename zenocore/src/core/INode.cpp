@@ -673,27 +673,67 @@ ZENO_API PrimitveParams INode::get_output_primitivie_params() const {
     return params;
 }
 
-ZENO_API ParamPrimitive INode::get_input_prim_param(std::string const& name) const {
-    auto& paramPrim = safe_at(m_inputPrims, name, "miss input param `" + name + "` on node `" + m_name + "`");
-    ParamPrimitive param = paramPrim->export();
+ZENO_API ParamPrimitive INode::get_input_prim_param(std::string const& name, bool* pExist) const {
+    ParamPrimitive param;
+    auto iter = m_inputPrims.find(name);
+    if (iter != m_inputPrims.end()) {
+        auto& paramPrim = iter->second;
+        param = paramPrim->export();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
     return param;
 }
 
-ZENO_API ParamObject INode::get_input_obj_param(std::string const& name) const {
-    auto& paramObj = safe_at(m_inputObjs, name, "miss input object `" + name + "` on node `" + m_name + "`");
-    ParamObject param = paramObj->export();
+ZENO_API ParamObject INode::get_input_obj_param(std::string const& name, bool* pExist) const {
+    ParamObject param;
+    auto iter = m_inputObjs.find(name);
+    if (iter != m_inputObjs.end()) {
+        auto& paramObj = iter->second;
+        param = paramObj->export();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
     return param;
 }
 
-ZENO_API ParamPrimitive INode::get_output_prim_param(std::string const& name) const {
-    auto& paramObj = safe_at(m_outputPrims, name, "miss input param `" + name + "` on node `" + m_name + "`");
-    ParamPrimitive param = paramObj->export();
+ZENO_API ParamPrimitive INode::get_output_prim_param(std::string const& name, bool* pExist) const {
+    ParamPrimitive param;
+    auto iter = m_outputPrims.find(name);
+    if (iter != m_outputPrims.end()) {
+        auto& paramPrim = iter->second;
+        param = paramPrim->export();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
     return param;
 }
 
-ZENO_API ParamObject INode::get_output_obj_param(std::string const& name) const {
-    auto& paramObj = safe_at(m_outputObjs, name, "miss output object `" + name + "` on node `" + m_name + "`");
-    ParamObject param = paramObj->export();
+ZENO_API ParamObject INode::get_output_obj_param(std::string const& name, bool* pExist) const {
+    ParamObject param;
+    auto iter = m_outputObjs.find(name);
+    if (iter != m_outputObjs.end()) {
+        auto& paramObj = iter->second;
+        param = paramObj->export();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
     return param;
 }
 
@@ -967,23 +1007,33 @@ ZENO_API NodeData INode::exportInfo() const
     else
         node.type = Node_Normal;
 
+    node.customUi = nodeClass->m_customui;
     for (auto& [name, paramObj] : m_inputObjs)
     {
-        node.inputObjs.push_back(paramObj->export());
+        node.customUi.inputObjs.push_back(paramObj->export());
     }
-    for (auto& [name, paramObj] : m_inputPrims)
+    for (auto tab : node.customUi.inputPrims.tabs)
     {
-        node.inputPrims.push_back(paramObj->export());
+        for (auto group : tab.groups)
+        {
+            for (auto& param : group.params)
+            {
+                auto iter = m_inputPrims.find(param.name);
+                if (iter != m_inputPrims.end())
+                {
+                    param = iter->second->export();
+                }
+            }
+        }
     }
     for (auto& [name, paramObj] : m_outputPrims)
     {
-        node.outputPrims.push_back(paramObj->export());
+        node.customUi.outputPrims.push_back(paramObj->export());
     }
     for (auto& [name, paramObj] : m_outputObjs)
     {
-        node.outputObjs.push_back(paramObj->export());
+        node.customUi.outputObjs.push_back(paramObj->export());
     }
-    node.customUi = nodeClass->m_customui;
     return node;
 }
 
@@ -1032,19 +1082,25 @@ ZENO_API void INode::init(const NodeData& dat)
 
 ZENO_API void INode::initParams(const NodeData& dat)
 {
-    for (const ParamObject& paramObj : dat.inputObjs)
+    for (const ParamObject& paramObj : dat.customUi.inputObjs)
     {
         add_input_obj_param(paramObj);
     }
-    for (const ParamPrimitive& param : dat.inputPrims)
+    for (auto tab : dat.customUi.inputPrims.tabs)
     {
-        add_input_prim_param(param);
+        for (auto group : tab.groups)
+        {
+            for (auto param : group.params)
+            {
+                add_input_prim_param(param);
+            }
+        }
     }
-    for (const ParamPrimitive& param : dat.outputPrims)
+    for (const ParamPrimitive& param : dat.customUi.outputPrims)
     {
         add_output_prim_param(param);
     }
-    for (const ParamObject& paramObj : dat.outputObjs)
+    for (const ParamObject& paramObj : dat.customUi.outputObjs)
     {
         add_output_obj_param(paramObj);
     }

@@ -219,33 +219,22 @@ namespace zeno {
     }
 
     ZENO_API std::string objPathToStr(ObjPath path) {
-        std::string ret = path.front();
-        path.pop_front();
-        for (auto item : path) {
-            ret += "/" + item;
-        }
-        return ret;
+        return path;
     }
 
     ObjPath zeno::strToObjPath(const std::string& str)
     {
-        ObjPath path;
-        std::string token;
-        for (char c : str) {
-            if (c == '/') {
-                if (token.size() > 0) {
-                    path.push_back(token);
-                    token = {};
-                }
-            }
-            else {
-                token.push_back(c);
+        return str;
+    }
+
+    PrimitveParams customUiToParams(const CustomUIParams& customparams) {
+        PrimitveParams params;
+        for (auto tab : customparams.tabs) {
+            for (auto group : tab.groups) {
+                params.insert(params.end(), group.params.begin(), group.params.end());
             }
         }
-        if (token.size() > 0) {
-            path.push_back(token);
-        }
-        return path;
+        return params;
     }
 
     CustomUI descToCustomui(const Descriptor& desc) {

@@ -27,6 +27,7 @@ namespace zeno {
     ObjPath strToObjPath(const std::string& str);
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs);
     CustomUI descToCustomui(const Descriptor& desc);
+    PrimitveParams customUiToParams(const CustomUIParams& customparams);
     void initControlsByType(CustomUI& ui);
     std::string absolutePath(std::string currentPath, const std::string& path);
     std::string relativePath(std::string currentPath, const std::string& path);
