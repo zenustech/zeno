@@ -14,8 +14,10 @@ struct Asset {
 };
 
 struct ZenoAsset {
-    std::vector<ParamPrimitive> inputs;
-    std::vector<ParamPrimitive> outputs;
+    ObjectParams object_inputs;
+    PrimitiveParams primitive_inputs;
+    PrimitiveParams primitive_outputs;
+    ObjectParams object_outputs;
     AssetInfo info;
     CustomUI m_customui;
     std::optional<GraphData> optGraph;

@@ -244,17 +244,16 @@ zeno::NodeData Zsg2Reader::_parseNode(
     return retNode;
 }
 
-zeno::ParamPrimitive Zsg2Reader::_parseSocket(
+void Zsg2Reader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
         const std::string& id,
         const std::string& nodeCls,
         const std::string& sockName,
         const rapidjson::Value& sockObj,
+        zeno::NodeData& ret,
         zeno::LinksData& links)
 {
-    zeno::ParamPrimitive param;
-
     std::string sockProp;
     if (sockObj.HasMember("property"))
     {
@@ -272,9 +271,10 @@ zeno::ParamPrimitive Zsg2Reader::_parseSocket(
     else if (sockProp == "group-line")
         prop = zeno::SocketProperty::Socket_Normal;    //deprecated
 
-    param.prop = prop;
-    param.name = sockName;
-    param.socketType = bInput ? zeno::ParamSocket : zeno::PrimarySocket; //以前的定义是不包含这个的。
+    zeno::SocketType socketType = zeno::NoSocket;
+    zeno::ParamType paramType = zeno::Param_Null;
+    zeno::zvariant defl;
+    std::string tooltip;
 
     if (m_bDiskReading &&
         (prop == zeno::SocketProperty::Socket_Editable ||
@@ -282,20 +282,28 @@ zeno::ParamPrimitive Zsg2Reader::_parseSocket(
     {
         if (prop == zeno::SocketProperty::Socket_Editable) {
             //like extract dict.
-            param.type = zeno::Param_String;
+            paramType = zeno::Param_String;
         } else {
-            param.type = zeno::Param_Null;
+            paramType = zeno::Param_Null;
         }
     }
 
+    bool bPrimType = isPrimitiveType(paramType);
+
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
-        param.type = zeno::convertToType(sockObj["type"].GetString());
-        param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
-        if (bSubnetNode && (param.type == zeno::Param_Null ||
-            param.type == zeno::Param_Prim))
-        {
-            //这种情况大概率是连对象
-            param.socketType = zeno::PrimarySocket;
+        paramType = zeno::convertToType(sockObj["type"].GetString());
+        defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
+        if (bPrimType) {
+            socketType = zeno::Socket_Primitve;
+        }
+        else {
+            if (bInput) {
+                //这种情况大概率是连对象，默认赋予Owing端口吧
+                socketType = zeno::Socket_Owning;
+            }
+            else {
+                socketType = zeno::Socket_Output;
+            }
         }
     }
 
@@ -329,23 +337,67 @@ zeno::ParamPrimitive Zsg2Reader::_parseSocket(
         _parseDictPanel(bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
     }
 
+    std::optional<zeno::ControlProperty> ctrlProps;
+
     if (sockObj.HasMember("control"))
 	{
-        zeno::ParamControl ctrl;
         zeno::ControlProperty props;
         bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
         if (bret) {
-            param.control = ctrl;
             if (props.items || props.ranges)
-                param.ctrlProps = props;
+                ctrlProps = props;
         }
     }
 
     if (sockObj.HasMember("tooltip")) 
     {
-        param.tooltip = sockObj["tooltip"].GetString();
+        tooltip = sockObj["tooltip"].GetString();
     }
-    return param;
+
+    if (bPrimType) {
+        zeno::ParamPrimitive param;
+        param.bInput = bInput;
+        param.control = ctrl;
+        param.ctrlProps = ctrlProps;
+        param.defl = defl;
+        param.name = sockName;
+        param.prop = prop;
+        param.socketType = socketType;
+        param.tooltip = tooltip;
+        param.type = paramType;
+        if (bInput) {
+            //老zsg没有层级结构，直接用默认就行
+            if (ret.customUi.inputPrims.tabs.empty())
+            {
+                zeno::ParamTab tab;
+                tab.name = "Tab1";
+                zeno::ParamGroup group;
+                group.name = "Group1";
+                tab.groups.emplace_back(group);
+                ret.customUi.inputPrims.tabs.emplace_back(tab);
+            }
+            auto& group = ret.customUi.inputPrims.tabs[0].groups[0];
+            group.params.emplace_back(param);
+        }
+        else {
+            ret.customUi.outputPrims.emplace_back(param);
+        }
+    }
+    else {
+        zeno::ParamObject param;
+        param.bInput = bInput;
+        param.name = sockName;
+        param.prop = prop;
+        param.socketType = socketType;
+        param.tooltip = tooltip;
+        param.type = paramType;
+        if (bInput) {
+            ret.customUi.inputObjs.emplace_back(param);
+        }
+        else {
+            ret.customUi.outputObjs.emplace_back(param);
+        }
+    }
 }
 
 void Zsg2Reader::_parseDictPanel(
@@ -440,7 +492,8 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
                 std::string toolTip(valueObj["tooltip"].GetString());
                 param.tooltip = toolTip;
             }
-            ret.inputs.push_back(param);
+            //how to place?
+            //ret.inputs.push_back(param);
         }
     }
     return true;

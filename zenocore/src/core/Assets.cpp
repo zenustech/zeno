@@ -88,8 +88,8 @@ ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset) {
         spGraph->init(asset.optGraph.value());
         newAsst.sharedGraph = spGraph;
     }
-    newAsst.inputs = asset.inputs;
-    newAsst.outputs = asset.outputs;
+    newAsst.inputs = asset.primitive_inputs;
+    newAsst.outputs = asset.primitive_outputs;
     newAsst.m_customui = asset.m_customui;
 
     if (m_assets.find(asset.info.name) != m_assets.end()) {

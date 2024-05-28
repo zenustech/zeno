@@ -227,8 +227,8 @@ namespace zeno {
         return str;
     }
 
-    PrimitveParams customUiToParams(const CustomUIParams& customparams) {
-        PrimitveParams params;
+    PrimitiveParams customUiToParams(const CustomUIParams& customparams) {
+        PrimitiveParams params;
         for (auto tab : customparams.tabs) {
             for (auto group : tab.groups) {
                 params.insert(params.end(), group.params.begin(), group.params.end());

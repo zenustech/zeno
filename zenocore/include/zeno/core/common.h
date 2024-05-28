@@ -98,6 +98,7 @@ namespace zeno {
         NoSocket,
         //ParamSocket,
         //PrimarySocket,
+        Socket_Output,      //Output object
 
         //obj:
         Socket_ReadOnly,

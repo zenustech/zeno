@@ -289,7 +289,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
         {
             std::string color;
             int nres = 0;
-            const PrimitveParams& primparams = customUiToParams(node.customUi.inputPrims);
+            const PrimitiveParams& primparams = customUiToParams(node.customUi.inputPrims);
             for (const auto& input : primparams)
             {
                 if (input.name == "_RAMPS" && std::holds_alternative<std::string>(input.defl))
@@ -662,7 +662,7 @@ ZENO_API LinksData Graph::exportLinks() const
     LinksData links;
     for (auto& [uuid, node] : m_nodes) {
         zeno::NodeData nodeinfo = node->exportInfo();
-        const PrimitveParams& params = customUiToParams(nodeinfo.customUi.inputPrims);
+        const PrimitiveParams& params = customUiToParams(nodeinfo.customUi.inputPrims);
         for (ParamPrimitive param : params) {
             links.insert(links.end(), param.links.begin(), param.links.end());
         }

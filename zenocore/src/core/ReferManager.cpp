@@ -29,7 +29,7 @@ namespace zeno {
             auto namePath = spNode->get_path();
             namePath.pop_back();
             auto currPath = zeno::objPathToStr(namePath);
-            PrimitveParams params = spNode->get_input_primitive_params();
+            PrimitiveParams params = spNode->get_input_primitive_params();
             for (ParamPrimitive& param : params)
             {
                 auto paths = referPaths(currPath, param.defl);

@@ -3,6 +3,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/helper.h>
 #include <zeno/io/iohelper.h>
+#include <zeno/io/iotags.h>
 #include <format>
 
 using namespace zeno::iotags;
@@ -22,7 +23,7 @@ namespace zenoio
         RAPIDJSON_WRITER writer(s);
 
         {
-            JsonObjScope batch(writer);
+            JsonObjScope scope(writer);
 
             writer.Key("name");
             writer.String(asset.info.name.c_str());
@@ -40,26 +41,47 @@ namespace zenoio
             writer.Key("Parameters");
             {
                 JsonObjScope batch(writer);
-                writer.Key("inputs");
+                
+                writer.Key(iotags::params::node_inputs_objs);
                 {
-                    JsonObjScope _batch(writer);
-                    for (auto param : asset.inputs)
+                    JsonObjScope _scope(writer);
+                    for (auto param : asset.object_inputs)
                     {
                         writer.Key(param.name.c_str());
-                        dumpSocket(param, writer);
+                        dumpObjectParam(param, writer);
                     }
                 }
-                writer.Key("outputs");
+
+                writer.Key(iotags::params::node_inputs_primitive);
                 {
-                    JsonObjScope _batch(writer);
-                    for (auto param : asset.outputs)
+                    JsonObjScope _scope(writer);
+                    for (auto param : asset.primitive_inputs)
                     {
                         writer.Key(param.name.c_str());
-                        dumpSocket(param, writer);
+                        dumpPrimitiveParam(param, writer);
+                    }
+                }
+
+                writer.Key(iotags::params::node_outputs_primitive);
+                {
+                    JsonObjScope _batch(writer);
+                    for (auto param : asset.primitive_outputs)
+                    {
+                        writer.Key(param.name.c_str());
+                        dumpPrimitiveParam(param, writer);
+                    }
+                }
+
+                writer.Key(iotags::params::node_outputs_objs);
+                {
+                    JsonObjScope _scope(writer);
+                    for (auto param : asset.object_outputs)
+                    {
+                        writer.Key(param.name.c_str());
+                        dumpObjectParam(param, writer);
                     }
                 }
             }
-
             dumpCustomUI(asset.m_customui, writer);
         }
 

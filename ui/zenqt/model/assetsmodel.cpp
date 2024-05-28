@@ -150,8 +150,8 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
 
     asset.optGraph = sample;
 
-    std::vector<zeno::ParamPrimitive>& inputs = asset.inputs;
-    std::vector<zeno::ParamPrimitive>& outputs = asset.outputs;
+    std::vector<zeno::ParamPrimitive>& inputs = asset.primitive_inputs;
+    std::vector<zeno::ParamPrimitive>& outputs = asset.primitive_outputs;
 
     zeno::ParamGroup defaultGroup;
 
@@ -181,7 +181,7 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     zeno::ParamTab tab;
     tab.groups.emplace_back(std::move(defaultGroup));
     asset.m_customui.tabs.emplace_back(std::move(tab));
-    asset.m_customui.outputs = outputs;
+    asset.m_customui.primitive_outputs = outputs;
 
     assets->createAsset(asset);
     saveAsset(QString::fromStdString(info.name));
@@ -204,8 +204,8 @@ void AssetsModel::saveAsset(const QString& name)
     zeno::ZenoAsset zasset;
     zasset.info = asset.m_info;
     zasset.optGraph = asset.sharedGraph->exportGraph();
-    zasset.inputs = asset.inputs;
-    zasset.outputs = asset.outputs;
+    zasset.primitive_inputs = asset.inputs;
+    zasset.primitive_outputs = asset.outputs;
     zasset.m_customui = asset.m_customui;
 
     zenoio::ZdaWriter writer;

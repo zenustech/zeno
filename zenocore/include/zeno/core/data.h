@@ -67,6 +67,7 @@ namespace zeno {
         SocketType socketType = Socket_Clone;
         std::vector<EdgeInfo> links;
         SocketProperty prop = Socket_Normal;
+        std::string tooltip;
         bool bInput = true;
     };
 
@@ -106,11 +107,11 @@ namespace zeno {
     };
 
     using ObjectParams = std::vector<ParamObject>;
-    using PrimitveParams = std::vector<ParamPrimitive>;
+    using PrimitiveParams = std::vector<ParamPrimitive>;
 
     struct ParamGroup {
         std::string name = "Group1";
-        PrimitveParams params;
+        PrimitiveParams params;
     };
 
     struct ParamTab {
@@ -126,7 +127,7 @@ namespace zeno {
     struct CustomUI {
         ObjectParams inputObjs;
         CustomUIParams inputPrims;
-        PrimitveParams outputPrims;
+        PrimitiveParams outputPrims;
         ObjectParams outputObjs;
 
         std::string category;

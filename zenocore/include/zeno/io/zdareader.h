@@ -17,11 +17,7 @@ namespace zenoio
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
 
     private:
-        void _parseParams(
-            const rapidjson::Value& paramsObj,
-            std::vector<zeno::ParamPrimitive>& inputs,
-            std::vector<zeno::ParamPrimitive>& outputs
-        );
+        void _parseParams(const rapidjson::Value& paramsObj, zeno::NodeData& ret);
 
         zeno::ZenoAsset m_asset;
         bool m_bDelayReadGraphData;

@@ -1,5 +1,7 @@
 #include <zeno/io/zdareader.h>
 #include <zeno/utils/string.h>
+#include <zeno/io/iotags.h>
+#include <zeno/utils/helper.h>
 
 
 namespace zenoio
@@ -47,7 +49,13 @@ namespace zenoio
                 return false;
         }
 
-        _parseParams(doc["Parameters"], m_asset.inputs, m_asset.outputs);
+        zeno::NodeData tmp;
+        _parseParams(doc["Parameters"], tmp);
+
+        m_asset.object_inputs = tmp.customUi.inputObjs;
+        m_asset.primitive_inputs = customUiToParams(tmp.customUi.inputPrims);
+        m_asset.primitive_outputs = tmp.customUi.outputPrims;
+        m_asset.object_outputs = tmp.customUi.outputObjs;
 
         if (doc.HasMember("subnet-customUi"))
             m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
@@ -64,61 +72,87 @@ namespace zenoio
         return m_asset;
     }
 
-    void ZdaReader::_parseParams(
-        const rapidjson::Value& paramsObj,
-        std::vector<zeno::ParamPrimitive>& inputs,
-        std::vector<zeno::ParamPrimitive>& outputs)
+    void ZdaReader::_parseParams(const rapidjson::Value& paramsObj, zeno::NodeData& ret)
     {
-        if (paramsObj.HasMember("inputs"))
+        if (paramsObj.HasMember(iotags::params::node_inputs_objs))
         {
-            for (const auto& inObj : paramsObj["inputs"].GetObject())
+            for (const auto& inObj : paramsObj[iotags::params::node_inputs_primitive].GetObject())
             {
                 const std::string& inSock = inObj.name.GetString();
                 const auto& inputObj = inObj.value;
 
-                if (inSock == "SRC") {
-                    continue;
-                }
-
                 if (inputObj.IsNull())
                 {
-                    zeno::ParamPrimitive param;
+                    zeno::ParamObject param;
                     param.name = inSock;
-                    inputs.push_back(param);
+                    ret.customUi.inputObjs.push_back(param);
                 }
                 else if (inputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamPrimitive param = _parseSocket(true, false, "", "", inSock, inputObj, links);
-                    inputs.push_back(param);
+                    _parseSocket(true, true, true, "", "", inSock, inputObj, ret, links);
+                }
+                else
+                {
+                    //TODO
+                }
+            }
+        }
+        if (paramsObj.HasMember(iotags::params::node_inputs_primitive))
+        {
+            for (const auto& inObj : paramsObj[iotags::params::node_inputs_primitive].GetObject())
+            {
+                const std::string& inSock = inObj.name.GetString();
+                const auto& inputObj = inObj.value;
+
+                if (inputObj.IsNull())
+                {
+                }
+                else if (inputObj.IsObject())
+                {
+                    zeno::LinksData links;
+                    _parseSocket(true, true, false, "", "", inSock, inputObj, ret, links);
                 }
                 else
                 {
                 }
             }
         }
-        if (paramsObj.HasMember("outputs"))
+        if (paramsObj.HasMember(iotags::params::node_outputs_primitive))
         {
-            for (const auto& outObj : paramsObj["outputs"].GetObject())
+            for (const auto& outObj : paramsObj[iotags::params::node_outputs_primitive].GetObject())
             {
                 const std::string& outSock = outObj.name.GetString();
                 const auto& outputObj = outObj.value;
-
-                if (outSock == "SRC") {
-                    continue;
-                }
-
                 if (outputObj.IsNull())
                 {
-                    zeno::ParamPrimitive param;
-                    param.name = outSock;
-                    outputs.push_back(param);
                 }
                 else if (outputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    zeno::ParamPrimitive param = _parseSocket(false, false, "", "", outSock, outputObj, links);
-                    outputs.push_back(param);
+                    _parseSocket(false, true, false, "", "", outSock, outputObj, ret, links);
+                }
+                else
+                {
+                }
+            }
+        }
+        if (paramsObj.HasMember(iotags::params::node_outputs_objs))
+        {
+            for (const auto& outObj : paramsObj[iotags::params::node_outputs_objs].GetObject())
+            {
+                const std::string& outSock = outObj.name.GetString();
+                const auto& outputObj = outObj.value;
+                if (outputObj.IsNull())
+                {
+                    zeno::ParamObject param;
+                    param.name = outSock;
+                    ret.customUi.outputObjs.push_back(param);
+                }
+                else if (outputObj.IsObject())
+                {
+                    zeno::LinksData links;
+                    _parseSocket(false, true, true, "", "", outSock, outputObj, ret, links);
                 }
                 else
                 {

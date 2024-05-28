@@ -640,9 +640,9 @@ ZENO_API ObjectParams INode::get_output_object_params() const
     return params;
 }
 
-ZENO_API PrimitveParams INode::get_input_primitive_params() const {
+ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
     //TODO: deprecated node.
-    PrimitveParams params;
+    PrimitiveParams params;
     for (auto& [name, spParamObj] : m_inputPrims) {
         ParamPrimitive param;
         param.bInput = true;
@@ -657,8 +657,8 @@ ZENO_API PrimitveParams INode::get_input_primitive_params() const {
     return params;
 }
 
-ZENO_API PrimitveParams INode::get_output_primitivie_params() const {
-    PrimitveParams params;
+ZENO_API PrimitiveParams INode::get_output_primitivie_params() const {
+    PrimitiveParams params;
     for (auto& [name, spParamObj] : m_inputPrims) {
         ParamPrimitive param;
         param.bInput = false;

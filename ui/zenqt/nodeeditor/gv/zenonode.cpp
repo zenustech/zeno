@@ -1613,8 +1613,8 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             asset.info.majorVer = 1;
             asset.info.minorVer = 0;
             zeno::NodeData data = m_index.data(ROLE_NODEDATA).value<zeno::NodeData>();
-            asset.inputs = data.inputs;
-            asset.outputs = data.outputs;
+            asset.primitive_inputs = data.inputs;
+            asset.primitive_outputs = data.outputs;
             asset.optGraph = data.subgraph;
             asset.m_customui = data.customUi;
             auto& assets = zeno::getSession().assets;
