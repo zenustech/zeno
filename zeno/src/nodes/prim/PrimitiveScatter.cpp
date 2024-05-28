@@ -119,7 +119,7 @@ struct PrimitiveScatter : INode {
 
 ZENDEFNODE(PrimitiveScatter, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"int", "npoints", "100"},
     {"int", "seed", "0"},
     },

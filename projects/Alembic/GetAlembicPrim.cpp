@@ -473,7 +473,7 @@ struct ImportAlembicPrim : INode {
 
 ZENDEFNODE(ImportAlembicPrim, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"frameid"},
         {"int", "index", "-1"},
         {"bool", "use_xform", "0"},

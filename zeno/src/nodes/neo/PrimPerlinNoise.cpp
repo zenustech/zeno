@@ -82,7 +82,7 @@ struct PrimPerlinNoise : INode {
 
 ZENDEFNODE(PrimPerlinNoise, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "inAttr", "pos"},
     {"string", "outAttr", "tmp"},
     {"float", "scale", "5"},

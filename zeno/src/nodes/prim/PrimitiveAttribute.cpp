@@ -39,8 +39,8 @@ struct PrimitiveAddAttr : zeno::INode {
 ZENDEFNODE(PrimitiveAddAttr, 
     { 
         {
-            {"", "fillValue", "", PrimarySocket},
-            {"", "prim", "", PrimarySocket},
+            {"", "fillValue", "", zeno::Socket_ReadOnly},
+            {"", "prim", "", zeno::Socket_ReadOnly},
         }, 
     {"prim"},
     {
@@ -71,7 +71,7 @@ struct PrimitiveDelAttr : zeno::INode {
 ZENDEFNODE(PrimitiveDelAttr,
     {
         {
-            {"", "prim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
         },
     {"prim"}, 
     {
@@ -113,7 +113,7 @@ struct PrimitiveGetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetAttrValue, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"int","index","0"},
     }, 
     {
@@ -156,7 +156,7 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveSetAttrValue,{ 
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"int","index","0"},
         {"float","value"},
     }, 

@@ -115,7 +115,7 @@ ZENDEFNODE(
     {
         {
             {"string", "str", ""},
-            {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+            {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         },
         {},
         {},
@@ -137,7 +137,7 @@ ZENDEFNODE(
     FileReadString,
     {
         {
-            {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
             {"string", "str"},
@@ -786,7 +786,7 @@ struct StringSplitPath : zeno::INode {
 
 ZENDEFNODE(StringSplitPath, {
     {
-        {"string", "string", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "string", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"bool", "SplitExtension", "true"},
     },
     {{"string", "directory"},

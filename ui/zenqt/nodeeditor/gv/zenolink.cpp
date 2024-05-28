@@ -276,7 +276,7 @@ void ZenoFullLink::onInSocketPosChanged()
     zeno::SocketType inSockProp = zeno::NoSocket;
     getConnectedState(inSockProp, bCollasped);
 
-    if (inSockProp == zeno::PrimarySocket) {
+    if (inSockProp == zeno::Socket_ReadOnly) {
         setVisible(true);
         m_dstPos = pNode->getSocketPos(inSockIdx, inKey);
     }
@@ -330,7 +330,7 @@ bool ZenoFullLink::isPrimLink()
 
     zeno::SocketType outprop = (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt();
     zeno::SocketType inprop = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
-    return outprop == zeno::PrimarySocket && outprop == inprop;
+    return outprop == zeno::Socket_ReadOnly && outprop == inprop;
 }
 
 void ZenoFullLink::focusOnNode(const QModelIndex& nodeIdx)
@@ -425,7 +425,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         zeno::SocketType inSockProp = zeno::NoSocket;
         getConnectedState(inSockProp, bCollasped);
 
-        if (inSockProp == zeno::PrimarySocket) {
+        if (inSockProp == zeno::Socket_ReadOnly) {
             painter->save();
             QPen pen;
             pen.setColor(isSelected() ? QColor(92, 36, 36) : QColor(192, 36, 36, 153));

@@ -194,7 +194,8 @@ namespace zenoio
             std::string newName;;
             if (cls == "SubInput" || cls == "SubOutput")
             {
-                for (const auto& info : nodeData.inputs)
+                auto primparams = customUiToParams(nodeData.customUi.inputPrims);
+                for (const auto& info : primparams)
                 {
                     if (info.name == "name")
                     {
@@ -203,8 +204,9 @@ namespace zenoio
                     }
                 }
             }
-            else
+            else {
                 newName = cls + std::to_string(newIdNum);
+            }
 
             old2new.insert(std::make_pair(oldName, newName));
 

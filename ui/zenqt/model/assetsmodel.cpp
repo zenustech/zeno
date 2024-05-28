@@ -158,24 +158,24 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     zeno::ParamPrimitive param;
     param.name = "input1";
     param.bInput = true;
-    param.socketType = zeno::PrimarySocket;
+    param.socketType = zeno::Socket_ReadOnly;
     inputs.push_back(param);
     defaultGroup.params.push_back(param);
 
     param.name = "input2";
     param.bInput = true;
-    param.socketType = zeno::PrimarySocket;
+    param.socketType = zeno::Socket_ReadOnly;
     inputs.push_back(param);
     defaultGroup.params.push_back(param);
 
     param.name = "output1";
     param.bInput = false;
-    param.socketType = zeno::PrimarySocket;
+    param.socketType = zeno::Socket_ReadOnly;
     outputs.push_back(param);
 
     param.name = "output2";
     param.bInput = false;
-    param.socketType = zeno::PrimarySocket;
+    param.socketType = zeno::Socket_ReadOnly;
     outputs.push_back(param);
 
     zeno::ParamTab tab;

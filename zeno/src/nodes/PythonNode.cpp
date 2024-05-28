@@ -320,7 +320,7 @@ namespace zeno {
 
         ZENDEFNODE(PythonNode, {
             {
-                {"string", "script", "", ParamSocket, CodeEditor},
+                {"string", "script", "", Socket_Primitve, CodeEditor},
                 {"readpath", "path"},
                 {"dict", "args"}
             },
@@ -359,9 +359,9 @@ namespace zeno {
             {
                 {"string", "nameList"},
                 {"string", "keyWords"},
-                {"string", "materialPath", "", zeno::ParamSocket, zeno::ReadPathEdit},
+                {"string", "materialPath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
                 {"string", "matchInputs"}, 
-                {"string", "script", "", ParamSocket, Multiline}
+                {"string", "script", "", Socket_Primitve, Multiline}
             },
             {},
             {},

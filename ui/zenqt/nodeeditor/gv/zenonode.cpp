@@ -253,7 +253,7 @@ ZGraphicsLayout* ZenoNode::initVerticalSockets(bool bInput)
         if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
             continue;
 
-        if (paramIdx.data(ROLE_SOCKET_TYPE) != zeno::PrimarySocket)
+        if (paramIdx.data(ROLE_SOCKET_TYPE) != zeno::Socket_ReadOnly)
             continue;
 
         addOnlySocketToLayout(pSocketLayout, paramIdx);
@@ -660,7 +660,7 @@ void ZenoNode::onLayoutChanged()
         if (!paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         m_inputsLayout->addItem(addSocket(paramIdx, true, pScene));
-        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::PrimarySocket)
+        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::Socket_ReadOnly)
             addOnlySocketToLayout(m_topInputSockets, paramIdx);
     }
 
@@ -670,7 +670,7 @@ void ZenoNode::onLayoutChanged()
         if (paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         m_outputsLayout->addItem(addSocket(paramIdx, false, pScene));
-        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::PrimarySocket)
+        if (paramIdx.data(ROLE_SOCKET_TYPE) == zeno::Socket_ReadOnly)
             addOnlySocketToLayout(m_bottomOutputSockets, paramIdx);
     }
 

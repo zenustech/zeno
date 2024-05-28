@@ -39,7 +39,7 @@ struct PrimitiveFillAttr : INode {
 
 ZENDEFNODE(PrimitiveFillAttr,{
     {
-        {"","prim", "", PrimarySocket},
+        {"","prim", "", zeno::Socket_ReadOnly},
         {"NumericObject", "value"},
     },
     {
@@ -85,7 +85,7 @@ struct PrimitivePrintAttr : INode {
 
 ZENDEFNODE(PrimitivePrintAttr,{
     {
-        {"","prim", "", PrimarySocket},
+        {"","prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -135,7 +135,7 @@ struct PrimitiveRandomizeAttr : INode {
 
 ZENDEFNODE(PrimitiveRandomizeAttr, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -191,7 +191,7 @@ struct PrimitiveRandomAttr : INode {
 
 ZENDEFNODE(PrimitiveRandomAttr, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"NumericObject", "min", "-1"},
         {"NumericObject", "max", "1"},
     },

@@ -257,7 +257,7 @@ struct PrimExtrude : INode {
 
 ZENDEFNODE(PrimExtrude, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "maskAttr", ""},
     {"float", "extrude", "0.1"},
     {"float", "inset", "0"},

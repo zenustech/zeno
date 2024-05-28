@@ -62,8 +62,8 @@ struct PrimitiveUnaryOp : INode {
 
 ZENDEFNODE(PrimitiveUnaryOp,
     { /* inputs: */ {
-    {"", "primA", "", PrimarySocket},
-    {"", "primOut", "", PrimarySocket},
+    {"", "primA", "", zeno::Socket_ReadOnly},
+    {"", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
     "primOut",
     }, /* params: */ {
@@ -148,9 +148,9 @@ struct PrimitiveBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveBinaryOp,
     { /* inputs: */ {
-        {"", "primB", "", PrimarySocket},
-        {"", "primA", "", PrimarySocket},
-        {"", "primOut", "", PrimarySocket},
+        {"", "primB", "", zeno::Socket_ReadOnly},
+        {"", "primA", "", zeno::Socket_ReadOnly},
+        {"", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
     "primOut",
     }, /* params: */ {
@@ -199,10 +199,10 @@ struct PrimitiveMix : INode {
 };
 ZENDEFNODE(PrimitiveMix,
     { /* inputs: */ {
-        {"", "coef", "", PrimarySocket},
-        {"", "primB", "", PrimarySocket},
-        {"", "primA", "", PrimarySocket},
-        {"", "primOut", "", PrimarySocket},
+        {"", "coef", "", zeno::Socket_ReadOnly},
+        {"", "primB", "", zeno::Socket_ReadOnly},
+        {"", "primA", "", zeno::Socket_ReadOnly},
+        {"", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
     "primOut",
     }, /* params: */ {
@@ -287,9 +287,9 @@ struct PrimitiveHalfBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveHalfBinaryOp,
     { /* inputs: */ {
-        {"", "valueB", "", PrimarySocket},
-        {"", "primA", "", PrimarySocket},
-        {"", "primOut", "", PrimarySocket},
+        {"", "valueB", "", zeno::Socket_ReadOnly},
+        {"", "primA", "", zeno::Socket_ReadOnly},
+        {"", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
     "primOut",
     }, /* params: */ {

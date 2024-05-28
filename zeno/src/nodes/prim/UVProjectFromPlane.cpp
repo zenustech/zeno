@@ -78,8 +78,8 @@ struct UVProjectFromPlane : zeno::INode {
 
 ZENDEFNODE(UVProjectFromPlane, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
-        {"PrimitiveObject", "refPlane", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"PrimitiveObject", "refPlane", "", zeno::Socket_ReadOnly},
     },
     {
         {"PrimitiveObject", "outPrim"}
@@ -307,8 +307,8 @@ struct PrimSample2D : zeno::INode {
 };
 ZENDEFNODE(PrimSample2D, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
-        {"PrimitiveObject", "image", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"PrimitiveObject", "image", "", zeno::Socket_ReadOnly},
         {"string", "uvChannel", "uv"},
         {"enum vertex tris loopsuv", "uvSource", "vertex"},
         {"string", "targetChannel", "clr"},
@@ -445,7 +445,7 @@ struct ReadImageFile : INode {//todo: select custom color space
 };
 ZENDEFNODE(ReadImageFile, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"bool", "Linearize Non-linear Images", "1"},
     },
     {
@@ -521,7 +521,7 @@ struct ReadImageFile_v2 : INode {
 };
 ZENDEFNODE(ReadImageFile_v2, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"bool", "srgb_to_linear", "0"},
     },
     {
@@ -547,7 +547,7 @@ struct ImageFlipVertical : INode {
 };
 ZENDEFNODE(ImageFlipVertical, {
     {
-        {"", "image", "", PrimarySocket},
+        {"", "image", "", zeno::Socket_ReadOnly},
     },
     {
         {"image"},
@@ -678,8 +678,8 @@ struct WriteImageFile : INode {
 };
 ZENDEFNODE(WriteImageFile, {
     {
-        {"", "image", "", PrimarySocket},
-        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+        {"", "image", "", zeno::Socket_ReadOnly},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
@@ -766,8 +766,8 @@ struct WriteImageFile_v2 : INode {
 };
 ZENDEFNODE(WriteImageFile_v2, {
     {
-        {"", "image", "", PrimarySocket},
-        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+        {"", "image", "", zeno::Socket_ReadOnly},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "linear_to_srgb_when_save", "0"},
@@ -847,7 +847,7 @@ struct ImageFloatGaussianBlur : INode {
 
 ZENDEFNODE(ImageFloatGaussianBlur, {
     {
-        {"", "image", "", PrimarySocket},
+        {"", "image", "", zeno::Socket_ReadOnly},
     },
     {
         {"image"},
@@ -891,7 +891,7 @@ struct EnvMapRot : INode {
 };
 ZENDEFNODE(EnvMapRot, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"vec3f", "dir", "1, 1, 1"},
     },
     {
@@ -924,8 +924,8 @@ struct PrimLoadExrToChannel : INode {
 
 ZENDEFNODE(PrimLoadExrToChannel, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
-        {"", "prim", "", PrimarySocket},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"string", "channel", "clr"},
     },
     {

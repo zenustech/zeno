@@ -77,6 +77,7 @@ namespace zeno {
         ParamType type = Param_Null;
         SocketType socketType = NoSocket;
         zvariant defl;
+        zvariant result;    //run result.
         ParamControl control = NullControl;
         std::optional<ControlProperty> ctrlProps;
 

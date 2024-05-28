@@ -72,7 +72,7 @@ struct PrimSort : INode {
 
 ZENDEFNODE(PrimSort, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum NoChange ByAttribute", "Vertex Sort", "NoChange"},//Add more methods
     {"string", "Attribute", "index"},
     {"bool", "Reverse", "0"}

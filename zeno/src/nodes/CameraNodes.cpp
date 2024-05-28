@@ -65,7 +65,7 @@ struct SetPhysicalCamera : INode {
 
 ZENO_DEFNODE(SetPhysicalCamera)({
     {
-        {"", "camera", "", PrimarySocket},
+        {"", "camera", "", zeno::Socket_ReadOnly},
         {"float", "aperture", "2"},
         {"float", "shutter_speed", "0.04"},
         {"float", "iso", "150"},
@@ -381,8 +381,8 @@ ZENO_DEFNODE(LightNode)({
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
 
-        {"string", "profile", "", zeno::ParamSocket, zeno::ReadPathEdit},
-        {"string", "texturePath", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "profile", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {"string", "texturePath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"float",  "textureGamma", "1.0"},
         {"float", "visibleIntensity", "-1.0"},
 

@@ -79,7 +79,7 @@ struct PrimitiveTwist : zeno::INode { // todo: also add PrimitiveStretch and Pri
 
 ZENDEFNODE(PrimitiveTwist, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"vec3f", "origin", "0,0,0"},
     {"vec3f", "direction", "0,1,0"},
     {"tangent"},

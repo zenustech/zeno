@@ -53,7 +53,7 @@ struct ScalarFieldAnalyzer : zeno::INode {
 
 ZENO_DEFNODE(ScalarFieldAnalyzer)(
     { /* inputs: */ {
-        {"", "InVDB", "", PrimarySocket},
+        {"", "InVDB", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "OutVDB"
     }, /* params: */ {
@@ -92,7 +92,7 @@ struct VectorFieldAnalyzer : zeno::INode {
 
 ZENO_DEFNODE(VectorFieldAnalyzer)(
     { /* inputs: */ {
-        {"", "InVDB", "", PrimarySocket},
+        {"", "InVDB", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "OutVDB"
     }, /* params: */ {

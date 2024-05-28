@@ -84,7 +84,7 @@ struct HeatmapFromImage : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage,
 { /* inputs: */ {
-    {"", "image", "", PrimarySocket},
+    {"", "image", "", zeno::Socket_ReadOnly},
     {"int", "startPos", "0"},
     {"int", "endPos", "-1"},
 }, /* outputs: */ {
@@ -131,7 +131,7 @@ struct HeatmapFromImage2 : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage2,
            { /* inputs: */ {
-                   {"", "image", "", PrimarySocket},
+                   {"", "image", "", zeno::Socket_ReadOnly},
                    {"float", "startPos", "0"},
                    {"float", "endPos", "1"},
                    {"int", "resample", "0"},
@@ -177,7 +177,7 @@ struct HeatmapFromPrimAttr : zeno::INode {
 
 ZENDEFNODE(HeatmapFromPrimAttr,
            { /* inputs: */ {
-                   {"", "prim", "", PrimarySocket},
+                   {"", "prim", "", zeno::Socket_ReadOnly},
                    {"string", "attrName", "clr"},
                    {"int", "attrNum", "10"},
                    {"int", "resample", "0"},
@@ -221,9 +221,9 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
-            {"", "prim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
             "attrName2",
-            {"", "heatmap", "", PrimarySocket},
+            {"", "heatmap", "", zeno::Socket_ReadOnly},
             {"float", "min", "0"},
             {"float", "max", "1"},
         }, /* outputs: */ {
@@ -249,8 +249,8 @@ struct PrimSample1D : zeno::INode {
 };
 ZENDEFNODE(PrimSample1D, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
-        {"", "heatmap", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"", "heatmap", "", zeno::Socket_ReadOnly},
         {"string", "srcChannel", "rho"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},

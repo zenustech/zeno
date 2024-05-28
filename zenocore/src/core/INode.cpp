@@ -492,6 +492,7 @@ bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj) {
         in_param->spObject = outputObj;
         //TODO: readonly property on object.
     }
+    return true;
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
@@ -678,7 +679,7 @@ ZENO_API ParamPrimitive INode::get_input_prim_param(std::string const& name, boo
     auto iter = m_inputPrims.find(name);
     if (iter != m_inputPrims.end()) {
         auto& paramPrim = iter->second;
-        param = paramPrim->export();
+        param = paramPrim->exportParam();
         if (pExist)
             *pExist = true;
     }
@@ -694,7 +695,7 @@ ZENO_API ParamObject INode::get_input_obj_param(std::string const& name, bool* p
     auto iter = m_inputObjs.find(name);
     if (iter != m_inputObjs.end()) {
         auto& paramObj = iter->second;
-        param = paramObj->export();
+        param = paramObj->exportParam();
         if (pExist)
             *pExist = true;
     }
@@ -710,7 +711,7 @@ ZENO_API ParamPrimitive INode::get_output_prim_param(std::string const& name, bo
     auto iter = m_outputPrims.find(name);
     if (iter != m_outputPrims.end()) {
         auto& paramPrim = iter->second;
-        param = paramPrim->export();
+        param = paramPrim->exportParam();
         if (pExist)
             *pExist = true;
     }
@@ -726,7 +727,7 @@ ZENO_API ParamObject INode::get_output_obj_param(std::string const& name, bool* 
     auto iter = m_outputObjs.find(name);
     if (iter != m_outputObjs.end()) {
         auto& paramObj = iter->second;
-        param = paramObj->export();
+        param = paramObj->exportParam();
         if (pExist)
             *pExist = true;
     }
@@ -750,7 +751,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam->socketType = param.socketType;
     sparam->type = param.type;
     sparam->optCtrlprops = param.ctrlProps;
-    m_inputPrims.insert(std::make_pair(param.name, sparam));
+    m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
 
@@ -764,12 +765,12 @@ bool INode::add_input_obj_param(ParamObject param) {
     sparam->type = param.type;
     sparam->socketType = param.socketType;
     sparam->m_wpNode = shared_from_this();
-    m_inputObjs.insert(std::make_pair(param.name, sparam));
+    m_inputObjs.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
 
 bool INode::add_output_prim_param(ParamPrimitive param) {
-    if (m_inputPrims.find(param.name) != m_inputPrims.end()) {
+    if (m_outputPrims.find(param.name) != m_outputPrims.end()) {
         return false;
     }
     std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
@@ -781,12 +782,12 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam->socketType = param.socketType;
     sparam->type = param.type;
     sparam->optCtrlprops = param.ctrlProps;
-    m_inputPrims.insert(std::make_pair(param.name, sparam));
+    m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
 
 bool INode::add_output_obj_param(ParamObject param) {
-    if (m_inputObjs.find(param.name) != m_inputObjs.end()) {
+    if (m_outputObjs.find(param.name) != m_outputObjs.end()) {
         return false;
     }
     std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
@@ -795,7 +796,7 @@ bool INode::add_output_obj_param(ParamObject param) {
     sparam->type = param.type;
     sparam->socketType = param.socketType;
     sparam->m_wpNode = shared_from_this();
-    m_inputObjs.insert(std::make_pair(param.name, sparam));
+    m_outputObjs.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
 
@@ -883,8 +884,8 @@ std::vector<EdgeInfo> INode::getLinks() const {
 std::vector<EdgeInfo> INode::getLinksByParam(bool bInput, const std::string& param_name) const {
     std::vector<EdgeInfo> links;
 
-    auto objects = bInput ? m_inputObjs : m_outputObjs;
-    auto primtives = bInput ? m_inputPrims : m_outputPrims;
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
+    auto& primtives = bInput ? m_inputPrims : m_outputPrims;
 
     auto iter = objects.find(param_name);
     if (iter != objects.end()) {
@@ -905,7 +906,7 @@ std::vector<EdgeInfo> INode::getLinksByParam(bool bInput, const std::string& par
 
 bool INode::updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey)
 {
-    auto objects = bInput ? m_inputObjs : m_outputObjs;
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
     auto iter = objects.find(param_name);
     if (iter != objects.end()) {
         for (auto spLink : iter->second->links) {
@@ -920,7 +921,7 @@ bool INode::updateLinkKey(bool bInput, const std::string& param_name, const std:
 
 bool INode::moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key)
 {
-    auto objects = bInput ? m_inputObjs : m_outputObjs;
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
     auto iter = objects.find(param_name);
     if (iter != objects.end()) {
         for (auto it = iter->second->links.begin(); it != iter->second->links.end(); it++) {
@@ -1010,7 +1011,7 @@ ZENO_API NodeData INode::exportInfo() const
     node.customUi = nodeClass->m_customui;
     for (auto& [name, paramObj] : m_inputObjs)
     {
-        node.customUi.inputObjs.push_back(paramObj->export());
+        node.customUi.inputObjs.push_back(paramObj->exportParam());
     }
     for (auto tab : node.customUi.inputPrims.tabs)
     {
@@ -1021,18 +1022,18 @@ ZENO_API NodeData INode::exportInfo() const
                 auto iter = m_inputPrims.find(param.name);
                 if (iter != m_inputPrims.end())
                 {
-                    param = iter->second->export();
+                    param = iter->second->exportParam();
                 }
             }
         }
     }
     for (auto& [name, paramObj] : m_outputPrims)
     {
-        node.customUi.outputPrims.push_back(paramObj->export());
+        node.customUi.outputPrims.push_back(paramObj->exportParam());
     }
     for (auto& [name, paramObj] : m_outputObjs)
     {
-        node.customUi.outputObjs.push_back(paramObj->export());
+        node.customUi.outputObjs.push_back(paramObj->exportParam());
     }
     return node;
 }
@@ -1229,7 +1230,10 @@ ZENO_API bool INode::in_asset_file() const {
 }
 
 ZENO_API bool INode::set_primitive_output(std::string const& id, const zvariant& val) {
-
+    auto iter = m_outputPrims.find(id);
+    if (iter == m_outputPrims.end())
+        return false;
+    iter->second->result = val;
 }
 
 ZENO_API bool INode::set_output(std::string const& param, zany obj) {
@@ -1283,15 +1287,8 @@ ZENO_API bool INode::set_output(std::string const& param, zany obj) {
                 }
             }
             else if (auto strObject = std::dynamic_pointer_cast<StringObject>(obj)) {
-                const auto& val = numObject->value;
-                if (std::holds_alternative<std::string>(val))
-                {
-                    iter2->second->result = std::get<std::string>(val);
-                }
-                else {
-                    //throw makeError<TypeError>(typeid(T));
-                    //error, throw expection.
-                }
+                const auto& val = strObject->value;
+                iter2->second->result = val;
             }
             return true;
         }
@@ -1367,7 +1364,8 @@ template<class T, class E> T INode::resolveVec(const zvariant& defl, const Param
     }
     else {
         //error, throw expection.
-        throw makeError<TypeError>(typeid(T));
+        return T();
+        //throw makeError<TypeError>(typeid(T));
     }
 }
 

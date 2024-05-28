@@ -143,7 +143,7 @@ struct PrimitiveCalcNormal : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcNormal, {
     {
-    {"", "prim", "", PrimarySocket},
+    {"", "prim", "", zeno::Socket_ReadOnly},
     {"string", "nrmAttr", "nrm"},
     {"bool", "flip", "0"},
     },
@@ -193,7 +193,7 @@ struct PrimitiveOrderVertexByNormal : zeno::INode{
 };
 ZENDEFNODE(PrimitiveOrderVertexByNormal, {
                                     {
-                                        {"", "prim", "", PrimarySocket},
+                                        {"", "prim", "", zeno::Socket_ReadOnly},
                                         {"string", "nrmAttr", "nrm"}
                                     },
                                     {"prim"},

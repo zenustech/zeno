@@ -73,8 +73,8 @@ struct PrimConnectTape : INode {
 
 ZENDEFNODE(PrimConnectTape, {
     {
-    {"PrimitiveObject", "prim1", "", PrimarySocket},
-    {"PrimitiveObject", "prim2", "", PrimarySocket},
+    {"PrimitiveObject", "prim1", "", zeno::Socket_ReadOnly},
+    {"PrimitiveObject", "prim2", "", zeno::Socket_ReadOnly},
     {"enum quads lines none", "faceType", "quads"},
     {"bool", "isCloseRing", "0"},
     {"string", "edgeMaskAttr", ""},
@@ -118,7 +118,7 @@ struct PrimConnectBridge : INode {
 
 ZENDEFNODE(PrimConnectBridge, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "edgeIndAttr", "tag"},
     },
     {
@@ -166,7 +166,7 @@ struct PrimConnectSkin : INode {
 
 ZENDEFNODE(PrimConnectSkin, {
     {
-    {"ListObject", "primList", "", PrimarySocket},
+    {"ListObject", "primList", "", zeno::Socket_ReadOnly},
     {"bool", "isCloseRing", "0"},
     },
     {

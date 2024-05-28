@@ -138,8 +138,8 @@ struct SampleVDBToPrimitive : INode {
 
 ZENDEFNODE(SampleVDBToPrimitive, {
                                      {
-                                        {"", "prim", "", PrimarySocket},
-                                        {"", "vdbGrid", "", PrimarySocket},
+                                        {"", "prim", "", zeno::Socket_ReadOnly},
+                                        {"", "vdbGrid", "", zeno::Socket_ReadOnly},
                                         {"string", "sampleBy","pos"},
                                         {"string", "primAttr", "sdf"}},
                                      {"prim"},
@@ -186,8 +186,8 @@ struct PrimSample3D : zeno::INode {
 };
 ZENDEFNODE(PrimSample3D, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
-        {"", "vdbGrid", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"", "vdbGrid", "", zeno::Socket_ReadOnly},
         {"string", "srcChannel", "pos"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},
@@ -228,8 +228,8 @@ struct PrimSample : zeno::INode {
 };
 ZENDEFNODE(PrimSample, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
-        {"", "sampledObject", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"", "sampledObject", "", zeno::Socket_ReadOnly},
         {"string", "srcChannel", "uv"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},

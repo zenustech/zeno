@@ -165,8 +165,8 @@ struct PrimitiveMerge : zeno::INode {
 
 ZENDEFNODE(PrimitiveMerge, {
     {
-        {"", "dst", "", PrimarySocket},
-        {"", "listPrim", "", PrimarySocket},
+        {"", "dst", "", zeno::Socket_ReadOnly},
+        {"", "listPrim", "", zeno::Socket_ReadOnly},
     },
     {"prim"},
     {},

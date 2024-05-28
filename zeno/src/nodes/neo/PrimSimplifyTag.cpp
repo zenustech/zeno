@@ -61,7 +61,7 @@ struct PrimSimplifyTag : INode {
 
 ZENDEFNODE(PrimSimplifyTag, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "tagAttr", "tag"},
     },
     {
@@ -88,7 +88,7 @@ struct PrimColorByTag : INode {
 
 ZENDEFNODE(PrimColorByTag, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "tagAttr", "tag"},
     {"string", "clrAttr", "clr"},
     {"int", "seed", "-1"},

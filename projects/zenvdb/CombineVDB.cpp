@@ -85,8 +85,8 @@ struct  ResampleVDBGrid : zeno::INode {
 
 static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDBGrid",
      { /* inputs: */ {
-         {"", "resampleTo", "", PrimarySocket},
-         {"", "resampleFrom", "", PrimarySocket},
+         {"", "resampleTo", "", zeno::Socket_ReadOnly},
+         {"", "resampleFrom", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      "resampleTo",
      }, /* params: */ {
@@ -187,8 +187,8 @@ struct CombineVDB : zeno::INode{
 };
 static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      { /* inputs: */ {
-         {"", "FieldA", "", PrimarySocket},
-         {"", "FieldB", "", PrimarySocket},
+         {"", "FieldA", "", zeno::Socket_ReadOnly},
+         {"", "FieldB", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
        "FieldOut",
      }, /* params: */ {
@@ -256,8 +256,8 @@ struct VDBDeactivate : zeno::INode
 };
 static int defVDBDeactivate = zeno::defNodeClass<VDBDeactivate>("VDBDeactivate",
      { /* inputs: */ {
-         {"", "Field", "", PrimarySocket},
-         {"", "Mask", "", PrimarySocket},
+         {"", "Field", "", zeno::Socket_ReadOnly},
+         {"", "Mask", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      }, /* params: */ {
      }, /* category: */ {

@@ -84,8 +84,8 @@ struct testPoly2 : INode {
 ZENDEFNODE(testPoly2, {
     /* inputs: */
     {
-        {"", "prim", "", PrimarySocket},
-        {"", "list", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
+        {"", "list", "", zeno::Socket_ReadOnly},
     },
     /* outputs: */
     {
@@ -115,7 +115,7 @@ struct PrimMarkTrisIdx : INode {
 ZENDEFNODE(PrimMarkTrisIdx, {
     /* inputs: */
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"string", "idxName", "index"},
     },
     /* outputs: */
@@ -139,7 +139,7 @@ struct PrimGetTrisSize : INode {
 ZENDEFNODE(PrimGetTrisSize, {
     /* inputs: */
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", Socket_ReadOnly},
     },
     /* outputs: */
     {
@@ -178,7 +178,7 @@ struct PrimPointTris : INode {
 ZENDEFNODE(PrimPointTris, {
     /* inputs: */
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"int", "pointID", "0"},
     },
     /* outputs: */
@@ -203,7 +203,7 @@ struct PrimTriPoints : INode {
 ZENDEFNODE(PrimTriPoints, {
     /* inputs: */
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"int", "trisID", "0"},
     },
     /* outputs: */
@@ -230,7 +230,7 @@ struct DictEraseItem : zeno::INode {
 ZENDEFNODE(DictEraseItem, {
     /* inputs: */
     {
-        {"DictObject", "dict", "", PrimarySocket},
+        {"DictObject", "dict", "", zeno::Socket_ReadOnly},
         {"string", "key"},
     },
     /* outputs: */
@@ -467,8 +467,8 @@ struct Grid2DSample_M : zeno::INode {
 ZENDEFNODE(Grid2DSample_M, {
     /* inputs: */
     {
-        {"PrimitiveObject", "grid", "", PrimarySocket},
-        {"PrimitiveObject", "grid2", "", PrimarySocket},
+        {"PrimitiveObject", "grid", "", zeno::Socket_ReadOnly},
+        {"PrimitiveObject", "grid2", "", zeno::Socket_ReadOnly},
         {"int", "nx", "1"},
         {"int", "ny", "1"},
         {"float", "h", "1"},

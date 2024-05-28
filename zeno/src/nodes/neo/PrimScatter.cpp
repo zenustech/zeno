@@ -224,7 +224,7 @@ struct PrimScatter : INode {
 
 ZENO_DEFNODE(PrimScatter)({
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
         {"enum tris lines", "type", "tris"},
         {"string", "denAttr", ""},
         {"float", "density", "100"},

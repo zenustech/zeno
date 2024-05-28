@@ -284,12 +284,12 @@ struct AlembicToSoftBodyVAT: public INode {
 
 ZENDEFNODE(AlembicToSoftBodyVAT, {
     {
-      {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+      {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
       {"bool", "useXForm", "1"},
       {"bool", "flipFrontBack", "1"},
       {"int", "frameEnd", "1"},
       {"int", "frameStart", "0"},
-      {"string", "outputPath", "", zeno::ParamSocket, zeno::WritePathEdit},
+      {"string", "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
     },
     { {"primitive"} },
     {
@@ -480,12 +480,12 @@ struct AlembicToDynamicRemeshVAT : public INode {
 
 ZENDEFNODE(AlembicToDynamicRemeshVAT, {
   {
-    {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+    {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     {"bool", "useXForm", "1"},
     {"bool", "flipFrontBack", "1"},
     {"int", "frameEnd", "1"},
     {"int", "frameStart", "0"},
-    {"string", "outputPath", "", zeno::ParamSocket, zeno::WritePathEdit},
+    {"string", "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
   },
   { {"primitive"} },
   {},

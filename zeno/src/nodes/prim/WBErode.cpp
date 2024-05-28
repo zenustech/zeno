@@ -106,7 +106,7 @@ struct erode_value2cond : INode {
 };
 ZENDEFNODE(erode_value2cond,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                    {"float", "value", "1.0"}, // 0.0 ~ 1.0
                    {"float", "seed", "0.0"},
                },
@@ -503,7 +503,7 @@ struct erode_tumble_material_erosion : INode {
 };
 ZENDEFNODE(erode_tumble_material_erosion,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
                    {"ListObject", "perm"},
                    {"ListObject", "p_dirs"},
@@ -826,7 +826,7 @@ struct erode_tumble_material_v0 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v0,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
                    {"ListObject", "perm"},
                    {"ListObject", "p_dirs"},
@@ -1036,7 +1036,7 @@ struct erode_tumble_material_v1 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v1,
            {/* inputs: */ {
-                   {"", "HeightField", "", PrimarySocket},
+                   {"", "HeightField", "", zeno::Socket_ReadOnly},
                    {"string", "write_back_material_layer", "write_back_material"},
                    {"int", "openborder", "0"},
                    {"float", "repose_angle", "15.0"},
@@ -1312,7 +1312,7 @@ struct erode_tumble_material_v2 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v2,
            {/* inputs: */ {
-                   {"", "HeightField", "", PrimarySocket},
+                   {"", "HeightField", "", zeno::Socket_ReadOnly},
 
                    {"string", "stabilitymask", "_stability"},
                    {"ListObject", "perm"},
@@ -1622,7 +1622,7 @@ struct erode_tumble_material_v3 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v3,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
                    {"string", "stabilitymask", "_stability"},
                    {"ListObject", "perm"},
@@ -2092,7 +2092,7 @@ struct erode_tumble_material_v4 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v4,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
                    {"ListObject", "perm"},
                    {"ListObject", "p_dirs"},
@@ -2231,7 +2231,7 @@ struct erode_smooth_flow : INode {
 };
 ZENDEFNODE(erode_smooth_flow,
            {/* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                    {"float", "smoothRate", "1.0"},
                    {"string", "flowName", "flow"},
                },
@@ -2302,7 +2302,7 @@ struct erode_terrainHiMeLo : INode {
 };
 ZENDEFNODE(erode_terrainHiMeLo,
            { /* inputs: */ {
-                   {"", "prim_2DGrid", "", PrimarySocket},
+                   {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                    { "string", "attrName", "fbm" },
                }, /* outputs: */ {
                    "prim_2DGrid",
@@ -2501,7 +2501,7 @@ struct HF_maskByFeature : INode {
 };
 ZENDEFNODE(HF_maskByFeature,
            {/* inputs: */ {
-                   {"", "HeightField", "", PrimarySocket},
+                   {"", "HeightField", "", zeno::Socket_ReadOnly},
                    {"bool", "invert_mask", "0"},
                    {"string", "height_layer", "height"},
                    {"string", "mask_layer", "mask"},
@@ -2561,7 +2561,7 @@ struct HF_rotate_displacement_2d : INode {
 };
 ZENDEFNODE(HF_rotate_displacement_2d,
            { /* inputs: */ {
-               {"", "prim_2DGrid", "", PrimarySocket},
+               {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                {"float", "Rotate Displacement", "0"}
            }, /* outputs: */ {
                "prim_2DGrid",
@@ -2637,7 +2637,7 @@ struct HF_remap : INode {
 };
 ZENDEFNODE(HF_remap,
            { /* inputs: */ {
-               {"", "prim", "", PrimarySocket},
+               {"", "prim", "", zeno::Socket_ReadOnly},
                {"string", "remap layer", "height"},
                {"bool", "Auto Compute input range", "0"},
                {"float", "input min", "0"},
@@ -2826,7 +2826,7 @@ struct HF_maskbyOcclusion : INode {
 };
 ZENDEFNODE(HF_maskbyOcclusion,
            { /* inputs: */ {
-                   {"", "prim", "", PrimarySocket},
+                   {"", "prim", "", zeno::Socket_ReadOnly},
                    {"bool", "invert mask", "0"},
                    {"int", "view distance", "200"},
                    {"float", "step scale", "1"},

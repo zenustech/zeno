@@ -25,7 +25,7 @@ struct PrimitiveSimplePoints : zeno::INode {
 
 ZENDEFNODE(PrimitiveSimplePoints, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -53,7 +53,7 @@ struct PrimitiveSimpleLines : zeno::INode {
 
 ZENDEFNODE(PrimitiveSimpleLines, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -78,7 +78,7 @@ struct PrimitiveFarSimpleLines : zeno::INode {
 
 ZENDEFNODE(PrimitiveFarSimpleLines, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -104,7 +104,7 @@ struct PrimitiveNearSimpleLines : zeno::INode {
 
 ZENDEFNODE(PrimitiveNearSimpleLines,{
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",
@@ -227,7 +227,7 @@ struct PrimitiveLineSimpleLink : zeno::INode {
 
 ZENDEFNODE(PrimitiveLineSimpleLink, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     },
     {
     {"PrimitiveObject", "prim"},
@@ -263,7 +263,7 @@ struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replac
 };
 
 ZENDEFNODE(PrimitiveSplitEdges, {
-    {{"", "prim", "", PrimarySocket}},
+    {{"", "prim", "", zeno::Socket_ReadOnly}},
     {"prim"},
     {},
     {"deprecated"},
@@ -299,7 +299,7 @@ struct PrimitiveFaceToEdges : zeno::INode {
 
 ZENDEFNODE(PrimitiveFaceToEdges, {
     {
-        {"", "prim", "", PrimarySocket},
+        {"", "prim", "", zeno::Socket_ReadOnly},
     },
     {
         "prim",

@@ -73,8 +73,8 @@ struct FuncEnd : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncEnd, {
     {
-        {"", "rets", "", PrimarySocket},
-        {"", "FUNC", "", PrimarySocket},
+        {"", "rets", "", zeno::Socket_ReadOnly},
+        {"", "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},
     {},
@@ -141,8 +141,8 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleEnd, {
     {
-        {"", "ret", "", PrimarySocket},
-        {"", "FUNC", "", PrimarySocket},
+        {"", "ret", "", zeno::Socket_ReadOnly},
+        {"", "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},
     {},
@@ -171,8 +171,8 @@ struct FuncCall : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncCall, {
     {
-        {"FunctionObject", "function", "", PrimarySocket},
-        {"FunctionObject", "args", "", PrimarySocket},
+        {"FunctionObject", "function", "", zeno::Socket_ReadOnly},
+        {"FunctionObject", "args", "", zeno::Socket_ReadOnly},
     },
     {
         {"FunctionObject", "rets"},
@@ -200,10 +200,10 @@ struct FuncCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncCallInDict, {
     {
-        {"DictObject", "funcDict", "", PrimarySocket},
+        {"DictObject", "funcDict", "", zeno::Socket_ReadOnly},
         {"bool", "mayNotFound", "1"},
         {"string", "dictKey"},
-        {"DictObject", "args", "", PrimarySocket},
+        {"DictObject", "args", "", zeno::Socket_ReadOnly},
     },
     {
         {"DictObject", "rets"},
@@ -237,8 +237,8 @@ struct FuncSimpleCall : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleCall, {
     {
-        {"FunctionObject", "function", "", PrimarySocket},
-        {"IObject", "arg", "", PrimarySocket},
+        {"FunctionObject", "function", "", zeno::Socket_ReadOnly},
+        {"IObject", "arg", "", zeno::Socket_ReadOnly},
     },
     {
         {"IObject", "ret"},
@@ -274,11 +274,11 @@ struct FuncSimpleCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleCallInDict, {
     {
-        {"DictObject", "funcDict", "", PrimarySocket},
+        {"DictObject", "funcDict", "", zeno::Socket_ReadOnly},
         {"string", "dictKey"},
-        {"IObject", "arg", "", PrimarySocket},
+        {"IObject", "arg", "", zeno::Socket_ReadOnly},
         {"bool", "mayNotFound", "1"},
-        {"IObject", "notFoundRet", "", PrimarySocket},
+        {"IObject", "notFoundRet", "", zeno::Socket_ReadOnly},
     },
     {
         {"bool", "isFound"},

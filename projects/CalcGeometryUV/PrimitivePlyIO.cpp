@@ -103,7 +103,7 @@ ZENDEFNODE(
         {
             {
                 "string",
-                "path" , "", zeno::ParamSocket, zeno::ReadPathEdit
+                "path" , "", zeno::Socket_Primitve, zeno::ReadPathEdit
             },
         },
         // outpus

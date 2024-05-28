@@ -96,8 +96,8 @@ namespace zeno {
     enum SocketType
     {
         NoSocket,
-        //ParamSocket,
-        //PrimarySocket,
+        //Socket_Primitve,
+        //zeno::Socket_ReadOnly,
         Socket_Output,      //Output object
 
         //obj:

@@ -171,7 +171,7 @@ struct erode_noise_perlin : INode {
 };
 ZENDEFNODE(erode_noise_perlin,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"string", "vec3fAttrName", "pos"},
         }, /* outputs: */ {
             "prim_2DGrid",
@@ -569,7 +569,7 @@ struct erode_noise_simplex : INode {
 };
 ZENDEFNODE(erode_noise_simplex,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"string", "posLikeAttrName", "pos"},
         }, /* outputs: */ {
             "prim_2DGrid",
@@ -764,7 +764,7 @@ struct erode_noise_analytic_simplex_2d : INode {
 };
 ZENDEFNODE(erode_noise_analytic_simplex_2d,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"string", "posLikeAttrName", "pos"},
         }, /* outputs: */ {
             "prim_2DGrid",
@@ -1169,7 +1169,7 @@ struct erode_noise_sparse_convolution : INode {
     }
 };
 ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
-                                                {"", "prim_2DGrid", "", PrimarySocket},
+                                                {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                                                 {"string", "posLikeAttrName", "pos"},
                                                 {"int", "pulsenum", "3"},
                                                 {"int", "seed", "1"},
@@ -1347,7 +1347,7 @@ struct Noise_gabor_2d : INode {
 };
 
 ZENDEFNODE(Noise_gabor_2d, {/* inputs: */ {
-                                      {"", "prim_2DGrid", "", PrimarySocket},
+                                      {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
                                       {"string", "posLikeAttrName", "pos"},
                                       {"float", "a_", "0.07"},
                                       {"float", "frequency", "0.2"},
@@ -1498,7 +1498,7 @@ struct erode_noise_worley : INode {
 };
 ZENDEFNODE(erode_noise_worley,
     { /* inputs: */ {
-        {"", "prim_2DGrid", "", PrimarySocket},
+        {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
         {"vec3f", "seed", "0,0,0"},
         {"string", "posLikeAttrName", "pos"},
         {"float", "celljitter", "1"},
@@ -1590,7 +1590,7 @@ struct erode_hybridMultifractal_v1 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v1,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"float", "H", "1.0"},
             {"float", "lacunarity", "1.841"},
             {"float", "octaves", "8.0"},
@@ -1673,7 +1673,7 @@ struct erode_hybridMultifractal_v2 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v2,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"float", "H", "1.0"},
             {"float", "lacunarity", "1.841"},
             {"float", "octaves", "8.0"},
@@ -1755,7 +1755,7 @@ struct erode_hybridMultifractal_v3 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v3,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", PrimarySocket},
+            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
             {"float", "H", "1.0"},
             {"float", "lacunarity", "1.841"},
             {"float", "octaves", "8.0"},
@@ -1835,7 +1835,7 @@ struct erode_domainWarping_v1 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v1,
     { /* inputs: */ {
-            {"", "prim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
             {"float", "fbmH", "1.0"},
             {"float", "fbmFrequence", "1.0"},
             {"float", "fbmAmplitude", "1.0"},
@@ -1901,7 +1901,7 @@ struct erode_domainWarping_v2 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v2,
     { /* inputs: */ {
-            {"", "prim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
             {"float", "fbmH", "1.0"},
             {"float", "fbmFrequence", "1.0"},
             {"float", "fbmAmplitude", "1.0"},
@@ -1956,8 +1956,8 @@ struct erode_voronoi : INode {
 };
 ZENDEFNODE(erode_voronoi,
     { /* inputs: */ {
-            {"", "prim", "", PrimarySocket},
-            {"", "featurePrim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
+            {"", "featurePrim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
             "prim",
         }, /* params: */ {
@@ -2059,7 +2059,7 @@ struct Primcluster : INode {//todo:: just for color ramp now
 };
 ZENDEFNODE(Primcluster,
     { /* inputs: */ {
-            {"", "prim", "", PrimarySocket},
+            {"", "prim", "", zeno::Socket_ReadOnly},
             {"int", "numberofcluster", "10"},
             {"int", "seed", "9"},
             {"int", "cutoff", "5"},

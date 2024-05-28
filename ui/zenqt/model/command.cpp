@@ -19,15 +19,15 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamUpdateInfo info;
         info.param.bInput = true;
         info.param.name = "input1";
-        info.param.socketType = zeno::PrimarySocket;
+        info.param.socketType = zeno::Socket_ReadOnly;
         updateInfo.push_back(info);
         info.param.bInput = true;
         info.param.name = "input2";
-        info.param.socketType = zeno::PrimarySocket;
+        info.param.socketType = zeno::Socket_ReadOnly;
         updateInfo.push_back(info);
         info.param.bInput = false;
         info.param.name = "output1";
-        info.param.socketType = zeno::PrimarySocket;
+        info.param.socketType = zeno::Socket_ReadOnly;
         updateInfo.push_back(info);
 
         default.params.push_back(updateInfo[0].param);

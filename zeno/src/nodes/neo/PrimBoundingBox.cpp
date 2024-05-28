@@ -40,7 +40,7 @@ struct PrimBoundingBox : INode {
 
 ZENO_DEFNODE(PrimBoundingBox)({
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"float", "extraBound", "0"},
     },
     {
@@ -141,7 +141,7 @@ struct PrimCalcCentroid : zeno::INode {
 
 ZENO_DEFNODE(PrimCalcCentroid)({
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum Volume Area Vertex BoundBox", "method", "Volume"},
     {"float", "density", "1"},
     },

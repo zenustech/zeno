@@ -527,7 +527,7 @@ struct ReadVATFile : INode {
 
 ZENDEFNODE(ReadVATFile, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     },
     {
         {"PrimitiveObject", "image"},

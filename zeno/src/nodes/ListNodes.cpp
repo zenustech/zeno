@@ -17,7 +17,7 @@ struct ListLength : zeno::INode {
 };
 
 ZENDEFNODE(ListLength, {
-    {{"list", "list", "", PrimarySocket, NoMultiSockPanel}},
+    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
     {"length"},
     {},
     {"list"},
@@ -44,7 +44,7 @@ struct ListGetItem : zeno::INode {
 };
 
 ZENDEFNODE(ListGetItem, {
-    {{"list", "list", "", PrimarySocket, NoMultiSockPanel},
+    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
      {"int", "index"}},
     {"object"},
     {},
@@ -67,7 +67,7 @@ struct ExtractList : zeno::INode {
 };
 
 ZENDEFNODE(ExtractList, {
-    {{"list", "list", "", PrimarySocket, NoMultiSockPanel}},
+    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
     {},
     {},
     {"list"},
@@ -99,8 +99,8 @@ struct AppendList : zeno::INode {
 
 ZENDEFNODE(AppendList, {
     {
-        {"list", "list", "", PrimarySocket, NoMultiSockPanel},
-        {"", "object", "", PrimarySocket}
+        {"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
+        {"", "object", "", zeno::Socket_ReadOnly}
     },
     {"list"},
     {},
@@ -120,8 +120,8 @@ struct ExtendList : zeno::INode {
 
 ZENDEFNODE(ExtendList, {
     {
-        {"list", "list1", "", PrimarySocket, NoMultiSockPanel},
-        {"list", "list2", "", PrimarySocket, NoMultiSockPanel}
+        {"list", "list1", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
+        {"list", "list2", "", zeno::Socket_ReadOnly, NoMultiSockPanel}
     },
     {{"list", "list1"}},
     {},
@@ -184,7 +184,7 @@ struct MakeList : zeno::INode {
 };
 
 ZENDEFNODE(MakeList, {
-    {{"list", "objs", "", zeno::PrimarySocket}},
+    {{"list", "objs", "", zeno::Socket_ReadOnly}},
     {"list"},
     {},
     {"list"},
@@ -223,7 +223,7 @@ struct IsList : zeno::INode {
 
 ZENDEFNODE(IsList, {
     {
-        {"", "list", "", PrimarySocket},
+        {"", "list", "", zeno::Socket_ReadOnly},
     },
     {"result"},
     {},

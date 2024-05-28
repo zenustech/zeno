@@ -468,8 +468,8 @@ struct PrimProject : INode {
 
 ZENDEFNODE(PrimProject, {
                             {
-                                {"PrimitiveObject", "prim", "", PrimarySocket},
-                                {"PrimitiveObject", "targetPrim", "", PrimarySocket},
+                                {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+                                {"PrimitiveObject", "targetPrim", "", zeno::Socket_ReadOnly},
                                 {"string", "nrmAttr", "nrm"},
                                 {"float", "offset", "0"},
                                 {"float", "limit", "0"},

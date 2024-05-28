@@ -122,8 +122,8 @@ struct ExtractMaterialShader : zeno::INode
       SetMaterial,
       {
           {
-              {"primitive", "prim", "", PrimarySocket},
-              {"material", "mtl", "", PrimarySocket},
+              {"primitive", "prim", "", zeno::Socket_ReadOnly},
+              {"material", "mtl", "", zeno::Socket_ReadOnly},
           },
           {
               {"primitive", "prim"},
@@ -174,7 +174,7 @@ struct ExtractMaterialShader : zeno::INode
       BindMaterial,
       {
           {
-              {"", "object", "", PrimarySocket},
+              {"", "object", "", zeno::Socket_ReadOnly},
               {"string", "mtlid", "Mat1"},
           },
           {
@@ -222,7 +222,7 @@ struct ExtractMaterialShader : zeno::INode
         BindLight,
         {
             {
-                {"", "object", "", PrimarySocket},
+                {"", "object", "", zeno::Socket_ReadOnly},
                 {"bool", "islight", "1"},// actually string or list
                 {"bool", "invertdir", "0"}
             },

@@ -78,7 +78,7 @@ struct PrimSplit : INode {
 };
 
 ZENDEFNODE(PrimSplit, {
-    {{"", "prim", "", PrimarySocket}},
+    {{"", "prim", "", zeno::Socket_ReadOnly}},
     {"prim"},
     {},
     {"primitive"},

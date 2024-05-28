@@ -79,7 +79,7 @@ struct VDBPerlinNoise : INode {
 
 ZENO_DEFNODE(VDBPerlinNoise)(
      { /* inputs: */ {
-     {"", "inoutSDF", "", PrimarySocket},
+     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
     {"float", "scale", "5"},
     {"vec3f", "scale3d", "1,1,1"},
     {"float", "detail", "2"},

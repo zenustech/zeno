@@ -35,7 +35,7 @@ struct ReadPoseFrame : zeno::INode {
 };
 
 ZENDEFNODE(ReadPoseFrame, {
-    {{"string","dmat_path", "", zeno::ParamSocket, zeno::ReadPathEdit},"bones"},
+    {{"string","dmat_path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},"bones"},
     {"posesFrame"},
     {},
     {"Skinning"},

@@ -19,7 +19,7 @@ struct DictSize : zeno::INode {
 };
 
 ZENDEFNODE(DictSize, {
-    {{"DictObject", "dict", "", PrimarySocket}},
+    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}},
     {{"int", "size"}},
     {},
     {"dict"},
@@ -41,7 +41,7 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"DictObject", "dict", "", PrimarySocket}, {"string", "key"}, {"IObject", "defl", "", PrimarySocket}},
+    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}, {"string", "key"}, {"IObject", "defl", "", zeno::Socket_ReadOnly}},
     {{"zany", "object"}},
     {},
     {"dict"},
@@ -74,7 +74,7 @@ struct DictSetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictSetItem, {
-    {{"DictObject", "dict", "", PrimarySocket}, {"string", "key"}, {"zany", "object", "", PrimarySocket}},
+    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}, {"string", "key"}, {"zany", "object", "", zeno::Socket_ReadOnly}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},
@@ -89,7 +89,7 @@ struct MakeDict : zeno::INode {
 };
 
 ZENDEFNODE(MakeDict, {
-    {{"dict", "objs", "", zeno::PrimarySocket}},
+    {{"dict", "objs", "", zeno::Socket_ReadOnly}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},
@@ -152,8 +152,8 @@ struct ZipListAsDict : zeno::INode {
 
 ZENDEFNODE(ZipListAsDict, {
     {
-        {"ListObject", "keys", "", PrimarySocket},
-        {"ListObject", "values", "", PrimarySocket},
+        {"ListObject", "keys", "", zeno::Socket_ReadOnly},
+        {"ListObject", "values", "", zeno::Socket_ReadOnly},
     },
     {{"DictObject", "dict"}},
     {},
@@ -173,8 +173,8 @@ struct DictUnion : zeno::INode {
 };
 
 ZENDEFNODE(DictUnion, {
-    {{"DictObject", "dict1", "", PrimarySocket},
-     {"DictObject", "dict2", "", PrimarySocket}},
+    {{"DictObject", "dict1", "", zeno::Socket_ReadOnly},
+     {"DictObject", "dict2", "", zeno::Socket_ReadOnly}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},

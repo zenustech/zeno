@@ -141,8 +141,8 @@ namespace zeno {
     };
 ZENDEFNODE(PrimitiveAttrFit, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
-    {"PrimitiveObject", "refPrim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {"PrimitiveObject", "refPrim", "", zeno::Socket_ReadOnly},
     {"string", "attrNameSrc", "pos"},
     {"string", "attrNameDst", "pos"},
     {"string", "refAttrNameSrc", "pos"},

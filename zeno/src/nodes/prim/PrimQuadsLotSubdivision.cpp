@@ -1077,7 +1077,7 @@ struct PrimQuadsLotSubdivision : zeno::INode {
 };
 ZENDEFNODE(PrimQuadsLotSubdivision, {{
                                /* inputs: */
-                               {"", "input_quads_model", "", zeno::PrimarySocket},
+                               {"", "input_quads_model", "", zeno::Socket_ReadOnly},
                                {"int", "num", "1"},
                                {"bool", "row_or_columns", "0"},
 

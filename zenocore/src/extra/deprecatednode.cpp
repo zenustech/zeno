@@ -6,6 +6,7 @@
 namespace zeno {
     namespace {
 
+#if 0
         struct DeprecatedNode : zeno::INode {
             virtual void apply() override {
 
@@ -73,6 +74,7 @@ namespace zeno {
             {},
             {"subgraph"}
         });
+#endif
 
     }
 }
