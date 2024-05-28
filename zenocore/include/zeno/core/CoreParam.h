@@ -2,7 +2,7 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
-#include <zeno/core/INode.h>
+//#include <zeno/core/INode.h>
 #include <zeno/core/common.h>
 #include <variant>
 #include <memory>
@@ -12,6 +12,10 @@
 #include <optional>
 
 namespace zeno {
+
+class INode;
+class ObjectParam;
+class PrimitiveParam;
 
 struct ObjectLink {
     ObjectParam* fromparam = nullptr;  //IParam stored as unique ptr in the INode, so we need no smart pointer.

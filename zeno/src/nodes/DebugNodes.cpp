@@ -256,6 +256,7 @@ ZENDEFNODE(Group, {
     {"layout"},
     });
 
+#if 0
 struct CustomNode : zeno::INode {
     virtual void apply() override {
 
@@ -313,5 +314,6 @@ ZENDEFINE(CustomNode, {
     "debug",
     "CUI",
 });
+#endif
 
 }

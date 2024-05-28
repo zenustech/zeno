@@ -122,10 +122,15 @@ struct CacheLastFrameEnd : zeno::INode {
 
     virtual void apply() override {
         {
-            auto [sn, ss] = getinputbound("linkTo");
+            zeno::ParamObject paramobj = get_input_obj_param("linkTo");
+            if (paramobj.links.empty())
+                throw makeError("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
+
+            auto link = paramobj.links[0];
+
             std::shared_ptr<Graph> spGraph = getThisGraph();
             assert(spGraph);
-            m_CacheLastFrameBegin = dynamic_cast<CacheLastFrameBegin*>(spGraph->m_nodes.at(sn).get());
+            m_CacheLastFrameBegin = dynamic_cast<CacheLastFrameBegin*>(spGraph->m_nodes.at(link.outNode).get());
             if (!m_CacheLastFrameBegin) {
                 printf("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
                 abort();

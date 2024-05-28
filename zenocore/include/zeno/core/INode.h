@@ -15,6 +15,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
+#include <zeno/core/CoreParam.h>
 #include <functional>
 
 namespace zeno {
@@ -28,7 +29,6 @@ struct TempNodeCaller;
 struct CoreParam;
 struct ObjectParam;
 struct PrimitiveParam;
-struct ObjectParam;
 struct ObjectLink;
 struct PrimitiveLink;
 struct SubnetNode;
@@ -47,7 +47,6 @@ public:
     ZENO_API void doComplete();
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
-    ZENO_API zvariant resolveInput(std::string const& id);
 
     //BEGIN new api
     ZENO_API void init(const NodeData& dat);
@@ -113,6 +112,7 @@ public:
     bool updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey);
     bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
     bool removeLink(bool bInput, const EdgeInfo& edge);
+    zvariant resolveInput(std::string const& id);
     void mark_dirty_objs();
 
 protected:
@@ -122,6 +122,8 @@ protected:
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void registerObjToManager();
     ZENO_API virtual void initParams(const NodeData& dat);
+    ZENO_API bool set_primitive_input(std::string const& id, const zvariant& val);
+    ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
 
 private:
     zvariant processPrimitive(PrimitiveParam* in_param);
@@ -144,7 +146,6 @@ public:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
-    ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
     ZENO_API zany get_output_obj(std::string const& sock_name);
 
     template <class T>

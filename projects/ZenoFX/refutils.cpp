@@ -77,79 +77,83 @@ namespace zeno {
                     return code;
 
                 auto& pNode = pGraph->m_nodes[ident];
-                zany input = pNode->resolveInput(param);
+                if (pNode->requireInput(param)) {
+                    bool bExist = false;
+                    ParamPrimitive input = pNode->get_input_prim_param(param, &bExist);
+                    
+                    const zvariant& val = input.defl;
+                    if (std::holds_alternative<float>(val)) {
+                        auto v = std::get<float>(val);
+                        symval = zeno::format("{}", v);
+                    }
+                    else if (std::holds_alternative<int>(val)) {
+                        auto v = std::get<int>(val);
+                        symval = zeno::format("{}", v);
+                    }
+                    else if (std::holds_alternative<std::string>(val)) {
+                        auto v = std::get<std::string>(val);
+                        symval = zeno::format("\"{}\"", v);
+                    }
+                    else if (std::holds_alternative<zeno::vec2f>(val)) {
+                        auto v = std::get<zeno::vec2f>(val);
+                        if (dim >= 0 && dim <= 1) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec2({},{})", v[0], v[1]);
+                        }
+                    }
+                    else if (std::holds_alternative<zeno::vec2i>(val)) {
+                        auto v = std::get<zeno::vec2i>(val);
+                        if (dim >= 0 && dim <= 1) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec2({},{})", v[0], v[1]);
+                        }
+                    }
+                    else if (std::holds_alternative<zeno::vec3f>(val)) {
+                        auto v = std::get<zeno::vec3f>(val);
+                        if (dim >= 0 && dim <= 2) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec3({},{},{})", v[0], v[1], v[2]);
+                        }
+                    }
+                    else if (std::holds_alternative<zeno::vec3i>(val)) {
+                        auto v = std::get<zeno::vec3i>(val);
+                        if (dim >= 0 && dim <= 2) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec3({},{},{})", v[0], v[1], v[2]);
+                        }
+                    }
+                    else if (std::holds_alternative<zeno::vec4f>(val)) {
+                        auto v = std::get<zeno::vec4f>(val);
+                        if (dim >= 0 && dim <= 3) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec4({},{},{},{})", v[0], v[1], v[2], v[3]);
+                        }
+                    }
+                    else if (std::holds_alternative<zeno::vec4i>(val)) {
+                        auto v = std::get<zeno::vec4i>(val);
+                        if (dim >= 0 && dim <= 3) {
+                            symval = zeno::format("{}", v[dim]);
+                        }
+                        else {
+                            symval = zeno::format("vec4({},{},{},{})", v[0], v[1], v[2], v[3]);
+                        }
+                    }
+                    else {
+                        //todo
+                    }
 
-                if (zeno::objectIsLiterial<float>(input)) {
-                    auto v = zeno::objectToLiterial<float>(input);
-                    symval = zeno::format("{}", v);
+                    symbVals[refvar] = symval;
                 }
-                else if (zeno::objectIsLiterial<int>(input)) {
-                    auto v = zeno::objectToLiterial<int>(input);
-                    symval = zeno::format("{}", v);
-                }
-                else if (zeno::objectIsLiterial<std::string>(input)) {
-                    auto v = zeno::objectToLiterial<std::string>(input);
-                    symval = zeno::format("\"{}\"", v);
-                }
-                else if (zeno::objectIsLiterial<zeno::vec2f>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec2f>(input);
-                    if (dim >= 0 && dim <= 1) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec2({},{})", v[0], v[1]);
-                    }
-                }
-                else if (zeno::objectIsLiterial<zeno::vec2i>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec2i>(input);
-                    if (dim >= 0 && dim <= 1) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec2({},{})", v[0], v[1]);
-                    }
-                }
-                else if (zeno::objectIsLiterial<zeno::vec3f>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec3f>(input);
-                    if (dim >= 0 && dim <= 2) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec3({},{},{})", v[0], v[1], v[2]);
-                    }
-                }
-                else if (zeno::objectIsLiterial<zeno::vec3i>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec3i>(input);
-                    if (dim >= 0 && dim <= 2) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec3({},{},{})", v[0], v[1], v[2]);
-                    }
-                }
-                else if (zeno::objectIsLiterial<zeno::vec4f>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec4f>(input);
-                    if (dim >= 0 && dim <= 3) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec4({},{},{},{})", v[0], v[1], v[2], v[3]);
-                    }
-                }
-                else if (zeno::objectIsLiterial<zeno::vec4i>(input)) {
-                    auto v = zeno::objectToLiterial<zeno::vec4i>(input);
-                    if (dim >= 0 && dim <= 3) {
-                        symval = zeno::format("{}", v[dim]);
-                    }
-                    else {
-                        symval = zeno::format("vec4({},{},{},{})", v[0], v[1], v[2], v[3]);
-                    }
-                }
-                else {
-                    //todo
-                }
-
-                symbVals[refvar] = symval;
             }
 
             parsed_code.replace(i, iend - i + 1, symval);

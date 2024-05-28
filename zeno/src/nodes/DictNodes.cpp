@@ -185,9 +185,9 @@ ZENDEFNODE(DictUnion, {
 struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
-        for (auto pair : getoutputs2())
+        for (auto paramobj : get_output_object_params())
         {
-            const std::string& key = pair.first;
+            const std::string& key = paramobj.name;
             auto it = dict->lut.find(key);
             if (it == dict->lut.end())
                 continue;

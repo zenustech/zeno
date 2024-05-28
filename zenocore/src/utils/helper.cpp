@@ -1,6 +1,7 @@
 #include <zeno/utils/helper.h>
 #include <regex>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/INode.h>
 
 
 namespace zeno {

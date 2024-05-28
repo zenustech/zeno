@@ -1204,7 +1204,7 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     }
 }
 
-ZENO_API zvariant INode::resolveInput(std::string const& id) {
+zvariant INode::resolveInput(std::string const& id) {
     if (requireInput(id)) {
         auto iter = m_inputPrims.find(id);
         return iter->second->result;
@@ -1229,7 +1229,14 @@ ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(spGraph);
 }
 
-ZENO_API bool INode::set_primitive_output(std::string const& id, const zvariant& val) {
+bool INode::set_primitive_input(std::string const& id, const zvariant& val) {
+    auto iter = m_inputPrims.find(id);
+    if (iter == m_inputPrims.end())
+        return false;
+    iter->second->result = val;
+}
+
+bool INode::set_primitive_output(std::string const& id, const zvariant& val) {
     auto iter = m_outputPrims.find(id);
     if (iter == m_outputPrims.end())
         return false;

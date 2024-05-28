@@ -137,10 +137,15 @@ ZENDEFNODE(EndFor, {
 
 struct BreakFor : zeno::INode {
     virtual void apply() override {
-        auto [sn, ss] = getinputbound("FOR", "input socket of BreakFor");
+        zeno::ParamObject paramobj = get_input_obj_param("FOR");
+        if (paramobj.links.empty())
+            throw makeError("BreakFor::FOR must be conn to BeginFor::FOR");
+
+        auto link = paramobj.links[0];
+
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(sn).get());
+        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(link.outNode).get());
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
@@ -274,10 +279,15 @@ ZENDEFNODE(BeginSubstep, {
 
 struct SubstepDt : zeno::INode {
     void apply() override {
-        auto [sn, ss] = getinputbound("FOR", "input socket of SubstepDt");
+        zeno::ParamObject paramobj = get_input_obj_param("FOR");
+        if (paramobj.links.empty())
+            throw makeError("BreakFor::FOR must be conn to BeginFor::FOR");
+
+        auto link = paramobj.links[0];
+
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(sn).get());
+        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(link.outNode).get());
         if (!fore) {
             throw Exception("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
         }

@@ -13,7 +13,7 @@ struct PortalIn : zeno::INode {
         auto name = get_param<std::string>("name");
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        spGraph->portalIns[name] = this->m_name;
+        spGraph->portalIns[name] = this->get_name();
     }
 
     virtual void apply() override {

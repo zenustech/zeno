@@ -25,7 +25,9 @@ struct ShaderNode : INode {
 template <class Derived>
 struct ShaderNodeClone : ShaderNode {
     virtual std::shared_ptr<ShaderNode> clone() const override {
-        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
+        //TODO: clone INode.
+        return nullptr;
+        //return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 };
 
