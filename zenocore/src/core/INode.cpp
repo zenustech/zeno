@@ -988,8 +988,8 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
             }
         }
         Formula fmla(code);
-        float res = 0.;
-        int ret = fmla.parse(res);
+        int ret = fmla.parse();
+        float res = fmla.getResult();
         return res;
     }
     else if (zany curve = zeno::parseCurveObj(formulaOrKFrame)) {

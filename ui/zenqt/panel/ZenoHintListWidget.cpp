@@ -193,3 +193,50 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
     painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
     QWidget::paintEvent(event);
 }
+
+ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
+    : m_currentFunc("")
+{
+    //setMinimumSize({ 100, 50 });
+    m_label = new QLabel(this);
+    m_label->setStyleSheet("QLabel{ font-size: 10pt; color: rgb(160, 178, 194)}");
+    
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->addWidget(m_label);
+    setLayout(layout);
+
+    hide();
+}
+
+void ZenoFuncDescriptionLabel::setText(QString txt)
+{
+    QStringList list = txt.split('\n');
+    QString txtToSet = "";
+    for (auto& i : list) {
+        txtToSet += "<p>" + i + "</p>";
+    }
+    txtToSet = "<html><head><style> p { margin: 10; } </style></head><body><div>" + txtToSet + "</div></body></html>";
+    m_label->setText(txtToSet);
+    m_label->setFont(QApplication::font());
+}
+
+void ZenoFuncDescriptionLabel::setCurrentFuncName(std::string funcName)
+{
+    m_currentFunc = funcName;
+}
+
+std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
+{
+    return m_currentFunc;
+}
+
+void ZenoFuncDescriptionLabel::paintEvent(QPaintEvent* event)
+{
+    QWidget::paintEvent(event);
+    QPainter painter(this);
+    painter.fillRect(rect(), "#22252C");
+    painter.setPen(Qt::black);
+    painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
+    QWidget::paintEvent(event);
+}

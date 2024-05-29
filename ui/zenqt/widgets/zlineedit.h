@@ -16,6 +16,7 @@ public:
     void setShowingSlider(bool bShow);
     bool showingSlider();
     void setIcons(const QString& icNormal, const QString& icHover);
+    void hintSelectedSetText(QString text);
 
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -50,6 +51,8 @@ private:
     bool m_bIconHover;
 
     bool m_bShowHintList;
+
+    QString m_firstCandidateWord;
 };
 
 #endif
