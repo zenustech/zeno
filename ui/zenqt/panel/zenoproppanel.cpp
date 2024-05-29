@@ -91,8 +91,17 @@ ZenoHintListWidget& ZenoPropPanel::getHintListInstance()
     return hintlist;
 }
 
+ZenoFuncDescriptionLabel& ZenoPropPanel::getFuncDescriptionInstance()
+{
+    static ZenoFuncDescriptionLabel descLabel;
+    return descLabel;
+}
+
 void ZenoPropPanel::clearLayout()
 {
+    ZenoPropPanel::getHintListInstance().setParent(nullptr);
+    ZenoPropPanel::getFuncDescriptionInstance().setParent(nullptr);
+
     setUpdatesEnabled(false);
     qDeleteAll(findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly));
     QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
@@ -133,8 +142,6 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         //update();
         return;
     }
-    ZenoHintListWidget* hintlist = &getHintListInstance();
-    hintlist->setParent(nullptr);
 
     clearLayout();
     QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
@@ -202,9 +209,12 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     update();
 
+    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
     hintlist->setParent(m_tabWidget);
     hintlist->resetSize();
     hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
+    ZenoFuncDescriptionLabel* descLabel = &ZenoPropPanel::getFuncDescriptionInstance();
+    descLabel->setParent(m_tabWidget);
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)

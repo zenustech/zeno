@@ -80,7 +80,7 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                     if (hintlist->isVisible())
                     {
                         hintlist->hide();
-                        edit->setText(hintlist->getCurrentText());
+                        edit->hintSelectedSetText(hintlist->getCurrentText());
                     }
                     else {
                         edit->clearFocus();

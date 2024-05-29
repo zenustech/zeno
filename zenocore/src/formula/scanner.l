@@ -20,7 +20,7 @@
 
     // This will track current scanner location.
     // Action is called when length of the token is known.
-    #define YY_USER_ACTION m_driver.increaseLocation(yyleng);
+    #define YY_USER_ACTION m_driver.increaseLocation(yyleng, yytext);
     
     // !!!WARNING!!!
     // Location API is used, but the location is not initialized, 'cause I'm lazy. When making
@@ -41,6 +41,7 @@
 
 /*正则式的各种简写，使程序有层次感而显得明晰 */
 string  \"[^\n"]+\"
+word    [A-Za-z0-9]+
 ws      [ \t]+
 alpha   [A-Za-z]
 dig     [0-9]
@@ -61,7 +62,7 @@ id      ({alpha})+
 %}
 
 {number}    {
-                return Parser::make_NUMBER(std::strtof(yytext,(&yytext+yyleng)),loc); // strtof函数将字符串转换为浮点数
+                return Parser::make_NUMBER(std::strtof(yytext,0),loc); // strtof函数将字符串转换为浮点数
             }
 {frame}     {
                 return zeno::Parser::make_FRAME(loc);
@@ -97,14 +98,15 @@ id      ({alpha})+
 "("       { return zeno::Parser::make_LPAREN(yytext,loc); }
 ")"       { return zeno::Parser::make_RPAREN(yytext,loc); }
 ","       { return zeno::Parser::make_COMMA(loc); }
-"|"       { return zeno::Parser::make_ABS(loc); }
+"abs"       { return zeno::Parser::make_ABS(loc); }
 "sin"     { return zeno::Parser::make_SIN(loc); }
 "sinh"    { return zeno::Parser::make_SINH(loc); }
 "cos"     { return zeno::Parser::make_COS(loc); }
 "cosh"     { return zeno::Parser::make_COSH(loc); }
 "ref"     { return zeno::Parser::make_REF(loc); }
 "rand"    { return zeno::Parser::make_RAND(loc); }
-{string}  { return zeno::Parser::make_LITERAL(yytext,loc); }
+{string}  { return zeno::Parser::make_LITERAL(yytext, loc); }
+{word}    { return zeno::Parser::make_WORD(loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "Scanner: unknown character [" << yytext << "]" << endl;

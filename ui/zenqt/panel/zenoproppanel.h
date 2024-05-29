@@ -6,6 +6,7 @@
 #include "nodeeditor/gv/callbackdef.h"
 #include "ZenoHintListWidget.h"
 #include "widgets/zlineedit.h"
+#include "widgets/zlabel.h"
 
 class IGraphsModel;
 
@@ -36,6 +37,7 @@ public:
     bool updateCustomName(const QString &value, QString &oldValue);
 
     static ZenoHintListWidget& getHintListInstance();
+    static ZenoFuncDescriptionLabel& getFuncDescriptionInstance();
 
 public slots:
     void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);

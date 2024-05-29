@@ -53,6 +53,8 @@
     #include <cmath>
     #include <cstdlib>
     #include <ctime>
+    #include <vector>
+    #include <zeno/formula/syntax_tree.h>
 
     using namespace std;
 
@@ -61,7 +63,7 @@
         class Formula;
     }
 
-#line 65 "parser.hpp"
+#line 67 "parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -202,7 +204,7 @@
 
 #line 10 "parser.y"
 namespace  zeno  {
-#line 206 "parser.hpp"
+#line 208 "parser.hpp"
 
 
 
@@ -422,13 +424,6 @@ namespace  zeno  {
     union union_type
     {
       // NUMBER
-      // calclist
-      // exp
-      // factor
-      // zenvar
-      // func
-      // unaryfunc
-      // term
       char dummy1[sizeof (float)];
 
       // RPAREN
@@ -436,6 +431,13 @@ namespace  zeno  {
       // LITERAL
       // LPAREN
       char dummy2[sizeof (string)];
+
+      // calclist
+      // exp
+      // factor
+      // unaryfunc
+      // term
+      char dummy3[sizeof (struct node*)];
     };
 
     /// The size of the largest semantic type.
@@ -500,14 +502,15 @@ namespace  zeno  {
     TOKEN_SINH = 267,              // SINH
     TOKEN_COS = 268,               // COS
     TOKEN_COSH = 269,              // COSH
-    TOKEN_REF = 270,               // REF
-    TOKEN_LITERAL = 271,           // LITERAL
-    TOKEN_RAND = 272,              // RAND
-    TOKEN_ADD = 273,               // ADD
-    TOKEN_SUB = 275,               // SUB
-    TOKEN_MUL = 277,               // MUL
-    TOKEN_DIV = 279,               // DIV
-    TOKEN_ABS = 281,               // ABS
+    TOKEN_ABS = 270,               // ABS
+    TOKEN_REF = 271,               // REF
+    TOKEN_LITERAL = 272,           // LITERAL
+    TOKEN_RAND = 273,              // RAND
+    TOKEN_WORD = 274,              // WORD
+    TOKEN_ADD = 275,               // ADD
+    TOKEN_SUB = 277,               // SUB
+    TOKEN_MUL = 279,               // MUL
+    TOKEN_DIV = 281,               // DIV
     TOKEN_NEG = 283,               // NEG
     TOKEN_LPAREN = 284             // LPAREN
       };
@@ -543,29 +546,27 @@ namespace  zeno  {
         S_SINH = 12,                             // SINH
         S_COS = 13,                              // COS
         S_COSH = 14,                             // COSH
-        S_REF = 15,                              // REF
-        S_LITERAL = 16,                          // LITERAL
-        S_RAND = 17,                             // RAND
-        S_ADD = 18,                              // ADD
-        S_19_ = 19,                              // "+"
-        S_SUB = 20,                              // SUB
-        S_21_ = 21,                              // "-"
-        S_MUL = 22,                              // MUL
-        S_23_ = 23,                              // "*"
-        S_DIV = 24,                              // DIV
-        S_25_ = 25,                              // "/"
-        S_ABS = 26,                              // ABS
-        S_27_ = 27,                              // "|"
+        S_ABS = 15,                              // ABS
+        S_REF = 16,                              // REF
+        S_LITERAL = 17,                          // LITERAL
+        S_RAND = 18,                             // RAND
+        S_WORD = 19,                             // WORD
+        S_ADD = 20,                              // ADD
+        S_21_ = 21,                              // "+"
+        S_SUB = 22,                              // SUB
+        S_23_ = 23,                              // "-"
+        S_MUL = 24,                              // MUL
+        S_25_ = 25,                              // "*"
+        S_DIV = 26,                              // DIV
+        S_27_ = 27,                              // "/"
         S_NEG = 28,                              // NEG
         S_LPAREN = 29,                           // LPAREN
         S_YYACCEPT = 30,                         // $accept
         S_calclist = 31,                         // calclist
         S_exp = 32,                              // exp
         S_factor = 33,                           // factor
-        S_zenvar = 34,                           // zenvar
-        S_func = 35,                             // func
-        S_unaryfunc = 36,                        // unaryfunc
-        S_term = 37                              // term
+        S_unaryfunc = 34,                        // unaryfunc
+        S_term = 35                              // term
       };
     };
 
@@ -603,13 +604,6 @@ namespace  zeno  {
         switch (this->kind ())
     {
       case symbol_kind::S_NUMBER: // NUMBER
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
-      case symbol_kind::S_factor: // factor
-      case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_func: // func
-      case symbol_kind::S_unaryfunc: // unaryfunc
-      case symbol_kind::S_term: // term
         value.move< float > (std::move (that.value));
         break;
 
@@ -618,6 +612,14 @@ namespace  zeno  {
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_calclist: // calclist
+      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_factor: // factor
+      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_term: // term
+        value.move< struct node* > (std::move (that.value));
         break;
 
       default:
@@ -671,6 +673,20 @@ namespace  zeno  {
       {}
 #endif
 
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, struct node*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const struct node*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
       /// Destroy the symbol.
       ~basic_symbol ()
       {
@@ -696,13 +712,6 @@ namespace  zeno  {
 switch (yykind)
     {
       case symbol_kind::S_NUMBER: // NUMBER
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
-      case symbol_kind::S_factor: // factor
-      case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_func: // func
-      case symbol_kind::S_unaryfunc: // unaryfunc
-      case symbol_kind::S_term: // term
         value.template destroy< float > ();
         break;
 
@@ -711,6 +720,14 @@ switch (yykind)
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_LPAREN: // LPAREN
         value.template destroy< string > ();
+        break;
+
+      case symbol_kind::S_calclist: // calclist
+      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_factor: // factor
+      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_term: // term
+        value.template destroy< struct node* > ();
         break;
 
       default:
@@ -1118,6 +1135,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_ABS (location_type l)
+      {
+        return symbol_type (token::TOKEN_ABS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ABS (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_ABS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_REF (location_type l)
       {
         return symbol_type (token::TOKEN_REF, std::move (l));
@@ -1158,6 +1190,21 @@ switch (yykind)
       make_RAND (const location_type& l)
       {
         return symbol_type (token::TOKEN_RAND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_WORD (location_type l)
+      {
+        return symbol_type (token::TOKEN_WORD, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_WORD (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_WORD, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1218,21 +1265,6 @@ switch (yykind)
       make_DIV (const location_type& l)
       {
         return symbol_type (token::TOKEN_DIV, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_ABS (location_type l)
-      {
-        return symbol_type (token::TOKEN_ABS, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_ABS (const location_type& l)
-      {
-        return symbol_type (token::TOKEN_ABS, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1595,8 +1627,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 69,     ///< Last index in yytable_.
-      yynnts_ = 8,  ///< Number of nonterminal symbols.
+      yylast_ = 145,     ///< Last index in yytable_.
+      yynnts_ = 6,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
 
@@ -1668,13 +1700,6 @@ switch (yykind)
     switch (this->kind ())
     {
       case symbol_kind::S_NUMBER: // NUMBER
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
-      case symbol_kind::S_factor: // factor
-      case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_func: // func
-      case symbol_kind::S_unaryfunc: // unaryfunc
-      case symbol_kind::S_term: // term
         value.copy< float > (YY_MOVE (that.value));
         break;
 
@@ -1683,6 +1708,14 @@ switch (yykind)
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_LPAREN: // LPAREN
         value.copy< string > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_calclist: // calclist
+      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_factor: // factor
+      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_term: // term
+        value.copy< struct node* > (YY_MOVE (that.value));
         break;
 
       default:
@@ -1717,13 +1750,6 @@ switch (yykind)
     switch (this->kind ())
     {
       case symbol_kind::S_NUMBER: // NUMBER
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
-      case symbol_kind::S_factor: // factor
-      case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_func: // func
-      case symbol_kind::S_unaryfunc: // unaryfunc
-      case symbol_kind::S_term: // term
         value.move< float > (YY_MOVE (s.value));
         break;
 
@@ -1732,6 +1758,14 @@ switch (yykind)
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_calclist: // calclist
+      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_factor: // factor
+      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_term: // term
+        value.move< struct node* > (YY_MOVE (s.value));
         break;
 
       default:
@@ -1801,7 +1835,7 @@ switch (yykind)
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1805 "parser.hpp"
+#line 1839 "parser.hpp"
 
 
 

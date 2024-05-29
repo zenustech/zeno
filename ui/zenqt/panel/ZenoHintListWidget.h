@@ -70,3 +70,19 @@ private:
 
     std::function<QPoint()> m_getPropPanelPosfunc;
 };
+
+class ZenoFuncDescriptionLabel :public QWidget
+{
+    Q_OBJECT
+public:
+    ZenoFuncDescriptionLabel();
+    void setText(QString txt);
+    void setCurrentFuncName(std::string funcName);
+    std::string getCurrentFuncName();
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
+private:
+    QLabel* m_label;
+    std::string m_currentFunc;
+};
