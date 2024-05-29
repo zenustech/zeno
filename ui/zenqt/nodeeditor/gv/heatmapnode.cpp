@@ -31,11 +31,11 @@ ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
     pHLayout->addItem(pEditBtn, Qt::AlignRight);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
-    _param_ctrl param;
-    param.param_name = pNameItem;
-    param.param_control = pEditBtn;
-    param.ctrl_layout = pHLayout;
-    addParam(param);
+    //_param_ctrl param;
+    //param.param_name = pNameItem;
+    //param.param_control = pEditBtn;
+    //param.ctrl_layout = pHLayout;
+    //addParam(param);
 
     return pHLayout;
 }

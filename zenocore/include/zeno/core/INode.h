@@ -72,7 +72,7 @@ public:
     ZENO_API ObjectParams get_input_object_params() const;
     ZENO_API ObjectParams get_output_object_params() const;
     ZENO_API PrimitiveParams get_input_primitive_params() const;
-    ZENO_API PrimitiveParams get_output_primitivie_params() const;
+    ZENO_API PrimitiveParams get_output_primitive_params() const;
     ZENO_API ParamPrimitive get_input_prim_param(std::string const& name, bool* pExist = nullptr) const;
     ZENO_API ParamObject get_input_obj_param(std::string const& name, bool* pExist = nullptr) const;
     ZENO_API ParamPrimitive get_output_prim_param(std::string const& name, bool* pExist = nullptr) const;

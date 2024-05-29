@@ -174,8 +174,7 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     {
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if (Qt::LeftButton == event->button()) {
-            zeno::LinkFunction lnkProp = (modifiers & Qt::ControlModifier) ? zeno::Link_Ref : zeno::Link_Copy;
-            emit clicked(m_bInput, lnkProp);
+            emit clicked(m_bInput);
         }
     }
 }

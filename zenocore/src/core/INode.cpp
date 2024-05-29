@@ -647,6 +647,8 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
     for (auto& [name, spParamObj] : m_inputPrims) {
         ParamPrimitive param;
         param.bInput = true;
+        param.name = name;
+        param.type = spParamObj->type;
         param.control = spParamObj->control;
         param.ctrlProps = spParamObj->optCtrlprops;
         param.defl = spParamObj->defl;
@@ -658,11 +660,13 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
     return params;
 }
 
-ZENO_API PrimitiveParams INode::get_output_primitivie_params() const {
+ZENO_API PrimitiveParams INode::get_output_primitive_params() const {
     PrimitiveParams params;
-    for (auto& [name, spParamObj] : m_inputPrims) {
+    for (auto& [name, spParamObj] : m_outputPrims) {
         ParamPrimitive param;
         param.bInput = false;
+        param.name = name;
+        param.type = spParamObj->type;
         param.control = NullControl;
         param.ctrlProps = std::nullopt;
         param.defl = spParamObj->defl;
@@ -833,11 +837,11 @@ bool INode::isPrimitiveType(bool bInput, const std::string& param_name, bool& bE
     if (bInput) {
         if (m_inputObjs.find(param_name) != m_inputObjs.end()) {
             bExist = true;
-            return true;
+            return false;
         }
         else if (m_inputPrims.find(param_name) != m_inputPrims.end()) {
             bExist = true;
-            return false;
+            return true;
         }
         bExist = false;
         return false;
@@ -845,11 +849,11 @@ bool INode::isPrimitiveType(bool bInput, const std::string& param_name, bool& bE
     else {
         if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
             bExist = true;
-            return true;
-        }
-        else if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
-            bExist = true;
             return false;
+        }
+        else if (m_outputPrims.find(param_name) != m_outputPrims.end()) {
+            bExist = true;
+            return true;
         }
         bExist = false;
         return false;

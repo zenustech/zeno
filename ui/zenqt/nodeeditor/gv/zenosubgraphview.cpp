@@ -5,7 +5,7 @@
 #include "zenosearchbar.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
-#include "zenonode.h"
+#include "zenonodebase.h"
 #include "zenonewmenu.h"
 #include "widgets/zlabel.h"
 #include "widgets/ziconbutton.h"
@@ -250,7 +250,7 @@ void _ZenoSubGraphView::cameraFocus()
         return;
     }
     QGraphicsItem* item = selItems[0];
-    if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+    if (ZenoNodeBase *pNode = qgraphicsitem_cast<ZenoNodeBase*>(item)) {
         QString nodeId = pNode->nodeId();
         zeno::vec3f center;
         float radius;
@@ -291,15 +291,15 @@ void _ZenoSubGraphView::focusOnWithNoSelect(const QString& nodeId)
 
 void _ZenoSubGraphView::focusOn(const QString& nodeName, const QPointF& pos, bool isError)
 {
-    ZenoNode* pSelNode = nullptr;
-    if (isError) {
-        pSelNode = m_scene->markError(nodeName);
-    }
-    else {
+    ZenoNodeBase* pSelNode = nullptr;
+    if (!isError) {
+    //    pSelNode = m_scene->markError(nodeName);
+    //}
+    //else {
         m_scene->select(nodeName);
         auto items = m_scene->selectedItems();
         if (items.size() == 1)
-            pSelNode = qgraphicsitem_cast<ZenoNode*>(items[0]);
+            pSelNode = qgraphicsitem_cast<ZenoNodeBase*>(items[0]);
     }
 
     if (pSelNode)

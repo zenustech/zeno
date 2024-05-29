@@ -13,7 +13,7 @@
 #include "nodeeditor/gv/zgraphicslayoutitem.h"
 #include "nodeeditor/gv/zsocketlayout.h"
 #include "nodeeditor/gv/zlayoutbackground.h"
-
+#include "zenonodebase.h"
 
 class ZenoGraphsEditor;
 class ZenoSubGraphScene;
@@ -22,20 +22,10 @@ class ParamsModel;
 class StatusGroup;
 class StatusButton;
 
-class ZenoNode : public ZLayoutBackground
+class ZenoNode : public ZenoNodeBase
 {
     Q_OBJECT
-    typedef ZLayoutBackground _base;
-
-public:
-    struct _param_ctrl
-    {
-        ZSimpleTextItem* param_name;
-        QGraphicsItem* param_control;
-        ZGraphicsLayout* ctrl_layout;
-        QPersistentModelIndex viewidx;
-        _param_ctrl() : param_name(nullptr), param_control(nullptr), ctrl_layout(nullptr) {}
-    };
+    typedef ZenoNodeBase _base;
 
 public:
     ZenoNode(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
@@ -43,13 +33,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
     QRectF boundingRect() const override;
 
-    enum { Type = ZTYPE_NODE };
-    int type() const override;
+    void initLayout();
 
-    void initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, const QModelIndex& index);
-
-    QPersistentModelIndex index() const { return m_index; }
-    QPersistentModelIndex subgIndex() { return m_subGpIndex; }
     QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
@@ -57,33 +42,14 @@ public:
     ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
     void markNodeStatus(zeno::NodeRunStatus status);
 
-    QString nodeId() const;
-    QString nodeClass() const;
-    QString nodeUuid() const;
-    QPointF nodePos() const;
     void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();
     void onMarkDataChanged(bool bDirty);
 
-    void setMoving(bool isMoving);
-    bool isMoving();
-
     virtual void onZoomed();
-    void setGroupNode(GroupNode *pNode);
-    GroupNode *getGroupNode();
-    void addParam(const _param_ctrl &param);
+    //void addParam(const _param_ctrl &param);
 
-    virtual void setSelected(bool selected);
-
-signals:
-    void socketClicked(ZenoSocketItem*, zeno::LinkFunction);
-    void doubleClicked(const QString &nodename);
-    void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
-    void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);
-    void statusBtnHovered(STATUS_BTN);
-    void inSocketPosChanged();
-    void outSocketPosChanged();
-    void nodePosChangedSignal();
+    //virtual void setSelected(bool selected);
 
 public slots:
     void onCollaspeBtnClicked();
@@ -118,10 +84,9 @@ protected:
     void focusOutEvent(QFocusEvent *event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
     //ZenoNode:
-    QPersistentModelIndex subGraphIndex() const;
-    virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
+    virtual ZLayoutBackground* initBodyWidget();
     virtual ZLayoutBackground* initHeaderWidget();
-    virtual ZGraphicsLayout* initSockets(ParamsModel* pModel, const bool bInput, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initSockets(ParamsModel* pModel, const bool bInput);
     virtual ZGraphicsLayout* initCustomParamWidgets();
     virtual Callback_OnButtonClicked registerButtonCallback(const QModelIndex& paramIdx);
 
@@ -143,7 +108,6 @@ private:
     ZLayoutBackground* initMainHeaderBg();
     ZGraphicsLayout* initNameLayout();
     ZGraphicsLayout* initVerticalSockets(bool bInput);
-    void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
     ZSocketLayout* getSocketLayout(bool bInput, int idx);
     bool removeSocketLayout(bool bInput, const QString& sockName);
@@ -152,22 +116,17 @@ private:
     void addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
-    QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);
+    QGraphicsItem* initSocketWidget(const QModelIndex& paramIdx);
     void updateWhole();
-    SocketBackgroud* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
+    SocketBackgroud* addSocket(const QModelIndex& idx, bool bInput);
     void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
     void onPasteSocketRefSlot(QModelIndex toIndex);
 
     QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
     QVector<ZenoSocketItem*> getSocketItems(bool bInput) const;
 
-    QPersistentModelIndex m_index;
-    QPersistentModelIndex m_subGpIndex;
-
     //QVector<ZSocketLayout*> m_inSockets;
     //QVector<ZSocketLayout*> m_outSockets;
-
-    QKeyList<QString, _param_ctrl> m_params;
 
     ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem* m_pCategoryItem;
@@ -184,21 +143,8 @@ private:
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;
 
-    //when initui, zenonode should not emit any signals.
-    bool m_bUIInited;
-
     zeno::NodeRunStatus m_nodeStatus;
-    bool m_bEnableSnap;
-    bool m_bMoving;     //pos change flag.
-    QPointF m_lastMoving;    //last moving pos.
     QString m_dbgName;      //only used to debug.
-
-    // when zoom out the view, the view of node will be displayed as text with large size font.
-    // it's convenient to view all nodes in big scale picture, but it also brings some problem.
-    static const bool bEnableZoomPreview = false;
-    static const bool bShowDataChanged = true;
-    GroupNode *m_groupNode;
-    bool m_bVisible;
 };
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef __GROUP_NODE_H__
 #define __GROUP_NODE_H__
 
-#include "zenonode.h"
+#include "zenonodebase.h"
 
 class GroupTextItem : public QGraphicsWidget {
     Q_OBJECT
@@ -30,25 +30,25 @@ private:
 };
 
 
-class GroupNode : public ZenoNode {
+class GroupNode : public ZenoNodeBase {
     Q_OBJECT
+        typedef ZenoNodeBase _base;
 public:
     GroupNode(const NodeUtilParam &params, QGraphicsItem *parent = nullptr);
     ~GroupNode();
-    bool nodePosChanged(ZenoNode *);
+    bool nodePosChanged(ZenoNodeBase*);
     void onZoomed() override;
     QRectF boundingRect() const override;
-    void appendChildItem(ZenoNode *item);
+    void appendChildItem(ZenoNodeBase*item);
     void updateChildItemsPos();
-    QVector<ZenoNode *> getChildItems();
-    void removeChildItem(ZenoNode *pNode);
-    void updateChildRelativePos(const ZenoNode *item);
+    QVector<ZenoNodeBase*> getChildItems();
+    void removeChildItem(ZenoNodeBase*pNode);
+    void updateChildRelativePos(const ZenoNodeBase*item);
     void updateBlackboard();
-    void setSelected(bool selected) override;
+    void setSelected(bool selected);
+    void initLayout() override;
 
 protected:
-    ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
-    ZLayoutBackground *initHeaderWidget() override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -76,7 +76,7 @@ private:
 
     bool m_bDragging;
     bool m_bSelected;
-    QVector<ZenoNode *> m_childItems;
+    QVector<ZenoNodeBase*> m_childItems;
     GroupTextItem *m_pTextItem;
     QMap<QString, QPointF> m_itemRelativePosMap;
     QByteArray m_svgByte;

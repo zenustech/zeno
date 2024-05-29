@@ -18,7 +18,7 @@ struct ParamItem
     zeno::ParamType type = zeno::Param_Null;
     QVariant value;
     //END
-    std::weak_ptr<zeno::CoreParam> m_wpParam;
+    //std::weak_ptr<zeno::CoreParam> m_wpParam;
 
     bool bInput = true;
     zeno::ParamControl control = zeno::NullControl;

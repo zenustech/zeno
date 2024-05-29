@@ -465,7 +465,7 @@ namespace zeno {
     bool isPrimitiveType(const zeno::ParamType type) {
         return type == Param_String || type == Param_Int || type == Param_Float || type == Param_Vec2i ||
             type == Param_Vec3i || type == Param_Vec4i || type == Param_Vec2f || type == Param_Vec3f ||
-            type == Param_Vec4f;//TODO: heatmap type.
+            type == Param_Vec4f || type == Param_Bool;//TODO: heatmap type.
     }
 
     zany strToZAny(std::string const& defl, ParamType const& type) {

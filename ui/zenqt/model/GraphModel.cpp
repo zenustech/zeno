@@ -333,7 +333,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 }
                 return zeno::Node_SubgraphNode;
             }
-            if (spNode && spNode->m_nodecls == "Group")
+            if (spNode && spNode->get_nodecls() == "Group")
                 return zeno::Node_Group;
             return zeno::Node_Normal;
         }
@@ -521,12 +521,15 @@ QStringList GraphModel::uuidPath2ObjPath(const zeno::ObjPath& uuidPath)
     if (tmp.empty())
         return res;
 
-    auto it = m_nodes.find(QString::fromStdString(tmp.front()));
+    int idx = tmp.find("/");
+    auto uuid = tmp.substr(0, idx);
+    auto it = m_nodes.find(QString::fromStdString(uuid));
     if (it == m_nodes.end()) {
         NodeItem* pItem = it.value();
         res.append(pItem->getName());
 
-        tmp.pop_front();
+        if (idx >= 0)
+            tmp = tmp.substr(idx+1, tmp.size() - idx);
 
         if (pItem->optSubgraph.has_value())
             res.append(pItem->optSubgraph.value()->uuidPath2ObjPath(tmp));
@@ -540,15 +543,16 @@ QModelIndex GraphModel::indexFromUuidPath(const zeno::ObjPath& uuidPath)
     if (uuidPath.empty())
         return QModelIndex();
 
-    const QString& uuid = QString::fromStdString(uuidPath.front());
+    int idx = uuidPath.find("/");
+    const QString& uuid = QString::fromStdString(uuidPath.substr(0, idx));
     if (m_nodes.find(uuid) != m_nodes.end()) {
         NodeItem* pItem = m_nodes[uuid];
         zeno::ObjPath _path = uuidPath;
-        _path.pop_front();
-        if (_path.empty()) {
+        if (idx < 0) {
             return createIndex(m_uuid2Row[uuid], 0, nullptr);
         }
         else if (pItem->optSubgraph.has_value()) {
+            _path = uuidPath.substr(idx + 1, uuidPath.size() - idx);
             return pItem->optSubgraph.value()->indexFromUuidPath(_path);
         }
     }
@@ -668,9 +672,20 @@ void GraphModel::_initLink()
         auto spNode = item->m_wpNode.lock();
         ZASSERT_EXIT(spNode);
         zeno::NodeData nodedata = spNode->exportInfo();
-        for (auto param : nodedata.inputs) {
+        //objects links init
+        for (auto param : nodedata.customUi.inputObjs) {
             for (auto link : param.links) {
                 _addLink(link);
+            }
+        }
+        //primitives links init
+        for (auto tab : nodedata.customUi.inputPrims.tabs) {
+            for (auto group : tab.groups) {
+                for (auto param : group.params) {
+                    for (auto link : param.links) {
+                        _addLink(link);
+                    }
+                }
             }
         }
     }
@@ -686,7 +701,6 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
     QString inNode = QString::fromStdString(link.inNode);
     QString inParam = QString::fromStdString(link.inParam);
     QString inKey = QString::fromStdString(link.inKey);
-    zeno::LinkFunction lnkProp = link.lnkfunc;
 
     if (m_name2uuid.find(outNode) == m_name2uuid.end() ||
         m_name2uuid.find(inNode) == m_name2uuid.end())
@@ -708,7 +722,7 @@ void GraphModel::_addLink(const zeno::EdgeInfo link)
                 emit fromParams->linkAboutToBeInserted(link);
         }
 
-        QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey, lnkProp);
+        QModelIndex linkIdx = m_linkModel->addLink(from, outKey, to, inKey, link.bObjLink);
         fromParams->addLink(from, linkIdx);
         toParams->addLink(to, linkIdx);
     }
@@ -885,8 +899,16 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
     }
     else {
         auto updateInputs = [](zeno::NodeData& nodedata, std::shared_ptr<zeno::INode> spNode) {
-            for (auto& param : nodedata.inputs)
-                spNode->update_param(param.name, param.defl);
+            for (auto& tab : nodedata.customUi.inputPrims.tabs)
+            {
+                for (auto& group : tab.groups)
+                {
+                    for (auto& param : group.params)
+                    {
+                        spNode->update_param(param.name, param.defl);
+                    }
+                }
+            }
         };
 
         std::shared_ptr<zeno::Graph> spGraph = m_wpCoreGraph.lock();
@@ -1350,10 +1372,11 @@ void GraphModel::importNodes(const zeno::NodesData& nodes, const zeno::LinksData
     for (auto [name, node] : nodes) {
         bool bAsset = node.asset.has_value();
         std::shared_ptr<zeno::INode> spNode = spGraph->createNode(node.cls, "", bAsset);
-        node.name = spNode->m_name;
+        node.name = spNode->get_name();
         spNode->init(node);
-        spNode->set_pos({ spNode->m_pos.first + offset.x(), spNode->m_pos.second + offset.y()});
-        old2new[name] = spNode->m_name;
+        auto pos = spNode->get_pos();
+        spNode->set_pos({ pos.first + offset.x(), pos.second + offset.y()});
+        old2new[name] = node.name;
         _appendNode(spNode);
     }
     registerCoreNotify();

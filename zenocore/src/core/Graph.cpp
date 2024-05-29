@@ -578,14 +578,15 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
     if (path.empty())
         return nullptr;
 
-    std::string uuid = path.substr(0, path.find('/'));
+    int idx = path.find('/');
+    std::string uuid = path.substr(0, idx);
     auto it = m_nodes.find(uuid);
     if (it == m_nodes.end()) {
         return nullptr;
     }
-    path = path.substr(path.find('/'));
-    if (!path.empty())
+    if (idx != std::string::npos)
     {
+        path = path.substr(idx + 1, path.size() - idx);
         //subnet
         if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
         {

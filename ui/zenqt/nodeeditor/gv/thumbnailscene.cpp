@@ -1,6 +1,7 @@
 #include "thumbnailscene.h"
 #include "zenosubgraphscene.h"
 #include "model/GraphModel.h"
+#include "zenonodebase.h"
 #include "zenonode.h"
 #include "zassert.h"
 
@@ -136,7 +137,7 @@ void ThumbnailScene::onSceneRectChanged(const QRectF& rcNew)
 
     m_trans = trans1 * trans2;
 
-    ZenoNode* pLeftestNode = nullptr;
+    ZenoNodeBase* pLeftestNode = nullptr;
     qreal minx = 1000000;
 
     for (auto pNode : m_origin->getNodesItem())
@@ -174,7 +175,7 @@ void ThumbnailScene::onSceneRectChanged(const QRectF& rcNew)
     }
 }
 
-QGraphicsRectItem* ThumbnailScene::onNewThumbNode(const ZenoNode* pNode, const zeno::ObjPath& path)
+QGraphicsRectItem* ThumbnailScene::onNewThumbNode(const ZenoNodeBase* pNode, const zeno::ObjPath& path)
 {
     QRectF br = pNode->boundingRect();
     qreal W = br.width();
@@ -189,7 +190,7 @@ QGraphicsRectItem* ThumbnailScene::onNewThumbNode(const ZenoNode* pNode, const z
     return pThumbNode;
 }
 
-void ThumbnailScene::onNodePosChanged(const ZenoNode* pNode)
+void ThumbnailScene::onNodePosChanged(const ZenoNodeBase* pNode)
 {
     const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
     auto iter = m_nodes.find(path);
@@ -200,7 +201,7 @@ void ThumbnailScene::onNodePosChanged(const ZenoNode* pNode)
     pThumbNode->setPos(pt);
 }
 
-void ThumbnailScene::onNodeInserted(const ZenoNode* pNode)
+void ThumbnailScene::onNodeInserted(const ZenoNodeBase* pNode)
 {
     const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
     QGraphicsRectItem* pThumbNode = onNewThumbNode(pNode, path);
@@ -208,7 +209,7 @@ void ThumbnailScene::onNodeInserted(const ZenoNode* pNode)
     pThumbNode->setPos(pt);
 }
 
-void ThumbnailScene::onNodeAboutToRemoved(const ZenoNode* pNode)
+void ThumbnailScene::onNodeAboutToRemoved(const ZenoNodeBase* pNode)
 {
     const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
     auto iter = m_nodes.find(path);
