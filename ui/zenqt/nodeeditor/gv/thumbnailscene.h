@@ -7,7 +7,7 @@
 class GraphModel;
 class ZenoSubGraphScene;
 class ThumbnailNode;
-class ZenoNode;
+class ZenoNodeBase;
 
 
 class NavigatorItem : public QGraphicsRectItem
@@ -39,7 +39,7 @@ public:
     void onNavigatorPosChanged();
 
 private slots:
-    void onNodePosChanged(const ZenoNode* pNode);
+    void onNodePosChanged(const ZenoNodeBase* pNode);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
@@ -56,11 +56,11 @@ signals:
 
 private slots:
     void onSceneRectChanged(const QRectF& rc);
-    void onNodeInserted(const ZenoNode* pNode);
-    void onNodeAboutToRemoved(const ZenoNode* pNode);
+    void onNodeInserted(const ZenoNodeBase* pNode);
+    void onNodeAboutToRemoved(const ZenoNodeBase* pNode);
 
 private:
-    QGraphicsRectItem* onNewThumbNode(const ZenoNode* pNode, const zeno::ObjPath& path);
+    QGraphicsRectItem* onNewThumbNode(const ZenoNodeBase* pNode, const zeno::ObjPath& path);
     void initNavigator();
 
     NavigatorItem* m_navigator;

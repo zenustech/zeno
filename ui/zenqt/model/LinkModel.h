@@ -16,7 +16,7 @@ class LinkModel : public QAbstractListModel
         QPersistentModelIndex toParam;
         QString toKey;
         QUuid uuid;
-        zeno::LinkFunction lnkProp;
+        bool bObjLink = true;
         bool m_bCollasped = false;
     };
 
@@ -34,7 +34,7 @@ public:
 
     //api:
     QModelIndex addLink(const QModelIndex& fromParam, const QString& fromKey,
-        const QModelIndex& toParam, const QString& toKey, zeno::LinkFunction lnkProp);
+        const QModelIndex& toParam, const QString& toKey, bool bObjLink);
 private:
     LINKS_ITEM m_items;
 };

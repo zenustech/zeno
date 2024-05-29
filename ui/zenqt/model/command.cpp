@@ -33,8 +33,8 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         default.params.push_back(updateInfo[0].param);
         default.params.push_back(updateInfo[1].param);
         tab.groups.emplace_back(std::move(default));
-        m_nodeData.customUi.tabs.emplace_back(std::move(tab));
-        m_nodeData.customUi.outputs.push_back(updateInfo[2].param);
+        m_nodeData.customUi.inputPrims.tabs.emplace_back(std::move(tab));
+        m_nodeData.customUi.outputPrims.push_back(updateInfo[2].param);
     }
 }
 

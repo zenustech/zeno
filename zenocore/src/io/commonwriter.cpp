@@ -65,7 +65,7 @@ namespace zenoio
         writer.Key("primitive_outputs");
         {
             JsonObjScope _batch(writer);
-            zeno::PrimitiveParams params = customUiToParams(node.customUi.inputPrims);
+            zeno::PrimitiveParams params = node.customUi.outputPrims;
             for (const auto& param : params)
             {
                 writer.Key(param.name.c_str());

@@ -53,31 +53,56 @@ void ParamsModel::initParamItems()
 {
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
-    std::vector<std::shared_ptr<zeno::CoreParam>> inputs = spNode->get_input_params();
-    for (std::shared_ptr<zeno::CoreParam> spParam : inputs) {
+    //primitive inputs
+    auto inputs = spNode->get_input_primitive_params();
+    for (const auto& spParam : inputs) {
         ParamItem item;
         item.bInput = true;
-        item.control = spParam->control;
+        item.control = spParam.control;
         if (item.control == zeno::NullControl)
-            item.control = UiHelper::getDefaultControl(spParam->type);
-        item.optCtrlprops = spParam->optCtrlprops;
-        item.m_wpParam = spParam;
-        item.name = QString::fromStdString(spParam->name);
-        item.type = spParam->type;
-        item.value = UiHelper::zvarToQVar(spParam->defl);
-        item.connectProp = spParam->socketType;
+            item.control = UiHelper::getDefaultControl(spParam.type);
+        item.optCtrlprops = spParam.ctrlProps;
+        item.name = QString::fromStdString(spParam.name);
+        item.type = spParam.type;
+        item.value = UiHelper::zvarToQVar(spParam.defl);
+        item.connectProp = spParam.socketType;
+        item.group = zeno::Group_InputPrimitive;
+        m_items.append(item);
+    }
+    //object inputs
+    auto objInputs = spNode->get_input_object_params();
+    for (const auto& spParam : objInputs) {
+        ParamItem item;
+        item.bInput = true;
+        item.name = QString::fromStdString(spParam.name);
+        item.type = spParam.type;
+        item.connectProp = spParam.socketType;
+        item.group = zeno::Group_InputObject;
         m_items.append(item);
     }
 
-    std::vector<std::shared_ptr<zeno::CoreParam>> outputs = spNode->get_output_params();
-    for (std::shared_ptr<zeno::CoreParam> spParam : outputs) {
+    //primitive outputs
+    auto outputs = spNode->get_output_primitive_params();
+    for (const auto& param : outputs) {
         ParamItem item;
         item.bInput = false;
-        item.m_wpParam = spParam;
         item.control = zeno::NullControl;
-        item.name = QString::fromStdString(spParam->name);
-        item.type = spParam->type;
-        item.connectProp = spParam->socketType;
+        item.name = QString::fromStdString(param.name);
+        item.type = param.type;
+        item.connectProp = param.socketType;
+        item.group = zeno::Group_OutputPrimitive;
+        m_items.append(item);
+    }
+
+    //object outputs
+    auto objOutputs = spNode->get_output_object_params();
+    for (const auto& param : objOutputs) {
+        ParamItem item;
+        item.bInput = false;
+        item.name = QString::fromStdString(param.name);
+        item.type = param.type;
+        item.connectProp = param.socketType;
+        item.group = zeno::Group_OutputObject;
         m_items.append(item);
     }
 
@@ -460,44 +485,45 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     initParamItems();
 
     //reconstruct links.
+    auto inputs = spNode->get_input_primitive_params();
     for (int r = 0; r < m_items.size(); r++) {
-        std::shared_ptr<zeno::CoreParam> spParam = m_items[r].m_wpParam.lock();
-        for (auto spLink : spParam->links) {
-            auto spFrom = spLink->fromparam.lock();
-            auto spTo = spLink->toparam.lock();
-            ZASSERT_EXIT(spFrom && spTo);
-            auto spFromNode = spFrom->m_wpNode.lock();
-            auto spToNode = spTo->m_wpNode.lock();
-            ZASSERT_EXIT(spFromNode && spToNode);
+        auto group = m_items[r].group;
+        if (group == zeno::Group_InputPrimitive)
+        {
+            bool bExist = false;
+            auto paramPrim = spNode->get_input_prim_param(m_items[r].name.toStdString(), &bExist);
+            if (!bExist)
+                continue;
+            for (const auto& linkInfo : paramPrim.links) {
 
-            const QString fromNode = QString::fromStdString(spFromNode->get_name());
-            const QString toNode = QString::fromStdString(spToNode->get_name());
-            const QString fromSock = QString::fromStdString(spFrom->name);
-            const QString toSock = QString::fromStdString(spTo->name);
-            const QString outKey = QString::fromStdString(spLink->tokey);
-            const QString inKey = QString::fromStdString(spLink->fromkey);
-            zeno::LinkFunction lnkProp = spLink->lnkProp;
+                const QString fromNode = QString::fromStdString(linkInfo.outNode);
+                const QString toNode = QString::fromStdString(linkInfo.inNode);
+                const QString fromSock = QString::fromStdString(linkInfo.outParam);
+                const QString toSock = QString::fromStdString(linkInfo.inParam);
+                const QString outKey = QString::fromStdString(linkInfo.outKey);
+                const QString inKey = QString::fromStdString(linkInfo.inKey);
 
-            //add the new link in current graph.
-            GraphModel* pGraphM = parentGraph();
-            QModelIndex fromNodeIdx = pGraphM->indexFromName(fromNode);
-            QModelIndex toNodeIdx = pGraphM->indexFromName(toNode);
-            ZASSERT_EXIT(fromNodeIdx.isValid() && toNodeIdx.isValid());
+                //add the new link in current graph.
+                GraphModel* pGraphM = parentGraph();
+                QModelIndex fromNodeIdx = pGraphM->indexFromName(fromNode);
+                QModelIndex toNodeIdx = pGraphM->indexFromName(toNode);
+                ZASSERT_EXIT(fromNodeIdx.isValid() && toNodeIdx.isValid());
 
-            ParamsModel* fromParams = QVariantPtr<ParamsModel>::asPtr(fromNodeIdx.data(ROLE_PARAMS));
-            ParamsModel* toParams = QVariantPtr<ParamsModel>::asPtr(toNodeIdx.data(ROLE_PARAMS));
-            ZASSERT_EXIT(fromParams && toParams);
-            QModelIndex fromParam = fromParams->paramIdx(fromSock, false);
-            QModelIndex toParam = toParams->paramIdx(toSock, true);
-            ZASSERT_EXIT(fromParam.isValid() && toParam.isValid());
+                ParamsModel* fromParams = QVariantPtr<ParamsModel>::asPtr(fromNodeIdx.data(ROLE_PARAMS));
+                ParamsModel* toParams = QVariantPtr<ParamsModel>::asPtr(toNodeIdx.data(ROLE_PARAMS));
+                ZASSERT_EXIT(fromParams && toParams);
+                QModelIndex fromParam = fromParams->paramIdx(fromSock, false);
+                QModelIndex toParam = toParams->paramIdx(toSock, true);
+                ZASSERT_EXIT(fromParam.isValid() && toParam.isValid());
 
-            LinkModel* lnkModel = pGraphM->getLinkModel();
-            ZASSERT_EXIT(lnkModel);
-            //only add in model layer, not core layer.
-            QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey, lnkProp);
+                LinkModel* lnkModel = pGraphM->getLinkModel();
+                ZASSERT_EXIT(lnkModel);
+                //only add in model layer, not core layer.
+                QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey, linkInfo.bObjLink);
 
-            fromParams->m_items[fromParam.row()].links.append(newLink);
-            toParams->m_items[toParam.row()].links.append(newLink);
+                fromParams->m_items[fromParam.row()].links.append(newLink);
+                toParams->m_items[toParam.row()].links.append(newLink);
+            }
         }
     }
     //resetCustomParamModel();

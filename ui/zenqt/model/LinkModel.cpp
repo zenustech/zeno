@@ -55,8 +55,9 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const QString& outParam = info.fromParam.data(ROLE_PARAM_NAME).toString();
             const QString& inNode = info.toParam.data(ROLE_NODE_NAME).toString();
             const QString& inParam = info.toParam.data(ROLE_PARAM_NAME).toString();
+            bool bLinkObj = info.bObjLink;
             zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), info.fromKey.toStdString(),
-                inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString() };
+                inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString(), bLinkObj};
             return QVariant::fromValue(edge);
         }
         case ROLE_LINKID:
@@ -69,10 +70,10 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const auto& info = m_items[index.row()];
             return info.m_bCollasped;
         }
-        case ROLE_LINK_PROP:
+        case ROLE_LINK_OBJECT:
         {
             const auto& info = m_items[index.row()];
-            return info.lnkProp;
+            return info.bObjLink;
         }
     }
     return QVariant();
@@ -122,7 +123,7 @@ bool LinkModel::removeRows(int row, int count, const QModelIndex& parent)
 }
 
 QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QString& fromKey,
-    const QModelIndex& toParam, const QString& toKey, zeno::LinkFunction lnkProp)
+    const QModelIndex& toParam, const QString& toKey, bool bObjLink)
 {
     int row = m_items.size();
     beginInsertRows(QModelIndex(), row, row);
@@ -133,7 +134,7 @@ QModelIndex LinkModel::addLink(const QModelIndex& fromParam, const QString& from
     item.fromKey = fromKey;
     item.toKey = toKey;
     item.uuid = QUuid::createUuid();
-    item.lnkProp = lnkProp;
+    item.bObjLink = bObjLink;
 
     m_items.append(item);
 

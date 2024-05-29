@@ -75,7 +75,7 @@ namespace zeno {
     struct ParamPrimitive {
         std::string name;
         ParamType type = Param_Null;
-        SocketType socketType = NoSocket;
+        SocketType socketType = Socket_Primitve;
         zvariant defl;
         zvariant result;    //run result.
         ParamControl control = NullControl;

@@ -1,5 +1,5 @@
 #include "zenolink.h"
-#include "zenonode.h"
+#include "zenonodebase.h"
 #include "zenosubgraphscene.h"
 #include "nodeeditor/gv/nodesys_common.h"
 #include "control/common_id.h"
@@ -101,7 +101,6 @@ ZenoTempLink::ZenoTempLink(
         QString nodeId,
         QPointF fixedPos,
         bool fixInput,
-        zeno::LinkFunction lnkProp,
         QModelIndexList selNodes)
     : ZenoLink(nullptr)
     , m_fixedSocket(socketItem)
@@ -111,8 +110,9 @@ ZenoTempLink::ZenoTempLink(
     , m_nodeId(nodeId)
     , m_adsortedSocket(nullptr)
     , m_selNodes(selNodes)
-    , m_lnkProp(lnkProp)
 {
+    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
+    m_bObjLink = type != zeno::Socket_Primitve;
 }
 
 ZenoTempLink::~ZenoTempLink()
@@ -150,7 +150,7 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     QPen pen;
     pen.setColor(QColor("#5FD2FF"));
     pen.setWidthF(ZenoStyle::scaleWidth(WIDTH));
-    if (zeno::Link_Ref == m_lnkProp)
+    if (m_bObjLink)
         pen.setStyle(Qt::DashLine);
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
@@ -165,12 +165,12 @@ void ZenoTempLink::setFloatingPos(QPointF pos)
     update();
 }
 
-void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, zeno::LinkFunction& lnkProp)
+void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, bool lnkObj)
 {
     nodeId = m_nodeId;
     fixedPos = m_fixedPos;
     bFixedInput = m_bfixInput;
-    lnkProp = m_lnkProp;
+    lnkObj = m_bObjLink;
 }
 
 ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const
@@ -211,11 +211,12 @@ void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 }
 
 
-ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode)
+ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNode, ZenoNodeBase* inNode)
     : ZenoLink(nullptr)
     , m_index(idx)
     , m_bLegacyLink(false)
     , m_bHover(false)
+    , m_bObjLink(true)
 {
     setAcceptHoverEvents(true);
     setFlags(ItemIsSelectable | ItemIsFocusable);
@@ -239,7 +240,7 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
     m_dstPos = inNode->getSocketPos(inSockIdx, inKey);
     m_srcPos = outNode->getSocketPos(outSockIdx, outKey);
-    m_lnkProp = (zeno::LinkFunction)m_index.data(ROLE_LINK_PROP).toInt();
+    m_bObjLink = edge.bObjLink;
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -259,7 +260,7 @@ void ZenoFullLink::onInSocketPosChanged()
     if (!m_index.isValid())
         return;
 
-    ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
+    ZenoNodeBase* pNode = qobject_cast<ZenoNodeBase*>(sender());
     ZASSERT_EXIT(pNode);
 
     zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
@@ -306,7 +307,7 @@ void ZenoFullLink::onOutSocketPosChanged()
     if (!m_index.isValid())
         return;
 
-    ZenoNode* pNode = qobject_cast<ZenoNode*>(sender());
+    ZenoNodeBase* pNode = qobject_cast<ZenoNodeBase*>(sender());
     ZASSERT_EXIT(pNode);
 
     zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
@@ -411,7 +412,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         QPen pen;
         pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(83, 83, 85));
         pen.setWidthF(ZenoStyle::scaleWidth(3));
-        if (zeno::Link_Ref == m_lnkProp)
+        if (m_bObjLink)
             pen.setStyle(Qt::DashLine);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(pen);
@@ -431,7 +432,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
             pen.setColor(isSelected() ? QColor(92, 36, 36) : QColor(192, 36, 36, 153));
             pen.setWidthF(ZenoStyle::scaleWidth(4));
             pen.setJoinStyle(Qt::RoundJoin);
-            if (zeno::Link_Ref == m_lnkProp)
+            if (m_bObjLink)
                 pen.setStyle(Qt::DashLine);
             painter->setRenderHint(QPainter::Antialiasing);
             painter->setPen(pen);

@@ -45,7 +45,7 @@ public:
     QString netLabel() const;
 
 signals:
-    void clicked(bool, zeno::LinkFunction);
+    void clicked(bool);
     void netLabelClicked();
     void netLabelEditFinished();
     void netLabelMenuActionTriggered(QAction*);

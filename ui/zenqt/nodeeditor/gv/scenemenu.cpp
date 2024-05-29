@@ -28,7 +28,7 @@ bool sceneMenuEvent(
     const QList<QGraphicsItem*>& items
     )
 {
-    QSet<ZenoNode*> nodeSets, nodeSelections;
+    QSet<ZenoNodeBase*> nodeSets, nodeSelections;
     QSet<ZenoFullLink*> seledLinks;
 
     ZenoSocketItem* pSelSocket = nullptr;
@@ -39,7 +39,7 @@ bool sceneMenuEvent(
 
     for (QGraphicsItem* pItem : seledItems)
     {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
+        if (ZenoNodeBase* pNode = qgraphicsitem_cast<ZenoNodeBase*>(pItem))
         {
             nodeSelections.insert(pNode);
         }
@@ -55,7 +55,7 @@ bool sceneMenuEvent(
         {
             continue;
         }
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
+        if (ZenoNodeBase* pNode = qgraphicsitem_cast<ZenoNodeBase*>(pItem))
         {
             nodeSets.insert(pNode);
         }
@@ -69,7 +69,7 @@ bool sceneMenuEvent(
     if (nodeSets.size() == 1)
     {
         //send to scene/ZenoNode.
-        ZenoNode* pNode = *nodeSets.begin();
+        ZenoNodeBase* pNode = *nodeSets.begin();
 
         QModelIndex selParam;
 

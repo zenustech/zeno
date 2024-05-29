@@ -992,9 +992,9 @@ void ZEditParamLayoutDlg::onApply()
             }
             tabInfo.groups.push_back(groupInfo);
         }
-        m_customUi.tabs.push_back(tabInfo);
+        m_customUi.inputPrims.tabs.push_back(tabInfo);
     }
-    m_customUi.outputs = outputs;
+    m_customUi.outputPrims = outputs;
 }
 
 void ZEditParamLayoutDlg::onOk()

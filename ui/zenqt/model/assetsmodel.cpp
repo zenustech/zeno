@@ -180,8 +180,8 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
 
     zeno::ParamTab tab;
     tab.groups.emplace_back(std::move(defaultGroup));
-    asset.m_customui.tabs.emplace_back(std::move(tab));
-    asset.m_customui.primitive_outputs = outputs;
+    asset.m_customui.inputPrims.tabs.emplace_back(std::move(tab));
+    asset.m_customui.outputPrims = outputs;
 
     assets->createAsset(asset);
     saveAsset(QString::fromStdString(info.name));
