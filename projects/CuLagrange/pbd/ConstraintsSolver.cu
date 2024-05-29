@@ -1184,6 +1184,10 @@ struct XPBDSolveSmoothAll : INode {
 
             if(category == category_c::vertex_pin_to_cell_constraint) {
                 // std::cout << "solve vertex cell pin constraint" << std::endl;
+                auto use_hard_constraint = constraint_ptr->readMeta<bool>(PBD_USE_HARD_CONSTRAINT);
+                if(use_hard_constraint && iter_id > 0)
+                    continue;
+
 
                 auto target = constraint_ptr->readMeta<ZenoParticles*>(CONSTRAINT_TARGET);
                 const auto& kverts = target->getParticles();
@@ -1214,6 +1218,7 @@ struct XPBDSolveSmoothAll : INode {
                     thickness);    
                     
                 cudaPol(zs::range(cquads.size()),[
+                    use_hard_constraint = use_hard_constraint,
                     cquads = proxy<space>({},cquads),
                     cell_buffer = proxy<space>({},cell_buffer),
                     dptagOffset = verts.getPropertyOffset(dptag),
@@ -1248,11 +1253,14 @@ struct XPBDSolveSmoothAll : INode {
                             tp += bs[i] * bary[i + 3];
                         }
 
-                        auto dp = tp - verts.pack(dim_c<3>,ptagOffset,vi);
-
-
-                        for(int d = 0;d != 3;++d){
-                            atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d]);
+                        if(use_hard_constraint) {
+                            verts.tuple(dim_c<3>,ptagOffset,vi) = tp;
+                        } else {
+                            auto dp = (tp - verts.pack(dim_c<3>,ptagOffset,vi)) * w;
+                            atomic_add(exec_tag,&verts(wOffset,vi),w);
+                            for(int d = 0;d != 3;++d){
+                                atomic_add(exec_tag,&verts(dptagOffset + d,vi),dp[d]);
+                            }
                         }
                 });
             }

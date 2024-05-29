@@ -1314,6 +1314,7 @@ virtual void apply() override {
 
         constexpr auto eps = 1e-6;
         constraint->setMeta(CONSTRAINT_KEY,category_c::vertex_pin_to_cell_constraint);
+        constraint->setMeta(PBD_USE_HARD_CONSTRAINT,use_hard_constraint);
 
         auto target = get_input<ZenoParticles>("target");
 
@@ -1405,7 +1406,7 @@ virtual void apply() override {
 
                     zs::vec<T,6> prism_bary{};
                     T toc{};
-                    if(!compute_vertex_prism_barycentric_weights(p,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,(T)0.001))
+                    if(!compute_vertex_prism_barycentric_weights(p,as[0],as[1],as[2],bs[0],bs[1],bs[2],toc,prism_bary,(T)0.0001))
                         return;           
 
                     auto toc_dist = zs::abs(toc - (T)0.5);
