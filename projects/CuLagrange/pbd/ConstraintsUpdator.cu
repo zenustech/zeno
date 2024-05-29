@@ -47,6 +47,14 @@ virtual void apply() override {
     auto source = get_input<ZenoParticles>("source");
     auto constraint = get_input<ZenoParticles>("constraint");
 
+    auto update_weight = get_input2<bool>("update_weight");
+    auto new_uniform_weight = get_input2<bool>("new_uniform_weight");
+
+    if(update_weight) {
+        auto& cquads = constraint->getQuadraturePoints();
+        TILEVEC_OPS::fill(cudaPol,cquads,"w",new_uniform_weight);
+    }
+
     // auto target = get_input<ZenoParticles>("target");
     
     auto type = constraint->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
@@ -89,7 +97,9 @@ virtual void apply() override {
 ZENDEFNODE(UpdateConstraintTarget, {{
     {"source"},
     {"target"},
-    {"constraint"}
+    {"constraint"},
+    {"bool","update_weight","0"},
+    {"float","new_uniform_weight","1.0"}
 },
 {{"source"},{"constraint"}},
 { 
