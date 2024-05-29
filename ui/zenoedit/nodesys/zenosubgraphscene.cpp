@@ -48,6 +48,9 @@ ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     // bsp tree index causes crash when removeItem and delete item. for safety, disable it.
     // https://stackoverflow.com/questions/38458830/crash-after-qgraphicssceneremoveitem-with-custom-item-class
     setItemIndexMethod(QGraphicsScene::NoIndex);
+    connect(this, &ZenoSubGraphScene::selectionChanged, this, [=]() {
+        afterSelectionChanged();
+    });
 }
 
 ZenoSubGraphScene::~ZenoSubGraphScene()
@@ -1015,6 +1018,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         QString id = idx.data(ROLE_OBJID).toString();
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         ZenoNode* pNode = m_nodes[id];
+        pNode->setSelected(false);
         if (qobject_cast<GroupNode *>(pNode)) 
         {
             GroupNode *pBlackboard = qobject_cast<GroupNode *>(pNode);
