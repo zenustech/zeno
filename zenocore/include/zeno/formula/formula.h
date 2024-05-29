@@ -59,6 +59,7 @@ public:
     void setRoot(struct node* root);
     struct node* makeNewNode(nodeType type, operatorVals op, struct node* left, struct node* right);
     struct node* makeNewNumberNode(float value);
+    struct node* makeEmptyNode();
     ZENO_API void printSyntaxTree();
     ZENO_API void freeSyntaxTree();
     ZENO_API std::optional<std::pair<std::string, std::string>> getCurrFuncDescription();

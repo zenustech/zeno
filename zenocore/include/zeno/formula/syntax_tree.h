@@ -13,7 +13,9 @@ enum nodeType {
     FOUROPERATIONS,       //+ - * / %
     ZENVAR,
     FUNC,
-    UNARY_FUNC      //sin cos ref ...
+    PLACEHOLDER,
+    UNARY_FUNC,      //sin cos ref ...
+    FUNC_ARG
 };
 
 enum operatorVals {
@@ -22,12 +24,14 @@ enum operatorVals {
     MINUS,
     MUL,
     DIV,
+    FUNC,
     //Ò»Ôªº¯Êý UNARY_FUNC
     SIN,
     SINH,
     COS,
     COSH,
-    ABS
+    ABS,
+    DEFAULT_OPVAL,
 };
 
 struct node {

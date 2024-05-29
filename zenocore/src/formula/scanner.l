@@ -54,6 +54,7 @@ frame   \$F
 fps     \$FPS
 pi      \$PI
 id      ({alpha})+
+functoken [A-Za-z][A-Za-z_0-9]*
 
 %%
 %{
@@ -107,6 +108,7 @@ id      ({alpha})+
 "rand"    { return zeno::Parser::make_RAND(loc); }
 {string}  { return zeno::Parser::make_LITERAL(yytext, loc); }
 {word}    { return zeno::Parser::make_WORD(loc); }
+{functoken} { return zeno::Parser::make_FUNC(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "Scanner: unknown character [" << yytext << "]" << endl;

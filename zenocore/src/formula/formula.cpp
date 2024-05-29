@@ -185,6 +185,21 @@ struct node* Formula::makeNewNumberNode(float value)
     return m_rootNode;
 }
 
+struct node* Formula::makeEmptyNode()
+{
+    struct node* n = (struct node*)malloc(sizeof(struct node));
+    if (!n)
+    {
+        exit(0);
+    }
+    n->type = PLACEHOLDER;
+    n->value = 0;
+    n->parent = nullptr;
+    n->left = nullptr;
+    n->right = nullptr;
+    return n;
+}
+
 ZENO_API void Formula::printSyntaxTree()
 {
     print_syntax_tree(m_rootNode, 0);
