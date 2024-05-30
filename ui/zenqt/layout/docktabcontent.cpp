@@ -623,6 +623,10 @@ void DockContent_Editor::initConnections()
         m_btnKill->setVisible(true);
         if (m_btnRun->text() == tr("ReRun"))
             zeno::getSession().set_Rerun();
+
+        for (auto view : zenoApp->getMainWindow()->viewports())
+            view->cleanUpScene();
+
         zenoApp->calculationMgr()->run();
     });
     connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
