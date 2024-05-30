@@ -4633,6 +4633,54 @@ ZENDEFNODE(AdvanceFrame, {
                              {"zs_geom"},
                          });
 
+struct PrimAssignRefAttrib : INode {
+    virtual void apply() override {
+        auto points = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("ref_prim");
+        auto idTag = get_input2<std::string>("pointIdTag");
+        auto tag = get_input2<std::string>("attribTag");
+
+        auto pointIndex = points->attr<int>(idTag);
+
+        auto assignAttrib = [&pointIndex](auto &dstAttrib, const auto &srcAttrib) {
+            if constexpr (zs::is_same_v<RM_CVREF_T(dstAttrib), RM_CVREF_T(srcAttrib)>) {
+    #pragma omp parallel for
+                for (auto index = 0; index < dstAttrib.size(); ++index) {
+                    dstAttrib[index] = srcAttrib[(int)pointIndex[index]];
+                }
+            } else 
+                throw std::runtime_error(
+                    fmt::format("destination attrib [{}], source attrib [{}]\n", 
+                    zs::get_var_type_str(dstAttrib), zs::get_var_type_str(srcAttrib)));
+        };
+
+        if (tag == "pos") {
+            assignAttrib(points->verts.values, prim->verts.values);
+        } else {
+            zs::match([&verts = points->verts, &tag](const auto &src) {
+                verts.add_attr<RM_CVREF_T(src[0])>(tag);
+            })(prim->verts.attr(tag));
+            zs::match([&assignAttrib](auto &dst, const auto &src) { 
+                assignAttrib(dst, src); 
+            })(points->verts.attr(tag), prim->verts.attr(tag));
+        }
+
+        set_output("prim", get_input("prim"));
+    }
+};
+
+ZENDEFNODE(PrimAssignRefAttrib, {
+                                      {
+                                          "prim",
+                                          "ref_prim",
+                                          {"string", "pointIdTag", "bvh_id"},
+                                          {"string", "attribTag"},
+                                      },
+                                      {"prim"},
+                                      {},
+                                      {"primitive"},
+                                  });
+
 struct RemovePrimitiveTopo : INode {
     void apply() override {
         auto prim = get_input2<PrimitiveObject>("prim");
