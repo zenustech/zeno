@@ -45,7 +45,7 @@ public:
     void removeChildItem(ZenoNodeBase*pNode);
     void updateChildRelativePos(const ZenoNodeBase*item);
     void updateBlackboard();
-    void setSelected(bool selected);
+    void setSelected(bool selected) override;
     void initLayout() override;
 
 protected:

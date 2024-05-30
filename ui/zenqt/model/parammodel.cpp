@@ -485,45 +485,55 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     initParamItems();
 
     //reconstruct links.
-    auto inputs = spNode->get_input_primitive_params();
     for (int r = 0; r < m_items.size(); r++) {
         auto group = m_items[r].group;
+        std::vector<zeno::EdgeInfo> links;
         if (group == zeno::Group_InputPrimitive)
         {
             bool bExist = false;
             auto paramPrim = spNode->get_input_prim_param(m_items[r].name.toStdString(), &bExist);
             if (!bExist)
                 continue;
-            for (const auto& linkInfo : paramPrim.links) {
+            links = paramPrim.links;
+            
+        }
+        else if (group == zeno::Group_InputObject)
+        {
+            bool bExist = false;
+            auto paramObj = spNode->get_input_obj_param(m_items[r].name.toStdString(), &bExist);
+            if (!bExist)
+                continue;
+            links = paramObj.links;
+        }
+        for (const auto& linkInfo : links) {
 
-                const QString fromNode = QString::fromStdString(linkInfo.outNode);
-                const QString toNode = QString::fromStdString(linkInfo.inNode);
-                const QString fromSock = QString::fromStdString(linkInfo.outParam);
-                const QString toSock = QString::fromStdString(linkInfo.inParam);
-                const QString outKey = QString::fromStdString(linkInfo.outKey);
-                const QString inKey = QString::fromStdString(linkInfo.inKey);
+            const QString fromNode = QString::fromStdString(linkInfo.outNode);
+            const QString toNode = QString::fromStdString(linkInfo.inNode);
+            const QString fromSock = QString::fromStdString(linkInfo.outParam);
+            const QString toSock = QString::fromStdString(linkInfo.inParam);
+            const QString outKey = QString::fromStdString(linkInfo.outKey);
+            const QString inKey = QString::fromStdString(linkInfo.inKey);
 
-                //add the new link in current graph.
-                GraphModel* pGraphM = parentGraph();
-                QModelIndex fromNodeIdx = pGraphM->indexFromName(fromNode);
-                QModelIndex toNodeIdx = pGraphM->indexFromName(toNode);
-                ZASSERT_EXIT(fromNodeIdx.isValid() && toNodeIdx.isValid());
+            //add the new link in current graph.
+            GraphModel* pGraphM = parentGraph();
+            QModelIndex fromNodeIdx = pGraphM->indexFromName(fromNode);
+            QModelIndex toNodeIdx = pGraphM->indexFromName(toNode);
+            ZASSERT_EXIT(fromNodeIdx.isValid() && toNodeIdx.isValid());
 
-                ParamsModel* fromParams = QVariantPtr<ParamsModel>::asPtr(fromNodeIdx.data(ROLE_PARAMS));
-                ParamsModel* toParams = QVariantPtr<ParamsModel>::asPtr(toNodeIdx.data(ROLE_PARAMS));
-                ZASSERT_EXIT(fromParams && toParams);
-                QModelIndex fromParam = fromParams->paramIdx(fromSock, false);
-                QModelIndex toParam = toParams->paramIdx(toSock, true);
-                ZASSERT_EXIT(fromParam.isValid() && toParam.isValid());
+            ParamsModel* fromParams = QVariantPtr<ParamsModel>::asPtr(fromNodeIdx.data(ROLE_PARAMS));
+            ParamsModel* toParams = QVariantPtr<ParamsModel>::asPtr(toNodeIdx.data(ROLE_PARAMS));
+            ZASSERT_EXIT(fromParams && toParams);
+            QModelIndex fromParam = fromParams->paramIdx(fromSock, false);
+            QModelIndex toParam = toParams->paramIdx(toSock, true);
+            ZASSERT_EXIT(fromParam.isValid() && toParam.isValid());
 
-                LinkModel* lnkModel = pGraphM->getLinkModel();
-                ZASSERT_EXIT(lnkModel);
-                //only add in model layer, not core layer.
-                QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey, linkInfo.bObjLink);
+            LinkModel* lnkModel = pGraphM->getLinkModel();
+            ZASSERT_EXIT(lnkModel);
+            //only add in model layer, not core layer.
+            QModelIndex newLink = lnkModel->addLink(fromParam, outKey, toParam, inKey, linkInfo.bObjLink);
 
-                fromParams->m_items[fromParam.row()].links.append(newLink);
-                toParams->m_items[toParam.row()].links.append(newLink);
-            }
+            fromParams->m_items[fromParam.row()].links.append(newLink);
+            toParams->m_items[toParam.row()].links.append(newLink);
         }
     }
     //resetCustomParamModel();

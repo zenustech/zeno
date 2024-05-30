@@ -1017,9 +1017,9 @@ ZENO_API NodeData INode::exportInfo() const
     {
         node.customUi.inputObjs.push_back(paramObj->exportParam());
     }
-    for (auto tab : node.customUi.inputPrims.tabs)
+    for (auto &tab : node.customUi.inputPrims.tabs)
     {
-        for (auto group : tab.groups)
+        for (auto &group : tab.groups)
         {
             for (auto& param : group.params)
             {
@@ -1180,7 +1180,7 @@ ZENO_API zany INode::get_input(std::string const &id) const {
                     //throw makeError<TypeError>(typeid(T));
                     //error, throw expection.
                 }
-                break;
+                return spNum;
             }
             case Param_String:
             {

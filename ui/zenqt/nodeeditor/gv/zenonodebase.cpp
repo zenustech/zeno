@@ -422,3 +422,8 @@ void ZenoNodeBase::onCollaspeBtnClicked()
 void ZenoNodeBase::onCollaspeUpdated(bool)
 {
 }
+
+void ZenoNodeBase::setSelected(bool bSelected)
+{
+    _base::setSelected(bSelected);
+}
