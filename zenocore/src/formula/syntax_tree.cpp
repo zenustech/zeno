@@ -21,13 +21,33 @@ char* getOperatorString(operatorVals op)
         return "cosh";
     case ABS:
         return "abs";
+    case DEFAULT_FUNCVAL:
+        return "default_funcVal";
+    case UNDEFINE_OP:
+        return "undefinedOp";
     default:
         return "";
     }
 }
 
-struct node* newNode(nodeType type, operatorVals op, struct node* left, struct node* right) {
-    struct node* n = (struct node*)malloc(sizeof(struct node));
+operatorVals funcName2Enum(std::string func)
+{
+    if (func == "sin") {
+        return SIN;
+    } else if (func == "sinh") {
+        return SINH;
+    }else if (func == "cos") {
+        return COS;
+    }else if (func == "cosh") {
+        return COSH;
+    } else if (func == "abs") {
+        return ABS;
+    }
+    return UNDEFINE_OP;
+}
+
+std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> Children) {
+    std::shared_ptr<struct node> n = std::make_shared<struct node>();
     if (!n)
     {
         exit(0);
@@ -35,35 +55,34 @@ struct node* newNode(nodeType type, operatorVals op, struct node* left, struct n
     n->type = type;
     n->opVal = op;
     n->value = 0;
-    n->left = left;
-    n->right = right;
+    n->children = Children;
     n->parent = nullptr;
     n->isParenthesisNode = false;
-    if (left) {
-        left->parent = n;
-    }
-    if (right) {
-        right->parent = n;
+    n->isParenthesisNodeComplete = false;
+    for (auto & child: n->children)
+    {
+        if (child) {
+            child->parent = n;
+        }
     }
     return n;
 }
 
-struct node* newNumberNode(float value) {
-    struct node* n = (struct node*)malloc(sizeof(struct node));
+std::shared_ptr<struct node> newNumberNode(float value) {
+    std::shared_ptr<struct node> n = std::make_shared<struct node>();
     if (!n)
     {
         exit(0);
     }
     n->type = NUMBER;
+    n->opVal = UNDEFINE_OP;
     n->value = value;
     n->parent = nullptr;
-    n->left = nullptr;
-    n->right = nullptr;
     return n;
 }
 
-void print_syntax_tree(struct node* root, int depth) {
-    const auto& printVal = [](struct node* root, char* prefix) {
+void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
+    const auto& printVal = [](std::shared_ptr<struct node> root, char* prefix) {
         if (root->type == NUMBER)
             printf("%s: %f\n", prefix, root->value);
         else
@@ -75,68 +94,118 @@ void print_syntax_tree(struct node* root, int depth) {
         }
         if (root->parent)
         {
-            if (root->parent->left && root->parent->left == root)
-                printVal(root, "left");
-            else if (root->parent->right && root->parent->right == root)
-                printVal(root, "right");
+            for (auto& child: root->parent->children)
+            {
+                if (child)
+                {
+                }
+            }
+            for (int i = 0; i < root->parent->children.size(); i++)
+            {
+                if (root->parent->children[i] && root->parent->children[i] == root) {
+                    std::string info = "child:" + std::to_string(i);
+                    printVal(root, info.data());
+                }
+            }
         }
         else {
             printVal(root, "root");
         }
-        print_syntax_tree(root->left, depth + 1);
-        print_syntax_tree(root->right, depth + 1);
+        for (auto& child: root->children) {
+            print_syntax_tree(child, depth + 1);
+        }
     }
 }
 
-void free_syntax_tree(struct node* root)
-{
-    if (root) {
-        free_syntax_tree(root->left);
-        free_syntax_tree(root->right);
-        //if (root->type == NUMBER)
-        //    printf("free number: %f\n", root->value);
-        //else
-        //    printf("free operators: %s\n", getOperatorString(root->opVal));
-        free(root);
-        root = nullptr;
-        return;
-    }
-}
-
-float calc_syntax_tree(struct node* root)
+float calc_syntax_tree(std::shared_ptr<struct node> root)
 {
     if (root) {
         if (root->type == NUMBER)
         {
             return root->value;
-        }
-        float leftRes = calc_syntax_tree(root->left);
-        float rightRes = calc_syntax_tree(root->right);
-        switch (root->opVal)
-        {
-        case PLUS:
-            return leftRes + rightRes;
-        case MINUS:
-            return leftRes - rightRes;
-        case MUL:
-            return leftRes * rightRes;
-        case DIV:
-            return leftRes / rightRes;
-        case SIN:
-            return std::sin(leftRes);
-        case SINH:
-            return std::sinh(leftRes);
-        case COS:
-            return std::cos(leftRes);
-        case COSH:
-            return std::cosh(leftRes);
-        case ABS:
-            return std::abs(leftRes);
-        default:
-            return 0;
+        } else if (root->type == FOUROPERATIONS) {
+            float leftRes = calc_syntax_tree(root->children[0]);
+            float rightRes = calc_syntax_tree(root->children[1]);
+            switch (root->opVal)
+            {
+            case PLUS:
+                return leftRes + rightRes;
+            case MINUS:
+                return leftRes - rightRes;
+            case MUL:
+                return leftRes * rightRes;
+            case DIV: {
+                if (rightRes == 0) {
+                    return 0;
+                }
+                return leftRes / rightRes;
+            }
+            default:
+                return 0;
+            }
+        } else if (root->type == FUNC) {
+            float leftRes = calc_syntax_tree(root->children[0]);
+            switch (root->opVal)
+            {
+            case SIN:
+                return std::sin(leftRes);
+            case SINH:
+                return std::sinh(leftRes);
+            case COS:
+                return std::cos(leftRes);
+            case COSH:
+                return std::cosh(leftRes);
+            case ABS:
+                return std::abs(leftRes);
+            default:
+                return 0;
+            }
         }
     }
     return 0;
+}
+
+void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& pos)
+{
+    std::vector<std::shared_ptr<struct node>> preorderVec;
+    preOrderVec(root, preorderVec);
+    if (preorderVec.size() != 0)
+    {
+        auto last = preorderVec.back();
+        if (last->type == FUNC) {
+            std::string candidate = getOperatorString(last->opVal);
+            if (candidate != "") {
+                name = candidate;
+                pos = NAN;  //当前焦点在函数名上
+                return;
+            }
+        }
+        last = last->parent;
+        while (last)
+        {
+            if (last->type == FUNC && !last->isParenthesisNodeComplete) {
+                std::string candidate = getOperatorString(last->opVal);
+                if (candidate != "") {
+                    name = candidate;
+                    pos = last->children.size() - 1;
+                    return;
+                }
+            }
+            last = last->parent;
+        }
+    }
+    name = "";
+}
+
+void preOrderVec(std::shared_ptr<struct node> root, std::vector<std::shared_ptr<struct node>>& tmplist)
+{
+    if (root)
+    {
+        tmplist.push_back(root);
+        for (auto& child: root->children) {
+            preOrderVec(child, tmplist);
+        }
+    }
 }
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright)
@@ -168,47 +237,4 @@ bool checkparentheses(std::string& exp, int& addleft, int& addright)
         addright = 0;
         return true;
     }
-}
-
-void preOrderVec(struct node* root, std::vector<struct node*>& tmplist)
-{
-    if (root)
-    {
-        tmplist.push_back(root);
-        preOrderVec(root->left, tmplist);
-        preOrderVec(root->right, tmplist);
-    }
-}
-
-std::string currFuncName(struct node* root, int rightParenthesesAdded)
-{
-    std::vector<struct node*> preorderVec;
-    preOrderVec(root, preorderVec);
-    if (preorderVec.size() != 0)
-    {
-        auto last = preorderVec.back();
-        std::vector<struct node*> allParenthesesAncestors;
-        while (last)
-        {
-            if (last->type == UNARY_FUNC || last->isParenthesisNode) {
-                allParenthesesAncestors.push_back(last);
-            }
-            last = last->parent;
-        }
-        if (allParenthesesAncestors.size() > rightParenthesesAdded - 1)
-        {
-            auto currentParentheseNode = allParenthesesAncestors[allParenthesesAncestors.size() - rightParenthesesAdded];
-            while (currentParentheseNode)
-            {
-                if (currentParentheseNode->type == UNARY_FUNC) {
-                    std::string candidate = getOperatorString(currentParentheseNode->opVal);
-                    if (candidate != "") {
-                        return candidate;
-                    }
-                }
-                currentParentheseNode = currentParentheseNode->parent;
-            }
-        }
-    }
-    return "";
 }

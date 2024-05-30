@@ -4,15 +4,16 @@
 #include "zlineedit.h"
 #include "util/curveutil.h"
 #include <zeno/utils/log.h>
-#include "panel/ZenoHintListWidget.h"
 #include "panel/zenoproppanel.h"
 
 
-ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
-	: QWidget(parent)
-	, m_bFloat(bFloat)
+ZVecEditor::ZVecEditor(const QVariant& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
+    : QWidget(parent)
+    , m_bFloat(bFloat)
     , m_deflSize(deflSize)
     , m_styleCls(styleCls)
+    , m_hintlist(nullptr)
+    , m_descLabel(nullptr)
 {
     initUI(vec);
 }
@@ -36,7 +37,7 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     }
     else if (event->type() == QEvent::FocusOut)
     {
-        if (!ZenoPropPanel::getHintListInstance().isVisible())
+        if (m_hintlist && !m_hintlist->isVisible())
         {
             if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
             {
@@ -58,10 +59,10 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
             {
                 if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
                 {
-                    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
-                    if (hintlist->isVisible())
-                    {
-                        hintlist->hide();
+                    if (m_hintlist && m_hintlist->isVisible()) {
+                        m_hintlist->hide();
+                    } else if (m_descLabel && m_descLabel->isVisible()) {
+                        m_descLabel->hide();
                     }
                     else {
                         edit->clearFocus();
@@ -76,11 +77,12 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
             {
                 if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
                 {
-                    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
-                    if (hintlist->isVisible())
+                    if (m_hintlist && m_hintlist->isVisible())
                     {
-                        hintlist->hide();
-                        edit->hintSelectedSetText(hintlist->getCurrentText());
+                        m_hintlist->hide();
+                        edit->hintSelectedSetText(m_hintlist->getCurrentText());
+                    } else if (m_descLabel && m_descLabel->isVisible()) {
+                        m_descLabel->hide();
                     }
                     else {
                         edit->clearFocus();
@@ -127,7 +129,6 @@ void ZVecEditor::initUI(const QVariant &vec) {
         pLayout->addWidget(m_editors[i]);
         connect(m_editors[i], &ZLineEdit::editingFinished, this, &ZVecEditor::editingFinished);
     }
-    connect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::clickOutSideHide, this, &ZVecEditor::showNoFocusLineEdits);
     setLayout(pLayout);
     setStyleSheet("ZVecEditor { background: transparent; } ");
 }
@@ -277,4 +278,14 @@ void ZVecEditor::updateProperties(const QVector<QString>& properties)
         m_editors[i]->style()->polish(m_editors[i]);
         m_editors[i]->update();
     }
+}
+
+void ZVecEditor::setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl)
+{
+    m_hintlist = hintlist;
+    m_descLabel = descLabl;
+    for (int i = 0; i < m_editors.size(); i++) {
+        m_editors[i]->setHintListWidget(hintlist, descLabl);
+    }
+    connect(m_hintlist, &ZenoHintListWidget::clickOutSideHide, this, &ZVecEditor::showNoFocusLineEdits);
 }

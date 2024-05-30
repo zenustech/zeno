@@ -55,14 +55,13 @@ public:
     unsigned int location() const;
 
     //syntax_tree
-    struct node* getRoot();
-    void setRoot(struct node* root);
-    struct node* makeNewNode(nodeType type, operatorVals op, struct node* left, struct node* right);
-    struct node* makeNewNumberNode(float value);
-    struct node* makeEmptyNode();
+    std::shared_ptr<struct node> getRoot();
+    void setRoot(std::shared_ptr<struct node> root);
+    std::shared_ptr<struct node> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children);
+    std::shared_ptr<struct node> makeNewNumberNode(float value);
+    std::shared_ptr<struct node> makeEmptyNode();
     ZENO_API void printSyntaxTree();
-    ZENO_API void freeSyntaxTree();
-    ZENO_API std::optional<std::pair<std::string, std::string>> getCurrFuncDescription();
+    ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
     //regex
     ZENO_API std::vector<std::string> getHintList(std::string originTxt, std::string& candidateTxt);
 
@@ -73,9 +72,7 @@ private:
     float m_result;
 
     //syntax_tree
-    struct node* m_rootNode;
-    int m_leftParenthesesAdded;
-    int m_rightParenthesesAdded;
+    std::shared_ptr<struct node> m_rootNode;
 };
 
 }

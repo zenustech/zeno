@@ -35,7 +35,7 @@
 // private implementation details that can be changed or removed.
 
 // "%code top" blocks.
-#line 36 "parser.y"
+#line 37 "parser.y"
 
     #include <iostream>
     #include "scanner.h"
@@ -229,19 +229,24 @@ namespace  zeno  {
         value.YY_MOVE_OR_COPY< float > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_RPAREN: // RPAREN
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_LPAREN: // LPAREN
-        value.YY_MOVE_OR_COPY< string > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_exp: // exp
       case symbol_kind::S_factor: // factor
-      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_term: // term
-        value.YY_MOVE_OR_COPY< struct node* > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::shared_ptr<struct node> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_funcargs: // funcargs
+        value.YY_MOVE_OR_COPY< std::vector<std::shared_ptr<struct node>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_RPAREN: // RPAREN
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LITERAL: // LITERAL
+      case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_LPAREN: // LPAREN
+        value.YY_MOVE_OR_COPY< string > (YY_MOVE (that.value));
         break;
 
       default:
@@ -263,19 +268,24 @@ namespace  zeno  {
         value.move< float > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_RPAREN: // RPAREN
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_LPAREN: // LPAREN
-        value.move< string > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_exp: // exp
       case symbol_kind::S_factor: // factor
-      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_term: // term
-        value.move< struct node* > (YY_MOVE (that.value));
+        value.move< std::shared_ptr<struct node> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_funcargs: // funcargs
+        value.move< std::vector<std::shared_ptr<struct node>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_RPAREN: // RPAREN
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LITERAL: // LITERAL
+      case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_LPAREN: // LPAREN
+        value.move< string > (YY_MOVE (that.value));
         break;
 
       default:
@@ -297,19 +307,24 @@ namespace  zeno  {
         value.copy< float > (that.value);
         break;
 
-      case symbol_kind::S_RPAREN: // RPAREN
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_LPAREN: // LPAREN
-        value.copy< string > (that.value);
-        break;
-
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_exp: // exp
       case symbol_kind::S_factor: // factor
-      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_term: // term
-        value.copy< struct node* > (that.value);
+        value.copy< std::shared_ptr<struct node> > (that.value);
+        break;
+
+      case symbol_kind::S_funcargs: // funcargs
+        value.copy< std::vector<std::shared_ptr<struct node>> > (that.value);
+        break;
+
+      case symbol_kind::S_RPAREN: // RPAREN
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LITERAL: // LITERAL
+      case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_LPAREN: // LPAREN
+        value.copy< string > (that.value);
         break;
 
       default:
@@ -330,19 +345,24 @@ namespace  zeno  {
         value.move< float > (that.value);
         break;
 
-      case symbol_kind::S_RPAREN: // RPAREN
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_LPAREN: // LPAREN
-        value.move< string > (that.value);
-        break;
-
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_exp: // exp
       case symbol_kind::S_factor: // factor
-      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_term: // term
-        value.move< struct node* > (that.value);
+        value.move< std::shared_ptr<struct node> > (that.value);
+        break;
+
+      case symbol_kind::S_funcargs: // funcargs
+        value.move< std::vector<std::shared_ptr<struct node>> > (that.value);
+        break;
+
+      case symbol_kind::S_RPAREN: // RPAREN
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LITERAL: // LITERAL
+      case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_LPAREN: // LPAREN
+        value.move< string > (that.value);
         break;
 
       default:
@@ -608,19 +628,24 @@ namespace  zeno  {
         yylhs.value.emplace< float > ();
         break;
 
-      case symbol_kind::S_RPAREN: // RPAREN
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_LPAREN: // LPAREN
-        yylhs.value.emplace< string > ();
-        break;
-
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_exp: // exp
       case symbol_kind::S_factor: // factor
-      case symbol_kind::S_unaryfunc: // unaryfunc
+      case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_term: // term
-        yylhs.value.emplace< struct node* > ();
+        yylhs.value.emplace< std::shared_ptr<struct node> > ();
+        break;
+
+      case symbol_kind::S_funcargs: // funcargs
+        yylhs.value.emplace< std::vector<std::shared_ptr<struct node>> > ();
+        break;
+
+      case symbol_kind::S_RPAREN: // RPAREN
+      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_LITERAL: // LITERAL
+      case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_LPAREN: // LPAREN
+        yylhs.value.emplace< string > ();
         break;
 
       default:
@@ -644,167 +669,131 @@ namespace  zeno  {
           switch (yyn)
             {
   case 2: // calclist: %empty
-#line 108 "parser.y"
+#line 104 "parser.y"
                 {}
-#line 650 "parser.cpp"
+#line 675 "parser.cpp"
     break;
 
   case 3: // calclist: calclist exp EOL
-#line 108 "parser.y"
+#line 104 "parser.y"
                                     {
-    yylhs.value.as < struct node* > () = yystack_[1].value.as < struct node* > ();
+    yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[1].value.as < std::shared_ptr<struct node> > ();
     //driver.setResult($$);
 }
-#line 659 "parser.cpp"
+#line 684 "parser.cpp"
     break;
 
   case 4: // exp: factor
-#line 113 "parser.y"
-                        { yylhs.value.as < struct node* > () = yystack_[0].value.as < struct node* > (); }
-#line 665 "parser.cpp"
+#line 109 "parser.y"
+                        { yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
+#line 690 "parser.cpp"
     break;
 
   case 5: // exp: exp ADD factor
-#line 114 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, PLUS, yystack_[2].value.as < struct node* > (), yystack_[0].value.as < struct node* > ()); }
-#line 671 "parser.cpp"
+#line 110 "parser.y"
+                        { std::vector<std::shared_ptr<struct node>>children({yystack_[2].value.as < std::shared_ptr<struct node> > (), yystack_[0].value.as < std::shared_ptr<struct node> > ()}); yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FOUROPERATIONS, PLUS, children); }
+#line 696 "parser.cpp"
     break;
 
   case 6: // exp: exp SUB factor
-#line 115 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, MINUS, yystack_[2].value.as < struct node* > (), yystack_[0].value.as < struct node* > ()); }
-#line 677 "parser.cpp"
+#line 111 "parser.y"
+                        { std::vector<std::shared_ptr<struct node>>children({yystack_[2].value.as < std::shared_ptr<struct node> > (), yystack_[0].value.as < std::shared_ptr<struct node> > ()}); yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FOUROPERATIONS, MINUS, children); }
+#line 702 "parser.cpp"
     break;
 
   case 7: // factor: term
-#line 118 "parser.y"
-                        { yylhs.value.as < struct node* > () = yystack_[0].value.as < struct node* > (); }
-#line 683 "parser.cpp"
+#line 114 "parser.y"
+                        { yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
+#line 708 "parser.cpp"
     break;
 
   case 8: // factor: factor MUL term
-#line 119 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, MUL, yystack_[2].value.as < struct node* > (), yystack_[0].value.as < struct node* > ()); }
-#line 689 "parser.cpp"
+#line 115 "parser.y"
+                        { std::vector<std::shared_ptr<struct node>>children({yystack_[2].value.as < std::shared_ptr<struct node> > (), yystack_[0].value.as < std::shared_ptr<struct node> > ()}); yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FOUROPERATIONS, MUL, children); }
+#line 714 "parser.cpp"
     break;
 
   case 9: // factor: factor DIV term
-#line 120 "parser.y"
+#line 116 "parser.y"
                       {
-        float wtf = yystack_[0].value.as < struct node* > ()->value;
+        float wtf = yystack_[0].value.as < std::shared_ptr<struct node> > ()->value;
         if (wtf == 0) {
             /*error(wtf, "zero divide");*/
             YYABORT;
         }
-        yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, DIV, yystack_[2].value.as < struct node* > (), yystack_[0].value.as < struct node* > ()); 
+        std::vector<std::shared_ptr<struct node>>children({yystack_[2].value.as < std::shared_ptr<struct node> > (), yystack_[0].value.as < std::shared_ptr<struct node> > ()}); yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
     }
-#line 702 "parser.cpp"
+#line 727 "parser.cpp"
     break;
 
-  case 10: // factor: factor MUL
-#line 128 "parser.y"
-                   { yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, MUL, yystack_[1].value.as < struct node* > (), driver.makeNewNumberNode(NAN)); }
-#line 708 "parser.cpp"
-    break;
-
-  case 11: // factor: factor DIV
-#line 129 "parser.y"
-                   { yylhs.value.as < struct node* > () = driver.makeNewNode(FOUROPERATIONS, DIV, yystack_[1].value.as < struct node* > (), driver.makeNewNumberNode(NAN)); }
-#line 714 "parser.cpp"
-    break;
-
-  case 12: // unaryfunc: SIN LPAREN exp RPAREN
-#line 145 "parser.y"
-                                 { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, SIN, yystack_[1].value.as < struct node* > (), nullptr); }
-#line 720 "parser.cpp"
-    break;
-
-  case 13: // unaryfunc: SIN LPAREN RPAREN
-#line 146 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, SIN, nullptr, nullptr); }
-#line 726 "parser.cpp"
-    break;
-
-  case 14: // unaryfunc: SINH LPAREN exp RPAREN
-#line 147 "parser.y"
-                             { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, SINH, yystack_[1].value.as < struct node* > (), nullptr); }
-#line 732 "parser.cpp"
-    break;
-
-  case 15: // unaryfunc: SINH LPAREN RPAREN
-#line 148 "parser.y"
-                         { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, SINH, nullptr, nullptr); }
-#line 738 "parser.cpp"
-    break;
-
-  case 16: // unaryfunc: COS LPAREN exp RPAREN
-#line 149 "parser.y"
-                            { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, COS, yystack_[1].value.as < struct node* > (), nullptr); }
-#line 744 "parser.cpp"
-    break;
-
-  case 17: // unaryfunc: COS LPAREN RPAREN
-#line 150 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, COS, nullptr, nullptr); }
-#line 750 "parser.cpp"
-    break;
-
-  case 18: // unaryfunc: COSH LPAREN exp RPAREN
-#line 151 "parser.y"
-                             { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, COSH, yystack_[1].value.as < struct node* > (), nullptr); }
-#line 756 "parser.cpp"
-    break;
-
-  case 19: // unaryfunc: COSH LPAREN RPAREN
+  case 10: // funcargs: exp
 #line 152 "parser.y"
-                         { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, COSH, nullptr, nullptr); }
-#line 762 "parser.cpp"
+                         { yylhs.value.as < std::vector<std::shared_ptr<struct node>> > () = std::vector<std::shared_ptr<struct node>>({yystack_[0].value.as < std::shared_ptr<struct node> > ()}); }
+#line 733 "parser.cpp"
     break;
 
-  case 20: // unaryfunc: ABS LPAREN exp RPAREN
+  case 11: // funcargs: funcargs COMMA exp
 #line 153 "parser.y"
-                            { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, ABS, yystack_[1].value.as < struct node* > (), nullptr); }
-#line 768 "parser.cpp"
+                         { yystack_[2].value.as < std::vector<std::shared_ptr<struct node>> > ().push_back(yystack_[0].value.as < std::shared_ptr<struct node> > ()); yylhs.value.as < std::vector<std::shared_ptr<struct node>> > () = yystack_[2].value.as < std::vector<std::shared_ptr<struct node>> > (); }
+#line 739 "parser.cpp"
     break;
 
-  case 21: // unaryfunc: ABS LPAREN RPAREN
-#line 154 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNode(UNARY_FUNC, ABS, nullptr, nullptr); }
-#line 774 "parser.cpp"
+  case 12: // funccontent: LPAREN funcargs RPAREN
+#line 155 "parser.y"
+                                    { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, yystack_[1].value.as < std::vector<std::shared_ptr<struct node>> > ()); yylhs.value.as < std::shared_ptr<struct node> > ()->isParenthesisNodeComplete = true; }
+#line 745 "parser.cpp"
     break;
 
-  case 22: // term: NUMBER
-#line 158 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNumberNode(yystack_[0].value.as < float > ()); }
-#line 780 "parser.cpp"
+  case 13: // funccontent: LPAREN funcargs
+#line 156 "parser.y"
+                      { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, yystack_[0].value.as < std::vector<std::shared_ptr<struct node>> > ()); yylhs.value.as < std::shared_ptr<struct node> > ()->isParenthesisNodeComplete = false; }
+#line 751 "parser.cpp"
     break;
 
-  case 23: // term: WORD
+  case 14: // funccontent: %empty
+#line 157 "parser.y"
+             { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeEmptyNode(); }
+#line 757 "parser.cpp"
+    break;
+
+  case 15: // term: NUMBER
 #line 159 "parser.y"
-                        { yylhs.value.as < struct node* > () = driver.makeNewNumberNode(NAN);}
-#line 786 "parser.cpp"
+                        { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeNewNumberNode(yystack_[0].value.as < float > ()); }
+#line 763 "parser.cpp"
     break;
 
-  case 24: // term: LPAREN exp RPAREN
+  case 16: // term: LPAREN exp RPAREN
 #line 160 "parser.y"
-                        { yystack_[1].value.as < struct node* > ()->isParenthesisNode = true; yylhs.value.as < struct node* > () = yystack_[1].value.as < struct node* > (); }
-#line 792 "parser.cpp"
+                        { yystack_[1].value.as < std::shared_ptr<struct node> > ()->isParenthesisNode = true; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[1].value.as < std::shared_ptr<struct node> > (); }
+#line 769 "parser.cpp"
     break;
 
-  case 25: // term: SUB exp
+  case 17: // term: LPAREN exp
 #line 161 "parser.y"
-                        { yystack_[0].value.as < struct node* > ()->value = -1 * yystack_[0].value.as < struct node* > ()->value; yylhs.value.as < struct node* > () = yystack_[0].value.as < struct node* > (); }
-#line 798 "parser.cpp"
+                 { yystack_[0].value.as < std::shared_ptr<struct node> > ()->isParenthesisNode = true; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
+#line 775 "parser.cpp"
     break;
 
-  case 26: // term: unaryfunc
-#line 164 "parser.y"
-                { yylhs.value.as < struct node* > () = yystack_[0].value.as < struct node* > (); }
-#line 804 "parser.cpp"
+  case 18: // term: SUB exp
+#line 162 "parser.y"
+                        { yystack_[0].value.as < std::shared_ptr<struct node> > ()->value = -1 * yystack_[0].value.as < std::shared_ptr<struct node> > ()->value; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
+#line 781 "parser.cpp"
+    break;
+
+  case 19: // term: FUNC funccontent
+#line 166 "parser.y"
+                        { yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); yylhs.value.as < std::shared_ptr<struct node> > ()->opVal = funcName2Enum(yystack_[1].value.as < string > ()); yylhs.value.as < std::shared_ptr<struct node> > ()->isParenthesisNode = true; }
+#line 787 "parser.cpp"
+    break;
+
+  case 20: // term: %empty
+#line 167 "parser.y"
+             { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeEmptyNode(); }
+#line 793 "parser.cpp"
     break;
 
 
-#line 808 "parser.cpp"
+#line 797 "parser.cpp"
 
             default:
               break;
@@ -1156,106 +1145,78 @@ namespace  zeno  {
   }
 
 
-  const signed char  Parser ::yypact_ninf_ = -28;
+  const signed char  Parser ::yypact_ninf_ = -13;
 
   const signed char  Parser ::yytable_ninf_ = -1;
 
   const signed char
    Parser ::yypact_[] =
   {
-     -28,     0,   -28,   -28,   -27,   -21,     5,    12,    14,   -28,
-      91,    91,    11,   -23,   -28,   -28,    13,    33,    46,    66,
-      79,   -28,     1,   -28,    91,    91,   104,   104,   -28,    17,
-     -28,    50,   -28,   108,   -28,   109,   -28,   118,   -28,   -23,
-     -23,   -28,   -28,   -28,   -28,   -28,   -28,   -28
+     -13,     0,   -13,   -13,    -6,    -4,    -4,     4,   -12,   -13,
+      -4,   -13,   -13,    18,   -13,    -4,    -4,    -4,    -4,    11,
+       1,   -13,   -12,   -12,   -13,   -13,   -13,    -4,    11
   };
 
   const signed char
    Parser ::yydefact_[] =
   {
-       2,     0,     1,    22,     0,     0,     0,     0,     0,    23,
-       0,     0,     0,     4,    26,     7,     0,     0,     0,     0,
-       0,    25,     0,     3,     0,     0,    10,    11,    13,     0,
-      15,     0,    17,     0,    19,     0,    21,     0,    24,     5,
-       6,     8,     9,    12,    14,    16,    18,    20
+       2,    20,     1,    15,    14,    20,    20,     0,     4,     7,
+      20,    19,    18,    17,     3,    20,    20,    20,    20,    10,
+      13,    16,     5,     6,     8,     9,    12,    20,    11
   };
 
   const signed char
    Parser ::yypgoto_[] =
   {
-     -28,   -28,   125,   -18,   -28,   -17
+     -13,   -13,    -3,    -1,   -13,   -13,    12
   };
 
   const signed char
    Parser ::yydefgoto_[] =
   {
-       0,     1,    12,    13,    14,    15
+       0,     1,     7,     8,    20,    11,     9
   };
 
   const signed char
    Parser ::yytable_[] =
   {
-       2,    26,    16,    27,    38,     3,    39,    40,    17,    41,
-      42,     4,     5,     6,     7,     8,    28,    23,     3,     9,
-      43,    24,    10,    25,     4,     5,     6,     7,     8,    11,
-       0,    24,     9,    25,    18,    10,    30,    24,     3,    25,
-       0,    19,    11,    20,     4,     5,     6,     7,     8,    32,
-       0,     3,     9,    44,     0,    10,     0,     4,     5,     6,
-       7,     8,    11,     0,     0,     9,     0,     0,    10,    34,
-      24,     3,    25,     0,     0,    11,     0,     4,     5,     6,
-       7,     8,    36,     0,     3,     9,     0,     0,    10,     0,
-       4,     5,     6,     7,     8,    11,     3,     0,     9,     0,
-       0,    10,     4,     5,     6,     7,     8,     0,    11,     3,
-       9,    45,    46,    10,     0,     4,     5,     6,     7,     8,
-      11,    47,     0,     9,     0,     0,     0,     0,    24,    24,
-      25,    25,     0,    11,     0,    21,    22,     0,    24,     0,
-      25,    29,    31,    33,    35,    37
+       2,     3,    12,    13,    26,     3,    17,    19,    18,     4,
+      14,    27,     5,     4,    22,    23,     5,    10,    15,     6,
+      16,    21,     0,     6,    28,    15,     0,    16,     0,    24,
+      25
   };
 
   const signed char
    Parser ::yycheck_[] =
   {
-       0,    24,    29,    26,     3,     5,    24,    25,    29,    26,
-      27,    11,    12,    13,    14,    15,     3,     6,     5,    19,
-       3,    20,    22,    22,    11,    12,    13,    14,    15,    29,
-      -1,    20,    19,    22,    29,    22,     3,    20,     5,    22,
-      -1,    29,    29,    29,    11,    12,    13,    14,    15,     3,
-      -1,     5,    19,     3,    -1,    22,    -1,    11,    12,    13,
-      14,    15,    29,    -1,    -1,    19,    -1,    -1,    22,     3,
-      20,     5,    22,    -1,    -1,    29,    -1,    11,    12,    13,
-      14,    15,     3,    -1,     5,    19,    -1,    -1,    22,    -1,
-      11,    12,    13,    14,    15,    29,     5,    -1,    19,    -1,
-      -1,    22,    11,    12,    13,    14,    15,    -1,    29,     5,
-      19,     3,     3,    22,    -1,    11,    12,    13,    14,    15,
-      29,     3,    -1,    19,    -1,    -1,    -1,    -1,    20,    20,
-      22,    22,    -1,    29,    -1,    10,    11,    -1,    20,    -1,
-      22,    16,    17,    18,    19,    20
+       0,     5,     5,     6,     3,     5,    18,    10,    20,    13,
+       6,    10,    16,    13,    15,    16,    16,    23,    14,    23,
+      16,     3,    -1,    23,    27,    14,    -1,    16,    -1,    17,
+      18
   };
 
   const signed char
    Parser ::yystos_[] =
   {
-       0,    31,     0,     5,    11,    12,    13,    14,    15,    19,
-      22,    29,    32,    33,    34,    35,    29,    29,    29,    29,
-      29,    32,    32,     6,    20,    22,    24,    26,     3,    32,
-       3,    32,     3,    32,     3,    32,     3,    32,     3,    33,
-      33,    35,    35,     3,     3,     3,     3,     3
+       0,    25,     0,     5,    13,    16,    23,    26,    27,    30,
+      23,    29,    26,    26,     6,    14,    16,    18,    20,    26,
+      28,     3,    27,    27,    30,    30,     3,    10,    26
   };
 
   const signed char
    Parser ::yyr1_[] =
   {
-       0,    30,    31,    31,    32,    32,    32,    33,    33,    33,
-      33,    33,    34,    34,    34,    34,    34,    34,    34,    34,
-      34,    34,    35,    35,    35,    35,    35
+       0,    24,    25,    25,    26,    26,    26,    27,    27,    27,
+      28,    28,    29,    29,    29,    30,    30,    30,    30,    30,
+      30
   };
 
   const signed char
    Parser ::yyr2_[] =
   {
        0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
-       2,     2,     4,     3,     4,     3,     4,     3,     4,     3,
-       4,     3,     1,     1,     3,     2,     1
+       1,     3,     3,     2,     0,     1,     3,     2,     2,     2,
+       0
   };
 
 
@@ -1266,10 +1227,10 @@ namespace  zeno  {
   const  Parser ::yytname_[] =
   {
   "END", "error", "\"invalid token\"", "RPAREN", "IDENTIFIER", "NUMBER",
-  "EOL", "FRAME", "FPS", "PI", "COMMA", "SIN", "SINH", "COS", "COSH",
-  "ABS", "REF", "LITERAL", "RAND", "WORD", "ADD", "\"+\"", "SUB", "\"-\"",
-  "MUL", "\"*\"", "DIV", "\"/\"", "NEG", "LPAREN", "$accept", "calclist",
-  "exp", "factor", "unaryfunc", "term", YY_NULLPTR
+  "EOL", "FRAME", "FPS", "PI", "COMMA", "REF", "LITERAL", "FUNC", "ADD",
+  "\"+\"", "SUB", "\"-\"", "MUL", "\"*\"", "DIV", "\"/\"", "NEG", "LPAREN",
+  "$accept", "calclist", "exp", "factor", "funcargs", "funccontent",
+  "term", YY_NULLPTR
   };
 #endif
 
@@ -1278,9 +1239,9 @@ namespace  zeno  {
   const unsigned char
    Parser ::yyrline_[] =
   {
-       0,   108,   108,   108,   113,   114,   115,   118,   119,   120,
-     128,   129,   145,   146,   147,   148,   149,   150,   151,   152,
-     153,   154,   158,   159,   160,   161,   164
+       0,   104,   104,   104,   109,   110,   111,   114,   115,   116,
+     152,   153,   155,   156,   157,   159,   160,   161,   162,   166,
+     167
   };
 
   void
@@ -1313,9 +1274,9 @@ namespace  zeno  {
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1317 "parser.cpp"
+#line 1278 "parser.cpp"
 
-#line 166 "parser.y"
+#line 169 "parser.y"
 
 
 // Bison expects us to provide implementation - otherwise linker complains
@@ -1326,6 +1287,4 @@ void zeno::Parser::error(const location &loc , const std::string &message) {
 	// cout << "Error: " << message << endl << "Location: " << loc << endl;
 
     cout << "Error: " << message << endl << "Error location: " << driver.location() << endl;
-    //报错释放所有节点
-    driver.freeSyntaxTree();
 }

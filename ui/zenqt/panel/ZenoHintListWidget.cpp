@@ -205,14 +205,25 @@ ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     layout->setContentsMargins(10, 10, 10, 10);
     layout->addWidget(m_label);
     setLayout(layout);
+    qApp->installEventFilter(this);
 
     hide();
 }
 
-void ZenoFuncDescriptionLabel::setText(QString txt)
+void ZenoFuncDescriptionLabel::setDesc(QString desc, int pos)
 {
-    QStringList list = txt.split('\n');
+    QStringList list = desc.split('\n');
     QString txtToSet = "";
+    for (int i = 0; i < list[0].toInt(); i++) {
+        if (i == pos) {
+            txtToSet += "<b>param:" + QString::number(i) + "</b> ";
+        }
+        else {
+            txtToSet += "param:" + QString::number(i) + " ";
+        }
+    }
+    txtToSet = "<p>" + txtToSet + "</p>";
+    list.removeFirst();
     for (auto& i : list) {
         txtToSet += "<p>" + i + "</p>";
     }
@@ -229,6 +240,30 @@ void ZenoFuncDescriptionLabel::setCurrentFuncName(std::string funcName)
 std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
 {
     return m_currentFunc;
+}
+
+bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (this->isVisible())
+    {
+        if (event->type() == QEvent::MouseButtonPress)
+        {
+            if (QMouseEvent* e = static_cast<QMouseEvent*>(event))
+            {
+                if (QWidget* wid = qobject_cast<QWidget*>(watched)) //点击区域不在内部则hide
+                {
+                    const QPoint& globalPos = wid->mapToGlobal(e->pos());
+                    const QPoint& lefttop = mapToGlobal(QPoint(0, 0));
+                    const QPoint& rightbottom = mapToGlobal(QPoint(width(), height()));
+                    if (globalPos.x() < lefttop.x() || globalPos.x() > rightbottom.x() || globalPos.y() < lefttop.y() || globalPos.y() > rightbottom.y())
+                    {
+                        hide();
+                    }
+                }
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void ZenoFuncDescriptionLabel::paintEvent(QPaintEvent* event)

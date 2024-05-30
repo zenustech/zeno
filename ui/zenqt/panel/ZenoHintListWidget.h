@@ -76,11 +76,12 @@ class ZenoFuncDescriptionLabel :public QWidget
     Q_OBJECT
 public:
     ZenoFuncDescriptionLabel();
-    void setText(QString txt);
+    void setDesc(QString desc, int pos);
     void setCurrentFuncName(std::string funcName);
     std::string getCurrentFuncName();
 protected:
     void paintEvent(QPaintEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     QLabel* m_label;
