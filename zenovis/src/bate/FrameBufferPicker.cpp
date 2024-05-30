@@ -309,7 +309,7 @@ struct FrameBufferPicker : IPicker {
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
                 bool pick_particle = false;
-                if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_OBJECT) {
                     pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -343,7 +343,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->select_mode == PICK_MODE::PICK_VERTEX || pick_particle) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX || pick_particle) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -387,7 +387,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->select_mode == PICK_MODE::PICK_LINE) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_LINE) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -454,7 +454,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->select_mode == PICK_MODE::PICK_MESH) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_MESH) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -541,7 +541,7 @@ struct FrameBufferPicker : IPicker {
         fbo->unbind();
 
         string result;
-        if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
+        if (scene->get_select_mode() == PICK_MODE::PICK_OBJECT) {
             if (!pixel.has_object() || !id_table.count(pixel.obj_id)) return "";
             result = id_table[pixel.obj_id];
         }
@@ -594,7 +594,7 @@ struct FrameBufferPicker : IPicker {
         fbo->unbind();
 
         string result;
-        if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
+        if (scene->get_select_mode() == PICK_MODE::PICK_OBJECT) {
             unordered_set<unsigned int> selected_obj;
             // fetch selected objects' ids
             for (int i = 0; i < pixel_count; i++) {
