@@ -31,6 +31,7 @@ public:
     ZenoNodeNew(const NodeUtilParam& params, QGraphicsItem *parent = nullptr);
     virtual ~ZenoNodeNew();
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
+    QRectF boundingRect() const override;
 
     void initLayout() override;
 
@@ -38,23 +39,14 @@ public:
     QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "") override;
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput) override;
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName) override;
-    ZenoSocketItem* getObjSocketItem(const QModelIndex& sockIdx, bool bInput);
     virtual void onZoomed() override;
-
-public slots:
-    void onCollaspeBtnClicked();
-    void onCollaspeUpdated(bool);
-    void onRunStateChanged();
-    void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
-    void onOptionsUpdated(int options);
-    void onViewUpdated(bool bView);
-    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName);
+    void onCollaspeUpdated(bool) override;
+    void onCollaspeBtnClicked() override;
+    void onOptionsUpdated(int options) override;
+    void onViewUpdated(bool bView) override;
+    void onRunStateChanged() override;
+    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) override;
     void onNameUpdated(const QString& newName);
-    void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
-    void onParamInserted(const QModelIndex& parent, int first, int last);
-    void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-    void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
-    void onLayoutChanged();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -64,7 +56,12 @@ protected:
     virtual ZGraphicsLayout* initCustomParamWidgets();
 
 private slots:
-    void onCustomNameChanged();
+    void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
+    void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+    void onParamInserted(const QModelIndex& parent, int first, int last);
+    void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
+    void onLayoutChanged();
 
 private:
     ZLayoutBackground* initBodyWidget();
@@ -81,11 +78,13 @@ private:
     QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
     QVector<ZenoSocketItem*> getSocketItems(bool bInput) const;
     QVector<ZenoSocketItem*> getObjSocketItems(bool bInput) const;
+    ZenoSocketItem* getObjSocketItem(const QModelIndex& sockIdx, bool bInput);
+    ZenoSocketItem* getPrimSocketItem(const QModelIndex& sockIdx, bool bInput, const QString keyName);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName) const;
     ZSocketLayout* getSocketLayout(bool bInput, int idx) const;
 
 private:
-    ZGraphicsTextItem* m_NameItem;
+    ZEditableTextItem* m_NameItem;
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     StatusGroup* m_pStatusWidgets;

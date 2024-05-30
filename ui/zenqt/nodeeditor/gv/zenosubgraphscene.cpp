@@ -31,15 +31,13 @@
 #include "zenosubgraphview.h"
 #include <zeno/io/zenreader.h>
 #include "widgets/ztooltip.h"
+#include "zenonodenew.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
-    , m_bOnceOn(false)
-    , m_bBypassOn(false)
-    , m_bViewOn(false)
     , m_model(nullptr)
     , m_pUnfoldNode(nullptr)
 {
@@ -739,8 +737,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
     bool bFixedInput = false;
     QString nodeId;
     QPointF fixedPos;
-    bool bLinkObj = true;
-    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput, bLinkObj);
+    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput);
 
     QPointF pos = mousePos;
     QList<QGraphicsItem *> catchedItems = items(pos);
@@ -838,8 +835,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
         QString fixedNodeId;
         bool fixedInput = false;
         QPointF fixedPos;
-        bool bLinkObj = true;
-        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput, bLinkObj);
+        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput);
 
         if (bTargetIsInput != fixedInput)
         {
@@ -1318,20 +1314,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     }
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
     {
-        updateNodeStatus(m_bBypassOn, zeno::Mute);
+        updateNodeStatus(zeno::Mute);
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
-        updateNodeStatus(m_bViewOn, zeno::View);
+        updateNodeStatus(zeno::View);
     }
 }
 
-void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option) 
+void ZenoSubGraphScene::updateNodeStatus(int option) 
 {
-    bOn = !bOn;
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
         int options = idx.data(ROLE_NODE_STATUS).toInt();
+        if (options & option)
+            options &= (~option);
+        else
+            options |= option;
         UiHelper::qIndexSetData(idx, options, ROLE_NODE_STATUS);
     }
     

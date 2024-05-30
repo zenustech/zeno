@@ -50,6 +50,13 @@ public:
     virtual ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
     //ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
     virtual void onZoomed();
+    virtual void onCollaspeUpdated(bool);
+    virtual void onCollaspeBtnClicked();
+    virtual void onRunStateChanged() {};
+    virtual void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) {};
+    virtual void onOptionsUpdated(int options) {};
+    virtual void onViewUpdated(bool bView) {};
+    virtual void setSelected(bool);
 
 signals:
     void nodePosChangedSignal();
@@ -66,13 +73,6 @@ protected:
     void updateWhole();
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
 
-public slots:
-    void onCollaspeBtnClicked();
-    void onCollaspeUpdated(bool);
-    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) {};
-    void onRunStateChanged() {};
-    void onOptionsUpdated(int options) {};
-    void onViewUpdated(bool bView) {};
 private:
     void _drawBorderWangStyle(QPainter* painter);
 

@@ -47,18 +47,19 @@ public:
     void onMarkDataChanged(bool bDirty);
 
     virtual void onZoomed();
+    void onCollaspeUpdated(bool) override;
+    void onCollaspeBtnClicked() override;
+    void onOptionsUpdated(int options) override;
+    void onViewUpdated(bool bView) override;
+    void onRunStateChanged() override;
+    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) override;
+
     //void addParam(const _param_ctrl &param);
 
     //virtual void setSelected(bool selected);
 
-public slots:
-    void onCollaspeBtnClicked();
-    void onCollaspeUpdated(bool);
-    void onRunStateChanged();
+public slots:    
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
-    void onOptionsUpdated(int options);
-    void onViewUpdated(bool bView);
-    void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName);
     void onNameUpdated(const QString& newName);
     void onParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onParamInserted(const QModelIndex& parent, int first, int last);

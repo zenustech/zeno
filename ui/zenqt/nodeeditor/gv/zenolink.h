@@ -55,7 +55,7 @@ public:
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
-    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, bool lnkObj);
+    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput);
     ZenoSocketItem* getFixedSocket() const;
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
@@ -78,7 +78,6 @@ private:
     QPointF m_fixedPos;
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;
-    bool m_bObjLink;
     QPersistentModelIndex m_oldLink;    //the link which belongs to
     QModelIndexList m_selNodes;
     bool m_bfixInput;
@@ -126,7 +125,6 @@ private:
     QString m_outNode;
     bool m_bHover;
     bool m_bLegacyLink;
-    bool m_bObjLink;
 };
 
 #endif

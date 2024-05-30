@@ -111,8 +111,6 @@ ZenoTempLink::ZenoTempLink(
     , m_adsortedSocket(nullptr)
     , m_selNodes(selNodes)
 {
-    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
-    m_bObjLink = type != zeno::Socket_Primitve;
 }
 
 ZenoTempLink::~ZenoTempLink()
@@ -150,7 +148,9 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     QPen pen;
     pen.setColor(QColor("#5FD2FF"));
     pen.setWidthF(ZenoStyle::scaleWidth(WIDTH));
-    if (m_bObjLink)
+    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
+    bool bObjLink = type != zeno::Socket_Primitve;
+    if (!bObjLink)
         pen.setStyle(Qt::DashLine);
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
@@ -165,12 +165,11 @@ void ZenoTempLink::setFloatingPos(QPointF pos)
     update();
 }
 
-void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, bool lnkObj)
+void ZenoTempLink::getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput)
 {
     nodeId = m_nodeId;
     fixedPos = m_fixedPos;
     bFixedInput = m_bfixInput;
-    lnkObj = m_bObjLink;
 }
 
 ZenoSocketItem* ZenoTempLink::getAdsorbedSocket() const
@@ -216,7 +215,6 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
     , m_index(idx)
     , m_bLegacyLink(false)
     , m_bHover(false)
-    , m_bObjLink(true)
 {
     setAcceptHoverEvents(true);
     setFlags(ItemIsSelectable | ItemIsFocusable);
@@ -240,7 +238,6 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
 
     m_dstPos = inNode->getSocketPos(inSockIdx, inKey);
     m_srcPos = outNode->getSocketPos(outSockIdx, outKey);
-    m_bObjLink = edge.bObjLink;
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -406,13 +403,15 @@ int ZenoFullLink::type() const
 
 void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
+    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    auto inSockProp = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
     if (m_bLegacyLink)
     {
         painter->save();
         QPen pen;
         pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(83, 83, 85));
         pen.setWidthF(ZenoStyle::scaleWidth(3));
-        if (m_bObjLink)
+        if (inSockProp == zeno::Socket_Primitve)
             pen.setStyle(Qt::DashLine);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(pen);
@@ -422,18 +421,13 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     }
     else
     {
-        bool bCollasped = false;
-        zeno::SocketType inSockProp = zeno::NoSocket;
-        getConnectedState(inSockProp, bCollasped);
-
-        if (inSockProp == zeno::Socket_ReadOnly) {
+        if (inSockProp != zeno::Socket_Primitve) {
             painter->save();
             QPen pen;
-            pen.setColor(isSelected() ? QColor(92, 36, 36) : QColor(192, 36, 36, 153));
+            pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(192, 36, 36, 153));
             pen.setWidthF(ZenoStyle::scaleWidth(4));
             pen.setJoinStyle(Qt::RoundJoin);
-            if (m_bObjLink)
-                pen.setStyle(Qt::DashLine);
+            //pen.setStyle(Qt::DashLine);
             painter->setRenderHint(QPainter::Antialiasing);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
@@ -445,8 +439,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
             QPen pen;
             pen.setColor(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"));
             pen.setWidthF(ZenoStyle::scaleWidth(1));
-            /*if (zeno::Link_Ref == m_lnkProp)
-                */pen.setStyle(Qt::DotLine);
+            pen.setStyle(Qt::DashLine);
             painter->setRenderHint(QPainter::Antialiasing);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
