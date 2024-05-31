@@ -59,7 +59,7 @@ void CameraControl::setPhi(float phi) {
 }
 glm::quat& CameraControl::getRotation() {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->rotation;
+    return scene->camera->m_rotation;
 }
 zeno::vec3f CameraControl::getCenter() const {
     auto *scene = m_zenovis->getSession()->get_scene();

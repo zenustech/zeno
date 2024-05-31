@@ -36,7 +36,7 @@ struct Camera {
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
-    glm::quat rotation = {1, 0, 0, 0};
+    glm::quat m_rotation = {1, 0, 0, 0};
 
     bool m_need_sync = false;
     bool m_block_window = false;
