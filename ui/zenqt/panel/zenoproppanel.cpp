@@ -61,12 +61,6 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 
 ZenoPropPanel::~ZenoPropPanel()
 {
-    if (!m_hintlist->parent()) {
-        delete m_hintlist;
-    }
-    if (!m_descLabel->parent()) {
-        delete m_descLabel;
-    }
 }
 
 QSize ZenoPropPanel::sizeHint() const
@@ -95,12 +89,12 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
 
 ZenoHintListWidget* ZenoPropPanel::getHintListInstance()
 {
-    return m_hintlist;
+    return m_hintlist.get();
 }
 
 ZenoFuncDescriptionLabel* ZenoPropPanel::getFuncDescriptionInstance()
 {
-    return m_descLabel;
+    return m_descLabel.get();
 }
 
 void ZenoPropPanel::clearLayout()
@@ -393,10 +387,10 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     {
         connect(pMultilineStr, &ZTextEdit::geometryUpdated, pGroupWidget, &ZExpandableSection::updateGeo);
     } else if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl)) {
-        pLineEdit->setHintListWidget(m_hintlist, m_descLabel);
+        pLineEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
     }
     else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl)) {
-        pVecEdit->setHintListWidget(m_hintlist, m_descLabel);
+        pVecEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
     }
 
     _PANEL_CONTROL panelCtrl;

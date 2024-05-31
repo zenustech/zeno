@@ -158,7 +158,6 @@ funccontent: LPAREN funcargs RPAREN { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNC
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
-    | LPAREN exp { $2->isParenthesisNode = true; $$ = $2; }
     | SUB exp %prec NEG { $2->value = -1 * $2->value; $$ = $2; }
     //| zenvar { $$ = $1; }
     //| func { $$ = $1; }

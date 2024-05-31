@@ -100,7 +100,7 @@ void ZLineEdit::init()
             //º¯ÊýËµÃ÷
             int ret = fmla.parse();
             //fmla.printSyntaxTree();
-            if (ret == 0)
+            if (ret == 0 || fmla.getRoot())
             {
                 std::optional<std::tuple<std::string, std::string, int>> optNameDescPos = fmla.getCurrFuncDescription();
                 if (!optNameDescPos.has_value())

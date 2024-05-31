@@ -81,8 +81,8 @@ private:
     PANEL_TABS m_controls;
     QList<_PANEL_CONTROL> m_floatColtrols;
 
-    ZenoHintListWidget* m_hintlist;
-    ZenoFuncDescriptionLabel* m_descLabel;
+    QScopedPointer<ZenoHintListWidget> m_hintlist;
+    QScopedPointer<ZenoFuncDescriptionLabel> m_descLabel;
 };
 
 #endif

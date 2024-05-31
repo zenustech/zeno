@@ -44,7 +44,8 @@ struct node {
     std::string content;    //func name.
 
     std::vector<std::shared_ptr<struct node>> children;
-    std::shared_ptr<struct node> parent;
+
+    std::weak_ptr<struct node> parent;
 };
 
 char* getOperatorString(operatorVals op);

@@ -157,7 +157,7 @@ unsigned int Formula::location() const {
     return m_location;
 }
 
-std::shared_ptr<struct node> Formula::getRoot()
+ZENO_API std::shared_ptr<struct node> Formula::getRoot()
 {
     return m_rootNode;
 }
@@ -179,7 +179,6 @@ std::shared_ptr<node> Formula::makeStringNode(std::string text)
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
     spNode->content = text;
-    spNode->parent = nullptr;
     return spNode;
 }
 
@@ -198,7 +197,6 @@ std::shared_ptr<struct node> Formula::makeEmptyNode()
     }
     n->type = PLACEHOLDER;
     n->value = 0;
-    n->parent = nullptr;
     return n;
 }
 

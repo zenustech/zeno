@@ -56,7 +56,6 @@ std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector
     n->opVal = op;
     n->value = 0;
     n->children = Children;
-    n->parent = nullptr;
     n->isParenthesisNode = false;
     n->isParenthesisNodeComplete = false;
     for (auto & child: n->children)
@@ -77,32 +76,31 @@ std::shared_ptr<struct node> newNumberNode(float value) {
     n->type = NUMBER;
     n->opVal = UNDEFINE_OP;
     n->value = value;
-    n->parent = nullptr;
     return n;
 }
 
 void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
     const auto& printVal = [](std::shared_ptr<struct node> root, char* prefix) {
         if (root->type == NUMBER)
-            printf("%s: %f\n", prefix, root->value);
+            printf("%s: %f isParen:%d : iscompleted:%d\n", prefix, root->value, root->isParenthesisNode, root->isParenthesisNodeComplete);
         else
-            printf("%s: %s isParen:%d\n", prefix, getOperatorString(root->opVal), root->isParenthesisNode);
+            printf("%s: %s isParen:%d : iscompleted:%d\n", prefix, getOperatorString(root->opVal), root->isParenthesisNode, root->isParenthesisNodeComplete);
     };
     if (root) {
         for (int i = 0; i < depth; ++i) {
             printf("|  ");
         }
-        if (root->parent)
+        if (std::shared_ptr<struct node> spParent = root->parent.lock())
         {
-            for (auto& child: root->parent->children)
+            for (auto& child: spParent->children)
             {
                 if (child)
                 {
                 }
             }
-            for (int i = 0; i < root->parent->children.size(); i++)
+            for (int i = 0; i < spParent->children.size(); i++)
             {
-                if (root->parent->children[i] && root->parent->children[i] == root) {
+                if (spParent->children[i] && spParent->children[i] == root) {
                     std::string info = "child:" + std::to_string(i);
                     printVal(root, info.data());
                 }
@@ -181,7 +179,7 @@ void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& 
                 return;
             }
         }
-        last = last->parent;
+        last = last->parent.lock();
         while (last)
         {
             if (last->type == FUNC && !last->isParenthesisNodeComplete) {
@@ -192,7 +190,7 @@ void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& 
                     return;
                 }
             }
-            last = last->parent;
+            last = last->parent.lock();
         }
     }
     name = "";
