@@ -21,7 +21,7 @@ namespace zeno {
 std::vector<std::filesystem::path> cachepath(3);
 std::unordered_set<std::string> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
     });
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 

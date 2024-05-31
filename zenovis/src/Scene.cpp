@@ -59,7 +59,7 @@ void Scene::cleanUpScene()
     RenderEngine* pEngine = renderMan->getEngine();
     if (pEngine) {
         pEngine->update();
-        pEngine->cleanupOptix();
+        pEngine->cleanupAssets();
     }
 }
 

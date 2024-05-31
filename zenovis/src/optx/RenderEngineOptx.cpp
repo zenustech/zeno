@@ -32,6 +32,7 @@
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
+#include <tinygltf/json.hpp>
 
 #include <map>
 #include <string>
@@ -694,14 +695,88 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
-                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path) {
+                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path
+                        && OptixUtil::sky_tex.value() != OptixUtil::default_sky_tex ) {
                         OptixUtil::removeTexture(OptixUtil::sky_tex.value());
                     }
+
                     OptixUtil::sky_tex = path;
                     OptixUtil::addTexture(path);
+                } else {
+                    OptixUtil::sky_tex = OptixUtil::default_sky_tex;
                 }
+
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
+
+                if (OptixUtil::portal_delayed.has_value()) {
+                    OptixUtil::portal_delayed.value()();
+                    //OptixUtil::portal_delayed.reset();
+                }
+            }
+            else if (prim_in->userData().has<int>("SkyComposer")) {
+
+                auto& attr_dir = prim_in->verts;
+
+                std::vector<zeno::DistantLightData> dlights;
+                dlights.reserve(attr_dir->size());
+                
+                if (attr_dir->size()) {
+
+                    auto& attr_angle = attr_dir.attr<float>("angle");
+                    auto& attr_color = attr_dir.attr<zeno::vec3f>("color");
+                    auto& attr_inten = attr_dir.attr<float>("inten");
+
+                    for (size_t i=0; i<attr_dir->size(); ++i) {
+
+                        auto& dld = dlights.emplace_back();
+                        dld.direction = attr_dir[i];
+                        dld.angle = attr_angle[i];
+                        dld.color = attr_color[i];
+                        dld.intensity = attr_inten[i];
+                    }
+                }
+                xinxinoptix::updateDistantLights(dlights);
+
+                if(prim_in->userData().has<std::string>("portals")) {
+
+                    auto portals_string = prim_in->userData().get2<std::string>("portals");
+                    auto portals_json = nlohmann::json::parse(portals_string);
+
+                    auto ps_string = prim_in->userData().get2<std::string>("psizes");
+                    auto ps_json = nlohmann::json::parse(ps_string);
+
+                    std::vector<Portal> portals {};
+
+                    if (portals_json.is_array() && portals_json.size()%4 == 0) {
+                        
+                        portals.reserve(portals_json.size()/4);
+
+                        auto pack = [&portals_json](size_t i) {
+                            auto x = portals_json[i][0].template get<float>();
+                            auto y = portals_json[i][1].template get<float>();
+                            auto z = portals_json[i][2].template get<float>();
+                            return zeno::vec3f(x, y, z);
+                        };
+                        
+                        for (size_t i=0; i<portals_json.size(); i+=4) {
+                            auto v0 = pack(i+0);
+                            auto v1 = pack(i+1);
+                            auto v2 = pack(i+2);
+                            auto v3 = pack(i+3);
+
+                            uint32_t psize = ps_json[i/4].template get<int>(); 
+                            portals.push_back({v0, v1, v2, v3, psize});
+                        }
+                    } 
+
+                    if (OptixUtil::sky_tex.has_value()) {
+                        xinxinoptix::updatePortalLights(portals);
+                    }
+                    OptixUtil::portal_delayed = [=]() {
+                        xinxinoptix::updatePortalLights(portals);
+                    }; 
+                } //portals
             }
         }
         return sky_found;
@@ -1160,6 +1235,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
                         continue;
                     }
+                    if (tex == OptixUtil::default_sky_tex) {
+                        continue;
+                    }
                     needToRemoveTexPaths.emplace_back(tex);
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
@@ -1389,11 +1467,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     ~RenderEngineOptx() override {
-        xinxinoptix::optixcleanup();
+        xinxinoptix::optixDestroy();
     }
 
-    void cleanupOptix() override {
-
+    void cleanupAssets() override {
+        xinxinoptix::optixCleanup();
     }
 };
 

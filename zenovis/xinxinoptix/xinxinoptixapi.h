@@ -8,6 +8,9 @@
 
 #include "optixSphere.h"
 #include "zeno/utils/vec.h"
+#include "zeno/types/LightObject.h"
+
+#include "Portal.h"
 
 enum ShaderMaker {
     Mesh = 0,
@@ -30,7 +33,9 @@ namespace xinxinoptix {
 
 std::set<std::string> uniqueMatsForMesh();
 
-void optixcleanup();
+void optixCleanup();
+
+void optixDestroy();
 void optixrender(int fbo = 0, int samples = 1, bool denoise = false, bool simpleRender = false);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
@@ -102,6 +107,9 @@ void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength);
 void using_hdr_sky(bool enable);
 void show_background(bool enable);
+
+void updatePortalLights(const std::vector<Portal>& portals);
+void updateDistantLights(std::vector<zeno::DistantLightData>& dldl);
 // void optixUpdateUniforms(std::vector<float4> & inConstants);
 void optixUpdateUniforms(void *inConstants, std::size_t size);
 }

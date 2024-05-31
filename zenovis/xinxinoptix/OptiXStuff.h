@@ -336,9 +336,21 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
 }
 struct cuTexture{
     std::string md5;
-    cudaArray_t gpuImageArray;
-    cudaTextureObject_t texture;
-    cuTexture(){gpuImageArray = nullptr;texture=0;}
+    
+    cudaArray_t gpuImageArray = nullptr;
+    cudaTextureObject_t texture = 0llu;
+
+    uint32_t width, height;
+    float average = 0.0f;
+
+    std::vector<float> cdf;
+    std::vector<float> pdf; 
+    std::vector<int> start;
+
+    std::vector<float> rawData;
+
+    cuTexture() {}
+    cuTexture(uint32_t w, uint32_t h) : width(w), height(h) {}
     ~cuTexture()
     {
         if(gpuImageArray!=nullptr)
@@ -355,7 +367,7 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
 }
 inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
 {
-    auto texture = std::make_shared<cuTexture>();
+    auto texture = std::make_shared<cuTexture>(nx, ny);
     std::vector<uchar4> data;
     data.resize(nx*ny);
     for(int j=0;j<ny;j++)
@@ -413,7 +425,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
 }
 inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
 {
-    auto texture = std::make_shared<cuTexture>();
+    auto texture = std::make_shared<cuTexture>(nx, ny);
     std::vector<float4> data;
     data.resize(nx*ny);
     for(int j=0;j<ny;j++)
@@ -612,14 +624,14 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 
     return iesData;
 }
+
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
-inline std::map<std::string, int> sky_nx_map;
-inline std::map<std::string, int> sky_ny_map;
-inline std::map<std::string, float> sky_avg_map;
+inline std::string default_sky_tex;
 
+inline std::optional<std::function<void(void)>> portal_delayed;
 
 struct WrapperIES {
     raii<CUdeviceptr> ptr;
@@ -628,18 +640,19 @@ struct WrapperIES {
 
 inline std::map<std::string, WrapperIES> g_ies;
 
-inline std::map<std::string, std::vector<float>> sky_cdf_map;
-inline std::map<std::string, std::vector<float>> sky_pdf_map;
-inline std::map<std::string, std::vector<int>>   sky_start_map;
+inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_t)>& look) {
 
-template<typename T>
-inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
-    auto &sky_nx = sky_nx_map[sky_tex.value()];
-    auto &sky_ny = sky_ny_map[sky_tex.value()];
-    auto &sky_cdf = sky_cdf_map[sky_tex.value()];
-    auto &sky_pdf = sky_pdf_map[sky_tex.value()];
-    auto &sky_start = sky_start_map[sky_tex.value()];
-    auto &sky_avg = sky_avg_map[sky_tex.value()];
+    auto& tex = g_tex[sky_tex.value()];
+
+    auto &sky_nx = tex->width;
+    auto &sky_ny = tex->height;
+
+    auto &sky_avg = tex->average;
+
+    auto &sky_cdf = tex->cdf;
+    auto &sky_pdf = tex->pdf;
+    auto &sky_start = tex->start;
+
     sky_nx = nx;
     sky_ny = ny;
     //we need to recompute cdf
@@ -658,7 +671,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             size_t idx2 = jj*nx*nc + ii*nc;
             size_t idx = jj*nx + ii;
             float illum = 0.0f;
-            auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
+            auto color = zeno::vec3f(look(idx2+0), look(idx2+1), look(idx2+2));
             illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
             //illum = illum > 0.5? illum : 0.0f;
             illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
@@ -687,6 +700,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
 }
+
 static std::string calculateMD5(const std::vector<char>& input) {
     CryptoPP::byte digest[CryptoPP::Weak::MD5::DIGESTSIZE];
     CryptoPP::Weak::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
@@ -724,8 +738,12 @@ inline void addTexture(std::string path)
     else {
         md5_path_mapping[md5Hash] = path;
     }
+
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
+
+    std::function<float(uint32_t)> lookupTexture = [](uint32_t x) {return 0.0f;};
+    std::function<void(void)>     cleanupTexture = [](){};
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -748,12 +766,15 @@ inline void addTexture(std::string path)
             }
         }
         assert(rgba);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, rgba);
-        }
+
         g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
-        free(rgba);
+
+        lookupTexture = [&](uint32_t idx) {
+            return rgba[idx];
+        };
+        cleanupTexture = [&]() {
+            free(rgba);
+        };
     }
     else if (zeno::ends_with(path, ".ies", false)) {
         float coneAngle;
@@ -783,13 +804,11 @@ inline void addTexture(std::string path)
             g_tex[path] = std::make_shared<cuTexture>();
             return;
         }
-        int nx = std::max(img->userData().get2<int>("w"), 1);
-        int ny = std::max(img->userData().get2<int>("h"), 1);
+        nx = std::max(img->userData().get2<int>("w"), 1);
+        ny = std::max(img->userData().get2<int>("h"), 1);
         int channels = std::max(img->userData().get2<int>("channels"), 3);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
-        }
+        nc = 3;
+
         if (channels == 3) {
             std::vector<unsigned char> ucdata;
             ucdata.resize(img->verts.size()*3);
@@ -811,6 +830,11 @@ inline void addTexture(std::string path)
             }
             g_tex[path] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4);
         }
+        
+        lookupTexture = [img](uint32_t idx) {
+            auto ptr = (float*)img->verts->data();
+            return ptr[idx];
+        };
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
@@ -822,12 +846,15 @@ inline void addTexture(std::string path)
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, img);
-        }
+        
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
-        stbi_image_free(img);
+
+        lookupTexture = [&](uint32_t idx) {
+            return img[idx];
+        };
+        cleanupTexture = [&]() {
+            stbi_image_free(img);
+        };
     }
     else {
         unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
@@ -839,14 +866,30 @@ inline void addTexture(std::string path)
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, img);
-        }
+        
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
-        stbi_image_free(img);
+
+        lookupTexture = [&](uint32_t idx) {
+            return (float)img[idx] / 255;
+        };
+        cleanupTexture = [&]() {
+            stbi_image_free(img);
+        };
     }
     g_tex[path]->md5 = md5Hash;
+
+    if(sky_tex.value() == path)
+    {
+        calc_sky_cdf_map(nx, ny, nc, lookupTexture);
+        auto& tex = g_tex[sky_tex.value()];
+        auto float_count = nx * ny * nc;
+        tex->rawData.resize(float_count);
+
+        for (size_t i=0; i<float_count; ++i) {
+            tex->rawData.at(i) = lookupTexture(i);
+        }
+    }
+    cleanupTexture();
 
     for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
         zeno::log_info("-{}", i->first);
@@ -863,12 +906,6 @@ inline void removeTexture(std::string path) {
             zeno::log_error("removeTexture: {} not exists!", path);
         }
         g_tex.erase(path);
-        sky_nx_map.erase(path);
-        sky_ny_map.erase(path);
-        sky_cdf_map.erase(path);
-        sky_pdf_map.erase(path);
-        sky_start_map.erase(path);
-        sky_avg_map.erase(path);
         g_tex_last_write_time.erase(path);
     }
 }
