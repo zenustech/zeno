@@ -48,7 +48,7 @@ public:
     virtual QPointF getSocketPos(const QModelIndex& sockIdx, const QString keyName = "");
     virtual ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     virtual ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
-    //ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
+
     virtual void onZoomed();
     virtual void onCollaspeUpdated(bool);
     virtual void onCollaspeBtnClicked();

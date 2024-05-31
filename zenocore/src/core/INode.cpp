@@ -617,6 +617,7 @@ ZENO_API ObjectParams INode::get_input_object_params() const
         obj.name = name;
         obj.type = spObjParam->type;
         obj.bInput = true;
+        obj.socketType = spObjParam->socketType;
         //obj.prop = ?
         params.push_back(obj);
     }
@@ -1013,6 +1014,7 @@ ZENO_API NodeData INode::exportInfo() const
         node.type = Node_Normal;
 
     node.customUi = nodeClass->m_customui;
+    node.customUi.inputObjs.clear();
     for (auto& [name, paramObj] : m_inputObjs)
     {
         node.customUi.inputObjs.push_back(paramObj->exportParam());
@@ -1031,10 +1033,12 @@ ZENO_API NodeData INode::exportInfo() const
             }
         }
     }
+    node.customUi.outputPrims.clear();
     for (auto& [name, paramObj] : m_outputPrims)
     {
         node.customUi.outputPrims.push_back(paramObj->exportParam());
     }
+    node.customUi.outputObjs.clear();
     for (auto& [name, paramObj] : m_outputObjs)
     {
         node.customUi.outputObjs.push_back(paramObj->exportParam());
@@ -1057,6 +1061,18 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
         getSession().referManager->checkReference(m_uuidPath, spParam->name);
+        return true;
+    }
+    return false;
+}
+
+ZENO_API bool zeno::INode::update_param_socket_type(const std::string& param, SocketType type)
+{
+    CORE_API_BATCH
+    auto& spParam = safe_at(m_inputObjs, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    if (type != spParam->socketType)
+    {
+        spParam->socketType = type;
         return true;
     }
     return false;
@@ -1089,7 +1105,12 @@ ZENO_API void INode::initParams(const NodeData& dat)
 {
     for (const ParamObject& paramObj : dat.customUi.inputObjs)
     {
-        add_input_obj_param(paramObj);
+        auto iter = m_inputObjs.find(paramObj.name);
+        if (iter == m_inputObjs.end()) {
+            continue;;
+        }
+        auto& sparam = iter->second;
+        sparam->socketType = paramObj.socketType;
     }
     for (auto tab : dat.customUi.inputPrims.tabs)
     {
@@ -1097,18 +1118,25 @@ ZENO_API void INode::initParams(const NodeData& dat)
         {
             for (auto param : group.params)
             {
-                add_input_prim_param(param);
+                auto iter = m_inputPrims.find(param.name);
+                if (iter == m_inputPrims.end()) {
+                    continue;;
+                }
+                auto& sparam = iter->second;
+                sparam->defl = param.defl;
+                sparam->control = param.control;
+                sparam->optCtrlprops = param.ctrlProps;
             }
         }
     }
-    for (const ParamPrimitive& param : dat.customUi.outputPrims)
-    {
-        add_output_prim_param(param);
-    }
-    for (const ParamObject& paramObj : dat.customUi.outputObjs)
-    {
-        add_output_obj_param(paramObj);
-    }
+    //for (const ParamPrimitive& param : dat.customUi.outputPrims)
+    //{
+    //    add_output_prim_param(param);
+    //}
+    //for (const ParamObject& paramObj : dat.customUi.outputObjs)
+    //{
+    //    add_output_obj_param(paramObj);
+    //}
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {

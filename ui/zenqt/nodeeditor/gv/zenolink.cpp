@@ -16,6 +16,7 @@
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
     : _base(parent)
+    , m_bObjLink(false)
 {
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) { 
         if (key == zsLinkLineShape) {
@@ -49,7 +50,7 @@ QPainterPath ZenoLink::shape() const
         } else {
             float dist = dst.x() - src.x();
             dist = std::clamp(std::abs(dist), 40.f, 700.f) * BEZIER;
-            if (m_bothCollaspedNode) {
+            if (m_bObjLink) {
                 path.cubicTo(src.x(), src.y() + dist, dst.x(), dst.y() - dist, dst.x(), dst.y());
             }
             else {
@@ -111,6 +112,8 @@ ZenoTempLink::ZenoTempLink(
     , m_adsortedSocket(nullptr)
     , m_selNodes(selNodes)
 {
+    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
+    m_bObjLink = type != zeno::Socket_Primitve;
 }
 
 ZenoTempLink::~ZenoTempLink()
@@ -148,9 +151,8 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     QPen pen;
     pen.setColor(QColor("#5FD2FF"));
     pen.setWidthF(ZenoStyle::scaleWidth(WIDTH));
-    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
-    bool bObjLink = type != zeno::Socket_Primitve;
-    if (!bObjLink)
+
+    if (!m_bObjLink)
         pen.setStyle(Qt::DashLine);
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
@@ -238,6 +240,7 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
 
     m_dstPos = inNode->getSocketPos(inSockIdx, inKey);
     m_srcPos = outNode->getSocketPos(outSockIdx, outKey);
+    m_bObjLink = inSockIdx.data(ROLE_SOCKET_TYPE).toInt() != zeno::Socket_Primitve;
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
