@@ -13,6 +13,7 @@ enum nodeType {
     NUMBER,             //数字
     FUNC,               //函数
     FOUROPERATIONS,     //四则运算+ - * / %
+    STRING,             //字符串
     ZENVAR,
     PLACEHOLDER,
 };
@@ -40,9 +41,10 @@ struct node {
 
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;
+    std::string content;    //func name.
 
     std::vector<std::shared_ptr<struct node>> children;
-    std::shared_ptr<struct node> parent = nullptr;
+    std::shared_ptr<struct node> parent;
 };
 
 char* getOperatorString(operatorVals op);

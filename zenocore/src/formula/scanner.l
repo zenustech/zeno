@@ -98,7 +98,6 @@ functoken [A-Za-z][A-Za-z_0-9]*
 "("       { return zeno::Parser::make_LPAREN(yytext,loc); }
 ")"       { return zeno::Parser::make_RPAREN(yytext,loc); }
 ","       { return zeno::Parser::make_COMMA(loc); }
-"ref"     { return zeno::Parser::make_REF(loc); }
 {string}  { return zeno::Parser::make_LITERAL(yytext, loc); }
 {functoken} { return zeno::Parser::make_FUNC(yytext, loc); }
 <<EOF>>   { return yyterminate(); }

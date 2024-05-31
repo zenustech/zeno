@@ -59,6 +59,7 @@ public:
     void setRoot(std::shared_ptr<struct node> root);
     std::shared_ptr<struct node> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children);
     std::shared_ptr<struct node> makeNewNumberNode(float value);
+    std::shared_ptr<node> makeStringNode(std::string text);
     std::shared_ptr<struct node> makeEmptyNode();
     ZENO_API void printSyntaxTree();
     ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();

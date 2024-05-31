@@ -79,7 +79,6 @@
 %token FPS
 %token PI
 %token COMMA
-%token REF
 %token LITERAL
 %token FUNC
 
@@ -157,13 +156,20 @@ funccontent: LPAREN funcargs RPAREN { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNC
     | %empty { $$ = driver.makeEmptyNode(); }
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
+    | LITERAL           { $$ = driver.makeStringNode($1); }
     | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
     | LPAREN exp { $2->isParenthesisNode = true; $$ = $2; }
     | SUB exp %prec NEG { $2->value = -1 * $2->value; $$ = $2; }
     //| zenvar { $$ = $1; }
     //| func { $$ = $1; }
     //| unaryfunc { $$ = $1; }
-    | FUNC funccontent  { $$ = $2; $$->opVal = funcName2Enum($1); $$->isParenthesisNode = true; }
+    | FUNC funccontent  { 
+        $$ = $2;
+        $$->opVal = DEFAULT_FUNCVAL;
+        $$->type = FUNC;
+        $$->content = $1;
+        $$->isParenthesisNode = true;
+    }
     | %empty { $$ = driver.makeEmptyNode(); }
     ;
 %%

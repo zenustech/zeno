@@ -173,6 +173,16 @@ std::shared_ptr<struct node> Formula::makeNewNode(nodeType type, operatorVals op
     return m_rootNode;
 }
 
+std::shared_ptr<node> Formula::makeStringNode(std::string text)
+{
+    std::shared_ptr<node> spNode = std::make_shared<node>();
+    spNode->type = STRING;
+    spNode->opVal = UNDEFINE_OP;
+    spNode->content = text;
+    spNode->parent = nullptr;
+    return spNode;
+}
+
 std::shared_ptr<struct node> Formula::makeNewNumberNode(float value)
 {
     m_rootNode = newNumberNode(value);

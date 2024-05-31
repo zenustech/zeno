@@ -144,6 +144,7 @@ float calc_syntax_tree(std::shared_ptr<struct node> root)
                 return 0;
             }
         } else if (root->type == FUNC) {
+            //TODO: 多元函数的情况
             float leftRes = calc_syntax_tree(root->children[0]);
             switch (root->opVal)
             {

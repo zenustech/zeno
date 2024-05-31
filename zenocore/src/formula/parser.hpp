@@ -503,15 +503,14 @@ namespace  zeno  {
     TOKEN_FPS = 263,               // FPS
     TOKEN_PI = 264,                // PI
     TOKEN_COMMA = 265,             // COMMA
-    TOKEN_REF = 266,               // REF
-    TOKEN_LITERAL = 267,           // LITERAL
-    TOKEN_FUNC = 268,              // FUNC
-    TOKEN_ADD = 269,               // ADD
-    TOKEN_SUB = 271,               // SUB
-    TOKEN_MUL = 273,               // MUL
-    TOKEN_DIV = 275,               // DIV
-    TOKEN_NEG = 277,               // NEG
-    TOKEN_LPAREN = 278             // LPAREN
+    TOKEN_LITERAL = 266,           // LITERAL
+    TOKEN_FUNC = 267,              // FUNC
+    TOKEN_ADD = 268,               // ADD
+    TOKEN_SUB = 270,               // SUB
+    TOKEN_MUL = 272,               // MUL
+    TOKEN_DIV = 274,               // DIV
+    TOKEN_NEG = 276,               // NEG
+    TOKEN_LPAREN = 277             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -528,7 +527,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 24, ///< Number of tokens.
+        YYNTOKENS = 23, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -541,26 +540,25 @@ namespace  zeno  {
         S_FPS = 8,                               // FPS
         S_PI = 9,                                // PI
         S_COMMA = 10,                            // COMMA
-        S_REF = 11,                              // REF
-        S_LITERAL = 12,                          // LITERAL
-        S_FUNC = 13,                             // FUNC
-        S_ADD = 14,                              // ADD
-        S_15_ = 15,                              // "+"
-        S_SUB = 16,                              // SUB
-        S_17_ = 17,                              // "-"
-        S_MUL = 18,                              // MUL
-        S_19_ = 19,                              // "*"
-        S_DIV = 20,                              // DIV
-        S_21_ = 21,                              // "/"
-        S_NEG = 22,                              // NEG
-        S_LPAREN = 23,                           // LPAREN
-        S_YYACCEPT = 24,                         // $accept
-        S_calclist = 25,                         // calclist
-        S_exp = 26,                              // exp
-        S_factor = 27,                           // factor
-        S_funcargs = 28,                         // funcargs
-        S_funccontent = 29,                      // funccontent
-        S_term = 30                              // term
+        S_LITERAL = 11,                          // LITERAL
+        S_FUNC = 12,                             // FUNC
+        S_ADD = 13,                              // ADD
+        S_14_ = 14,                              // "+"
+        S_SUB = 15,                              // SUB
+        S_16_ = 16,                              // "-"
+        S_MUL = 17,                              // MUL
+        S_18_ = 18,                              // "*"
+        S_DIV = 19,                              // DIV
+        S_20_ = 20,                              // "/"
+        S_NEG = 21,                              // NEG
+        S_LPAREN = 22,                           // LPAREN
+        S_YYACCEPT = 23,                         // $accept
+        S_calclist = 24,                         // calclist
+        S_exp = 25,                              // exp
+        S_factor = 26,                           // factor
+        S_funcargs = 27,                         // funcargs
+        S_funccontent = 28,                      // funccontent
+        S_term = 29                              // term
       };
     };
 
@@ -847,7 +845,7 @@ switch (yykind)
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOKEN_END
                    || (token::TOKEN_YYerror <= tok && tok <= token::TOKEN_YYUNDEF)
-                   || (token::TOKEN_EOL <= tok && tok <= token::TOKEN_REF)
+                   || (token::TOKEN_EOL <= tok && tok <= token::TOKEN_COMMA)
                    || (token::TOKEN_ADD <= tok && tok <= token::TOKEN_NEG));
 #endif
       }
@@ -1088,21 +1086,6 @@ switch (yykind)
       make_COMMA (const location_type& l)
       {
         return symbol_type (token::TOKEN_COMMA, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_REF (location_type l)
-      {
-        return symbol_type (token::TOKEN_REF, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_REF (const location_type& l)
-      {
-        return symbol_type (token::TOKEN_REF, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1555,7 +1538,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 30,     ///< Last index in yytable_.
+      yylast_ = 34,     ///< Last index in yytable_.
       yynnts_ = 7,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
@@ -1604,10 +1587,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23
+      15,    16,    17,    18,    19,    20,    21,    22
     };
     // Last valid token kind.
-    const int code_max = 278;
+    const int code_max = 277;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1772,7 +1755,7 @@ switch (yykind)
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1776 "parser.hpp"
+#line 1759 "parser.hpp"
 
 
 
