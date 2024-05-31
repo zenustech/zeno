@@ -6,32 +6,31 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <memory>
 
 enum nodeType {
-    UNDEFINE = 0,     //数字
-    NUMBER,     //数字
-    FOUROPERATIONS,       //+ - * / %
+    UNDEFINE = 0,
+    NUMBER,             //数字
+    FUNC,               //函数
+    FOUROPERATIONS,     //四则运算+ - * / %
     ZENVAR,
-    FUNC,
     PLACEHOLDER,
-    UNARY_FUNC,      //sin cos ref ...
-    FUNC_ARG
 };
 
 enum operatorVals {
-    //四则运算 FOUROPERATIONS
-    PLUS = 0,
+    UNDEFINE_OP = 0,
+    //四则运算 nodeType对应FOUROPERATIONS
+    PLUS,
     MINUS,
     MUL,
     DIV,
-    FUNC,
-    //一元函数 UNARY_FUNC
+    //函数 nodeType对应FUNC
     SIN,
     SINH,
     COS,
     COSH,
     ABS,
-    DEFAULT_OPVAL,
+    DEFAULT_FUNCVAL,
 };
 
 struct node {
@@ -40,23 +39,23 @@ struct node {
     float value = 0;  //如果是number
 
     bool isParenthesisNode = false;
+    bool isParenthesisNodeComplete = false;
 
-    struct node* left = nullptr;
-    struct node* right = nullptr;
-    struct node* parent = nullptr;
+    std::vector<std::shared_ptr<struct node>> children;
+    std::shared_ptr<struct node> parent = nullptr;
 };
 
 char* getOperatorString(operatorVals op);
+operatorVals funcName2Enum(std::string func);
 
-struct node* newNode(nodeType type, operatorVals op, struct node* left, struct node* right);
-struct node* newNumberNode(float value);
+std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> Children);
+std::shared_ptr<struct node> newNumberNode(float value);
 
-void print_syntax_tree(struct node* root, int depth);
-void free_syntax_tree(struct node* root);
-float calc_syntax_tree(struct node* root);
+void print_syntax_tree(std::shared_ptr<struct node> root, int depth);
+float calc_syntax_tree(std::shared_ptr<struct node> root);
+
+void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& pos);  //当前函数名及处于第几个参数
+void preOrderVec(std::shared_ptr<struct node> root, std::vector<std::shared_ptr<struct node>>& tmplist);
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright);
-
-void preOrderVec(struct node* root, std::vector<struct node*>& tmplist);
-std::string currFuncName(struct node* root, int rightParenthesesAdded);
 #endif

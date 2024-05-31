@@ -11,26 +11,23 @@
 using namespace zeno;
 
 static std::map<std::string, std::string> funcDescription({ 
-    {"sin", "float sin(float degrees)\nReturn the sine of argument\nUsage:\nExample:\n---"},
-    {"cos", "float cos(float degrees)\nReturn the cosine of argument\nUsage:\nExample:\n---"},
-    {"sinh", "float sinh(float degrees)\nReturn the sinh of argument\nUsage:\nExample:\n---"},
-    {"cosh", "float cosh(float degrees)\nReturn the cosh of argument\nUsage:\nExample:\n---"},
-    {"abs", "float abs(float degrees)\nReturn the abs of argument\nUsage:\nExample:\n---"},
+    //函数名，参数个数\n函数签名\n描述\nUSage:\nExample\n---
+    {"sin", "3\nfloat sin(float degrees)\nReturn the sine of argument\nUsage:\nExample:\n---"},
+    {"cos", "3\nfloat cos(float degrees)\nReturn the cosine of argument\nUsage:\nExample:\n---"},
+    {"sinh", "3\nfloat sinh(float degrees)\nReturn the sinh of argument\nUsage:\nExample:\n---"},
+    {"cosh", "3\nfloat cosh(float degrees)\nReturn the cosh of argument\nUsage:\nExample:\n---"},
+    {"abs", "3\nfloat abs(float degrees)\nReturn the abs of argument\nUsage:\nExample:\n---"},
     });
 
 ZENO_API Formula::Formula(const std::string& formula)
     : m_location(0)
     , m_formula(formula)
     , m_rootNode(nullptr)
-    , m_leftParenthesesAdded(0)
-    , m_rightParenthesesAdded(0)
 {
-    checkparentheses(m_formula, m_leftParenthesesAdded, m_rightParenthesesAdded);
 }
 
 ZENO_API Formula::~Formula()
 {
-    free_syntax_tree(m_rootNode);
 }
 
 ZENO_API int Formula::parse() {
@@ -41,9 +38,6 @@ ZENO_API int Formula::parse() {
     m_location = 0;
     inStream << m_formula << std::endl;
     int ret = parser.parse();
-    if (ret == 0) {
-        m_result = calc_syntax_tree(m_rootNode);
-    }
     return ret;
 }
 
@@ -163,31 +157,31 @@ unsigned int Formula::location() const {
     return m_location;
 }
 
-struct node* Formula::getRoot()
+std::shared_ptr<struct node> Formula::getRoot()
 {
     return m_rootNode;
 }
 
-void Formula::setRoot(struct node* root)
+void Formula::setRoot(std::shared_ptr<struct node> root)
 {
     m_rootNode = root;
 }
 
-struct node* Formula::makeNewNode(nodeType type, operatorVals op, struct node* left, struct node* right)
+std::shared_ptr<struct node> Formula::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children)
 {
-    m_rootNode = newNode(type, op, left, right);
+    m_rootNode = newNode(type, op, children);
     return m_rootNode;
 }
 
-struct node* Formula::makeNewNumberNode(float value)
+std::shared_ptr<struct node> Formula::makeNewNumberNode(float value)
 {
     m_rootNode = newNumberNode(value);
     return m_rootNode;
 }
 
-struct node* Formula::makeEmptyNode()
+std::shared_ptr<struct node> Formula::makeEmptyNode()
 {
-    struct node* n = (struct node*)malloc(sizeof(struct node));
+    std::shared_ptr<struct node> n = std::make_shared<struct node>();
     if (!n)
     {
         exit(0);
@@ -195,8 +189,6 @@ struct node* Formula::makeEmptyNode()
     n->type = PLACEHOLDER;
     n->value = 0;
     n->parent = nullptr;
-    n->left = nullptr;
-    n->right = nullptr;
     return n;
 }
 
@@ -205,18 +197,15 @@ ZENO_API void Formula::printSyntaxTree()
     print_syntax_tree(m_rootNode, 0);
 }
 
-ZENO_API void Formula::freeSyntaxTree()
-{
-    free_syntax_tree(m_rootNode);
-    m_rootNode = nullptr;
-}
-
-ZENO_API std::optional<std::pair<std::string, std::string>> Formula::getCurrFuncDescription()
+ZENO_API std::optional<std::tuple<std::string, std::string, int>> Formula::getCurrFuncDescription()
 {
     //printSyntaxTree();
-    auto it = funcDescription.find(currFuncName(m_rootNode, m_rightParenthesesAdded));
+    std::string funcName = "";
+    int paramPos = 0;
+    currFuncNamePos(m_rootNode, funcName, paramPos);
+    auto it = funcDescription.find(funcName);
     if (it != funcDescription.end()) {
-        return *it;
+        return std::optional<std::tuple<std::string, std::string, int>>(std::make_tuple(funcName, it->second, paramPos));
     }
     return nullopt;
 }

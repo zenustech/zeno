@@ -50,6 +50,8 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
     , m_bReentry(false)
     , m_tabWidget(nullptr)
+    , m_hintlist(new ZenoHintListWidget)
+    , m_descLabel(new ZenoFuncDescriptionLabel)
 {
     QVBoxLayout* pVLayout = new QVBoxLayout;
     pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -59,6 +61,12 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
 
 ZenoPropPanel::~ZenoPropPanel()
 {
+    if (!m_hintlist->parent()) {
+        delete m_hintlist;
+    }
+    if (!m_descLabel->parent()) {
+        delete m_descLabel;
+    }
 }
 
 QSize ZenoPropPanel::sizeHint() const
@@ -85,22 +93,20 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
 }
 
-ZenoHintListWidget& ZenoPropPanel::getHintListInstance()
+ZenoHintListWidget* ZenoPropPanel::getHintListInstance()
 {
-    static ZenoHintListWidget hintlist;
-    return hintlist;
+    return m_hintlist;
 }
 
-ZenoFuncDescriptionLabel& ZenoPropPanel::getFuncDescriptionInstance()
+ZenoFuncDescriptionLabel* ZenoPropPanel::getFuncDescriptionInstance()
 {
-    static ZenoFuncDescriptionLabel descLabel;
-    return descLabel;
+    return m_descLabel;
 }
 
 void ZenoPropPanel::clearLayout()
 {
-    ZenoPropPanel::getHintListInstance().setParent(nullptr);
-    ZenoPropPanel::getFuncDescriptionInstance().setParent(nullptr);
+    m_hintlist->setParent(nullptr);
+    m_descLabel->setParent(nullptr);
 
     setUpdatesEnabled(false);
     qDeleteAll(findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly));
@@ -209,12 +215,10 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     update();
 
-    ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
-    hintlist->setParent(m_tabWidget);
-    hintlist->resetSize();
-    hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
-    ZenoFuncDescriptionLabel* descLabel = &ZenoPropPanel::getFuncDescriptionInstance();
-    descLabel->setParent(m_tabWidget);
+    m_hintlist->setParent(m_tabWidget);
+    m_hintlist->resetSize();
+    m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
+    m_descLabel->setParent(m_tabWidget);
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
@@ -388,6 +392,11 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     if (ZTextEdit* pMultilineStr = qobject_cast<ZTextEdit*>(pControl))
     {
         connect(pMultilineStr, &ZTextEdit::geometryUpdated, pGroupWidget, &ZExpandableSection::updateGeo);
+    } else if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl)) {
+        pLineEdit->setHintListWidget(m_hintlist, m_descLabel);
+    }
+    else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl)) {
+        pVecEdit->setHintListWidget(m_hintlist, m_descLabel);
     }
 
     _PANEL_CONTROL panelCtrl;
