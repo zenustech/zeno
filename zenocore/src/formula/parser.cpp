@@ -774,20 +774,14 @@ namespace  zeno  {
 #line 775 "parser.cpp"
     break;
 
-  case 18: // term: LPAREN exp
+  case 18: // term: SUB exp
 #line 161 "parser.y"
-                 { yystack_[0].value.as < std::shared_ptr<struct node> > ()->isParenthesisNode = true; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
+                        { yystack_[0].value.as < std::shared_ptr<struct node> > ()->value = -1 * yystack_[0].value.as < std::shared_ptr<struct node> > ()->value; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
 #line 781 "parser.cpp"
     break;
 
-  case 19: // term: SUB exp
-#line 162 "parser.y"
-                        { yystack_[0].value.as < std::shared_ptr<struct node> > ()->value = -1 * yystack_[0].value.as < std::shared_ptr<struct node> > ()->value; yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > (); }
-#line 787 "parser.cpp"
-    break;
-
-  case 20: // term: FUNC funccontent
-#line 166 "parser.y"
+  case 19: // term: FUNC funccontent
+#line 165 "parser.y"
                         { 
         yylhs.value.as < std::shared_ptr<struct node> > () = yystack_[0].value.as < std::shared_ptr<struct node> > ();
         yylhs.value.as < std::shared_ptr<struct node> > ()->opVal = DEFAULT_FUNCVAL;
@@ -795,17 +789,17 @@ namespace  zeno  {
         yylhs.value.as < std::shared_ptr<struct node> > ()->content = yystack_[1].value.as < string > ();
         yylhs.value.as < std::shared_ptr<struct node> > ()->isParenthesisNode = true;
     }
+#line 793 "parser.cpp"
+    break;
+
+  case 20: // term: %empty
+#line 172 "parser.y"
+             { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeEmptyNode(); }
 #line 799 "parser.cpp"
     break;
 
-  case 21: // term: %empty
-#line 173 "parser.y"
-             { yylhs.value.as < std::shared_ptr<struct node> > () = driver.makeEmptyNode(); }
-#line 805 "parser.cpp"
-    break;
 
-
-#line 809 "parser.cpp"
+#line 803 "parser.cpp"
 
             default:
               break;
@@ -1157,30 +1151,30 @@ namespace  zeno  {
   }
 
 
-  const signed char  Parser ::yypact_ninf_ = -19;
+  const signed char  Parser ::yypact_ninf_ = -10;
 
   const signed char  Parser ::yytable_ninf_ = -1;
 
   const signed char
    Parser ::yypact_[] =
   {
-     -19,     0,   -19,   -19,   -19,   -18,    -2,    -2,     1,     2,
-     -19,    -2,   -19,   -19,     5,   -19,    -2,    -2,    -2,    -2,
-      12,    14,   -19,     2,     2,   -19,   -19,   -19,    -2,    12
+     -10,     0,   -10,   -10,   -10,     6,    -2,    -2,    11,     2,
+     -10,    -2,   -10,   -10,     1,   -10,    -2,    -2,    -2,    -2,
+      14,    15,   -10,     2,     2,   -10,   -10,   -10,    -2,    14
   };
 
   const signed char
    Parser ::yydefact_[] =
   {
-       2,    21,     1,    15,    16,    14,    21,    21,     0,     4,
-       7,    21,    20,    19,    18,     3,    21,    21,    21,    21,
-      10,    13,    17,     5,     6,     8,     9,    12,    21,    11
+       2,    20,     1,    15,    16,    14,    20,    20,     0,     4,
+       7,    20,    19,    18,     0,     3,    20,    20,    20,    20,
+      10,    13,    17,     5,     6,     8,     9,    12,    20,    11
   };
 
   const signed char
    Parser ::yypgoto_[] =
   {
-     -19,   -19,    -5,    13,   -19,   -19,    15
+     -10,   -10,    -5,    -9,   -10,   -10,    12
   };
 
   const signed char
@@ -1192,19 +1186,19 @@ namespace  zeno  {
   const signed char
    Parser ::yytable_[] =
   {
-       2,    13,    14,     3,    11,     3,    20,    15,    22,     4,
-       5,     4,     5,     6,    16,     6,    17,    27,     0,    18,
-       7,    19,     7,    29,    28,    16,     0,    17,     0,    23,
-      24,     0,     0,    25,    26
+       2,    13,    14,     3,    22,     3,    20,    23,    24,     4,
+       5,     4,     5,     6,    16,     6,    17,    15,    27,    18,
+       7,    19,     7,    29,    16,    28,    17,    16,    11,    17,
+      25,    26
   };
 
   const signed char
    Parser ::yycheck_[] =
   {
-       0,     6,     7,     5,    22,     5,    11,     6,     3,    11,
-      12,    11,    12,    15,    13,    15,    15,     3,    -1,    17,
-      22,    19,    22,    28,    10,    13,    -1,    15,    -1,    16,
-      17,    -1,    -1,    18,    19
+       0,     6,     7,     5,     3,     5,    11,    16,    17,    11,
+      12,    11,    12,    15,    13,    15,    15,     6,     3,    17,
+      22,    19,    22,    28,    13,    10,    15,    13,    22,    15,
+      18,    19
   };
 
   const signed char
@@ -1220,7 +1214,7 @@ namespace  zeno  {
   {
        0,    23,    24,    24,    25,    25,    25,    26,    26,    26,
       27,    27,    28,    28,    28,    29,    29,    29,    29,    29,
-      29,    29
+      29
   };
 
   const signed char
@@ -1228,7 +1222,7 @@ namespace  zeno  {
   {
        0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
        1,     3,     3,     2,     0,     1,     1,     3,     2,     2,
-       2,     0
+       0
   };
 
 
@@ -1252,8 +1246,8 @@ namespace  zeno  {
    Parser ::yyrline_[] =
   {
        0,   103,   103,   103,   108,   109,   110,   113,   114,   115,
-     151,   152,   154,   155,   156,   158,   159,   160,   161,   162,
-     166,   173
+     151,   152,   154,   155,   156,   158,   159,   160,   161,   165,
+     172
   };
 
   void
@@ -1286,9 +1280,9 @@ namespace  zeno  {
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1290 "parser.cpp"
+#line 1284 "parser.cpp"
 
-#line 175 "parser.y"
+#line 174 "parser.y"
 
 
 // Bison expects us to provide implementation - otherwise linker complains

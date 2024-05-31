@@ -230,6 +230,7 @@ void ZenoFuncDescriptionLabel::setDesc(QString desc, int pos)
     txtToSet = "<html><head><style> p { margin: 10; } </style></head><body><div>" + txtToSet + "</div></body></html>";
     m_label->setText(txtToSet);
     m_label->setFont(QApplication::font());
+    adjustSize();
 }
 
 void ZenoFuncDescriptionLabel::setCurrentFuncName(std::string funcName)

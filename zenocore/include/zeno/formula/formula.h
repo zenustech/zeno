@@ -55,7 +55,7 @@ public:
     unsigned int location() const;
 
     //syntax_tree
-    std::shared_ptr<struct node> getRoot();
+    ZENO_API std::shared_ptr<struct node> getRoot();
     void setRoot(std::shared_ptr<struct node> root);
     std::shared_ptr<struct node> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children);
     std::shared_ptr<struct node> makeNewNumberNode(float value);
