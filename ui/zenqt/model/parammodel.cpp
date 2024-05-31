@@ -192,6 +192,16 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     case ROLE_PARAM_CTRL_PROPERTIES:
         param.optCtrlprops = value.value<zeno::ControlProperty>();
         break;
+    case ROLE_SOCKET_TYPE:
+    {
+        auto spNode = m_wpNode.lock();
+        if (spNode) {
+            param.connectProp = (zeno::SocketType)value.toInt();
+            spNode->update_param_socket_type(param.name.toStdString(), param.connectProp);
+            return true;
+        }
+        return false;
+    }
     default:
         return false;
     }

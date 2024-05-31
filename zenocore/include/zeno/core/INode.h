@@ -85,6 +85,8 @@ public:
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
 
+   ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
+
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
     ZENO_API void set_name(const std::string& name);

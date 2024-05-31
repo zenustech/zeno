@@ -318,11 +318,10 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     int type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
     if (m_bInput || type != zeno::Socket_Owning || links.isEmpty())
     {
-        QBrush brush = bOn ? m_brushOn : m_brush;
-        QColor col = brush.color();
-        col.setAlphaF(0.5);
-        brush.setColor(col);
-        painter->setBrush(brush);
+        qreal alpha = bOn ? 0.8 : 0.5;
+        QColor col = type == zeno::Socket_Owning ? QColor("#4876FF") : type == zeno::Socket_ReadOnly ? QColor("#8C8C8C") : QColor("#CD6839");
+        col.setAlphaF(alpha);
+        painter->setBrush(col);
     }
     painter->setPen(Qt::NoPen);
     painter->drawRect(rc);

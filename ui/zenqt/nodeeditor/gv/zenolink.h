@@ -33,6 +33,7 @@ public:
 
 protected:
     bool m_bothCollaspedNode = false;
+    bool m_bObjLink = false;
 
 private:
     static constexpr float BEZIER = 0.5f, WIDTH = 1;

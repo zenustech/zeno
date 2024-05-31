@@ -41,6 +41,7 @@
 #include "statusbutton.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
+#include "dialog/zsocketsettingdlg.h"
 
 
 ZenoNodeBase::ZenoNodeBase(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -319,6 +320,34 @@ void ZenoNodeBase::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
 #endif
+    }
+    else
+    {
+        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+        ZASSERT_EXIT(paramsM);
+        QModelIndexList indexs;
+        for (int r = 0; r < paramsM->rowCount(); r++)
+        {
+            const QModelIndex& paramIdx = paramsM->index(r, 0);
+            bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
+            if (!bInput)
+                continue;
+            auto type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+            if (type == zeno::Socket_ReadOnly || type == zeno::Socket_Clone || type == zeno::Socket_Owning)
+            {
+                indexs << paramIdx;
+            }
+        }
+        if (!indexs.isEmpty())
+        {
+            QMenu* menu = new QMenu;
+            menu->addAction(tr("Edit Socket"), [indexs]() {
+                ZSocketSettingDlg dlg(indexs);
+                dlg.exec();
+            });
+            menu->exec(QCursor::pos());
+            menu->deleteLater();
+        }
     }
 }
 

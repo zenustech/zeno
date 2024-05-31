@@ -267,7 +267,7 @@ ZenoNodeBase* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUt
     //}
     else
     {
-        return new ZenoNode(params);
+        return new ZenoNodeNew(params);
     }
 }
 
