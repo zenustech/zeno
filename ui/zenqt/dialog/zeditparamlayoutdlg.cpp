@@ -451,9 +451,9 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             m_ui->cbSocketType->setEnabled(true);
             if (zeno::NoSocket == socketType)
                 m_ui->cbSocketType->setCurrentText(tr("No Socket"));
-            else if (zeno::PrimarySocket == socketType)
+            else if (zeno::Socket_ReadOnly == socketType)
                 m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
-            else if (zeno::ParamSocket == socketType)
+            else if (zeno::Socket_Primitve == socketType)
                 m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
         }
 
@@ -523,9 +523,9 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
 
         if (zeno::NoSocket == socketType)
             m_ui->cbSocketType->setCurrentText(tr("No Socket"));
-        else if (zeno::PrimarySocket == socketType)
+        else if (zeno::Socket_ReadOnly == socketType)
             m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
-        else if (zeno::ParamSocket == socketType)
+        else if (zeno::Socket_Primitve == socketType)
             m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
 
         m_ui->cbSocketType->setEnabled(false);
@@ -645,7 +645,7 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::PrimarySocket, ROLE_SOCKET_TYPE);
+    pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
 
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -808,10 +808,10 @@ void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
         pItem->setData(zeno::NoSocket, ROLE_SOCKET_TYPE);
     }
     else if (socketType == tr("Primary Socket")) {
-        pItem->setData(zeno::PrimarySocket, ROLE_SOCKET_TYPE);
+        pItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
     }
     else if (socketType == tr("Parameter Socket")) {
-        pItem->setData(zeno::ParamSocket, ROLE_SOCKET_TYPE);
+        pItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
     }
 }
 
@@ -940,11 +940,11 @@ void ZEditParamLayoutDlg::onApply()
     zeno::CustomUI customui;
     m_customUi = customui;
 
-    std::vector<zeno::ParamInfo> outputs;
+    std::vector<zeno::ParamPrimitive> outputs;
     for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
     {
         QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
-        zeno::ParamInfo param;
+        zeno::ParamPrimitive param;
 
         param.bInput = false;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
@@ -976,7 +976,7 @@ void ZEditParamLayoutDlg::onApply()
             for (int k = 0; k < groupItem->rowCount(); k++)
             {
                 auto paramItem = groupItem->child(k);
-                zeno::ParamInfo paramInfo;
+                zeno::ParamPrimitive paramInfo;
                 paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
                 paramInfo.defl = UiHelper::qvarToZVar(paramItem->data(ROLE_PARAM_VALUE), paramInfo.type);
                 paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
@@ -992,9 +992,9 @@ void ZEditParamLayoutDlg::onApply()
             }
             tabInfo.groups.push_back(groupInfo);
         }
-        m_customUi.tabs.push_back(tabInfo);
+        m_customUi.inputPrims.tabs.push_back(tabInfo);
     }
-    m_customUi.outputs = outputs;
+    m_customUi.outputPrims = outputs;
 }
 
 void ZEditParamLayoutDlg::onOk()

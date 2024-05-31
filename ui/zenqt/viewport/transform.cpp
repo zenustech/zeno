@@ -794,7 +794,6 @@ void FakeTransformer::doTransform() {
 
         //把obj设置到新的transform节点的output端。
         std::string outputparam = transNode->get_viewobject_output_param();
-        std::shared_ptr<IParam> spParam = transNode->get_output_param(outputparam);
         transNode->set_result(false, outputparam, spObj);
     }
 

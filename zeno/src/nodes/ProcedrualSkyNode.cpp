@@ -65,7 +65,7 @@ struct HDRSky : INode {
 ZENDEFNODE(HDRSky, {
     {
         {"bool", "enable", "1"},
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"float", "rotation", "0"},
         {"vec3f", "rotation3d", "0,0,0"},
         {"float", "strength", "1"},

@@ -16,13 +16,14 @@ namespace zenoio
     protected:
         virtual bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret);
 
-        virtual zeno::ParamInfo _parseSocket(
+        virtual void _parseSocket(
             const bool bInput,
             const bool bSubnetNode,
             const std::string& id,
             const std::string& nodeCls,
             const std::string& inSock,
             const rapidjson::Value& sockObj,
+            zeno::NodeData& ret,
             zeno::LinksData& links);
 
         virtual void _parseInputs(
@@ -49,7 +50,6 @@ namespace zenoio
 
     private:
         zeno::TimelineInfo _parseTimeline(const rapidjson::Value& jsonTimeline);
-
         zeno::NodeDescs _parseDescs(const rapidjson::Value& descs);
     };
 }

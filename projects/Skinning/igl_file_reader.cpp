@@ -56,7 +56,7 @@ struct LoadTFGPrimitiveFromFile : zeno::INode {
 }; 
 
 ZENDEFNODE(LoadTFGPrimitiveFromFile, {
-    {{"string","tfg", "", zeno::ParamSocket, zeno::ReadPathEdit}},
+    {{"string","tfg", "", zeno::Socket_Primitve, zeno::ReadPathEdit}},
     {"res"},
     {},
     {"Skinning"},
@@ -144,7 +144,7 @@ struct ReadMesh : zeno::INode {
 };
 
 ZENDEFNODE(ReadMesh, {
-    {{"string","mesh", "", zeno::ParamSocket, zeno::ReadPathEdit}},
+    {{"string","mesh", "", zeno::Socket_Primitve, zeno::ReadPathEdit}},
     {"res"},
     {},
     {"Skinning"},

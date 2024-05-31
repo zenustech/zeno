@@ -34,8 +34,8 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
     QSizeF szSocket(14, 14);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
-        cbSock.cbOnSockClicked(m_socket, lnkProp);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput) {
+        cbSock.cbOnSockClicked(m_socket);
     });
 
     m_text = new ZSocketPlainTextItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked);

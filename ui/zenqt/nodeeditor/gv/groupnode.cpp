@@ -104,7 +104,7 @@ void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 }
 
 GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
-    : ZenoNode(params, parent), 
+    : _base(params, parent), 
     m_bDragging(false),
     m_bSelected(false),
     m_pTextItem(nullptr) 
@@ -113,14 +113,14 @@ GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     setAcceptHoverEvents(true);
     m_pTextItem = new GroupTextItem(this);    
     connect(m_pTextItem, &GroupTextItem::mouseMoveSignal, this, [=](QGraphicsSceneMouseEvent *event) {
-        ZenoNode::mouseMoveEvent(event);
+        _base::mouseMoveEvent(event);
     });
     connect(m_pTextItem, &GroupTextItem::mouseReleaseSignal, this, [=](QGraphicsSceneMouseEvent *event) { 
-        ZenoNode::mouseReleaseEvent(event);
+        _base::mouseReleaseEvent(event);
         m_bSelected = false;
     });
     connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=](QGraphicsSceneMouseEvent *event) {
-        ZenoNode::mousePressEvent(event);
+        _base::mousePressEvent(event);
         m_bSelected = true;
     });
     connect(m_pTextItem, &GroupTextItem::textChangedSignal, this, [=]() {
@@ -160,7 +160,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
     }
 }
 
-bool GroupNode::nodePosChanged(ZenoNode *item) 
+bool GroupNode::nodePosChanged(ZenoNodeBase*item)
 {
     if (this->sceneBoundingRect().contains(item->sceneBoundingRect()) && !m_childItems.contains(item)) {
 
@@ -212,12 +212,12 @@ void GroupNode::onZoomed()
 }
 
 QRectF GroupNode::boundingRect() const {
-    QRectF rect = ZenoNode::boundingRect();
+    QRectF rect = _base::boundingRect();
     rect.adjust(0, rect.y() - m_pTextItem->boundingRect().height(), 0, 0);
     return rect;
 }
 
-void GroupNode::appendChildItem(ZenoNode *item)
+void GroupNode::appendChildItem(ZenoNodeBase*item)
 {
     if (item->getGroupNode()) 
     {
@@ -251,12 +251,12 @@ void GroupNode::updateChildItemsPos()
     }
 }
 
-QVector<ZenoNode *> GroupNode::getChildItems() 
+QVector<ZenoNodeBase*> GroupNode::getChildItems()
 {
     return m_childItems;
 }
 
-void GroupNode::removeChildItem(ZenoNode *pNode) 
+void GroupNode::removeChildItem(ZenoNodeBase*pNode)
 {
     if (m_childItems.contains(pNode)) {
         m_childItems.removeOne(pNode);
@@ -265,14 +265,14 @@ void GroupNode::removeChildItem(ZenoNode *pNode)
     }
 }
 
-void GroupNode::updateChildRelativePos(const ZenoNode *item) 
+void GroupNode::updateChildRelativePos(const ZenoNodeBase*item)
 {
     if (m_itemRelativePosMap.contains(item->nodeId())) {
         m_itemRelativePosMap[item->nodeId()] = mapFromItem(item, 0, 0);
     }
 }
 
-ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
+void GroupNode::initLayout() {
     if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
     {
         auto index = paramsM->index(paramsM->indexFromName("title", true), 0);
@@ -311,14 +311,8 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
         }
     }
     ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS));
-    ZASSERT_EXIT(paramsM, nullptr);
+    ZASSERT_EXIT(paramsM);
     connect(paramsM, &ParamsModel::dataChanged, this, &GroupNode::onDataChanged);
-    return new ZLayoutBackground(this);
-}
-
-ZLayoutBackground *GroupNode::initHeaderWidget()
-{
-    return new ZLayoutBackground(this);    
 }
 
 void GroupNode::mousePressEvent(QGraphicsSceneMouseEvent *event) 
@@ -329,7 +323,7 @@ void GroupNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
     } else {
         m_bDragging = false;
     }
-    ZenoNode::mousePressEvent(event);
+    _base::mousePressEvent(event);
 }
 
 void GroupNode::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
@@ -412,7 +406,7 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 
 void GroupNode::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
     isDragArea(event->pos());
-    ZenoNode::hoverMoveEvent(event);
+    _base::hoverMoveEvent(event);
 }
 
 bool GroupNode::isDragArea(QPointF pos) {
@@ -484,7 +478,7 @@ void GroupNode::updateBlackboard() {
 
 void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
 {
-    ZenoNode::paint(painter, option, widget);
+    _base::paint(painter, option, widget);
 
     QColor background(0, 100, 168);
     if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
@@ -535,7 +529,7 @@ QVariant GroupNode::itemChange(GraphicsItemChange change, const QVariant &value)
         if (isSelected() && !m_bSelected && !path.contains(sceneBoundingRect()))
             this->setSelected(false);
     }
-    return ZenoNode::itemChange(change, value);
+    return _base::itemChange(change, value);
 }
 
 void GroupNode::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
@@ -581,6 +575,6 @@ void GroupNode::setSvgData(QString color)
 void GroupNode::setSelected(bool selected)
 {
     m_bSelected = true;
-    ZenoNode::setSelected(selected);
+    _base::setSelected(selected);
     m_bSelected = false;
 }

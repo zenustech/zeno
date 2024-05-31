@@ -1,5 +1,5 @@
 #include "zenosubgraphscene.h"
-#include "zenonode.h"
+#include "zenonodebase.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
@@ -31,15 +31,13 @@
 #include "zenosubgraphview.h"
 #include <zeno/io/zenreader.h>
 #include "widgets/ztooltip.h"
+#include "zenonodenew.h"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
-    , m_bOnceOn(false)
-    , m_bBypassOn(false)
-    , m_bViewOn(false)
     , m_model(nullptr)
     , m_pUnfoldNode(nullptr)
 {
@@ -73,15 +71,15 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     disconnect(m_model, &GraphModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onRowsAboutToBeRemoved);
 	disconnect(m_model, &GraphModel::rowsInserted, this, &ZenoSubGraphScene::onRowsInserted);
 
-    QVector<ZenoNode *> blackboardVect;
+    QVector<ZenoNodeBase*> blackboardVect;
     for (int r = 0; r < pGraphM->rowCount(); r++)
     {
         const QModelIndex& idx = pGraphM->index(r, 0);
-        ZenoNode* pNode = createNode(idx, m_nodeParams);
-        connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-        connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
-        pNode->initUI(this, m_subgIdx, idx);
+        ZenoNodeBase* pNode = createNode(idx, m_nodeParams);
+        connect(pNode, &ZenoNodeBase::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+        connect(pNode, &ZenoNodeBase::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
         addItem(pNode);
+        pNode->initUI(idx);
         const QString& nodeid = pNode->nodeId();
         m_nodes[nodeid] = pNode;
         if (pNode->nodeClass() == "Group") 
@@ -92,7 +90,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
 
     for (auto it : m_nodes)
     {
-        ZenoNode *inNode = it.second;
+        ZenoNodeBase*inNode = it.second;
         const QString& id = inNode->nodeId();
         const QModelIndex& idx = m_model->indexFromName(id);
 
@@ -187,7 +185,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
     connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
 }
 
-void ZenoSubGraphScene::onNodePositionChanged(const ZenoNode* pNode)
+void ZenoSubGraphScene::onNodePositionChanged(const ZenoNodeBase* pNode)
 {
     emit nodePosChanged(pNode);
 }
@@ -209,8 +207,8 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     const QString inKey = QString::fromStdString(edge.inKey);
     const QString outKey = QString::fromStdString(edge.outKey);
 
-    ZenoNode* inNode = m_nodes[inId];
-    ZenoNode* outNode = m_nodes[outId];
+    ZenoNodeBase* inNode = m_nodes[inId];
+    ZenoNodeBase* outNode = m_nodes[outId];
     ZASSERT_EXIT(inNode && outNode);
 
     ZenoFullLink *pEdge = new ZenoFullLink(linkIdx, outNode, inNode);
@@ -228,7 +226,7 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
     //socketItem->toggle(true);
 }
 
-ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
+ZenoNodeBase* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
 {
     const QString& descName = idx.data(ROLE_CLASS_NAME).toString();
     if (descName == "SubInput")
@@ -342,16 +340,16 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& topLeft, const QModelIn
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onRunStateChanged();
     }
-    if (role == ROLE_NODE_DIRTY)
-    {
-        QVariant varDataChanged = idx.data(ROLE_NODE_DIRTY);
-        if (varDataChanged.canConvert<bool>())
-        {
-            bool bDirty = varDataChanged.toBool();
-            if (m_nodes.find(id) != m_nodes.end())
-                m_nodes[id]->onMarkDataChanged(bDirty);
-        }
-    }
+    //if (role == ROLE_NODE_DIRTY)
+    //{
+    //    QVariant varDataChanged = idx.data(ROLE_NODE_DIRTY);
+    //    if (varDataChanged.canConvert<bool>())
+    //    {
+    //        bool bDirty = varDataChanged.toBool();
+    //        if (m_nodes.find(id) != m_nodes.end())
+    //            m_nodes[id]->onMarkDataChanged(bDirty);
+    //    }
+    //}
 #if 0
     if (role == ROLE_PARAMS_NO_DESC)
     {
@@ -401,8 +399,8 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
     if (m_links.find(linkid) != m_links.end())
         return;
 
-    ZenoNode* pInNode = m_nodes[inId];
-    ZenoNode* pOutNode = m_nodes[outId];
+    ZenoNodeBase* pInNode = m_nodes[inId];
+    ZenoNodeBase* pOutNode = m_nodes[outId];
     ZASSERT_EXIT(pInNode && pOutNode);
 
     ZenoFullLink* pEdge = new ZenoFullLink(QPersistentModelIndex(linkIdx), pOutNode, pInNode);
@@ -528,24 +526,14 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
     afterSelectionChanged();
 }
 
-ZenoNode* ZenoSubGraphScene::markError(const QString& nodeName)
-{
-    //Deprecated
-    return nullptr;
-}
 
-QList<ZenoNode*> ZenoSubGraphScene::getNodesItem() const
+QList<ZenoNodeBase*> ZenoSubGraphScene::getNodesItem() const
 {
-    QList<ZenoNode*> items;
+    QList<ZenoNodeBase*> items;
     for (auto& [_, node] : m_nodes) {
         items.append(node);
     }
     return items;
-}
-
-void ZenoSubGraphScene::clearMark()
-{
-    //Deprecated
 }
 
 void ZenoSubGraphScene::undo()
@@ -566,7 +554,7 @@ QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
     QList<QGraphicsItem *> selItems = selectedItems();
     for (auto item : selItems)
     {
-        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+        if (ZenoNodeBase*pNode = qgraphicsitem_cast<ZenoNodeBase*>(item))
         {
             QModelIndex idx = pNode->index();
             if (zeno::NoVersionNode != idx.data(ROLE_NODETYPE))
@@ -656,7 +644,7 @@ void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
     initModel(pGraphM);
 }
 
-void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, zeno::LinkFunction lnkProp)
+void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 {
     if (m_tempLink)
         return;
@@ -695,7 +683,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, zeno::LinkF
 
         socketPos = m_nodes[outNode]->getSocketPos(outSockIdx);
         ZenoSocketItem* pOutSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx, outKey);
-        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, lnkProp, QModelIndexList());
+        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, QModelIndexList());
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
 
@@ -711,7 +699,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, zeno::LinkF
             return y1 < y2;
         });
 
-        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput, lnkProp, selNodes);
+        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput, selNodes);
         addItem(m_tempLink);
         pSocketItem->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
     }
@@ -719,11 +707,11 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, zeno::LinkF
 
 void ZenoSubGraphScene::onNodePosChanged() 
 {
-    ZenoNode *senderNode = dynamic_cast<ZenoNode *>(sender());
+    ZenoNodeBase*senderNode = dynamic_cast<ZenoNodeBase*>(sender());
     GroupNode *blackboardNode = dynamic_cast<GroupNode *>(senderNode);
     for (auto pair : m_nodes) 
     {
-        ZenoNode *zenoNode = pair.second;
+        ZenoNodeBase*zenoNode = pair.second;
         if (zenoNode == senderNode) 
         {
             continue;
@@ -749,16 +737,15 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
     bool bFixedInput = false;
     QString nodeId;
     QPointF fixedPos;
-    zeno::LinkFunction lnkProp = zeno::Link_Copy;
-    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput, lnkProp);
+    m_tempLink->getFixedInfo(nodeId, fixedPos, bFixedInput);
 
     QPointF pos = mousePos;
     QList<QGraphicsItem *> catchedItems = items(pos);
-    QList<ZenoNode *> catchNodes;
+    QList<ZenoNodeBase*> catchNodes;
     QList<ZenoSocketItem* > catchSocks;
     for (QGraphicsItem *item : catchedItems)
     {
-        if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
+        if (ZenoNodeBase*pNode = qgraphicsitem_cast<ZenoNodeBase*>(item))
         {
             if (pNode->index().data(ROLE_NODE_NAME).toString() != nodeId)
             {
@@ -793,9 +780,9 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
     
     if (!catchNodes.isEmpty())
     {
-        ZenoNode *pTarget = nullptr;
+        ZenoNodeBase*pTarget = nullptr;
         float minDist = std::numeric_limits<float>::max();
-        for (ZenoNode *pNode : catchNodes)
+        for (ZenoNodeBase*pNode : catchNodes)
         {
             QPointF nodePos = pNode->sceneBoundingRect().center();
             QPointF offset = nodePos - pos;
@@ -848,8 +835,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
         QString fixedNodeId;
         bool fixedInput = false;
         QPointF fixedPos;
-        zeno::LinkFunction lnkProp = zeno::Link_Copy;
-        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput, lnkProp);
+        m_tempLink->getFixedInfo(fixedNodeId, fixedPos, fixedInput);
 
         if (bTargetIsInput != fixedInput)
         {
@@ -971,7 +957,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             newEdge.outParam = outSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
             newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
             newEdge.inParam = inSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
-            newEdge.lnkfunc = lnkProp;
+            newEdge.bObjLink = inSockIdx.data(ROLE_SOCKET_TYPE).toInt() != zeno::Socket_Primitve;
 
             if (!fixedInput)
             {
@@ -1016,7 +1002,7 @@ void ZenoSubGraphScene::mousePressEvent(QGraphicsSceneMouseEvent* event)
         auto catchedItems = items(event->scenePos());
         for (QGraphicsItem* item : catchedItems)
         {
-            if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+            if (ZenoNodeBase* pNode = qgraphicsitem_cast<ZenoNodeBase*>(item))
             {
                 bool bCollasped = pNode->index().data(ROLE_COLLASPED).toBool();
                 if (bCollasped)
@@ -1071,7 +1057,7 @@ void ZenoSubGraphScene::afterSelectionChanged()
             bool bSelected = pair.second;
             if (m_nodes.find(name) == m_nodes.end())
                 continue;
-            ZenoNode* pNode = m_nodes[name];
+            ZenoNodeBase* pNode = m_nodes[name];
             ZASSERT_EXIT(pNode);
             if (bSelected)
             {
@@ -1117,7 +1103,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& parent, int fi
         QModelIndex idx = m_model->index(r, 0, parent);
         QString id = idx.data(ROLE_NODE_NAME).toString();
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-        ZenoNode* pNode = m_nodes[id];
+        ZenoNodeBase* pNode = m_nodes[id];
         if (qobject_cast<GroupNode *>(pNode)) 
         {
             GroupNode *pBlackboard = qobject_cast<GroupNode *>(pNode);
@@ -1147,11 +1133,11 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
 {
     //right click goes here
     QModelIndex idx = m_model->index(first, 0, parent);
-    ZenoNode *pNode = createNode(idx, m_nodeParams);
-    connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
-    connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
-    pNode->initUI(this, m_subgIdx, idx);
+    ZenoNodeBase*pNode = createNode(idx, m_nodeParams);
+    connect(pNode, &ZenoNodeBase::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
+    connect(pNode, &ZenoNodeBase::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
     addItem(pNode);
+    pNode->initUI(idx);
     QString id = pNode->nodeId();
     m_nodes[id] = pNode;
 
@@ -1160,7 +1146,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
         QRectF rect;
         for (auto item : selectedItems()) 
         {
-            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+            if (ZenoNodeBase*pNode = qgraphicsitem_cast<ZenoNodeBase*>(item)) {
                 rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
             }
         }
@@ -1174,7 +1160,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& parent, int first, int
             UiHelper::qIndexSetData(pGroup->index(), rect.topLeft(), ROLE_OBJPOS);
             for (auto item : selectedItems()) 
             {
-                ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);
+                ZenoNodeBase*pChildNode = dynamic_cast<ZenoNodeBase*>(item);
                 if (pChildNode)
                     pGroup->appendChildItem(pChildNode);
             }
@@ -1201,7 +1187,7 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         ZASSERT_EXIT(picker);
         picker->clear();
         for (auto item : selItems) {
-            if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+            if (auto *pNode = qgraphicsitem_cast<ZenoNodeBase*>(item)) {
                 auto node_id = pNode->index().data(ROLE_NODE_NAME).toString().toStdString();
                 for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
                     if (prim_name.find(node_id) != std::string::npos)
@@ -1246,7 +1232,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             QList<QPersistentModelIndex> netLabels;
             for (auto item : selItems)
             {
-                if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
+                if (ZenoNodeBase* pNode = qgraphicsitem_cast<ZenoNodeBase*>(item))
                 {
                     nodes.append(pNode->index());
                 }
@@ -1328,20 +1314,23 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     }
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
     {
-        updateNodeStatus(m_bBypassOn, zeno::Mute);
+        updateNodeStatus(zeno::Mute);
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
-        updateNodeStatus(m_bViewOn, zeno::View);
+        updateNodeStatus(zeno::View);
     }
 }
 
-void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option) 
+void ZenoSubGraphScene::updateNodeStatus(int option) 
 {
-    bOn = !bOn;
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
         int options = idx.data(ROLE_NODE_STATUS).toInt();
+        if (options & option)
+            options &= (~option);
+        else
+            options |= option;
         UiHelper::qIndexSetData(idx, options, ROLE_NODE_STATUS);
     }
     
@@ -1420,7 +1409,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             for (QString node : nodes)
             {
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
-                ZenoNode* pNodeItem = m_nodes[node];
+                ZenoNodeBase* pNodeItem = m_nodes[node];
                 QRectF rc = pNodeItem->boundingRect();
                 H += rc.height();
                 W = qMax(rc.width(), W);
@@ -1433,7 +1422,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             {
                 //todo
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end(), QSizeF());
-                ZenoNode* pNodeItem = m_nodes[node];
+                ZenoNodeBase* pNodeItem = m_nodes[node];
                 QRectF rc = pNodeItem->boundingRect();
                 W += rc.width();
                 H = qMax(rc.height(), H);
@@ -1465,7 +1454,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             for (QString node : layerNodes[i])
             {
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
-                ZenoNode* pNode = m_nodes[node];
+                ZenoNodeBase* pNode = m_nodes[node];
                 pNode->setPos(x, y);
                 y += pNode->boundingRect().height();
                 y += vspace;
@@ -1501,7 +1490,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             for (QString node : layerNodes[i])
             {
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
-                ZenoNode* pNode = m_nodes[node];
+                ZenoNodeBase* pNode = m_nodes[node];
                 pNode->setPos(x, y);
                 QString name = pNode->nodeId();
                 x += pNode->boundingRect().width(); //TOFIX: 好像没算上左边名称的长度

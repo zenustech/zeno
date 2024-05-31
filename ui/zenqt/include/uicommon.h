@@ -168,7 +168,7 @@ enum MODEL_ROLE {
     ROLE_ISINPUT,
     ROLE_LINKS,
     ROLE_LINKID,        //a uuid for a specific link
-    ROLE_LINK_PROP,
+    ROLE_LINK_OBJECT,
     ROLE_OBJPOS,
     ROLE_OBJPATH,
     ROLE_COLLASPED,
@@ -256,12 +256,12 @@ struct NODE_CATE {
 };
 typedef QMap<QString, NODE_CATE> NODE_CATES;
 
-typedef QKeyList<QString, zeno::ParamInfo> PARAMS_INFO;
+typedef QKeyList<QString, zeno::ParamPrimitive> PARAMS_INFO;
 Q_DECLARE_METATYPE(PARAMS_INFO)
 
 Q_DECLARE_METATYPE(zeno::NodeData)
 
-Q_DECLARE_METATYPE(zeno::ParamInfo)
+Q_DECLARE_METATYPE(zeno::ParamPrimitive)
 
 Q_DECLARE_METATYPE(zeno::EdgeInfo)
 

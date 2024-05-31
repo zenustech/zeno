@@ -62,7 +62,7 @@ struct SDFToPoly : zeno::INode{
 
 static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
     { /* inputs: */ {
-        {"", "SDF", "", PrimarySocket},
+        {"", "SDF", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "Mesh",
     }, /* params: */ {
@@ -77,13 +77,13 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
 struct SDFToPrimitive : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
-        set_output("prim", std::move(get_output("Mesh")));
+        set_output("prim", std::move(get_output_obj("Mesh")));
     }
 };
 
 static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitive",
     { /* inputs: */ {
-        {"", "SDF", "", PrimarySocket},
+        {"", "SDF", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ {
@@ -199,7 +199,7 @@ struct SDFToPrim : zeno::INode{
 };
 ZENDEFNODE(SDFToPrim, {
     {
-        {"", "SDF", "", PrimarySocket},
+        {"", "SDF", "", zeno::Socket_ReadOnly},
         {"float", "isoValue", "0"},
         {"float", "adaptivity", "0"},
         {"bool", "allowQuads", "0"},

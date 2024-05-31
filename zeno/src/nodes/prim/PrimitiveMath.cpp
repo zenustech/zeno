@@ -37,11 +37,11 @@ struct PlaneProjectPrimitive2DAABB : INode {
 
 ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
     {
-        {"", "normal", "", PrimarySocket},
-        {"", "tangent", "", PrimarySocket},
-        {"", "origin", "", PrimarySocket},
-        {"", "prim", "", PrimarySocket},
-        {"", "bitangent", "", PrimarySocket},
+        {"", "normal", "", zeno::Socket_ReadOnly},
+        {"", "tangent", "", zeno::Socket_ReadOnly},
+        {"", "origin", "", zeno::Socket_ReadOnly},
+        {"", "prim", "", zeno::Socket_ReadOnly},
+        {"", "bitangent", "", zeno::Socket_ReadOnly},
     },
     {"boundMin2D", "boundMax2D"},
     {},

@@ -9,7 +9,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
@@ -40,35 +40,22 @@ struct ImplNodeClass : INodeClass {
         spNode->set_name(name);
 
         //init all params, and set defl value
-        for (const ParamTab& tab : m_customui.tabs)
+        for (const ParamObject& param : m_customui.inputObjs)
         {
-            for (const ParamGroup& group : tab.groups)
-            {
-                for (const ParamInfo& param : group.params)
-                {
-                    std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
-                    sparam->name = param.name;
-                    sparam->m_wpNode = spNode;
-                    sparam->type = param.type;
-                    sparam->defl = param.defl;
-                    sparam->socketType = param.socketType;
-                    sparam->control = param.control;
-                    sparam->optCtrlprops = param.ctrlProps;
-                    spNode->add_input_param(sparam);
-                }
-            }
+            spNode->add_input_obj_param(param);
         }
-
-        for (const ParamInfo& param : m_customui.outputs)
+        for (const ParamPrimitive& param : customUiToParams(m_customui.inputPrims))
         {
-            std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
-            sparam->name = param.name;
-            sparam->m_wpNode = spNode;
-            sparam->type = param.type;
-            sparam->socketType = PrimarySocket;
-            spNode->add_output_param(sparam);
+            spNode->add_input_prim_param(param);
         }
-
+        for (const ParamPrimitive& param : m_customui.outputPrims)
+        {
+            spNode->add_output_prim_param(param);
+        }
+        for (const ParamObject& param : m_customui.outputObjs)
+        {
+            spNode->add_output_obj_param(param);
+        }
         return spNode;
     }
 };

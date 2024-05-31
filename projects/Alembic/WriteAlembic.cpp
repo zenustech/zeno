@@ -690,7 +690,7 @@ ZENDEFNODE(WriteAlembic2, {
     {
         {"prim"},
         {"frameid"},
-        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
@@ -940,7 +940,7 @@ ZENDEFNODE(WriteAlembicPrims, {
         {"prim"},
         {"list", "prims"},
         {"frameid"},
-        {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},

@@ -1,5 +1,8 @@
 #include <zeno/utils/helper.h>
 #include <regex>
+#include <zeno/core/CoreParam.h>
+#include <zeno/core/INode.h>
+
 
 namespace zeno {
 
@@ -172,10 +175,11 @@ namespace zeno {
         return zvariant();
     }
 
-    EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink) {
+    EdgeInfo getEdgeInfo(std::shared_ptr<ObjectLink> spLink) {
         EdgeInfo edge;
-        auto spOutParam = spLink->fromparam.lock();
-        auto spInParam = spLink->toparam.lock();
+        edge.bObjLink = true;
+        auto spOutParam = spLink->fromparam;
+        auto spInParam = spLink->toparam;
         if (!spOutParam || !spInParam)
             return edge;
 
@@ -192,41 +196,52 @@ namespace zeno {
         return edge;
     }
 
+    EdgeInfo getEdgeInfo(std::shared_ptr<PrimitiveLink> spLink) {
+        EdgeInfo edge;
+        edge.bObjLink = false;
+        auto spOutParam = spLink->fromparam;
+        auto spInParam = spLink->toparam;
+        if (!spOutParam || !spInParam)
+            return edge;
+
+        auto spOutNode = spOutParam->m_wpNode.lock();
+        auto spInNode = spInParam->m_wpNode.lock();
+        if (!spOutNode || !spInNode)
+            return edge;
+
+        const std::string& outNode = spOutNode->get_name();
+        const std::string& outParam = spOutParam->name;
+        const std::string& inNode = spInNode->get_name();
+        const std::string& inParam = spInParam->name;
+        edge = { outNode, outParam, "", inNode, inParam, ""};
+        return edge;
+    }
+
     std::string generateObjKey(std::shared_ptr<IObject> spObject) {
         return "";    //TODO
     }
 
     ZENO_API std::string objPathToStr(ObjPath path) {
-        std::string ret = path.front();
-        path.pop_front();
-        for (auto item : path) {
-            ret += "/" + item;
-        }
-        return ret;
+        return path;
     }
 
     ObjPath zeno::strToObjPath(const std::string& str)
     {
-        ObjPath path;
-        std::string token;
-        for (char c : str) {
-            if (c == '/') {
-                if (token.size() > 0) {
-                    path.push_back(token);
-                    token = {};
-                }
-            }
-            else {
-                token.push_back(c);
+        return str;
+    }
+
+    PrimitiveParams customUiToParams(const CustomUIParams& customparams) {
+        PrimitiveParams params;
+        for (auto tab : customparams.tabs) {
+            for (auto group : tab.groups) {
+                params.insert(params.end(), group.params.begin(), group.params.end());
             }
         }
-        if (token.size() > 0) {
-            path.push_back(token);
-        }
-        return path;
+        return params;
     }
 
     CustomUI descToCustomui(const Descriptor& desc) {
+        //兼容以前写的各种ZENDEFINE
         CustomUI ui;
 
         ui.nickname = desc.displayName;
@@ -237,33 +252,47 @@ namespace zeno {
 
         ParamGroup default;
         for (const SocketDescriptor& param_desc : desc.inputs) {
-            ParamInfo param;
-            param.name = param_desc.name;
-            param.type = zeno::convertToType(param_desc.type);
-            param.defl = zeno::str2var(param_desc.defl, param.type);
-            param.socketType = param_desc.socketType;
-            if (param_desc.control != NullControl)
-                param.control = param_desc.control;
-            if (starts_with(param_desc.type, "enum ")) {
-                //compatible with old case of combobox items.
-                param.type = Param_String;
-                param.control = Combobox;
-                std::vector<std::string> items = split_str(param_desc.type, ' ');
-                if (!items.empty()) {
-                    items.erase(items.begin());
-                    ControlProperty props = ControlProperty();
-                    props.items = items;
-                    param.ctrlProps = props;
+            ParamType type = zeno::convertToType(param_desc.type);
+            if (isPrimitiveType(type)) {
+                //如果是数值类型，就添加到组里
+                ParamPrimitive param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.defl = zeno::str2var(param_desc.defl, param.type);
+                param.socketType = param_desc.socketType;
+                if (param_desc.control != NullControl)
+                    param.control = param_desc.control;
+                if (starts_with(param_desc.type, "enum ")) {
+                    //compatible with old case of combobox items.
+                    param.type = Param_String;
+                    param.control = Combobox;
+                    std::vector<std::string> items = split_str(param_desc.type, ' ');
+                    if (!items.empty()) {
+                        items.erase(items.begin());
+                        ControlProperty props = ControlProperty();
+                        props.items = items;
+                        param.ctrlProps = props;
+                    }
                 }
+                if (param.type != Param_Null && param.control == NullControl)
+                    param.control = getDefaultControl(param.type);
+                param.tooltip = param_desc.doc;
+                param.prop = Socket_Normal;
+                default.params.emplace_back(std::move(param));
             }
-            if (param.type != Param_Null && param.control == NullControl)
-                param.control = getDefaultControl(param.type);
-            param.tooltip = param_desc.doc;
-            param.prop = Socket_Normal;
-            default.params.emplace_back(std::move(param));
+            else
+            {
+                //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+                ParamObject param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.socketType = param_desc.socketType;
+                param.bInput = true;
+                ui.inputObjs.emplace_back(std::move(param));
+            }
         }
         for (const ParamDescriptor& param_desc : desc.params) {
-            ParamInfo param;
+            ParamPrimitive param;
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
             param.defl = zeno::str2var(param_desc.defl, param.type);
@@ -287,24 +316,43 @@ namespace zeno {
             default.params.emplace_back(std::move(param));
         }
         for (const SocketDescriptor& param_desc : desc.outputs) {
-            ParamInfo param;
-            param.name = param_desc.name;
-            param.type = zeno::convertToType(param_desc.type);
-            param.socketType = PrimarySocket;
-            ui.outputs.emplace_back(std::move(param));
+            ParamType type = zeno::convertToType(param_desc.type);
+            if (isPrimitiveType(type)) {
+                //如果是数值类型，就添加到组里
+                ParamPrimitive param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.defl = zeno::str2var(param_desc.defl, param.type);
+                param.socketType = param_desc.socketType;
+                param.control = NullControl;
+                param.tooltip = param_desc.doc;
+                param.prop = Socket_Normal;
+                ui.outputPrims.emplace_back(std::move(param));
+            }
+            else
+            {
+                //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+                ParamObject param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.socketType = param_desc.socketType;
+                param.bInput = true;
+                param.prop = Socket_Normal;
+                ui.outputObjs.emplace_back(std::move(param));
+            }
         }
         ParamTab tab;
         tab.groups.emplace_back(std::move(default));
-        ui.tabs.emplace_back(std::move(tab));
+        ui.inputPrims.tabs.emplace_back(std::move(tab));
         return ui;
     }
 
     void initControlsByType(CustomUI& ui) {
-        for (ParamTab& tab : ui.tabs)
+        for (ParamTab& tab : ui.inputPrims.tabs)
         {
             for (ParamGroup& group : tab.groups)
             {
-                for (ParamInfo& param : group.params)
+                for (ParamPrimitive& param : group.params)
                 {
                     if (param.type != Param_Null && param.control == NullControl)
                         param.control = getDefaultControl(param.type);
@@ -410,8 +458,14 @@ namespace zeno {
         return result;
     }
 
-    bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs) {
+    bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
         return false;
+    }
+
+    bool isPrimitiveType(const zeno::ParamType type) {
+        return type == Param_String || type == Param_Int || type == Param_Float || type == Param_Vec2i ||
+            type == Param_Vec3i || type == Param_Vec4i || type == Param_Vec2f || type == Param_Vec3f ||
+            type == Param_Vec4f || type == Param_Bool;//TODO: heatmap type.
     }
 
     zany strToZAny(std::string const& defl, ParamType const& type) {

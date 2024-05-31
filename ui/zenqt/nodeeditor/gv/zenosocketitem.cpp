@@ -174,8 +174,7 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     {
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if (Qt::LeftButton == event->button()) {
-            zeno::LinkFunction lnkProp = (modifiers & Qt::ControlModifier) ? zeno::Link_Ref : zeno::Link_Copy;
-            emit clicked(m_bInput, lnkProp);
+            emit clicked(m_bInput);
         }
     }
 }
@@ -297,4 +296,38 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         painter->drawEllipse(rc);
     }
 #endif
+}
+
+ZenoObjSocketItem::ZenoObjSocketItem(const QPersistentModelIndex& viewSockIdx, const QSizeF& sz, bool bInnerSocket, QGraphicsItem* parent)
+    : _base(viewSockIdx, sz, bInnerSocket, parent)
+{
+}
+
+ZenoObjSocketItem::~ZenoObjSocketItem()
+{
+}
+
+void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+    //object socket
+    auto paramIdx = paramIndex();
+    QRectF rc = boundingRect();
+    auto status = sockStatus();
+    bool bOn = status == STATUS_TRY_CONN || status == STATUS_CONNECTED || m_bHovered;
+    PARAM_LINKS links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
+    int type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+    if (m_bInput || type != zeno::Socket_Owning || links.isEmpty())
+    {
+        QBrush brush = bOn ? m_brushOn : m_brush;
+        QColor col = brush.color();
+        col.setAlphaF(0.5);
+        brush.setColor(col);
+        painter->setBrush(brush);
+    }
+    painter->setPen(Qt::NoPen);
+    painter->drawRect(rc);
+    QString name = paramIdx.data(ROLE_PARAM_NAME).toString();
+    QPen pen(Qt::white, 2);
+    painter->setPen(pen);
+    painter->drawText(rc, name, QTextOption(Qt::AlignCenter));
 }

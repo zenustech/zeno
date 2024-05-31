@@ -1232,8 +1232,8 @@ struct ReadFBXPrim : zeno::INode {
 ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
-                   {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
-                   {"string", "hintPath", "-1", zeno::ParamSocket, zeno::ReadPathEdit},
+                   {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                   {"string", "hintPath", "-1", zeno::Socket_Primitve, zeno::ReadPathEdit},
                    {"bool", "generate", "false"},
                    {"float", "offset", "0.0"},
                    {"DictObject", "visibility", ""}
@@ -1329,7 +1329,7 @@ struct ReadLightFromFile : zeno::INode {
 ZENDEFNODE(ReadLightFromFile,
            {       /* inputs: */
             {
-                {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+                {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
             },  /* outputs: */
             {
                 "posList", "rotList", "sclList", "colList", "intList", "expList"

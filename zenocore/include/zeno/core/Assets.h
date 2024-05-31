@@ -8,14 +8,16 @@ namespace zeno {
 struct Asset {
     AssetInfo m_info;
     std::shared_ptr<Graph> sharedGraph;
-    std::vector<ParamInfo> inputs;
-    std::vector<ParamInfo> outputs;
+    std::vector<ParamPrimitive> inputs;
+    std::vector<ParamPrimitive> outputs;
     CustomUI m_customui;
 };
 
 struct ZenoAsset {
-    std::vector<ParamInfo> inputs;
-    std::vector<ParamInfo> outputs;
+    ObjectParams object_inputs;
+    PrimitiveParams primitive_inputs;
+    PrimitiveParams primitive_outputs;
+    ObjectParams object_outputs;
     AssetInfo info;
     CustomUI m_customui;
     std::optional<GraphData> optGraph;

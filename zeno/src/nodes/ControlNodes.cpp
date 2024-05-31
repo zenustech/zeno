@@ -88,7 +88,7 @@ struct BeginForEach : IBeginFor {
 
 ZENDEFNODE(BeginForEach, {
     {
-        {"list", "objects", "", PrimarySocket},
+        {"list", "objects", "", zeno::Socket_ReadOnly},
     },
     {"object", {"int", "index"}},
     {{"string", "For End", ""}},
@@ -128,7 +128,7 @@ struct EndFor : INode {
 };
 
 ZENDEFNODE(EndFor, {
-    {{"", "object", "", PrimarySocket}},
+    {{"", "object", "", zeno::Socket_ReadOnly}},
     {},
     {{"string", "For Begin", ""}},
     {"control"},
@@ -137,10 +137,15 @@ ZENDEFNODE(EndFor, {
 
 struct BreakFor : zeno::INode {
     virtual void apply() override {
-        auto [sn, ss] = getinputbound("FOR", "input socket of BreakFor");
+        zeno::ParamObject paramobj = get_input_obj_param("FOR");
+        if (paramobj.links.empty())
+            throw makeError("BreakFor::FOR must be conn to BeginFor::FOR");
+
+        auto link = paramobj.links[0];
+
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(sn).get());
+        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(link.outNode).get());
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
@@ -153,7 +158,7 @@ struct BreakFor : zeno::INode {
 };
 
 ZENDEFNODE(BreakFor, {
-    {{"", "FOR", "", PrimarySocket}, {"bool", "breaks", "1"}},
+    {{"", "FOR", "", zeno::Socket_ReadOnly}, {"bool", "breaks", "1"}},
     {},
     {},
     {"control"},
@@ -223,8 +228,8 @@ struct EndForEach : INode {
 
 ZENDEFNODE(EndForEach, {
     {
-        {"", "object", "", PrimarySocket},
-        {"list", "objects", "", PrimarySocket},
+        {"", "object", "", zeno::Socket_ReadOnly},
+        {"list", "objects", "", zeno::Socket_ReadOnly},
         {"bool", "accept", "1"}
     },
     {"list", "droppedList"},
@@ -274,10 +279,15 @@ ZENDEFNODE(BeginSubstep, {
 
 struct SubstepDt : zeno::INode {
     void apply() override {
-        auto [sn, ss] = getinputbound("FOR", "input socket of SubstepDt");
+        zeno::ParamObject paramobj = get_input_obj_param("FOR");
+        if (paramobj.links.empty())
+            throw makeError("BreakFor::FOR must be conn to BeginFor::FOR");
+
+        auto link = paramobj.links[0];
+
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(sn).get());
+        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(link.outNode).get());
         if (!fore) {
             throw Exception("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
         }
@@ -305,7 +315,7 @@ struct SubstepDt : zeno::INode {
 };
 
 ZENDEFNODE(SubstepDt, {
-    {{"", "FOR", "", PrimarySocket}, {"float", "desired_dt", "0.04"}},
+    {{"", "FOR", "", zeno::Socket_ReadOnly}, {"float", "desired_dt", "0.04"}},
     {{"float", "actual_dt"}, {"float", "portion"}},
     {},
     {"control"},
@@ -342,8 +352,8 @@ struct IfElse : zeno::INode {
 
 ZENDEFNODE(IfElse, {
     {
-        {"", "true", "", PrimarySocket},
-        {"", "false", "", PrimarySocket},
+        {"", "true", "", zeno::Socket_ReadOnly},
+        {"", "false", "", zeno::Socket_ReadOnly},
         {"bool", "cond"},
     },
     {"result"},

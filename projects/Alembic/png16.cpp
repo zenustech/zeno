@@ -157,7 +157,7 @@ struct ReadPNG16 : INode {//todo: select custom color space
 };
 ZENDEFNODE(ReadPNG16, {
     {
-        {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     },
     {
         {"PrimitiveObject", "image"},

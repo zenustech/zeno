@@ -70,7 +70,7 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
         if (prim) {
             prim->verts.clear();
             prim->verts.clear_attrs();
@@ -477,11 +477,11 @@ ZENDEFNODE(CreateCube, {
         {"bool", "hasVertUV", "0"},
         {"bool", "isFlipFace", "0"},
 
-        {"int", "div_w", "2", ParamSocket, Lineedit},
-        {"int", "div_h", "2", ParamSocket, Lineedit},
-        {"int", "div_d", "2", ParamSocket, Lineedit},
-        {"float", "size", "1", ParamSocket, Lineedit},
-        {"bool", "quads", "0", ParamSocket, Lineedit},
+        {"int", "div_w", "2", Socket_Primitve, Lineedit},
+        {"int", "div_h", "2", Socket_Primitve, Lineedit},
+        {"int", "div_d", "2", Socket_Primitve, Lineedit},
+        {"float", "size", "1", Socket_Primitve, Lineedit},
+        {"bool", "quads", "0", Socket_Primitve, Lineedit},
     },
     {{"prim", "prim"}},
     {},

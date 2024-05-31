@@ -10,9 +10,12 @@
 #include <set>
 #include <map>
 #include <zeno/types/CurveObject.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
+#include <zeno/core/CoreParam.h>
 #include <functional>
 
 namespace zeno {
@@ -23,39 +26,30 @@ struct Scene;
 struct Session;
 struct GlobalState;
 struct TempNodeCaller;
-struct IParam;
+struct CoreParam;
+struct ObjectParam;
+struct PrimitiveParam;
+struct ObjectLink;
+struct PrimitiveLink;
+struct SubnetNode;
 
-struct INode : std::enable_shared_from_this<INode> {
+
+class INode : public std::enable_shared_from_this<INode>
+{
 public:
     INodeClass *nodeClass = nullptr;
-
-    std::string m_name;
-    std::string m_nodecls;
-    std::string m_uuid;
-    std::pair<float, float> m_pos;
-
-    std::map<std::string, std::shared_ptr<IParam>> m_inputs;
-    std::map<std::string, std::shared_ptr<IParam>> m_outputs;
 
     zany muted_output;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
-    //INode(INode const &) = delete;
-    //INode &operator=(INode const &) = delete;
-    //INode(INode &&) = delete;
-    //INode &operator=(INode &&) = delete;
-
     ZENO_API void doComplete();
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
-    ZENO_API zany resolveInput(std::string const& id);
 
     //BEGIN new api
     ZENO_API void init(const NodeData& dat);
-    ZENO_API void set_input_defl(std::string const& name, zvariant defl);
-    ZENO_API zvariant get_input_defl(std::string const& name);
     ZENO_API std::string get_nodecls() const;
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
@@ -75,10 +69,15 @@ public:
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
-    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_input_params() const;
-    ZENO_API virtual std::vector<std::shared_ptr<IParam>> get_output_params() const;
-    ZENO_API std::shared_ptr<IParam> get_input_param(std::string const& name) const;
-    ZENO_API std::shared_ptr<IParam> get_output_param(std::string const& name) const;
+    ZENO_API ObjectParams get_input_object_params() const;
+    ZENO_API ObjectParams get_output_object_params() const;
+    ZENO_API PrimitiveParams get_input_primitive_params() const;
+    ZENO_API PrimitiveParams get_output_primitive_params() const;
+    ZENO_API ParamPrimitive get_input_prim_param(std::string const& name, bool* pExist = nullptr) const;
+    ZENO_API ParamObject get_input_obj_param(std::string const& name, bool* pExist = nullptr) const;
+    ZENO_API ParamPrimitive get_output_prim_param(std::string const& name, bool* pExist = nullptr) const;
+    ZENO_API ParamObject get_output_obj_param(std::string const& name, bool* pExist = nullptr) const;
+
     ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;
     ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
@@ -101,11 +100,19 @@ public:
     void mark_previous_ref_dirty();
 
     //END new api
-
-    void add_input_param(std::shared_ptr<IParam> param);
-    void add_output_param(std::shared_ptr<IParam> param);
-    void directly_setinputs(std::map<std::string, zany> inputs);
-    std::map<std::string, zany> getoutputs();
+    bool add_input_prim_param(ParamPrimitive param);
+    bool add_input_obj_param(ParamObject param);
+    bool add_output_prim_param(ParamPrimitive param);
+    bool add_output_obj_param(ParamObject param);
+    void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink);
+    void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink);
+    bool isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist);
+    std::vector<EdgeInfo> getLinks() const;
+    std::vector<EdgeInfo> getLinksByParam(bool bInput, const std::string& param_name) const;
+    bool updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey);
+    bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
+    bool removeLink(bool bInput, const EdgeInfo& edge);
+    zvariant resolveInput(std::string const& id);
     void mark_dirty_objs();
 
 protected:
@@ -114,40 +121,32 @@ protected:
     ZENO_API virtual void preApply();
     ZENO_API virtual void apply() = 0;
     ZENO_API virtual void registerObjToManager();
-    ZENO_API std::vector<std::pair<std::string, zany>> getinputs();
-    ZENO_API std::vector<std::pair<std::string, zany>> getoutputs2();
-    ZENO_API std::pair<std::string, std::string> getinputbound(std::string const& name, std::string const& msg = "") const;
     ZENO_API virtual void initParams(const NodeData& dat);
+    ZENO_API bool set_primitive_input(std::string const& id, const zvariant& val);
+    ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
 
 private:
-    zany process(std::shared_ptr<IParam> in_param);
-    zany get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy);
+    zvariant processPrimitive(PrimitiveParam* in_param);
+    std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
+    std::shared_ptr<ListObject> processList(ObjectParam* in_param);
+    bool receiveOutputObj(ObjectParam* in_param, zany outputObj);
     void reportStatus(bool bDirty, NodeRunStatus status);
 
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
-    template<class T, class E> zany resolveVec(const zvariant& defl, const ParamType type);
+    template<class T, class E> T resolveVec(const zvariant& defl, const ParamType type);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
     ZENO_API bool requireInput(std::string const &ds);
-    ZENO_API bool requireInput(std::shared_ptr<IParam> param);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;
     ZENO_API Session *getThisSession() const;
     ZENO_API GlobalState *getGlobalState() const;
 
     ZENO_API bool has_input(std::string const &id) const;
-    ZENO_API bool set_input(std::string const& name, zany obj);
     ZENO_API zany get_input(std::string const &id) const;
-    ZENO_API bool has_output(std::string const& name) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
-    ZENO_API zany get_output(std::string const& sock_name);
-
-    ZENO_API bool has_keyframe(std::string const &id) const;
-    ZENO_API zany get_keyframe(std::string const &id) const;
-
-    ZENO_API bool has_formula(std::string const &id) const;
-    ZENO_API zany get_formula(std::string const &id) const;
+    ZENO_API zany get_output_obj(std::string const& sock_name);
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
@@ -200,11 +199,23 @@ public:
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
 private:
+    std::string m_name;
+    std::string m_nodecls;
+    std::string m_uuid;
+    std::pair<float, float> m_pos;
+
+    std::map<std::string, std::unique_ptr<ObjectParam>> m_inputObjs;
+    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_inputPrims;
+    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_outputPrims;
+    std::map<std::string, std::unique_ptr<ObjectParam>> m_outputObjs;
+
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;
     std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
+
+    friend class SubnetNode;
 };
 
 }

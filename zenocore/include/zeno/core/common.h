@@ -96,8 +96,24 @@ namespace zeno {
     enum SocketType
     {
         NoSocket,
-        ParamSocket,
-        PrimarySocket,
+        //Socket_Primitve,
+        //zeno::Socket_ReadOnly,
+        Socket_Output,      //Output object
+
+        //obj:
+        Socket_ReadOnly,
+        Socket_Clone,
+        Socket_Owning,
+        //primitive
+        Socket_Primitve
+    };
+
+    enum NodeDataGroup
+    {
+        Group_InputObject,
+        Group_InputPrimitive,
+        Group_OutputObject,
+        Group_OutputPrimitive
     };
 
     //ui issues:
@@ -172,7 +188,7 @@ namespace zeno {
         float,
         std::string>;
 
-    using ObjPath = std::list<std::string>;
+    using ObjPath = std::string;
 
     typedef std::function<void(ObjPath, bool, NodeRunStatus)> F_NodeStatus;
 }

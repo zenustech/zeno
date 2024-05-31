@@ -20,7 +20,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
 #include <zeno/utils/helper.h>
@@ -40,8 +40,8 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
     this->graph = pGraph;
 
     m_uuid = generateUUID(nodecls);
-    std::list<std::string> path;
-    path.push_front(m_uuid);
+    ObjPath path;
+    path += m_uuid;
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
@@ -52,11 +52,11 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
                 break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
-            path.push_front(pSubnetNode->m_uuid);
+            path = (pSubnetNode->m_uuid) + "/" + path;
             pGraph = pSubnetNode->graph.lock();
         }
     }
-    m_uuidPath = ObjPath(path);
+    m_uuidPath = path;
 }
 
 ZENO_API INode::~INode() = default;
@@ -76,12 +76,6 @@ ZENO_API GlobalState *INode::getGlobalState() const {
 ZENO_API void INode::doComplete() {
     set_output("DST", std::make_shared<DummyObject>());
     complete();
-}
-
-ZENO_API zvariant INode::get_input_defl(std::string const& name)
-{
-    std::shared_ptr<IParam> param = get_input_param(name);
-    return param->defl;
 }
 
 ZENO_API std::string INode::get_nodecls() const
@@ -122,15 +116,15 @@ ZENO_API CustomUI INode::get_customui() const {
 }
 
 ZENO_API ObjPath INode::get_path() const {
-    std::list<std::string> path;
-    path.push_front(m_name);
+    ObjPath path;
+    path = m_name;
 
     std::shared_ptr<Graph> pGraph = graph.lock();
 
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
-            path.push_front("main");
+            path = "/main" + path;
             break;
         }
         else {
@@ -138,11 +132,11 @@ ZENO_API ObjPath INode::get_path() const {
                 break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
-            path.push_front(pSubnetNode->m_name);
+            path = pSubnetNode->m_name + "/" + path;
             pGraph = pSubnetNode->graph.lock();
         }
     }
-    return ObjPath(path);
+    return path;
 }
 
 std::string INode::get_uuid() const
@@ -186,6 +180,8 @@ void INode::reportStatus(bool bDirty, NodeRunStatus status) {
 void INode::mark_previous_ref_dirty() {
     mark_dirty(true);
     //不仅要自身标脏，如果前面的节点是以引用的方式连接，说明前面的节点都可能被污染了，所有都要标脏。
+    //TODO: 由端口而不是边控制。
+    /*
     for (const auto& [name, param] : m_inputs) {
         for (const auto& link : param->links) {
             if (link->lnkProp == Link_Ref) {
@@ -195,6 +191,7 @@ void INode::mark_previous_ref_dirty() {
             }
         }
     }
+    */
 }
 
 void INode::onInterrupted() {
@@ -214,9 +211,20 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 
     m_dirty = bOn;
     if (m_dirty) {
-        for (auto& [name, param] : m_outputs) {
+        for (auto& [name, param] : m_outputObjs) {
             for (auto link : param->links) {
-                auto inParam = link->toparam.lock();
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty(m_dirty);
+                }
+            }
+        }
+        for (auto& [name, param] : m_outputPrims) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
                 assert(inParam);
                 if (inParam) {
                     auto inNode = inParam->m_wpNode.lock();
@@ -243,13 +251,13 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet)
 
 void INode::mark_dirty_objs()
 {
-    for (auto const& [name, param] : m_outputs)
+    for (auto const& [name, param] : m_outputObjs)
     {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-            if (spObj->key().empty()) {
+        if (param->spObject) {
+            if (param->spObject->key().empty()) {
                 continue;
             }
-            getSession().objsMan->collect_removing_objs(spObj->key());
+            getSession().objsMan->collect_removing_objs(param->spObject->key());
         }
     }
 }
@@ -263,8 +271,13 @@ ZENO_API void INode::preApply() {
     reportStatus(true, Node_Pending);
 
     //TODO: the param order should be arranged by the descriptors.
-    for (const auto& [name, param] : m_inputs) {
-        bool ret = requireInput(param);
+    for (const auto& [name, param] : m_inputObjs) {
+        bool ret = requireInput(name);
+        if (!ret)
+            zeno::log_warn("the param {} may not be initialized", name);
+    }
+    for (const auto& [name, param] : m_inputPrims) {
+        bool ret = requireInput(name);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
@@ -272,166 +285,283 @@ ZENO_API void INode::preApply() {
 
 ZENO_API void INode::registerObjToManager()
 {
-    for (auto const& [name, param] : m_outputs)
+    for (auto const& [name, param] : m_outputObjs)
     {
-        if (auto spObj = std::dynamic_pointer_cast<IObject>(param->result)) {
-
-            if (std::dynamic_pointer_cast<NumericObject>(spObj) ||
-                std::dynamic_pointer_cast<StringObject>(spObj)) {
+        if (param->spObject)
+        {
+            if (std::dynamic_pointer_cast<NumericObject>(param->spObject) ||
+                std::dynamic_pointer_cast<StringObject>(param->spObject)) {
                 return;
             }
 
-            if (spObj->key().empty())
+            if (param->spObject->key().empty())
             {
                 //如果当前节点是引用前继节点产生的obj，则obj.key不为空，此时就必须沿用之前的id，
                 //以表示“引用”，否则如果新建id，obj指针可能是同一个，会在manager引起混乱。
-                spObj->update_key(m_uuid);
+                param->spObject->update_key(m_uuid);
             }
 
-            const std::string& key = spObj->key();
+            const std::string& key = param->spObject->key();
             assert(!key.empty());
-            param->result->nodeId = m_name;
+            param->spObject->nodeId = m_name;
 
             auto& objsMan = getSession().objsMan;
             std::shared_ptr<INode> spNode = shared_from_this();
-            objsMan->collectingObject(spObj, spNode, m_bView);
+            objsMan->collectingObject(param->spObject, spNode, m_bView);
         }
     }
+}
+
+std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
+    std::shared_ptr<DictObject> spDict;
+    //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
+    bool bDirecyLink = false;
+    const auto& inLinks = in_param->links;
+    if (inLinks.size() == 1)
+    {
+        std::shared_ptr<ObjectLink> spLink = inLinks.front();
+        auto out_param = spLink->fromparam;
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty())
+        {
+            bDirecyLink = true;
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+        }
+    }
+    if (!bDirecyLink)
+    {
+        spDict = std::make_shared<DictObject>();
+        for (const auto& spLink : in_param->links)
+        {
+            const std::string& keyName = spLink->tokey;
+            auto out_param = spLink->fromparam;
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spDict->lut[keyName] = outResult;
+        }
+    }
+    return spDict;
+}
+
+std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
+    std::shared_ptr<ListObject> spList;
+    bool bDirectLink = false;
+    if (in_param->links.size() == 1)
+    {
+        std::shared_ptr<ObjectLink> spLink = in_param->links.front();
+        auto out_param = spLink->fromparam;
+        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
+        if (out_param->type == in_param->type && !spLink->tokey.empty()) {
+            bDirectLink = true;
+
+            GraphException::translated([&] {
+                outNode->doApply();
+                }, outNode.get());
+
+            zany outResult = outNode->get_output_obj(out_param->name);
+            spList = std::dynamic_pointer_cast<ListObject>(outResult);
+        }
+    }
+    if (!bDirectLink)
+    {
+        spList = std::make_shared<ListObject>();
+        int indx = 0;
+        for (const auto& spLink : in_param->links)
+        {
+            //list的情况下，keyName是不是没意义，顺序怎么维持？
+            auto out_param = spLink->fromparam;
+            std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+            if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
+
+                zany outResult = outNode->get_output_obj(out_param->name);
+                spList->push_back(outResult);
+                //spList->dirtyIndice.insert(indx);
+            }
+            else {
+                zany outResult = outNode->get_output_obj(out_param->name);
+                spList->push_back(outResult);
+            }
+        }
+    }
+    return spList;
+}
+
+zvariant INode::processPrimitive(PrimitiveParam* in_param)
+{
+    if (!in_param) {
+        return nullptr;
+    }
+
+    int frame = getGlobalState()->getFrameId();
+    //zany result;
+
+    const ParamType type = in_param->type;
+    const zvariant defl = in_param->defl;
+    zvariant result;
+
+    switch (type) {
+    case Param_Int:
+    case Param_Float:
+    case Param_Bool:
+    {
+        //先不考虑int float的划分,直接按variant的值来。
+        zvariant resolve_value;
+        if (std::holds_alternative<std::string>(defl))
+        {
+            std::string str = std::get<std::string>(defl);
+            float fVal = resolve(str, type);
+            result = fVal;
+        }
+        else if (std::holds_alternative<int>(defl))
+        {
+            result = defl;
+        }
+        else if (std::holds_alternative<float>(defl))
+        {
+            result = defl;
+        }
+        else
+        {
+            //error, throw expection.
+        }
+        break;
+    }
+    case Param_String:
+    {
+        if (std::holds_alternative<std::string>(defl))
+        {
+            result = defl;
+        }
+        else {
+            //error, throw expection.
+        }
+        break;
+    }
+    case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
+    case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
+    case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
+    case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
+    case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
+    case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
+    case Param_Heatmap:
+    {
+        //TODO: heatmap的结构体要整合到zvariant.
+        //if (std::holds_alternative<std::string>(defl))
+        //    result = zeno::parseHeatmapObj(std::get<std::string>(defl));
+        break;
+    }
+    //这里指的是基础类型的List/Dict.
+    case Param_List:
+    {
+        //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
+        break;
+    }
+    case Param_Dict:
+    {
+        break;
+    }
+    }
+    return result;
+}
+
+bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj) {
+    //观察端口属性
+    //TODO
+    if (in_param->socketType == Socket_Clone) {
+        in_param->spObject = outputObj->clone();
+        //TODO: list/dict case.
+    }
+    else if (in_param->socketType == Socket_Owning) {
+        in_param->spObject = outputObj->move_clone();
+    }
+    else if (in_param->socketType == Socket_ReadOnly) {
+        in_param->spObject = outputObj;
+        //TODO: readonly property on object.
+    }
+    return true;
 }
 
 ZENO_API bool INode::requireInput(std::string const& ds) {
-    auto param = get_input_param(ds);
-    return requireInput(param);
-}
-
-zany INode::get_output_result(std::shared_ptr<INode> outNode, std::string out_param, bool bCopy) {
-    zany outResult = outNode->get_output(out_param);
-    if (bCopy && outResult) {
-        outResult = outResult->clone();
-        //if (outResult->key().empty()) {
-        //    outResult->key = generateUUID();
-        //}
-    }
-    return outResult;
-}
-
-ZENO_API bool INode::requireInput(std::shared_ptr<IParam> in_param) {
-    if (!in_param)
-        return false;
-
-    if (in_param->links.empty()) {
-        in_param->result = process(in_param);
-        return true;    //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
-    }
-
-    switch (in_param->type)
-    {
-        case Param_Dict:
-        {
-            std::shared_ptr<DictObject> spDict;
-            //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
-            bool bDirecyLink = false;
-            const auto& inLinks = in_param->links;
-            if (inLinks.size() == 1)
-            {
-                std::shared_ptr<ILink> spLink = inLinks.front();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                if (out_param->type == in_param->type && !spLink->tokey.empty())
-                {
-                    bDirecyLink = true;
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
-                }
-            }
-            if (!bDirecyLink)
-            {
-                spDict = std::make_shared<DictObject>();
-                for (const auto& spLink : in_param->links)
-                {
-                    const std::string& keyName = spLink->tokey;
-                    std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spDict->lut[keyName] = outResult;
-                }
-            }
-            in_param->result = spDict;
-            break;
+    // 目前假设输入对象和输入数值，不能重名（不难实现，老节点直接改）。
+    auto iter = m_inputObjs.find(ds);
+    if (iter != m_inputObjs.end()) {
+        ObjectParam* in_param = iter->second.get();
+        if (in_param->links.empty()) {
+            //节点如果定义了对象，但没有边连上去，是否要看节点apply如何处理？
         }
-        case Param_List:
-        {
-            std::shared_ptr<ListObject> spList;
-            bool bDirectLink = false;
-            if (in_param->links.size() == 1)
+        else {
+            switch (in_param->type)
             {
-                std::shared_ptr<ILink> spLink = in_param->links.front();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                if (out_param->type == in_param->type && !spLink->tokey.empty()) {
-                    bDirectLink = true;
-
-                    GraphException::translated([&] {
-                        outNode->doApply();
-                    }, outNode.get());
-
-                    zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                    spList = std::dynamic_pointer_cast<ListObject>(outResult);
-                }
-            }
-            if (!bDirectLink)
-            {
-                auto oldinput = std::dynamic_pointer_cast<ListObject>(in_param->result);
-
-                spList = std::make_shared<ListObject>();
-                int indx = 0;
-                for (const auto& spLink : in_param->links)
+                case Param_Dict:
                 {
-                    //list的情况下，keyName是不是没意义，顺序怎么维持？
-                    std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                    std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-                    if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                    std::shared_ptr<DictObject> outDict = processDict(in_param);
+                    receiveOutputObj(in_param, outDict);
+                    break;
+                }
+                case Param_List:
+                {
+                    std::shared_ptr<ListObject> outList = processList(in_param);
+                    receiveOutputObj(in_param, outList);
+                    break;
+                }
+                case Param_Curve:
+                {
+                    //Curve要视作Object，因为整合到variant太麻烦，只要对于最原始的MakeCurve节点，以字符串（储存json）作为特殊类型即可。
+                }
+                default:
+                {
+                    if (in_param->links.size() == 1)
+                    {
+                        std::shared_ptr<ObjectLink> spLink = *in_param->links.begin();
+                        ObjectParam* out_param = spLink->fromparam;
+                        std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
+
                         GraphException::translated([&] {
                             outNode->doApply();
                         }, outNode.get());
 
-                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                        spList->push_back(outResult);
-                        //spList->dirtyIndice.insert(indx);
-                    } else {
-                        zany outResult = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
-                        spList->push_back(outResult);
+                        receiveOutputObj(in_param, out_param->spObject);
                     }
                 }
             }
-            in_param->result = spList;
-            //同上
-            break;
         }
-        default:
-        {
-            if (in_param->links.size() == 1)
-            {
-                std::shared_ptr<ILink> spLink = *in_param->links.begin();
-                std::shared_ptr<IParam> out_param = spLink->fromparam.lock();
-                std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
-
-                GraphException::translated([&] {
-                    outNode->doApply();
-                }, outNode.get());
-
-                in_param->result = get_output_result(outNode, out_param->name, Link_Copy == spLink->lnkProp);
+    }
+    else {
+        auto iter2 = m_inputPrims.find(ds);
+        if (iter2 != m_inputPrims.end()) {
+            PrimitiveParam* in_param = iter2->second.get();
+            if (in_param->links.empty()) {
+                in_param->result = processPrimitive(in_param);
+                //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
             }
+            else {
+                if (in_param->links.size() == 1) {
+                    std::shared_ptr<PrimitiveLink> spLink = *in_param->links.begin();
+                    std::shared_ptr<INode> outNode = spLink->fromparam->m_wpNode.lock();
+
+                    GraphException::translated([&] {
+                        outNode->doApply();
+                    }, outNode.get());
+                    //数值基本类型，直接复制。
+                    in_param->result = spLink->fromparam->result;
+                }
+            }
+        } else {
+            return false;
         }
     }
     return true;
@@ -448,10 +578,12 @@ ZENO_API void INode::doApply() {
         return;
     }
 
+    /*
     zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
         for (auto const& [name, param] : m_outputs)
             param->m_idModify = false;
         });
+    */
 
     preApply();
 
@@ -473,104 +605,398 @@ ZENO_API void INode::doApply() {
     reportStatus(false, Node_RunSucceed);
 }
 
-ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_input_params() const
+ZENO_API ObjectParams INode::get_input_object_params() const
 {
-    std::vector<std::shared_ptr<IParam>> params;
-    //TODO: 如果参数deprecated，是否还需要加入inputs_? 要
-    if (m_nodecls != "DeprecatedNode") {
+    ObjectParams params;
+    for (auto& [name, spObjParam] : m_inputObjs)
+    {
+        ParamObject obj;
+        for (auto linkInfo : spObjParam->links) {
+            obj.links.push_back(getEdgeInfo(linkInfo));
+        }
+        obj.name = name;
+        obj.type = spObjParam->type;
+        obj.bInput = true;
+        //obj.prop = ?
+        params.push_back(obj);
+    }
+    return params;
+}
 
-        for (const ParamTab& tab : nodeClass->m_customui.tabs)
-        {
-            for (const ParamGroup& group : tab.groups)
-            {
-                for (const ParamInfo& param : group.params)
-                {
-                    auto it = m_inputs.find(param.name);
-                    if (it == m_inputs.end()) {
-                        zeno::log_warn("unknown param {}", param.name);
-                        continue;
-                    }
-                    params.push_back(it->second);
+ZENO_API ObjectParams INode::get_output_object_params() const
+{
+    ObjectParams params;
+    for (auto& [name, spObjParam] : m_outputObjs)
+    {
+        ParamObject obj;
+        for (auto linkInfo : spObjParam->links) {
+            obj.links.push_back(getEdgeInfo(linkInfo));
+        }
+        obj.name = name;
+        obj.type = spObjParam->type;
+        obj.bInput = false;
+        //obj.prop = ?
+        params.push_back(obj);
+    }
+    return params;
+}
+
+ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
+    //TODO: deprecated node.
+    PrimitiveParams params;
+    for (auto& [name, spParamObj] : m_inputPrims) {
+        ParamPrimitive param;
+        param.bInput = true;
+        param.name = name;
+        param.type = spParamObj->type;
+        param.control = spParamObj->control;
+        param.ctrlProps = spParamObj->optCtrlprops;
+        param.defl = spParamObj->defl;
+        for (auto spLink : spParamObj->links) {
+            param.links.push_back(getEdgeInfo(spLink));
+        }
+        params.push_back(param);
+    }
+    return params;
+}
+
+ZENO_API PrimitiveParams INode::get_output_primitive_params() const {
+    PrimitiveParams params;
+    for (auto& [name, spParamObj] : m_outputPrims) {
+        ParamPrimitive param;
+        param.bInput = false;
+        param.name = name;
+        param.type = spParamObj->type;
+        param.control = NullControl;
+        param.ctrlProps = std::nullopt;
+        param.defl = spParamObj->defl;
+        for (auto spLink : spParamObj->links) {
+            param.links.push_back(getEdgeInfo(spLink));
+        }
+        params.push_back(param);
+    }
+    return params;
+}
+
+ZENO_API ParamPrimitive INode::get_input_prim_param(std::string const& name, bool* pExist) const {
+    ParamPrimitive param;
+    auto iter = m_inputPrims.find(name);
+    if (iter != m_inputPrims.end()) {
+        auto& paramPrim = iter->second;
+        param = paramPrim->exportParam();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
+    return param;
+}
+
+ZENO_API ParamObject INode::get_input_obj_param(std::string const& name, bool* pExist) const {
+    ParamObject param;
+    auto iter = m_inputObjs.find(name);
+    if (iter != m_inputObjs.end()) {
+        auto& paramObj = iter->second;
+        param = paramObj->exportParam();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
+    return param;
+}
+
+ZENO_API ParamPrimitive INode::get_output_prim_param(std::string const& name, bool* pExist) const {
+    ParamPrimitive param;
+    auto iter = m_outputPrims.find(name);
+    if (iter != m_outputPrims.end()) {
+        auto& paramPrim = iter->second;
+        param = paramPrim->exportParam();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
+    return param;
+}
+
+ZENO_API ParamObject INode::get_output_obj_param(std::string const& name, bool* pExist) const {
+    ParamObject param;
+    auto iter = m_outputObjs.find(name);
+    if (iter != m_outputObjs.end()) {
+        auto& paramObj = iter->second;
+        param = paramObj->exportParam();
+        if (pExist)
+            *pExist = true;
+    }
+    else {
+        if (pExist)
+            *pExist = false;
+    }
+    return param;
+}
+
+bool INode::add_input_prim_param(ParamPrimitive param) {
+    if (m_inputPrims.find(param.name) != m_inputPrims.end()) {
+        return false;
+    }
+    std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
+    sparam->bInput = true;
+    sparam->control = param.control;
+    sparam->defl = param.defl;
+    sparam->m_wpNode = shared_from_this();
+    sparam->name = param.name;
+    sparam->socketType = param.socketType;
+    sparam->type = param.type;
+    sparam->optCtrlprops = param.ctrlProps;
+    m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
+    return true;
+}
+
+bool INode::add_input_obj_param(ParamObject param) {
+    if (m_inputObjs.find(param.name) != m_inputObjs.end()) {
+        return false;
+    }
+    std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
+    sparam->bInput = true;
+    sparam->name = param.name;
+    sparam->type = param.type;
+    sparam->socketType = param.socketType;
+    sparam->m_wpNode = shared_from_this();
+    m_inputObjs.insert(std::make_pair(param.name, std::move(sparam)));
+    return true;
+}
+
+bool INode::add_output_prim_param(ParamPrimitive param) {
+    if (m_outputPrims.find(param.name) != m_outputPrims.end()) {
+        return false;
+    }
+    std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
+    sparam->bInput = false;
+    sparam->control = param.control;
+    sparam->defl = param.defl;
+    sparam->m_wpNode = shared_from_this();
+    sparam->name = param.name;
+    sparam->socketType = param.socketType;
+    sparam->type = param.type;
+    sparam->optCtrlprops = param.ctrlProps;
+    m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
+    return true;
+}
+
+bool INode::add_output_obj_param(ParamObject param) {
+    if (m_outputObjs.find(param.name) != m_outputObjs.end()) {
+        return false;
+    }
+    std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
+    sparam->bInput = true;
+    sparam->name = param.name;
+    sparam->type = param.type;
+    sparam->socketType = param.socketType;
+    sparam->m_wpNode = shared_from_this();
+    m_outputObjs.insert(std::make_pair(param.name, std::move(sparam)));
+    return true;
+}
+
+ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj) {
+    if (bInput) {
+        auto& param = safe_at(m_inputObjs, name, "");
+        param->spObject = spObj;
+    }
+    else {
+        auto& param = safe_at(m_outputObjs, name, "");
+        param->spObject = spObj;
+    }
+}
+
+void INode::init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink) {
+    auto iter = bInput ? m_inputObjs.find(paramname) : m_outputObjs.find(paramname);
+    if (bInput)
+        spLink->toparam = iter->second.get();
+    else
+        spLink->fromparam = iter->second.get();
+    iter->second->links.emplace_back(spLink);
+}
+
+void INode::init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink) {
+    auto iter = bInput ? m_inputPrims.find(paramname) : m_outputPrims.find(paramname);
+    if (bInput)
+        spLink->toparam = iter->second.get();
+    else
+        spLink->fromparam = iter->second.get();
+    iter->second->links.emplace_back(spLink);
+}
+
+bool INode::isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist) {
+    if (bInput) {
+        if (m_inputObjs.find(param_name) != m_inputObjs.end()) {
+            bExist = true;
+            return false;
+        }
+        else if (m_inputPrims.find(param_name) != m_inputPrims.end()) {
+            bExist = true;
+            return true;
+        }
+        bExist = false;
+        return false;
+    }
+    else {
+        if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
+            bExist = true;
+            return false;
+        }
+        else if (m_outputPrims.find(param_name) != m_outputPrims.end()) {
+            bExist = true;
+            return true;
+        }
+        bExist = false;
+        return false;
+    }
+}
+
+std::vector<EdgeInfo> INode::getLinks() const {
+    std::vector<EdgeInfo> remLinks;
+    for (const auto& [_, spParam] : m_inputObjs) {
+        for (std::shared_ptr<ObjectLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_inputPrims) {
+        for (std::shared_ptr<PrimitiveLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_outputObjs) {
+        for (std::shared_ptr<ObjectLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    for (const auto& [_, spParam] : m_outputPrims) {
+        for (std::shared_ptr<PrimitiveLink> spLink : spParam->links) {
+            remLinks.push_back(getEdgeInfo(spLink));
+        }
+    }
+    return remLinks;
+}
+
+std::vector<EdgeInfo> INode::getLinksByParam(bool bInput, const std::string& param_name) const {
+    std::vector<EdgeInfo> links;
+
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
+    auto& primtives = bInput ? m_inputPrims : m_outputPrims;
+
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto spLink : iter->second->links) {
+            links.push_back(getEdgeInfo(spLink));
+        }
+    }
+    else {
+        auto iter2 = primtives.find(param_name);
+        if (iter2 != primtives.end()) {
+            for (auto spLink : iter2->second->links) {
+                links.push_back(getEdgeInfo(spLink));
+            }
+        }
+    }
+    return links;
+}
+
+bool INode::updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey)
+{
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto spLink : iter->second->links) {
+            if (spLink->tokey == oldkey) {
+                spLink->tokey = newkey;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool INode::moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key)
+{
+    auto& objects = bInput ? m_inputObjs : m_outputObjs;
+    auto iter = objects.find(param_name);
+    if (iter != objects.end()) {
+        for (auto it = iter->second->links.begin(); it != iter->second->links.end(); it++) {
+            if ((*it)->tokey == key) {
+                auto it_ = std::prev(it);
+                std::swap(*it, *it_);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
+    if (bInput) {
+        if (edge.bObjLink) {
+            auto iter = m_inputObjs.find(edge.inParam);
+            if (iter == m_inputObjs.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
+        }
+        else {
+            auto iter = m_inputPrims.find(edge.inParam);
+            if (iter == m_inputPrims.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->fromparam->name == edge.outParam) {
+                    iter->second->links.remove(spLink);
+                    return true;
                 }
             }
         }
     }
     else {
-        //TODO: the order of deprecated node.
-        for (auto& [name, param] : m_inputs) {
-            params.push_back(param);
-        }
-    }
-    return params;
-}
-
-ZENO_API std::vector<std::shared_ptr<IParam>> INode::get_output_params() const
-{
-    std::vector<std::shared_ptr<IParam>> params;
-    if (m_nodecls != "DeprecatedNode") {
-        for (auto param : nodeClass->m_customui.outputs) {
-            auto it = m_outputs.find(param.name);
-            if (it == m_outputs.end()) {
-                zeno::log_warn("unknown param {}", param.name);
-                continue;
+        if (edge.bObjLink) {
+            auto iter = m_outputObjs.find(edge.inParam);
+            if (iter == m_outputObjs.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
             }
-            params.push_back(it->second);
+        }
+        else {
+            auto iter = m_outputPrims.find(edge.inParam);
+            if (iter == m_outputPrims.end())
+                return false;
+            for (auto spLink : iter->second->links) {
+                if (spLink->toparam->name == edge.inParam) {
+                    iter->second->links.remove(spLink);
+                    return true;
+                }
+            }
         }
     }
-    else {
-        for (auto& [name, param] : m_outputs) {
-            params.push_back(param);
-        }
-    }
-    return params;
-}
-
-ZENO_API void INode::set_input_defl(std::string const& name, zvariant defl) {
-    std::shared_ptr<IParam> param = get_input_param(name);
-    param->defl = defl;
-}
-
-ZENO_API std::shared_ptr<IParam> INode::get_input_param(std::string const& param) const {
-    auto it = m_inputs.find(param);
-    if (it != m_inputs.end())
-        return it->second;
-    return nullptr;
-}
-
-void INode::add_input_param(std::shared_ptr<IParam> param) {
-    m_inputs.insert(std::make_pair(param->name, param));
-}
-
-void INode::add_output_param(std::shared_ptr<IParam> param) {
-    m_outputs.insert(std::make_pair(param->name, param));
-}
-
-ZENO_API std::shared_ptr<IParam> INode::get_output_param(std::string const& param) const {
-    auto it = m_outputs.find(param);
-    if (it != m_outputs.end())
-        return it->second;
-    return nullptr;
-}
-
-ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj) {
-    if (bInput) {
-        auto param = safe_at(m_inputs, name, "");
-        param->result = spObj;
-    }
-    else {
-        auto param = safe_at(m_outputs, name, "");
-        param->result = spObj;
-    }
+    return false;
 }
 
 ZENO_API std::string INode::get_viewobject_output_param() const {
     //现在暂时还没有什么标识符用于指定哪个输出口是对应输出view obj的
     //一般都是默认第一个输出obj，暂时这么规定，后续可能用标识符。
-    auto params = get_output_params();
-    if (!params.empty())
-        return params[0]->name;
-    else
+    if (m_outputObjs.empty())
         return "";
+    return m_outputObjs.begin()->second->name;
 }
 
 ZENO_API NodeData INode::exportInfo() const
@@ -586,61 +1012,39 @@ ZENO_API NodeData INode::exportInfo() const
     else
         node.type = Node_Normal;
 
-    for (auto sparam : get_input_params()) {
-        ParamInfo param;
-        param.name = sparam->name;
-        param.bInput = true;
-        param.control = sparam->control;
-        param.ctrlProps = sparam->optCtrlprops;
-        param.type = sparam->type;
-        param.defl = sparam->defl;
-        param.socketType = sparam->socketType;
-        for (auto link : sparam->links) {
-            EdgeInfo info;
-            auto outParam = link->fromparam.lock();
-            auto outNode = outParam->m_wpNode.lock();
-            info.outNode = outNode->get_name();
-            info.outParam = outParam->name;
-            info.outKey = link->fromkey;
-            info.inNode = m_name;
-            info.inParam = param.name;
-            info.inKey = link->tokey;
-            info.lnkfunc = link->lnkProp;
-            param.links.push_back(info);
-        }
-        node.inputs.push_back(param);
+    node.customUi = nodeClass->m_customui;
+    for (auto& [name, paramObj] : m_inputObjs)
+    {
+        node.customUi.inputObjs.push_back(paramObj->exportParam());
     }
-
-    for (auto sparam : get_output_params()) {
-        ParamInfo param;
-        param.bInput = false;
-        param.name = sparam->name;
-        param.control = sparam->control;
-        param.ctrlProps = sparam->optCtrlprops;
-        param.socketType = sparam->socketType;
-        param.type = sparam->type;
-        param.defl = sparam->defl;
-        for (auto link : sparam->links) {
-            EdgeInfo info;
-            auto inParam = link->toparam.lock();
-            auto inNode = inParam->m_wpNode.lock();
-            info.inNode = inNode->get_name();
-            info.inParam = inParam->name;
-            info.inKey = link->tokey;
-            info.outNode = m_name;
-            info.outParam = param.name;
-            info.outKey = link->fromkey;
-            info.lnkfunc = link->lnkProp;
-            param.links.push_back(info);
+    for (auto &tab : node.customUi.inputPrims.tabs)
+    {
+        for (auto &group : tab.groups)
+        {
+            for (auto& param : group.params)
+            {
+                auto iter = m_inputPrims.find(param.name);
+                if (iter != m_inputPrims.end())
+                {
+                    param = iter->second->exportParam();
+                }
+            }
         }
-        node.outputs.push_back(param);
+    }
+    for (auto& [name, paramObj] : m_outputPrims)
+    {
+        node.customUi.outputPrims.push_back(paramObj->exportParam());
+    }
+    for (auto& [name, paramObj] : m_outputObjs)
+    {
+        node.customUi.outputObjs.push_back(paramObj->exportParam());
     }
     return node;
 }
 
 ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
     CORE_API_BATCH
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
     if (!zeno::isEqual(spParam->defl, new_value, spParam->type))
     {
         zvariant old_value = spParam->defl;
@@ -649,7 +1053,7 @@ ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_
         std::shared_ptr<Graph> spGraph = graph.lock();
         assert(spGraph);
 
-        spGraph->onNodeParamUpdated(spParam, old_value, new_value);
+        spGraph->onNodeParamUpdated(spParam.get(), old_value, new_value);
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
         getSession().referManager->checkReference(m_uuidPath, spParam->name);
@@ -662,66 +1066,6 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 {
     params_change_info ret;
     return ret;
-}
-
-void INode::directly_setinputs(std::map<std::string, zany> inputs)
-{
-    for (auto& [name, val] : inputs) {
-        std::shared_ptr<IParam> sparam = get_input_param(name);
-        if (!sparam) {
-            sparam = std::make_shared<IParam>();
-            sparam->name = name;
-            sparam->m_wpNode = shared_from_this();
-            sparam->type = Param_Null;
-            sparam->defl = zvariant();
-        }
-        sparam->result = val;
-    }
-}
-
-std::map<std::string, zany> INode::getoutputs()
-{
-    std::map<std::string, zany> output_res;
-    for (const auto& [name, param] : this->m_outputs) {
-        output_res.insert(std::make_pair(name, param->result));
-    }
-    return output_res;
-}
-
-std::vector<std::pair<std::string, zany>> INode::getinputs()
-{
-    std::vector<std::pair<std::string, zany>> input_res;
-    for (const auto& [name, param] : this->m_inputs) {
-        input_res.push_back(std::make_pair(name, param->result));
-    }
-    return input_res;
-}
-
-std::pair<std::string, std::string> INode::getinputbound(std::string const& param, std::string const& msg) const
-{
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
-    if (!spParam->links.empty()) {
-        auto lnk = *spParam->links.begin();
-        auto outparam = lnk->fromparam.lock();
-        if (outparam) {
-            outparam->name;
-            auto pnode = outparam->m_wpNode.lock();
-            if (pnode) {
-                auto id = pnode->get_ident();
-                return { id, outparam->name };
-            }
-        }
-    }
-    throw makeError<KeyError>(m_name, msg);
-}
-
-std::vector<std::pair<std::string, zany>> INode::getoutputs2()
-{
-    std::vector<std::pair<std::string, zany>> output_res;
-    for (const auto& [name, param] : this->m_outputs) {
-        output_res.push_back(std::make_pair(name, param->result));
-    }
-    return output_res;
 }
 
 ZENO_API void INode::init(const NodeData& dat)
@@ -743,48 +1087,135 @@ ZENO_API void INode::init(const NodeData& dat)
 
 ZENO_API void INode::initParams(const NodeData& dat)
 {
-    for (const ParamInfo& param : dat.inputs)
+    for (const ParamObject& paramObj : dat.customUi.inputObjs)
     {
-        std::shared_ptr<IParam> sparam = get_input_param(param.name);
-        if (!sparam) {
-            //legacy zsg有大量此类参数，导致占用输出，因此先屏蔽
-            //zeno::log_warn("input param `{}` is not registerd in current zeno version");
-            continue;
-        }
-        sparam->defl = param.defl;
-        sparam->control = param.control;
-        sparam->optCtrlprops = param.ctrlProps;
-        sparam->m_wpNode = shared_from_this();
+        add_input_obj_param(paramObj);
     }
-    for (const ParamInfo& param : dat.outputs)
+    for (auto tab : dat.customUi.inputPrims.tabs)
     {
-        std::shared_ptr<IParam> sparam = get_output_param(param.name);
-        if (!sparam) {
-            //zeno::log_warn("output param `{}` is not registerd in current zeno version");
-            continue;
+        for (auto group : tab.groups)
+        {
+            for (auto param : group.params)
+            {
+                add_input_prim_param(param);
+            }
         }
-        sparam->defl = param.defl;
-        sparam->control = param.control;
-        sparam->optCtrlprops = param.ctrlProps;
-        sparam->m_wpNode = shared_from_this();
+    }
+    for (const ParamPrimitive& param : dat.customUi.outputPrims)
+    {
+        add_output_prim_param(param);
+    }
+    for (const ParamObject& paramObj : dat.customUi.outputObjs)
+    {
+        add_output_obj_param(paramObj);
     }
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {
-    auto param = get_input_param(id);
-    return param != nullptr && param->result != nullptr;
+    //这个has_input在旧的语义里，代表的是input obj，如果有一些边没有连上，那么有一些参数值仅有默认值，未必会设这个input的，
+    //还有一种情况，就是对象值是否有输入引入
+    //这种情况要看旧版本怎么处理。
+    //对于新版本而言，对于数值型输入，没有连上边仅有默认值，就不算has_input，有点奇怪，因此这里直接判断参数是否存在。
+    auto iter = m_inputObjs.find(id);
+    if (iter != m_inputObjs.end()) {
+        return !iter->second->links.empty();
+    }
+    else {
+        return m_inputPrims.find(id) != m_inputPrims.end();
+    }
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
-    std::shared_ptr<IParam> param = get_input_param(id);
-    return param ? param->result : nullptr;
+    auto iter = m_inputPrims.find(id);
+    if (iter != m_inputPrims.end()) {
+        auto& val = iter->second->result;
+        switch (iter->second->type) {
+            case Param_Int:
+            case Param_Float:
+            case Param_Bool:
+            case Param_Vec2f:
+            case Param_Vec2i:
+            case Param_Vec3f:
+            case Param_Vec3i:
+            case Param_Vec4f:
+            case Param_Vec4i:
+            {
+                //依然有很多节点用了NumericObject，为了兼容，需要套一层NumericObject出去。
+                std::shared_ptr<NumericObject> spNum = std::make_shared<NumericObject>();
+                zvariant value;
+                if (std::holds_alternative<int>(val))
+                {
+                    spNum->set<int>(std::get<int>(val));
+                }
+                else if (std::holds_alternative<float>(val))
+                {
+                    spNum->set<float>(std::get<float>(val));
+                }
+                else if (std::holds_alternative<vec2i>(val))
+                {
+                    spNum->set<vec2i>(std::get<vec2i>(val));
+                }
+                else if (std::holds_alternative<vec2f>(val))
+                {
+                    spNum->set<vec2f>(std::get<vec2f>(val));
+                }
+                else if (std::holds_alternative<vec3i>(val))
+                {
+                    spNum->set<vec3i>(std::get<vec3i>(val));
+                }
+                else if (std::holds_alternative<vec3f>(val))
+                {
+                    spNum->set<vec3f>(std::get<vec3f>(val));
+                }
+                else if (std::holds_alternative<vec4i>(val))
+                {
+                    spNum->set<vec4i>(std::get<vec4i>(val));
+                }
+                else if (std::holds_alternative<vec4f>(val))
+                {
+                    spNum->set<vec4f>(std::get<vec4f>(val));
+                }
+                else
+                {
+                    //throw makeError<TypeError>(typeid(T));
+                    //error, throw expection.
+                }
+                return spNum;
+            }
+            case Param_String:
+            {
+                if (std::holds_alternative<std::string>(val))
+                {
+                    std::shared_ptr<StringObject> stringobj = std::make_shared<StringObject>();
+                    return stringobj;
+                }
+                else {
+                    //error, throw expection.
+                }
+                break;
+            }
+            return nullptr;
+        }
+    }
+    else {
+        auto iter2 = m_inputObjs.find(id);
+        if (iter2 != m_inputObjs.end()) {
+            return iter2->second->spObject;
+        }
+        else {
+            return nullptr;
+        }
+    }
 }
 
-ZENO_API zany INode::resolveInput(std::string const& id) {
-    if (requireInput(id))
-        return get_input_param(id)->result;
-    else
+zvariant INode::resolveInput(std::string const& id) {
+    if (requireInput(id)) {
+        auto iter = m_inputPrims.find(id);
+        return iter->second->result;
+    }
+    else {
         return nullptr;
+    }
 }
 
 ZENO_API void INode::set_pos(std::pair<float, float> pos) {
@@ -802,138 +1233,83 @@ ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(spGraph);
 }
 
-ZENO_API bool INode::set_input(std::string const& param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(m_inputs, param, "miss input param `" + param + "` on node `" + m_name + "`");
-    spParam->result = obj;
-    return true;
+bool INode::set_primitive_input(std::string const& id, const zvariant& val) {
+    auto iter = m_inputPrims.find(id);
+    if (iter == m_inputPrims.end())
+        return false;
+    iter->second->result = val;
 }
 
-ZENO_API bool INode::has_output(std::string const& name) const {
-    return get_output_param(name) != nullptr;
+bool INode::set_primitive_output(std::string const& id, const zvariant& val) {
+    auto iter = m_outputPrims.find(id);
+    if (iter == m_outputPrims.end())
+        return false;
+    iter->second->result = val;
 }
 
-ZENO_API bool INode::set_output(std::string const & param, zany obj) {
-    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
-    spParam->result = obj;
-    return true;
-}
-
-ZENO_API zany INode::get_output(std::string const& param) {
-    std::shared_ptr<IParam> spParam = safe_at(m_outputs, param, "miss output param `" + param + "` on node `" + m_name + "`");
-    return spParam->result;
-}
-
-ZENO_API bool INode::has_keyframe(std::string const &id) const {
-    return false;
-    //return kframes.find(id) != kframes.end();
-}
-
-ZENO_API zany INode::get_keyframe(std::string const &id) const 
-{
-    //deprecated: will parse it when processing defl value
-    return nullptr;
-    /*
-    auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
-    auto curves = dynamic_cast<zeno::CurveObject *>(value.get());
-    if (!curves) {
-        return value;
+ZENO_API bool INode::set_output(std::string const& param, zany obj) {
+    auto iter = m_outputObjs.find(param);
+    if (iter != m_outputObjs.end()) {
+        iter->second->spObject = obj;
+        return true;
     }
-    int frame = getGlobalState()->getFrameId();
-    if (curves->keys.size() == 1) {
-        auto val = curves->keys.begin()->second.eval(frame);
-        value = objectFromLiterial(val);
-    } else {
-        int size = curves->keys.size();
-        if (size == 2) {
-            zeno::vec2f vec2;
-            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
-                 it++) {
-                int index = it->first == "x" ? 0 : 1;
-                vec2[index] = it->second.eval(frame);
-            }
-            value = objectFromLiterial(vec2);
-        } else if (size == 3) {
-            zeno::vec3f vec3;
-            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
-                 it++) {
-                int index = it->first == "x" ? 0 : it->first == "y" ? 1 : 2;
-                vec3[index] = it->second.eval(frame);
-            }
-            value = objectFromLiterial(vec3);
-        } else if (size == 4) {
-            zeno::vec4f vec4;
-            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
-                 it++) {
-                int index = it->first == "x" ? 0 : it->first == "y" ? 1 : it->first == "z" ? 2 : 3;
-                vec4[index] = it->second.eval(frame);
-            }
-            value = objectFromLiterial(vec4);
-        }
-    }
-    return value;
-    */
-}
-
-ZENO_API bool INode::has_formula(std::string const &id) const {
-    return false;
-    //return formulas.find(id) != formulas.end();
-}
-
-ZENO_API zany INode::get_formula(std::string const &id) const 
-{
-    //deprecated: will parse it when processing defl value
-    return nullptr;
-    /*
-    auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
-    if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
-    {
-        std::string code = formulas->get();
-
-        auto& desc = nodeClass->desc;
-        if (!desc)
-            return value;
-
-        bool isStrFmla = false;
-        for (auto const& [type, name, defl, _] : desc->inputs) {
-            if (name == id && (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                isStrFmla = true;
-                break;
-            }
-        }
-        if (!isStrFmla) {
-            for (auto const& [type, name, defl, _] : desc->params) {
-                auto name_ = name + ":";
-                if (id == name_ &&
-                    (type == "string" || type == "writepath" || type == "readpath" || type == "multiline_string")) {
-                    isStrFmla = true;
-                    break;
+    else {
+        auto iter2 = m_outputPrims.find(param);
+        if (iter2 != m_outputPrims.end()) {
+            //兼容以前NumericObject的情况
+            if (auto numObject = std::dynamic_pointer_cast<NumericObject>(obj)) {
+                const auto& val = numObject->value;
+                if (std::holds_alternative<int>(val))
+                {
+                    iter2->second->result = std::get<int>(val);
+                }
+                else if (std::holds_alternative<float>(val))
+                {
+                    iter2->second->result = std::get<float>(val);
+                }
+                else if (std::holds_alternative<vec2i>(val))
+                {
+                    iter2->second->result = std::get<vec2i>(val);
+                }
+                else if (std::holds_alternative<vec2f>(val))
+                {
+                    iter2->second->result = std::get<vec2f>(val);
+                }
+                else if (std::holds_alternative<vec3i>(val))
+                {
+                    iter2->second->result = std::get<vec3i>(val);
+                }
+                else if (std::holds_alternative<vec3f>(val))
+                {
+                    iter2->second->result = std::get<vec3f>(val);
+                }
+                else if (std::holds_alternative<vec4i>(val))
+                {
+                    iter2->second->result = std::get<vec4i>(val);
+                }
+                else if (std::holds_alternative<vec4f>(val))
+                {
+                    iter2->second->result = std::get<vec4f>(val);
+                }
+                else
+                {
+                    //throw makeError<TypeError>(typeid(T));
+                    //error, throw expection.
                 }
             }
-        }
-
-        //remove '='
-        code.replace(0, 1, "");
-
-        if (isStrFmla) {
-            auto res = getThisGraph()->callTempNode("StringEval", { {"zfxCode", objectFromLiterial(code)} }).at("result");
-            value = objectFromLiterial(std::move(res));
-        }
-        else
-        {
-            std::string prefix = "vec3";
-            std::string resType;
-            if (code.substr(0, prefix.size()) == prefix) {
-                resType = "vec3f";
+            else if (auto strObject = std::dynamic_pointer_cast<StringObject>(obj)) {
+                const auto& val = strObject->value;
+                iter2->second->result = val;
             }
-            else {
-                resType = "float";
-            }
-            auto res = getThisGraph()->callTempNode("NumericEval", { {"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial(resType)} }).at("result");
-            value = objectFromLiterial(std::move(res));
+            return true;
         }
-    }     
-    return value;
-    */
+    }
+    return false;
+}
+
+ZENO_API zany INode::get_output_obj(std::string const& param) {
+    auto& spParam = safe_at(m_outputObjs, param, "miss output param `" + param + "` on node `" + m_name + "`");
+    return spParam->spObject;
 }
 
 ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
@@ -983,10 +1359,10 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
     }
 }
 
-template<class T, class E> zany INode::resolveVec(const zvariant& defl, const ParamType type)
+template<class T, class E> T INode::resolveVec(const zvariant& defl, const ParamType type)
 {
     if (std::holds_alternative<T>(defl)) {
-        return std::make_shared<zeno::NumericObject>(std::get<T>(defl));
+        return std::get<T>(defl);
     }
     else if (std::holds_alternative<E>(defl)) {
         E vec = std::get<E>(defl);
@@ -995,96 +1371,13 @@ template<class T, class E> zany INode::resolveVec(const zvariant& defl, const Pa
             float fVal = resolve(vec[i], type);
             vecnum[i] = fVal;
         }
-        return std::make_shared<zeno::NumericObject>(vecnum);
+        return vecnum;
     }
     else {
         //error, throw expection.
-        return nullptr;
+        return T();
+        //throw makeError<TypeError>(typeid(T));
     }
-}
-
-zany INode::process(std::shared_ptr<IParam> in_param)
-{
-    if (!in_param) {
-        return nullptr;
-    }
-
-    int frame = getGlobalState()->getFrameId();
-    zany result;
-
-    const ParamType type = in_param->type;
-    const zvariant defl = in_param->defl;
-
-    switch (type) {
-        case Param_Int:
-        case Param_Float:
-        case Param_Bool:
-        {
-            //先不考虑int float的划分,直接按variant的值来。
-            zvariant resolve_value;
-            if (std::holds_alternative<std::string>(defl))
-            {
-                std::string str = std::get<std::string>(defl);
-                float fVal = resolve(str, type);
-                result = std::make_shared<zeno::NumericObject>(fVal);
-            }
-            else if (std::holds_alternative<int>(defl))
-            {
-                result = std::make_shared<zeno::NumericObject>(std::get<int>(defl));
-            }
-            else if (std::holds_alternative<float>(defl))
-            {
-                result = std::make_shared<zeno::NumericObject>(std::get<float>(defl));
-            }
-            else
-            {
-                //error, throw expection.
-            }
-            break;
-        }
-        case Param_String:
-        {
-            if (std::holds_alternative<std::string>(defl))
-            {
-                std::string str = std::get<std::string>(defl);
-                result = std::make_shared<zeno::StringObject>(str);
-            }
-            else {
-                //error, throw expection.
-            }
-            break;
-        }
-        case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
-        case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
-        case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
-        case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
-        case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
-        case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
-        case Param_Curve:
-        {
-            if (std::holds_alternative<std::string>(defl))
-            {
-                result = zeno::parseCurveObj(std::get<std::string>(defl));
-            }
-            break;
-        }
-        case Param_Heatmap:
-        {
-            if (std::holds_alternative<std::string>(defl))
-                result = zeno::parseHeatmapObj(std::get<std::string>(defl));
-            break;
-        }
-        case Param_List:
-        {
-            //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
-            break;
-        }
-        case Param_Dict:
-        {
-            break;
-        }
-    }
-    return result;
 }
 
 }

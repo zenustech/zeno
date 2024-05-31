@@ -3,6 +3,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/helper.h>
 #include <zeno/io/iohelper.h>
+#include <zeno/io/iotags.h>
 
 using namespace zeno::iotags;
 
@@ -42,24 +43,45 @@ namespace zenoio
         writer.Key("class");
         writer.String(node.cls.c_str());
 
-        writer.Key("inputs");
+        writer.Key("object_inputs");
         {
             JsonObjScope _batch(writer);
-            for (const auto& param : node.inputs)
+            for (const auto& param : node.customUi.inputObjs)
             {
                 writer.Key(param.name.c_str());
-                dumpSocket(param, writer);
+                dumpObjectParam(param, writer);
             }
         }
-        writer.Key("outputs");
+        writer.Key("primitive_inputs");
         {
-            JsonObjScope _scope(writer);
-            for (const auto& param : node.outputs)
+            JsonObjScope _batch(writer);
+            zeno::PrimitiveParams params = customUiToParams(node.customUi.inputPrims);
+            for (const auto& param : params)
             {
                 writer.Key(param.name.c_str());
-                dumpSocket(param, writer);
+                dumpPrimitiveParam(param, writer);
             }
         }
+        writer.Key("primitive_outputs");
+        {
+            JsonObjScope _batch(writer);
+            zeno::PrimitiveParams params = node.customUi.outputPrims;
+            for (const auto& param : params)
+            {
+                writer.Key(param.name.c_str());
+                dumpPrimitiveParam(param, writer);
+            }
+        }
+        writer.Key("object_outputs");
+        {
+            JsonObjScope _batch(writer);
+            for (const auto& param : node.customUi.outputObjs)
+            {
+                writer.Key(param.name.c_str());
+                dumpObjectParam(param, writer);
+            }
+        }
+
         writer.Key("uipos");
         {
             writer.StartArray();
@@ -87,11 +109,6 @@ namespace zenoio
 
         if (node.cls == "Blackboard") {
             // do not compatible with zeno1
-
-            for (auto param : node.inputs)
-            {
-                //TODO
-            }
         }
         else if (node.cls == "Group") {
             // TODO
@@ -123,50 +140,6 @@ namespace zenoio
 
     void CommonWriter::dumpCustomUI(zeno::CustomUI customUi, RAPIDJSON_WRITER& writer)
     {
-        auto customUiDumpParam = [](const zeno::ParamInfo& param, RAPIDJSON_WRITER& writer) {
-            writer.Key(param.name.c_str());
-            JsonObjScope scopeparams(writer);
-            writer.Key("name");
-            writer.String(param.name.c_str());
-            writer.Key("type");
-            writer.Int(param.type);
-            writer.Key("socketType");
-            writer.Int(param.socketType);
-            writer.Key("default-value");
-            writeZVariant(param.defl, param.type, writer);
-            writer.Key("control");
-            writer.Int(param.control);
-            writer.Key("controlProps");
-            {
-                if (param.ctrlProps.has_value()) {
-                    JsonObjScope scopeCtrlProps(writer);
-                    writer.Key("items");
-                    if (param.ctrlProps->items.has_value()) {
-                        writer.StartArray();
-                        for (auto& v : param.ctrlProps->items.value())
-                            writer.String(v.c_str());
-                    }
-                    else
-                        writer.Null();
-                    writer.Key("ranges");
-                    if (param.ctrlProps->ranges.has_value()) {
-                        JsonObjScope scopeRange(writer);
-                        writer.Key("min");
-                        writer.Double(param.ctrlProps->ranges.value()[0]);
-                        writer.Key("max");
-                        writer.Double(param.ctrlProps->ranges.value()[1]);
-                        writer.Key("step");
-                        writer.Double(param.ctrlProps->ranges.value()[2]);
-                    }
-                    else
-                        writer.Null();
-                }
-                else
-                    writer.Null();
-            }
-            writer.Key("tooltip");
-            writer.String(param.tooltip.c_str());
-        };
         writer.Key("subnet-customUi");
         JsonObjScope scopeui(writer);
         writer.Key("nickname");
@@ -177,15 +150,10 @@ namespace zenoio
         writer.String(customUi.category.c_str());
         writer.Key("doc");
         writer.String(customUi.doc.c_str());
-        writer.Key("outputs");
-        {
-            JsonObjScope scopegroup(writer);
-            for (const zeno::ParamInfo& output : customUi.outputs)
-                customUiDumpParam(output, writer);
-        }
+
         writer.Key("tabs");
         JsonObjScope scopetabs(writer);
-        for (const zeno::ParamTab& tab : customUi.tabs)
+        for (const zeno::ParamTab& tab : customUi.inputPrims.tabs)
         {
             writer.Key(tab.name.c_str());
             JsonObjScope scopetab(writer);
@@ -193,13 +161,66 @@ namespace zenoio
             {
                 writer.Key(group.name.c_str());
                 JsonObjScope scopegroup(writer);
-                for (const zeno::ParamInfo& param : group.params)
-                    customUiDumpParam(param, writer);
+                for (const zeno::ParamPrimitive& param : group.params)
+                    dumpPrimitiveParam(param, writer);
             }
         }
     }
 
-    void CommonWriter::dumpSocket(zeno::ParamInfo param, RAPIDJSON_WRITER& writer)
+    void CommonWriter::dumpObjectParam(zeno::ParamObject param, RAPIDJSON_WRITER& writer)
+    {
+        JsonObjScope scope(writer);
+        if (param.bInput)
+        {
+            writer.Key("links");
+            if (param.links.empty())
+            {
+                writer.Null();
+            }
+            else
+            {
+                writer.StartArray();
+                for (auto link : param.links) {
+                    JsonObjScope scope2(writer);
+                    writer.Key("out-node");
+                    writer.String(link.outNode.c_str());
+                    writer.Key("out-socket");
+                    writer.String(link.outParam.c_str());
+                    writer.Key("out-key");
+                    writer.String(link.outKey.c_str());
+                    writer.Key("in-key");
+                    writer.String(link.inKey.c_str());
+                }
+                writer.EndArray();
+            }
+        }
+
+        writer.Key("type");
+        writer.String(zeno::paramTypeToString(param.type).c_str());
+
+        if (param.bInput)
+        {
+            writer.Key("socket-type");
+            switch (param.socketType)
+            {
+            case zeno::Socket_Output:   writer.String(iotags::params::socket_clone); break;
+            case zeno::Socket_Clone:    writer.String(iotags::params::socket_output); break;
+            case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
+            case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
+            case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+            default:
+                writer.String(iotags::params::socket_none);
+            }
+        }
+
+        if (!param.tooltip.empty())
+        {
+            writer.Key("tooltip");
+            writer.String(param.tooltip.c_str());
+        }
+    }
+
+    void CommonWriter::dumpPrimitiveParam(zeno::ParamPrimitive param, RAPIDJSON_WRITER& writer)
     {
         //new io format for socket.
         writer.StartObject();
@@ -232,7 +253,6 @@ namespace zenoio
             {
                 writer.StartArray();
                 for (auto link : param.links) {
-
                     JsonObjScope scope(writer);
                     writer.Key("out-node");
                     writer.String(link.outNode.c_str());
@@ -240,17 +260,8 @@ namespace zenoio
                     writer.String(link.outParam.c_str());
                     writer.Key("out-key");
                     writer.String(link.outKey.c_str());
-
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
-
-                    writer.Key("property");
-                    if (link.lnkfunc == zeno::Link_Copy) {
-                        writer.String("copy");
-                    }
-                    else {
-                        writer.String("ref");
-                    }
                 }
                 writer.EndArray();
             }
@@ -267,15 +278,48 @@ namespace zenoio
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);
 
+            writer.Key("controlProps");
+            {
+                if (param.ctrlProps.has_value()) {
+                    JsonObjScope scopeCtrlProps(writer);
+                    writer.Key("items");
+                    if (param.ctrlProps->items.has_value()) {
+                        writer.StartArray();
+                        for (auto& v : param.ctrlProps->items.value())
+                            writer.String(v.c_str());
+                    }
+                    else {
+                        writer.Null();
+                    }
+
+                    writer.Key("ranges");
+                    if (param.ctrlProps->ranges.has_value()) {
+                        JsonObjScope scopeRange(writer);
+                        writer.Key("min");
+                        writer.Double(param.ctrlProps->ranges.value()[0]);
+                        writer.Key("max");
+                        writer.Double(param.ctrlProps->ranges.value()[1]);
+                        writer.Key("step");
+                        writer.Double(param.ctrlProps->ranges.value()[2]);
+                    }
+                    else {
+                        writer.Null();
+                    }
+                }
+                else {
+                    writer.Null();
+                }
+            }
+
             writer.Key("socket-type");
-            if (param.socketType == zeno::ParamSocket) {
-                writer.String("parameter");
-            }
-            else if (param.socketType == zeno::PrimarySocket) {
-                writer.String("primary");
-            }
-            else {
-                writer.String("none");
+            switch (param.socketType)
+            {
+            case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
+            case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
+            case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
+            case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+            default:
+                writer.String(iotags::params::socket_none);
             }
         }
 

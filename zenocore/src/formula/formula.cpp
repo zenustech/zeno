@@ -82,11 +82,14 @@ float Formula::callRef(const std::string& ref) {
         zeno::log_error("{} refer loop", path);
         return NAN;
     }
-    if (auto spParam = pNode->get_input_param(param))
+    if (pNode->requireInput(param))
     {
         //refer float
-        if (pNode->requireInput(spParam))
-            return objectToLiterial<float>(spParam->result);
+        bool bExist = true;
+        zeno::ParamPrimitive primparam = pNode->get_input_prim_param(param, &bExist);
+        if (!bExist)
+            return NAN;
+        return std::get<float>(primparam.result);
     }
     else
     {
@@ -96,18 +99,21 @@ float Formula::callRef(const std::string& ref) {
             zeno::log_error("reference param {} error", param);
             return NAN;
         }
-        if (auto spParam = pNode->get_input_param(paramName))
+        if (pNode->requireInput(paramName))
         {
-            if (pNode->requireInput(spParam))
+            std::string vecStr = param.substr(param.size() - 1, 1);
+            int idx = vecStr == "x" ? 0 : vecStr == "y" ? 1 : vecStr == "z" ? 2 : 3;
+            bool bExist = true;
+            zeno::ParamPrimitive primparam = pNode->get_input_prim_param(param, &bExist);
+            if (!bExist)
+                return NAN;
+
+            switch (primparam.type)
             {
-                std::string vecStr = param.substr(param.size() - 1, 1);
-                int idx = vecStr == "x" ? 0 : vecStr == "y" ? 1 : vecStr == "z" ? 2 : 3;
-                switch (spParam->type)
-                {
                 case Param_Vec2f:
                 case Param_Vec2i:
                 {
-                    auto vec = objectToLiterial<zeno::vec2f>(spParam->result);
+                    auto vec = std::get<zeno::vec2f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
@@ -115,7 +121,7 @@ float Formula::callRef(const std::string& ref) {
                 case Param_Vec3f:
                 case Param_Vec3i:
                 {
-                    auto vec = objectToLiterial<zeno::vec3f>(spParam->result);
+                    auto vec = std::get<zeno::vec3f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
@@ -123,11 +129,10 @@ float Formula::callRef(const std::string& ref) {
                 case Param_Vec4f:
                 case Param_Vec4i:
                 {
-                    auto vec = objectToLiterial<zeno::vec4f>(spParam->result);
+                    auto vec = std::get<zeno::vec4f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
-                }
                 }
             }
         }

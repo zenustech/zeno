@@ -52,7 +52,7 @@ struct GetVDBPoints : zeno::INode {
 
 static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     { /* inputs: */ {
-        {"", "grid", "", PrimarySocket},
+        {"", "grid", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "pars",
     }, /* params: */ {
@@ -257,7 +257,7 @@ struct VDBPointsToPrimitive : zeno::INode {
 
 static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("VDBPointsToPrimitive",
     { /* inputs: */ {
-        {"", "grid", "", PrimarySocket},
+        {"", "grid", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ {
@@ -330,8 +330,8 @@ struct GetVDBPointsDroplets : zeno::INode {
 
 static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("GetVDBPointsDroplets",
     { /* inputs: */ {
-        {"", "grid", "", PrimarySocket},
-        {"", "sdf", "", PrimarySocket},
+        {"", "grid", "", zeno::Socket_ReadOnly},
+        {"", "sdf", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ {
@@ -343,14 +343,14 @@ static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("G
 struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
     virtual void apply() override {
         VDBPointsToPrimitive::apply();
-        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output("prim"))).get());
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("prim"))).get());
     }
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPointsGrid).name(), typeid(PrimitiveObject).name())({
         {
-            {"", "grid", "", PrimarySocket},
-            {"", "prim", "", PrimarySocket},
+            {"", "grid", "", zeno::Socket_ReadOnly},
+            {"", "prim", "", zeno::Socket_ReadOnly},
         },
         {},
         {},

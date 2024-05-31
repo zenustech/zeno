@@ -1,6 +1,7 @@
 #include <zeno/io/zenreader.h>
 #include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
+#include <zeno/io/iotags.h>
 
 
 namespace zenoio
@@ -82,13 +83,21 @@ namespace zenoio
         retNode.cls = cls;
         retNode.type = zeno::Node_Normal;
 
-        if (objValue.HasMember("inputs"))
-        {
-            _parseInputs(nodeid, cls, objValue["inputs"], retNode, links);
+        //要先parse customui以获得整个参数树结构。
+        if (objValue.HasMember("subnet-customUi")) {
+            retNode.customUi = _parseCustomUI(objValue["subnet-customUi"]);
         }
-        if (objValue.HasMember("outputs"))
-        {
-            _parseOutputs(nodeid, cls, objValue["outputs"], retNode, links);
+        if (objValue.HasMember(iotags::params::node_inputs_objs)) {
+            _parseInputs(true, nodeid, cls, objValue[iotags::params::node_inputs_objs], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_inputs_primitive)) {
+            _parseInputs(false, nodeid, cls, objValue[iotags::params::node_inputs_primitive], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_outputs_primitive)) {
+            _parseOutputs(false, nodeid, cls, objValue[iotags::params::node_outputs_primitive], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_outputs_objs)) {
+            _parseOutputs(true, nodeid, cls, objValue[iotags::params::node_outputs_objs], retNode, links);
         }
 
         if (objValue.HasMember("uipos"))
@@ -166,10 +175,6 @@ namespace zenoio
             //TODO: import group.
         //}
 
-        if (objValue.HasMember("subnet-customUi")) {
-            retNode.customUi = _parseCustomUI(objValue["subnet-customUi"]);
-        }
-
         if (objValue.HasMember("subnet")) {
             zeno::GraphData subgraph;
             _parseGraph(objValue["subnet"], assets, subgraph);
@@ -202,7 +207,41 @@ namespace zenoio
         return retNode;
     }
 
+    void ZenReader::_parseOutputs(
+        const bool bObjectParam,
+        const std::string& id,
+        const std::string& nodeName,
+        const rapidjson::Value& outputs,
+        zeno::NodeData& ret,
+        zeno::LinksData& links)
+    {
+        for (const auto& outParamObj : outputs.GetObject())
+        {
+            const std::string& outParam = outParamObj.name.GetString();
+            if (outParam == "DST")
+                continue;
+
+            const auto& outObj = outParamObj.value;
+            if (outObj.IsNull())
+            {
+                zeno::ParamObject param;
+                param.name = outParam;
+                param.socketType = zeno::Socket_Output;
+                ret.customUi.outputObjs.push_back(param);
+            }
+            else if (outObj.IsObject())
+            {
+                _parseSocket(false, false, bObjectParam, id, nodeName, outParam, outObj, ret, links);
+            }
+            else
+            {
+                zeno::log_error("unknown format");
+            }
+        }
+    }
+
     void ZenReader::_parseInputs(
+        const bool bObjectParam,
         const std::string& id,
         const std::string& nodeName,
         const rapidjson::Value& inputs,
@@ -216,15 +255,14 @@ namespace zenoio
 
             if (inputObj.IsNull())
             {
-                zeno::ParamInfo param;
+                zeno::ParamObject param;
                 param.name = inSock;
-                ret.inputs.push_back(param);
+                ret.customUi.inputObjs.emplace_back(param);
             }
             else if (inputObj.IsObject())
             {
                 bool bSubnet = ret.cls == "Subnet";
-                zeno::ParamInfo param = _parseSocket(true, bSubnet, id, nodeName, inSock, inputObj, links);
-                ret.inputs.push_back(param);
+                _parseSocket(true, bSubnet, bObjectParam, id, nodeName, inSock, inputObj, ret, links);
             }
             else
             {
@@ -233,17 +271,17 @@ namespace zenoio
         }
     }
 
-    zeno::ParamInfo ZenReader::_parseSocket(
+    void ZenReader::_parseSocket(
         const bool bInput,
         const bool bSubnetNode,
+        const bool bObjectParam,
         const std::string& id,
         const std::string& nodeCls,
-        const std::string& inSock,
+        const std::string& sockName,
         const rapidjson::Value& sockObj,
+        zeno::NodeData& ret,
         zeno::LinksData& links)
     {
-        zeno::ParamInfo param;
-
         std::string sockProp;
         if (sockObj.HasMember("property"))
         {
@@ -252,6 +290,12 @@ namespace zenoio
         }
 
         zeno::ParamControl ctrl = zeno::NullControl;
+        zeno::ParamType paramType = zeno::Param_Null;
+        zeno::SocketType socketType = zeno::NoSocket;
+        zeno::zvariant defl;
+        zeno::LinksData paramLinks;
+        std::optional<zeno::ControlProperty> ctrlProps;
+        std::string tooltip;
 
         zeno::SocketProperty prop = zeno::SocketProperty::Socket_Normal;
         if (sockProp == "dict-panel")
@@ -261,40 +305,48 @@ namespace zenoio
         else if (sockProp == "group-line")
             prop = zeno::SocketProperty::Socket_Normal;    //deprecated
 
-        param.prop = prop;
-        param.name = inSock;
-
         if (m_bDiskReading &&
             (prop == zeno::SocketProperty::Socket_Editable ||
                 nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
         {
             if (prop == zeno::SocketProperty::Socket_Editable) {
                 //like extract dict.
-                param.type = zeno::Param_String;
+                paramType = zeno::Param_String;
             }
             else {
-                param.type = zeno::Param_Null;
+                paramType = zeno::Param_Null;
             }
         }
 
         if (sockObj.HasMember("type")) {
-            param.type = zeno::convertToType(sockObj["type"].GetString());
+            paramType = zeno::convertToType(sockObj["type"].GetString());
         }
 
+        bool bPrimitiveType = !bObjectParam;
+
         if (sockObj.HasMember("default-value")) {
-            param.defl = zenoio::jsonValueToZVar(sockObj["default-value"], param.type);
+            defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
         }
 
         if (sockObj.HasMember("socket-type") && sockObj["socket-type"].IsString()) {
             const std::string& sockType = sockObj["socket-type"].GetString();
-            if (sockType == "primary") {
-                param.socketType = zeno::PrimarySocket;
+            if (sockType == iotags::params::socket_none) {
+                socketType = zeno::NoSocket;
             }
-            else if (sockType == "parameter") {
-                param.socketType = zeno::ParamSocket;
+            else if (sockType == iotags::params::socket_readonly) {
+                socketType = zeno::Socket_ReadOnly;
             }
-            else {
-                param.socketType = zeno::NoSocket;
+            else if (sockType == iotags::params::socket_clone) {
+                socketType = zeno::Socket_Clone;
+            }
+            else if (sockType == iotags::params::socket_output) {
+                socketType = zeno::Socket_Output;
+            }
+            else if (sockType == iotags::params::socket_owning) {
+                socketType = zeno::Socket_Owning;
+            }
+            else if (sockType == iotags::params::socket_primitive) {
+                socketType = zeno::Socket_Primitve;
             }
         }
 
@@ -308,7 +360,7 @@ namespace zenoio
                 const std::string& outsock = linkObj["out-socket"].GetString();
                 const std::string& outkey = linkObj["out-key"].GetString();
                 const std::string& innode = id;
-                const std::string& insock = inSock;
+                const std::string& insock = sockName;
                 const std::string& inkey = linkObj["in-key"].GetString();
                 std::string property = "copy";
                 if (linkObj.HasMember("property")) {
@@ -317,35 +369,77 @@ namespace zenoio
 
                 zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
                 zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
-                param.links.push_back(link);
+                paramLinks.push_back(link);
                 links.push_back(link);
             }
         }
 
         if (sockObj.HasMember("control"))
         {
-            zeno::ParamControl ctrl = zeno::NullControl;
             zeno::ControlProperty props;
             bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
             if (bret) {
-                param.control = ctrl;
                 if (ctrl == zeno::NullControl)
-                    param.control = zeno::getDefaultControl(param.type);
+                    ctrl = zeno::getDefaultControl(paramType);
                 if (props.items || props.ranges)
-                    param.ctrlProps = props;
+                    ctrlProps = props;
             }
         }
 
         if (sockObj.HasMember("tooltip"))
         {
-            param.tooltip = sockObj["tooltip"].GetString();
+            tooltip = sockObj["tooltip"].GetString();
         }
-        return param;
+
+        if (bPrimitiveType) {
+            zeno::ParamPrimitive param;
+            param.bInput = bInput;
+            param.control = ctrl;
+            param.ctrlProps = ctrlProps;
+            param.defl = defl;
+            param.name = sockName;
+            param.prop = prop;
+            param.socketType = socketType;
+            param.tooltip = tooltip;
+            param.type = paramType;
+            if (bInput) {
+                //老zsg没有层级结构，直接用默认就行
+                if (ret.customUi.inputPrims.tabs.empty())
+                {
+                    zeno::ParamTab tab;
+                    tab.name = "Tab1";
+                    zeno::ParamGroup group;
+                    group.name = "Group1";
+                    tab.groups.emplace_back(group);
+                    ret.customUi.inputPrims.tabs.emplace_back(tab);
+                }
+                auto& group = ret.customUi.inputPrims.tabs[0].groups[0];
+                group.params.emplace_back(param);
+            }
+            else {
+                ret.customUi.outputPrims.emplace_back(param);
+            }
+        }
+        else {
+            zeno::ParamObject param;
+            param.bInput = bInput;
+            param.name = sockName;
+            param.prop = prop;
+            param.socketType = socketType;
+            param.tooltip = tooltip;
+            param.type = paramType;
+            if (bInput) {
+                ret.customUi.inputObjs.emplace_back(param);
+            }
+            else {
+                ret.customUi.outputObjs.emplace_back(param);
+            }
+        }
     }
 
     zeno::CustomUI ZenReader::_parseCustomUI(const rapidjson::Value& customuiObj)
     {
-        auto readCustomUiParam = [](zeno::ParamInfo& paramInfo, const rapidjson::Value& param) {
+        auto readCustomUiParam = [](zeno::ParamPrimitive& paramInfo, const rapidjson::Value& param) {
             if (!param.IsNull()) {
                 auto paramValue = param.GetObject();
                 paramInfo.type = (zeno::ParamType)paramValue["type"].GetInt();
@@ -396,7 +490,7 @@ namespace zenoio
                                 auto params = group.value.GetObject();
                                 for (const auto& param : params)
                                 {
-                                    zeno::ParamInfo paramInfo;
+                                    zeno::ParamPrimitive paramInfo;
                                     paramInfo.name = param.name.GetString();
                                     readCustomUiParam(paramInfo, param.value);
                                     paramGroup.params.push_back(paramInfo);
@@ -405,19 +499,7 @@ namespace zenoio
                             paramTab.groups.push_back(paramGroup);
                         }
                    }
-                   ui.tabs.push_back(paramTab);
-                }
-            }
-
-            if (cusomui.HasMember("outputs"))
-            {
-                auto outputs = cusomui["outputs"].GetObject();
-                for (const auto& output : outputs)
-                {
-                    zeno::ParamInfo paramInfo;
-                    paramInfo.name = output.name.GetString();
-                    readCustomUiParam(paramInfo, output.value);
-                    ui.outputs.push_back(paramInfo);
+                   ui.inputPrims.tabs.push_back(paramTab);
                 }
             }
 

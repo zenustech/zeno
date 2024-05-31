@@ -139,7 +139,7 @@ struct PrimEdgeBound : INode {
 
 ZENDEFNODE(PrimEdgeBound, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"bool", "removeFaces", "1"},
     {"bool", "killDeadVerts", "1"},
     },
@@ -161,7 +161,7 @@ struct PrimWireframe : INode {
 
 ZENDEFNODE(PrimWireframe, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"bool", "removeFaces", "1"},
     },
     {
@@ -182,7 +182,7 @@ struct PrimitiveWireframe : INode {
 
 ZENDEFNODE(PrimitiveWireframe, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     },
     {
     {"PrimitiveObject", "prim"},

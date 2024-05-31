@@ -21,8 +21,8 @@ struct ExportZpmPrimitive : zeno::INode {
 
 ZENDEFNODE(ExportZpmPrimitive,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
-    {"string", "path", "", zeno::ParamSocket, zeno::WritePathEdit},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -41,7 +41,7 @@ struct ImportZpmPrimitive : zeno::INode {
 
 ZENDEFNODE(ImportZpmPrimitive,
     { /* inputs: */ {
-    {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+    {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     }, /* outputs: */ {
     {"PrimitiveObject", "prim"},
     }, /* params: */ {

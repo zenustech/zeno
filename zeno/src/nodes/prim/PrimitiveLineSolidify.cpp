@@ -247,7 +247,7 @@ prim->verts.add_attr<zeno::vec3f>("uv");
 
 ZENDEFNODE(PrimitiveLineSolidify, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"int", "count", "4"},
     {"float", "radius", "0.1"},
     {"string", "radiusAttr", ""},

@@ -28,11 +28,12 @@ namespace zeno {
         std::string inParam;
         std::string inKey;
 
-        LinkFunction lnkfunc = Link_Copy;
+        bool bObjLink = true;
 
         bool operator==(const EdgeInfo& rhs) const {
             return outNode == rhs.outNode && outParam == rhs.outParam && outKey == rhs.outKey &&
-                inNode == rhs.inNode && inParam == rhs.inParam && inKey == rhs.inKey;
+                inNode == rhs.inNode && inParam == rhs.inParam && inKey == rhs.inKey &&
+                bObjLink == rhs.bObjLink;
         }
         bool operator<(const EdgeInfo& rhs) const {
 
@@ -60,11 +61,23 @@ namespace zeno {
         }
     };
 
-    struct ParamInfo {
+    struct ParamObject {
         std::string name;
         ParamType type = Param_Null;
-        SocketType socketType = NoSocket;
+        SocketType socketType = Socket_Clone;
+        std::vector<EdgeInfo> links;
+        SocketProperty prop = Socket_Normal;
+        std::string tooltip;
+        bool bInput = true;
+    };
+
+    //primitive
+    struct ParamPrimitive {
+        std::string name;
+        ParamType type = Param_Null;
+        SocketType socketType = Socket_Primitve;
         zvariant defl;
+        zvariant result;    //run result.
         ParamControl control = NullControl;
         std::optional<ControlProperty> ctrlProps;
 
@@ -74,15 +87,15 @@ namespace zeno {
         std::string tooltip;
         bool bInput = true;
 
-        ParamInfo() {}
-        ParamInfo(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
+        ParamPrimitive() {}
+        ParamPrimitive(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
             : name(name)
             , type(type)
             , socketType(sockType)
             , tooltip(tooltip)
         {
         }
-        ParamInfo(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
+        ParamPrimitive(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
             : name(name)
             , type(type)
             , socketType(sockType)
@@ -94,9 +107,12 @@ namespace zeno {
         }
     };
 
+    using ObjectParams = std::vector<ParamObject>;
+    using PrimitiveParams = std::vector<ParamPrimitive>;
+
     struct ParamGroup {
         std::string name = "Group1";
-        std::vector<ParamInfo> params;
+        PrimitiveParams params;
     };
 
     struct ParamTab {
@@ -104,9 +120,17 @@ namespace zeno {
         std::vector<ParamGroup> groups;
     };
 
+    struct CustomUIParams {
+        std::vector<ParamTab> tabs;   //custom ui for input primitive params
+    };
+
+    //CustomUI is structure for input params of primitive types, like vec3f int string, etc.
     struct CustomUI {
-        std::vector<ParamTab> tabs;   //custom ui for input params
-        std::vector<ParamInfo> outputs;
+        ObjectParams inputObjs;
+        CustomUIParams inputPrims;
+        PrimitiveParams outputPrims;
+        ObjectParams outputObjs;
+
         std::string category;
         std::string nickname;
         std::string iconResPath;
@@ -114,7 +138,7 @@ namespace zeno {
     };
 
     struct ParamUpdateInfo {
-        zeno::ParamInfo param;
+        zeno::ParamPrimitive param;
         std::string oldName;
     };
 
@@ -156,15 +180,12 @@ namespace zeno {
         std::string name;
         std::string cls;
 
-        std::vector<ParamInfo> inputs;
-        std::vector<ParamInfo> outputs;
+        CustomUI customUi;   //custom ui for input params,just a template or mapping of input params data.
 
         //if current node is a subgraph node, which means type =NodeStatus::SubgraphNode.
         std::optional<GraphData> subgraph;
         std::optional<AssetInfo> asset;
         std::optional<GroupInfo> group;
-
-        CustomUI customUi;
 
         std::pair<float, float> uipos;
         bool bView = false;
@@ -174,8 +195,8 @@ namespace zeno {
 
     struct NodeDesc {
         std::string name;
-        std::vector<ParamInfo> inputs;
-        std::vector<ParamInfo> outputs;
+        std::vector<ParamPrimitive> inputs;
+        std::vector<ParamPrimitive> outputs;
         std::vector<std::string> categories;
         bool is_subgraph = false;
     };

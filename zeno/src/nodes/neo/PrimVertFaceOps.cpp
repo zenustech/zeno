@@ -157,7 +157,7 @@ struct PrimVertsAttrToFaces : INode {
 
 ZENDEFNODE(PrimVertsAttrToFaces, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum lines tris quads polys", "faceType", "tris"},
     {"string", "vertAttr", "tmp"},
     {"string", "faceAttr", "tmp"},
@@ -225,7 +225,7 @@ struct PrimFacesAttrToVerts : INode {
 
 ZENDEFNODE(PrimFacesAttrToVerts, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum lines tris quads polys", "faceType", "tris"},
     {"string", "faceAttr", "tmp"},
     {"string", "vertAttr", "tmp"},
@@ -288,7 +288,7 @@ struct PrimFacesCenterAsVerts : INode {
 
 ZENDEFNODE(PrimFacesCenterAsVerts, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum faces lines", "faceType", "faces"},
     {"bool", "copyFaceAttrs", "1"},
     },

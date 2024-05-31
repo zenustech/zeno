@@ -98,7 +98,7 @@ struct PrimBend : zeno::INode {
 
 ZENDEFNODE(PrimBend, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     //{"vec3f", "origin", "0,0,0"},
     {"vec3f", "tangent", "0,1,0"},
     {"vec3f", "direction", "1,0,0"},

@@ -54,7 +54,7 @@ struct PrimFillAttr : INode {
 
 ZENDEFNODE(PrimFillAttr, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
         {"enum vert tri loop poly line", "scope", "vert"},
     {"string", "attr", "rad"},
     {"enum float vec3f int", "type", "float"},
@@ -70,16 +70,16 @@ ZENDEFNODE(PrimFillAttr, {
 
 struct PrimFillColor : PrimFillAttr {
     virtual void apply() override {
-        set_input("attr", std::make_shared<StringObject>("clr"));
-        set_input("type", std::make_shared<StringObject>("vec3f"));
-        set_input("scope", std::make_shared<StringObject>("vert"));
+        set_primitive_input("attr", "clr");
+        set_primitive_input("type", "vec3f");
+        set_primitive_input("scope", "vert");
         PrimFillAttr::apply();
     }
 };
 
 ZENDEFNODE(PrimFillColor, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"vec3f", "value", "1,0.5,0.5"},
     },
     {
@@ -152,7 +152,7 @@ struct PrimFloatAttrToInt : INode {
 
 ZENDEFNODE(PrimFloatAttrToInt, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
     {"float", "divisor", "1"},
@@ -232,7 +232,7 @@ struct PrimIntAttrToFloat : INode {
 
 ZENDEFNODE(PrimIntAttrToFloat, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"string", "attr", "tag"},
     {"string", "attrOut", "tag"},
     {"float", "divisor", "1"},
@@ -290,8 +290,8 @@ struct PrimAttrInterp : INode {
 
 ZENDEFNODE(PrimAttrInterp, {
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
-    {"PrimitiveObject", "prim2", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {"PrimitiveObject", "prim2", "", zeno::Socket_ReadOnly},
     {"string", "attr", ""},
     {"float", "factor", "0.5"},
     {"string", "facAttr", ""},
@@ -428,7 +428,7 @@ struct PrimAttrRemap : INode {
 
 ZENDEFNODE(PrimAttrRemap, {
     {
-        {"PrimitiveObject", "prim", "", PrimarySocket},
+        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
         {"enum vert tri loop poly line", "scope", "vert"},
         {"string", "attr", ""},
         {"bool", "Auto Compute input range", "0"},

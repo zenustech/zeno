@@ -256,6 +256,7 @@ ZENDEFNODE(Group, {
     {"layout"},
     });
 
+#if 0
 struct CustomNode : zeno::INode {
     virtual void apply() override {
 
@@ -270,16 +271,16 @@ ZENDEFINE(CustomNode, {
                 {
                     "Group1",
                     {
-                        {"param1", zeno::Param_Null, zeno::PrimarySocket},
-                        {"param2", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param1", zeno::Param_Null, zeno::Socket_ReadOnly},
+                        {"param2", zeno::Param_Prim, zeno::Socket_ReadOnly},
                         {"param3", zeno::Param_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
                     }
                 },
                 {
                     "Group2",
                     {
-                        {"param4", zeno::Param_String, zeno::PrimarySocket, "", zeno::Multiline, {}},
-                        {"param5", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param4", zeno::Param_String, zeno::Socket_ReadOnly, "", zeno::Multiline, {}},
+                        {"param5", zeno::Param_Prim, zeno::Socket_ReadOnly},
                         {"param6", zeno::Param_Null, zeno::NoSocket}
                     }
                 }
@@ -291,16 +292,16 @@ ZENDEFINE(CustomNode, {
                 {
                     "Group3",
                     {
-                        {"param7", zeno::Param_Null, zeno::PrimarySocket},
-                        {"param8", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param7", zeno::Param_Null, zeno::Socket_ReadOnly},
+                        {"param8", zeno::Param_Prim, zeno::Socket_ReadOnly},
                         {"param9", zeno::Param_Null, zeno::NoSocket}
                     }
                 },
                 {
                     "Group4",
                     {
-                        {"param10", zeno::Param_Null, zeno::PrimarySocket},
-                        {"param11", zeno::Param_Prim, zeno::PrimarySocket},
+                        {"param10", zeno::Param_Null, zeno::Socket_ReadOnly},
+                        {"param11", zeno::Param_Prim, zeno::Socket_ReadOnly},
                         {"param12", zeno::Param_Null, zeno::NoSocket}
                     }
                 }
@@ -308,10 +309,11 @@ ZENDEFINE(CustomNode, {
         },
     },
     {
-        {"output1", zeno::Param_Null, zeno::PrimarySocket},
+        {"output1", zeno::Param_Null, zeno::Socket_ReadOnly},
     },
     "debug",
     "CUI",
 });
+#endif
 
 }

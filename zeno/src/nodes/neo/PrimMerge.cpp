@@ -690,7 +690,7 @@ struct PrimMerge : INode {
 
 ZENDEFNODE(PrimMerge, {
   {
-      {"list", "listPrim", "", PrimarySocket},
+      {"list", "listPrim", "", zeno::Socket_ReadOnly},
       {"string", "tagAttr", ""},
       {"enum vert face vert_face", "tag_scope", "vert"},
   },

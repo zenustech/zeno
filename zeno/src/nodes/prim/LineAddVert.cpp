@@ -61,8 +61,8 @@ struct SyncPrimitiveAttributes : zeno::INode {
 
 ZENDEFNODE(SyncPrimitiveAttributes, {
     {
-        {"", "prim1", "", PrimarySocket},
-        {"", "prim2", "", PrimarySocket},
+        {"", "prim1", "", zeno::Socket_ReadOnly},
+        {"", "prim2", "", zeno::Socket_ReadOnly},
     },
     {"prim1", "prim2"},
     {},

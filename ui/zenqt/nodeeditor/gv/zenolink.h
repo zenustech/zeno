@@ -8,7 +8,7 @@
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;
-class ZenoNode;
+class ZenoNodeBase;
 
 //#define BASE_ON_CURVE
 
@@ -50,13 +50,12 @@ public:
         QString nodeId,
         QPointF fixedPos,
         bool fixInput,
-        zeno::LinkFunction lnkProp,
         QModelIndexList selNodes);
     ~ZenoTempLink();
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
-    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput, zeno::LinkFunction& lnkProp);
+    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput);
     ZenoSocketItem* getFixedSocket() const;
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
@@ -79,7 +78,6 @@ private:
     QPointF m_fixedPos;
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;
-    const zeno::LinkFunction m_lnkProp;
     QPersistentModelIndex m_oldLink;    //the link which belongs to
     QModelIndexList m_selNodes;
     bool m_bfixInput;
@@ -90,7 +88,7 @@ class ZenoFullLink : public ZenoLink
     Q_OBJECT
 
 public:
-    ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode);
+    ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNode, ZenoNodeBase* inNode);
     ~ZenoFullLink();
 
     virtual QPointF getSrcPos() const override;
@@ -127,7 +125,6 @@ private:
     QString m_outNode;
     bool m_bHover;
     bool m_bLegacyLink;
-    zeno::LinkFunction m_lnkProp;
 };
 
 #endif

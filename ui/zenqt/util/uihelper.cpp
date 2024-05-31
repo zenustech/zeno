@@ -16,6 +16,7 @@
 #include "zenomainwindow.h"
 #include "model/graphsmanager.h"
 #include "model/assetsmodel.h"
+#include <zeno/utils/helper.h>
 
 
 const char* g_setKey = "setKey";
@@ -1734,11 +1735,20 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     //replace all the old-id in newNodes, and clear cached links.
     for (auto& [key, data] : outNodes)
     {
-        for (auto& param : data.inputs)
+        for (auto& param : data.customUi.inputObjs)
         {
             param.links.clear();
         }
-        for (auto& param : data.outputs)
+        for (auto& param : data.customUi.outputObjs)
+        {
+            param.links.clear();
+        }
+        auto inputs = zeno::customUiToParams(data.customUi.inputPrims);
+        for (auto& param : inputs)
+        {
+            param.links.clear();
+        }
+        for (auto& param : data.customUi.outputPrims)
         {
             param.links.clear();
         }
@@ -1767,7 +1777,7 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     }
 }
 
-QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs)
+QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamPrimitive>& inputs, const std::vector<zeno::ParamPrimitive>& outputs)
 {
     QStandardItemModel* customParamsM = new QStandardItemModel;
 
@@ -1775,7 +1785,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>&
     QStandardItem* pInputs = new QStandardItem("input");
     QStandardItem* pOutputs = new QStandardItem("output");
 
-    for (zeno::ParamInfo info : inputs) {
+    for (zeno::ParamPrimitive info : inputs) {
         QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
         const QString& paramName = QString::fromStdString(info.name);
         paramItem->setData(paramName, Qt::DisplayRole);
@@ -1790,7 +1800,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamInfo>&
         pInputs->appendRow(paramItem);
     }
 
-    for (zeno::ParamInfo info : outputs) {
+    for (zeno::ParamPrimitive info : outputs) {
         QStandardItem* paramItem = new QStandardItem(QString::fromStdString(info.name));
         const QString& paramName = QString::fromStdString(info.name);
         paramItem->setData(paramName, Qt::DisplayRole);
@@ -1827,7 +1837,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
 
     QStandardItem* pInputs = new QStandardItem("inputs");
     pInputs->setEditable(false);
-    for (const zeno::ParamTab& tab : customui.tabs)
+    for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
     {
         const QString& tabName = QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
@@ -1841,7 +1851,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
             pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
             pGroup->setData(groupName, ROLE_PARAM_NAME);
 
-            for (const zeno::ParamInfo& param : group.params)
+            for (const zeno::ParamPrimitive& param : group.params)
             {
                 QStandardItem* paramItem = new QStandardItem(QString::fromStdString(param.name));
                 paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
@@ -1866,7 +1876,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
 
     QStandardItem* pOutputs = new QStandardItem("output");
     pOutputs->setEditable(false);
-    for (const zeno::ParamInfo& param : customui.outputs)
+    for (const zeno::ParamPrimitive& param : customui.outputPrims)
     {
         const QString& paramName = QString::fromStdString(param.name);
         QStandardItem* paramItem = new QStandardItem(paramName);
@@ -1890,13 +1900,13 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
 
 void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos)
 {
-    for (const zeno::ParamTab& tab : customui.tabs)
+    for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
     {
         for (const zeno::ParamGroup& group : tab.groups)
         {
-            for (const zeno::ParamInfo& param : group.params)
+            for (const zeno::ParamPrimitive& param : group.params)
             {
-                zeno::ParamInfo info;
+                zeno::ParamPrimitive info;
                 info.bInput = true;
                 info.control = param.control;
                 info.type = param.type;
@@ -1909,9 +1919,9 @@ void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdat
             }
         }
     }
-    for (const zeno::ParamInfo& param : customui.outputs)
+    for (const zeno::ParamPrimitive& param : customui.outputPrims)
     {
-        zeno::ParamInfo info;
+        zeno::ParamPrimitive info;
         info.bInput = false;
         info.control = param.control;
         info.type = param.type;
@@ -1953,9 +1963,8 @@ void UiHelper::saveProject(const QString& name)
 
 QStringList UiHelper::stdlistToQStringList(const zeno::ObjPath& objpath)
 {
-    QStringList lst;
-    for (auto path : objpath)
-        lst.append(QString::fromStdString(path));
+    QString str = QString::fromStdString(objpath);
+    QStringList lst = str.split("/");
     return lst;
 }
 
@@ -1967,7 +1976,8 @@ QStringList UiHelper::findPreviousNode(GraphModel* pModel, const QString& node)
         return nodes;
 
     zeno::NodeData nodeDat = nodeIdx.data(ROLE_NODEDATA).value<zeno::NodeData>();
-    for (const zeno::ParamInfo& param : nodeDat.inputs)
+    auto inputs = zeno::customUiToParams(nodeDat.customUi.inputPrims);
+    for (const zeno::ParamPrimitive& param : inputs)
     {
         for (const zeno::EdgeInfo& link : param.links)
         {
@@ -1985,7 +1995,7 @@ QStringList UiHelper::findSuccessorNode(GraphModel* pModel, const QString& node)
         return nodes;
 
     zeno::NodeData nodeDat = nodeIdx.data(ROLE_NODEDATA).value<zeno::NodeData>();
-    for (const zeno::ParamInfo& param : nodeDat.outputs)
+    for (const zeno::ParamPrimitive& param : nodeDat.customUi.outputPrims)
     {
         for (const zeno::EdgeInfo& link : param.links)
         {

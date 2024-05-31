@@ -45,7 +45,7 @@ struct VDBPointScatter : INode{
 };
 ZENO_DEFNODE(VDBPointScatter)(
      { /* inputs: */ {
-     {"", "grid", "", PrimarySocket},
+     {"", "grid", "", zeno::Socket_ReadOnly},
      {"int", "count", "4"},
      {"float", "spread", "1"},
      {"int", "seed", "-1"},

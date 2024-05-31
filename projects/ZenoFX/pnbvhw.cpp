@@ -200,7 +200,7 @@ struct ParticlesBuildBvh : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesBuildBvh, {
-                                  {{"PrimitiveObject", "primNei", "", PrimarySocket},
+                                  {{"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
                                    {"float", "radius"},
                                    {"float", "radiusMin"}},
                                   {{"LBvh", "lbvh"}},
@@ -241,7 +241,7 @@ struct BuildPrimitiveBvh : zeno::INode {
 
 ZENDEFNODE(BuildPrimitiveBvh,
            {
-               {{"PrimitiveObject", "prim", "", PrimarySocket}, {"float", "thickness", "0"}},
+               {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly}, {"float", "thickness", "0"}},
                {{"LBvh", "lbvh"}},
                {{"enum auto point line tri quad", "prim_type", "auto"}},
                {"zenofx"},
@@ -259,7 +259,7 @@ struct ParticlesBuildBvhRadius : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesBuildBvhRadius, {
-                                  {{"PrimitiveObject", "primNei", "", PrimarySocket},
+                                  {{"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
                                    {"float", "basicRadius", "0"},
                                    {"string", "radiusAttr", ""},},
                                   {{"LBvh", "lbvh"}},
@@ -276,7 +276,7 @@ struct RefitPrimitiveBvh : zeno::INode {
 };
 
 ZENDEFNODE(RefitPrimitiveBvh, {
-                                  {{"LBvh", "lbvh", "", PrimarySocket}},
+                                  {{"LBvh", "lbvh", "", zeno::Socket_ReadOnly}},
                                   {{"LBvh", "lbvh"}},
                                   {},
                                   {"zenofx"},
@@ -375,8 +375,8 @@ struct QueryNearestPrimitive : zeno::INode {
 
 ZENDEFNODE(QueryNearestPrimitive, {
                                       {
-                                          {"", "prim", "", PrimarySocket},
-                                          {"LBvh", "lbvh", "", PrimarySocket},
+                                          {"", "prim", "", zeno::Socket_ReadOnly},
+                                          {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                                           {"string", "idTag", "bvh_id"},
                                           {"string", "distTag", "bvh_dist"},
                                           {"string", "closestPointTag", "cp"},
@@ -517,7 +517,7 @@ struct QueryNearestPrimitiveWithUV : zeno::INode {
 };
 
 ZENDEFNODE(QueryNearestPrimitiveWithUV, {
-                                      {{"", "prim", "", PrimarySocket}, {"LBvh", "lbvh", "", PrimarySocket},
+                                      {{"", "prim", "", zeno::Socket_ReadOnly}, {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                                       {"string", "idTag", "bvh_id"},
                                       {"string", "distTag", "bvh_dist"},
                                       {"string", "closestPointTag", "cp"},
@@ -612,7 +612,7 @@ struct RematchBestPrimitiveUV : zeno::INode {
 };
 
 ZENDEFNODE(RematchBestPrimitiveUV, {
-                                      {{"PrimitiveObject", "prim", "", PrimarySocket}, {"LBvh", "lbvh", "", PrimarySocket},
+                                      {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly}, {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                                       {"float", "threshold", "0.001"},
                                       {"string", "selection_tag", "selected"}
                                       },
@@ -721,7 +721,7 @@ struct QueryNearestPrimitiveWithinGroup : zeno::INode {
 };
 
 ZENDEFNODE(QueryNearestPrimitiveWithinGroup, {
-                                      {{"", "prim", "", PrimarySocket}, {"LBvh", "lbvh", "", PrimarySocket},
+                                      {{"", "prim", "", zeno::Socket_ReadOnly}, {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                                       {"string", "groupTag", "island_index"},
                                       {"string", "idTag", "bvh_id"},
                                       {"string", "distTag", "bvh_dist"},
@@ -953,12 +953,12 @@ struct ParticlesNeighborBvhWrangle : zeno::INode {
 
 ZENDEFNODE(ParticlesNeighborBvhWrangle,
            {
-               {{"PrimitiveObject", "prim", "", PrimarySocket},
-                {"PrimitiveObject", "primNei", "", PrimarySocket},
-                {"LBvh", "lbvh", "", PrimarySocket},
+               {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+                {"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
+                {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                 {"bool", "is_box", "1"},
-                {"string", "zfxCode", "", ParamSocket, CodeEditor},
-                {"DictObject:NumericObject", "params", "", PrimarySocket}},
+                {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
+                {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
                {{"PrimitiveObject", "prim"}},
                {},
                {"zenofx"},
@@ -1179,13 +1179,13 @@ struct ParticlesNeighborBvhWrangleSorted : zeno::INode {
 
 ZENDEFNODE(ParticlesNeighborBvhWrangleSorted,
            {
-               {{"PrimitiveObject", "prim", "", PrimarySocket},
-                {"PrimitiveObject", "primNei", "", PrimarySocket},
-                {"LBvh", "lbvh", "", PrimarySocket},
+               {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+                {"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
+                {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                 {"bool", "is_box", "1"},
                 {"int", "limit", "-1"},
-                {"string", "zfxCode", "", ParamSocket, CodeEditor},
-                {"DictObject:NumericObject", "params", "", PrimarySocket}},
+                {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
+                {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
                {{"PrimitiveObject", "prim"}},
                {},
                {"zenofx"},
@@ -1413,14 +1413,14 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
 
 ZENDEFNODE(ParticlesNeighborBvhRadiusWrangle,
            {
-               {{"PrimitiveObject", "prim", "", PrimarySocket},
-                {"PrimitiveObject", "primNei", "", PrimarySocket},
-                {"LBvh", "lbvh", "", PrimarySocket},
+               {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+                {"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
+                {"LBvh", "lbvh", "", zeno::Socket_ReadOnly},
                 {"bool", "is_box", "0"},
                 {"string", "radiusAttr", "radius"},
                 {"string", "maskAttr", ""}, 
-                {"string", "zfxCode", "", ParamSocket, CodeEditor},
-                {"DictObject:NumericObject", "params", "", PrimarySocket}},
+                {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
+                {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
                {{"PrimitiveObject", "prim"}},
                {},
                {"zenofx"},

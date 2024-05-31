@@ -88,7 +88,7 @@ struct CacheVDBGrid : zeno::INode {
 
 ZENDEFNODE(CacheVDBGrid,
     { /* inputs: */ {
-    {"", "inGrid", "", PrimarySocket},
+    {"", "inGrid", "", zeno::Socket_ReadOnly},
     "frameNum",
     }, /* outputs: */ {
     "outGrid",
@@ -178,7 +178,7 @@ struct ReadVDB : ImportVDBGrid {
 };
 static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     { /* inputs: */ {
-    {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+    {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     }, /* outputs: */ {
     "data",
     }, /* params: */ {

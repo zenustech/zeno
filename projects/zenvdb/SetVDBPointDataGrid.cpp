@@ -114,7 +114,7 @@ struct PrimToVDBPointDataGrid : zeno::INode {
 
 static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
-        {"", "ParticleGeo", "", PrimarySocket},
+        {"", "ParticleGeo", "", zeno::Socket_ReadOnly},
         {"float","Dx"}, "vdbPoints",
     }, /* outputs: */ {
         "Particles",
@@ -149,7 +149,7 @@ struct SetVDBPointDataGrid : zeno::INode {
 
 static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
     { /* inputs: */ {
-        {"", "ParticleGeo", "", PrimarySocket},
+        {"", "ParticleGeo", "", zeno::Socket_ReadOnly},
         {"float","Dx"},
     }, /* outputs: */ {
         "Particles",

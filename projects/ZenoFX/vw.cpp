@@ -240,11 +240,11 @@ struct VDBWrangle : zeno::INode {
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"VDBGrid", "grid", "", PrimarySocket}, 
-     {"string", "zfxCode", "", ParamSocket, CodeEditor},
+    {{"VDBGrid", "grid", "", zeno::Socket_ReadOnly}, 
+     {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
      {"enum true false","ModifyActive","false"},
      {"enum true false","ChangeBackground","false"},
-     {"DictObject:NumericObject", "params", "", PrimarySocket}},
+     {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
     {{"VDBGrid", "grid"}},
     {},
     {"zenofx"},

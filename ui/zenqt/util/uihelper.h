@@ -97,7 +97,7 @@ public:
                                const zeno::LinksData& inLinks,
                                zeno::NodesData& outNodes,
                                zeno::LinksData& outLinks);
-    static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamInfo>& inputs, const std::vector<zeno::ParamInfo>& outputs);
+    static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamPrimitive>& inputs, const std::vector<zeno::ParamPrimitive>& outputs);
     static void newCustomModel(QStandardItemModel* customParamsM, const zeno::CustomUI& customui);
     static void parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos);
 

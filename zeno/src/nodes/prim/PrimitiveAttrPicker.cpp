@@ -57,7 +57,7 @@ struct PrimitiveAttrPicker : zeno::INode {
 ZENDEFNODE(PrimitiveAttrPicker, {
     // inputs
     {
-    {"PrimitiveObject", "prim", "", PrimarySocket},
+    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
     {"enum point line triangle", "mode", "point"},
     {"string", "newAttr", ""},
     {"float", "attrVal", ""},

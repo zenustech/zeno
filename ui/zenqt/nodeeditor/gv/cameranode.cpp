@@ -41,18 +41,18 @@ ZGraphicsLayout* CameraNode::initCustomParamWidgets()
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
-    _param_ctrl param;
-    param.param_name = pNameItem;
-    param.param_control = pEditBtn;
-    param.ctrl_layout = pHLayout;
-    addParam(param);
+    //_param_ctrl param;
+    //param.param_name = pNameItem;
+    //param.param_control = pEditBtn;
+    //param.ctrl_layout = pHLayout;
+    //addParam(param);
 
     return pHLayout;
 }
 
 void CameraNode::onEditClicked()
 {
-    zeno::ParamInfo param;
+    zeno::ParamPrimitive param;
 
     QPersistentModelIndex nodeIdx = index();
     ZASSERT_EXIT(nodeIdx.isValid());
@@ -90,7 +90,7 @@ void CameraNode::onEditClicked()
 
         auto camera = *(scene->camera.get());
 
-        zeno::ParamInfo& pos = inputs["pos"];
+        zeno::ParamPrimitive& pos = inputs["pos"];
         vec = {camera.m_lodcenter[0], camera.m_lodcenter[1], camera.m_lodcenter[2]};
         pos.defl = vec;
 
@@ -199,11 +199,11 @@ ZGraphicsLayout* LightNode::initCustomParamWidgets()
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
-    _param_ctrl param;
-    param.param_name = pNameItem;
-    param.param_control = pEditBtn;
-    param.ctrl_layout = pHLayout;
-    addParam(param);
+    //_param_ctrl param;
+    //param.param_name = pNameItem;
+    //param.param_control = pEditBtn;
+    //param.ctrl_layout = pHLayout;
+    //addParam(param);
 
     return pHLayout;
 }

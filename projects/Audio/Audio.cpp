@@ -97,7 +97,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(ReadWavFile, {
         {
-            {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
             "wave",
@@ -117,7 +117,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(ReadMp3File, {
         {
-            {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
             "wave",
@@ -153,7 +153,7 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
 
     ZENDEFNODE(ReadAudioFile, {
         {
-            {"string", "path", "", zeno::ParamSocket, zeno::ReadPathEdit},
+            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
             "wave",

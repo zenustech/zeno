@@ -265,7 +265,7 @@ ZENDEFNODE(CalcGeometryUV,
 {
     /*输入*/
     {
-        {"string", "objpath", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "objpath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"PrimitiveObject", "prim", ""},
     },
     /*输出*/

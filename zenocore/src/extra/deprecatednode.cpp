@@ -1,18 +1,19 @@
 #include <zeno/zeno.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/utils/log.h>
 
 
 namespace zeno {
     namespace {
 
+#if 0
         struct DeprecatedNode : zeno::INode {
             virtual void apply() override {
 
             }
 
-            std::vector<std::shared_ptr<IParam>> get_input_params() const override {
-                std::vector<std::shared_ptr<IParam>> params;
+            std::vector<std::shared_ptr<CoreParam>> get_input_params() const override {
+                std::vector<std::shared_ptr<CoreParam>> params;
                 for (auto param : m_input_names) {
                     auto it = m_inputs.find(param);
                     if (it == m_inputs.end()) {
@@ -24,8 +25,8 @@ namespace zeno {
                 return params;
             }
 
-            std::vector<std::shared_ptr<IParam>> get_output_params() const override {
-                std::vector<std::shared_ptr<IParam>> params;
+            std::vector<std::shared_ptr<CoreParam>> get_output_params() const override {
+                std::vector<std::shared_ptr<CoreParam>> params;
                 for (auto param : m_output_names) {
                     auto it = m_outputs.find(param);
                     if (it == m_outputs.end()) {
@@ -39,9 +40,9 @@ namespace zeno {
 
             void initParams(const NodeData& dat) override
             {
-                for (const ParamInfo& param : dat.inputs)
+                for (const ParamPrimitive& param : dat.inputs)
                 {
-                    std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+                    std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;
                     sparam->isLegacy = true;
                     sparam->defl = param.defl;
@@ -50,9 +51,9 @@ namespace zeno {
                     add_input_param(sparam);
                     m_input_names.push_back(param.name);
                 }
-                for (const ParamInfo& param : dat.outputs)
+                for (const ParamPrimitive& param : dat.outputs)
                 {
-                    std::shared_ptr<IParam> sparam = std::make_shared<IParam>();
+                    std::shared_ptr<CoreParam> sparam = std::make_shared<CoreParam>();
                     sparam->name = param.name;
                     sparam->isLegacy = true;
                     sparam->defl = param.defl;
@@ -73,6 +74,7 @@ namespace zeno {
             {},
             {"subgraph"}
         });
+#endif
 
     }
 }

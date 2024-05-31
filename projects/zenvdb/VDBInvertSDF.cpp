@@ -23,7 +23,7 @@ struct VDBChangeBackground : INode{
 };
 ZENO_DEFNODE(VDBChangeBackground)(
      { /* inputs: */ {
-     {"", "grid", "", PrimarySocket},
+     {"", "grid", "", zeno::Socket_ReadOnly},
      {"float", "background"},
      }, /* outputs: */ {
      "grid",
@@ -46,7 +46,7 @@ struct VDBGetBackground : INode{
 };
 ZENO_DEFNODE(VDBGetBackground)(
      { /* inputs: */ {
-     {"", "grid", "", PrimarySocket},
+     {"", "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      {"float", "background"},
      }, /* params: */ {
@@ -83,7 +83,7 @@ struct VDBInvertSDF : INode{
 };
 ZENO_DEFNODE(VDBInvertSDF)(
      { /* inputs: */ {
-     {"", "grid", "", PrimarySocket},
+     {"", "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      "grid",
      }, /* params: */ {
@@ -111,7 +111,7 @@ struct VDBPruneFootprint : INode{
 
 ZENO_DEFNODE(VDBPruneFootprint)(
      { /* inputs: */ {
-     {"", "grid", "", PrimarySocket},
+     {"", "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      "grid",
      }, /* params: */ {

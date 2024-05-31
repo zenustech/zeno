@@ -15,7 +15,7 @@
 #include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/utils/helper.h>
 #include <iostream>
@@ -101,7 +101,7 @@ ZENO_API void Graph::runGraph() {
     applyNodes(m_viewnodes);
 }
 
-void Graph::onNodeParamUpdated(std::shared_ptr<IParam> spParam, zvariant old_value, zvariant new_value) {
+void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value) {
     assert(spParam);
     if (Param_String == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
@@ -219,12 +219,16 @@ ZENO_API std::map<std::string, zany> Graph::callSubnetNode(std::string const &id
 ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
         std::map<std::string, zany> inputs) {
 
+    //DEPRECARED.
+    return {};
+#if 0
     auto cl = safe_at(getSession().nodeClasses, id, "node class name").get();
     const std::string& name = generateUUID();
     auto se = cl->new_instance(shared_from_this(), name);
     se->directly_setinputs(inputs);
     se->doOnlyApply();
     return se->getoutputs();
+#endif
 }
 
 ZENO_API void Graph::addNodeOutput(std::string const& id, std::string const& par) {
@@ -274,26 +278,10 @@ ZENO_API void Graph::init(const GraphData& graph) {
         else if (node.cls == "Group") {
             if (node.group.has_value())
             {
-                std::shared_ptr<IParam> param = spNode->get_input_param("title");
-                if (param)
-                {
-                    param->defl = node.group->title;
-                }
-                param = spNode->get_input_param("background");
-                if (param)
-                {
-                    param->defl = node.group->background;
-                }
-                param = spNode->get_input_param("size");
-                if (param)
-                {
-                    param->defl = node.group->sz;
-                }
-                param = spNode->get_input_param("items");
-                if (param)
-                {
-                    param->defl = join_str(node.group->items, ",");
-                }
+                spNode->update_param("title", node.group->title);
+                spNode->update_param("background", node.group->background);
+                spNode->update_param("size", node.group->sz);
+                spNode->update_param("items", join_str(node.group->items, ","));
             }
         }
         //Compatible with older versions
@@ -301,7 +289,8 @@ ZENO_API void Graph::init(const GraphData& graph) {
         {
             std::string color;
             int nres = 0;
-            for (const auto& input : node.inputs)
+            const PrimitiveParams& primparams = customUiToParams(node.customUi.inputPrims);
+            for (const auto& input : primparams)
             {
                 if (input.name == "_RAMPS" && std::holds_alternative<std::string>(input.defl))
                 {
@@ -314,14 +303,11 @@ ZENO_API void Graph::init(const GraphData& graph) {
             }
             if (!color.empty() && nres > 0)
             {
-                auto param = spNode->get_input_param("heatmap");
-                if (param)
-                {
-                    std::regex pattern("\n");
-                    std::string fmt = "\\n";
-                    color = std::regex_replace(color, pattern, fmt);
-                    param->defl = "{\"nres\": " + std::to_string(nres) + ", \"color\":\"" + color + "\"}";
-                }
+                std::regex pattern("\n");
+                std::string fmt = "\\n";
+                color = std::regex_replace(color, pattern, fmt);
+                std::string json = "{\"nres\": " + std::to_string(nres) + ", \"color\":\"" + color + "\"}";
+                spNode->update_param("heatmap", json);
             }
         }
         else if (node.cls == "Subnet")
@@ -336,26 +322,27 @@ ZENO_API void Graph::init(const GraphData& graph) {
         std::shared_ptr<INode> inNode = getNode(link.inNode);
         assert(outNode && inNode);
 
-        std::shared_ptr<IParam> outParam = outNode->get_output_param(link.outParam);
-        if (!outParam) {
-            //zeno::log_warn("no output param `{}` on node `{}`", link.outParam, link.outNode);
+        bool bExist = false;
+        bool bOutputPrim = outNode->isPrimitiveType(false, link.outParam, bExist);
+        bool bInputPrim = inNode->isPrimitiveType(true, link.inParam, bExist);
+        if (!bExist) {
+            //legacy param case:
+            //TODO:
             continue;
         }
-
-        std::shared_ptr<IParam> inParam = inNode->get_input_param(link.inParam);
-        if (!inParam) {
-            //zeno::log_warn("no input param `{}` on node `{}`", link.inParam, link.inNode);
-            continue;
+        assert(bInputPrim == bOutputPrim);
+        if (bInputPrim) {
+            std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
+            outNode->init_primitive_link(false, link.outParam, spLink);
+            inNode->init_primitive_link(true, link.inParam, spLink);
         }
-
-        std::shared_ptr<ILink> spLink = std::make_shared<zeno::ILink>();
-        spLink->fromparam = outParam;
-        spLink->toparam = inParam;
-        spLink->fromkey = link.outKey;
-        spLink->tokey = link.inKey;
-        spLink->lnkProp = link.lnkfunc;
-        outParam->links.emplace_back(spLink);
-        inParam->links.emplace_back(spLink);
+        else {
+            std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
+            spLink->fromkey = link.outKey;
+            spLink->tokey = link.inKey;
+            outNode->init_object_link(false, link.outParam, spLink);
+            inNode->init_object_link(true, link.inParam, spLink);
+        }
     }
 }
 
@@ -543,7 +530,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
         suboutput_nodes.insert(uuid);
     }
 
-    node->m_pos = pos;
+    node->set_pos(pos);
     node->mark_dirty(true);
     m_name2uuid[name] = uuid;
     m_nodes[uuid] = node;
@@ -587,25 +574,25 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
     return safe_at(m_nodes, uuid, "");
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNode(ObjPath path) {
+ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
     if (path.empty())
         return nullptr;
 
-    std::string uuid = path.front();
+    int idx = path.find('/');
+    std::string uuid = path.substr(0, idx);
     auto it = m_nodes.find(uuid);
     if (it == m_nodes.end()) {
         return nullptr;
     }
-    path.pop_front();
-
-    if (!path.empty())
+    if (idx != std::string::npos)
     {
+        path = path.substr(idx + 1, path.size() - idx);
         //subnet
         if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
         {
             auto spGraph = subnetNode->subgraph;
             if (spGraph)
-                return spGraph->getNode(path);
+                return spGraph->getNodeByUuidPath(path);
             else
                 return nullptr;
         }
@@ -676,7 +663,11 @@ ZENO_API LinksData Graph::exportLinks() const
     LinksData links;
     for (auto& [uuid, node] : m_nodes) {
         zeno::NodeData nodeinfo = node->exportInfo();
-        for (ParamInfo param : nodeinfo.inputs) {
+        const PrimitiveParams& params = customUiToParams(nodeinfo.customUi.inputPrims);
+        for (ParamPrimitive param : params) {
+            links.insert(links.end(), param.links.begin(), param.links.end());
+        }
+        for (ParamObject param : nodeinfo.customUi.inputObjs) {
             links.insert(links.end(), param.links.begin(), param.links.end());
         }
     }
@@ -701,17 +692,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     auto spNode = safe_at(m_nodes, uuid, "");
 
     //remove links first
-    std::vector<EdgeInfo> remLinks;
-    for (const auto& [_, spParam] : spNode->m_inputs) {
-        for (std::shared_ptr<ILink> spLink : spParam->links) {
-            remLinks.push_back(getEdgeInfo(spLink));
-        }
-    }
-    for (const auto& [_, spParam] : spNode->m_outputs) {
-        for (std::shared_ptr<ILink> spLink : spParam->links) {
-            remLinks.push_back(getEdgeInfo(spLink));
-        }
-    }
+    std::vector<EdgeInfo> remLinks = spNode->getLinks();
     for (auto edge : remLinks) {
         removeLink(edge);
     }
@@ -752,61 +733,78 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
-    if (!outParam || !inParam)
+    bool bExist = false;
+    bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
+    bool bInputPrim = inNode->isPrimitiveType(true, edge.inParam, bExist);
+    if (!bExist) {
+        zeno::log_warn("no exist param for edge.");
         return false;
+    }
+    if (bInputPrim != bOutputPrim) {
+        zeno::log_warn("link type no match.");
+        return false;
+    }
 
     EdgeInfo adjustEdge = edge;
 
     bool bRemOldLinks = true, bConnectWithKey = false;
     adjustEdge.inKey = edge.inKey;
-    if (inParam->type == Param_Dict || inParam->type == Param_List) {
-        bool bSameType = inParam->type == outParam->type;
-        if (bSameType) {
-            //直接连接，并去掉输入端原来的参数.
-            if (edge.inKey.empty()) {
-                bRemOldLinks = true;
-                bConnectWithKey = false;
+
+    if (!bInputPrim)
+    {
+        ParamObject inParam = inNode->get_input_obj_param(edge.inParam);
+        ParamObject outParam = outNode->get_output_obj_param(edge.outParam);
+        if (inParam.type == Param_Dict || inParam.type == Param_List) {
+            bool bSameType = inParam.type == outParam.type;
+            if (bSameType) {
+                //直接连接，并去掉输入端原来的参数.
+                if (edge.inKey.empty()) {
+                    bRemOldLinks = true;
+                    bConnectWithKey = false;
+                }
+                else {
+                    bRemOldLinks = false;
+                    bConnectWithKey = true;
+                }
             }
             else {
                 bRemOldLinks = false;
                 bConnectWithKey = true;
             }
-        }
-        else {
-            bRemOldLinks = false;
-            bConnectWithKey = true;
-        }
-        if (bConnectWithKey) {
-            std::set<std::string> ss;
-            for (auto spLink : inParam->links) {
-                ss.insert(spLink->tokey);
-            }
+            if (bConnectWithKey) {
+                std::set<std::string> ss;
+                for (const EdgeInfo& spLink : inParam.links) {
+                    ss.insert(spLink.inKey);
+                }
 
-            if (adjustEdge.inKey.empty())
-                adjustEdge.inKey = "obj0";
+                if (adjustEdge.inKey.empty())
+                    adjustEdge.inKey = "obj0";
 
-            int i = 0;
-            while (ss.find(adjustEdge.inKey) != ss.end()) {
-                i++;
-                adjustEdge.inKey = "obj" + std::to_string(i);
+                int i = 0;
+                while (ss.find(adjustEdge.inKey) != ss.end()) {
+                    i++;
+                    adjustEdge.inKey = "obj" + std::to_string(i);
+                }
             }
         }
     }
 
     if (bRemOldLinks)
-        removeLinks(inNode->get_name(), true, inParam->name);
+        removeLinks(inNode->get_name(), true, edge.inParam);
 
-    std::shared_ptr<ILink> spLink = std::make_shared<ILink>();
-    spLink->fromparam = outParam;
-    spLink->toparam = inParam;
-    spLink->fromkey = adjustEdge.outKey;
-    spLink->tokey = adjustEdge.inKey;
-    spLink->lnkProp = adjustEdge.lnkfunc;
-
-    outParam->links.push_back(spLink);
-    inParam->links.push_back(spLink);
+    assert(bInputPrim == bOutputPrim);
+    if (bInputPrim) {
+        std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
+        outNode->init_primitive_link(false, edge.outParam, spLink);
+        inNode->init_primitive_link(true, edge.inParam, spLink);
+    }
+    else {
+        std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
+        spLink->fromkey = edge.outKey;
+        spLink->tokey = edge.inKey;
+        outNode->init_object_link(false, edge.outParam, spLink);
+        inNode->init_object_link(true, edge.inParam, spLink);
+    }
 
     inNode->mark_dirty(true);
 
@@ -825,26 +823,17 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
-
-    outParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
-        auto _out_param = spLink->fromparam.lock();
-        auto _in_param = spLink->toparam.lock();
-        if (_out_param == outParam && _in_param == inParam) {
-            return true;
-        }
+    //pre checking for param.
+    bool bExist = false;
+    bool bPrimType = outNode->isPrimitiveType(false, edge.outParam, bExist);
+    if (!bExist)
         return false;
-    });
-
-    inParam->links.remove_if([&](std::shared_ptr<ILink> spLink) {
-        auto _out_param = spLink->fromparam.lock();
-        auto _in_param = spLink->toparam.lock();
-        if (_out_param == outParam && _in_param == inParam) {
-            return true;
-        }
+    bool bPrimType2 = inNode->isPrimitiveType(true, edge.inParam, bExist);
+    if (!bExist && bPrimType != bPrimType2)
         return false;
-    });
+
+    outNode->removeLink(false, edge);
+    inNode->removeLink(true, edge);
     inNode->mark_dirty(true);
 
     CALLBACK_NOTIFY(removeLink, edge)
@@ -856,21 +845,7 @@ ZENO_API bool Graph::removeLinks(const std::string nodename, bool bInput, const 
     CORE_API_BATCH
 
     std::shared_ptr<INode> spNode = getNode(nodename);
-    std::shared_ptr<IParam> spParam;
-    if (bInput)
-        spParam = spNode->get_input_param(paramname);
-    else
-        spParam = spNode->get_output_param(paramname);
-
-    if (!spParam)
-        return false;
-
-    std::vector<EdgeInfo> links;
-    for (auto spLink : spParam->links)
-    {
-        links.push_back(getEdgeInfo(spLink));
-    }
-
+    std::vector<EdgeInfo> links = spNode->getLinksByParam(bInput, paramname);
     for (auto link : links)
         removeLink(link);
 
@@ -889,48 +864,28 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
     if (!inNode)
         return false;
 
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
-
-    if (bInput) {
-        for (auto spLink : inParam->links) {
-            if (spLink->tokey == oldkey) {
-                spLink->tokey = newkey;
-                return true;
-            }
-        }
-    }
-    return false;
+    bool bExist = false;
+    bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
+    if (!bExist)
+        return false;
+    bool bInputPrim = inNode->isPrimitiveType(true, edge.inParam, bExist);
+    if (!bExist)
+        return false;
+    if (bInputPrim != bOutputPrim)
+        return false;
+    return inNode->updateLinkKey(true, edge.inParam, oldkey, newkey);
 }
 
 ZENO_API bool Graph::moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName)
 {
     CORE_API_BATCH
-
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
     std::shared_ptr<INode> inNode = getNode(edge.inNode);
     if (!inNode)
         return false;
-
-    std::shared_ptr<IParam> outParam = outNode->get_output_param(edge.outParam);
-    std::shared_ptr<IParam> inParam = inNode->get_input_param(edge.inParam);
-    if (!inParam || !outParam)
-        return false;
-
-    if (bInput) {
-        for (auto it = inParam->links.begin(); it != inParam->links.end(); it++)
-        {
-            if ((*it)->tokey == keyName && it != inParam->links.begin()) {
-                auto it_ = std::prev(it);
-                std::swap(*it, *it_);
-                return true;
-            }
-        }
-    }
-    return false;
-
+    return moveUpLinkKey(edge, bInput, keyName);
 }
 
 }

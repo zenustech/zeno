@@ -8,7 +8,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>
-#include <zeno/core/IParam.h>
+#include <zeno/core/CoreParam.h>
 
 namespace zeno {
 
@@ -20,12 +20,15 @@ namespace zeno {
     ZENO_API zeno::ParamControl getDefaultControl(const zeno::ParamType type);
     bool isEqual(const zvariant& lhs, const zvariant& rhs, ParamType const type);
     zany strToZAny(std::string const& defl, ParamType const& type);
-    EdgeInfo getEdgeInfo(std::shared_ptr<ILink> spLink);
+    EdgeInfo getEdgeInfo(std::shared_ptr<ObjectLink> spLink);
+    EdgeInfo getEdgeInfo(std::shared_ptr<PrimitiveLink> spLink);
     std::string generateObjKey(std::shared_ptr<IObject> spObject);
     ZENO_API std::string objPathToStr(ObjPath path);
     ObjPath strToObjPath(const std::string& str);
-    bool getParamInfo(const CustomUI& customui, std::vector<ParamInfo>& inputs, std::vector<ParamInfo>& outputs);
+    bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs);
+    bool isPrimitiveType(const zeno::ParamType type);
     CustomUI descToCustomui(const Descriptor& desc);
+    ZENO_API PrimitiveParams customUiToParams(const CustomUIParams& customparams);
     void initControlsByType(CustomUI& ui);
     std::string absolutePath(std::string currentPath, const std::string& path);
     std::string relativePath(std::string currentPath, const std::string& path);

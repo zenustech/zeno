@@ -33,9 +33,9 @@ public:
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         m_socket->setInnerKey(m_key);
 
-        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, zeno::LinkFunction lnkProp) {
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput) {
             if (cbSock.cbOnSockClicked)
-                cbSock.cbOnSockClicked(m_socket, lnkProp);
+                cbSock.cbOnSockClicked(m_socket);
         });
 
         //move up button
@@ -153,7 +153,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
 
     bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
 
-    zeno::ParamInfo paramInfo = m_paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamInfo>();
+    zeno::ParamPrimitive paramInfo = m_paramIdx.data(ROLE_PARAM_INFO).value<zeno::ParamPrimitive>();
     for (int r = 0; r < paramInfo.links.size(); r++)
     {
         zeno::EdgeInfo edge = paramInfo.links[r];

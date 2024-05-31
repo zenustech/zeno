@@ -65,7 +65,7 @@ struct SetPhysicalCamera : INode {
 
 ZENO_DEFNODE(SetPhysicalCamera)({
     {
-        {"", "camera", "", PrimarySocket},
+        {"", "camera", "", zeno::Socket_ReadOnly},
         {"float", "aperture", "2"},
         {"float", "shutter_speed", "0.04"},
         {"float", "iso", "150"},
@@ -194,7 +194,7 @@ struct LightNode : INode {
         auto shapeEnum = magic_enum::enum_cast<LightShape>(shapeString).value_or(LightShape::Plane);
         auto shapeOrder = magic_enum::enum_integer(shapeEnum);
 
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output("prim"));
+        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
 
         if (has_input("prim")) {
             auto mesh = get_input<PrimitiveObject>("prim");
@@ -381,8 +381,8 @@ ZENO_DEFNODE(LightNode)({
         {"bool", "invertdir", "0"},
         {"bool", "doubleside", "0"},
 
-        {"string", "profile", "", zeno::ParamSocket, zeno::ReadPathEdit},
-        {"string", "texturePath", "", zeno::ParamSocket, zeno::ReadPathEdit},
+        {"string", "profile", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {"string", "texturePath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {"float",  "textureGamma", "1.0"},
         {"float", "visibleIntensity", "-1.0"},
 
