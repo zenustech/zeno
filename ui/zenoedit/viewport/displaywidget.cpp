@@ -1386,7 +1386,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto _near = scene->camera->m_near;
                 auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
-                auto cz = glm::length(scene->camera->m_lodcenter);
+                auto cz = glm::length(scene->camera->m_pos);
                 if (depth != 0) {
                     cz = scene->camera->m_near / depth;
                 }

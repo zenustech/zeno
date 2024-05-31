@@ -32,39 +32,36 @@ struct Camera {
     float m_dof = -1.f;
     float m_safe_frames = 0;
 
-    glm::vec3 m_lodcenter{0, 0, -1};
-    glm::vec3 m_lodfront{0, 0, 1};
-    glm::vec3 m_lodup{0, 1, 0};
+    glm::vec3 m_pos{0, 0, -1};
 
     glm::quat m_rotation = {1, 0, 0, 0};
 
     bool m_need_sync = false;
     bool m_block_window = false;
     bool m_auto_radius = false;
-private:
-    float m_theta = 0;
-    float m_phi = 0;
-    float m_roll = 0;
 public:
     float get_theta() {
-        return m_theta;
+        return 0;
     }
     float get_phi() {
-        return m_phi;
+        return 0;
     }
     float get_roll() {
-        return m_roll;
+        return 0;
+    }
+    glm::vec3 get_lodfront() {
+        return m_rotation * glm::vec3(0, 0, -1);
+    }
+    glm::vec3 get_lodup() {
+        return m_rotation * glm::vec3(0, 1, 0);
     }
     void set_theta(float value) {
-        m_theta = value;
     }
     void set_phi(float value) {
-        m_phi = value;
     }
     void set_roll(float value) {
-        m_roll = value;
     }
-    zeno::vec3f m_center = {};
+    glm::vec3 m_center = {};
     bool m_ortho_mode = false;
     float m_radius = 5;
 
@@ -98,6 +95,7 @@ public:
     void setCamera(zeno::CameraData const &cam);
     void setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
+    void placeCamera(glm::vec3 pos, glm::quat rotation);
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);

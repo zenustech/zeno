@@ -21,9 +21,9 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 //    zeno::log_info("radius {}", m_zxx.radius);
 
     if (cam.isSet) {
-        m_center = cam.center;
-        m_theta = cam.theta;
-        m_phi = cam.phi;
+        m_center = zeno::vec_to_other<glm::vec3>(cam.center);
+        set_theta(cam.theta);
+        set_phi(cam.phi);
         m_radius = cam.radius;
     }
     else {
@@ -34,18 +34,18 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 //        zeno::log_info("theta: {}", theta);
 //        zeno::log_info("phi: {}", phi);
 
-        m_center = center;
-        m_theta = theta;
-        m_phi = phi;
+        m_center = zeno::vec_to_other<glm::vec3>(center);
+        set_theta(theta);
+        set_phi(phi);
 
-        float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
-        float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
+        float cos_t = glm::cos(get_theta()), sin_t = glm::sin(get_theta());
+        float cos_p = glm::cos(get_phi()), sin_p = glm::sin(get_phi());
         glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
         glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
         glm::vec3 left = glm::cross(up, front);
         float map_to_up = glm::dot(up, zeno::vec_to_other<glm::vec3>(cam.up));
         float map_to_left = glm::dot(left, zeno::vec_to_other<glm::vec3>(cam.up));
-        m_roll = glm::atan(map_to_left, map_to_up);
+        set_roll(glm::atan(map_to_left, map_to_up));
     }
 
     this->m_auto_radius = !cam.isSet;
@@ -69,14 +69,20 @@ static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, fl
             0.0f, 0.0f, zNear,  0.0f);
 }
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
-    front = glm::normalize(front);
-    up = glm::normalize(up);
+    auto right = glm::cross(glm::normalize(front), glm::normalize(up));
+    glm::mat3 rotation;
+    rotation[0] = right;
+    rotation[1] = up;
+    rotation[2] = -front;
 
-    m_lodcenter = pos;
-    m_lodfront = front;
-    m_lodup = up;
+    Camera::placeCamera(pos, glm::quat_cast(rotation));
+}
 
-    m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
+void Camera::placeCamera(glm::vec3 pos, glm::quat rotation) {
+    m_pos = pos;
+    m_rotation = rotation;
+
+    m_view = glm::lookAt(m_pos, m_pos + get_lodfront(), get_lodup());
     if (m_ortho_mode) {
         auto radius = m_radius;
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
@@ -88,19 +94,13 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
 
 void Camera::updateMatrix() {
     auto center = zeno::vec_to_other<glm::vec3>(m_center) ;
-    float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
-    float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
-    glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    glm::vec3 left = glm::cross(up, front);
-    up = glm::cos(m_roll) * up + glm::sin(m_roll) * left;
 
     if (!m_ortho_mode) {
         m_near = 0.05f;
         m_far = 20000.0f * std::max(1.0f, (float)m_radius / 10000.f);
-        placeCamera(center - front * m_radius, front, up);
+        placeCamera(center - get_lodfront() * m_radius, m_rotation);
     } else {
-        placeCamera(center - front * m_radius * 0.4f, front, up);
+        placeCamera(center - get_lodfront() * m_radius * 0.4f, m_rotation);
     }
 }
 
@@ -129,7 +129,7 @@ bool Camera::is_locked_window() const {
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
-    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup);
+    placeCamera(center - get_lodfront() * radius, m_rotation);
 }
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
     m_zxx.cx = cx;

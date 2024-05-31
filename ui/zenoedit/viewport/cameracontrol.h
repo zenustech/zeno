@@ -25,7 +25,8 @@ public:
     void setTheta(float theta);
     float getPhi() const;
     void setPhi(float phi);
-    glm::quat& getRotation();
+    glm::quat getRotation();
+    void setRotation(glm::quat value);
     zeno::vec3f getCenter() const;
     void setCenter(zeno::vec3f center);
     bool getOrthoMode() const;

@@ -912,7 +912,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
@@ -1045,9 +1045,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate || camNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating camera");
-
-            auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
-            auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+            auto lodright = cam.m_rotation * glm::vec3(1, 0, 0);
+            auto lodup = cam.m_rotation * glm::vec3(0, 1, 0);
+            auto lodfront = cam.m_rotation * glm::vec3(0, 0, -1);
 
             std::random_device rd;
             std::mt19937 gen(rd());
@@ -1056,7 +1056,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
-                                        glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                        glm::value_ptr(lodfront), glm::value_ptr(cam.m_pos),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
             xinxinoptix::set_physical_camera_param(
                 cam.zOptixCameraSettingInfo.aperture,

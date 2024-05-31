@@ -57,17 +57,21 @@ void CameraControl::setPhi(float phi) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->set_phi(phi);
 }
-glm::quat& CameraControl::getRotation() {
+glm::quat CameraControl::getRotation() {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->m_rotation;
 }
+void CameraControl::setRotation(glm::quat value) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_rotation = value;
+}
 zeno::vec3f CameraControl::getCenter() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_center;
+    return zeno::other_to_vec<3>(scene->camera->m_center);
 }
 void CameraControl::setCenter(zeno::vec3f center) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_center = center;
+    scene->camera->m_center = zeno::vec_to_other<glm::vec3>(center);
 }
 bool CameraControl::getOrthoMode() const {
     auto *scene = m_zenovis->getSession()->get_scene();
@@ -134,7 +138,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
                 glm::vec4 posVS = posCS / posCS.w;
                 glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
                 glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
-                setRadius(glm::length(scene->camera->m_lodcenter - p3WS));
+                setRadius(glm::length(scene->camera->m_pos - p3WS));
                 setCenter({p3WS.x, p3WS.y, p3WS.z});
             });
             int mid_x = int(this->res().x() * 0.5);
@@ -147,7 +151,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
-    auto front = scene->camera->m_lodfront;
+    auto front = scene->camera->get_lodfront();
     auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
@@ -315,7 +319,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     if (m_transformer) {
         bTransform = m_transformer->isTransforming();
         // check if hover a handler
-        auto front = scene->camera->m_lodfront;
+        auto front = scene->camera->get_lodfront();
         auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
         if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
             m_transformer->hoveredAnyHandler(realPos(), dir, front);
@@ -346,6 +350,12 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         float roll = getRoll();
         roll += dy;
         setRoll(roll);
+        {
+            auto rot = getRotation();
+//            zeno::log_info("rot {} {}", zeno::other_to_vec<4>(rot), dy);
+            rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
+            setRotation(rot);
+        }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
     else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
@@ -412,7 +422,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
 
                 auto vp = scene->camera->m_proj * scene->camera->m_view;
-                m_transformer->transform(camera_pos, dir, mouse_start, mouse_pos, scene->camera->m_lodfront, vp);
+                m_transformer->transform(camera_pos, dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
                 float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
