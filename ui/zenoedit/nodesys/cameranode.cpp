@@ -139,8 +139,8 @@ void CameraNode::onEditClicked()
             std::string other_prop;
             auto center = camera.m_center;
             other_prop += zeno::format("{},{},{},", center[0], center[1], center[2]);
-            other_prop += zeno::format("{},", camera.m_theta);
-            other_prop += zeno::format("{},", camera.m_phi);
+            other_prop += zeno::format("{},", camera.get_theta());
+            other_prop += zeno::format("{},", camera.get_phi());
             other_prop += zeno::format("{},", camera.m_radius);
             info.name = "other";
             info.oldValue = other.info.defaultValue;

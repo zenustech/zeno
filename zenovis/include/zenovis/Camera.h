@@ -36,13 +36,34 @@ struct Camera {
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
+    glm::quat rotation = {1, 0, 0, 0};
+
     bool m_need_sync = false;
     bool m_block_window = false;
     bool m_auto_radius = false;
-
+private:
     float m_theta = 0;
     float m_phi = 0;
     float m_roll = 0;
+public:
+    float get_theta() {
+        return m_theta;
+    }
+    float get_phi() {
+        return m_phi;
+    }
+    float get_roll() {
+        return m_roll;
+    }
+    void set_theta(float value) {
+        m_theta = value;
+    }
+    void set_phi(float value) {
+        m_phi = value;
+    }
+    void set_roll(float value) {
+        m_roll = value;
+    }
     zeno::vec3f m_center = {};
     bool m_ortho_mode = false;
     float m_radius = 5;

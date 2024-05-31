@@ -34,28 +34,32 @@ void CameraControl::setRes(QVector2D res) {
 
 float CameraControl::getRoll() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_roll;
+    return scene->camera->get_roll();
 }
 void CameraControl::setRoll(float roll) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_roll = roll;
+    scene->camera->set_roll(roll);
 }
 
 float CameraControl::getTheta() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_theta;
+    return scene->camera->get_theta();
 }
 void CameraControl::setTheta(float theta) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_theta = theta;
+    scene->camera->set_theta(theta);
 }
 float CameraControl::getPhi() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_phi;
+    return scene->camera->get_phi();
 }
 void CameraControl::setPhi(float phi) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_phi = phi;
+    scene->camera->set_phi(phi);
+}
+glm::quat& CameraControl::getRotation() {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->rotation;
 }
 zeno::vec3f CameraControl::getCenter() const {
     auto *scene = m_zenovis->getSession()->get_scene();
