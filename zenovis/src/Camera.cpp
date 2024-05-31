@@ -21,7 +21,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 //    zeno::log_info("radius {}", m_zxx.radius);
 
     if (cam.isSet) {
-        m_center = zeno::vec_to_other<glm::vec3>(cam.center);
+        m_pivot = zeno::vec_to_other<glm::vec3>(cam.center);
         set_theta(cam.theta);
         set_phi(cam.phi);
         m_radius = cam.radius;
@@ -34,7 +34,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 //        zeno::log_info("theta: {}", theta);
 //        zeno::log_info("phi: {}", phi);
 
-        m_center = zeno::vec_to_other<glm::vec3>(center);
+        m_pivot = zeno::vec_to_other<glm::vec3>(center);
         set_theta(theta);
         set_phi(phi);
 
@@ -93,7 +93,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::quat rotation) {
 }
 
 void Camera::updateMatrix() {
-    auto center = zeno::vec_to_other<glm::vec3>(m_center) ;
+    auto center = zeno::vec_to_other<glm::vec3>(m_pivot) ;
 
     if (!m_ortho_mode) {
         m_near = 0.05f;

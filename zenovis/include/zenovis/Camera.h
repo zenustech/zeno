@@ -33,7 +33,7 @@ struct Camera {
     float m_safe_frames = 0;
 
     glm::vec3 m_pos{0, 0, -1};
-
+    glm::vec3 m_pivot = {};
     glm::quat m_rotation = {1, 0, 0, 0};
 
     bool m_need_sync = false;
@@ -61,7 +61,6 @@ public:
     }
     void set_roll(float value) {
     }
-    glm::vec3 m_center = {};
     bool m_ortho_mode = false;
     float m_radius = 5;
 

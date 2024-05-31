@@ -67,11 +67,11 @@ void CameraControl::setRotation(glm::quat value) {
 }
 zeno::vec3f CameraControl::getCenter() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return zeno::other_to_vec<3>(scene->camera->m_center);
+    return zeno::other_to_vec<3>(scene->camera->m_pivot);
 }
 void CameraControl::setCenter(zeno::vec3f center) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_center = zeno::vec_to_other<glm::vec3>(center);
+    scene->camera->m_pivot = zeno::vec_to_other<glm::vec3>(center);
 }
 bool CameraControl::getOrthoMode() const {
     auto *scene = m_zenovis->getSession()->get_scene();
