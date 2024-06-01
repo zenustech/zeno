@@ -207,9 +207,6 @@ bool sceneMenuEvent(
                         const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
                         if (pMimeData) {
                             QString refExp = pMimeData->text();
-                            if (!refExp.startsWith("=")) {
-                                refExp = "=" + refExp;
-                            }
                             UiHelper::qIndexSetData(selParam, refExp, ROLE_PARAM_VALUE);
                         }
                         });

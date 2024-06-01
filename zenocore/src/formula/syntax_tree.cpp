@@ -1,7 +1,23 @@
 #include <zeno/formula/syntax_tree.h>
 
-char* getOperatorString(operatorVals op)
+char* getOperatorString(nodeType type, operatorVals op)
 {
+    if (type == FUNC)
+        return "FUNC";
+
+    switch (type)
+    {
+    case FUNC: return "FUNC";
+    case NUMBER: return "NUMBER";
+    case STRING: return "STRING";
+    case ZENVAR: return "ZENVAR";
+    case PLACEHOLDER: return "PLACEHOLDER";
+    case FOUROPERATIONS: return "OP";
+    default:
+        break;
+    }
+
+
     switch (op) {
     case PLUS:
         return "plus";
@@ -55,6 +71,28 @@ std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector
     n->type = type;
     n->opVal = op;
     n->value = 0;
+
+    switch (op) {
+    case PLUS:
+        n->value = "plus";
+        break;
+    case MINUS:
+        n->value = "minus";
+        break;
+    case MUL:
+        n->value = "mul";
+        break;
+    case DIV:
+        n->value = "div";
+        break;
+    case DEFAULT_FUNCVAL:
+        n->value = "default_funcVal";
+        break;
+    case UNDEFINE_OP:
+        n->value = "undefinedOp";
+        break;
+    }
+
     n->children = Children;
     n->isParenthesisNode = false;
     n->isParenthesisNodeComplete = false;
@@ -81,11 +119,22 @@ std::shared_ptr<struct node> newNumberNode(float value) {
 
 void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
     const auto& printVal = [](std::shared_ptr<struct node> root, char* prefix) {
+        if (std::holds_alternative<float>(root->value)) {
+            printf("%f ", std::get<float>(root->value));
+        }
+        else if (std::holds_alternative<int>(root->value)) {
+            printf("%d ", std::get<int>(root->value));
+        }
+        else if (std::holds_alternative<std::string>(root->value)) {
+            printf("%s ", std::get<std::string>(root->value).c_str());
+        }
+
         if (root->type == NUMBER)
-            printf("%s: %f isParen:%d : iscompleted:%d\n", prefix, root->value, root->isParenthesisNode, root->isParenthesisNodeComplete);
+            printf("[%s]\n", getOperatorString(root->type, root->opVal));
         else
-            printf("%s: %s isParen:%d : iscompleted:%d\n", prefix, getOperatorString(root->opVal), root->isParenthesisNode, root->isParenthesisNodeComplete);
+            printf("[%s]\n", getOperatorString(root->type, root->opVal));
     };
+
     if (root) {
         for (int i = 0; i < depth; ++i) {
             printf("|  ");
@@ -118,10 +167,10 @@ void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
 float calc_syntax_tree(std::shared_ptr<struct node> root)
 {
     if (root) {
-        if (root->type == NUMBER)
-        {
-            return root->value;
-        } else if (root->type == FOUROPERATIONS) {
+        if (root->type == NUMBER) {
+            return std::get<float>(root->value);
+        } 
+        else if (root->type == FOUROPERATIONS) {
             float leftRes = calc_syntax_tree(root->children[0]);
             float rightRes = calc_syntax_tree(root->children[1]);
             switch (root->opVal)
@@ -172,7 +221,7 @@ void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& 
     {
         auto last = preorderVec.back();
         if (last->type == FUNC) {
-            std::string candidate = getOperatorString(last->opVal);
+            std::string candidate = getOperatorString(last->type, last->opVal);
             if (candidate != "") {
                 name = candidate;
                 pos = NAN;  //当前焦点在函数名上
@@ -183,7 +232,7 @@ void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& 
         while (last)
         {
             if (last->type == FUNC && !last->isParenthesisNodeComplete) {
-                std::string candidate = getOperatorString(last->opVal);
+                std::string candidate = getOperatorString(last->type, last->opVal);
                 if (candidate != "") {
                     name = candidate;
                     pos = last->children.size() - 1;

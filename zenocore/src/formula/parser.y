@@ -112,14 +112,13 @@ exp: factor             { $$ = $1; }
     ;
 
 factor: term            { $$ = $1; }
-    | factor MUL term   { std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children); }
+    | factor MUL term { 
+        std::vector<std::shared_ptr<struct node>>children({$1, $3});
+        $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
+    }
     | factor DIV term {
-        float wtf = $3->value;
-        if (wtf == 0) {
-            /*error(wtf, "zero divide");*/
-            YYABORT;
-        }
-        std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
+        std::vector<std::shared_ptr<struct node>>children({$1, $3});
+        $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
     }
     ;
 
@@ -160,7 +159,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
     | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
-    | SUB exp %prec NEG { $2->value = -1 * $2->value; $$ = $2; }
+    | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
     //| zenvar { $$ = $1; }
     //| func { $$ = $1; }
     //| unaryfunc { $$ = $1; }
@@ -168,7 +167,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;
         $$->type = FUNC;
-        $$->content = $1;
+        $$->value = $1;
         $$->isParenthesisNode = true;
     }
     | %empty { $$ = driver.makeEmptyNode(); }

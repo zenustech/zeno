@@ -55,7 +55,12 @@ void ZLineEdit::sltSetFocus()
 
 void ZLineEdit::init()
 {
-    connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
+    connect(this, &ZLineEdit::editingFinished, this, [=]() {
+        zeno::Formula fmla(text().toStdString());
+        int ret = fmla.parse();
+        fmla.printSyntaxTree();
+        emit textEditFinished();
+    });
     connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
         if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList)
         {
@@ -69,6 +74,8 @@ void ZLineEdit::init()
             globalPos.setY(globalPos.y() - parentGlobalPos.y() + height());
 
             //设置函数提示列表内容
+            //不能直接采用正则表达式识别函数，还是要归到语法树，这样才能即得到函数名称，以及函数参数位置。
+#if 0
             QStringList items;
             std::string candidateWord = "";
             for (auto& i : fmla.getHintList(txt.toStdString(), candidateWord)) {
@@ -96,7 +103,7 @@ void ZLineEdit::init()
                 m_hintlist->resetCurrentItem();
                 return;
             }
-
+#endif
             //函数说明
             int ret = fmla.parse();
             //fmla.printSyntaxTree();

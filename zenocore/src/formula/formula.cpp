@@ -178,7 +178,7 @@ std::shared_ptr<node> Formula::makeStringNode(std::string text)
     std::shared_ptr<node> spNode = std::make_shared<node>();
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
-    spNode->content = text.substr(1, text.length() - 2);
+    spNode->value = text.substr(1, text.length() - 2);
     return spNode;
 }
 
@@ -187,7 +187,7 @@ std::shared_ptr<node> Formula::makeQuoteStringNode(std::string text)
     std::shared_ptr<node> spNode = std::make_shared<node>();
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
-    spNode->content = text.substr(1);
+    spNode->value = text.substr(1);
     return spNode;
 }
 
@@ -211,7 +211,10 @@ std::shared_ptr<struct node> Formula::makeEmptyNode()
 
 ZENO_API void Formula::printSyntaxTree()
 {
+    printf("\n");
+    printf("original formula: %s\n", m_formula.c_str());
     print_syntax_tree(m_rootNode, 0);
+    printf("\n");
 }
 
 ZENO_API std::optional<std::tuple<std::string, std::string, int>> Formula::getCurrFuncDescription()

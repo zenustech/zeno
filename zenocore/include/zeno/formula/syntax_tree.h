@@ -7,6 +7,8 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <zeno/core/common.h>
+
 
 enum nodeType {
     UNDEFINE = 0,
@@ -37,18 +39,20 @@ enum operatorVals {
 struct node {
     enum operatorVals opVal;
     enum nodeType type;
-    float value = 0;  //如果是number
+
+    std::vector<std::shared_ptr<struct node>> children;
+    std::weak_ptr<struct node> parent;
+
+    //float value = 0;  //如果是number
+    //std::string string_value;    //func name.
+    zeno::zvariant value;
 
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;
-    std::string content;    //func name.
-
-    std::vector<std::shared_ptr<struct node>> children;
-
-    std::weak_ptr<struct node> parent;
+    bool bCompleted = false;
 };
 
-char* getOperatorString(operatorVals op);
+char* getOperatorString(nodeType type, operatorVals op);
 operatorVals funcName2Enum(std::string func);
 
 std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> Children);
