@@ -441,6 +441,7 @@ namespace  zeno  {
       // IDENTIFIER
       // LITERAL
       // FUNC
+      // UNCOMPSTR
       // LPAREN
       char dummy4[sizeof (string)];
     };
@@ -505,12 +506,13 @@ namespace  zeno  {
     TOKEN_COMMA = 265,             // COMMA
     TOKEN_LITERAL = 266,           // LITERAL
     TOKEN_FUNC = 267,              // FUNC
-    TOKEN_ADD = 268,               // ADD
-    TOKEN_SUB = 270,               // SUB
-    TOKEN_MUL = 272,               // MUL
-    TOKEN_DIV = 274,               // DIV
-    TOKEN_NEG = 276,               // NEG
-    TOKEN_LPAREN = 277             // LPAREN
+    TOKEN_UNCOMPSTR = 268,         // UNCOMPSTR
+    TOKEN_ADD = 269,               // ADD
+    TOKEN_SUB = 271,               // SUB
+    TOKEN_MUL = 273,               // MUL
+    TOKEN_DIV = 275,               // DIV
+    TOKEN_NEG = 277,               // NEG
+    TOKEN_LPAREN = 278             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -527,7 +529,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 23, ///< Number of tokens.
+        YYNTOKENS = 24, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -542,23 +544,24 @@ namespace  zeno  {
         S_COMMA = 10,                            // COMMA
         S_LITERAL = 11,                          // LITERAL
         S_FUNC = 12,                             // FUNC
-        S_ADD = 13,                              // ADD
-        S_14_ = 14,                              // "+"
-        S_SUB = 15,                              // SUB
-        S_16_ = 16,                              // "-"
-        S_MUL = 17,                              // MUL
-        S_18_ = 18,                              // "*"
-        S_DIV = 19,                              // DIV
-        S_20_ = 20,                              // "/"
-        S_NEG = 21,                              // NEG
-        S_LPAREN = 22,                           // LPAREN
-        S_YYACCEPT = 23,                         // $accept
-        S_calclist = 24,                         // calclist
-        S_exp = 25,                              // exp
-        S_factor = 26,                           // factor
-        S_funcargs = 27,                         // funcargs
-        S_funccontent = 28,                      // funccontent
-        S_term = 29                              // term
+        S_UNCOMPSTR = 13,                        // UNCOMPSTR
+        S_ADD = 14,                              // ADD
+        S_15_ = 15,                              // "+"
+        S_SUB = 16,                              // SUB
+        S_17_ = 17,                              // "-"
+        S_MUL = 18,                              // MUL
+        S_19_ = 19,                              // "*"
+        S_DIV = 20,                              // DIV
+        S_21_ = 21,                              // "/"
+        S_NEG = 22,                              // NEG
+        S_LPAREN = 23,                           // LPAREN
+        S_YYACCEPT = 24,                         // $accept
+        S_calclist = 25,                         // calclist
+        S_exp = 26,                              // exp
+        S_factor = 27,                           // factor
+        S_funcargs = 28,                         // funcargs
+        S_funccontent = 29,                      // funccontent
+        S_term = 30                              // term
       };
     };
 
@@ -615,6 +618,7 @@ namespace  zeno  {
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (std::move (that.value));
         break;
@@ -742,6 +746,7 @@ switch (yykind)
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_LPAREN: // LPAREN
         value.template destroy< string > ();
         break;
@@ -871,7 +876,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT ((token::TOKEN_RPAREN <= tok && tok <= token::TOKEN_IDENTIFIER)
-                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_FUNC)
+                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_UNCOMPSTR)
                    || tok == token::TOKEN_LPAREN);
 #endif
       }
@@ -1116,6 +1121,21 @@ switch (yykind)
       make_FUNC (const string& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_FUNC, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_UNCOMPSTR (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_UNCOMPSTR, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_UNCOMPSTR (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_UNCOMPSTR, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1538,7 +1558,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 31,     ///< Last index in yytable_.
+      yylast_ = 37,     ///< Last index in yytable_.
       yynnts_ = 7,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
@@ -1587,10 +1607,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22
+      15,    16,    17,    18,    19,    20,    21,    22,    23
     };
     // Last valid token kind.
-    const int code_max = 277;
+    const int code_max = 278;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1629,6 +1649,7 @@ switch (yykind)
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_LPAREN: // LPAREN
         value.copy< string > (YY_MOVE (that.value));
         break;
@@ -1684,6 +1705,7 @@ switch (yykind)
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
       case symbol_kind::S_FUNC: // FUNC
+      case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (YY_MOVE (s.value));
         break;
@@ -1755,7 +1777,7 @@ switch (yykind)
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1759 "parser.hpp"
+#line 1781 "parser.hpp"
 
 
 

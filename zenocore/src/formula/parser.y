@@ -81,6 +81,7 @@
 %token COMMA
 %token LITERAL
 %token FUNC
+%token UNCOMPSTR
 
 %left ADD "+"
 %left SUB "-"
@@ -95,7 +96,7 @@
 
 %type <std::shared_ptr<struct node>> exp calclist factor term funccontent// farg// zenvar func //unaryfunc
 %type <std::vector<std::shared_ptr<struct node>>> funcargs
-%type <string> LITERAL FUNC 
+%type <string> LITERAL FUNC UNCOMPSTR
 
 %start calclist
 
@@ -157,6 +158,7 @@ funccontent: LPAREN funcargs RPAREN { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNC
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
+    | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
     | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
     | SUB exp %prec NEG { $2->value = -1 * $2->value; $$ = $2; }
     //| zenvar { $$ = $1; }

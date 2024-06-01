@@ -41,6 +41,7 @@
 
 /*正则式的各种简写，使程序有层次感而显得明晰 */
 string  \"[^\n"]+\"
+uncompstring \"[^\n"]*
 ws      [ \t]+
 alpha   [A-Za-z]
 dig     [0-9]
@@ -99,6 +100,7 @@ functoken [A-Za-z][A-Za-z_0-9]*
 ")"       { return zeno::Parser::make_RPAREN(yytext,loc); }
 ","       { return zeno::Parser::make_COMMA(loc); }
 {string}  { return zeno::Parser::make_LITERAL(yytext, loc); }
+{uncompstring} { return zeno::Parser::make_UNCOMPSTR(yytext, loc); }
 {functoken} { return zeno::Parser::make_FUNC(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {

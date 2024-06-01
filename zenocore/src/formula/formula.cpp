@@ -178,7 +178,16 @@ std::shared_ptr<node> Formula::makeStringNode(std::string text)
     std::shared_ptr<node> spNode = std::make_shared<node>();
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
-    spNode->content = text;
+    spNode->content = text.substr(1, text.length() - 2);
+    return spNode;
+}
+
+std::shared_ptr<node> Formula::makeQuoteStringNode(std::string text)
+{
+    std::shared_ptr<node> spNode = std::make_shared<node>();
+    spNode->type = STRING;
+    spNode->opVal = UNDEFINE_OP;
+    spNode->content = text.substr(1);
     return spNode;
 }
 

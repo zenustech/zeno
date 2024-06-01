@@ -340,8 +340,8 @@ int yyFlexLexer::yylex()
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 18
-#define YY_END_OF_BUFFER 19
+#define YY_NUM_RULES 19
+#define YY_END_OF_BUFFER 20
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -351,9 +351,9 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[39] =
     {   0,
-        0,    0,   19,   17,    6,    7,   17,   17,   12,   13,
-       10,    8,   14,    9,   17,   11,    1,   16,    0,    2,
-        0,    1,    5,    1,    1,    0,   16,   15,    0,    4,
+        0,    0,   20,   18,    6,    7,   16,   18,   12,   13,
+       10,    8,   14,    9,   18,   11,    1,   17,   16,    2,
+        0,    1,    5,    1,    1,    0,   17,   15,    0,    4,
         0,    5,    0,    1,    3,    0,    1,    0
     } ;
 
@@ -611,10 +611,10 @@ YY_DECL
 		}
 
 	{
-#line 58 "scanner.l"
+#line 59 "scanner.l"
 
 
-#line 61 "scanner.l"
+#line 62 "scanner.l"
   // C++ 兼容的词法分析器的规则，step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
   loc.step();
 
@@ -678,14 +678,14 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 65 "scanner.l"
+#line 66 "scanner.l"
 {
                 return Parser::make_NUMBER(std::strtof(yytext,0),loc); // strtof函数将字符串转换为浮点数
             }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 68 "scanner.l"
+#line 69 "scanner.l"
 {
                 return zeno::Parser::make_FRAME(loc);
                 cout << "frame" << endl;
@@ -693,7 +693,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 72 "scanner.l"
+#line 73 "scanner.l"
 {
                 cout << "fps" << endl;
                 return zeno::Parser::make_FPS(loc);
@@ -701,17 +701,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 76 "scanner.l"
+#line 77 "scanner.l"
 {
                 cout << "pi" << endl;
                 return zeno::Parser::make_PI(loc);
             }
 	YY_BREAK
 case 5:
-#line 82 "scanner.l"
+#line 83 "scanner.l"
 case 6:
 YY_RULE_SETUP
-#line 82 "scanner.l"
+#line 83 "scanner.l"
 {
             /* 跳过注释和空白符号 */
             // step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
@@ -722,7 +722,7 @@ YY_RULE_SETUP
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 89 "scanner.l"
+#line 90 "scanner.l"
 {
             loc.lines(yyleng);  //使用lines函数来更新位置信息中的符号
             loc.step();
@@ -731,66 +731,71 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 95 "scanner.l"
+#line 96 "scanner.l"
 { return zeno::Parser::make_ADD(loc); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 96 "scanner.l"
+#line 97 "scanner.l"
 { return zeno::Parser::make_SUB(loc); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 97 "scanner.l"
+#line 98 "scanner.l"
 { return zeno::Parser::make_MUL(loc); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 98 "scanner.l"
+#line 99 "scanner.l"
 { return zeno::Parser::make_DIV(loc); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 99 "scanner.l"
+#line 100 "scanner.l"
 { return zeno::Parser::make_LPAREN(yytext,loc); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 100 "scanner.l"
+#line 101 "scanner.l"
 { return zeno::Parser::make_RPAREN(yytext,loc); }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 101 "scanner.l"
+#line 102 "scanner.l"
 { return zeno::Parser::make_COMMA(loc); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 102 "scanner.l"
+#line 103 "scanner.l"
 { return zeno::Parser::make_LITERAL(yytext, loc); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 103 "scanner.l"
-{ return zeno::Parser::make_FUNC(yytext, loc); }
-	YY_BREAK
-case YY_STATE_EOF(INITIAL):
 #line 104 "scanner.l"
-{ return yyterminate(); }
+{ return zeno::Parser::make_UNCOMPSTR(yytext, loc); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 105 "scanner.l"
+{ return zeno::Parser::make_FUNC(yytext, loc); }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+#line 106 "scanner.l"
+{ return yyterminate(); }
+	YY_BREAK
+case 18:
+YY_RULE_SETUP
+#line 107 "scanner.l"
 {
              cout << "Scanner: unknown character [" << yytext << "]" << endl;
           }
 	YY_BREAK
-case 18:
+case 19:
 YY_RULE_SETUP
-#line 109 "scanner.l"
+#line 111 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 793 "scanner.cpp"
+#line 798 "scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1751,6 +1756,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 109 "scanner.l"
+#line 111 "scanner.l"
 
 
