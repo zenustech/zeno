@@ -5,6 +5,8 @@
 
 class ZNumSlider;
 class ZTimeline;
+class ZenoHintListWidget;
+class ZenoFuncDescriptionLabel;
 
 class ZLineEdit : public QLineEdit
 {
@@ -16,6 +18,8 @@ public:
     void setShowingSlider(bool bShow);
     bool showingSlider();
     void setIcons(const QString& icNormal, const QString& icHover);
+    void hintSelectedSetText(QString text);
+    void setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl);
 
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -50,6 +54,11 @@ private:
     bool m_bIconHover;
 
     bool m_bShowHintList;
+
+    QString m_firstCandidateWord;
+
+    ZenoHintListWidget* m_hintlist;
+    ZenoFuncDescriptionLabel* m_descLabel;
 };
 
 #endif

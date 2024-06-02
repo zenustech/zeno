@@ -6,6 +6,9 @@
 #include "util/uihelper.h"
 #include "panel/ZenoHintListWidget.h"
 #include "panel/zenoproppanel.h"
+#include "widgets/zlabel.h"
+#include <zeno/formula/formula.h>
+#include <util/log.h>
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -15,6 +18,8 @@ ZLineEdit::ZLineEdit(QWidget* parent)
     , m_pButton(nullptr)
     , m_bIconHover(false)
     , m_bShowHintList(true)
+    , m_hintlist(nullptr)
+    , m_descLabel(nullptr)
 
 {
     init();
@@ -33,11 +38,14 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
 
 void ZLineEdit::sltHintSelected(QString itemSelected)
 {
-    setText(itemSelected);
+    hintSelectedSetText(itemSelected);
     setFocus();
-    disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
-    disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
-    disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
+    if (m_hintlist)
+    {
+        disconnect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
+        disconnect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
+        disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
+    }
 }
 
 void ZLineEdit::sltSetFocus()
@@ -47,31 +55,81 @@ void ZLineEdit::sltSetFocus()
 
 void ZLineEdit::init()
 {
-    connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
+    connect(this, &ZLineEdit::editingFinished, this, [=]() {
+        zeno::Formula fmla(text().toStdString());
+        int ret = fmla.parse();
+        fmla.printSyntaxTree();
+        emit textEditFinished();
+    });
     connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
-        if (hasFocus() && m_bShowHintList)
+        if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList)
         {
-            ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
+            QString txt = text.left(cursorPosition());
+            zeno::Formula fmla(txt.toStdString());
+
             QFontMetrics metrics(this->font());
-            const QPoint& parentGlobalPos = hintlist->getPropPanelPos();
+            const QPoint& parentGlobalPos = m_hintlist->getPropPanelPos();
             QPoint globalPos = this->mapToGlobal(QPoint(0, 0));
-            globalPos.setX(globalPos.x() - parentGlobalPos.x() + metrics.width(text));
+            globalPos.setX(globalPos.x() - parentGlobalPos.x() + metrics.width(txt));
             globalPos.setY(globalPos.y() - parentGlobalPos.y() + height());
 
-            //测试
+            //设置函数提示列表内容
+            //不能直接采用正则表达式识别函数，还是要归到语法树，这样才能即得到函数名称，以及函数参数位置。
+#if 0
             QStringList items;
-            items << "1111" << "2222" << "3333" << "4444" << "5555" << "6666" << "7777" << "8888" << "9999" << "1100";
-            hintlist->setData(items);
-
-            hintlist->move(globalPos);
-            if (!hintlist->isVisible())
-            {
-                connect(hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
-                connect(hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                connect(hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                hintlist->show();
+            std::string candidateWord = "";
+            for (auto& i : fmla.getHintList(txt.toStdString(), candidateWord)) {
+                items << QString::fromStdString(i);
             }
-            hintlist->resetCurrentItem();
+            m_firstCandidateWord = QString::fromStdString(candidateWord);
+            if (items.size() == 0) {
+                if (m_hintlist->isVisible()) {
+                    m_hintlist->hide();
+                }
+            }
+            else {
+                m_hintlist->setData(items);
+                m_hintlist->move(globalPos);
+                if (!m_hintlist->isVisible())
+                {
+                    connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
+                    connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                    connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                    m_hintlist->show();
+                    if (m_descLabel->isVisible()) {
+                        m_descLabel->hide();
+                    }
+                }
+                m_hintlist->resetCurrentItem();
+                return;
+            }
+#endif
+            //函数说明
+            int ret = fmla.parse();
+            //fmla.printSyntaxTree();
+            if (ret == 0 || fmla.getRoot())
+            {
+                std::optional<std::tuple<std::string, std::string, int>> optNameDescPos = fmla.getCurrFuncDescription();
+                if (!optNameDescPos.has_value())
+                {
+                    if (m_descLabel->isVisible()) {
+                        m_descLabel->hide();
+                    }
+                } else {
+                    auto nameDescPos = optNameDescPos.value();
+                    m_descLabel->setDesc(QString::fromStdString(std::get<1>(nameDescPos)), std::get<2>(nameDescPos));
+                    //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
+                    //    m_descLabel->move(globalPos);
+                    //}
+                    m_descLabel->move(globalPos);
+                    if (!m_descLabel->isVisible()) {
+                        m_descLabel->show();
+                    }
+                    m_descLabel->setCurrentFuncName(std::get<0>(nameDescPos));
+                }
+            } else if (m_descLabel->isVisible()) {
+                    m_descLabel->hide();
+            }
         }
     });
 }
@@ -99,6 +157,22 @@ void ZLineEdit::setIcons(const QString& icNormal, const QString& icHover)
     btnLayout->setAlignment(Qt::AlignRight);
     btnLayout->setContentsMargins(0, 0, 0, 0);
     connect(m_pButton, SIGNAL(clicked(bool)), this, SIGNAL(btnClicked()));
+}
+
+void ZLineEdit::hintSelectedSetText(QString text)
+{
+    BlockSignalScope scope(this);
+    int newPos = cursorPosition() - m_firstCandidateWord.size() + text.size();
+    QString txt = this->text();
+    txt.replace(cursorPosition() - m_firstCandidateWord.size(), m_firstCandidateWord.size(), text);
+    setText(txt);
+    setCursorPosition(newPos);
+}
+
+void ZLineEdit::setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl)
+{
+    m_hintlist = hintlist;
+    m_descLabel = descLabl;
 }
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
@@ -130,7 +204,10 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 {
-    ZenoPropPanel::getHintListInstance().setCurrentZlineEdit(this);
+    if (m_hintlist)
+    {
+        m_hintlist->setCurrentZlineEdit(this);
+    }
     if (event->button() == Qt::MiddleButton && m_pSlider)
     {
         m_bShowHintList = true;
@@ -195,33 +272,39 @@ void ZLineEdit::popupSlider()
 
 void ZLineEdit::keyPressEvent(QKeyEvent* event)
 {
-    if (hasFocus() && m_bShowHintList)
+    if (m_hintlist && hasFocus() && m_bShowHintList)
     {
-        ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
-        if (hintlist->isVisible())
+        if (m_hintlist->isVisible())
         {
             if (event->key() == Qt::Key_Down) {
-                hintlist->setActive();
+                m_hintlist->setActive();
                 event->accept();
                 return;
             }
             else if (event->key() == Qt::Key_Escape)
             {
-                hintlist->hide();
+                m_hintlist->hide();
                 setFocus();
-                disconnect(hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
-                disconnect(hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
-                disconnect(hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
+                disconnect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
+                disconnect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
+                disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
                 event->accept();
                 return;
             }else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
             {
-                ZenoHintListWidget* hintlist = &ZenoPropPanel::getHintListInstance();
-                if (hintlist->isVisible())
+                if (m_hintlist->isVisible())
                 {
-                    hintlist->hide();
-                    setText(hintlist->getCurrentText());
+                    m_hintlist->hide();
+                    hintSelectedSetText(m_hintlist->getCurrentText());
                 }
+            }
+        }
+        if (m_descLabel && m_descLabel->isVisible())
+        {
+            if (event->key() == Qt::Key_Escape || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+                m_descLabel->hide();
+                setFocus();
+                event->accept();
             }
         }
     }
@@ -289,11 +372,11 @@ bool ZLineEdit::eventFilter(QObject *obj, QEvent *event) {
 
 void ZLineEdit::focusOutEvent(QFocusEvent* event)
 {
-    if (!ZenoPropPanel::getHintListInstance().isVisible())
+    if (m_hintlist && !m_hintlist->isVisible())
     {
-        disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
-        disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
-        disconnect(&ZenoPropPanel::getHintListInstance(), &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
+        disconnect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected);
+        disconnect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
+        disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
     }
     QLineEdit::focusOutEvent(event);
 }

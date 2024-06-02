@@ -12,6 +12,14 @@ QLabel[cssClass="proppanel-nodename"]
 	color: rgba(255, 255, 255, 0.5);
 }
 
+QWidget[cssClass="proppanel-funcDescription"]
+{
+	font-size: 10pt;
+	color: rgb(160, 178, 194);
+	border:1px solid black;
+	background-color: #22252C;
+}
+
 QWidget[cssClass="proppanel-section-header"]
 {
     background-color: rgb(56,56,56)

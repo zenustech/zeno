@@ -402,8 +402,6 @@ namespace JsonHelper
                 QString key = curve_util::getCurveKey(i);
                 bool ok = false;
                 QString str = strVec.at(i);
-                if (str.startsWith("="))
-                    continue;
                 str.toFloat(&ok);
                 if (ok)
                     continue;

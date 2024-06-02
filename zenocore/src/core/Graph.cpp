@@ -608,6 +608,8 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path)
     if (m_name == "main")
     {
         sPos = path.find(m_name) + m_name.size();
+        if (path.size() <= sPos)
+            return nullptr;
         path = path.substr(sPos + 1, path.size() - sPos);
     }
     std::string name = path.substr(0, path.find("/"));
