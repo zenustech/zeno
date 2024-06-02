@@ -385,6 +385,7 @@ ZEditableTextItem::ZEditableTextItem(const QString &text, QGraphicsItem *parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_validState(QValidator::Acceptable)
 {
     _base::setText(text);
     initUI(text);
@@ -396,6 +397,7 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
     , m_bShowSlider(false)
     , m_pSlider(nullptr)
     , m_bValidating(false)
+    , m_validState(QValidator::Acceptable)
 {
     initUI("");
 }
@@ -422,6 +424,13 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         painter->setPen(pen);
         painter->drawRect(rc);
     } else {
+        if (m_validState != QValidator::Acceptable)
+        {
+            pen.setJoinStyle(Qt::MiterJoin);
+            pen.setColor(QColor(200, 84, 79));
+            painter->setPen(pen);
+            painter->drawRect(rc);
+        }
         painter->fillRect(rc, col);
     }
     _base::paint(painter, option, widget);
@@ -488,6 +497,11 @@ void ZEditableTextItem::onContentsChanged()
         }
         else {
             m_acceptableText = editText;
+        }
+        if (m_validState != ret)
+        {
+            m_validState = ret;
+            update();
         }
         iVal = 0;
     }
@@ -589,6 +603,24 @@ void ZEditableTextItem::keyReleaseEvent(QKeyEvent* event)
         }
     }
     return _base::keyReleaseEvent(event);
+}
+
+bool ZEditableTextItem::event(QEvent * event)
+{
+    if (event->type() == QEvent::DynamicPropertyChange)
+    {
+        QDynamicPropertyChangeEvent* evt = static_cast<QDynamicPropertyChangeEvent*>(event);
+        if (evt->propertyName() == "filter") {
+            QString filter = property("filter").toString();
+            if (!filter.isEmpty())
+            {
+                QRegExp rx(filter);
+                rx.setPatternSyntax(QRegExp::Wildcard);
+                m_validator = new QRegExpValidator(rx, this);
+            }
+        }
+    }
+    return _base::event(event);
 }
 
 void ZEditableTextItem::focusInEvent(QFocusEvent* event)

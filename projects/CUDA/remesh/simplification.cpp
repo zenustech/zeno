@@ -3,6 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
+#include <mutex>
 
 #include "zensim/container/Bht.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"

@@ -24,12 +24,17 @@ void ZPathEdit::initUI(const CALLBACK_SWITCH& cbSwitch)
 
     QObject::connect(this, &ZLineEdit::btnClicked, [=]() {
         int ctrl = this->property("control").toInt();
+        QString filter = this->property("filter").toString();
+        if (filter.isEmpty())
+        {
+            filter = "All Files(*);;";
+        }
         QString path;
         cbSwitch(true);
         if (ctrl == CONTROL_READPATH) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", filter);
         } else if (ctrl == CONTROL_WRITEPATH) {
-            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", filter);
         } else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }

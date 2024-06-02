@@ -753,6 +753,10 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                     pSpinBox->setRange(info.min, info.max);
                   } 
             }
+            else if (value.type() == QMetaType::QVariantMap && value.toMap().contains("filter"))
+            {
+                ctrl.pControl->setProperty("filter", value.toMap()["filter"]);
+            }
         } 
         else if (role == ROLE_VPARAM_TOOLTIP) 
         {

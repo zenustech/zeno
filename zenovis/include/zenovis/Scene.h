@@ -32,7 +32,6 @@ enum class PICK_MODE {
 struct Scene : zeno::disable_copy {
     std::optional<zeno::vec4f> select_box = {};
     std::unordered_set<std::string> selected = {};
-    PICK_MODE select_mode = PICK_MODE::PICK_OBJECT;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements = {};
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;
@@ -62,6 +61,10 @@ struct Scene : zeno::disable_copy {
         std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems);
     void convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,           //仅展平对象
         std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems);
+    void set_select_mode(PICK_MODE _select_mode);
+    PICK_MODE get_select_mode();
+private:
+    PICK_MODE select_mode = PICK_MODE::PICK_OBJECT;
 };
 
 } // namespace zenovis

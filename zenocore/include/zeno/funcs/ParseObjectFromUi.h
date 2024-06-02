@@ -51,6 +51,7 @@ namespace iotags {
         constexpr const char* bAutoRemoveCache = "auto-remove-cache";
         constexpr const char* bAov = "aov";
         constexpr const char* bExr = "exr";
+        constexpr const char* exePath = "exePath";
     }
 
     namespace layoutinfo {

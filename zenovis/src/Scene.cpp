@@ -15,6 +15,7 @@
 #ifdef ZENO_ENABLE_OPTIX
     #include "../xinxinoptix/xinxinoptixapi.h"
 #endif
+//#include <magic_enum.hpp>
 #include <cstdlib>
 #include <map>
 
@@ -178,6 +179,13 @@ bool Scene::loadFrameObjects(int frameid) {
     return inserted;
 }
 
+void Scene::set_select_mode(PICK_MODE _select_mode) {
+//    zeno::log_info("{} -> {}", magic_enum::enum_name(select_mode), magic_enum::enum_name(_select_mode));
+    select_mode = _select_mode;
+}
+PICK_MODE Scene::get_select_mode() {
+    return select_mode;
+}
 void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {
