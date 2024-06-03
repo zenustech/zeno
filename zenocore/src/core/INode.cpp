@@ -1073,6 +1073,11 @@ ZENO_API bool zeno::INode::update_param_socket_type(const std::string& param, So
     if (type != spParam->socketType)
     {
         spParam->socketType = type;
+        if (type == Socket_Owning)
+        {
+            auto spGraph = graph.lock();
+            spGraph->removeLinks(m_name, true, param);
+        }
         return true;
     }
     return false;

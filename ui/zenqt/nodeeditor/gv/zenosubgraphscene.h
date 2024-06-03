@@ -87,6 +87,7 @@ private:
     ZenoNodeBase* createNode(const QModelIndex& idx, const NodeUtilParam& params);
     void initLink(const QModelIndex& linkIdx);
     void updateNodeStatus(int option);
+    bool isLinkValid(const ZenoSocketItem* fixedSockItem, const ZenoSocketItem* targetSockItem, bool bFixedInput);
 
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
