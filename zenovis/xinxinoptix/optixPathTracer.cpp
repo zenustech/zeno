@@ -3813,6 +3813,26 @@ static void save_exr(float3* ptr, int w, int h, std::string path) {
         }
     }
 }
+static void save_png_data(std::string path, int w, int h, float* ptr) {
+    std::vector<uint8_t> data;
+    data.reserve(w * h * 3);
+    for (auto i = 0; i < w * h * 3; i++) {
+        data.push_back(std::lround(ptr[i] * 255.0f));
+    }
+    std::string native_path = zeno::create_directories_when_write_file(path);
+    stbi_flip_vertically_on_write(1);
+    stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
+}
+static void save_png_color(std::string path, int w, int h, float* ptr) {
+    std::vector<uint8_t> data;
+    data.reserve(w * h * 3);
+    for (auto i = 0; i < w * h * 3; i++) {
+        data.push_back(std::lround(pow(ptr[i], 1.0f/2.2f) * 255.0f));
+    }
+    std::string native_path = zeno::create_directories_when_write_file(path);
+    stbi_flip_vertically_on_write(1);
+    stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
+}
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     bool imageRendered = false;
@@ -3853,40 +3873,44 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
         if (enable_output_mask) {
-            std::vector<uint8_t> data;
-            data.reserve(w * h * 3);
-            float* ptr = (float *)optixgetimg_extra("mask");
-            for (auto i = 0; i < w * h * 3; i++) {
-                data.push_back(int(ptr[i]));
-            }
-            std::string native_path = zeno::create_directories_when_write_file(path + "_mask.png");
-            stbi_flip_vertically_on_write(1);
-            stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
+            path = path.substr(0, path.size() - 4);
+            save_png_data(path + "_mask.png", w, h,  (float*)optixgetimg_extra("mask"));
         }
         // AOV
         if (enable_output_aov) {
-            zeno::create_directories_when_write_file(exr_path);
-            SaveMultiLayerEXR(
-                    {
-                            (float*)optixgetimg_extra("color"),
-                            (float*)optixgetimg_extra("diffuse"),
-                            (float*)optixgetimg_extra("specular"),
-                            (float*)optixgetimg_extra("transmit"),
-                            (float*)optixgetimg_extra("background"),
-                            (float*)optixgetimg_extra("mask"),
-                    },
-                    w,
-                    h,
-                    {
-                            "",
-                            "diffuse.",
-                            "specular.",
-                            "transmit.",
-                            "background.",
-                            "mask.",
-                    },
-                    exr_path.c_str()
-            );
+            if (enable_output_exr) {
+                zeno::create_directories_when_write_file(exr_path);
+                SaveMultiLayerEXR(
+                        {
+                                (float*)optixgetimg_extra("color"),
+                                (float*)optixgetimg_extra("diffuse"),
+                                (float*)optixgetimg_extra("specular"),
+                                (float*)optixgetimg_extra("transmit"),
+                                (float*)optixgetimg_extra("background"),
+                                (float*)optixgetimg_extra("mask"),
+                        },
+                        w,
+                        h,
+                        {
+                                "",
+                                "diffuse.",
+                                "specular.",
+                                "transmit.",
+                                "background.",
+                                "mask.",
+                        },
+                        exr_path.c_str()
+                );
+
+            }
+            else {
+                path = path.substr(0, path.size() - 4);
+                save_png_color(path + ".aov.diffuse.png", w, h,  (float*)optixgetimg_extra("diffuse"));
+                save_png_color(path + ".aov.specular.png", w, h,  (float*)optixgetimg_extra("specular"));
+                save_png_color(path + ".aov.transmit.png", w, h,  (float*)optixgetimg_extra("transmit"));
+                save_png_data(path + ".aov.background.png", w, h,  (float*)optixgetimg_extra("background"));
+                save_png_data(path + ".aov.mask.png", w, h,  (float*)optixgetimg_extra("mask"));
+            }
         }
         else {
             if (enable_output_exr) {

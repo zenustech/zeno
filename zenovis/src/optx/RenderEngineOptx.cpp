@@ -1473,6 +1473,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void cleanupAssets() override {
         xinxinoptix::optixCleanup();
     }
+
+    void cleanupWhenExit() override {
+
+    }
 };
 
 static auto definer = RenderManager::registerRenderEngine<RenderEngineOptx>("optx");

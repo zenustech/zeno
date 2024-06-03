@@ -97,6 +97,8 @@ class ZPlainLogPanel : public QPlainTextEdit
 public:
     ZPlainLogPanel(QWidget* parent = nullptr);
     void initMsgs();
+protected:
+    void contextMenuEvent(QContextMenuEvent* event) override;
 };
 
 

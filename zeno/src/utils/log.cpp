@@ -34,14 +34,17 @@ ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, st
     //*os << ansiclr::fg[make_array(ansiclr::white, ansiclr::cyan, ansiclr::green,
                                   //ansiclr::cyan | ansiclr::light, ansiclr::yellow | ansiclr::light,
                                   //ansiclr::red | ansiclr::light)[linlev]];
-    *os << format("[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}\n",
+    auto content = format("[{} {02d}:{02d}:{02d}.{03d}] ({}:{}) {}\n",
                   "TDICWE"[linlev],
                   mss / 1000 / 60 / 60 % 24, mss / 1000 / 60 % 60,
                   mss / 1000 % 60, mss % 1000,
                   loc.file_name(), loc.line(),
                   msg);
     //*os << ansiclr::reset;
+    *os << content;
     os->flush();
+    if (level == log_level_t::error)
+        std::cerr << content;
 }
 
 namespace {
