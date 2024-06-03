@@ -243,6 +243,10 @@ struct PortalLight {
     Vector3f X,Y,Z;
     //PortalLight() = default;
 
+    auto luminance(float3 c) {
+        return dot(c, float3{0.2722287, 0.6740818, 0.0536895});
+    };
+
 #ifndef __CUDACC_RTC__
 
     auto pack() {
@@ -286,10 +290,6 @@ struct PortalLight {
         image = xx::Array2D<float3>(pixel_count_x, pixel_count_y);
         dist = xx::Array2D<float>(pixel_count_x, pixel_count_y);
 
-        auto luminance = [](float3 c) {
-            return dot(c, float3{0.2722287, 0.6740818, 0.0536895});
-        };
-
         for (uint i=0; i<pixel_count_x; ++i) {
             for (uint j=0; j<pixel_count_y; ++j) {
 
@@ -308,8 +308,7 @@ struct PortalLight {
                 auto pos = (*(float2*)&suv) * make_float2(tex_width, tex_height);
 
                 auto pixel = BiLinear(texture, tex_width, tex_height, pos);
-                auto average = (pixel.x + pixel.y + pixel.z) / 3.0f;
-                //average = luminance(pixel);
+                auto average = this->luminance(pixel);
                 //average *= std::sin(M_PIf * suv.y);
 
                 image(i, j) = pixel;
@@ -347,10 +346,9 @@ struct PortalLight {
                 sum += value / duvdw;
             }
         }
-        
-        auto average = (sum.x + sum.y + sum.z) / 3.0f;
-        average /= (image.XSize() * image.YSize());
-        return area() * average;
+
+        sum /= (image.XSize() * image.YSize());
+        return area() * this->luminance(sum);
     }
 
     float3 Le(const Vector3f& ray_origin, const Vector3f& ray_dir) {
@@ -428,8 +426,8 @@ struct PortalLight {
 
         while (min < max && ( (n * max) - (n * min)) > 1) {
 
-            assert(P(min) <= u);
-            assert(P(max) >= u);
+            DCHECK(P(min) <= u);
+            DCHECK(P(max) >= u);
             float mid = (min + max) / 2;
             auto PM = P(mid);
             //PM = clamp(PM, 0.0f, 1.0f); 
