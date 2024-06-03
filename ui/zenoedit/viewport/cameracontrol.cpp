@@ -348,12 +348,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dy = ypos - m_lastMidButtonPos.y();
         dy *= ratio / m_res[1];
-        float roll = getRoll();
-        roll += dy;
-        setRoll(roll);
         {
             auto rot = getRotation();
-//            zeno::log_info("rot {} {}", zeno::other_to_vec<4>(rot), dy);
             rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
             setRotation(rot);
         }
@@ -389,28 +385,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             setOrthoMode(false);
             {
                 auto rot = getRotation();
-                auto rotMat = glm::toMat4(rot);
-                rotMat = glm::rotate(glm::mat4(1), -dx, glm::vec3(0, 1, 0)) * rotMat;
-                rotMat = glm::rotate(glm::mat4(1), -dy, glm::mat3(rotMat) * glm::vec3(1, 0, 0)) * rotMat;
-                rot = glm::toQuat(rotMat);
+                rot = glm::angleAxis(-dx, glm::vec3(0, 1, 0)) * rot;
+                rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
                 setRotation(rot);
-            }
-            setTheta(getTheta() - dy * M_PI);
-            if (int(abs(getTheta()) / M_PI) % 2 == 0) {
-                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
-                    setPhi(getPhi() + dx * M_PI);
-                }
-                else {
-                    setPhi(getPhi() - dx * M_PI);
-                }
-            }
-            else {
-                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
-                    setPhi(getPhi() - dx * M_PI);
-                }
-                else {
-                    setPhi(getPhi() + dx * M_PI);
-                }
             }
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
