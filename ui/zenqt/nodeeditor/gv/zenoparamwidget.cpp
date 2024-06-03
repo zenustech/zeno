@@ -289,10 +289,10 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         QString filePath = path;
 
         // need to resolve the formula path
-        if (path.startsWith('=')) {
+        {
             zeno::setConfigVariable("ZSG", zsgDir.toStdString());
             auto code = std::make_shared<zeno::StringObject>();
-            code->set(path.mid(1).toStdString());
+            code->set(path.toStdString());
             auto outs = zeno::TempNodeSimpleCaller("StringEval")
                 .set("zfxCode", code)
                 .call();

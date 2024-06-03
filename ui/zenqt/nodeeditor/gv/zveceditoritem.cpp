@@ -81,8 +81,6 @@ QVariant ZVecEditorItem::vec() const
                 }
                 vec.clear();
                 QString str = m_editors[i]->text();
-                if (!bOK && !str.startsWith("="))
-                    zeno::log_error("The formula '{}' need start with '='", str.toStdString());
                 vecStr.append(str);
             }
         }
@@ -98,8 +96,6 @@ QVariant ZVecEditorItem::vec() const
                 }
                 vec.clear();
                 QString str = m_editors[i]->text();
-                if (!bOK && !str.startsWith("="))
-                    zeno::log_error("The formula '{}' need start with '='", str.toStdString());
                 vecStr.append(str);
             }
         }

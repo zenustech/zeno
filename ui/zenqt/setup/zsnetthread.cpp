@@ -1,7 +1,10 @@
 ﻿#include "zsnetthread.h"
 #include "zsinstance.h"
 #define CURL_STATICLIB
+
+#if 0
 #include <curl/curl.h>
+#endif
 
 #include "zsinstance.h"
 
@@ -39,7 +42,9 @@ void ZsNetThread::netGet()
 {
 #ifdef __linux__
     return;
-#else
+#endif
+    //TODO: curl integration by vcpkg or submodule.
+#if 0
     CURL* curl;
     CURLcode res;
     std::string strData;

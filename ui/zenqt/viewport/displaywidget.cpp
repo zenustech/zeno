@@ -1162,11 +1162,12 @@ void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_MESH);
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_LINE);
             else
-                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_VERTEX);
+
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
@@ -1178,7 +1179,7 @@ void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &
                         node_context += prim_name + ":" + e.toStdString() + " ";
 
                 if (picker)
-                    picker->load_from_str(node_context, scene->select_mode, zeno::SELECTION_MODE::NORMAL);
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
                 picker->sync_to_scene();

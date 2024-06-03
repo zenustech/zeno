@@ -50,6 +50,8 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
     , m_bReentry(false)
     , m_tabWidget(nullptr)
+    , m_hintlist(new ZenoHintListWidget)
+    , m_descLabel(new ZenoFuncDescriptionLabel)
 {
     QVBoxLayout* pVLayout = new QVBoxLayout;
     pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -85,14 +87,21 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
 }
 
-ZenoHintListWidget& ZenoPropPanel::getHintListInstance()
+ZenoHintListWidget* ZenoPropPanel::getHintListInstance()
 {
-    static ZenoHintListWidget hintlist;
-    return hintlist;
+    return m_hintlist.get();
+}
+
+ZenoFuncDescriptionLabel* ZenoPropPanel::getFuncDescriptionInstance()
+{
+    return m_descLabel.get();
 }
 
 void ZenoPropPanel::clearLayout()
 {
+    m_hintlist->setParent(nullptr);
+    m_descLabel->setParent(nullptr);
+
     setUpdatesEnabled(false);
     qDeleteAll(findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly));
     QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
@@ -133,8 +142,6 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         //update();
         return;
     }
-    ZenoHintListWidget* hintlist = &getHintListInstance();
-    hintlist->setParent(nullptr);
 
     clearLayout();
     QVBoxLayout* pMainLayout = qobject_cast<QVBoxLayout*>(this->layout());
@@ -202,9 +209,10 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
     update();
 
-    hintlist->setParent(m_tabWidget);
-    hintlist->resetSize();
-    hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
+    m_hintlist->setParent(m_tabWidget);
+    m_hintlist->resetSize();
+    m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
+    m_descLabel->setParent(m_tabWidget);
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
@@ -378,6 +386,11 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     if (ZTextEdit* pMultilineStr = qobject_cast<ZTextEdit*>(pControl))
     {
         connect(pMultilineStr, &ZTextEdit::geometryUpdated, pGroupWidget, &ZExpandableSection::updateGeo);
+    } else if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl)) {
+        pLineEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
+    }
+    else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl)) {
+        pVecEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
     }
 
     _PANEL_CONTROL panelCtrl;

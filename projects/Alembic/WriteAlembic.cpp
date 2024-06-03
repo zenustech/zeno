@@ -547,6 +547,7 @@ void prim_to_poly_if_only_vertex(PrimitiveObject* p) {
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
+    OPoints pointsObj;
     std::string usedPath;
     std::map<std::string, std::any> verts_attrs;
     std::map<std::string, std::any> loops_attrs;
@@ -582,7 +583,12 @@ struct WriteAlembic2 : INode {
                 "None"
             );
             real_frame_start = -1;
-            meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
+            if (get_input2<bool>("outputPoint")) {
+                pointsObj = OPoints (OObject( archive, 1 ), "points");
+            }
+            else {
+                meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
+            }
             verts_attrs.clear();
             loops_attrs.clear();
             polys_attrs.clear();
@@ -602,7 +608,7 @@ struct WriteAlembic2 : INode {
         if (flipFrontBack) {
             primFlipFaces(prim.get());
         }
-        {
+        if (!get_input2<bool>("outputPoint")) {
             prim_to_poly_if_only_vertex(prim.get());
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
@@ -668,7 +674,9 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    if (get_input2<bool>("outputToMaya") == false) {
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    }
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -678,10 +686,35 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
-                    write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    if (get_input2<bool>("outputToMaya") == false) {
+                        write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, mesh, frameid, real_frame_start, prim_size_per_frame);
+                    }
                     mesh.set( mesh_samp );
                 }
             }
+        }
+        else {
+            OPointsSchema &points = pointsObj.getSchema();
+            OCompoundProperty user = points.getUserProperties();
+            write_user_data(user_attrs, "", prim, user, frameid, real_frame_start);
+            points.setTimeSampling(1);
+            OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
+            std::vector<uint64_t> ids(prim->verts.size());
+            if (prim->verts.attr_is<int>("id")) {
+                auto &ids_ = prim->verts.attr<int>("id");
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    ids[i] = ids_[i];
+                }
+            }
+            else {
+                std::iota(ids.begin(), ids.end(), 0);
+            }
+            samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
+            write_velocity(prim, samp);
+            if (get_input2<bool>("outputToMaya") == false) {
+                write_attrs(verts_attrs, loops_attrs, polys_attrs, "", prim, points, frameid, real_frame_start, prim_size_per_frame);
+            }
+            points.set( samp );
         }
     }
 };
@@ -695,6 +728,8 @@ ZENDEFNODE(WriteAlembic2, {
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
+        {"bool", "outputPoint", "0"},
+        {"bool", "outputToMaya", "0"},
     },
     {
     },
@@ -916,7 +951,9 @@ struct WriteAlembicPrims : INode {
                                 uvsamp);
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        if (get_input2<bool>("outputToMaya") == false) {
+                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        }
                         mesh.set( mesh_samp );
                     }
                     else {
@@ -926,7 +963,9 @@ struct WriteAlembicPrims : INode {
                                 Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                         write_velocity(prim, mesh_samp);
                         write_normal(prim, mesh_samp);
-                        write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        if (get_input2<bool>("outputToMaya") == false) {
+                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+                        }
                         mesh.set( mesh_samp );
                     }
                 }
@@ -945,6 +984,7 @@ ZENDEFNODE(WriteAlembicPrims, {
         {"int", "frame_end", "100"},
         {"float", "fps", "25"},
         {"bool", "flipFrontBack", "1"},
+        {"bool", "outputToMaya", "0"},
     },
     {
     },

@@ -9,8 +9,6 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 
-#ifdef ZENO_FBXSDK
-#include <fbxsdk.h>
 #include "zeno/utils/log.h"
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
@@ -18,6 +16,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#ifdef ZENO_FBXSDK
+#include <fbxsdk.h>
 
 namespace FBX{
     void GetChildNodePathRecursive(FbxNode* node, std::string& path) {
@@ -1089,6 +1090,9 @@ ZENDEFNODE(NewFBXImportCamera, {
     {},
     {"primitive"},
 });
+}
+#endif
+namespace zeno {
 struct NewFBXBoneDeform : INode {
     std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
         auto boneName_count = prim->userData().get2<int>("boneName_count");
@@ -1173,7 +1177,7 @@ struct NewFBXBoneDeform : INode {
         auto &bi = prim->verts.add_attr<vec4i>("boneName");
         auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
         size_t vert_count = prim->verts.size();
-        #pragma omp parallel for
+#pragma omp parallel for
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
@@ -1303,4 +1307,3 @@ ZENDEFNODE(BoneTransformView, {
     {"debug"},
 });
 }
-#endif

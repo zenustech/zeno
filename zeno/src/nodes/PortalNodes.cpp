@@ -80,12 +80,16 @@ struct Clone : zeno::INode {
             return;
         }
         set_output("newObject", std::move(newobj));
+        set_output("origin", obj);
     }
 };
 
 ZENDEFNODE(Clone, {
     {{"", "object", "", zeno::Socket_ReadOnly}},
-    {"newObject"},
+    {
+        "newObject",
+        "origin",
+    },
     {},
     {"lifecycle"},
 });

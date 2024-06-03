@@ -348,7 +348,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         if (IFloatGeomParam::matches(p)) {
             IFloatGeomParam param(arbattrs, p.getName());
 
-            IFloatGeomParam::Sample samp = param.getIndexedValue(iSS);
+            IFloatGeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<float> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -362,7 +362,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         else if (IInt32GeomParam::matches(p)) {
             IInt32GeomParam param(arbattrs, p.getName());
 
-            IInt32GeomParam::Sample samp = param.getIndexedValue(iSS);
+            IInt32GeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<int> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -376,7 +376,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
 
-            IV3fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            IV3fGeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<vec3f> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -391,7 +391,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         else if (IN3fGeomParam::matches(p)) {
             IN3fGeomParam param(arbattrs, p.getName());
 
-            IN3fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            IN3fGeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<vec3f> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -406,7 +406,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         else if (IC3fGeomParam::matches(p)) {
             IC3fGeomParam param(arbattrs, p.getName());
 
-            IC3fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            IC3fGeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<vec3f> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -421,7 +421,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         else if (IC4fGeomParam::matches(p)) {
             IC4fGeomParam param(arbattrs, p.getName());
 
-            IC4fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            IC4fGeomParam::Sample samp = param.getExpandedValue(iSS);
             std::vector<vec4f> data;
             data.resize(samp.getVals()->size());
             std::vector<vec3f> data_xyz(samp.getVals()->size());
@@ -1218,6 +1218,10 @@ ZENDEFNODE(ReadAlembic, {
 });
 
 std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none) {
+    auto list = std::make_shared<ListObject>();
+    if (prim->verts.size() == 0) {
+        return list;
+    }
     int faceset_count = prim->userData().get2<int>("faceset_count");
     if (add_when_none && faceset_count == 0) {
         auto name = prim->userData().get2<std::string>("_abc_name");
@@ -1228,7 +1232,6 @@ std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> p
     for (auto f = 0; f < faceset_count; f++) {
         faceset_map[f] = {};
     }
-    auto list = std::make_shared<ListObject>();
     if (prim->polys.size()) {
         auto &faceset = prim->polys.add_attr<int>("faceset");
         for (auto j = 0; j < faceset.size(); j++) {

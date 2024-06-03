@@ -6,6 +6,7 @@
 #include "nodeeditor/gv/callbackdef.h"
 #include "ZenoHintListWidget.h"
 #include "widgets/zlineedit.h"
+#include "widgets/zlabel.h"
 
 class IGraphsModel;
 
@@ -35,7 +36,8 @@ public:
     virtual QSize minimumSizeHint() const override;
     bool updateCustomName(const QString &value, QString &oldValue);
 
-    static ZenoHintListWidget& getHintListInstance();
+    ZenoHintListWidget* getHintListInstance();
+    ZenoFuncDescriptionLabel* getFuncDescriptionInstance();
 
 public slots:
     void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
@@ -78,6 +80,9 @@ private:
 
     PANEL_TABS m_controls;
     QList<_PANEL_CONTROL> m_floatColtrols;
+
+    QScopedPointer<ZenoHintListWidget> m_hintlist;
+    QScopedPointer<ZenoFuncDescriptionLabel> m_descLabel;
 };
 
 #endif
