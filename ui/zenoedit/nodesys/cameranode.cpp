@@ -143,7 +143,7 @@ void CameraNode::onEditClicked()
             other_prop += zeno::format("{},{},{},", center[0], center[1], center[2]);
             other_prop += zeno::format("{},", camera.get_theta());
             other_prop += zeno::format("{},", camera.get_phi());
-            other_prop += zeno::format("{},", camera.m_radius);
+            other_prop += zeno::format("{},", camera.get_radius());
             info.name = "other";
             info.oldValue = other.info.defaultValue;
             info.newValue = QVariant::fromValue(QString(other_prop.c_str()));

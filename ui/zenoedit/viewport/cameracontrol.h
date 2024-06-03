@@ -19,6 +19,10 @@ public:
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
 
+    glm::vec3 getPos() const;
+    void setPos(glm::vec3 value);
+    glm::vec3 getPivot() const;
+    void setPivot(glm::vec3 value);
     float getRoll() const;
     void setRoll(float roll);
     float getTheta() const;

@@ -42,6 +42,22 @@ void CameraControl::setRoll(float roll) {
     scene->camera->set_roll(roll);
 }
 
+glm::vec3 CameraControl::getPos() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->getPos();
+}
+void CameraControl::setPos(glm::vec3 value) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->setPos(value);
+}
+glm::vec3 CameraControl::getPivot() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->getPivot();
+}
+void CameraControl::setPivot(glm::vec3 value) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->setPivot(value);
+}
 float CameraControl::getTheta() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->get_theta();
@@ -84,11 +100,11 @@ void CameraControl::setOrthoMode(bool orthoMode) {
 }
 float CameraControl::getRadius() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_radius;
+    return scene->camera->get_radius();
 }
 void CameraControl::setRadius(float radius) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_radius = radius;
+    scene->camera->set_radius(radius);
 }
 
 float CameraControl::getFOV() const {
@@ -328,23 +344,20 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     }
 
     if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
-        dx *= ratio / m_res[0];
-        dy *= ratio / m_res[1];
-        float cos_t = cos(getTheta());
-        float sin_t = sin(getTheta());
-        float cos_p = cos(getPhi());
-        float sin_p = sin(getPhi());
-        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        QVector3D delta = -back * dy;
-        auto c = getCenter();
-        QVector3D center = {c[0], c[1], c[2]};
-        center += delta * getRadius();
-        setCenter({float(center.x()), float(center.y()), float(center.z())});
+        // zoom
+        {
+            float dy = ypos - m_lastMidButtonPos.y();
+            auto step = 0.99f;
+            float scale = (dy < 0) ? step : 1 / step;
+            auto pos = getPos();
+            auto pivot = getPivot();
+            auto new_pos = (pos - pivot) * scale + pivot;
+            setPos(new_pos);
+        }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
     else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+        // rot roll
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dy = ypos - m_lastMidButtonPos.y();
         dy *= ratio / m_res[1];
@@ -363,6 +376,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
+            // translate
             float cos_t = cos(getTheta());
             float sin_t = sin(getTheta());
             float cos_p = cos(getPhi());
@@ -382,12 +396,19 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             center += delta * getRadius();
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
+            // rot yaw pitch
             setOrthoMode(false);
             {
                 auto rot = getRotation();
+                auto beforeMat = glm::toMat3(rot);
                 rot = glm::angleAxis(-dx, glm::vec3(0, 1, 0)) * rot;
                 rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
                 setRotation(rot);
+                auto afterMat = glm::toMat3(rot);
+                auto pos = getPos();
+                auto pivot = getPivot();
+                auto new_pos = afterMat * glm::inverse(beforeMat) * (pos - pivot) + pivot;
+                setPos(new_pos);
             }
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
@@ -462,7 +483,10 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
-        setRadius(getRadius() * scale);
+        auto pos = getPos();
+        auto pivot = getPivot();
+        auto new_pos = (pos - pivot) * scale + pivot;
+        setPos(new_pos);
     }
     updatePerspective();
 

@@ -24,11 +24,11 @@ void Camera::setCamera(zeno::CameraData const &cam) {
         m_pivot = zeno::vec_to_other<glm::vec3>(cam.center);
         set_theta(cam.theta);
         set_phi(cam.phi);
-        m_radius = cam.radius;
+        set_radius(cam.radius);
     }
     else {
         auto view = zeno::normalize(cam.view);
-        zeno::vec3f center = cam.pos + m_radius * zeno::normalize(cam.view);
+        zeno::vec3f center = cam.pos + get_radius() * zeno::normalize(cam.view);
         float theta = M_PI_2 - glm::acos(zeno::dot(view, zeno::vec3f(0, 1, 0)));
         float phi = M_PI_2 + std::atan2(view[2], view[0]);
 //        zeno::log_info("theta: {}", theta);
@@ -84,7 +84,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::quat rotation) {
 
     m_view = glm::lookAt(m_pos, m_pos + get_lodfront(), get_lodup());
     if (m_ortho_mode) {
-        auto radius = m_radius;
+        auto radius = get_radius();
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, m_far, m_near);
     } else {
@@ -97,10 +97,10 @@ void Camera::updateMatrix() {
 
     if (!m_ortho_mode) {
         m_near = 0.05f;
-        m_far = 20000.0f * std::max(1.0f, (float)m_radius / 10000.f);
-        placeCamera(center - get_lodfront() * m_radius, m_rotation);
+        m_far = 20000.0f * std::max(1.0f, get_radius() / 10000.f);
+        placeCamera(getPos(), m_rotation);
     } else {
-        placeCamera(center - get_lodfront() * m_radius * 0.4f, m_rotation);
+        placeCamera(getPos(), m_rotation);
     }
 }
 

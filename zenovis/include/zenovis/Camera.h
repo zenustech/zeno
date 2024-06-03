@@ -32,7 +32,7 @@ struct Camera {
     float m_dof = -1.f;
     float m_safe_frames = 0;
 
-    glm::vec3 m_pos{0, 0, -1};
+    glm::vec3 m_pos{0, 0, 5};
     glm::vec3 m_pivot = {};
     glm::quat m_rotation = {1, 0, 0, 0};
 
@@ -62,7 +62,23 @@ public:
     void set_roll(float value) {
     }
     bool m_ortho_mode = false;
-    float m_radius = 5;
+    float get_radius() {
+        return glm::distance(m_pos, m_pivot);
+    }
+    void set_radius(float value) {
+    }
+    glm::vec3 getPos() {
+        return m_pos;
+    }
+    void setPos(glm::vec3 value) {
+        m_pos = value;
+    }
+    glm::vec3 getPivot() {
+        return m_pivot;
+    }
+    void setPivot(glm::vec3 value) {
+        m_pivot = value;
+    }
 
     zeno::vec2i viewport_offset = {};
     ZOptixCameraSettingInfo zOptixCameraSettingInfo = {};
