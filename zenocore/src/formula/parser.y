@@ -103,23 +103,29 @@
 %%
 calclist: %empty{}|calclist exp EOL {
     $$ = $2;
-    //driver.setResult($$);
+    driver.setASTResult($$);
 };
 
 exp: factor             { $$ = $1; }
-    | exp ADD factor    { std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children); }
-    | exp SUB factor    { std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children); }
+    | exp ADD factor    { 
+            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
+            }
+    | exp SUB factor    {
+            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
+            }
     ;
 
 factor: term            { $$ = $1; }
-    | factor MUL term { 
-        std::vector<std::shared_ptr<struct node>>children({$1, $3});
-        $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
-    }
+    | factor MUL term   { 
+            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
+            }
     | factor DIV term {
-        std::vector<std::shared_ptr<struct node>>children({$1, $3});
-        $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
-    }
+            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
+            }
     ;
 
 //zenvar: FRAME { $$ = driver.getFrameNum(); }
@@ -151,9 +157,20 @@ factor: term            { $$ = $1; }
 funcargs: exp            { $$ = std::vector<std::shared_ptr<struct node>>({$1}); }
     | funcargs COMMA exp { $1.push_back($3); $$ = $1; }
 
-funccontent: LPAREN funcargs RPAREN { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2); $$->isParenthesisNodeComplete = true; }
-    | LPAREN funcargs { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2); $$->isParenthesisNodeComplete = false; }
-    | %empty { $$ = driver.makeEmptyNode(); }
+funccontent: LPAREN funcargs RPAREN { 
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
+        $$->isParenthesisNodeComplete = true;
+        $$->match = Match_Exactly;
+    }
+    | LPAREN funcargs { 
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
+        $$->isParenthesisNodeComplete = false;
+        $$->match = Match_LeftPAREN;
+    }
+    | %empty {
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, {});
+        $$->match = Match_Nothing;
+    }
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }

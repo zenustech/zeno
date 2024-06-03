@@ -7,6 +7,7 @@
 #include "parser.hpp"
 #include <regex>
 #include <zeno/core/ReferManager.h>
+#include <zeno/core/FunctionManager.h>
 
 using namespace zeno;
 
@@ -174,8 +175,10 @@ void Formula::setRoot(std::shared_ptr<struct node> root)
 
 std::shared_ptr<struct node> Formula::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children)
 {
-    m_rootNode = newNode(type, op, children);
-    return m_rootNode;
+    //m_rootNode = newNode(type, op, children);
+    //return m_rootNode;
+    auto pNode = newNode(type, op, children);
+    return pNode;
 }
 
 std::shared_ptr<node> Formula::makeStringNode(std::string text)
@@ -198,8 +201,10 @@ std::shared_ptr<node> Formula::makeQuoteStringNode(std::string text)
 
 std::shared_ptr<struct node> Formula::makeNewNumberNode(float value)
 {
-    m_rootNode = newNumberNode(value);
-    return m_rootNode;
+    //m_rootNode = newNumberNode(value);
+    //return m_rootNode;
+    auto pNode = newNumberNode(value);
+    return pNode;
 }
 
 std::shared_ptr<struct node> Formula::makeEmptyNode()
@@ -212,6 +217,11 @@ std::shared_ptr<struct node> Formula::makeEmptyNode()
     n->type = PLACEHOLDER;
     n->value = 0;
     return n;
+}
+
+void Formula::setASTResult(std::shared_ptr<node> pNode)
+{
+    m_rootNode = pNode;
 }
 
 ZENO_API void Formula::printSyntaxTree()
@@ -233,6 +243,56 @@ ZENO_API std::optional<std::tuple<std::string, std::string, int>> Formula::getCu
         return std::optional<std::tuple<std::string, std::string, int>>(std::make_tuple(funcName, it->second, paramPos));
     }
     return nullopt;
+}
+
+ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
+{
+    formula_tip_info ret;
+    ret.type = FMLA_NO_MATCH;
+    std::vector<std::shared_ptr<struct node>> preorderVec;
+    preOrderVec(m_rootNode, preorderVec);
+    if (preorderVec.size() != 0)
+    {
+        auto last = preorderVec.back();
+        do {
+            if (last->type == FUNC) {
+                std::string funcprefix = std::get<std::string>(last->value);
+                if (Match_Nothing == last->match) {
+                    //仅仅有（潜在的）函数名，还没有括号。
+                    std::vector<std::string> candidates = zeno::getSession().funcManager->getCandidates(funcprefix);
+                    if (!candidates.empty())
+                    {
+                        ret.func_candidats = candidates;
+                        ret.prefix = funcprefix;
+                        ret.type = FMLA_TIP_FUNC_CANDIDATES;
+                    }
+                    else {
+                        ret.func_candidats.clear();
+                        ret.type = FMLA_TIP_FUNC_CANDIDATES;
+                    }
+                    break;
+                }
+                else if (Match_LeftPAREN == last->match) {
+                    bool bExist = false;
+                    FUNC_INFO info = zeno::getSession().funcManager->getFuncInfo(funcprefix);
+                    if (!info.name.empty()) {
+                        ret.func_args.func = info;
+                        ret.func_args.argidx = last->children.size();
+                        ret.type = FMLA_TIP_FUNC_ARGS;
+                    }
+                    else {
+                        ret.type = FMLA_NO_MATCH;
+                    }
+                    break;
+                }
+                else if (Match_Exactly == last->match) {
+                    ret.type = FMLA_NO_MATCH;
+                }
+            }
+            last = last->parent.lock();
+        } while (last);
+    }
+    return ret;
 }
 
 ZENO_API std::vector<std::string> Formula::getHintList(std::string originTxt, std::string& candidateTxt)

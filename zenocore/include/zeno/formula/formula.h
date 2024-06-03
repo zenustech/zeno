@@ -7,6 +7,7 @@
 #include <regex>
 #include <optional>
 #include <zeno/utils/api.h>
+#include <zeno/core/data.h>
 #include "syntax_tree.h"
 
 namespace zeno {
@@ -62,8 +63,10 @@ public:
     std::shared_ptr<node> makeStringNode(std::string text);
     std::shared_ptr<node> makeQuoteStringNode(std::string text);
     std::shared_ptr<struct node> makeEmptyNode();
+    void setASTResult(std::shared_ptr<node> pNode);
     ZENO_API void printSyntaxTree();
     ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
+    ZENO_API formula_tip_info getRecommandTipInfo() const;
     //regex
     ZENO_API std::vector<std::string> getHintList(std::string originTxt, std::string& candidateTxt);
 

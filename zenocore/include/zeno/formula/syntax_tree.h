@@ -36,6 +36,12 @@ enum operatorVals {
     DEFAULT_FUNCVAL,
 };
 
+enum TokenMatchCase {
+    Match_Nothing,
+    Match_LeftPAREN,
+    Match_Exactly,      //fully match
+};
+
 struct node {
     enum operatorVals opVal;
     enum nodeType type;
@@ -46,6 +52,8 @@ struct node {
     //float value = 0;  //Èç¹ûÊÇnumber
     //std::string string_value;    //func name.
     zeno::zvariant value;
+
+    TokenMatchCase match = Match_Nothing;
 
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;

@@ -20,6 +20,7 @@
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
+#include <zeno/core/FunctionManager.h>
 
 namespace zeno {
 
@@ -72,6 +73,7 @@ ZENO_API Session::Session()
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
     , referManager(std::make_unique<ReferManager>())
+    , funcManager(std::make_unique<FunctionManager>())
 {
     initNodeCates();
 }

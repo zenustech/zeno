@@ -109,6 +109,82 @@ void ZLineEdit::init()
             //fmla.printSyntaxTree();
             if (ret == 0 || fmla.getRoot())
             {
+                zeno::formula_tip_info recommandInfo = fmla.getRecommandTipInfo();
+                if (recommandInfo.type == zeno::FMLA_TIP_FUNC_CANDIDATES)
+                {
+                    QStringList items;
+                    std::string candidateWord = recommandInfo.prefix;
+                    for (auto& i : recommandInfo.func_candidats) {
+                        items << QString::fromStdString(i);
+                    }
+                    m_firstCandidateWord = QString::fromStdString(candidateWord);
+
+                    if (items.size() == 0) {
+                        if (m_hintlist->isVisible()) {
+                            m_hintlist->hide();
+                        }
+                    }
+                    else {
+                        m_hintlist->setData(items);
+                        m_hintlist->move(globalPos);
+                        if (!m_hintlist->isVisible())
+                        {
+                            connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
+                            connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                            connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                            m_hintlist->show();
+                            if (m_descLabel->isVisible()) {
+                                m_descLabel->hide();
+                            }
+                        }
+                        m_hintlist->resetCurrentItem();
+                    }
+                }
+                else if (recommandInfo.type == zeno::FMLA_TIP_REFERENCE)
+                {
+                }
+                else if (recommandInfo.type == zeno::FMLA_TIP_FUNC_ARGS)
+                {
+                    m_hintlist->hide();
+                    if (recommandInfo.func_args.func.name.empty()) {
+                        m_descLabel->hide();
+                    }
+                    else {
+                        int pos = recommandInfo.func_args.argidx;
+                        m_descLabel->setDesc(recommandInfo.func_args.func, 0);
+                        //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
+                        //    m_descLabel->move(globalPos);
+                        //}
+                        m_descLabel->move(globalPos);
+                        if (!m_descLabel->isVisible()) {
+                            m_descLabel->show();
+                        }
+                        m_descLabel->setCurrentFuncName(recommandInfo.func_args.func.name);
+                    }
+                    //const std::string& tipcontent = recommandInfo.func_args.tipcontent;
+                    //if (tipcontent.empty()) {
+                    //    m_descLabel->hide();
+                    //}
+                    //else {
+                    //    const QString& tip = QString::fromStdString(recommandInfo.func_args.tipcontent);
+                    //    int pos = recommandInfo.func_args.argidx;
+                    //    m_descLabel->setDesc(tip, 0);
+                    //    //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
+                    //    //    m_descLabel->move(globalPos);
+                    //    //}
+                    //    m_descLabel->move(globalPos);
+                    //    if (!m_descLabel->isVisible()) {
+                    //        m_descLabel->show();
+                    //    }
+                    //    m_descLabel->setCurrentFuncName(recommandInfo.func_args.funcname);
+                    //}
+                }
+                else if (recommandInfo.type == zeno::FMLA_NO_MATCH)
+                {
+                    m_hintlist->hide();
+                    m_descLabel->hide();
+                }
+#if 0
                 std::optional<std::tuple<std::string, std::string, int>> optNameDescPos = fmla.getCurrFuncDescription();
                 if (!optNameDescPos.has_value())
                 {
@@ -127,7 +203,9 @@ void ZLineEdit::init()
                     }
                     m_descLabel->setCurrentFuncName(std::get<0>(nameDescPos));
                 }
-            } else if (m_descLabel->isVisible()) {
+#endif
+            }
+            else if (m_descLabel->isVisible()) {
                     m_descLabel->hide();
             }
         }
