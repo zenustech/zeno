@@ -7,6 +7,7 @@
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
+#include "glm/gtx/quaternion.hpp"
 #include <cmath>
 
 
@@ -386,6 +387,14 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             setOrthoMode(false);
+            {
+                auto rot = getRotation();
+                auto rotMat = glm::toMat4(rot);
+                rotMat = glm::rotate(glm::mat4(1), -dx, glm::vec3(0, 1, 0)) * rotMat;
+                rotMat = glm::rotate(glm::mat4(1), -dy, glm::mat3(rotMat) * glm::vec3(1, 0, 0)) * rotMat;
+                rot = glm::toQuat(rotMat);
+                setRotation(rot);
+            }
             setTheta(getTheta() - dy * M_PI);
             if (int(abs(getTheta()) / M_PI) % 2 == 0) {
                 if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
