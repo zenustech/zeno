@@ -2170,9 +2170,7 @@ void updateDistantLights(std::vector<zeno::DistantLightData>& dldl)
         c /= power;
     }
 
-    state.dlights.list = dldl;
-    state.dlights.cdf = cdf;
-
+    state.dlights = DistantLightList {dldl, cdf};
     state.params.dlights_ptr = (void*)state.dlights.upload();
 }
 
@@ -2761,7 +2759,7 @@ OptixUtil::_compile_group.wait();
         state.params.envavg = tex->average;
 
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
-                            sizeof(float2)*tex->cdf.size() ) );
+                            sizeof(float)*tex->cdf.size() ) );
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
                               sizeof(int)*tex->start.size() ) );
 
@@ -2769,10 +2767,7 @@ OptixUtil::_compile_group.wait();
                    tex->cdf.data(),
                    sizeof(float)*tex->cdf.size(),
                    cudaMemcpyHostToDevice);
-        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p) + sizeof(float)*tex->cdf.size(),
-                   tex->pdf.data(),
-                   sizeof(float)*tex->pdf.size(),
-                   cudaMemcpyHostToDevice);
+
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_start),
                    tex->start.data(),
                    sizeof(int)*tex->start.size(),

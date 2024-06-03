@@ -341,8 +341,8 @@ void OptixWorker::onSetBackground(bool bShowBg)
     ZASSERT_EXIT(session);
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
-    scene->objectsMan->needUpdateLight = true;
-    scene->drawOptions->simpleRender = true;
+    //scene->objectsMan->needUpdateLight = true;
+    //scene->drawOptions->simpleRender = true;
     updateFrame();
 }
 

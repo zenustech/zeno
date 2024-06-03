@@ -662,8 +662,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_
     sky_pdf.assign(nx*ny, 0);
     sky_start.resize(nx*ny);
     sky_start.assign(nx*ny, 0);
-    std::vector<double> skypdf(nx*ny);
-    skypdf.assign(nx*ny,0);
+    
     for(int jj=0; jj<ny;jj++)
     {
         for(int ii=0;ii<nx;ii++)
@@ -672,12 +671,11 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_
             size_t idx = jj*nx + ii;
             float illum = 0.0f;
             auto color = zeno::vec3f(look(idx2+0), look(idx2+1), look(idx2+2));
-            illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
+            illum = zeno::dot(color, zeno::vec3f(0.2722287, 0.6740818, 0.0536895));
             //illum = illum > 0.5? illum : 0.0f;
             illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
-            skypdf[idx] = illum;
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
@@ -685,8 +683,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;
-        skypdf[ii] = skypdf[ii] * (double)nx * (double)ny / (double)total_illum;
-        sky_pdf[ii] = skypdf[ii];
+
         if(ii>0)
         {
             if(sky_cdf[ii]>sky_cdf[ii-1])
