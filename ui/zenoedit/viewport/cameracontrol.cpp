@@ -377,24 +377,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             // translate
-            float cos_t = cos(getTheta());
-            float sin_t = sin(getTheta());
-            float cos_p = cos(getPhi());
-            float sin_p = sin(getPhi());
-            QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-            QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-            QVector3D right = QVector3D::crossProduct(up, back);
-            up = QVector3D::crossProduct(back, right);
-            right.normalize();
-            up.normalize();
-            QVector3D delta = right * dx + up * dy;
-            auto c = getCenter();
-            QVector3D center = {c[0], c[1], c[2]};
+            auto left = getRotation() * glm::vec3(-1, 0, 0);
+            auto up = getRotation() * glm::vec3(0, 1, 0);
+            auto delta = left * dx + up * dy;
             if (getOrthoMode()) {
-                delta = (right * dx * m_res[0] / m_res[1] + up * dy) * 2;
+                delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
             }
-            center += delta * getRadius();
-            setCenter({float(center.x()), float(center.y()), float(center.z())});
+            auto pos = getPos();
+            auto new_pos = getPos() + delta * getRadius();
+            setPos(new_pos);
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             // rot yaw pitch
             setOrthoMode(false);
