@@ -38,11 +38,8 @@ void Camera::setCamera(zeno::CameraData const &cam) {
         set_theta(theta);
         set_phi(phi);
 
-        float cos_t = glm::cos(get_theta()), sin_t = glm::sin(get_theta());
-        float cos_p = glm::cos(get_phi()), sin_p = glm::sin(get_phi());
-        glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-        glm::vec3 left = glm::cross(up, front);
+        glm::vec3 up = m_rotation * glm::vec3(0, 1, 0);
+        glm::vec3 left = m_rotation * glm::vec3(-1, 0, 0);
         float map_to_up = glm::dot(up, zeno::vec_to_other<glm::vec3>(cam.up));
         float map_to_left = glm::dot(left, zeno::vec_to_other<glm::vec3>(cam.up));
         set_roll(glm::atan(map_to_left, map_to_up));

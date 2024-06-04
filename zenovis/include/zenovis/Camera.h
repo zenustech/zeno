@@ -40,15 +40,6 @@ struct Camera {
     bool m_block_window = false;
     bool m_auto_radius = false;
 public:
-    float get_theta() {
-        return 0;
-    }
-    float get_phi() {
-        return 0;
-    }
-    float get_roll() {
-        return 0;
-    }
     glm::vec3 get_lodfront() {
         return m_rotation * glm::vec3(0, 0, -1);
     }

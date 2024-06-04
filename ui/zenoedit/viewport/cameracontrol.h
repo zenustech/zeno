@@ -23,11 +23,7 @@ public:
     void setPos(glm::vec3 value);
     glm::vec3 getPivot() const;
     void setPivot(glm::vec3 value);
-    float getRoll() const;
-    void setRoll(float roll);
-    float getTheta() const;
     void setTheta(float theta);
-    float getPhi() const;
     void setPhi(float phi);
     glm::quat getRotation();
     void setRotation(glm::quat value);
@@ -44,7 +40,6 @@ public:
     float getDisPlane() const;
     void setDisPlane(float disPlane);
     void updatePerspective();
-    void setKeyFrame();
 
     bool fakeKeyPressEvent(int uKey);
     bool fakeKeyReleaseEvent(int uKey);
@@ -55,8 +50,8 @@ public:
     void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
     QVector3D realPos() const;
-    QVector3D screenToWorldRay(float x, float y) const;
-    QVariant hitOnFloor(float x, float y) const;
+    QVector3D screenToWorldRay(float x, float y);
+    QVariant hitOnFloor(float x, float y);
     void lookTo(int dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);

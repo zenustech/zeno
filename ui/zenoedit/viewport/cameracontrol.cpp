@@ -33,15 +33,6 @@ void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
 
-float CameraControl::getRoll() const {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->get_roll();
-}
-void CameraControl::setRoll(float roll) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->set_roll(roll);
-}
-
 glm::vec3 CameraControl::getPos() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->getPos();
@@ -58,17 +49,9 @@ void CameraControl::setPivot(glm::vec3 value) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->setPivot(value);
 }
-float CameraControl::getTheta() const {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->get_theta();
-}
 void CameraControl::setTheta(float theta) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->set_theta(theta);
-}
-float CameraControl::getPhi() const {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->get_phi();
 }
 void CameraControl::setPhi(float phi) {
     auto *scene = m_zenovis->getSession()->get_scene();
@@ -536,10 +519,6 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         }
     }
 }
-//void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
-void CameraControl::setKeyFrame() {
-    //todo
-}
 
 void CameraControl::focus(QVector3D center, float radius) {
     setPivot({float(center.x()), float(center.y()), float(center.z())});
@@ -551,28 +530,14 @@ void CameraControl::focus(QVector3D center, float radius) {
 }
 
 QVector3D CameraControl::realPos() const {
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    return center - back * getRadius();
+    auto p = getPos();
+    return {p[0], p[1], p[2]};
 }
 
 // x, y from [0, 1]
-QVector3D CameraControl::screenToWorldRay(float x, float y) const {
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    QVector3D right = QVector3D::crossProduct(up, back);
-    up = QVector3D::crossProduct(back, right);
-    right.normalize();
-    up.normalize();
+QVector3D CameraControl::screenToWorldRay(float x, float y) {
+    auto _up = getRotation() * glm::vec3(0, 1, 0);
+    QVector3D up(_up.x, _up.y, _up.z);
     QMatrix4x4 view;
     view.setToIdentity();
     auto c = getCenter();
@@ -588,7 +553,7 @@ QVector3D CameraControl::screenToWorldRay(float x, float y) const {
     return dir;
 }
 
-QVariant CameraControl::hitOnFloor(float x, float y) const {
+QVariant CameraControl::hitOnFloor(float x, float y) {
     auto dir = screenToWorldRay(x, y);
     auto pos = realPos();
     float t = (0 - pos.y()) / dir.y();
@@ -786,12 +751,8 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     if (!middle_button_pressed) {
         return false;
     }
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    zeno::vec3f back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    zeno::vec3f up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    zeno::vec3f back = zeno::other_to_vec<3>(getRotation() * glm::vec3(0, 0, -1));
+    zeno::vec3f up = zeno::other_to_vec<3>(getRotation() * glm::vec3(0, 1, 0));
     zeno::vec3f left = zeno::cross(up, back);
     auto center = getCenter();
     float step = 1.0f;
