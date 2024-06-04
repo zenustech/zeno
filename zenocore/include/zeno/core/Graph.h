@@ -82,7 +82,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
     ZENO_API std::shared_ptr<INode> getNodeByUuidPath(ObjPath path);
-    ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path);
+    ZENO_API std::shared_ptr<INode> getNodeByPath(const std::string& path);
+    ZENO_API std::shared_ptr<Graph> getGraphByPath(const std::string& path);
     ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
 
     ZENO_API GraphData exportGraph() const;
@@ -139,6 +140,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
+    std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;

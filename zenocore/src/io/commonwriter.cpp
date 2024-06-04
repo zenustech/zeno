@@ -161,8 +161,10 @@ namespace zenoio
             {
                 writer.Key(group.name.c_str());
                 JsonObjScope scopegroup(writer);
-                for (const zeno::ParamPrimitive& param : group.params)
+                for (const zeno::ParamPrimitive& param : group.params) {
+                    writer.Key(param.name.c_str());
                     dumpPrimitiveParam(param, writer);
+                }
             }
         }
     }
@@ -223,10 +225,8 @@ namespace zenoio
     void CommonWriter::dumpPrimitiveParam(zeno::ParamPrimitive param, RAPIDJSON_WRITER& writer)
     {
         //new io format for socket.
-        writer.StartObject();
+        JsonObjScope scope(writer);
 
-        zeno::SocketProperty prop;
-        param.prop;
         //property
         if (param.prop != zeno::Socket_Normal)
         {
@@ -253,7 +253,7 @@ namespace zenoio
             {
                 writer.StartArray();
                 for (auto link : param.links) {
-                    JsonObjScope scope(writer);
+                    JsonObjScope scope2(writer);
                     writer.Key("out-node");
                     writer.String(link.outNode.c_str());
                     writer.Key("out-socket");
@@ -287,6 +287,7 @@ namespace zenoio
                         writer.StartArray();
                         for (auto& v : param.ctrlProps->items.value())
                             writer.String(v.c_str());
+                        writer.EndArray();
                     }
                     else {
                         writer.Null();
@@ -328,7 +329,6 @@ namespace zenoio
             writer.Key("tooltip");
             writer.String(param.tooltip.c_str());
         }
-        writer.EndObject();
     }
 
     void CommonWriter::dumpTimeline(zeno::TimelineInfo info, RAPIDJSON_WRITER& writer)

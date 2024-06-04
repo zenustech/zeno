@@ -362,7 +362,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         bKeyFrame = AppHelper::getCurveValue(val);
     }
 
-    QWidget* pControl = zenoui::createWidget(val, ctrl, type, cbSet, pros);
+    QWidget* pControl = zenoui::createWidget(m_idx, val, ctrl, type, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 

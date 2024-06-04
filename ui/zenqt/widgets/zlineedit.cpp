@@ -56,16 +56,17 @@ void ZLineEdit::sltSetFocus()
 void ZLineEdit::init()
 {
     connect(this, &ZLineEdit::editingFinished, this, [=]() {
-        zeno::Formula fmla(text().toStdString());
+        zeno::Formula fmla(text().toStdString(), "");
         int ret = fmla.parse();
         fmla.printSyntaxTree();
         emit textEditFinished();
     });
     connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
-        if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList)
+        if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList && m_nodeIdx.isValid())
         {
             QString txt = text.left(cursorPosition());
-            zeno::Formula fmla(txt.toStdString());
+            QString nodePath = m_nodeIdx.data(ROLE_OBJPATH).toString();
+            zeno::Formula fmla(txt.toStdString(), nodePath.toStdString());
 
             QFontMetrics metrics(this->font());
             const QPoint& parentGlobalPos = m_hintlist->getPropPanelPos();
@@ -110,12 +111,16 @@ void ZLineEdit::init()
             if (ret == 0 || fmla.getRoot())
             {
                 zeno::formula_tip_info recommandInfo = fmla.getRecommandTipInfo();
-                if (recommandInfo.type == zeno::FMLA_TIP_FUNC_CANDIDATES)
+                if (recommandInfo.type == zeno::FMLA_TIP_FUNC_CANDIDATES ||
+                    recommandInfo.type == zeno::FMLA_TIP_REFERENCE)
                 {
                     QStringList items;
                     std::string candidateWord = recommandInfo.prefix;
-                    for (auto& i : recommandInfo.func_candidats) {
-                        items << QString::fromStdString(i);
+                    for (auto& item : recommandInfo.func_candidats) {
+                        items << QString::fromStdString(item);
+                    }
+                    for (auto& item : recommandInfo.ref_candidates) {
+                        items << QString::fromStdString(item.nodename);
                     }
                     m_firstCandidateWord = QString::fromStdString(candidateWord);
 
@@ -140,9 +145,6 @@ void ZLineEdit::init()
                         m_hintlist->resetCurrentItem();
                     }
                 }
-                else if (recommandInfo.type == zeno::FMLA_TIP_REFERENCE)
-                {
-                }
                 else if (recommandInfo.type == zeno::FMLA_TIP_FUNC_ARGS)
                 {
                     m_hintlist->hide();
@@ -152,32 +154,12 @@ void ZLineEdit::init()
                     else {
                         int pos = recommandInfo.func_args.argidx;
                         m_descLabel->setDesc(recommandInfo.func_args.func, 0);
-                        //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
-                        //    m_descLabel->move(globalPos);
-                        //}
                         m_descLabel->move(globalPos);
                         if (!m_descLabel->isVisible()) {
                             m_descLabel->show();
                         }
                         m_descLabel->setCurrentFuncName(recommandInfo.func_args.func.name);
                     }
-                    //const std::string& tipcontent = recommandInfo.func_args.tipcontent;
-                    //if (tipcontent.empty()) {
-                    //    m_descLabel->hide();
-                    //}
-                    //else {
-                    //    const QString& tip = QString::fromStdString(recommandInfo.func_args.tipcontent);
-                    //    int pos = recommandInfo.func_args.argidx;
-                    //    m_descLabel->setDesc(tip, 0);
-                    //    //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
-                    //    //    m_descLabel->move(globalPos);
-                    //    //}
-                    //    m_descLabel->move(globalPos);
-                    //    if (!m_descLabel->isVisible()) {
-                    //        m_descLabel->show();
-                    //    }
-                    //    m_descLabel->setCurrentFuncName(recommandInfo.func_args.funcname);
-                    //}
                 }
                 else if (recommandInfo.type == zeno::FMLA_NO_MATCH)
                 {
@@ -251,6 +233,10 @@ void ZLineEdit::setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescript
 {
     m_hintlist = hintlist;
     m_descLabel = descLabl;
+}
+
+void ZLineEdit::setNodeIdx(const QModelIndex& index) {
+    m_nodeIdx = index;
 }
 
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)

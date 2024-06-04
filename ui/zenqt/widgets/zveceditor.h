@@ -18,6 +18,7 @@ public:
     UI_VECTYPE text() const;
     int getCurrentEditor();
     void updateProperties(const QVector<QString>& properties);
+	void setNodeIdx(const QModelIndex& index);
     void setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl);
 
 signals:
@@ -38,6 +39,7 @@ private:
 	QVector<ZLineEdit*> m_editors;
 	int m_deflSize;
 	QString m_styleCls;
+	QPersistentModelIndex m_nodeIdx;
 	bool m_bFloat;
 
 	ZenoHintListWidget* m_hintlist;

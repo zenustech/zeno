@@ -15,7 +15,7 @@ namespace zeno {
 class Formula
 {
 public:
-    ZENO_API Formula(const std::string& formula);
+    ZENO_API Formula(const std::string& formula, const std::string& nodepath);
     ZENO_API ~Formula();
     /**
      * Run parser. Results are stored inside.
@@ -74,6 +74,7 @@ private:
 
     unsigned int m_location;          // Used by scanner
     std::string m_formula;
+    std::string m_nodepath;
     float m_result;
 
     //syntax_tree

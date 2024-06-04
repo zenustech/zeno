@@ -20,9 +20,10 @@ static std::map<std::string, std::string> funcDescription({
     {"abs", "3\nfloat abs(float degrees)\nReturn the abs of argument\nUsage:\nExample:\n---"},
     });
 
-ZENO_API Formula::Formula(const std::string& formula)
+ZENO_API Formula::Formula(const std::string& formula, const std::string& nodepath)
     : m_location(0)
     , m_formula(formula)
+    , m_nodepath(nodepath)
     , m_rootNode(nullptr)
 {
 }
@@ -253,8 +254,10 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
     preOrderVec(m_rootNode, preorderVec);
     if (preorderVec.size() != 0)
     {
+        //按照先序遍历，得到最后的叶节点就是当前编辑光标对应的语法树项。
         auto last = preorderVec.back();
         do {
+            //因为推荐仅针对函数，所以只需遍历当前节点及其父节点，找到函数节点即可。
             if (last->type == FUNC) {
                 std::string funcprefix = std::get<std::string>(last->value);
                 if (Match_Nothing == last->match) {
@@ -276,9 +279,55 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                     bool bExist = false;
                     FUNC_INFO info = zeno::getSession().funcManager->getFuncInfo(funcprefix);
                     if (!info.name.empty()) {
-                        ret.func_args.func = info;
-                        ret.func_args.argidx = last->children.size();
-                        ret.type = FMLA_TIP_FUNC_ARGS;
+                        if (info.name == "ref") {
+                            if (last->children.size() == 1 && last->children[0]->type == nodeType::STRING) {
+                                const std::string& refcontent = std::get<std::string>(last->children[0]->value);
+
+                                if (refcontent == "") {
+                                    ret.ref_candidates.push_back({ "/", /*TODO: icon*/"" });
+                                    ret.type = FMLA_TIP_REFERENCE;
+                                    break;
+                                }
+
+                                auto idx = refcontent.rfind('/');
+                                auto graphpath = refcontent.substr(0, idx);
+                                auto nodepath = refcontent.substr(idx + 1);
+
+                                if (graphpath.empty()) {
+                                    // "/" "/m" 这种，只有推荐词 /main （不考虑引用asset的情况）
+                                    std::string mainstr = "main";
+                                    if (mainstr.find(nodepath) != std::string::npos) {
+                                        ret.ref_candidates.push_back({ "main", /*TODO: icon*/"" });
+                                        ret.prefix = nodepath;
+                                        ret.type = FMLA_TIP_REFERENCE;
+                                        break;
+                                    }
+                                    else {
+                                        ret.type = FMLA_NO_MATCH;
+                                        break;
+                                    }
+                                }
+
+                                std::set<std::string> nodenames = getNodesByPath(m_nodepath, graphpath, nodepath);
+                                if (!nodenames.empty()) {
+                                    for (auto nodename : nodenames) {
+                                        ret.ref_candidates.push_back({ nodename, "" });
+                                    }
+                                    ret.prefix = nodepath;
+                                    ret.type = FMLA_TIP_REFERENCE;
+                                    return ret;
+                                }
+
+                                ret.type = FMLA_NO_MATCH;
+                                break;
+                            }
+                        }
+                        else {
+                            ret.func_args.func = info;
+                            //TODO: 参数位置高亮
+                            ret.func_args.argidx = last->children.size();
+                            ret.type = FMLA_TIP_FUNC_ARGS;
+                        }
                     }
                     else {
                         ret.type = FMLA_NO_MATCH;

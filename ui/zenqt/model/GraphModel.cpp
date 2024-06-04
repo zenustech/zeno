@@ -351,9 +351,13 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_OBJPATH:
         {
-            QStringList path = currentPath();
-            path.append(item->name);
-            return path;
+            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            if (spNode) {
+                return QString::fromStdString(spNode->get_path());
+            }
+            //QStringList path = currentPath();
+            //path.append(item->name);
+            return "";
         }
         case ROLE_COLLASPED:
         {

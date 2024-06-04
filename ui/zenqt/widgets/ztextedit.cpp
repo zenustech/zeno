@@ -13,6 +13,10 @@ ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
     initUI();
 }
 
+void ZTextEdit::setNodeIdx(const QModelIndex& index) {
+    m_index = index;
+}
+
 void ZTextEdit::initUI()
 {
     setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);

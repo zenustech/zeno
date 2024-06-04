@@ -15,6 +15,7 @@ public:
     explicit ZLineEdit(QWidget* parent = nullptr);
     explicit ZLineEdit(const QString& text, QWidget* parent = nullptr);
     void setNumSlider(const QVector<qreal>& steps);
+    void setNodeIdx(const QModelIndex& index);
     void setShowingSlider(bool bShow);
     bool showingSlider();
     void setIcons(const QString& icNormal, const QString& icHover);
@@ -56,6 +57,7 @@ private:
     bool m_bShowHintList;
 
     QString m_firstCandidateWord;
+    QPersistentModelIndex m_nodeIdx;
 
     ZenoHintListWidget* m_hintlist;
     ZenoFuncDescriptionLabel* m_descLabel;

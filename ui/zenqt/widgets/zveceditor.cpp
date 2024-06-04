@@ -121,6 +121,9 @@ void ZVecEditor::initUI(const QVariant &vec) {
         m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::Param_Float : zeno::Param_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
+        if (m_nodeIdx.isValid())
+            m_editors[i]->setNodeIdx(m_nodeIdx);
+
         if (vec.canConvert<UI_VECTYPE>())
             setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
         else if (vec.canConvert<UI_VECSTRING>())
@@ -254,6 +257,15 @@ int ZVecEditor::getCurrentEditor()
         }
     }
     return -1;
+}
+
+void ZVecEditor::setNodeIdx(const QModelIndex& index)
+{
+    m_nodeIdx = index;
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        m_editors[i]->setNodeIdx(m_nodeIdx);
+    }
 }
 
 void ZVecEditor::updateProperties(const QVector<QString>& properties)

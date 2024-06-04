@@ -140,8 +140,7 @@ QRectF ZenoNode::boundingRect() const
 
 void ZenoNode::initLayout()
 {
-    const QStringList& path = m_index.data(ROLE_OBJPATH).toStringList();
-    m_dbgName = path.join("/");
+    m_dbgName = m_index.data(ROLE_OBJPATH).toString();
 
     m_topInputSockets = initVerticalSockets(true);
     m_mainHeaderBg = initMainHeaderBg();

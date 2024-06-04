@@ -2,6 +2,7 @@
 #include <regex>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
+#include <zeno/core/Graph.h>
 
 
 namespace zeno {
@@ -381,6 +382,49 @@ namespace zeno {
         }, val);
     }
 
+    std::set<std::string> getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& prefix)
+    {
+        std::set<std::string> nodenames;
+        if (graphpath.empty())
+            return nodenames;
+
+        std::string fullabspath = graphpath;
+
+        if (graphpath.front() == '.' || graphpath.front() == '..') {
+            auto graphparts = split_str(graphpath, '/', false);
+            auto nodeparts = split_str(nodeabspath, '/', false);
+            nodeparts.pop_back();   //先去掉节点本身，剩下的就是节点所处的绝对路径。
+            while (!graphparts.empty() && (graphparts.front() == ".." || graphparts.front() == ".")) {
+                auto graphpart = graphparts.front();
+                if (graphpart == "..") {
+                    nodeparts.pop_back();   //往上级目录退。
+                    graphparts.erase(graphparts.begin());
+                }
+                else if (graphpart == ".") {
+                    graphparts.erase(graphparts.begin());   //同级目录，移除即可。
+                }
+            }
+            nodeparts.insert(nodeparts.end(), graphparts.begin(), graphparts.end());
+            fullabspath = '/' + join_str(nodeparts, '/');
+        }
+        else if (graphpath.front() == '/') {
+            fullabspath = graphpath;
+        }
+        else {
+            return nodenames;
+        }
+
+        auto spGraph = zeno::getSession().mainGraph->getGraphByPath(fullabspath);
+        if (!spGraph)
+            return nodenames;
+        std::map<std::string, std::shared_ptr<INode>> nodes = spGraph->getNodes();
+        for (auto& [name, _] : nodes) {
+            if (name.find(prefix) != std::string::npos)
+                nodenames.insert(name);
+        }
+        return nodenames;
+    }
+
     std::string absolutePath(std::string currentPath, const std::string& path)
     {
         if (!zeno::starts_with(path, "./") && !zeno::starts_with(path, "../"))
@@ -408,7 +452,7 @@ namespace zeno {
         return currentPath + "/" + tmpPath;
     }
 
-    std::string zeno::relativePath(std::string currentPath, const std::string& path)
+    std::string relativePath(std::string currentPath, const std::string& path)
     {
         if (path.find(currentPath) != std::string::npos)
         {

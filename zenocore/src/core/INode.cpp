@@ -124,7 +124,7 @@ ZENO_API ObjPath INode::get_path() const {
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
-            path = "/main" + path;
+            path = "/main/" + path;
             break;
         }
         else {
@@ -1363,7 +1363,7 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
                 code.replace(code.find(path), path.size(), absolutePath);
             }
         }
-        Formula fmla(code);
+        Formula fmla(code, get_path());
         int ret = fmla.parse();
         float res = fmla.getResult();
         return res;

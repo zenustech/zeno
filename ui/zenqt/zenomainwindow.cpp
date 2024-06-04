@@ -957,10 +957,11 @@ void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, Q
             GraphsTreeModel* pTreeM = zenoApp->graphsManager()->currentModel();
             if (pTreeM) {
                 QModelIndex nodeIdx = pTreeM->getIndexByUuidPath(nodeUuidPath);
-                QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
+                const QString& nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
+                QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
                 QString nodeName = nodePath.back();
-                nodePath.pop_back();
-                pEditor->activateTab(nodePath, nodeName, true);
+                pathitems.pop_back();
+                pEditor->activateTab(pathitems, nodeName, true);
             }
         }
     }

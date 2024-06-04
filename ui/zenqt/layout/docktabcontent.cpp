@@ -408,7 +408,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
-    cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", zeno::Combobox, zeno::Param_String, cbSet, props));
+    cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget(QModelIndex(), "100%", zeno::Combobox, zeno::Param_String, cbSet, props));
     cbZoom->setProperty("focusBorder", "none");
     cbZoom->setEditable(false);
     cbZoom->setFixedSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(20));
@@ -914,7 +914,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
-    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", zeno::Combobox, zeno::Param_String, cbSet, props));
+    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget(QModelIndex(), "Free", zeno::Combobox, zeno::Param_String, cbSet, props));
     m_cbRes->setProperty("focusBorder", "none");
     m_cbRes->setEditable(false);
     m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));

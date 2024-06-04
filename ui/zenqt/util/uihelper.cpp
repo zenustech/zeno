@@ -1684,7 +1684,7 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     auto nodeIdx = param.data(ROLE_NODEIDX).toModelIndex();
     if (!nodeIdx.isValid())
         return "";
-    QStringList list = nodeIdx.data(ROLE_OBJPATH).toStringList();
+    QString path = nodeIdx.data(ROLE_OBJPATH).toString();
     QString paramName = param.data(ROLE_PARAM_NAME).toString();
     if (dim == 0) {
         paramName += ".x";
@@ -1698,8 +1698,8 @@ QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
     else if (dim == 3) {
         paramName += ".w";
     }
-    list << paramName;
-    return list.join("/");
+    path += paramName;
+    return path;
 }
 
 zeno::NodesData UiHelper::dumpNodes(const QModelIndexList &nodeIndice)
