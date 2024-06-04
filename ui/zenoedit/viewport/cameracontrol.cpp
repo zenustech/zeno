@@ -542,10 +542,11 @@ void CameraControl::setKeyFrame() {
 }
 
 void CameraControl::focus(QVector3D center, float radius) {
-    setCenter({float(center.x()), float(center.y()), float(center.z())});
+    setPivot({float(center.x()), float(center.y()), float(center.z())});
     if (getFOV() >= 1e-6)
         radius /= (getFOV() / 45.0f);
-    setRadius(radius);
+    auto dir = getRotation() * glm::vec3(0, 0, 1) * radius;
+    setPos(getPivot() + dir);
     updatePerspective();
 }
 
