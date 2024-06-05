@@ -55,17 +55,9 @@ public:
     glm::vec3 get_lodup() {
         return m_rotation * glm::vec3(0, 1, 0);
     }
-    void set_theta(float value) {
-    }
-    void set_phi(float value) {
-    }
-    void set_roll(float value) {
-    }
     bool m_ortho_mode = false;
     float get_radius() {
         return glm::distance(m_pos, m_pivot);
-    }
-    void set_radius(float value) {
     }
     glm::vec3 getPos() {
         return m_pos;

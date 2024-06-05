@@ -77,10 +77,6 @@ float CameraControl::getRadius() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->get_radius();
 }
-void CameraControl::setRadius(float radius) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->set_radius(radius);
-}
 
 float CameraControl::getFOV() const {
     auto *scene = m_zenovis->getSession()->get_scene();
@@ -130,8 +126,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
                 glm::vec4 posVS = posCS / posCS.w;
                 glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
                 glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
-                setRadius(glm::length(scene->camera->m_pos - p3WS));
-                setCenter({p3WS.x, p3WS.y, p3WS.z});
+                // TODO
             });
             int mid_x = int(this->res().x() * 0.5);
             int mid_y = int(this->res().y() * 0.5);

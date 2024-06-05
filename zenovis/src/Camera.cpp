@@ -14,35 +14,13 @@ void Camera::setCamera(zeno::CameraData const &cam) {
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]));
-    //this->m_dof = cam.dof;
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
 
-//    zeno::log_info("radius {}", m_zxx.radius);
-
+    // TODO
     if (cam.isSet) {
-        m_pivot = zeno::vec_to_other<glm::vec3>(cam.center);
-//        set_theta(cam.theta);
-//        set_phi(cam.phi);
-        set_radius(cam.radius);
     }
     else {
-        auto view = zeno::normalize(cam.view);
-        zeno::vec3f center = cam.pos + get_radius() * zeno::normalize(cam.view);
-        float theta = M_PI_2 - glm::acos(zeno::dot(view, zeno::vec3f(0, 1, 0)));
-        float phi = M_PI_2 + std::atan2(view[2], view[0]);
-//        zeno::log_info("theta: {}", theta);
-//        zeno::log_info("phi: {}", phi);
-
-        m_pivot = zeno::vec_to_other<glm::vec3>(center);
-        set_theta(theta);
-        set_phi(phi);
-
-        glm::vec3 up = m_rotation * glm::vec3(0, 1, 0);
-        glm::vec3 left = m_rotation * glm::vec3(-1, 0, 0);
-        float map_to_up = glm::dot(up, zeno::vec_to_other<glm::vec3>(cam.up));
-        float map_to_left = glm::dot(left, zeno::vec_to_other<glm::vec3>(cam.up));
-        set_roll(glm::atan(map_to_left, map_to_up));
     }
 
     this->m_auto_radius = !cam.isSet;

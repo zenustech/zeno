@@ -31,7 +31,6 @@ public:
     bool getOrthoMode() const;
     void setOrthoMode(bool OrthoMode);
     float getRadius() const;
-    void setRadius(float radius);
     float getFOV() const;
     void setFOV(float fov);
     float getAperture() const;
