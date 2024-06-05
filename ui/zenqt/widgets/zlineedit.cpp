@@ -313,12 +313,19 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
                 }
             }
         }
-        if (m_descLabel && m_descLabel->isVisible())
+        else if (m_descLabel && m_descLabel->isVisible())
         {
             if (event->key() == Qt::Key_Escape || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
                 m_descLabel->hide();
                 setFocus();
                 event->accept();
+            }
+        }
+        else {
+            if (event->key() == Qt::Key_Escape ||
+                event->key() == Qt::Key_Return ||
+                event->key() == Qt::Key_Enter) {
+                this->clearFocus();
             }
         }
     }
