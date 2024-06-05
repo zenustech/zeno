@@ -74,21 +74,6 @@ public:
     zeno::vec2i viewport_offset = {};
     ZOptixCameraSettingInfo zOptixCameraSettingInfo = {};
 
-    // only used in real-shader
-    struct ZxxHappyLookParam {
-        float cx = 0;
-        float cy = 0;
-        float cz = 0;
-        float theta = 0;
-        float phi = 0;
-        float radius = 0;
-        float fov = 0;
-        bool ortho_mode = false;
-        float aperture = 0;
-        float focalPlaneDistance = 0;
-    };
-    struct ZxxHappyLookParam m_zxx;
-
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
     }
@@ -102,7 +87,6 @@ public:
     void setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
     void placeCamera(glm::vec3 pos, glm::quat rotation);
-    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
     void updateMatrix();

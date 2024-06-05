@@ -128,24 +128,6 @@ void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - get_lodfront() * radius, m_rotation);
 }
-void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
-    m_zxx.cx = cx;
-    m_zxx.cy = cy;
-    m_zxx.cz = cz;
-    m_zxx.theta = theta;
-    m_zxx.phi = phi;
-    m_zxx.radius = radius;
-    m_zxx.fov = fov;
-    m_zxx.ortho_mode = ortho_mode;
-    m_zxx.aperture = aperture;
-    m_zxx.focalPlaneDistance = focalPlaneDistance;
-
-    m_ortho_mode = ortho_mode;
-    m_aperture = aperture;
-    this->focalPlaneDistance = focalPlaneDistance;
-
-    updateMatrix();
-}
 
 void Camera::set_program_uniforms(opengl::Program *pro) {
     pro->use();
