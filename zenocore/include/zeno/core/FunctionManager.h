@@ -12,7 +12,7 @@ namespace zeno {
     {
     public:
         FunctionManager();
-        std::vector<std::string> getCandidates(const std::string& prefix) const;
+        std::vector<std::string> getCandidates(const std::string& prefix, bool bFunc) const;
         std::string getFuncTip(const std::string& funcName, bool& bExist) const;
         FUNC_INFO getFuncInfo(const std::string& funcName) const;
 

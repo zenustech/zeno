@@ -82,6 +82,8 @@
 %token LITERAL
 %token FUNC
 %token UNCOMPSTR
+%token DOLLAR
+%token VARNAME
 
 %left ADD "+"
 %left SUB "-"
@@ -94,9 +96,9 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<struct node>> exp calclist factor term funccontent// farg// zenvar func //unaryfunc
+%type <std::shared_ptr<struct node>> exp calclist factor term funccontent zenvar
 %type <std::vector<std::shared_ptr<struct node>>> funcargs
-%type <string> LITERAL FUNC UNCOMPSTR
+%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME
 
 %start calclist
 
@@ -128,31 +130,8 @@ factor: term            { $$ = $1; }
             }
     ;
 
-//zenvar: FRAME { $$ = driver.getFrameNum(); }
-//    | FPS { $$ = driver.getFps(); }
-//    | PI { $$ = driver.getPI(); }
-//    ;
-
-//func: RAND LPAREN RPAREN {
-//        std::srand(std::time(nullptr)); // use current time as seed for random generator
-//        int random_value = std::rand();
-//        $$ = (float)random_value / (RAND_MAX + 1u);
-//    }
-//    ;
-
-/* Ò»Ôªº¯Êý */
-//unaryfunc: SIN LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SIN, $3, nullptr); }
-//    | SIN LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SIN, nullptr, nullptr); }
-//    | SINH LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SINH, $3, nullptr); }
-//    | SINH LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SINH, nullptr, nullptr); }
-//    | COS LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COS, $3, nullptr); }
-//    | COS LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COS, nullptr, nullptr); }
-//    | COSH LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COSH, $3, nullptr); }
-//    | COSH LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COSH, nullptr, nullptr); }
-//    | ABS LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, ABS, $3, nullptr); }
-//    | ABS LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, ABS, nullptr, nullptr); }
-//    //| REF LPAREN LITERAL RPAREN { $$ = driver.callRef($3); }
-//    ;
+zenvar: VARNAME { $$ = driver.makeZenVarNode($1); }
+    | DOLLAR { $$ = driver.makeZenVarNode(""); };
 
 funcargs: exp            { $$ = std::vector<std::shared_ptr<struct node>>({$1}); }
     | funcargs COMMA exp { $1.push_back($3); $$ = $1; }
@@ -177,9 +156,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
     | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
     | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
-    //| zenvar { $$ = $1; }
-    //| func { $$ = $1; }
-    //| unaryfunc { $$ = $1; }
+    | zenvar { $$ = $1; }
     | FUNC funccontent  { 
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;

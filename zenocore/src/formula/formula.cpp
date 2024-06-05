@@ -176,8 +176,6 @@ void Formula::setRoot(std::shared_ptr<struct node> root)
 
 std::shared_ptr<struct node> Formula::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children)
 {
-    //m_rootNode = newNode(type, op, children);
-    //return m_rootNode;
     auto pNode = newNode(type, op, children);
     return pNode;
 }
@@ -188,6 +186,18 @@ std::shared_ptr<node> Formula::makeStringNode(std::string text)
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
     spNode->value = text.substr(1, text.length() - 2);
+    return spNode;
+}
+
+std::shared_ptr<node> Formula::makeZenVarNode(std::string text)
+{
+    std::shared_ptr<node> spNode = std::make_shared<node>();
+    spNode->type = ZENVAR;
+    spNode->opVal = UNDEFINE_OP;
+    if (!text.empty())
+        spNode->value = text.substr(1);
+    else
+        spNode->value = text;
     return spNode;
 }
 
@@ -202,8 +212,6 @@ std::shared_ptr<node> Formula::makeQuoteStringNode(std::string text)
 
 std::shared_ptr<struct node> Formula::makeNewNumberNode(float value)
 {
-    //m_rootNode = newNumberNode(value);
-    //return m_rootNode;
     auto pNode = newNumberNode(value);
     return pNode;
 }
@@ -262,7 +270,7 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                 std::string funcprefix = std::get<std::string>(last->value);
                 if (Match_Nothing == last->match) {
                     //仅仅有（潜在的）函数名，还没有括号。
-                    std::vector<std::string> candidates = zeno::getSession().funcManager->getCandidates(funcprefix);
+                    std::vector<std::string> candidates = zeno::getSession().funcManager->getCandidates(funcprefix, true);
                     if (!candidates.empty())
                     {
                         ret.func_candidats = candidates;
@@ -325,6 +333,19 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                     break;
                 }
                 else if (Match_Exactly == last->match) {
+                    ret.type = FMLA_NO_MATCH;
+                }
+            }
+            else if (last->type == ZENVAR) {
+                const std::string& varprefix = std::get<std::string>(last->value);
+                std::vector<std::string> candidates = zeno::getSession().funcManager->getCandidates(varprefix, false);
+                if (!candidates.empty()) {
+                    ret.func_candidats = candidates;
+                    ret.prefix = varprefix;
+                    ret.type = FMLA_TIP_FUNC_CANDIDATES;
+                }
+                else {
+                    ret.func_candidats.clear();
                     ret.type = FMLA_NO_MATCH;
                 }
             }

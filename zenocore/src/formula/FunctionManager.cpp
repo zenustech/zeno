@@ -6,15 +6,25 @@ namespace zeno {
         init();
     }
 
-    std::vector<std::string> FunctionManager::getCandidates(const std::string& prefix) const {
+    std::vector<std::string> FunctionManager::getCandidates(const std::string& prefix, bool bFunc) const {
         std::vector<std::string> candidates;
-        if (prefix.empty())
+        if (bFunc && prefix.empty())
             return candidates;
 
-        for (auto& [k, v] : m_funcs) {
-            //TODO: optimize the search
-            if (k.substr(0, prefix.size()) == prefix) {
-                candidates.push_back(k);
+        if (bFunc) {
+            for (auto& [k, v] : m_funcs) {
+                //TODO: optimize the search
+                if (k.substr(0, prefix.size()) == prefix) {
+                    candidates.push_back(k);
+                }
+            }
+        }
+        else {
+            static std::vector<std::string> vars = { "F", "FPS", "T", "PI" };
+            for (auto& var : vars) {
+                if (var.substr(0, prefix.size()) == prefix) {
+                    candidates.push_back(var);
+                }
             }
         }
         return candidates;

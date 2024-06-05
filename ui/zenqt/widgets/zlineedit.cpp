@@ -10,6 +10,7 @@
 #include <zeno/formula/formula.h>
 #include <util/log.h>
 
+
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_pSlider(nullptr)
@@ -74,37 +75,6 @@ void ZLineEdit::init()
             globalPos.setX(globalPos.x() - parentGlobalPos.x() + metrics.width(txt));
             globalPos.setY(globalPos.y() - parentGlobalPos.y() + height());
 
-            //设置函数提示列表内容
-            //不能直接采用正则表达式识别函数，还是要归到语法树，这样才能即得到函数名称，以及函数参数位置。
-#if 0
-            QStringList items;
-            std::string candidateWord = "";
-            for (auto& i : fmla.getHintList(txt.toStdString(), candidateWord)) {
-                items << QString::fromStdString(i);
-            }
-            m_firstCandidateWord = QString::fromStdString(candidateWord);
-            if (items.size() == 0) {
-                if (m_hintlist->isVisible()) {
-                    m_hintlist->hide();
-                }
-            }
-            else {
-                m_hintlist->setData(items);
-                m_hintlist->move(globalPos);
-                if (!m_hintlist->isVisible())
-                {
-                    connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
-                    connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                    connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                    m_hintlist->show();
-                    if (m_descLabel->isVisible()) {
-                        m_descLabel->hide();
-                    }
-                }
-                m_hintlist->resetCurrentItem();
-                return;
-            }
-#endif
             //函数说明
             int ret = fmla.parse();
             //fmla.printSyntaxTree();
@@ -166,29 +136,9 @@ void ZLineEdit::init()
                     m_hintlist->hide();
                     m_descLabel->hide();
                 }
-#if 0
-                std::optional<std::tuple<std::string, std::string, int>> optNameDescPos = fmla.getCurrFuncDescription();
-                if (!optNameDescPos.has_value())
-                {
-                    if (m_descLabel->isVisible()) {
-                        m_descLabel->hide();
-                    }
-                } else {
-                    auto nameDescPos = optNameDescPos.value();
-                    m_descLabel->setDesc(QString::fromStdString(std::get<1>(nameDescPos)), std::get<2>(nameDescPos));
-                    //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
-                    //    m_descLabel->move(globalPos);
-                    //}
-                    m_descLabel->move(globalPos);
-                    if (!m_descLabel->isVisible()) {
-                        m_descLabel->show();
-                    }
-                    m_descLabel->setCurrentFuncName(std::get<0>(nameDescPos));
-                }
-#endif
             }
             else if (m_descLabel->isVisible()) {
-                    m_descLabel->hide();
+                m_descLabel->hide();
             }
         }
     });
@@ -251,19 +201,19 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 
     connect(m_pSlider, &ZNumSlider::numSlided, this, [=](qreal val) {
         bool bOk = false;
-    qreal num = this->text().toFloat(&bOk);
-    if (bOk)
-    {
-        num = num + val;
-        QString newText = QString::number(num);
-        setText(newText);
-        emit editingFinished();
-    }
-        });
+        qreal num = this->text().toFloat(&bOk);
+        if (bOk)
+        {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+            emit editingFinished();
+        }
+    });
     connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
         setShowingSlider(false);
-    emit editingFinished();
-        });
+        emit editingFinished();
+    });
 }
 
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)

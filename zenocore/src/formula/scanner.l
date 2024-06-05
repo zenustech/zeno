@@ -55,6 +55,9 @@ fps     \$FPS
 pi      \$PI
 id      ({alpha})+
 functoken [A-Za-z][A-Za-z_0-9]*
+dollar \$
+zenvarname \$[A-Za-z_]+
+
 
 %%
 %{
@@ -64,18 +67,6 @@ functoken [A-Za-z][A-Za-z_0-9]*
 
 {number}    {
                 return Parser::make_NUMBER(std::strtof(yytext,0),loc); // strtof函数将字符串转换为浮点数
-            }
-{frame}     {
-                return zeno::Parser::make_FRAME(loc);
-                cout << "frame" << endl;
-            }
-{fps}       {
-                cout << "fps" << endl;
-                return zeno::Parser::make_FPS(loc);
-            }
-{pi}        {
-                cout << "pi" << endl;
-                return zeno::Parser::make_PI(loc);
             }
 
 "//".* |
@@ -102,6 +93,8 @@ functoken [A-Za-z][A-Za-z_0-9]*
 {string}  { return zeno::Parser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::Parser::make_UNCOMPSTR(yytext, loc); }
 {functoken} { return zeno::Parser::make_FUNC(yytext, loc); }
+{dollar}  { return zeno::Parser::make_DOLLAR(yytext, loc); }
+{zenvarname} { return zeno::Parser::make_VARNAME(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "Scanner: unknown character [" << yytext << "]" << endl;
