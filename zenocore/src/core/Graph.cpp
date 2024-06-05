@@ -614,7 +614,20 @@ std::shared_ptr<Graph> Graph::_getGraphByPath(std::vector<std::string> items)
     }
 
     if (m_name2uuid.find(currname) == m_name2uuid.end())
+    {
+        if (currname == ".") {
+            return _getGraphByPath(items);
+        }
+        else if (currname == "..") {
+            //ȡparent graph.
+            if (optParentSubgNode.has_value()) {
+                SubnetNode* parentNode = optParentSubgNode.value();
+                auto parentG = parentNode->getGraph().lock();
+                return parentG->_getGraphByPath(items);
+            }
+        }
         return nullptr;
+    }
 
     std::string uuid = m_name2uuid[currname];
     auto it = m_nodes.find(uuid);
@@ -630,6 +643,7 @@ std::shared_ptr<Graph> Graph::_getGraphByPath(std::vector<std::string> items)
         else
             return nullptr;
     }
+    return nullptr;
 }
 
 ZENO_API std::shared_ptr<Graph> Graph::getGraphByPath(const std::string& pa)

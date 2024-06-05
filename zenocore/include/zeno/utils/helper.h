@@ -34,7 +34,7 @@ namespace zeno {
     std::string relativePath(std::string currentPath, const std::string& path);
     std::set<std::string> getReferPath(const std::string& path);
     std::set<std::string> getReferPaths(const zvariant& val);
-    std::set<std::string> getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& prefix);
+    formula_tip_info getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& prefix);
 }
 
 

@@ -308,17 +308,7 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                                     }
                                 }
 
-                                std::set<std::string> nodenames = getNodesByPath(m_nodepath, graphpath, nodepath);
-                                if (!nodenames.empty()) {
-                                    for (auto nodename : nodenames) {
-                                        ret.ref_candidates.push_back({ nodename, "" });
-                                    }
-                                    ret.prefix = nodepath;
-                                    ret.type = FMLA_TIP_REFERENCE;
-                                    return ret;
-                                }
-
-                                ret.type = FMLA_NO_MATCH;
+                                ret = getNodesByPath(m_nodepath, graphpath, nodepath);
                                 break;
                             }
                         }

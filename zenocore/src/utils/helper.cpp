@@ -382,28 +382,19 @@ namespace zeno {
         }, val);
     }
 
-    std::set<std::string> getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& prefix)
+    formula_tip_info getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& node_part)
     {
-        std::set<std::string> nodenames;
+        formula_tip_info ret;
+        ret.type = FMLA_NO_MATCH;
         if (graphpath.empty())
-            return nodenames;
+            return ret;
 
         std::string fullabspath = graphpath;
 
         if (graphpath.front() == '.' || graphpath.front() == '..') {
             auto graphparts = split_str(graphpath, '/', false);
             auto nodeparts = split_str(nodeabspath, '/', false);
-            nodeparts.pop_back();   //先去掉节点本身，剩下的就是节点所处的绝对路径。
-            while (!graphparts.empty() && (graphparts.front() == ".." || graphparts.front() == ".")) {
-                auto graphpart = graphparts.front();
-                if (graphpart == "..") {
-                    nodeparts.pop_back();   //往上级目录退。
-                    graphparts.erase(graphparts.begin());
-                }
-                else if (graphpart == ".") {
-                    graphparts.erase(graphparts.begin());   //同级目录，移除即可。
-                }
-            }
+            nodeparts.pop_back();   //先去掉节点本身，剩下的就是节点所处的图的绝对路径。
             nodeparts.insert(nodeparts.end(), graphparts.begin(), graphparts.end());
             fullabspath = '/' + join_str(nodeparts, '/');
         }
@@ -411,18 +402,126 @@ namespace zeno {
             fullabspath = graphpath;
         }
         else {
-            return nodenames;
+            return ret;
         }
 
         auto spGraph = zeno::getSession().mainGraph->getGraphByPath(fullabspath);
         if (!spGraph)
-            return nodenames;
-        std::map<std::string, std::shared_ptr<INode>> nodes = spGraph->getNodes();
-        for (auto& [name, _] : nodes) {
-            if (name.find(prefix) != std::string::npos)
-                nodenames.insert(name);
+            return ret;
+
+        if (node_part == ".") {
+            ret.ref_candidates.clear();
+            ret.type = FMLA_NO_MATCH;
+            return ret;
         }
-        return nodenames;
+
+        //node_part like `Cube1.position.x`
+        std::vector<std::string> node_items = split_str(node_part, '.');
+        bool bEndsWithDot = !node_part.empty() && node_part.back() == '.';
+        const std::string& node_name = !node_items.empty() ? node_items[0] : "";
+        const std::string& param_part = node_items.size() >= 2 ? node_items[1] : "";
+        const std::string& param_component = node_items.size() >= 3 ? node_items[2] : "";
+
+        std::map<std::string, std::shared_ptr<INode>> nodes = spGraph->getNodes();
+        for (auto& [name, spNode] : nodes) {
+            if (name.find(node_name) != std::string::npos) {
+                if (!param_part.empty() || (param_part.empty() && bEndsWithDot)) {
+                    PrimitiveParams params = spNode->get_input_primitive_params();
+                    for (auto param : params) {
+                        if (param.name.find(param_part) != std::string::npos) {
+                            if (!param_part.empty() && (!param_component.empty() || bEndsWithDot)) {
+                                if (param.name == param_part) {
+                                    switch (param.type) {
+                                    case Param_Vec2f:
+                                    case Param_Vec2i:
+                                    {
+                                        ret.type = FMLA_TIP_REFERENCE;
+                                        ret.prefix = param_component;
+                                        if (param_component == "x" || param_component == "y") {
+                                            std::string iconres = "";
+                                            ret.ref_candidates.push_back({ param_component, iconres });
+                                        }
+                                        else if (param_component.empty()) {
+                                            ret.ref_candidates = { {"x", ""}, {"y", ""} };
+                                        }
+                                        else
+                                        {
+                                            ret.ref_candidates.clear();
+                                            ret.type = FMLA_NO_MATCH;
+                                            return ret;
+                                        }
+                                        break;
+                                    }
+                                    case Param_Vec3f:
+                                    case Param_Vec3i:
+                                    {
+                                        ret.type = FMLA_TIP_REFERENCE;
+                                        ret.prefix = param_component;
+                                        if (param_component == "x" || param_component == "y" || param_component == "z") {
+                                            std::string iconres = "";
+                                            ret.ref_candidates.push_back({ param_component, iconres });
+                                        }
+                                        else if (param_component.empty()) {
+                                            ret.ref_candidates = { {"x", ""}, {"y", ""}, {"z", ""} };
+                                        }
+                                        else
+                                        {
+                                            ret.ref_candidates.clear();
+                                            ret.type = FMLA_NO_MATCH;
+                                            return ret;
+                                        }
+                                        break;
+                                    }
+                                    case Param_Vec4f:
+                                    case Param_Vec4i:
+                                    {
+                                        ret.type = FMLA_TIP_REFERENCE;
+                                        ret.prefix = param_component;
+                                        if (param_component == "x" || param_component == "y" || param_component == "z" || param_component == "w") {
+                                            std::string iconres = "";
+                                            ret.ref_candidates.push_back({ param_component, iconres });
+                                        }
+                                        else if (param_component.empty()) {
+                                            ret.ref_candidates = { {"x", ""}, {"y", ""}, {"z", ""}, {"w", ""} };
+                                        }
+                                        else
+                                        {
+                                            ret.ref_candidates.clear();
+                                            ret.type = FMLA_NO_MATCH;
+                                            return ret;
+                                        }
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        ret.ref_candidates.clear();
+                                        ret.type = FMLA_NO_MATCH;
+                                        return ret;
+                                    }
+                                    }
+                                }
+                                else {
+                                    ret.ref_candidates.clear();
+                                    ret.type = FMLA_NO_MATCH;
+                                    return ret;
+                                }
+                            }
+                            else {
+                                ret.type = FMLA_TIP_REFERENCE;
+                                ret.prefix = param_part;
+                                ret.ref_candidates.push_back({ param.name, "" /*icon*/});
+                            }
+                        }
+                    }
+                }
+                else {
+                    ret.type = FMLA_TIP_REFERENCE;
+                    ret.prefix = node_name;
+                    ret.ref_candidates.push_back({ name, "" });
+                }
+            }
+        }
+        return ret;
     }
 
     std::string absolutePath(std::string currentPath, const std::string& path)
