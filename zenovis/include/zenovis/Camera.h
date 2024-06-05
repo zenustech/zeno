@@ -7,6 +7,15 @@
 #include <zeno/types/CameraObject.h>
 
 namespace zenovis {
+enum class CameraLookToDir {
+    front_view,
+    right_view,
+    top_view,
+    back_view,
+    left_view,
+    bottom_view,
+    back_to_origin,
+};
 
 namespace opengl {
     class Program;

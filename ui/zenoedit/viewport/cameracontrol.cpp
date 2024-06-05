@@ -49,14 +49,6 @@ void CameraControl::setPivot(glm::vec3 value) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->setPivot(value);
 }
-void CameraControl::setTheta(float theta) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->set_theta(theta);
-}
-void CameraControl::setPhi(float phi) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->set_phi(phi);
-}
 glm::quat CameraControl::getRotation() {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->m_rotation;
@@ -173,62 +165,24 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     }
 }
 
-void CameraControl::lookTo(int dir) {
-    if (dir < 0 || dir > 6)
-        return;
-    auto x_axis = QVector3D(1, 0, 0);
-    auto y_axis = QVector3D(0, 1, 0);
-    auto z_axis = QVector3D(0, 0, 1);
-
+void CameraControl::lookTo(zenovis::CameraLookToDir dir) {
     ZASSERT_EXIT(m_zenovis);
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    auto radius = getRadius();
 
     switch (dir) {
-    case 0:
-        // front view
-        setTheta(0);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center + z_axis * radius, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::front_view:
         break;
-    case 1:
-        // right view
-        setTheta(0);
-        setPhi(-glm::pi<float>() / 2);
-        m_zenovis->updateCameraFront(center + x_axis * radius, -x_axis, y_axis);
+    case zenovis::CameraLookToDir::right_view:
         break;
-    case 2:
-        // top view
-        setTheta(-glm::pi<float>() / 2);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center + y_axis * radius, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::top_view:
         break;
-    case 3:
-        // back view
-        setTheta(0);
-        setPhi(glm::pi<float>());
-        m_zenovis->updateCameraFront(center - z_axis * radius, z_axis, y_axis);
+    case zenovis::CameraLookToDir::back_view:
         break;
-    case 4:
-        // left view
-        setTheta(0);
-        setPhi(glm::pi<float>() / 2);
-        m_zenovis->updateCameraFront(center - x_axis * radius, x_axis, y_axis);
+    case zenovis::CameraLookToDir::left_view:
         break;
-    case 5:
-        // bottom view
-        setTheta(glm::pi<float>() / 2);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center - y_axis * radius, y_axis, z_axis);
+    case zenovis::CameraLookToDir::bottom_view:
         break;
-    case 6:
-        // back to origin
-        setCenter({0, 0, 0});
-        setRadius(5);
-        setTheta(0);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::back_to_origin:
+        break;
     default: break;
     }
     setOrthoMode(true);

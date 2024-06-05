@@ -327,7 +327,7 @@ std::tuple<int, int, bool> DisplayWidget::getOriginWindowSizeInfo()
     return originWindowSizeInfo;
 }
 
-void DisplayWidget::cameraLookTo(int dir)
+void DisplayWidget::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     if (m_bGLView)
         m_glView->cameraLookTo(dir);
@@ -794,30 +794,30 @@ void DisplayWidget::onDockViewAction(bool triggered)
     switch (viewType)
     {
         case ACTION_ORIGIN_VIEW:
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
             break;
         case ACTION_FRONT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::front_view);
             break;
         }
         case ACTION_BACK_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_view);
             break;
         }
         case ACTION_RIGHT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::right_view);
             break;
         }
         case ACTION_LEFT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::left_view);
             break;
         }
         case ACTION_TOP_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::top_view);
             break;
         }
         case ACTION_BOTTOM_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::bottom_view);
             break;
         }
     }

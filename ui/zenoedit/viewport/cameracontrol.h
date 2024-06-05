@@ -5,6 +5,7 @@
 #include <QtWidgets>
 #include <viewportinteraction/picker.h>
 #include <viewportinteraction/transform.h>
+#include <zenovis/Camera.h>
 
 class Zenovis;
 
@@ -23,8 +24,6 @@ public:
     void setPos(glm::vec3 value);
     glm::vec3 getPivot() const;
     void setPivot(glm::vec3 value);
-    void setTheta(float theta);
-    void setPhi(float phi);
     glm::quat getRotation();
     void setRotation(glm::quat value);
     zeno::vec3f getCenter() const;
@@ -52,7 +51,7 @@ public:
     QVector3D realPos() const;
     QVector3D screenToWorldRay(float x, float y);
     QVariant hitOnFloor(float x, float y);
-    void lookTo(int dir);
+    void lookTo(zenovis::CameraLookToDir dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
