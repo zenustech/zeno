@@ -1078,6 +1078,48 @@ ZENO_API bool zeno::INode::update_param_socket_type(const std::string& param, So
             auto spGraph = graph.lock();
             spGraph->removeLinks(m_name, true, param);
         }
+        mark_dirty(true);
+        CALLBACK_NOTIFY(update_param_socket_type, param, type)
+        return true;
+    }
+    return false;
+}
+
+ZENO_API bool zeno::INode::update_param_type(const std::string& param, ParamType type)
+{
+    CORE_API_BATCH
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    if (type != spParam->type)
+    {
+        spParam->type = type;
+        CALLBACK_NOTIFY(update_param_type, param, type)
+            return true;
+    }
+    return false;
+}
+
+ZENO_API bool zeno::INode::update_param_control(const std::string& param, ParamControl control)
+{
+    CORE_API_BATCH
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    if (control != spParam->control)
+    {
+        spParam->control = control;
+        CALLBACK_NOTIFY(update_param_control, param, control)
+        return true;
+    }
+    return false;
+}
+
+ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, ControlProperty props)
+{
+    CORE_API_BATCH
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+
+    if (props.items.has_value() || props.items.has_value())
+    {
+        spParam->optCtrlprops = props;
+        CALLBACK_NOTIFY(update_param_control_prop, param, props)
         return true;
     }
     return false;

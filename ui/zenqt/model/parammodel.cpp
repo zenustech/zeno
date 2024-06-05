@@ -47,6 +47,26 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                 }
             }
     });
+
+    spNode->register_update_param_socket_type(
+        [this](const std::string& name, zeno::SocketType type) {
+        updateParamData(QString::fromStdString(name), type, ROLE_SOCKET_TYPE);
+    });
+
+    spNode->register_update_param_type(
+        [this](const std::string& name, zeno::ParamType type) {
+        updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE);
+    });
+
+    spNode->register_update_param_control(
+        [this](const std::string& name, zeno::ParamControl control) {
+        updateParamData(QString::fromStdString(name), control, ROLE_PARAM_CONTROL);
+    });
+
+    spNode->register_update_param_control_prop(
+        [this](const std::string& name, zeno::ControlProperty controlProps) {
+        updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
+    });
 }
 
 void ParamsModel::initParamItems()
@@ -566,6 +586,37 @@ void ParamsModel::test_customparamsmodel() const
                 QStandardItem* pppItem = ppItem->child(k);
                 wtf = pppItem->text();
             }
+        }
+    }
+}
+
+void ParamsModel::updateParamData(const QString& name, const QVariant& val, int role)
+{
+    for (int i = 0; i < m_items.size(); i++) {
+        if (m_items[i].name == name) {
+            if (role == ROLE_PARAM_CONTROL)
+                m_items[i].control = (zeno::ParamControl)val.toInt();
+            else if (role == ROLE_PARAM_TYPE)
+                m_items[i].type = (zeno::ParamType)val.toInt();
+            else if (role == ROLE_SOCKET_TYPE)
+                m_items[i].connectProp = (zeno::SocketType)val.toInt();
+            else if (role == ROLE_PARAM_CTRL_PROPERTIES)
+                m_items[i].optCtrlprops = val.value<zeno::ControlProperty>();
+            QModelIndex idx = createIndex(i, 0);
+            emit dataChanged(idx, idx, { role });
+            break;
+        }
+    }
+    //object inputs do not need to update custom model
+    if (role == ROLE_SOCKET_TYPE)
+        return;
+    Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
+    auto pItems = m_customParamsM->findItems(name, flags);
+    for (auto pItem : pItems)
+    {
+        if (pItem->data(ROLE_ISINPUT).toBool())
+        {
+            pItem->setData(val, role);
         }
     }
 }

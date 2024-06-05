@@ -1835,7 +1835,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
 
     customParamsM->clear();
 
-    QStandardItem* pInputs = new QStandardItem("inputs");
+    QStandardItem* pInputs = new QStandardItem("prim_inputs");
     pInputs->setEditable(false);
     for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
     {
@@ -1874,7 +1874,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         pInputs->appendRow(pTab);
     }
 
-    QStandardItem* pOutputs = new QStandardItem("output");
+    QStandardItem* pOutputs = new QStandardItem("prim_outputs");
     pOutputs->setEditable(false);
     for (const zeno::ParamPrimitive& param : customui.outputPrims)
     {
@@ -1894,8 +1894,44 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         paramItem->setEditable(true);
     }
+    //object params
+    QStandardItem* pObjInputs = new QStandardItem("object_inputs");
+    pObjInputs->setEditable(false);
+    for (const auto& param : customui.inputObjs)
+    {
+        const QString& paramName = QString::fromStdString(param.name);
+        QStandardItem* paramItem = new QStandardItem(paramName);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(param.type, ROLE_PARAM_TYPE);
+        paramItem->setData(true, ROLE_ISINPUT);
+        paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+        pObjInputs->appendRow(paramItem);
+    }
+
+    QStandardItem* pObjOutputs = new QStandardItem("object_outputs");
+    pObjOutputs->setEditable(false);
+    for (const auto& param : customui.outputObjs)
+    {
+        const QString& paramName = QString::fromStdString(param.name);
+        QStandardItem* paramItem = new QStandardItem(paramName);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(param.type, ROLE_PARAM_TYPE);
+        paramItem->setData(false, ROLE_ISINPUT);
+        paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setEditable(true);
+        pObjOutputs->appendRow(paramItem);
+    }
     customParamsM->appendRow(pInputs);
     customParamsM->appendRow(pOutputs);
+    customParamsM->appendRow(pObjInputs);
+    customParamsM->appendRow(pObjOutputs);
 }
 
 void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos)

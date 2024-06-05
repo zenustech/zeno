@@ -138,7 +138,7 @@ namespace zeno {
     };
 
     struct ParamUpdateInfo {
-        zeno::ParamPrimitive param;
+        std::variant<zeno::ParamPrimitive, zeno::ParamObject> param;
         std::string oldName;
     };
 

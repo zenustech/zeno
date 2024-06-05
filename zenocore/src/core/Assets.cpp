@@ -157,48 +157,53 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     params_change_info changes;
 
     for (auto _pair : info) {
-        const ParamPrimitive& param = _pair.param;
-        const std::string oldname = _pair.oldName;
-        const std::string newname = param.name;
+        using T = std::decay_t<decltype(_pair.param)>;
+        bool bObject = std::is_same_v<T, zeno::ParamObject>;
+        if (!bObject)
+        {
+            const ParamPrimitive& param = std::get<ParamPrimitive>(_pair.param);
+            const std::string oldname = _pair.oldName;
+            const std::string newname = param.name;
 
-        auto& in_outputs = param.bInput ? input_names : output_names;
-        auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
-        auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
-        auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
+            auto& in_outputs = param.bInput ? input_names : output_names;
+            auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
+            auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
+            auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
 
-        if (oldname.empty()) {
-            //new added name.
-            if (in_outputs.find(newname) != in_outputs.end()) {
-                // the new name happen to have the same name with the old name, but they are not the same param.
-                in_outputs.erase(newname);
-                if (param.bInput)
-                    inputs_old.erase(newname);
-                else
-                    outputs_old.erase(newname);
+            if (oldname.empty()) {
+                //new added name.
+                if (in_outputs.find(newname) != in_outputs.end()) {
+                    // the new name happen to have the same name with the old name, but they are not the same param.
+                    in_outputs.erase(newname);
+                    if (param.bInput)
+                        inputs_old.erase(newname);
+                    else
+                        outputs_old.erase(newname);
 
-                remove_params.insert(newname);
+                    remove_params.insert(newname);
+                }
+                new_params.insert(newname);
             }
-            new_params.insert(newname);
-        }
-        else if (in_outputs.find(oldname) != in_outputs.end()) {
-            if (oldname != newname) {
-                //exist name changed.
-                in_outputs.insert(newname);
-                in_outputs.erase(oldname);
+            else if (in_outputs.find(oldname) != in_outputs.end()) {
+                if (oldname != newname) {
+                    //exist name changed.
+                    in_outputs.insert(newname);
+                    in_outputs.erase(oldname);
 
-                rename_params.insert({ oldname, newname });
+                    rename_params.insert({ oldname, newname });
+                }
+                else {
+                    //name stays.
+                }
+
+                if (param.bInput)
+                    inputs_old.erase(oldname);
+                else
+                    outputs_old.erase(oldname);
             }
             else {
-                //name stays.
+                throw makeError<KeyError>(oldname, "the name does not exist on the node");
             }
-
-            if (param.bInput)
-                inputs_old.erase(oldname);
-            else
-                outputs_old.erase(oldname);
-        }
-        else {
-            throw makeError<KeyError>(oldname, "the name does not exist on the node");
         }
     }
 
@@ -207,20 +212,20 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
         changes.remove_inputs.insert(rem_name);
     }
     //update the names.
-    input_names.clear();
-    for (const auto& [param, _] : info) {
-        if (param.bInput)
-            input_names.insert(param.name);
-    }
+    //input_names.clear();
+    //for (const auto& [param, _] : info) {
+    //    if (param.bInput)
+    //        input_names.insert(param.name);
+    //}
 
     for (auto rem_name : outputs_old) {
         changes.remove_outputs.insert(rem_name);
     }
-    output_names.clear();
-    for (const auto& [param, _] : info) {
-        if (!param.bInput)
-            output_names.insert(param.name);
-    }
+    //output_names.clear();
+    //for (const auto& [param, _] : info) {
+    //    if (!param.bInput)
+    //        output_names.insert(param.name);
+    //}
 
     //update subnetnode.
     for (auto name : changes.new_inputs) {
@@ -247,10 +252,13 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     assets.inputs.clear();
     assets.outputs.clear();
     for (auto pair : info) {
-        if (pair.param.bInput)
-            assets.inputs.push_back(pair.param);
-        else
-            assets.outputs.push_back(pair.param);
+        if (auto paramPrim = std::get_if<ParamPrimitive>(&pair.param))
+        {
+            if (paramPrim->bInput)
+                assets.inputs.push_back(*paramPrim);
+            else
+                assets.outputs.push_back(*paramPrim);
+        }
     }
     assets.m_customui = customui;
 }

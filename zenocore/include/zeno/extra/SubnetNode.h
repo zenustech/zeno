@@ -12,6 +12,8 @@ struct SubnetNode : INode {
 
     std::vector<std::string> m_input_names;
     std::vector<std::string> m_output_names;
+    std::vector<std::string> m_obj_input_names;
+    std::vector<std::string> m_obj_output_names;
 
     CustomUI m_customUi;
 
