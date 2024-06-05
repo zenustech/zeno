@@ -108,12 +108,12 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE&
     }
 
     m_version = ver;
-    m_filePath = fn;
 
     m_timerInfo = result.timeline;
     createGraphs(result);
     //reset model.
     newFile();
+    m_filePath = fn;
 
     emit fileOpened(fn);
     m_model->markDirty(false);
@@ -235,7 +235,7 @@ void GraphsManager::clear()
         m_main = nullptr;
         zeno::getSession().resetMainGraph();
     }
-
+    m_filePath = "";
     emit fileClosed();
 }
 

@@ -720,6 +720,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         pNewItem->setData(newParamName, ROLE_PARAM_NAME);
         pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
         pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
+        pNewItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
         pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         pNewItem->setData(UiHelper::initDefaultValue(ctrl.type), ROLE_PARAM_VALUE);
 
@@ -747,7 +748,7 @@ void ZEditParamLayoutDlg::onBtnAddObjInputs()
 {
     auto root = m_paramsLayoutM_objInputs->invisibleRootItem();
     QStringList existNames = getExistingNames(true, VPARAM_PARAM);
-    QString newParamName = UiHelper::getUniqueName(existNames, "object");
+    QString newParamName = UiHelper::getUniqueName(existNames, "object_input");
 
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
@@ -765,7 +766,7 @@ void ZEditParamLayoutDlg::onBtnAddObjOutputs()
 {
     auto root = m_paramsLayoutM_objOutputs->invisibleRootItem();
     QStringList existNames = getExistingNames(false, VPARAM_PARAM);
-    QString newParamName = UiHelper::getUniqueName(existNames, "object");
+    QString newParamName = UiHelper::getUniqueName(existNames, "object_output");
 
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
@@ -791,7 +792,7 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
+    pNewItem->setData(zeno::Socket_Output, ROLE_SOCKET_TYPE);
 
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -1056,42 +1057,38 @@ bool ZEditParamLayoutDlg::eventFilter(QObject* obj, QEvent* event)
 QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type) const
 {
     QStringList existNames;
-    if (bInput)
+    QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
+    for (int i = 0; i < pRoot->rowCount(); i++)
     {
-        QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
-        for (int i = 0; i < pRoot->rowCount(); i++)
+        auto tabItem = pRoot->child(i);
+        if (type == VPARAM_TAB) {
+            existNames.append(tabItem->text());
+            continue;
+        }
+
+        for (int j = 0; j < tabItem->rowCount(); j++)
         {
-            auto tabItem = pRoot->child(i);
-            if (type == VPARAM_TAB) {
-                existNames.append(tabItem->text());
+            auto groupItem = tabItem->child(j);
+            if (type == VPARAM_GROUP) {
+                existNames.append(groupItem->text());
                 continue;
             }
 
-            for (int j = 0; j < tabItem->rowCount(); j++)
+            for (int k = 0; k < groupItem->rowCount(); k++)
             {
-                auto groupItem = tabItem->child(j);
-                if (type == VPARAM_GROUP) {
-                    existNames.append(groupItem->text());
-                    continue;
-                }
-
-                for (int k = 0; k < groupItem->rowCount(); k++)
-                {
-                    auto paramItem = groupItem->child(k);
-                    if (type == VPARAM_PARAM) {
-                        existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
-                    }
+                auto paramItem = groupItem->child(k);
+                if (type == VPARAM_PARAM) {
+                    existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
                 }
             }
         }
+    }
+    if (type == VPARAM_PARAM) {
         for (int i = 0; i < m_paramsLayoutM_objInputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_objInputs->item(i);
             existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
         }
-    }
-    else
-    {
         for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
@@ -1103,6 +1100,7 @@ QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type)
             existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
         }
     }
+
     return existNames;
 }
 

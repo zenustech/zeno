@@ -1968,6 +1968,26 @@ void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdat
         info.ctrlProps = param.ctrlProps;
         infos.push_back({ info, ""});
     }
+    for (const zeno::ParamObject& param : customui.inputObjs)
+    {
+        zeno::ParamObject info;
+        info.bInput = true;
+        info.type = param.type;
+        info.name = param.name;
+        info.tooltip = param.tooltip;
+        info.socketType = param.socketType;
+        infos.push_back({ info, "" });
+    }
+    for (const zeno::ParamObject& param : customui.outputObjs)
+    {
+        zeno::ParamObject info;
+        info.bInput = false;
+        info.type = param.type;
+        info.name = param.name;
+        info.tooltip = param.tooltip;
+        info.socketType = param.socketType;
+        infos.push_back({ info, "" });
+    }
 }
 
 static std::string getZenoVersion()

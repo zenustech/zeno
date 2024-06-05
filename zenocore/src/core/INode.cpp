@@ -1013,7 +1013,7 @@ ZENO_API NodeData INode::exportInfo() const
     else
         node.type = Node_Normal;
 
-    node.customUi = nodeClass->m_customui;
+    node.customUi = get_customui();
     node.customUi.inputObjs.clear();
     for (auto& [name, paramObj] : m_inputObjs)
     {
@@ -1154,7 +1154,8 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         auto iter = m_inputObjs.find(paramObj.name);
         if (iter == m_inputObjs.end()) {
-            continue;;
+            add_input_obj_param(paramObj);
+            continue;
         }
         auto& sparam = iter->second;
         sparam->socketType = paramObj.socketType;
@@ -1167,7 +1168,8 @@ ZENO_API void INode::initParams(const NodeData& dat)
             {
                 auto iter = m_inputPrims.find(param.name);
                 if (iter == m_inputPrims.end()) {
-                    continue;;
+                    add_input_prim_param(param);
+                    continue;
                 }
                 auto& sparam = iter->second;
                 sparam->defl = param.defl;
@@ -1176,14 +1178,14 @@ ZENO_API void INode::initParams(const NodeData& dat)
             }
         }
     }
-    //for (const ParamPrimitive& param : dat.customUi.outputPrims)
-    //{
-    //    add_output_prim_param(param);
-    //}
-    //for (const ParamObject& paramObj : dat.customUi.outputObjs)
-    //{
-    //    add_output_obj_param(paramObj);
-    //}
+    for (const ParamPrimitive& param : dat.customUi.outputPrims)
+    {
+        add_output_prim_param(param);
+    }
+    for (const ParamObject& paramObj : dat.customUi.outputObjs)
+    {
+        add_output_obj_param(paramObj);
+    }
 }
 
 ZENO_API bool INode::has_input(std::string const &id) const {

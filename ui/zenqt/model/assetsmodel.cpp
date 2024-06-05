@@ -204,8 +204,10 @@ void AssetsModel::saveAsset(const QString& name)
     zeno::ZenoAsset zasset;
     zasset.info = asset.m_info;
     zasset.optGraph = asset.sharedGraph->exportGraph();
-    zasset.primitive_inputs = asset.inputs;
-    zasset.primitive_outputs = asset.outputs;
+    zasset.primitive_inputs = asset.primitive_inputs;
+    zasset.primitive_outputs = asset.primitive_outputs;
+    zasset.object_inputs = asset.object_inputs;
+    zasset.object_outputs = asset.object_outputs;
     zasset.m_customui = asset.m_customui;
 
     zenoio::ZdaWriter writer;

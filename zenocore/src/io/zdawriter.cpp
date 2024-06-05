@@ -38,7 +38,7 @@ namespace zenoio
                 dumpGraph(asset.optGraph.value(), writer);
             }
 
-            writer.Key("Parameters");
+            /*writer.Key("Parameters");
             {
                 JsonObjScope batch(writer);
                 
@@ -81,7 +81,7 @@ namespace zenoio
                         dumpObjectParam(param, writer);
                     }
                 }
-            }
+            }*/
             dumpCustomUI(asset.m_customui, writer);
         }
 

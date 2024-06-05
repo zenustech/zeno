@@ -88,8 +88,10 @@ ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset) {
         spGraph->init(asset.optGraph.value());
         newAsst.sharedGraph = spGraph;
     }
-    newAsst.inputs = asset.primitive_inputs;
-    newAsst.outputs = asset.primitive_outputs;
+    newAsst.primitive_inputs = asset.primitive_inputs;
+    newAsst.primitive_outputs = asset.primitive_outputs;
+    newAsst.object_inputs = asset.object_inputs;
+    newAsst.object_outputs = asset.object_outputs;
     newAsst.m_customui = asset.m_customui;
 
     if (m_assets.find(asset.info.name) != m_assets.end()) {
@@ -136,15 +138,24 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     if (!assets.sharedGraph)
         return;
 
-    std::set<std::string> inputs_old, outputs_old;
+    std::set<std::string> inputs_old, outputs_old, obj_inputs_old, obj_outputs_old;
 
     std::set<std::string> input_names;
     std::set<std::string> output_names;
-    for (auto param : assets.inputs) {
+    std::set<std::string> obj_input_names;
+    std::set<std::string> obj_output_names;
+    for (auto param : assets.primitive_inputs) {
         input_names.insert(param.name);
     }
-    for (auto param : assets.outputs) {
+    for (auto param : assets.primitive_outputs) {
         output_names.insert(param.name);
+    }
+
+    for (auto param : assets.object_inputs) {
+        obj_input_names.insert(param.name);
+    }
+    for (auto param : assets.object_outputs) {
+        obj_output_names.insert(param.name);
     }
 
     for (const auto& param_name : input_names) {
@@ -154,12 +165,64 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
         outputs_old.insert(param_name);
     }
 
+    for (const auto& param_name : obj_input_names) {
+        obj_inputs_old.insert(param_name);
+    }
+    for (const auto& param_name : obj_output_names) {
+        obj_outputs_old.insert(param_name);
+    }
+
     params_change_info changes;
 
     for (auto _pair : info) {
         using T = std::decay_t<decltype(_pair.param)>;
-        bool bObject = std::is_same_v<T, zeno::ParamObject>;
-        if (!bObject)
+        if (std::holds_alternative<ParamObject>(_pair.param))
+        {
+            const ParamObject& param = std::get<ParamObject>(_pair.param);
+            const std::string oldname = _pair.oldName;
+            const std::string newname = param.name;
+
+            auto& in_outputs = param.bInput ? obj_input_names : obj_output_names;
+            auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
+            auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
+            auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
+
+            if (oldname.empty()) {
+                //new added name.
+                if (in_outputs.find(newname) != in_outputs.end()) {
+                    // the new name happen to have the same name with the old name, but they are not the same param.
+                    in_outputs.erase(newname);
+                    if (param.bInput)
+                        obj_inputs_old.erase(newname);
+                    else
+                        obj_outputs_old.erase(newname);
+
+                    remove_params.insert(newname);
+                }
+                new_params.insert(newname);
+            }
+            else if (in_outputs.find(oldname) != in_outputs.end()) {
+                if (oldname != newname) {
+                    //exist name changed.
+                    in_outputs.insert(newname);
+                    in_outputs.erase(oldname);
+
+                    rename_params.insert({ oldname, newname });
+                }
+                else {
+                    //name stays.
+                }
+
+                if (param.bInput)
+                    obj_inputs_old.erase(oldname);
+                else
+                    obj_outputs_old.erase(oldname);
+            }
+            else {
+                throw makeError<KeyError>(oldname, "the name does not exist on the node");
+            }
+        }
+        else if (std::holds_alternative<ParamPrimitive>(_pair.param))
         {
             const ParamPrimitive& param = std::get<ParamPrimitive>(_pair.param);
             const std::string oldname = _pair.oldName;
@@ -221,6 +284,14 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     for (auto rem_name : outputs_old) {
         changes.remove_outputs.insert(rem_name);
     }
+
+    for (auto rem_name : obj_inputs_old) {
+        changes.remove_inputs.insert(rem_name);
+    }
+
+    for (auto rem_name : obj_outputs_old) {
+        changes.remove_outputs.insert(rem_name);
+    }
     //output_names.clear();
     //for (const auto& [param, _] : info) {
     //    if (!param.bInput)
@@ -249,15 +320,24 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     }
 
     //update assets data
-    assets.inputs.clear();
-    assets.outputs.clear();
+    assets.primitive_inputs.clear();
+    assets.primitive_outputs.clear();    
+    assets.object_inputs.clear();
+    assets.object_outputs.clear();
     for (auto pair : info) {
         if (auto paramPrim = std::get_if<ParamPrimitive>(&pair.param))
         {
             if (paramPrim->bInput)
-                assets.inputs.push_back(*paramPrim);
+                assets.primitive_inputs.push_back(*paramPrim);
             else
-                assets.outputs.push_back(*paramPrim);
+                assets.primitive_outputs.push_back(*paramPrim);
+        }
+        else if (auto paramPrim = std::get_if<ParamObject>(&pair.param))
+        {
+            if (paramPrim->bInput)
+                assets.object_inputs.push_back(*paramPrim);
+            else
+                assets.object_outputs.push_back(*paramPrim);
         }
     }
     assets.m_customui = customui;
@@ -349,16 +429,28 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     spNode->set_name(nodeName);
     spNode->m_customUi = assets.m_customui;
 
-    for (const ParamPrimitive& param : assets.inputs)
+    for (const ParamPrimitive& param : assets.primitive_inputs)
     {
         spNode->add_input_prim_param(param);
         spNode->m_input_names.push_back(param.name);
     }
 
-    for (const ParamPrimitive& param : assets.outputs)
+    for (const ParamPrimitive& param : assets.primitive_outputs)
     {
         spNode->add_output_prim_param(param);
         spNode->m_output_names.push_back(param.name);
+    }
+
+    for (const auto& param : assets.object_inputs)
+    {
+        spNode->add_input_obj_param(param);
+        spNode->m_obj_input_names.push_back(param.name);
+    }
+
+    for (const auto& param : assets.object_outputs)
+    {
+        spNode->add_output_obj_param(param);
+        spNode->m_obj_output_names.push_back(param.name);
     }
 
     return std::dynamic_pointer_cast<INode>(spNode);
@@ -379,16 +471,28 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
 
     spNode->subgraph = assetGraph;
 
-    for (const ParamPrimitive& param : assets.inputs)
+    for (const ParamPrimitive& param : assets.primitive_inputs)
     {
         spNode->add_input_prim_param(param);
         spNode->m_input_names.push_back(param.name);
     }
 
-    for (const ParamPrimitive& param : assets.outputs)
+    for (const ParamPrimitive& param : assets.primitive_outputs)
     {
         spNode->add_output_prim_param(param);
         spNode->m_output_names.push_back(param.name);
+    }
+
+    for (const auto& param : assets.object_inputs)
+    {
+        spNode->add_input_obj_param(param);
+        spNode->m_obj_input_names.push_back(param.name);
+    }
+
+    for (const auto& param : assets.object_outputs)
+    {
+        spNode->add_output_obj_param(param);
+        spNode->m_obj_output_names.push_back(param.name);
     }
 }
 
