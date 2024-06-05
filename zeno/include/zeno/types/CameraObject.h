@@ -2,8 +2,23 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace zeno {
+static glm::quat from_theta_phi(float theta, float phi) {
+    float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
+    float cos_p = glm::cos(phi), sin_p = glm::sin(phi);
+    glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    glm::vec3 right = glm::cross(front, up);
+    glm::mat3 rotation;
+    rotation[0] = right;
+    rotation[1] = up;
+    rotation[2] = -front;
+    return glm::quat_cast(rotation);
+}
 
 struct CameraData {
     vec3f pos{0, 0, 1};
@@ -19,8 +34,6 @@ struct CameraData {
     bool isSet = false;
     vec3f center{0, 0, 0};
     float radius{1};
-    float theta{};
-    float phi{};
 };
 
 struct CameraObject : IObjectClone<CameraObject>, CameraData {

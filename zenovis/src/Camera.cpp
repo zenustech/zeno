@@ -22,8 +22,8 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 
     if (cam.isSet) {
         m_pivot = zeno::vec_to_other<glm::vec3>(cam.center);
-        set_theta(cam.theta);
-        set_phi(cam.phi);
+//        set_theta(cam.theta);
+//        set_phi(cam.phi);
         set_radius(cam.radius);
     }
     else {
