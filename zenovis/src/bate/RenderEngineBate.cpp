@@ -92,7 +92,6 @@ struct RenderEngineBate : RenderEngine {
         if (!record) {
             fbr->unbind();
             fbr->draw_to_screen();
-            fbr->destroy_buffers();
         }
     }
 
@@ -109,6 +108,9 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.clear();
         primHighlight = nullptr;
         fbr = nullptr;
+    }
+    float getDepth(int x, int y) override {
+        return fbr->getDepth(x, y);
     }
 };
 
