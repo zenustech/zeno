@@ -210,6 +210,10 @@ public:
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
+    void propagateDirty();  //在上游节点传播dirty
+    void getUpstreamNodes(std::function<void(INode*)> getDependentNodes, std::set<INode*>& upstrems, std::string outParamName = "");
+    void mark_dirty_by_dependNodes(bool bOn, std::set<INode*> nodesRange, std::string inParamName = "");
+
 private:
     std::string m_name;
     std::string m_nodecls;

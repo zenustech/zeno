@@ -1396,6 +1396,192 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
+void INode::propagateDirty()
+{
+    std::set<INode*> depNodes;
+    auto addDependentNodesFunc = [&depNodes](INode* node) {
+        if (node)
+        {
+            bool isdepNode = false;
+            //使用了全局变量存入depNodes
+            //isdepNode = node->is_$F_Node();
+            if (isdepNode) {
+                depNodes.insert(node);
+            }
+        }
+    };
+    std::set<INode*> upstreams;
+    getUpstreamNodes(addDependentNodesFunc, upstreams);
+    for (auto& depnode : depNodes) {
+        depnode->mark_dirty_by_dependNodes(true, upstreams);
+    }
+}
+
+void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, std::set<INode*>& upstreams, std::string outParamName)
+{
+    addDependentNodesFunc(this);
+
+    if (upstreams.find(this) != upstreams.end()) {
+        return;
+    }
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+    {
+        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &addDependentNodesFunc, &upstreams](std::string paramName) {
+            if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
+                suboutput->getUpstreamNodes(addDependentNodesFunc, upstreams);
+                upstreams.insert(suboutput.get());
+            }
+        };
+        if (outParamName != "") {
+            suboutoutGetUpstreamFunc(outParamName);
+        }
+        else {
+            for (auto& [name, param] : pSubnetNode->m_outputPrims) {
+                suboutoutGetUpstreamFunc(name);
+            }
+            for (auto& [name, param] : pSubnetNode->m_outputObjs) {
+                suboutoutGetUpstreamFunc(name);
+            }
+        }
+        upstreams.insert(pSubnetNode);
+    }
+    else {
+        for (auto& [name, param] : m_inputPrims) {
+            for (auto link : param->links) {
+                auto outParam = link->fromparam;
+                if (outParam) {
+                    auto outNode = outParam->m_wpNode.lock();
+                    assert(outNode);
+                    outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
+                    upstreams.insert(outNode.get());
+                }
+            }
+        }
+        for (auto& [name, param] : m_inputObjs) {
+            for (auto link : param->links) {
+                auto outParam = link->fromparam;
+                if (outParam) {
+                    auto outNode = outParam->m_wpNode.lock();
+                    assert(outNode);
+                    outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
+                    upstreams.insert(outNode.get());
+                }
+            }
+        }
+        upstreams.insert(this);
+    }
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubInput")
+    {
+        upstreams.insert(spGraph->optParentSubgNode.value());
+        auto parentSubgNodeGetUpstreamFunc = [&addDependentNodesFunc, &upstreams](CoreParam* outParam) {
+            if (outParam) {
+                auto outNode = outParam->m_wpNode.lock();
+                assert(outNode);
+                outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
+                upstreams.insert(outNode.get());
+            }
+        };
+        const auto& parentSubgNodePrimsInputs = spGraph->optParentSubgNode.value()->m_inputPrims;
+        if (parentSubgNodePrimsInputs.find(m_name) != parentSubgNodePrimsInputs.end()) {
+            for (auto link : parentSubgNodePrimsInputs.find(m_name)->second->links) {
+                parentSubgNodeGetUpstreamFunc(link->fromparam);
+            }
+        }
+        const auto& parentSubgNodeObjsInputs = spGraph->optParentSubgNode.value()->m_inputObjs;
+        if (parentSubgNodeObjsInputs.find(m_name) != parentSubgNodeObjsInputs.end()) {
+            for (auto link : parentSubgNodeObjsInputs.find(m_name)->second->links) {
+                parentSubgNodeGetUpstreamFunc(link->fromparam);
+            }
+        }
+    }
+}
+
+void INode::mark_dirty_by_dependNodes(bool bOn, std::set<INode*> nodesRange, std::string inParamName)
+{
+    if (!nodesRange.empty()) {
+        if (nodesRange.find(this) == nodesRange.end()) {
+            return;
+        }
+    }
+    scope_exit sp([&] {
+        m_status = Node_DirtyReadyToRun;
+    reportStatus(m_dirty, m_status);
+        });
+
+    if (m_dirty == bOn)
+        return;
+
+    m_dirty = bOn;
+    if (m_dirty) {
+        for (auto& [name, param] : m_outputPrims) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty_by_dependNodes(m_dirty, nodesRange, inParam->name);
+                }
+            }
+        }
+        for (auto& [name, param] : m_outputObjs) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty_by_dependNodes(m_dirty, nodesRange, inParam->name);
+                }
+            }
+        }
+    }
+
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+    {
+        auto subinputMarkDirty = [&pSubnetNode, &nodesRange](bool dirty, std::string paramName) {
+            if (auto subinput = pSubnetNode->subgraph->getNode(paramName))
+                subinput->mark_dirty_by_dependNodes(dirty, nodesRange);
+        };
+        if (inParamName != "") {
+            subinputMarkDirty(m_dirty, inParamName);
+        }
+        else {
+            for (auto& [name, param] : pSubnetNode->m_inputPrims)
+                subinputMarkDirty(m_dirty, name);
+            for (auto& [name, param] : pSubnetNode->m_inputObjs)
+                subinputMarkDirty(m_dirty, name);
+        }
+    }
+
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubOutput")
+    {
+        auto parentSubgNodeMarkDirty = [&nodesRange](CoreParam* inParam) {
+            if (inParam) {
+                auto inNode = inParam->m_wpNode.lock();
+                assert(inNode);
+                inNode->mark_dirty_by_dependNodes(true, nodesRange, inParam->name);
+            }
+        };
+        const auto& parentSubgNodeOutputPrims = spGraph->optParentSubgNode.value()->m_outputPrims;
+        if (parentSubgNodeOutputPrims.find(m_name) != parentSubgNodeOutputPrims.end()) {
+            for (auto link : parentSubgNodeOutputPrims.find(m_name)->second->links) {
+                parentSubgNodeMarkDirty(link->toparam);
+            }
+        }
+        const auto& parentSubgNodeOutputObjs = spGraph->optParentSubgNode.value()->m_outputObjs;
+        if (parentSubgNodeOutputObjs.find(m_name) != parentSubgNodeOutputObjs.end()) {
+            for (auto link : parentSubgNodeOutputObjs.find(m_name)->second->links) {
+                parentSubgNodeMarkDirty(link->toparam);
+            }
+        }
+    }
+}
+
 float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
 {
     int frame = getGlobalState()->getFrameId();
