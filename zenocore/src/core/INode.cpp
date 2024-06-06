@@ -1396,40 +1396,37 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
-void INode::propagateDirty()
+void INode::propagateDirty(std::string dependType)
 {
-    std::set<INode*> depNodes;
-    auto addDependentNodesFunc = [&depNodes](INode* node) {
-        if (node)
-        {
-            bool isdepNode = false;
-            //使用了全局变量存入depNodes
-            //isdepNode = node->is_$F_Node();
-            if (isdepNode) {
-                depNodes.insert(node);
-            }
+    std::set<ObjPath> depNodes;
+    std::set<ObjPath> upstreams;
+    getUpstreamNodes(depNodes, dependType, upstreams);
+    for (auto& objPath : depNodes) {
+        if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
+            node->mark_dirty_by_dependNodes(true, upstreams);
         }
-    };
-    std::set<INode*> upstreams;
-    getUpstreamNodes(addDependentNodesFunc, upstreams);
-    for (auto& depnode : depNodes) {
-        depnode->mark_dirty_by_dependNodes(true, upstreams);
     }
 }
 
-void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, std::set<INode*>& upstreams, std::string outParamName)
+void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstreams, std::string outParamName)
 {
-    addDependentNodesFunc(this);
+    if (dependType == "timeNode") {
+        bool isdepNode = false;
+        //isdepNode = this->is_$F_Node();
+        if (isdepNode) {
+            depNodes.insert(m_uuidPath);
+        }
+    }
 
-    if (upstreams.find(this) != upstreams.end()) {
+    if (upstreams.find(m_uuidPath) != upstreams.end()) {
         return;
     }
     if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
     {
-        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &addDependentNodesFunc, &upstreams](std::string paramName) {
+        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &dependType, &upstreams](std::string paramName) {
             if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
-                suboutput->getUpstreamNodes(addDependentNodesFunc, upstreams);
-                upstreams.insert(suboutput.get());
+                suboutput->getUpstreamNodes(depNodes, dependType, upstreams);
+                upstreams.insert(suboutput->m_uuidPath);
             }
         };
         if (outParamName != "") {
@@ -1443,7 +1440,7 @@ void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, 
                 suboutoutGetUpstreamFunc(name);
             }
         }
-        upstreams.insert(pSubnetNode);
+        upstreams.insert(m_uuidPath);
     }
     else {
         for (auto& [name, param] : m_inputPrims) {
@@ -1452,8 +1449,8 @@ void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, 
                 if (outParam) {
                     auto outNode = outParam->m_wpNode.lock();
                     assert(outNode);
-                    outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
-                    upstreams.insert(outNode.get());
+                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    upstreams.insert(outNode->m_uuidPath);
                 }
             }
         }
@@ -1463,24 +1460,24 @@ void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, 
                 if (outParam) {
                     auto outNode = outParam->m_wpNode.lock();
                     assert(outNode);
-                    outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
-                    upstreams.insert(outNode.get());
+                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    upstreams.insert(outNode->m_uuidPath);
                 }
             }
         }
-        upstreams.insert(this);
+        upstreams.insert(m_uuidPath);
     }
     std::shared_ptr<Graph> spGraph = graph.lock();
     assert(spGraph);
     if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubInput")
     {
-        upstreams.insert(spGraph->optParentSubgNode.value());
-        auto parentSubgNodeGetUpstreamFunc = [&addDependentNodesFunc, &upstreams](CoreParam* outParam) {
+        upstreams.insert(spGraph->optParentSubgNode.value()->m_uuidPath);
+        auto parentSubgNodeGetUpstreamFunc = [&depNodes, dependType, &upstreams](CoreParam* outParam) {
             if (outParam) {
                 auto outNode = outParam->m_wpNode.lock();
                 assert(outNode);
-                outNode->getUpstreamNodes(addDependentNodesFunc, upstreams, outParam->name);
-                upstreams.insert(outNode.get());
+                outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                upstreams.insert(outNode->m_uuidPath);
             }
         };
         const auto& parentSubgNodePrimsInputs = spGraph->optParentSubgNode.value()->m_inputPrims;
@@ -1498,10 +1495,10 @@ void INode::getUpstreamNodes(std::function<void(INode*)> addDependentNodesFunc, 
     }
 }
 
-void INode::mark_dirty_by_dependNodes(bool bOn, std::set<INode*> nodesRange, std::string inParamName)
+void INode::mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName)
 {
     if (!nodesRange.empty()) {
-        if (nodesRange.find(this) == nodesRange.end()) {
+        if (nodesRange.find(m_uuidPath) == nodesRange.end()) {
             return;
         }
     }
