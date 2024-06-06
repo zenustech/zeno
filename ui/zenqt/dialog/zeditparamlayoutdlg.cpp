@@ -172,6 +172,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     , m_isGlobalUniqueFunc(nullptr)
     , m_paramsLayoutM_inputs(new QStandardItemModel(this))
     , m_paramsLayoutM_outputs(new QStandardItemModel(this))
+    , m_paramsLayoutM_objInputs(new QStandardItemModel(this))
+    , m_paramsLayoutM_objOutputs(new QStandardItemModel(this))
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -193,19 +195,29 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
 
     m_ui->paramsView->setModel(m_paramsLayoutM_inputs);
     m_ui->outputsView->setModel(m_paramsLayoutM_outputs);
+    m_ui->objInputsView->setModel(m_paramsLayoutM_objInputs);
+    m_ui->objOutputsView->setModel(m_paramsLayoutM_objOutputs);
     ParamTreeItemDelegate* treeDelegate = new ParamTreeItemDelegate(m_paramsLayoutM_inputs, m_ui->paramsView);
     outputListItemDelegate* listDelegate = new outputListItemDelegate(m_paramsLayoutM_outputs, m_ui->outputsView);
+    outputListItemDelegate* listDelegate_objInput = new outputListItemDelegate(m_paramsLayoutM_objInputs, m_ui->objInputsView);
+    outputListItemDelegate* listDelegate_objOutput = new outputListItemDelegate(m_paramsLayoutM_objOutputs, m_ui->objOutputsView);
     m_ui->paramsView->setItemDelegate(treeDelegate);
     m_ui->outputsView->setItemDelegate(listDelegate);
+    m_ui->objInputsView->setItemDelegate(listDelegate_objInput);
+    m_ui->objOutputsView->setItemDelegate(listDelegate_objOutput);
 
     m_isGlobalUniqueFunc = [&](QString name) -> bool {
         QStandardItem* pParamsViewRoot = m_paramsLayoutM_inputs->item(0);
         auto paramsResLst = m_paramsLayoutM_inputs->match(pParamsViewRoot->index(), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
         auto outputResLst = m_paramsLayoutM_outputs->match(m_paramsLayoutM_outputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
-        return paramsResLst.empty() && outputResLst.empty();
+        auto objectInResLst = m_paramsLayoutM_objInputs->match(m_paramsLayoutM_objInputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        auto objOutResLst = m_paramsLayoutM_objOutputs->match(m_paramsLayoutM_objOutputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        return paramsResLst.empty() && outputResLst.empty() && objectInResLst.empty() && objOutResLst.empty();
     };
     treeDelegate->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
     listDelegate->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
+    listDelegate_objInput->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
+    listDelegate_objOutput->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
 
     QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
     connect(selModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this,
@@ -221,10 +233,24 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     const QModelIndex& outputFirst = m_paramsLayoutM_outputs->index(0, 0);
     selModelOutputs->setCurrentIndex(outputFirst, QItemSelectionModel::SelectCurrent);
 
+    QItemSelectionModel* selModelInputs_obj = m_ui->objInputsView->selectionModel();
+    connect(selModelInputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
+        SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
+    const QModelIndex& objInputFirst = m_paramsLayoutM_objInputs->index(0, 0);
+    selModelInputs_obj->setCurrentIndex(objInputFirst, QItemSelectionModel::SelectCurrent);
+
+    QItemSelectionModel* selModelOutputs_obj = m_ui->objOutputsView->selectionModel();
+    connect(selModelOutputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
+        SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
+    const QModelIndex& objOutputFirst = m_paramsLayoutM_objOutputs->index(0, 0);
+    selModelOutputs_obj->setCurrentIndex(objOutputFirst, QItemSelectionModel::SelectCurrent);
+
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
     connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
     connect(m_ui->btnAddInput, SIGNAL(clicked()), this, SLOT(onBtnAddInputs()));
     connect(m_ui->btnAddOutput, SIGNAL(clicked()), this, SLOT(onBtnAddOutputs()));
+    connect(m_ui->btnAddObjInput, SIGNAL(clicked()), this, SLOT(onBtnAddObjInputs()));
+    connect(m_ui->btnAddObjOutput, SIGNAL(clicked()), this, SLOT(onBtnAddObjOutputs()));
     connect(m_ui->btnApply, SIGNAL(clicked()), this, SLOT(onApply()));
     connect(m_ui->btnOk, SIGNAL(clicked()), this, SLOT(onOk()));
     connect(m_ui->btnCancel, SIGNAL(clicked()), this, SLOT(onCancel()));
@@ -233,14 +259,37 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     //connect(shortcut, SIGNAL(activated()), this, SLOT(onParamTreeDeleted()));
     m_ui->paramsView->installEventFilter(this);
     m_ui->outputsView->installEventFilter(this);
+    m_ui->objInputsView->installEventFilter(this);
+    m_ui->objOutputsView->installEventFilter(this);
 
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
     connect(m_ui->cbSocketType, SIGNAL(currentIndexChanged(int)), this, SLOT(onSocketTypeChanged(int)));
 
     connect(m_paramsLayoutM_inputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onParamsViewParamDataChanged);
     connect(m_paramsLayoutM_outputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onOutputsViewParamDataChanged);
-    connect(m_ui->paramsView, &QTreeView::clicked, this, [&]() {m_ui->outputsView->selectionModel()->clearCurrentIndex(); });
-    connect(m_ui->outputsView, &QListView::clicked, this, [&]() {m_ui->paramsView->selectionModel()->clearCurrentIndex(); });
+    connect(m_paramsLayoutM_objOutputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onOutputsViewParamDataChanged);
+    connect(m_paramsLayoutM_objInputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onOutputsViewParamDataChanged);
+    connect(m_ui->paramsView, &QTreeView::clicked, this, [&]() 
+    {
+        m_ui->outputsView->selectionModel()->clearCurrentIndex(); 
+        m_ui->objInputsView->selectionModel()->clearCurrentIndex();
+        m_ui->objOutputsView->selectionModel()->clearCurrentIndex();
+    });
+    connect(m_ui->outputsView, &QListView::clicked, this, [&]() {
+        m_ui->paramsView->selectionModel()->clearCurrentIndex(); 
+        m_ui->objInputsView->selectionModel()->clearCurrentIndex();
+        m_ui->objOutputsView->selectionModel()->clearCurrentIndex();
+    });
+    connect(m_ui->objInputsView, &QTreeView::clicked, this, [&]() {
+        m_ui->paramsView->selectionModel()->clearCurrentIndex();
+        m_ui->outputsView->selectionModel()->clearCurrentIndex();
+        m_ui->objOutputsView->selectionModel()->clearCurrentIndex();
+    });
+    connect(m_ui->objOutputsView, &QListView::clicked, this, [&]() {
+        m_ui->paramsView->selectionModel()->clearCurrentIndex();
+        m_ui->outputsView->selectionModel()->clearCurrentIndex();
+        m_ui->objInputsView->selectionModel()->clearCurrentIndex(); 
+    });
 }
 
 void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
@@ -254,7 +303,7 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
         }
         return newItem;
     };
-
+    //prim params
     if (QStandardItem* inputsItem = pModel->item(0, 0))
     {
         m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, inputsItem));
@@ -266,6 +315,24 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
         {
             QStandardItem* newItem = outputsItem->child(r);
             m_paramsLayoutM_outputs->appendRow(cloneItem(cloneItem, newItem));
+        }
+    }
+    //object params
+    if (QStandardItem* inputsItem = pModel->item(2, 0))
+    {
+        for (int r = 0; r < inputsItem->rowCount(); r++)
+        {
+            QStandardItem* newItem = inputsItem->child(r);
+            m_paramsLayoutM_objInputs->appendRow(cloneItem(cloneItem, newItem));
+        }
+    }
+
+    if (QStandardItem* outputsItem = pModel->item(3, 0))
+    {
+        for (int r = 0; r < outputsItem->rowCount(); r++)
+        {
+            QStandardItem* newItem = outputsItem->child(r);
+            m_paramsLayoutM_objOutputs->appendRow(cloneItem(cloneItem, newItem));
         }
     }
 }
@@ -282,8 +349,12 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->listConctrl->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->paramsView->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->outputsView->setFixedWidth(ZenoStyle::dpiScaled(296));
+    m_ui->objInputsView->setFixedWidth(ZenoStyle::dpiScaled(296));
+    m_ui->objOutputsView->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->btnAddInput->setFixedSize(ZenoStyle::dpiScaled(66), ZenoStyle::dpiScaled(36));
     m_ui->btnAddOutput->setFixedSize(ZenoStyle::dpiScaled(66), ZenoStyle::dpiScaled(36));
+    m_ui->btnAddObjInput->setFixedSize(ZenoStyle::dpiScaled(66), ZenoStyle::dpiScaled(36));
+    m_ui->btnAddObjOutput->setFixedSize(ZenoStyle::dpiScaled(66), ZenoStyle::dpiScaled(36));
     QSize buttonSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(36));
     m_ui->btnApply->setFixedSize(buttonSize);
     m_ui->btnCancel->setFixedSize(buttonSize);
@@ -296,7 +367,15 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->listConctrl->setAlternatingRowColors(true);
     m_ui->paramsView->setAlternatingRowColors(true);
     m_ui->outputsView->setAlternatingRowColors(true);
+    m_ui->objInputsView->setAlternatingRowColors(true);
+    m_ui->objOutputsView->setAlternatingRowColors(true);
     m_ui->listConctrl->setFocusPolicy(Qt::NoFocus);
+    m_ui->cbSocketType->addItem("NoSocket", zeno::NoSocket);
+    m_ui->cbSocketType->addItem("Socket_Output", zeno::Socket_Output);
+    m_ui->cbSocketType->addItem("Socket_ReadOnly", zeno::Socket_ReadOnly);
+    m_ui->cbSocketType->addItem("Socket_Clone", zeno::Socket_Clone);
+    m_ui->cbSocketType->addItem("Socket_Owning", zeno::Socket_Owning);
+    m_ui->cbSocketType->addItem("Socket_Primitve", zeno::Socket_Primitve);
     //m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
     resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
     setFocusPolicy(Qt::ClickFocus);
@@ -374,6 +453,22 @@ void ZEditParamLayoutDlg::onOutputsListDeleted()
     m_paramsLayoutM_outputs->removeRow(idx.row());
 }
 
+void ZEditParamLayoutDlg::onObjInputsListDeleted()
+{
+    QModelIndex idx = m_ui->objInputsView->currentIndex();
+    bool bEditable = true;//TODO:
+    if (!idx.isValid() || !bEditable)
+        return;
+    m_paramsLayoutM_objInputs->removeRow(idx.row());
+}
+void ZEditParamLayoutDlg::onObjOutputsListDeleted()
+{
+    QModelIndex idx = m_ui->objOutputsView->currentIndex();
+    bool bEditable = true;//TODO:
+    if (!idx.isValid() || !bEditable)
+        return;
+    m_paramsLayoutM_objOutputs->removeRow(idx.row());
+}
 void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
     auto pCurrentItem = m_paramsLayoutM_inputs->itemFromIndex(current);
@@ -450,11 +545,17 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
             m_ui->cbSocketType->setEnabled(true);
             if (zeno::NoSocket == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("No Socket"));
+                m_ui->cbSocketType->setCurrentText(tr("NoSocket"));
+            else if (zeno::Socket_Output == socketType)
+                m_ui->cbSocketType->setCurrentText(tr("Socket_Output"));
             else if (zeno::Socket_ReadOnly == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
+                m_ui->cbSocketType->setCurrentText(tr("Socket_ReadOnly"));
+            else if (zeno::Socket_Clone == socketType)
+                m_ui->cbSocketType->setCurrentText(tr("Socket_Clone"));
+            else if (zeno::Socket_Owning== socketType)
+                m_ui->cbSocketType->setCurrentText(tr("Socket_Owning"));
             else if (zeno::Socket_Primitve == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
+                m_ui->cbSocketType->setCurrentText(tr("Socket_Primitve"));
         }
 
         switchStackProperties(ctrl, pCurrentItem);
@@ -463,7 +564,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
 
 void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-    auto pCurrentItem = m_paramsLayoutM_outputs->itemFromIndex(current);
+    const QStandardItemModel* pModel = qobject_cast<const QStandardItemModel*>(current.model());
+    if (!pModel)
+        return;
+    auto pCurrentItem = pModel->itemFromIndex(current);
     if (!pCurrentItem)
         return;
 
@@ -522,13 +626,19 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
         BlockSignalScope scope(m_ui->cbSocketType);
 
         if (zeno::NoSocket == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("No Socket"));
+            m_ui->cbSocketType->setCurrentText(tr("NoSocket"));
+        else if (zeno::Socket_Output == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("Socket_Output"));
         else if (zeno::Socket_ReadOnly == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Primary Socket"));
+            m_ui->cbSocketType->setCurrentText(tr("Socket_ReadOnly"));
+        else if (zeno::Socket_Clone == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("Socket_Clone"));
+        else if (zeno::Socket_Owning == socketType)
+            m_ui->cbSocketType->setCurrentText(tr("Socket_Owning"));
         else if (zeno::Socket_Primitve == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Parameter Socket"));
+            m_ui->cbSocketType->setCurrentText(tr("Socket_Primitve"));
 
-        m_ui->cbSocketType->setEnabled(false);
+        m_ui->cbSocketType->setEnabled(pModel != m_paramsLayoutM_outputs);
     }
 
     switchStackProperties(ctrl, pCurrentItem);
@@ -610,6 +720,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         pNewItem->setData(newParamName, ROLE_PARAM_NAME);
         pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
         pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
+        pNewItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
         pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         pNewItem->setData(UiHelper::initDefaultValue(ctrl.type), ROLE_PARAM_VALUE);
 
@@ -633,11 +744,11 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
     }
 }
 
-void ZEditParamLayoutDlg::onBtnAddOutputs()
+void ZEditParamLayoutDlg::onBtnAddObjInputs()
 {
-    auto root = m_paramsLayoutM_outputs->invisibleRootItem();
-    QStringList existNames = getExistingNames(false, VPARAM_PARAM);
-    QString newParamName = UiHelper::getUniqueName(existNames, "object");
+    auto root = m_paramsLayoutM_objInputs->invisibleRootItem();
+    QStringList existNames = getExistingNames(true, VPARAM_PARAM);
+    QString newParamName = UiHelper::getUniqueName(existNames, "object_input");
 
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
@@ -647,10 +758,45 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
     pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
 
-    m_paramsLayoutM_outputs->appendRow(pNewItem);
+    m_paramsLayoutM_objInputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
 }
 
+void ZEditParamLayoutDlg::onBtnAddObjOutputs()
+{
+    auto root = m_paramsLayoutM_objOutputs->invisibleRootItem();
+    QStringList existNames = getExistingNames(false, VPARAM_PARAM);
+    QString newParamName = UiHelper::getUniqueName(existNames, "object_output");
+
+    auto pNewItem = new QStandardItem(newParamName);
+    pNewItem->setData(newParamName, ROLE_PARAM_NAME);
+    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
+    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
+
+    m_paramsLayoutM_objOutputs->appendRow(pNewItem);
+    pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
+}
+
+void ZEditParamLayoutDlg::onBtnAddOutputs()
+{
+    auto root = m_paramsLayoutM_outputs->invisibleRootItem();
+    QStringList existNames = getExistingNames(false, VPARAM_PARAM);
+    QString newParamName = UiHelper::getUniqueName(existNames, "output");
+
+    auto pNewItem = new QStandardItem(newParamName);
+    pNewItem->setData(newParamName, ROLE_PARAM_NAME);
+    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
+    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::Socket_Output, ROLE_SOCKET_TYPE);
+
+    m_paramsLayoutM_outputs->appendRow(pNewItem);
+    pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
+}
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
 {
     zeno::ControlProperty pros = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
@@ -717,9 +863,9 @@ void ZEditParamLayoutDlg::onOutputsViewParamDataChanged(const QModelIndex& topLe
     int role = roles[0];
     if (role == ROLE_PARAM_NAME)
     {
-        const QModelIndex& outputsViewCurrIdx = m_ui->outputsView->currentIndex();
-        if (outputsViewCurrIdx.isValid() && outputsViewCurrIdx == topLeft) {
-            QString newName = m_paramsLayoutM_outputs->data(topLeft, ROLE_PARAM_NAME).toString();
+        //const QModelIndex& outputsViewCurrIdx = m_ui->outputsView->currentIndex();
+        if (topLeft.isValid()) {
+            QString newName = topLeft.data(ROLE_PARAM_NAME).toString();
             disconnect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
             m_ui->editName->setText(newName);
             connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
@@ -747,6 +893,8 @@ void ZEditParamLayoutDlg::onNameEditFinished()
 {
     const QModelIndex& paramsViewCurrIdx = m_ui->paramsView->currentIndex();
     const QModelIndex& outputsViewCurrIdx = m_ui->outputsView->currentIndex();
+    const QModelIndex& objInputsViewCurrIdx = m_ui->objInputsView->currentIndex();
+    const QModelIndex& objOutputsViewCurrIdx = m_ui->objOutputsView->currentIndex();
     QString newName = m_ui->editName->text();
 
     QStandardItem* currentItem = nullptr;
@@ -755,6 +903,10 @@ void ZEditParamLayoutDlg::onNameEditFinished()
         currentItem = m_paramsLayoutM_inputs->itemFromIndex(paramsViewCurrIdx);
     }else if (outputsViewCurrIdx.isValid()) {   //修改的参数来自outputView
         currentItem = m_paramsLayoutM_outputs->itemFromIndex(outputsViewCurrIdx);
+    } else if (objInputsViewCurrIdx.isValid()) {   //修改的参数来自objInputsView
+        currentItem = m_paramsLayoutM_objInputs->itemFromIndex(objInputsViewCurrIdx);
+    } else if (objOutputsViewCurrIdx.isValid()) {   //修改的参数来自objOutputsView
+        currentItem = m_paramsLayoutM_objOutputs->itemFromIndex(objOutputsViewCurrIdx);
     }
     if (!currentItem)
         return;
@@ -798,21 +950,14 @@ void ZEditParamLayoutDlg::onHintEditFinished()
 
 void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
 {
-    const QModelIndex& currIdx = m_ui->paramsView->currentIndex();
+    const QModelIndex& currIdx = m_ui->objInputsView->currentIndex();
     if (!currIdx.isValid())
         return;
 
-    QStandardItem* pItem = m_paramsLayoutM_inputs->itemFromIndex(currIdx);
+    QStandardItem* pItem = m_paramsLayoutM_objInputs->itemFromIndex(currIdx);
     const QString& socketType = m_ui->cbSocketType->itemText(idx);
-    if (socketType == tr("No Socket")) {
-        pItem->setData(zeno::NoSocket, ROLE_SOCKET_TYPE);
-    }
-    else if (socketType == tr("Primary Socket")) {
-        pItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
-    }
-    else if (socketType == tr("Parameter Socket")) {
-        pItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
-    }
+    auto type = m_ui->cbSocketType->itemData(idx);
+    pItem->setData(type, ROLE_SOCKET_TYPE);
 }
 
 void ZEditParamLayoutDlg::onControlItemChanged(int idx)
@@ -888,49 +1033,74 @@ bool ZEditParamLayoutDlg::eventFilter(QObject* obj, QEvent* event)
             return true;
         }
     }
+    else if (obj == m_ui->objInputsView && event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* e = static_cast<QKeyEvent*>(event);
+        if (e->key() == Qt::Key_Delete)
+        {
+            onObjInputsListDeleted();
+            return true;
+        }
+    }
+    else if (obj == m_ui->objOutputsView && event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* e = static_cast<QKeyEvent*>(event);
+        if (e->key() == Qt::Key_Delete)
+        {
+            onObjOutputsListDeleted();
+            return true;
+        }
+    }
     return QDialog::eventFilter(obj, event);
 }
 
 QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type) const
 {
     QStringList existNames;
-    if (bInput)
+    QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
+    for (int i = 0; i < pRoot->rowCount(); i++)
     {
-        QStandardItem* pRoot = m_paramsLayoutM_inputs->item(0);
-        for (int i = 0; i < pRoot->rowCount(); i++)
+        auto tabItem = pRoot->child(i);
+        if (type == VPARAM_TAB) {
+            existNames.append(tabItem->text());
+            continue;
+        }
+
+        for (int j = 0; j < tabItem->rowCount(); j++)
         {
-            auto tabItem = pRoot->child(i);
-            if (type == VPARAM_TAB) {
-                existNames.append(tabItem->text());
+            auto groupItem = tabItem->child(j);
+            if (type == VPARAM_GROUP) {
+                existNames.append(groupItem->text());
                 continue;
             }
 
-            for (int j = 0; j < tabItem->rowCount(); j++)
+            for (int k = 0; k < groupItem->rowCount(); k++)
             {
-                auto groupItem = tabItem->child(j);
-                if (type == VPARAM_GROUP) {
-                    existNames.append(groupItem->text());
-                    continue;
-                }
-
-                for (int k = 0; k < groupItem->rowCount(); k++)
-                {
-                    auto paramItem = groupItem->child(k);
-                    if (type == VPARAM_PARAM) {
-                        existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
-                    }
+                auto paramItem = groupItem->child(k);
+                if (type == VPARAM_PARAM) {
+                    existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
                 }
             }
         }
     }
-    else
-    {
+    if (type == VPARAM_PARAM) {
+        for (int i = 0; i < m_paramsLayoutM_objInputs->rowCount(); i++)
+        {
+            QStandardItem* pItem = m_paramsLayoutM_objInputs->item(i);
+            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+        }
         for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
             existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
         }
+        for (int i = 0; i < m_paramsLayoutM_objOutputs->rowCount(); i++)
+        {
+            QStandardItem* pItem = m_paramsLayoutM_objOutputs->item(i);
+            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+        }
     }
+
     return existNames;
 }
 
@@ -995,6 +1165,42 @@ void ZEditParamLayoutDlg::onApply()
         m_customUi.inputPrims.tabs.push_back(tabInfo);
     }
     m_customUi.outputPrims = outputs;
+
+    std::vector<zeno::ParamObject> obj_inputs;
+    for (int i = 0; i < m_paramsLayoutM_objInputs->rowCount(); i++)
+    {
+        QStandardItem* pItem = m_paramsLayoutM_objInputs->item(i);
+        zeno::ParamObject param;
+
+        param.bInput = true;
+        param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
+        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
+        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+
+        m_paramsUpdate.push_back({ param, existName.toStdString() });
+        obj_inputs.push_back(param);
+    }
+    m_customUi.inputObjs = obj_inputs;
+
+    std::vector<zeno::ParamObject> obj_outputs;
+    for (int i = 0; i < m_paramsLayoutM_objOutputs->rowCount(); i++)
+    {
+        QStandardItem* pItem = m_paramsLayoutM_objOutputs->item(i);
+        zeno::ParamObject param;
+
+        param.bInput = false;
+        param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
+        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
+        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+
+        m_paramsUpdate.push_back({ param, existName.toStdString() });
+        obj_outputs.push_back(param);
+    }
+    m_customUi.outputObjs = obj_outputs;
 }
 
 void ZEditParamLayoutDlg::onOk()

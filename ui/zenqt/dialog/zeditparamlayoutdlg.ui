@@ -154,7 +154,7 @@
              <item>
               <widget class="QLabel" name="labelPrameter_2">
                <property name="text">
-                <string>outputs</string>
+                <string>prim_outputs</string>
                </property>
               </widget>
              </item>
@@ -169,6 +169,70 @@
            </item>
            <item>
             <widget class="QListView" name="outputsView"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="horizontalLayoutWidget_3">
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <property name="topMargin">
+              <number>10</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="labelPrameter_3">
+               <property name="text">
+                <string>object_inputs</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAddObjInput">
+               <property name="text">
+                <string>Add</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QListView" name="objInputsView"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="horizontalLayoutWidget_4">
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <property name="topMargin">
+              <number>10</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="labelPrameter_4">
+               <property name="text">
+                <string>object_oututs</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnAddObjOutput">
+               <property name="text">
+                <string>Add</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QListView" name="objOutputsView"/>
            </item>
           </layout>
          </item>
@@ -221,23 +285,7 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QComboBox" name="cbSocketType">
-           <item>
-            <property name="text">
-             <string>No Socket</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Primary Socket</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Parameter Socket</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="cbSocketType"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_16">

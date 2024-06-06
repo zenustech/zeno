@@ -8,8 +8,10 @@ namespace zeno {
 struct Asset {
     AssetInfo m_info;
     std::shared_ptr<Graph> sharedGraph;
-    std::vector<ParamPrimitive> inputs;
-    std::vector<ParamPrimitive> outputs;
+    std::vector<ParamPrimitive> primitive_inputs;
+    std::vector<ParamPrimitive> primitive_outputs;
+    std::vector<ParamObject> object_inputs;
+    std::vector<ParamObject> object_outputs;
     CustomUI m_customui;
 };
 

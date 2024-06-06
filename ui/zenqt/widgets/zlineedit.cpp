@@ -32,6 +32,7 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
     , m_bHasRightBtn(false)
     , m_pButton(nullptr)
     , m_bIconHover(false)
+    , m_hintlist(nullptr)
 {
     init();
 }

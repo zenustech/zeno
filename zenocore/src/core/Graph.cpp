@@ -789,6 +789,10 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
                 }
             }
         }
+        if (inParam.socketType == Socket_Owning)
+        {
+            removeLinks(outNode->get_name(), false, edge.outParam);
+        }
     }
 
     if (bRemOldLinks)
