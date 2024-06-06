@@ -43,45 +43,6 @@ namespace zenoio
         writer.Key("class");
         writer.String(node.cls.c_str());
 
-        writer.Key("object_inputs");
-        {
-            JsonObjScope _batch(writer);
-            for (const auto& param : node.customUi.inputObjs)
-            {
-                writer.Key(param.name.c_str());
-                dumpObjectParam(param, writer);
-            }
-        }
-        writer.Key("primitive_inputs");
-        {
-            JsonObjScope _batch(writer);
-            zeno::PrimitiveParams params = customUiToParams(node.customUi.inputPrims);
-            for (const auto& param : params)
-            {
-                writer.Key(param.name.c_str());
-                dumpPrimitiveParam(param, writer);
-            }
-        }
-        writer.Key("primitive_outputs");
-        {
-            JsonObjScope _batch(writer);
-            zeno::PrimitiveParams params = node.customUi.outputPrims;
-            for (const auto& param : params)
-            {
-                writer.Key(param.name.c_str());
-                dumpPrimitiveParam(param, writer);
-            }
-        }
-        writer.Key("object_outputs");
-        {
-            JsonObjScope _batch(writer);
-            for (const auto& param : node.customUi.outputObjs)
-            {
-                writer.Key(param.name.c_str());
-                dumpObjectParam(param, writer);
-            }
-        }
-
         writer.Key("uipos");
         {
             writer.StartArray();
@@ -152,6 +113,7 @@ namespace zenoio
         writer.String(customUi.doc.c_str());
 
         writer.Key("tabs");
+        {
         JsonObjScope scopetabs(writer);
         for (const zeno::ParamTab& tab : customUi.inputPrims.tabs)
         {
@@ -161,10 +123,42 @@ namespace zenoio
             {
                 writer.Key(group.name.c_str());
                 JsonObjScope scopegroup(writer);
-                for (const zeno::ParamPrimitive& param : group.params) {
-                    writer.Key(param.name.c_str());
-                    dumpPrimitiveParam(param, writer);
+                    {
+                        writer.Key(param.name.c_str());
+                        dumpPrimitiveParam(param, writer);
+                    }
                 }
+            }
+        }
+
+        writer.Key("primitive_outputs");
+        {
+            JsonObjScope _batch(writer);
+            zeno::PrimitiveParams params = customUi.outputPrims;
+            for (const auto& param : params)
+            {
+                writer.Key(param.name.c_str());
+                dumpPrimitiveParam(param, writer);
+            }
+        }
+
+        writer.Key("object_inputs");
+        {
+            JsonObjScope _batch(writer);
+            for (const auto& param : customUi.inputObjs)
+            {
+                writer.Key(param.name.c_str());
+                dumpObjectParam(param, writer);
+            }
+        }
+
+        writer.Key("object_outputs");
+        {
+            JsonObjScope _batch(writer);
+            for (const auto& param : customUi.outputObjs)
+            {
+                writer.Key(param.name.c_str());
+                dumpObjectParam(param, writer);
             }
         }
     }

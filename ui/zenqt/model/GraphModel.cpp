@@ -925,7 +925,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
 
         zeno::NodeData node;
 
-        if (nodedata.cls == "Subnet") {
+        if (nodedata.cls == "Subnet" || cate == "assets") {
             QString nodeName = QString::fromStdString(spNode->get_name());
             QString uuid = m_name2uuid[nodeName];
             ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), zeno::NodeData());
@@ -933,6 +933,11 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
 
             if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {
                 //create input/output in subnet
+                if (cate == "assets")
+                {
+                    const auto asset = zeno::getSession().assets->getAsset(nodedata.cls);
+                    nodedata.customUi = asset.m_customui;
+                }
                 zeno::ParamsUpdateInfo updateInfo;
                 UiHelper::parseUpdateInfo(nodedata.customUi, updateInfo);
                 paramsM->resetCustomUi(nodedata.customUi);

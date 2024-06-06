@@ -79,6 +79,8 @@ protected:
 private slots:
     void onBtnAddInputs();
     void onBtnAddOutputs();
+    void onBtnAddObjInputs();
+    void onBtnAddObjOutputs();
     void onApply();
     void onOk();
     void onCancel();
@@ -89,6 +91,8 @@ private slots:
     void onHintEditFinished();
     void onParamTreeDeleted();
     void onOutputsListDeleted();
+    void onObjInputsListDeleted();
+    void onObjOutputsListDeleted();
     void onControlItemChanged(int);
     void onParamsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onOutputsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
@@ -108,6 +112,8 @@ private:
 
     QStandardItemModel * m_paramsLayoutM_inputs;
     QStandardItemModel * m_paramsLayoutM_outputs;
+    QStandardItemModel* m_paramsLayoutM_objInputs;
+    QStandardItemModel* m_paramsLayoutM_objOutputs;
 
     Ui::EditParamLayoutDlg* m_ui;
     const QPersistentModelIndex m_nodeIdx;

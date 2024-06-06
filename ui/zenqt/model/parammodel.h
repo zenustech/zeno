@@ -78,6 +78,7 @@ private:
     void initCustomUI(const zeno::CustomUI& customui);
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
+    void updateParamData(const QString& name, const QVariant& val, int role);
 
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;

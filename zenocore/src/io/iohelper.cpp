@@ -5,6 +5,7 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/helper.h>
 #include <filesystem>
+#include <zeno/io/iotags.h>
 
 
 namespace zenoio
@@ -155,6 +156,28 @@ namespace zenoio
             return zeno::VER_3;
         else
             return zeno::UNKNOWN_VER;
+    }
+
+    zeno::SocketType getSocketTypeByDesc(const std::string& sockType)
+    {
+        if (sockType == iotags::params::socket_none) {
+            return zeno::NoSocket;
+        }
+        else if (sockType == iotags::params::socket_readonly) {
+            return zeno::Socket_ReadOnly;
+        }
+        else if (sockType == iotags::params::socket_clone) {
+            return zeno::Socket_Clone;
+        }
+        else if (sockType == iotags::params::socket_output) {
+            return zeno::Socket_Output;
+        }
+        else if (sockType == iotags::params::socket_owning) {
+            return zeno::Socket_Owning;
+        }
+        else if (sockType == iotags::params::socket_primitive) {
+            return zeno::Socket_Primitve;
+        }
     }
 
     zeno::GraphData fork(
