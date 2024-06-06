@@ -53,12 +53,15 @@ namespace zenoio
         //_parseParams(doc["Parameters"], tmp);
 
         if (doc.HasMember("subnet-customUi"))
-            m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
-
-        m_asset.object_inputs = m_asset.m_customui.inputObjs;
-        m_asset.primitive_inputs = customUiToParams(m_asset.m_customui.inputPrims);
-        m_asset.primitive_outputs = m_asset.m_customui.outputPrims;
-        m_asset.object_outputs = m_asset.m_customui.outputObjs;
+        {
+            zeno::NodeData tmp;
+            _parseParams(doc["subnet-customUi"], tmp);
+            m_asset.primitive_inputs = customUiToParams(tmp.customUi.inputPrims);
+            m_asset.object_inputs = tmp.customUi.inputObjs;
+            m_asset.primitive_outputs = tmp.customUi.outputPrims;
+            m_asset.object_outputs = tmp.customUi.outputObjs;
+            m_asset.m_customui = tmp.customUi;
+        }
 
         ret.type = zeno::Subnet_Normal;
         ret.name = m_asset.info.name;
@@ -74,9 +77,10 @@ namespace zenoio
 
     void ZdaReader::_parseParams(const rapidjson::Value& paramsObj, zeno::NodeData& ret)
     {
+        ret.customUi = _parseCustomUI(paramsObj);
         if (paramsObj.HasMember(iotags::params::node_inputs_objs))
         {
-            for (const auto& inObj : paramsObj[iotags::params::node_inputs_primitive].GetObject())
+            for (const auto& inObj : paramsObj[iotags::params::node_inputs_objs].GetObject())
             {
                 const std::string& inSock = inObj.name.GetString();
                 const auto& inputObj = inObj.value;
@@ -95,26 +99,6 @@ namespace zenoio
                 else
                 {
                     //TODO
-                }
-            }
-        }
-        if (paramsObj.HasMember(iotags::params::node_inputs_primitive))
-        {
-            for (const auto& inObj : paramsObj[iotags::params::node_inputs_primitive].GetObject())
-            {
-                const std::string& inSock = inObj.name.GetString();
-                const auto& inputObj = inObj.value;
-
-                if (inputObj.IsNull())
-                {
-                }
-                else if (inputObj.IsObject())
-                {
-                    zeno::LinksData links;
-                    _parseSocket(true, true, false, "", "", inSock, inputObj, ret, links);
-                }
-                else
-                {
                 }
             }
         }

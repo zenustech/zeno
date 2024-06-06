@@ -289,16 +289,19 @@ void ZenoNodeBase::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         connect(pLock, &QAction::triggered, this, [=]() {
             pSubgGraphM->setLocked(!bLocked);
         });
-        QAction* pEditParam = new QAction(tr("Custom Params"));
-        nodeMenu->addAction(pEditParam);
-        connect(pEditParam, &QAction::triggered, this, [=]() {
-            ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
+        if (!bLocked)
+        {
+            QAction* pEditParam = new QAction(tr("Custom Params"));
+            nodeMenu->addAction(pEditParam);
+            connect(pEditParam, &QAction::triggered, this, [=]() {
+                ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
             {
                 QString assetName = m_index.data(ROLE_CLASS_NAME).toString();
                 pEditor->onAssetsCustomParamsClicked(assetName);
             }
-        });
+            });
+        }
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
