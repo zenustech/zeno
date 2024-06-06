@@ -17,16 +17,16 @@ namespace zenoio
     bool ZdaReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) {
         if (!doc.HasMember("name") ||
             !doc.HasMember("version") ||
-            !doc.HasMember("graph")/* ||
-            !doc.HasMember("Parameters")*/)
+            !doc.HasMember("graph") ||
+            !doc.HasMember("Parameters"))
         {
             return false;
         }
 
         if (!doc["name"].IsString() ||
             !doc["version"].IsString() ||
-            !doc["graph"].IsObject()/* ||
-            !doc["Parameters"].IsObject()*/)
+            !doc["graph"].IsObject() ||
+            !doc["Parameters"].IsObject())
         {
             return false;
         }
@@ -49,16 +49,21 @@ namespace zenoio
                 return false;
         }
 
-        //zeno::NodeData tmp;
-        //_parseParams(doc["Parameters"], tmp);
+        zeno::NodeData tmp;
+        _parseParams(doc["Parameters"], tmp);
+
+        m_asset.object_inputs = tmp.customUi.inputObjs;
+        m_asset.primitive_inputs = customUiToParams(tmp.customUi.inputPrims);
+        m_asset.primitive_outputs = tmp.customUi.outputPrims;
+        m_asset.object_outputs = tmp.customUi.outputObjs;
 
         if (doc.HasMember("subnet-customUi"))
+        {
             m_asset.m_customui = _parseCustomUI(doc["subnet-customUi"]);
-
-        m_asset.object_inputs = m_asset.m_customui.inputObjs;
-        m_asset.primitive_inputs = customUiToParams(m_asset.m_customui.inputPrims);
-        m_asset.primitive_outputs = m_asset.m_customui.outputPrims;
-        m_asset.object_outputs = m_asset.m_customui.outputObjs;
+            m_asset.m_customui.inputObjs = tmp.customUi.inputObjs;
+            m_asset.m_customui.outputPrims = tmp.customUi.outputPrims;
+            m_asset.m_customui.outputObjs = tmp.customUi.outputObjs;
+        }
 
         ret.type = zeno::Subnet_Normal;
         ret.name = m_asset.info.name;
@@ -76,7 +81,7 @@ namespace zenoio
     {
         if (paramsObj.HasMember(iotags::params::node_inputs_objs))
         {
-            for (const auto& inObj : paramsObj[iotags::params::node_inputs_primitive].GetObject())
+            for (const auto& inObj : paramsObj[iotags::params::node_inputs_objs].GetObject())
             {
                 const std::string& inSock = inObj.name.GetString();
                 const auto& inputObj = inObj.value;

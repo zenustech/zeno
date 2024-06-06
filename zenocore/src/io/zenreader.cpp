@@ -86,19 +86,18 @@ namespace zenoio
         //要先parse customui以获得整个参数树结构。
         if (objValue.HasMember("subnet-customUi")) {
             retNode.customUi = _parseCustomUI(objValue["subnet-customUi"]);
-            if (objValue["subnet-customUi"].IsObject())
-            {
-                auto customui = objValue["subnet-customUi"].GetObject();
-                if (customui.HasMember(iotags::params::node_inputs_objs)) {
-                    _parseInputs(true, nodeid, cls, customui[iotags::params::node_inputs_objs], retNode, links);
-                }
-                if (customui.HasMember(iotags::params::node_outputs_primitive)) {
-                    _parseOutputs(false, nodeid, cls, customui[iotags::params::node_outputs_primitive], retNode, links);
-                }
-                if (customui.HasMember(iotags::params::node_outputs_objs)) {
-                    _parseOutputs(true, nodeid, cls, customui[iotags::params::node_outputs_objs], retNode, links);
-                }
-            }
+        }
+        if (objValue.HasMember(iotags::params::node_inputs_objs)) {
+            _parseInputs(true, nodeid, cls, objValue[iotags::params::node_inputs_objs], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_inputs_primitive) && !objValue.HasMember("subnet-customUi")) {
+            _parseInputs(false, nodeid, cls, objValue[iotags::params::node_inputs_primitive], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_outputs_primitive)) {
+            _parseOutputs(false, nodeid, cls, objValue[iotags::params::node_outputs_primitive], retNode, links);
+        }
+        if (objValue.HasMember(iotags::params::node_outputs_objs)) {
+            _parseOutputs(true, nodeid, cls, objValue[iotags::params::node_outputs_objs], retNode, links);
         }
 
         if (objValue.HasMember("uipos"))
