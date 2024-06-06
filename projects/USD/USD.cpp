@@ -329,7 +329,6 @@ void ImportUSDMesh::apply() {
     set_output2("prim", std::move(zPrim));
 }
 
-
 void ImportUSDPrimMatrix::apply() {
     std::string& usdPath = get_input2<zeno::StringObject>("usdPath")->get();
     std::string& primPath = get_input2<zeno::StringObject>("primPath")->get();
@@ -349,27 +348,35 @@ void ImportUSDPrimMatrix::apply() {
         return;
     }
 
-    auto attr = prim.GetAttribute(pxr::TfToken(opAttrName));
-    if (!attr.IsValid()) {
-        zeno::log_error("failed to get attribute named " + opAttrName);
-        return;
-    }
-
-    auto op = pxr::UsdGeomXformOp(attr);
-    if (op.GetOpType() == pxr::UsdGeomXformOp::TypeInvalid) {
-        zeno::log_error("failed to parse xformOp cause it is an invalid type " + primPath);
-        return;
-    }
-
     if (frameTime < 0.0f) {
         frameTime = pxr::UsdTimeCode::Default().GetValue();
     }
 
-    pxr::VtValue mVal;
-    attr.Get(&mVal, frameTime);
+    double* vp = nullptr;
+    if (opAttrName.empty()) { // import the entire xformOp as a matrix
+        auto xform = pxr::UsdGeomXform(prim);
+        pxr::GfMatrix4d usdTransform = xform.ComputeLocalToWorldTransform(frameTime);
+        vp = usdTransform.data();
+    }
+    else {
+        auto attr = prim.GetAttribute(pxr::TfToken(opAttrName));
+        if (!attr.IsValid()) {
+            zeno::log_error("failed to get attribute named " + opAttrName);
+            return;
+        }
 
-    pxr::GfMatrix4d __ = pxr::UsdGeomXformOp::GetOpTransform(op.GetOpType(), mVal, isInversedOp);
-    double* vp = __.data();
+        auto op = pxr::UsdGeomXformOp(attr);
+        if (op.GetOpType() == pxr::UsdGeomXformOp::TypeInvalid) {
+            zeno::log_error("failed to parse xformOp cause it is an invalid type " + primPath);
+            return;
+        }
+
+        pxr::VtValue mVal;
+        attr.Get(&mVal, frameTime);
+
+        vp = pxr::UsdGeomXformOp::GetOpTransform(op.GetOpType(), mVal, isInversedOp).data();
+    }
+
     glm::mat4 realMat;
     for (int i = 0; i < 16; ++i) {
         realMat[i / 4][i % 4] = static_cast<float>(vp[i]);

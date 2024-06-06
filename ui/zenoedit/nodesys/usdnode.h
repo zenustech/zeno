@@ -39,6 +39,7 @@ private:
 	void _handleShaderInput(/* pxr::UsdPrim */ std::any, const std::string&, ZENO_HANDLE, ZENO_HANDLE, const std::string&);
 
 	ZENO_HANDLE _emitLightNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE, const std::string& lightType, const std::string& shapeType);
+	ZENO_HANDLE _emitHDRSkyNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
 
 	ZENO_HANDLE _emitCameraNode(/* pxr::UsdPrim */ std::any, ZENO_HANDLE);
 
@@ -49,6 +50,9 @@ private:
 	std::string mUSDPath;
 	std::string mPrimPath;
 	bool mIsRecursive = false;
+	bool mIsPreviewMode = false;
+	bool mImportRefMaterial = false;
+	bool mIgnoreEmptyXform = false;
 private slots:
 	void _onEvalClicked();
 };

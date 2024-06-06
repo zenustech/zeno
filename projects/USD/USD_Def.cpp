@@ -28,10 +28,10 @@ ZENDEFNODE(ImportUSDPrimMatrix,
             {"float", "frame", "-1"},
             {"bool", "isInversedOp", "0"},
         },
-    /* outputs */
-    {
-        {"Matrix"}
-    },
+        /* outputs */
+        {
+            {"Matrix"}
+        },
     /* params */
     {},
     /* category */
@@ -108,6 +108,9 @@ ZENDEFNODE(EvalUSDPrim,
             {"readpath", "usdPath", ""},
             {"string", "primPath", ""},
             {"bool", "isRecursive", "0"},
+            {"bool", "previewMode", "0"},
+            {"bool", "importRefMaterial", "0"},
+            {"bool", "ignoreEmptyXform", "0"},
         },
         /* outputs */
         {

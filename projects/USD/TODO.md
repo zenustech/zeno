@@ -1,16 +1,24 @@
 # 近期重要性排序
-* 材质解析优化 primvar displayColor等
-* 各种读取方式改接口化 而不是硬读attribute (xform这些)
-* 各种做安全判断
-* 各种节点都尝试改成按帧读取 Camera XformOps
+* 接poc 测试性能
+  * 除了log缓冲区大小问题 其他的都还好
+  * 尽快接入
+* 研究USD的高性能优化部分
 ---
 * 导出方案
-* import性能优化
 * 子图生成与reference
 * visible的树形解析
+* 读相机 测试流畅性 用houdini预览
+* 支持多个prim path 用一个makelist串起来
+* full材质的texture没有读出来
+  * 需要支持UDIM计算
+* 找更多的场景测试 查漏
+  * 各种节点都尝试改成按帧读取 Camera XformOps
 ---
 * 测一下镜头
 * instancing
+# 接入ZPC_POC
+* [ ] 跑通USD cmake
+* [ ] 加入代码
 # 基本
 * [x] 配开发环境
 * [x] 写一个基本的USD导入导出，先跑通整个流程
@@ -46,6 +54,7 @@
 * [x] 节点排列算法
 * [x] 对于同时包含xform和geom的根节点的处理方案
 * [x] zeno的shaderFinalize可以单独一棵树 需要稍微重构一下树形排列的做法 支持多棵树 可以考虑把shader finalize放进subgraph里面
+* [x] 允许忽略空的xformOp
 * [ ] visible的树形关系处理
 * [ ] 同一个子图的多棵树生成时重叠
 * [ ] 考虑共用节点的情况 例如GetFrameNum的输出可能会被很多节点同时作为input使用
@@ -62,6 +71,7 @@
   * [x] 解析material引用 并且材质会被放进subgraph中生效
   * [x] 支持 SkelRoot+Skeleton+SkelAnimation解析 并且支持多帧播放
   * [x] BlendShape解析支持
+  * [x] 支持额外解析引用的材质
 * [x] 支持递归导入prim树
 * [x] 支持编辑USD prim: 目前方案是导入时转换为等价的zeno节点树
 * [ ] 支持导出USD prim: 遍历node 然后利用userdata标记的信息反向导出 具体实现有待研究
@@ -69,18 +79,24 @@
   * 如何获取用户修改了哪部分 仅保存修改的部分
 # mtlx
 * [ ] Material支持
+  * https://openusd.org/release/spec_usdpreviewsurface.html#preview-surface
   * [x] 基础解析功能
   * [x] mesh绑定映射自动化
     * 用UsdShadeMaterialBindingAPI::ComputeBoundMaterial搞定了
   * [x] 用一个专门的subgraph存储材质定义节点(shaderFinalize)
   * [ ] Shader input解析支持
     * [x] 字面值解析支持
-    * [x] 纹理采样支持
-    * [ ] primvar取值: 可以用ShaderInputAttr节点来表示
-      * UsdPrimvarReader或者UsdPrimvarReader_float2用来获取uv坐标
-      * displayColor解析
-    * 其他input属性支持 找一下包含有所有属性的表格
-  * [ ] SpecularColor 这个属性在zeno里面暂时没有支持 MetalColor也没有启用 综合来说这是一个不那么Physical的东西
+    * [ ] SpecularColor 这个属性在zeno里面暂时没有支持 MetalColor也没有启用
+    * [ ] 纹理采样支持
+      * [x] 基本解析
+      * [ ] 支持UDIM计算转换
+      * [ ] SmartTexture2D的wrapS/T需要支持black以及useMetadata模式
+      * [ ] SmartTexture2D节点需要支持scale + bias的输入
+      * [ ] SmartTexture2D需要支持sourceColorSpace的指定
+    * [ ] primvar取值支持
+      * [x] 基本支持: 用ShaderInputAttr节点来表示
+      * [ ] emissiveColor支持?
+      * [ ] fallback支持
   * [ ] mtlx
 # 灯光相机
 * [x] CylinderLight
@@ -96,18 +112,21 @@
   * [ ] 支持多帧读取
 * [ ] 灯光动画？
 # 优化
+/root/stoat/outfit_M_hrc/MATERIAL/usd_preview/preview_opacity_usduvtexture
 /Kitchen_set/Arch_grp/Kitchen_1
 这个路径import进来有2467个节点 尽量尝试减少它的解析后节点数
 直接import整个kitchen会卡很久然后炸
 * [ ] 节点缩减
   * [x] 把setuserdata合并成一个点 可以减少解析后的节点数和层数(减少了503个)
-  * [ ] 考虑支持某些节点共用 例如GetFrameNum可以全图共用
+  * [ ] 考虑支持节点共用 例如GetFrameNum可以全图共用
+  * [x] 考虑增加快速预览模式 用于减少解析出来的节点量：
+    * USD transform合成为一个matrix，而不是用链式的节点
+    * 不生成UserData标记节点
 * [ ] 子图划分
   * [ ] 考虑做一下子图划分 防止解析出来的节点过多时 编辑界面卡顿+崩溃 但是哪些分成子图有待商榷
 * [ ] 代码整理
   * [ ] usdnode代码太长 需要做一下划分，用不同的.cpp根据功能分开实现.h里面的内容 比如说geom的单开一个cpp 材质单开一个 xform单开一个 主流程一个等等
-* [ ] 节点效率优化
-  * [ ] 需要profile并关注一下性能瓶颈 看下哪里比较耗时 个人感觉是创建节点、节点编辑比较卡
+* [ ] 节点效率优化 - 转到ImGUI以后 节点图更新以及渲染性能可以上一个台阶
 * [ ] 考虑用异步实现，而不是长时间阻塞 或者考虑提升并行度、增加线程等
 # instancing
 * [ ] 实现实例化 USD instancing: 目前zeno对于instancing的支持有限 可以暂时往后稍稍?
@@ -118,6 +137,7 @@
 * [ ] SkelRoot?
 * [ ] Points?
 * [ ] Curves?
+  * NurbsCurves
 # 进阶以及可选
 * [ ] Collapse功能 | 节点支持
 * [ ] 支持其他USD合成操作表示
