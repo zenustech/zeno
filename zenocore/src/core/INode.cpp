@@ -116,6 +116,30 @@ ZENO_API CustomUI INode::get_customui() const {
     }
 }
 
+ZENO_API ObjPath INode::get_graph_path() const {
+    ObjPath path;
+    path = "";
+
+    std::shared_ptr<Graph> pGraph = graph.lock();
+
+    while (pGraph) {
+        const std::string name = pGraph->getName();
+        if (name == "main") {
+            path = "/main/" + path;
+            break;
+        }
+        else {
+            if (!pGraph->optParentSubgNode.has_value())
+                break;
+            auto pSubnetNode = pGraph->optParentSubgNode.value();
+            assert(pSubnetNode);
+            path = pSubnetNode->m_name + "/" + path;
+            pGraph = pSubnetNode->graph.lock();
+        }
+    }
+    return path;
+}
+
 ZENO_API ObjPath INode::get_path() const {
     ObjPath path;
     path = m_name;

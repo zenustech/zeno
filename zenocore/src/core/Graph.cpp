@@ -661,38 +661,15 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(const std::string& pa)
     std::string path = pa;
     if (path.empty())
         return nullptr;
-    int sPos = 0;
-    if (m_name == "main")
-    {
-        sPos = path.find(m_name) + m_name.size();
-        if (path.size() <= sPos)
-            return nullptr;
-        path = path.substr(sPos + 1, path.size() - sPos);
-    }
-    std::string name = path.substr(0, path.find("/"));
-    if (m_name2uuid.find(name) == m_name2uuid.end())
-        return nullptr;
-    std::string uuid = m_name2uuid[name];
-    auto it = m_nodes.find(uuid);
-    if (it == m_nodes.end()) {
-        return nullptr;
-    }
-    sPos = path.find("/");
 
-    if (sPos != std::string::npos)
-    {
-        path = path.substr(sPos + 1, path.size() - sPos);
-        //subnet
-        if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
-        {
-            auto spGraph = subnetNode->subgraph;
-            if (spGraph)
-                return spGraph->getNodeByPath(path);
-            else
-                return nullptr;
-        }
-    }
-    return it->second;
+    auto pathitems = split_str(pa, '/', false);
+    if (pathitems.empty())
+        return nullptr;
+
+    std::string nodename = pathitems.back();
+    pathitems.pop_back();
+    auto spGraph = _getGraphByPath(pathitems);
+    return spGraph->getNode(nodename);
 }
 
 ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
