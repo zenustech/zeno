@@ -83,7 +83,7 @@ float Formula::callRef(const std::string& ref) {
     std::string param = ref.substr(sPos + 1, ref.size() - sPos - 2);
     //remove " 
     std::string path = ref.substr(1, sPos - 1);
-    //apply the referenced node
+    //apply the referenced ZfxASTNode
     auto pNode = zeno::getSession().mainGraph->getNodeByPath(path);
     if (!pNode) {
         zeno::log_error("reference {} error", path);
@@ -164,35 +164,29 @@ unsigned int Formula::location() const {
     return m_location;
 }
 
-ZENO_API std::shared_ptr<struct node> Formula::getRoot()
+ZENO_API std::shared_ptr<ZfxASTNode> Formula::getASTResult()
 {
     return m_rootNode;
 }
 
-void Formula::setRoot(std::shared_ptr<struct node> root)
-{
-    m_rootNode = root;
-}
-
-std::shared_ptr<struct node> Formula::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children)
+std::shared_ptr<ZfxASTNode> Formula::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children)
 {
     auto pNode = newNode(type, op, children);
     return pNode;
 }
 
-std::shared_ptr<node> Formula::makeStringNode(std::string text)
+std::shared_ptr<ZfxASTNode> Formula::makeStringNode(std::string text)
 {
-    std::shared_ptr<node> spNode = std::make_shared<node>();
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
     spNode->value = text.substr(1, text.length() - 2);
     return spNode;
 }
 
-
-std::shared_ptr<node> Formula::makeZenVarNode(std::string text)
+std::shared_ptr<ZfxASTNode> Formula::makeZenVarNode(std::string text)
 {
-    std::shared_ptr<node> spNode = std::make_shared<node>();
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = ZENVAR;
     spNode->opVal = UNDEFINE_OP;
     if (!text.empty())
@@ -202,24 +196,24 @@ std::shared_ptr<node> Formula::makeZenVarNode(std::string text)
     return spNode;
 }
 
-std::shared_ptr<node> Formula::makeQuoteStringNode(std::string text)
+std::shared_ptr<ZfxASTNode> Formula::makeQuoteStringNode(std::string text)
 {
-    std::shared_ptr<node> spNode = std::make_shared<node>();
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
     spNode->value = text.substr(1);
     return spNode;
 }
 
-std::shared_ptr<struct node> Formula::makeNewNumberNode(float value)
+std::shared_ptr<ZfxASTNode> Formula::makeNewNumberNode(float value)
 {
     auto pNode = newNumberNode(value);
     return pNode;
 }
 
-std::shared_ptr<struct node> Formula::makeEmptyNode()
+std::shared_ptr<ZfxASTNode> Formula::makeEmptyNode()
 {
-    std::shared_ptr<struct node> n = std::make_shared<struct node>();
+    std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
     if (!n)
     {
         exit(0);
@@ -229,12 +223,12 @@ std::shared_ptr<struct node> Formula::makeEmptyNode()
     return n;
 }
 
-void Formula::setASTResult(std::shared_ptr<node> pNode)
+void Formula::setASTResult(std::shared_ptr<ZfxASTNode> pNode)
 {
     m_rootNode = pNode;
 }
 
-void Formula::debugASTNode(std::shared_ptr<node> pNode) {
+void Formula::debugASTNode(std::shared_ptr<ZfxASTNode> pNode) {
     int j;
     j = 0;
 }
@@ -264,7 +258,7 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
 {
     formula_tip_info ret;
     ret.type = FMLA_NO_MATCH;
-    std::vector<std::shared_ptr<struct node>> preorderVec;
+    std::vector<std::shared_ptr<ZfxASTNode>> preorderVec;
     preOrderVec(m_rootNode, preorderVec);
     if (preorderVec.size() != 0)
     {

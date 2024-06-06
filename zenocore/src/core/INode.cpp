@@ -29,6 +29,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/formula/formula.h>
 #include <zeno/core/ReferManager.h>
+#include <zeno/core/FunctionManager.h>
 
 
 namespace zeno {
@@ -1396,43 +1397,36 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
-float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
+float INode::resolve(const std::string& expression, const ParamType type)
 {
-    int frame = getGlobalState()->getFrameId();
-    if (zeno::starts_with(formulaOrKFrame, "=")) {
-        std::string code = formulaOrKFrame.substr(1);
-        std::set<std::string>paths = zeno::getReferPath(code);
-        std::string currPath = zeno::objPathToStr(get_path());
-        currPath = currPath.substr(0, currPath.find_last_of("/"));
-        for (auto& path : paths)
-        {
-            auto absolutePath = zeno::absolutePath(currPath, path);
-            if (absolutePath != path)
-            {
-                code.replace(code.find(path), path.size(), absolutePath);
-            }
+    std::string code = expression;
+    Formula fmla(code, get_path());
+    int ret = fmla.parse();
+    if (ret == 0)
+    {
+        auto& funcMgr = zeno::getSession().funcManager;
+        auto& astRoot = fmla.getASTResult();
+        FuncContext ctx;
+        ctx.nodePath = get_path();
+        zvariant res = funcMgr->calc(astRoot, &ctx);
+        if (std::holds_alternative<int>(res)) {
+            return std::get<int>(res);
         }
-        Formula fmla(code, get_path());
-        int ret = fmla.parse();
-        float res = fmla.getResult();
-        return res;
-    }
-    else if (zany curve = zeno::parseCurveObj(formulaOrKFrame)) {
-        std::shared_ptr<zeno::CurveObject> curves = std::dynamic_pointer_cast<zeno::CurveObject>(curve);
-        assert(curves && curves->keys.size() == 1);
-        float fVal = curves->keys.begin()->second.eval(frame);
-        return fVal;
-    }
-    else {
-        if (Param_Float == type)
-        {
-            float fVal = std::stof(formulaOrKFrame);
-            return fVal;
+        else if (std::holds_alternative<float>(res)) {
+            return std::get<float>(res);
         }
         else {
-            float fVal = std::stoi(formulaOrKFrame);
-            return fVal;
+            throw makeError<UnimplError>();
         }
+    }
+
+    //TODO: k帧的情况应该额外用数据结构标识
+    if (zany curve = zeno::parseCurveObj(expression)) {
+        std::shared_ptr<zeno::CurveObject> curves = std::dynamic_pointer_cast<zeno::CurveObject>(curve);
+        assert(curves && curves->keys.size() == 1);
+        int frame = getGlobalState()->getFrameId();
+        float fVal = curves->keys.begin()->second.eval(frame);
+        return fVal;
     }
 }
 

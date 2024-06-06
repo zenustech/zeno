@@ -114,15 +114,16 @@ namespace zenoio
 
         writer.Key("tabs");
         {
-        JsonObjScope scopetabs(writer);
-        for (const zeno::ParamTab& tab : customUi.inputPrims.tabs)
-        {
-            writer.Key(tab.name.c_str());
-            JsonObjScope scopetab(writer);
-            for (const zeno::ParamGroup& group : tab.groups)
+            JsonObjScope scopetabs(writer);
+            for (const zeno::ParamTab& tab : customUi.inputPrims.tabs)
             {
-                writer.Key(group.name.c_str());
-                JsonObjScope scopegroup(writer);
+                writer.Key(tab.name.c_str());
+                JsonObjScope scopetab(writer);
+                for (const zeno::ParamGroup& group : tab.groups)
+                {
+                    writer.Key(group.name.c_str());
+                    JsonObjScope scopegroup(writer);
+                    for (const zeno::ParamPrimitive& param : group.params)
                     {
                         writer.Key(param.name.c_str());
                         dumpPrimitiveParam(param, writer);

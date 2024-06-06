@@ -959,7 +959,8 @@ void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, Q
                 QModelIndex nodeIdx = pTreeM->getIndexByUuidPath(nodeUuidPath);
                 const QString& nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
                 QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
-                QString nodeName = nodePath.back();
+                ZASSERT_EXIT(!pathitems.isEmpty());
+                QString nodeName = pathitems.back();
                 pathitems.pop_back();
                 pEditor->activateTab(pathitems, nodeName, true);
             }

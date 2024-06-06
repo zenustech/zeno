@@ -96,8 +96,8 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<struct node>> exp calclist factor term funccontent zenvar parencontent
-%type <std::vector<std::shared_ptr<struct node>>> funcargs
+%type <std::shared_ptr<ZfxASTNode>> exp calclist factor term funccontent zenvar parencontent
+%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs
 %type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN
 
 %start calclist
@@ -110,22 +110,22 @@ calclist: %empty{}|calclist exp EOL {
 
 exp: factor             { $$ = $1; }
     | exp ADD factor    { 
-            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
             $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
     | exp SUB factor    {
-            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
             $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
     ;
 
 factor: term            { $$ = $1; }
     | factor MUL term   { 
-            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
             $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
             }
     | factor DIV term {
-            std::vector<std::shared_ptr<struct node>>children({$1, $3});
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
             $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
             }
     ;
@@ -133,7 +133,7 @@ factor: term            { $$ = $1; }
 zenvar: VARNAME { $$ = driver.makeZenVarNode($1); }
     | DOLLAR { $$ = driver.makeZenVarNode(""); };
 
-funcargs: exp            { $$ = std::vector<std::shared_ptr<struct node>>({$1}); }
+funcargs: exp            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp { $1.push_back($3); $$ = $1; }
 
 funccontent: LPAREN funcargs RPAREN { 

@@ -42,15 +42,13 @@ enum TokenMatchCase {
     Match_Exactly,      //fully match
 };
 
-struct node {
+struct ZfxASTNode {
     enum operatorVals opVal;
     enum nodeType type;
 
-    std::vector<std::shared_ptr<struct node>> children;
-    std::weak_ptr<struct node> parent;
+    std::vector<std::shared_ptr<ZfxASTNode>> children;
+    std::weak_ptr<ZfxASTNode> parent;
 
-    //float value = 0;  //如果是number
-    //std::string string_value;    //func name.
     zeno::zvariant value;
 
     TokenMatchCase func_match = Match_Nothing;
@@ -61,17 +59,21 @@ struct node {
     bool bCompleted = false;
 };
 
+struct FuncContext {
+    std::string nodePath;
+};
+
 char* getOperatorString(nodeType type, operatorVals op);
 operatorVals funcName2Enum(std::string func);
 
-std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> Children);
-std::shared_ptr<struct node> newNumberNode(float value);
+std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children);
+std::shared_ptr<ZfxASTNode> newNumberNode(float value);
 
-void print_syntax_tree(std::shared_ptr<struct node> root, int depth);
-float calc_syntax_tree(std::shared_ptr<struct node> root);
+void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth);
+float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);
 
-void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& pos);  //当前函数名及处于第几个参数
-void preOrderVec(std::shared_ptr<struct node> root, std::vector<std::shared_ptr<struct node>>& tmplist);
+void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos);  //当前函数名及处于第几个参数
+void preOrderVec(std::shared_ptr<ZfxASTNode> root, std::vector<std::shared_ptr<ZfxASTNode>>& tmplist);
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright);
 #endif

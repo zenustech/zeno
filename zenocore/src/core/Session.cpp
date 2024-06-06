@@ -197,8 +197,6 @@ ZENO_API bool Session::run() {
     m_bInterrupted = false;
     globalState->set_working(true);
 
-    zeno::log_info("Session::run()");
-
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });
 

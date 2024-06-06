@@ -56,16 +56,15 @@ public:
     unsigned int location() const;
 
     //syntax_tree
-    ZENO_API std::shared_ptr<struct node> getRoot();
-    void setRoot(std::shared_ptr<struct node> root);
-    std::shared_ptr<struct node> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children);
-    std::shared_ptr<struct node> makeNewNumberNode(float value);
-    std::shared_ptr<node> makeStringNode(std::string text);
-    std::shared_ptr<node> makeZenVarNode(std::string text);
-    std::shared_ptr<node> makeQuoteStringNode(std::string text);
-    std::shared_ptr<struct node> makeEmptyNode();
-    void setASTResult(std::shared_ptr<node> pNode);
-    void debugASTNode(std::shared_ptr<node> pNode);
+    ZENO_API std::shared_ptr<ZfxASTNode> getASTResult();
+    std::shared_ptr<ZfxASTNode> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children);
+    std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
+    std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeEmptyNode();
+    void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
+    void debugASTNode(std::shared_ptr<ZfxASTNode> pNode);
     ZENO_API void printSyntaxTree();
     ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
     ZENO_API formula_tip_info getRecommandTipInfo() const;
@@ -79,7 +78,7 @@ private:
     float m_result;
 
     //syntax_tree
-    std::shared_ptr<struct node> m_rootNode;
+    std::shared_ptr<ZfxASTNode> m_rootNode;
 };
 
 }

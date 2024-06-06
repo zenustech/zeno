@@ -79,7 +79,7 @@ void ZLineEdit::init()
             //º¯ÊýËµÃ÷
             int ret = fmla.parse();
             //fmla.printSyntaxTree();
-            if (ret == 0 || fmla.getRoot())
+            if (ret == 0 || fmla.getASTResult())
             {
                 zeno::formula_tip_info recommandInfo = fmla.getRecommandTipInfo();
                 if (recommandInfo.type == zeno::FMLA_TIP_FUNC_CANDIDATES ||

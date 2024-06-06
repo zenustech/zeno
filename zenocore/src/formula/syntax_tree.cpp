@@ -62,8 +62,8 @@ operatorVals funcName2Enum(std::string func)
     return UNDEFINE_OP;
 }
 
-std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> Children) {
-    std::shared_ptr<struct node> n = std::make_shared<struct node>();
+std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children) {
+    std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
     if (!n)
     {
         exit(0);
@@ -74,16 +74,16 @@ std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector
 
     switch (op) {
     case PLUS:
-        n->value = "plus";
+        n->value = "+";
         break;
     case MINUS:
-        n->value = "minus";
+        n->value = "-";
         break;
     case MUL:
-        n->value = "mul";
+        n->value = "*";
         break;
     case DIV:
-        n->value = "div";
+        n->value = "/";
         break;
     case DEFAULT_FUNCVAL:
         n->value = "default_funcVal";
@@ -105,8 +105,8 @@ std::shared_ptr<struct node> newNode(nodeType type, operatorVals op, std::vector
     return n;
 }
 
-std::shared_ptr<struct node> newNumberNode(float value) {
-    std::shared_ptr<struct node> n = std::make_shared<struct node>();
+std::shared_ptr<ZfxASTNode> newNumberNode(float value) {
+    std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
     if (!n)
     {
         exit(0);
@@ -117,8 +117,8 @@ std::shared_ptr<struct node> newNumberNode(float value) {
     return n;
 }
 
-void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
-    const auto& printVal = [](std::shared_ptr<struct node> root, char* prefix) {
+void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth) {
+    const auto& printVal = [](std::shared_ptr<ZfxASTNode> root, char* prefix) {
         if (std::holds_alternative<float>(root->value)) {
             printf("%f ", std::get<float>(root->value));
         }
@@ -139,7 +139,7 @@ void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
         for (int i = 0; i < depth; ++i) {
             printf("|  ");
         }
-        if (std::shared_ptr<struct node> spParent = root->parent.lock())
+        if (std::shared_ptr<ZfxASTNode> spParent = root->parent.lock())
         {
             for (auto& child: spParent->children)
             {
@@ -164,7 +164,7 @@ void print_syntax_tree(std::shared_ptr<struct node> root, int depth) {
     }
 }
 
-float calc_syntax_tree(std::shared_ptr<struct node> root)
+float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root)
 {
     if (root) {
         if (root->type == NUMBER) {
@@ -213,9 +213,9 @@ float calc_syntax_tree(std::shared_ptr<struct node> root)
     return 0;
 }
 
-void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& pos)
+void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos)
 {
-    std::vector<std::shared_ptr<struct node>> preorderVec;
+    std::vector<std::shared_ptr<ZfxASTNode>> preorderVec;
     preOrderVec(root, preorderVec);
     if (preorderVec.size() != 0)
     {
@@ -245,7 +245,7 @@ void currFuncNamePos(std::shared_ptr<struct node> root, std::string& name, int& 
     name = "";
 }
 
-void preOrderVec(std::shared_ptr<struct node> root, std::vector<std::shared_ptr<struct node>>& tmplist)
+void preOrderVec(std::shared_ptr<ZfxASTNode> root, std::vector<std::shared_ptr<ZfxASTNode>>& tmplist)
 {
     if (root)
     {

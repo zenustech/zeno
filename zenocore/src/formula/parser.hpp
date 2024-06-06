@@ -434,10 +434,10 @@ namespace  zeno  {
       // funccontent
       // parencontent
       // term
-      char dummy2[sizeof (std::shared_ptr<struct node>)];
+      char dummy2[sizeof (std::shared_ptr<ZfxASTNode>)];
 
       // funcargs
-      char dummy3[sizeof (std::vector<std::shared_ptr<struct node>>)];
+      char dummy3[sizeof (std::vector<std::shared_ptr<ZfxASTNode>>)];
 
       // RPAREN
       // IDENTIFIER
@@ -619,11 +619,11 @@ namespace  zeno  {
       case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
-        value.move< std::shared_ptr<struct node> > (std::move (that.value));
+        value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-        value.move< std::vector<std::shared_ptr<struct node>> > (std::move (that.value));
+        value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (std::move (that.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
@@ -675,13 +675,13 @@ namespace  zeno  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::shared_ptr<struct node>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::shared_ptr<ZfxASTNode>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::shared_ptr<struct node>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::shared_ptr<ZfxASTNode>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -689,13 +689,13 @@ namespace  zeno  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<std::shared_ptr<struct node>>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<std::shared_ptr<ZfxASTNode>>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<std::shared_ptr<struct node>>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<std::shared_ptr<ZfxASTNode>>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -751,11 +751,11 @@ switch (yykind)
       case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
-        value.template destroy< std::shared_ptr<struct node> > ();
+        value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-        value.template destroy< std::vector<std::shared_ptr<struct node>> > ();
+        value.template destroy< std::vector<std::shared_ptr<ZfxASTNode>> > ();
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
@@ -1689,11 +1689,11 @@ switch (yykind)
       case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
-        value.copy< std::shared_ptr<struct node> > (YY_MOVE (that.value));
+        value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-        value.copy< std::vector<std::shared_ptr<struct node>> > (YY_MOVE (that.value));
+        value.copy< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
@@ -1749,11 +1749,11 @@ switch (yykind)
       case symbol_kind::S_funccontent: // funccontent
       case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
-        value.move< std::shared_ptr<struct node> > (YY_MOVE (s.value));
+        value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-        value.move< std::vector<std::shared_ptr<struct node>> > (YY_MOVE (s.value));
+        value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
