@@ -189,6 +189,7 @@ std::shared_ptr<node> Formula::makeStringNode(std::string text)
     return spNode;
 }
 
+
 std::shared_ptr<node> Formula::makeZenVarNode(std::string text)
 {
     std::shared_ptr<node> spNode = std::make_shared<node>();
@@ -233,6 +234,11 @@ void Formula::setASTResult(std::shared_ptr<node> pNode)
     m_rootNode = pNode;
 }
 
+void Formula::debugASTNode(std::shared_ptr<node> pNode) {
+    int j;
+    j = 0;
+}
+
 ZENO_API void Formula::printSyntaxTree()
 {
     printf("\n");
@@ -268,7 +274,7 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
             //因为推荐仅针对函数，所以只需遍历当前节点及其父节点，找到函数节点即可。
             if (last->type == FUNC) {
                 std::string funcprefix = std::get<std::string>(last->value);
-                if (Match_Nothing == last->match) {
+                if (Match_Nothing == last->func_match) {
                     //仅仅有（潜在的）函数名，还没有括号。
                     std::vector<std::string> candidates = zeno::getSession().funcManager->getCandidates(funcprefix, true);
                     if (!candidates.empty())
@@ -283,12 +289,13 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                     }
                     break;
                 }
-                else if (Match_LeftPAREN == last->match) {
+                else if (Match_LeftPAREN == last->func_match) {
                     bool bExist = false;
                     FUNC_INFO info = zeno::getSession().funcManager->getFuncInfo(funcprefix);
                     if (!info.name.empty()) {
                         if (info.name == "ref") {
-                            if (last->children.size() == 1 && last->children[0]->type == nodeType::STRING) {
+                            if (last->children.size() == 1 && last->children[0] &&
+                                last->children[0]->type == nodeType::STRING) {
                                 const std::string& refcontent = std::get<std::string>(last->children[0]->value);
 
                                 if (refcontent == "") {
@@ -332,7 +339,7 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
                     }
                     break;
                 }
-                else if (Match_Exactly == last->match) {
+                else if (Match_Exactly == last->func_match) {
                     ret.type = FMLA_NO_MATCH;
                 }
             }

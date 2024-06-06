@@ -70,7 +70,7 @@
 /*通过zeno::Parser::make_XXX(loc)给token添加前缀*/
 %define api.token.prefix {TOKEN_}
 
-%token <string>RPAREN
+%token RPAREN
 %token <string>IDENTIFIER
 %token <float>NUMBER
 %token EOL
@@ -96,9 +96,9 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<struct node>> exp calclist factor term funccontent zenvar
+%type <std::shared_ptr<struct node>> exp calclist factor term funccontent zenvar parencontent
 %type <std::vector<std::shared_ptr<struct node>>> funcargs
-%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME
+%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN
 
 %start calclist
 
@@ -139,24 +139,30 @@ funcargs: exp            { $$ = std::vector<std::shared_ptr<struct node>>({$1});
 funccontent: LPAREN funcargs RPAREN { 
         $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
         $$->isParenthesisNodeComplete = true;
-        $$->match = Match_Exactly;
+        $$->func_match = Match_Exactly;
     }
     | LPAREN funcargs { 
         $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
         $$->isParenthesisNodeComplete = false;
-        $$->match = Match_LeftPAREN;
+        $$->func_match = Match_LeftPAREN;
     }
     | %empty {
         $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, {});
-        $$->match = Match_Nothing;
-    }
+        $$->func_match = Match_Nothing;
+    };
+
+parencontent: LPAREN exp RPAREN { $$ = $2; $$->paren_match = Match_Exactly; }
+    /* 括号不全的情况不予以识别，否则parser无法识别全括号的情况
+    | LPAREN exp { driver.debugASTNode($2); $$ = $2; $$->paren_match = Match_LeftPAREN; }
+    | LPAREN { $$ = driver.makeEmptyNode(); $$->paren_match = Match_LeftPAREN; };
+    */
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
-    | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
+    | parencontent      { $$ = $1; }
     | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
-    | zenvar { $$ = $1; }
+    | zenvar            { $$ = $1; }
     | FUNC funccontent  { 
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;
@@ -164,7 +170,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$->value = $1;
         $$->isParenthesisNode = true;
     }
-    | %empty { $$ = driver.makeEmptyNode(); }
+    | %empty { /*$$ = driver.makeEmptyNode();*/ }
     ;
 %%
 

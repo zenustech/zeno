@@ -53,7 +53,8 @@ struct node {
     //std::string string_value;    //func name.
     zeno::zvariant value;
 
-    TokenMatchCase match = Match_Nothing;
+    TokenMatchCase func_match = Match_Nothing;
+    TokenMatchCase paren_match = Match_Nothing;
 
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;

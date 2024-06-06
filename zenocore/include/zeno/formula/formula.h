@@ -65,6 +65,7 @@ public:
     std::shared_ptr<node> makeQuoteStringNode(std::string text);
     std::shared_ptr<struct node> makeEmptyNode();
     void setASTResult(std::shared_ptr<node> pNode);
+    void debugASTNode(std::shared_ptr<node> pNode);
     ZENO_API void printSyntaxTree();
     ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
     ZENO_API formula_tip_info getRecommandTipInfo() const;
@@ -72,7 +73,6 @@ public:
     ZENO_API std::vector<std::string> getHintList(std::string originTxt, std::string& candidateTxt);
 
 private:
-
     unsigned int m_location;          // Used by scanner
     std::string m_formula;
     std::string m_nodepath;

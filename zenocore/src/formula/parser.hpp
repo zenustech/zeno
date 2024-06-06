@@ -432,6 +432,7 @@ namespace  zeno  {
       // factor
       // zenvar
       // funccontent
+      // parencontent
       // term
       char dummy2[sizeof (std::shared_ptr<struct node>)];
 
@@ -569,7 +570,8 @@ namespace  zeno  {
         S_zenvar = 30,                           // zenvar
         S_funcargs = 31,                         // funcargs
         S_funccontent = 32,                      // funccontent
-        S_term = 33                              // term
+        S_parencontent = 33,                     // parencontent
+        S_term = 34                              // term
       };
     };
 
@@ -615,6 +617,7 @@ namespace  zeno  {
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_funccontent: // funccontent
+      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<struct node> > (std::move (that.value));
         break;
@@ -746,6 +749,7 @@ switch (yykind)
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_funccontent: // funccontent
+      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<struct node> > ();
         break;
@@ -1602,8 +1606,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 40,     ///< Last index in yytable_.
-      yynnts_ = 8,  ///< Number of nonterminal symbols.
+      yylast_ = 43,     ///< Last index in yytable_.
+      yynnts_ = 9,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
 
@@ -1683,6 +1687,7 @@ switch (yykind)
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_funccontent: // funccontent
+      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<struct node> > (YY_MOVE (that.value));
         break;
@@ -1742,6 +1747,7 @@ switch (yykind)
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_funccontent: // funccontent
+      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<struct node> > (YY_MOVE (s.value));
         break;
@@ -1828,7 +1834,7 @@ switch (yykind)
 
 #line 10 "parser.y"
 } //  zeno 
-#line 1832 "parser.hpp"
+#line 1838 "parser.hpp"
 
 
 

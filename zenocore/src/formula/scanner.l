@@ -45,7 +45,6 @@ uncompstring \"[^\n"]*
 ws      [ \t]+
 alpha   [A-Za-z]
 dig     [0-9]
-nonliteral [^A-Za-z0-9]
 /*name    (\$)({alpha}|{dig}|[_.\-/$])*/
 num1    {dig}+\.?([eE][-]?{dig}+)?
 num2    {dig}*\.{dig}+([eE][-]?{dig}+)?
@@ -53,7 +52,6 @@ number  {num1}|{num2}
 frame   \$F
 fps     \$FPS
 pi      \$PI
-id      ({alpha})+
 functoken [A-Za-z][A-Za-z_0-9]*
 dollar \$
 zenvarname \$[A-Za-z_]+
