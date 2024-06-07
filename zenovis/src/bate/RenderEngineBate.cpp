@@ -92,6 +92,10 @@ struct RenderEngineBate : RenderEngine {
         if (!record) {
             fbr->unbind();
             fbr->draw_to_screen();
+            auto fuck = getClickedPos(fbr->w / 2, fbr->h / 2);
+            if (fuck.has_value()) {
+                zeno::log_info("{}", fuck.value());
+            }
         }
     }
 
@@ -109,8 +113,29 @@ struct RenderEngineBate : RenderEngine {
         primHighlight = nullptr;
         fbr = nullptr;
     }
-    float getDepth(int x, int y) override {
-        return fbr->getDepth(x, y);
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        auto depth = fbr->getDepth(x, y);
+        if (depth == 0) {
+            return {};
+        }
+        zeno::log_info("depth: {}", depth);
+
+        auto fov = scene->camera->m_fov;
+        float cz = scene->camera->m_near / depth;
+        auto w = scene->camera->m_nx;
+        auto h = scene->camera->m_ny;
+        zeno::log_info("{} {} {} {}", x, y, w, h);
+        zeno::log_info("fov: {}", fov);
+        zeno::log_info("w: {}, h: {}", w, h);
+        auto u = (2.0 * x / w) - 1;
+        auto v = 1 - (2.0 * y / h);
+        zeno::log_info("u: {}, v: {}", u, v);
+        auto cy = v * tan(glm::radians(fov) / 2) * cz;
+        auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+        glm::vec4 cc = {cx, cy, -cz, 1};
+        auto wc = glm::inverse(scene->camera->m_view) * cc;
+        wc /= wc.w;
+        return glm::vec3(wc);
     }
 };
 

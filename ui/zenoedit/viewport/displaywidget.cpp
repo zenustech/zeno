@@ -1390,6 +1390,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 if (depth != 0) {
                     cz = scene->camera->m_near / depth;
                 }
+                zeno::log_info("click depth {}", depth);
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
                 // zeno::log_info("fov: {}", fov);
@@ -1405,7 +1406,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 wc /= wc.w;
                 // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
                 auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
-                zeno::log_info("fetch {}", points.c_str());
+                zeno::log_info("fetch {}", wc);
                 points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
                 zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
             };

@@ -19,7 +19,7 @@ struct RenderEngine {
     virtual void cleanupWhenExit() = 0;
 
     virtual ~RenderEngine() = default;
-    virtual float getDepth(int x, int y) { return 0; }
+    virtual std::optional<glm::vec3> getClickedPos(int x, int y) { return {}; }
 };
 
 class RenderManager {
