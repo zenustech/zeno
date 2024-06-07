@@ -67,6 +67,7 @@ struct RenderEngineBate : RenderEngine {
 //        }
         primHighlight->draw();
         if (scene->drawOptions->show_grid) {
+            glDepthMask(GL_FALSE);
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
@@ -84,6 +85,7 @@ struct RenderEngineBate : RenderEngine {
                     *scene->camera = backup;
                 }
             }
+            glDepthMask(GL_TRUE);
         }
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
