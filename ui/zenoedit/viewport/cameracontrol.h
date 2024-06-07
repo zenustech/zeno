@@ -62,6 +62,7 @@ private:
     QPoint m_boundRectStartPos;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
+    std::optional<glm::vec3> hit_posWS;
 
     std::weak_ptr<zeno::Picker> m_picker;
     std::weak_ptr<zeno::FakeTransformer> m_transformer;

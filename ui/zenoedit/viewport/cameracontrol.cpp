@@ -111,6 +111,10 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
+        hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+        if (hit_posWS.has_value()) {
+            scene->camera->setPivot(hit_posWS.value());
+        }
     }
     auto m_picker = this->m_picker.lock();
     auto m_transformer = this->m_transformer.lock();
@@ -280,7 +284,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         {
             float dy = ypos - m_lastMidButtonPos.y();
             auto step = 0.99f;
-            float scale = (dy < 0) ? step : 1 / step;
+            float scale = glm::pow(step, -dy);
             auto pos = getPos();
             auto pivot = getPivot();
             auto new_pos = (pos - pivot) * scale + pivot;
