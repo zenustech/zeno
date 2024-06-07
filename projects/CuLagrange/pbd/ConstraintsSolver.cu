@@ -1545,18 +1545,31 @@ struct XPBDSolveSmoothAll : INode {
             }
         }
 
+        auto update_vertex_position = get_input2<bool>("update_vertex_position");
+
+        auto output_debug_inform = get_input2<bool>("output_debug_inform");
+
         cudaPol(zs::range(verts.size()),[
+            update_vertex_position = update_vertex_position,
             verts = proxy<space>({},verts),
             eps = eps,
+            // output_debug_inform = output_debug_inform,
             dptagOffset = verts.getPropertyOffset(dptag),
             ptagOffset = verts.getPropertyOffset(ptag),
             wOffset = verts.getPropertyOffset("w")] ZS_LAMBDA(int vi) mutable {
                 if(verts(wOffset,vi) > eps)
-                    verts.tuple(dim_c<3>,dptagOffset,vi) = verts.pack(dim_c<3>,dptagOffset,vi) / verts(wOffset,vi);
+                    verts.tuple(dim_c<3>,dptagOffset,vi) = 2.f * verts.pack(dim_c<3>,dptagOffset,vi) / verts(wOffset,vi);
                 else
                     verts.tuple(dim_c<3>,dptagOffset,vi) = vec3::zeros();
-                verts.tuple(dim_c<3>,ptagOffset,vi) = verts.pack(dim_c<3>,ptagOffset,vi) + 2.f * verts.pack(dim_c<3>,dptagOffset,vi);
+                if(update_vertex_position)
+                    verts.tuple(dim_c<3>,ptagOffset,vi) = verts.pack(dim_c<3>,ptagOffset,vi) + verts.pack(dim_c<3>,dptagOffset,vi);
         });
+
+        if(output_debug_inform) {
+            auto ndp = TILEVEC_OPS::dot<3>(cudaPol,verts,dptag,dptag);
+            std::cout << "ndp : " << ndp << std::endl;
+        }
+        
 
         set_output("zsparticles",get_input("zsparticles"));
         set_output("constraints",get_input("constraints"));
@@ -1572,11 +1585,527 @@ ZENDEFNODE(XPBDSolveSmoothAll, {{{"zsparticles"},
                                 {"float","dt","1.0"},
                                 {"int","nm_substeps","1"},
                                 {"int","substep_id","0"},
-                                {"int","iter_id","0"}
+                                {"int","iter_id","0"},
+                                {"bool","update_vertex_position","1"},
+                                {"bool","output_debug_inform","0"}
                             },
 							{{"zsparticles"},{"constraints"}},
 							{},
 							{"PBD"}});
+
+
+// recalc target nodal normal and bvh structure before using this node
+struct ProjectOntoSurface : INode {
+
+    using bvh_t = ZenoLinearBvh::lbvh_t;
+    using bv_t = bvh_t::Box;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    virtual void apply() override {
+        using namespace zs;
+        using namespace PBD_CONSTRAINT;
+
+        using vec2 = zs::vec<float,2>;
+        using vec3 = zs::vec<float,3>;
+        using vec4 = zs::vec<float,4>;
+        using mat3 = zs::vec<float,3,3>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+        using Box = AABBBox<3,float>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+        constexpr auto eps = 1e-6;
+
+        auto target = get_input2<ZenoParticles>("target");
+
+        const auto& tverts = target->getParticles();
+        const auto& ttris = target->getQuadraturePoints();
+        auto tptag = get_input2<std::string>("tptag");
+
+        auto update_target_mesh = get_input2<bool>("update_target_mesh");
+
+        if(!target->hasBvh(TRIANGLE_MESH_BVH)) {
+            target->bvh(TRIANGLE_MESH_BVH) = LBvh<3,int,T>{};
+        }
+        auto& ttri_bvh = target->bvh(TRIANGLE_MESH_BVH);
+
+        if(!target->hasMeta(MESH_REORDER_KEYS)) {
+            update_target_mesh = true;
+            target->setMeta(MESH_REORDER_KEYS,
+                zs::Vector<float>{tverts.get_allocator(),tverts.size()});
+        }
+        auto& keys = target->readMeta<zs::Vector<float>&>(MESH_REORDER_KEYS);
+
+        if(!target->hasMeta(MESH_REORDER_INDICES)) {
+            update_target_mesh = true;
+            target->setMeta(MESH_REORDER_INDICES,
+                zs::Vector<int>{tverts.get_allocator(),tverts.size()});
+        }
+        auto& indices = target->readMeta<zs::Vector<int>&>(MESH_REORDER_INDICES);
+
+        if(!target->hasMeta(MESH_REORDER_VERTICES_BUFFER)) {
+            update_target_mesh = true;
+            target->setMeta(MESH_REORDER_VERTICES_BUFFER,
+                zs::Vector<vec3>{tverts.get_allocator(),tverts.size()});
+        }
+        auto& reorderedVBuffer = target->readMeta<zs::Vector<vec3>&>(MESH_REORDER_VERTICES_BUFFER);
+
+        if(!target->hasMeta(MESH_MAIN_AXIS)) {
+            update_target_mesh = true;
+            target->setMeta(MESH_MAIN_AXIS,0);
+        }
+        auto& axis = target->readMeta<int&>(MESH_MAIN_AXIS);
+
+        if(!target->hasMeta(MESH_GLOBAL_BOUNDING_BOX)) {
+            update_target_mesh = true;
+            target->setMeta(MESH_GLOBAL_BOUNDING_BOX,Box{});
+        }
+        auto& gbv = target->readMeta<Box&>(MESH_GLOBAL_BOUNDING_BOX);
+
+        // std::cout << "before update_target_mesh" << std::endl;
+
+        if(update_target_mesh) {
+            auto tbvs = retrieve_bounding_volumes(cudaPol,tverts,ttris,wrapv<3>{},(T)0,tptag);
+            ttri_bvh.build(cudaPol,tbvs);
+
+            zs::Vector<float> gmins{tverts.get_allocator(),tverts.size()},gmaxs{tverts.get_allocator(),tverts.size()};
+            // Box gbv;
+            zs::Vector<float> ret{tverts.get_allocator(),1};
+
+            for(int d = 0;d != 3;++d) {
+                cudaPol(enumerate(gmins,gmaxs),[
+                        tverts = proxy<space>({},tverts),
+                        tptagOffset = tverts.getPropertyOffset(tptag),
+                        d = d] ZS_LAMBDA(int i,float& gmin,float& gmax) mutable {
+                    auto p = tverts.pack(dim_c<3>,tptagOffset,i);
+                    gmin = p[d];
+                    gmax = p[d];
+                });
+
+                reduce(cudaPol,std::begin(gmins),std::end(gmins),std::begin(ret),limits<float>::max(),getmin<float>{});
+                gbv._min[d] = ret.getVal();
+                reduce(cudaPol,std::begin(gmaxs),std::end(gmaxs),std::begin(ret),limits<float>::min(),getmax<float>{});
+                gbv._max[d] = ret.getVal();
+            }
+            axis = 0;
+            auto dis = gbv._max[0] - gbv._min[0];
+            for(int d = 1;d != 3;++d) {
+                if(auto tmp = gbv._max[d] - gbv._min[d];tmp > dis) {
+                    dis = tmp;
+                    axis = d;
+                }
+            }
+
+            zs::Vector<float> keys{tverts.get_allocator(),tverts.size()};
+            zs::Vector<int> indices{tverts.get_allocator(),tverts.size()};
+            cudaPol(enumerate(keys,indices),[tverts = proxy<space>({},tverts),
+                    tptagOffset = tverts.getPropertyOffset(tptag),
+                    axis] ZS_LAMBDA(int id,float& key,int &idx) mutable {
+                auto p = tverts.pack(dim_c<3>,tptagOffset,id);
+                key = p[axis];
+                idx = id;
+            });
+
+            merge_sort_pair(cudaPol,std::begin(keys),std::begin(indices),tverts.size(),std::less<float>{});
+            cudaPol(zip(indices,reorderedVBuffer),[
+                tverts = proxy<space>({},tverts),
+                tptagOffset = tverts.getPropertyOffset(tptag)] ZS_LAMBDA(int oid,vec3& p) mutable {
+                    p = tverts.pack(dim_c<3>,tptagOffset,oid);
+            });
+        }
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto& verts = zsparticles->getParticles();
+        auto ptag = get_input2<std::string>("ptag");
+
+        auto npcheck = TILEVEC_OPS::dot<3>(cudaPol,verts,ptag,ptag);
+        if(isnan(npcheck)){
+            std::cout << "nan np detected" << std::endl;
+            // throw std::runtime_error("nan np detected");
+        }
+
+        zs::Vector<int> locs{verts.get_allocator(),verts.size()};
+        cudaPol(zip(zs::range(verts.size()),locs),[axis = axis,
+                keys = proxy<space>(keys),
+                minvOffset = verts.getPropertyOffset("minv"),
+                verts = proxy<space>({},verts),
+                ptagOffset = verts.getPropertyOffset(ptag)] ZS_LAMBDA(int vi,int& loc) mutable {
+           auto locate = [&keys](float v) -> int {
+                int left = 0, right = keys.size();
+                while (left < right) {
+                    auto mid = left + (right - left) / 2;
+                    if (keys[mid] > v)
+                        right = mid;
+                    else
+                        left = mid + 1;
+                }
+                if (left < keys.size()) {
+                    if (keys[left] > v)
+                        left--;
+                } else
+                    left = keys.size() - 1;
+                // left could be -1
+                return left;            
+           };
+           if(verts(minvOffset,vi) < 0.00001)
+                return;
+
+           auto xi = verts.pack(dim_c<3>,ptagOffset,vi);
+           loc = locate(xi[axis]);
+        });
+
+        zs::Vector<float> search_radii{verts.get_allocator(),verts.size()};
+        auto default_search_radius = get_input2<float>("default_search_radius");
+
+        // std::cout << "before projection" << std::endl;
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            minvOffset = verts.getPropertyOffset("minv"),
+            ptagOffset = verts.getPropertyOffset(ptag),
+            reorderedVBuffer = proxy<space>(reorderedVBuffer),
+            locs = proxy<space>(locs),
+            keys = proxy<space>(keys),
+            search_radii = proxy<space>(search_radii),
+            axis = axis,
+            default_search_radius = default_search_radius,
+            dd2 = default_search_radius * default_search_radius,
+            indices = proxy<space>(indices)] ZS_LAMBDA(int vi) mutable {
+                if(verts(minvOffset,vi) < 0.00001)
+                    return;
+                auto loc = locs[vi];
+                auto p = verts.pack(dim_c<3>,ptagOffset,vi);
+                int l = loc + 1;
+                // auto d2 = limits<float>::max();
+                auto d2 = dd2;
+                int j = -1;
+                int cnt = 0;
+                while(l < verts.size() && cnt++ < 128) {
+                    if(auto tmp = zs::sqr(reorderedVBuffer[l][axis] - p[axis]);tmp > d2 || tmp > dd2)
+                        break;
+                    if(auto tmp = (reorderedVBuffer[l] - p).l2NormSqr();tmp < d2) {
+                        d2 = tmp;
+                        j = l;
+                    }
+                    ++l;
+                }
+                cnt = 0;
+                l = loc;
+                while(l >= 0 && cnt++ < 128) {
+                    if(auto tmp = zs::sqr(reorderedVBuffer[l][axis] - p[axis]);tmp > d2 || tmp > dd2)
+                        break;
+                    if(auto tmp = (reorderedVBuffer[l] - p).l2NormSqr();tmp < d2) {
+                        d2 = tmp;
+                        j = l;
+                    }
+                    l--;
+                }
+
+                if(j != -1) {
+                    search_radii[vi] = zs::sqrt(d2 + 0.000001f)  * 1.0001f;
+                } else {
+                    search_radii[vi] = default_search_radius * 1.0001f;
+                }
+        });
+        
+        auto do_moton_ordering = get_input2<bool>("do_moton_ordering");
+
+
+        if(!zsparticles->hasMeta(MESH_REORDER_INDICES)) {
+            do_moton_ordering = true;
+            zsparticles->setMeta(MESH_REORDER_INDICES,zs::Vector<int>{verts.get_allocator(),verts.size()});
+        }
+        auto& is = zsparticles->readMeta<zs::Vector<int>&>(MESH_REORDER_INDICES);
+        
+        // std::cout << "do motor ordering" << std::endl;
+        if(do_moton_ordering) {
+            if(!zsparticles->hasMeta(MESH_REORDER_KEYS)) {
+                do_moton_ordering = true;
+                zsparticles->setMeta(MESH_REORDER_KEYS,zs::Vector<u32>{verts.get_allocator(),verts.size()});
+            }
+            auto& ks = zsparticles->readMeta<zs::Vector<u32>&>(MESH_REORDER_KEYS);
+
+            cudaPol(enumerate(ks,is),[
+                gbv = gbv,
+                ptagOffset = verts.getPropertyOffset(ptag),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int i,u32& key,int& idx) mutable {
+                    auto p = verts.pack(dim_c<3>,ptagOffset,i);
+                    for (int d = 0; d != 3; ++d) {
+                        if (p[d] < gbv._min[d])
+                            p[d] = gbv._min[d];
+                        else if (p[d] > gbv._max[d])
+                            p[d] = gbv._max[d];
+                    }    
+                    auto coord = gbv.getUniformCoord(p).template cast<f32>();
+                    key = morton_code<3>(coord);
+                    idx = i;
+            });
+
+            merge_sort_pair(cudaPol, std::begin(ks), std::begin(is), verts.size(), std::less<u32>{});
+        } else {
+            cudaPol(enumerate(is),[] ZS_LAMBDA(int i,int& idx) mutable {idx = i;});
+        }
+
+        auto dptag = get_input2<std::string>("dptag");
+        auto update_vertex_position = get_input2<bool>("update_vertex_position");
+
+        if(!update_vertex_position && !verts.hasProperty(dptag)) {
+            verts.append_channels(cudaPol,{{dptag,3}});
+            TILEVEC_OPS::fill(cudaPol,verts,dptag,0.f);
+        }
+
+        // std::cout << "before doing projection" << std::endl;
+
+        cudaPol(is,[verts = proxy<space>({},verts),
+            ptagOffset = verts.getPropertyOffset(ptag),
+            dptagOffset = verts.getPropertyOffset(dptag),
+            minvOffset = verts.getPropertyOffset("minv"),
+            tverts = proxy<space>({},tverts),
+            tptagOffset = tverts.getPropertyOffset(tptag),
+            ttris = proxy<space>({},ttris),
+            update_vertex_position = update_vertex_position,
+            default_search_radius = default_search_radius,
+            is = proxy<space>(is),
+            tindsOffset = ttris.getPropertyOffset("inds"),
+            search_radii = proxy<space>(search_radii),
+            ttri_bvh = proxy<space>(ttri_bvh)] ZS_LAMBDA(int qid) mutable {
+                if(verts(minvOffset,qid) < 0.00001)
+                    return;
+                auto rad = search_radii[qid];
+                auto p = verts.pack(dim_c<3>,ptagOffset,qid);
+                auto bv = Box{get_bounding_box(p - rad,p + rad)};
+
+                auto closest_dist = limits<float>::max();
+                int closest_ti = -1;
+                // auto closest_bary = vec3{1.f,0.f,0.f};
+                auto closest_cp = vec3::zeros();
+
+                auto find_closest_triangles = [&](int ti) {
+                    auto ttri = ttris.pack(dim_c<3>,tindsOffset,ti,int_c);
+                    vec3 tps[3] = {};
+                    for(int i = 0;i != 3;++i)
+                        tps[i] = tverts.pack(dim_c<3>,tptagOffset,ttri[i]);
+                    vec3 bary{};
+                    vec3 project_cp{};
+                    auto dist = LSL_GEO::get_vertex_triangle_distance(tps[0],tps[1],tps[2],p,bary,project_cp);
+                    if(project_cp.norm() < 1e-6) {
+                        {
+                            auto v0 = tps[0];
+                            auto v1 = tps[1];
+                            auto v2 = tps[2];
+                            auto v = p;
+                            vec3 barycentric{};
+                            vec3 project_point{};
+
+                            const vec3 e1 = v1 - v0;
+                            const vec3 e2 = v2 - v0;
+                            const vec3 e3 = v2 - v1;
+                            const vec3 n = e1.cross(e2);
+                            const vec3 na = (v2 - v1).cross(v - v1);
+                            const vec3 nb = (v0 - v2).cross(v - v2);
+                            const vec3 nc = (v1 - v0).cross(v - v0);
+                            // barycentric = vec3(n.dot(na) / n.l2NormSqr(),
+                            //                             n.dot(nb) / n.l2NormSqr(),
+                            //                             n.dot(nc) / n.l2NormSqr());
+                            auto n2 = n.l2NormSqr();
+                            barycentric = vec3(n.dot(na),n.dot(nb),n.dot(nc));                      
+                            const float barySum = zs::abs(barycentric[0]) + zs::abs(barycentric[1]) + zs::abs(barycentric[2]);
+                    
+                            // if the point projects to inside the triangle, it should sum to 1
+                            if (zs::abs(barySum - n2) < static_cast<float>(1e-6) && n2 > static_cast<float>(1e-6))
+                            {
+                                const vec3 nHat = n / n.norm();
+                                const float normalDistance = (nHat.dot(v - v0));
+                                barycentric /= n2;
+                                // project_bary = barycentric;
+                                // project_point = vec3::zeros();
+                    
+                                project_point = barycentric[0] * v0 + barycentric[1] * v1 + barycentric[2] * v2;
+
+                                printf("wierd——000 project center[%d]->[%d] : %f %f %f : %f %f %f : A : %f D : %f\n",qid,ti,
+                                (float)project_cp[0],
+                                (float)project_cp[1],
+                                (float)project_cp[2],
+                                (float)tps[0].norm(),
+                                (float)tps[1].norm(),
+                                (float)tps[2].norm(),
+                                (float)LSL_GEO::area(tps[0],tps[1],tps[2]),
+                                (float)dist);
+
+                                return;
+
+                                // return zs::abs(normalDistance);
+                            }
+                    
+                            vec3 vs[3] = {v0,v1,v2};
+                    
+                            vec3 es[3] = {};
+                    
+                            // project onto each edge, find the distance to each edge
+                    
+                            const vec3 ev = v - v0;
+                            const vec3 ev3 = v - v1;
+                    
+                            // const vec3 e2Hat = e2 / e2.norm();
+                            // const vec3 e3Hat = e3 / e3.norm();
+                            vec3 edgeDistances{1e8, 1e8, 1e8};
+                    
+                            // see if it projects onto the interval of the edge
+                            // if it doesn't, then the vertex distance will be smaller,
+                            // so we can skip computing anything
+                            // vec3 e1Hat = e1;
+                            float e1dot = e1.dot(ev);
+                            // vec3 projected_e[3] = {};
+                            // auto e1n = e1.norm();
+                            auto e1n2 = e1.l2NormSqr();
+                            if (e1dot > 0.0 && e1dot < e1n2 && e1n2 > static_cast<float>(1e-6))
+                            {
+                                // e1Hat /= e1.norm();
+                                const vec3 projected = v0 + e1 * e1dot / e1n2;
+                                es[0] = projected;
+                                edgeDistances[0] = (v - projected).norm();
+                            }
+                    
+                            const float e2dot = e2.dot(ev);
+                            auto e2n2 = e2.l2NormSqr();
+                            if (e2dot > 0.0 && e2dot < e2n2 && e2n2 > static_cast<float>(1e-6))
+                            {
+                                const vec3 projected = v0 + e2 * e2dot / e2n2;
+                                es[1] = projected;
+                                edgeDistances[1] = (v - projected).norm();
+                            }
+                            const float e3dot = e3.dot(ev3);
+                            auto e3n2 = e3.l2NormSqr();
+                            if (e3dot > 0.0 && e3dot < e3n2 && e3n2 > static_cast<float>(1e-6))
+                            {
+                                const vec3 projected = v1 + e3 * e3dot / e3n2;
+                                es[2] = projected;
+                                edgeDistances[2] = (v - projected).norm();
+                            }
+                    
+                            // get the distance to each vertex
+                            const vec3 vertexDistances{(v - v0).norm(), 
+                                                            (v - v1).norm(), 
+                                                            (v - v2).norm()};
+                    
+                            // get the smallest of both the edge and vertex distances
+                            float vertexMin = 1e8;
+                            float edgeMin = 1e8;
+                    
+                            int min_e_idx = 0;
+                            int min_v_idx = 0;
+                            // vec3 project_v_min{};
+                            // vec3 project_e_min{};
+                    
+                            for(int i = 0;i < 3;++i){
+                                if(vertexMin > vertexDistances[i]){
+                                    vertexMin = vertexDistances[i];
+                                    min_v_idx = i;
+                                }
+                                if(edgeMin > edgeDistances[i]){
+                                    edgeMin = edgeDistances[i];
+                                    min_e_idx = i;
+                                }
+                                // vertexMin = vertexMin > vertexDistances[i] ? vertexDistances[i] : vertexMin;
+                                // edgeMin = edgeMin > edgeDistances[i] ? edgeDistances[i] : edgeMin;
+                            }
+                            // vec3 project_v{};
+                            if(vertexMin < edgeMin)
+                                project_point = vs[min_v_idx];
+                            else
+                                project_point = es[min_e_idx];
+
+                            printf("wierd-111 project center[%d]->[%d] : PCP : %f %f %f : V  %f %f %f %f : VD : %f %f %f : A : %f Vmin : %f\n",qid,ti,
+                            (float)project_cp[0],
+                            (float)project_cp[1],
+                            (float)project_cp[2],
+                            (float)v.norm(),
+                            (float)v0.norm(),
+                            (float)v1.norm(),
+                            (float)v2.norm(),
+                            (float)vertexDistances[0],
+                            (float)vertexDistances[1],
+                            (float)vertexDistances[2],
+                            (float)LSL_GEO::area(tps[0],tps[1],tps[2]),
+                            (float)vertexMin);
+
+                            return;
+                            
+                        }
+
+
+                        // printf("wierd project center[%d]->[%d] : %f %f %f : %f %f %f : A : %f D : %f\n",qid,ti,
+                        //     (float)project_cp[0],
+                        //     (float)project_cp[1],
+                        //     (float)project_cp[2],
+                        //     (float)tps[0].norm(),
+                        //     (float)tps[1].norm(),
+                        //     (float)tps[2].norm(),
+                        //     (float)LSL_GEO::area(tps[0],tps[1],tps[2]),
+                        //     (float)dist);
+                    }
+                    // if(isnan(dist) || isnan(project_bary.norm()))
+                    //     return;
+                    if(dist < closest_dist) {
+                        closest_dist = dist;
+                        closest_ti = ti;
+                        closest_cp = project_cp;
+                    }
+                };
+
+                ttri_bvh.iter_neighbors(bv,find_closest_triangles);
+                if(closest_ti < 0) {
+                    return;
+                } else {
+                    auto cp = closest_cp;
+                    auto dp = cp - verts.pack(dim_c<3>,ptagOffset,qid);
+                    
+                    // if(isnan(dp.norm()) || dp.norm() > default_search_radius) {
+                    //     printf("too big projection update detected %d(%f) -> %d [%f %f %f]\n",qid,(float)rad,closest_ti,
+                    //         (float)closest_cp[0],
+                    //         (float)closest_cp[1],
+                    //         (float)closest_cp[2]);
+                    //     return;
+                    // }
+
+                    if(update_vertex_position)
+                        verts.tuple(dim_c<3>,ptagOffset,qid) = cp;
+                    else
+                        verts.tuple(dim_c<3>,dptagOffset,qid) = dp;
+                }
+        });
+
+        auto np = TILEVEC_OPS::dot<3>(cudaPol,verts,ptag,ptag);
+        if(isnan(np)) {
+            std::cout << "nan update detected after surface project" << std::endl;
+            throw std::runtime_error("nan update detected after surface project");
+        }
+
+
+        set_output("zsparticles",get_input("zsparticles"));
+        set_output("target",get_input("target"));
+    };
+};
+
+
+ZENDEFNODE(ProjectOntoSurface, {{{"zsparticles"},
+                                {"target"},
+                                {"string","ptag","x"},
+                                {"string","dptag","dx"},
+                                {"string","tptag","x"},
+                                {"bool","update_target_mesh","1"},
+                                {"bool","do_moton_ordering","1"},
+                                {"bool","update_vertex_position","1"},
+                                {"float","default_search_radius","0.0"}
+                            },
+                            {{"zsparticles"},{"target"}},
+                            {},
+                            {"PBD"}});
+
 
 struct VisualizeDCDProximity : zeno::INode {
 

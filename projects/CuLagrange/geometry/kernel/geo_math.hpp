@@ -395,28 +395,33 @@ namespace zeno { namespace LSL_GEO {
 ///////////////////////////////////////////////////////////////////////
 
 constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1, 
-                                        const VECTOR3& v2, const VECTOR3& v,VECTOR3& barycentric,VECTOR3& project_bary)
+                                        const VECTOR3& v2, const VECTOR3& v,VECTOR3& barycentric,VECTOR3& project_point)
     {
         // get the barycentric coordinates
         const VECTOR3 e1 = v1 - v0;
         const VECTOR3 e2 = v2 - v0;
+        const VECTOR3 e3 = v2 - v1;
         const VECTOR3 n = e1.cross(e2);
         const VECTOR3 na = (v2 - v1).cross(v - v1);
         const VECTOR3 nb = (v0 - v2).cross(v - v2);
         const VECTOR3 nc = (v1 - v0).cross(v - v0);
-        barycentric = VECTOR3(n.dot(na) / n.l2NormSqr(),
-                                    n.dot(nb) / n.l2NormSqr(),
-                                    n.dot(nc) / n.l2NormSqr());
-                                    
+        // barycentric = VECTOR3(n.dot(na) / n.l2NormSqr(),
+        //                             n.dot(nb) / n.l2NormSqr(),
+        //                             n.dot(nc) / n.l2NormSqr());
+        auto n2 = n.l2NormSqr();
+        barycentric = VECTOR3(n.dot(na),n.dot(nb),n.dot(nc));                      
         const REAL barySum = zs::abs(barycentric[0]) + zs::abs(barycentric[1]) + zs::abs(barycentric[2]);
 
         // if the point projects to inside the triangle, it should sum to 1
-        if (zs::abs(barySum - 1.0) < 1e-6)
+        if (zs::abs(barySum - n2) < static_cast<REAL>(1e-6) && n2 > static_cast<REAL>(1e-6))
         {
             const VECTOR3 nHat = n / n.norm();
             const REAL normalDistance = (nHat.dot(v - v0));
-            project_bary = barycentric;
-            // project_v = barycentric[0] * v0 + barycentric[1] * v1 + barycentric[2] * v2;
+            barycentric /= n2;
+            // project_bary = barycentric;
+            // project_point = VECTOR3::zeros();
+
+            project_point = barycentric[0] * v0 + barycentric[1] * v1 + barycentric[2] * v2;
             return zs::abs(normalDistance);
         }
 
@@ -425,44 +430,51 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
         VECTOR3 es[3] = {};
 
         // project onto each edge, find the distance to each edge
-        const VECTOR3 e3 = v2 - v1;
+
         const VECTOR3 ev = v - v0;
         const VECTOR3 ev3 = v - v1;
-        const VECTOR3 e1Hat = e1 / e1.norm();
-        const VECTOR3 e2Hat = e2 / e2.norm();
-        const VECTOR3 e3Hat = e3 / e3.norm();
-        VECTOR3 edgeDistances(1e8, 1e8, 1e8);
+
+        // const VECTOR3 e2Hat = e2 / e2.norm();
+        // const VECTOR3 e3Hat = e3 / e3.norm();
+        VECTOR3 edgeDistances{1e8, 1e8, 1e8};
 
         // see if it projects onto the interval of the edge
         // if it doesn't, then the vertex distance will be smaller,
         // so we can skip computing anything
-        const REAL e1dot = e1Hat.dot(ev);
+        // VECTOR3 e1Hat = e1;
+        REAL e1dot = e1.dot(ev);
         // VECTOR3 projected_e[3] = {};
-        if (e1dot > 0.0 && e1dot < e1.norm())
+        // auto e1n = e1.norm();
+        auto e1n2 = e1.l2NormSqr();
+        if (e1dot > 0.0 && e1dot < e1n2 && e1n2 > static_cast<REAL>(1e-6))
         {
-            const VECTOR3 projected = v0 + e1Hat * e1dot;
+            // e1Hat /= e1.norm();
+            const VECTOR3 projected = v0 + e1 * e1dot / e1n2;
             es[0] = projected;
             edgeDistances[0] = (v - projected).norm();
         }
-        const REAL e2dot = e2Hat.dot(ev);
-        if (e2dot > 0.0 && e2dot < e2.norm())
+
+        const REAL e2dot = e2.dot(ev);
+        auto e2n2 = e2.l2NormSqr();
+        if (e2dot > 0.0 && e2dot < e2n2 && e2n2 > static_cast<REAL>(1e-6))
         {
-            const VECTOR3 projected = v0 + e2Hat * e2dot;
+            const VECTOR3 projected = v0 + e2 * e2dot / e2n2;
             es[1] = projected;
             edgeDistances[1] = (v - projected).norm();
         }
-        const REAL e3dot = e3Hat.dot(ev3);
-        if (e3dot > 0.0 && e3dot < e3.norm())
+        const REAL e3dot = e3.dot(ev3);
+        auto e3n2 = e3.l2NormSqr();
+        if (e3dot > 0.0 && e3dot < e3n2 && e3n2 > static_cast<REAL>(1e-6))
         {
-            const VECTOR3 projected = v1 + e3Hat * e3dot;
+            const VECTOR3 projected = v1 + e3 * e3dot / e3n2;
             es[2] = projected;
             edgeDistances[2] = (v - projected).norm();
         }
 
         // get the distance to each vertex
-        const VECTOR3 vertexDistances((v - v0).norm(), 
+        const VECTOR3 vertexDistances{(v - v0).norm(), 
                                         (v - v1).norm(), 
-                                        (v - v2).norm());
+                                        (v - v2).norm()};
 
         // get the smallest of both the edge and vertex distances
         REAL vertexMin = 1e8;
@@ -485,22 +497,22 @@ constexpr REAL get_vertex_triangle_distance(const VECTOR3& v0, const VECTOR3& v1
             // vertexMin = vertexMin > vertexDistances[i] ? vertexDistances[i] : vertexMin;
             // edgeMin = edgeMin > edgeDistances[i] ? edgeDistances[i] : edgeMin;
         }
-        VECTOR3 project_v{};
+        // VECTOR3 project_v{};
         if(vertexMin < edgeMin)
-            project_v = vs[min_v_idx];
+            project_point = vs[min_v_idx];
         else
-            project_v = es[min_e_idx];
+            project_point = es[min_e_idx];
 
 
         // const VECTOR3 e1 = v1 - v0;
         // const VECTOR3 e2 = v2 - v0;
         // const VECTOR3 n = e1.cross(e2);
-        auto na_p = (v2 - v1).cross(project_v - v1);
-        auto nb_p = (v0 - v2).cross(project_v - v2);
-        auto nc_p = (v1 - v0).cross(project_v - v0);
-        project_bary = VECTOR3(n.dot(na_p) / n.l2NormSqr(),
-                                    n.dot(nb_p) / n.l2NormSqr(),
-                                    n.dot(nc_p) / n.l2NormSqr());
+        // auto na_p = (v2 - v1).cross(project_v - v1);
+        // auto nb_p = (v0 - v2).cross(project_v - v2);
+        // auto nc_p = (v1 - v0).cross(project_v - v0);
+        // project_bary = VECTOR3(n.dot(na_p) / n.l2NormSqr(),
+        //                             n.dot(nb_p) / n.l2NormSqr(),
+        //                             n.dot(nc_p) / n.l2NormSqr());
 
         // return the smallest of those
         return (vertexMin < edgeMin) ? vertexMin : edgeMin;
