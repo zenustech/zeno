@@ -379,6 +379,12 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
+    auto session = m_zenovis->getSession();
+    auto scene = session->get_scene();
+    hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+    if (hit_posWS.has_value()) {
+        scene->camera->setPivot(hit_posWS.value());
+    }
     int dy = 0;
     if (event->modifiers() & Qt::AltModifier)
         dy = event->angleDelta().x();
