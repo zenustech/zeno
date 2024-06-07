@@ -32,7 +32,7 @@
 
 
 /**
- ** \file parser.hpp
+ ** \file zfxparser.hpp
  ** Define the  zeno ::parser class.
  */
 
@@ -42,10 +42,10 @@
 // especially those whose name start with YY_ or yy_.  They are
 // private implementation details that can be changed or removed.
 
-#ifndef YY_YY_PARSER_HPP_INCLUDED
-# define YY_YY_PARSER_HPP_INCLUDED
+#ifndef YY_YY_ZFXPARSER_HPP_INCLUDED
+# define YY_YY_ZFXPARSER_HPP_INCLUDED
 // "%code requires" blocks.
-#line 12 "parser.y"
+#line 13 "zfxparser.y"
 
     #include <iostream>
     #include <string>
@@ -60,11 +60,11 @@
     using namespace std;
 
     namespace zeno {
-        class Scanner;
-        class Formula;
+        class ZfxScanner;
+        class ZfxExecute;
     }
 
-#line 68 "parser.hpp"
+#line 68 "zfxparser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -203,15 +203,15 @@
 # define YYDEBUG 1
 #endif
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 namespace  zeno  {
-#line 209 "parser.hpp"
+#line 209 "zfxparser.hpp"
 
 
 
 
   /// A Bison parser.
-  class  Parser 
+  class  ZfxParser 
   {
   public:
 #ifdef YYSTYPE
@@ -428,11 +428,10 @@ namespace  zeno  {
       char dummy1[sizeof (float)];
 
       // calclist
-      // exp
+      // exp-statement
       // factor
       // zenvar
       // func-content
-      // parencontent
       // term
       char dummy2[sizeof (std::shared_ptr<ZfxASTNode>)];
 
@@ -565,13 +564,12 @@ namespace  zeno  {
         S_LPAREN = 25,                           // LPAREN
         S_YYACCEPT = 26,                         // $accept
         S_calclist = 27,                         // calclist
-        S_exp = 28,                              // exp
+        S_28_exp_statement = 28,                 // exp-statement
         S_factor = 29,                           // factor
         S_zenvar = 30,                           // zenvar
         S_funcargs = 31,                         // funcargs
         S_32_func_content = 32,                  // func-content
-        S_parencontent = 33,                     // parencontent
-        S_term = 34                              // term
+        S_term = 33                              // term
       };
     };
 
@@ -613,11 +611,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
@@ -745,11 +742,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
@@ -779,7 +775,7 @@ switch (yykind)
       /// The user-facing name of this symbol.
       std::string name () const YY_NOEXCEPT
       {
-        return  Parser ::symbol_name (this->kind ());
+        return  ZfxParser ::symbol_name (this->kind ());
       }
 
       /// Backward compatibility (Bison 3.6).
@@ -901,14 +897,14 @@ switch (yykind)
     };
 
     /// Build a parser object.
-     Parser  (zeno::Scanner &scanner_yyarg, zeno::Formula &driver_yyarg);
-    virtual ~ Parser  ();
+     ZfxParser  (zeno::ZfxScanner &scanner_yyarg, zeno::ZfxExecute &driver_yyarg);
+    virtual ~ ZfxParser  ();
 
 #if 201103L <= YY_CPLUSPLUS
     /// Non copyable.
-     Parser  (const  Parser &) = delete;
+     ZfxParser  (const  ZfxParser &) = delete;
     /// Non copyable.
-     Parser & operator= (const  Parser &) = delete;
+     ZfxParser & operator= (const  ZfxParser &) = delete;
 #endif
 
     /// Parse.  An alias for parse ().
@@ -1281,7 +1277,7 @@ switch (yykind)
     class context
     {
     public:
-      context (const  Parser & yyparser, const symbol_type& yyla);
+      context (const  ZfxParser & yyparser, const symbol_type& yyla);
       const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
       symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
       const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
@@ -1292,16 +1288,16 @@ switch (yykind)
       int expected_tokens (symbol_kind_type yyarg[], int yyargn) const;
 
     private:
-      const  Parser & yyparser_;
+      const  ZfxParser & yyparser_;
       const symbol_type& yyla_;
     };
 
   private:
 #if YY_CPLUSPLUS < 201103L
     /// Non copyable.
-     Parser  (const  Parser &);
+     ZfxParser  (const  ZfxParser &);
     /// Non copyable.
-     Parser & operator= (const  Parser &);
+     ZfxParser & operator= (const  ZfxParser &);
 #endif
 
 
@@ -1606,21 +1602,21 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 43,     ///< Last index in yytable_.
-      yynnts_ = 9,  ///< Number of nonterminal symbols.
+      yylast_ = 40,     ///< Last index in yytable_.
+      yynnts_ = 8,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
 
 
     // User arguments.
-    zeno::Scanner &scanner;
-    zeno::Formula &driver;
+    zeno::ZfxScanner &scanner;
+    zeno::ZfxExecute &driver;
 
   };
 
   inline
-   Parser ::symbol_kind_type
-   Parser ::yytranslate_ (int t) YY_NOEXCEPT
+   ZfxParser ::symbol_kind_type
+   ZfxParser ::yytranslate_ (int t) YY_NOEXCEPT
   {
     // YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to
     // TOKEN-NUM as returned by yylex.
@@ -1671,7 +1667,7 @@ switch (yykind)
 
   // basic_symbol.
   template <typename Base>
-   Parser ::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
+   ZfxParser ::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
     , value ()
     , location (that.location)
@@ -1683,11 +1679,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -1717,8 +1712,8 @@ switch (yykind)
 
 
   template <typename Base>
-   Parser ::symbol_kind_type
-   Parser ::basic_symbol<Base>::type_get () const YY_NOEXCEPT
+   ZfxParser ::symbol_kind_type
+   ZfxParser ::basic_symbol<Base>::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
@@ -1726,14 +1721,14 @@ switch (yykind)
 
   template <typename Base>
   bool
-   Parser ::basic_symbol<Base>::empty () const YY_NOEXCEPT
+   ZfxParser ::basic_symbol<Base>::empty () const YY_NOEXCEPT
   {
     return this->kind () == symbol_kind::S_YYEMPTY;
   }
 
   template <typename Base>
   void
-   Parser ::basic_symbol<Base>::move (basic_symbol& s)
+   ZfxParser ::basic_symbol<Base>::move (basic_symbol& s)
   {
     super_type::move (s);
     switch (this->kind ())
@@ -1743,11 +1738,10 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
@@ -1776,13 +1770,13 @@ switch (yykind)
 
   // by_kind.
   inline
-   Parser ::by_kind::by_kind () YY_NOEXCEPT
+   ZfxParser ::by_kind::by_kind () YY_NOEXCEPT
     : kind_ (symbol_kind::S_YYEMPTY)
   {}
 
 #if 201103L <= YY_CPLUSPLUS
   inline
-   Parser ::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
+   ZfxParser ::by_kind::by_kind (by_kind&& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {
     that.clear ();
@@ -1790,12 +1784,12 @@ switch (yykind)
 #endif
 
   inline
-   Parser ::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
+   ZfxParser ::by_kind::by_kind (const by_kind& that) YY_NOEXCEPT
     : kind_ (that.kind_)
   {}
 
   inline
-   Parser ::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
+   ZfxParser ::by_kind::by_kind (token_kind_type t) YY_NOEXCEPT
     : kind_ (yytranslate_ (t))
   {}
 
@@ -1803,40 +1797,40 @@ switch (yykind)
 
   inline
   void
-   Parser ::by_kind::clear () YY_NOEXCEPT
+   ZfxParser ::by_kind::clear () YY_NOEXCEPT
   {
     kind_ = symbol_kind::S_YYEMPTY;
   }
 
   inline
   void
-   Parser ::by_kind::move (by_kind& that)
+   ZfxParser ::by_kind::move (by_kind& that)
   {
     kind_ = that.kind_;
     that.clear ();
   }
 
   inline
-   Parser ::symbol_kind_type
-   Parser ::by_kind::kind () const YY_NOEXCEPT
+   ZfxParser ::symbol_kind_type
+   ZfxParser ::by_kind::kind () const YY_NOEXCEPT
   {
     return kind_;
   }
 
 
   inline
-   Parser ::symbol_kind_type
-   Parser ::by_kind::type_get () const YY_NOEXCEPT
+   ZfxParser ::symbol_kind_type
+   ZfxParser ::by_kind::type_get () const YY_NOEXCEPT
   {
     return this->kind ();
   }
 
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 } //  zeno 
-#line 1838 "parser.hpp"
+#line 1832 "zfxparser.hpp"
 
 
 
 
-#endif // !YY_YY_PARSER_HPP_INCLUDED
+#endif // !YY_YY_ZFXPARSER_HPP_INCLUDED

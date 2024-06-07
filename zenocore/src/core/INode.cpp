@@ -1288,7 +1288,8 @@ ZENO_API zany INode::get_input(std::string const &id) const {
             {
                 if (std::holds_alternative<std::string>(val))
                 {
-                    std::shared_ptr<StringObject> stringobj = std::make_shared<StringObject>();
+                    const std::string& code = std::get<std::string>(val);
+                    std::shared_ptr<StringObject> stringobj = std::make_shared<StringObject>(code);
                     return stringobj;
                 }
                 else {

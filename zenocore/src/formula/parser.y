@@ -96,7 +96,7 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> exp calclist factor term funccontent zenvar parencontent
+%type <std::shared_ptr<ZfxASTNode>> exp calclist factor term func-content zenvar parencontent
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs
 %type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN
 
@@ -136,7 +136,7 @@ zenvar: VARNAME { $$ = driver.makeZenVarNode($1); }
 funcargs: exp            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp { $1.push_back($3); $$ = $1; }
 
-funccontent: LPAREN funcargs RPAREN { 
+func-content: LPAREN funcargs RPAREN { 
         $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
         $$->isParenthesisNodeComplete = true;
         $$->func_match = Match_Exactly;
@@ -163,7 +163,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | parencontent      { $$ = $1; }
     | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
     | zenvar            { $$ = $1; }
-    | FUNC funccontent  { 
+    | FUNC func-content  { 
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;
         $$->type = FUNC;

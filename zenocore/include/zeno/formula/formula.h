@@ -83,4 +83,4 @@ private:
 
 }
 
-#endif __ZEN_FORMULA_H__
+#endif

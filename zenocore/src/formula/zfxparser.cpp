@@ -35,33 +35,27 @@
 // private implementation details that can be changed or removed.
 
 // "%code top" blocks.
-#line 37 "parser.y"
+#line 38 "zfxparser.y"
 
     #include <iostream>
-    #include "scanner.h"
-    #include "parser.hpp"
-    #include <zeno/formula/formula.h>
+    #include "zfxscanner.h"
+    #include "zfxparser.hpp"
+    #include <zeno/formula/zfxexecute.h>
     #include <zeno/formula/syntax_tree.h>
     #include "location.hh"
-    
-    // yylex() arguments are defined in parser.y
-    static zeno::Parser::symbol_type yylex(zeno::Scanner &scanner, zeno::Formula &driver) {
+
+    static zeno::ZfxParser::symbol_type yylex(zeno::ZfxScanner &scanner, zeno::ZfxExecute &driver) {
         return scanner.get_next_token();
     }
-    
-    // you can accomplish the same thing by inlining the code using preprocessor
-    // x and y are same as in above static function
-    // #define yylex(x, y) scanner.get_next_token()
-    
+
     using namespace zeno;
 
-
-#line 60 "parser.cpp"
-
+#line 54 "zfxparser.cpp"
 
 
 
-#include "parser.hpp"
+
+#include "zfxparser.hpp"
 
 
 
@@ -154,12 +148,12 @@
 #define YYERROR         goto yyerrorlab
 #define YYRECOVERING()  (!!yyerrstatus_)
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 namespace  zeno  {
-#line 160 "parser.cpp"
+#line 154 "zfxparser.cpp"
 
   /// Build a parser object.
-   Parser :: Parser  (zeno::Scanner &scanner_yyarg, zeno::Formula &driver_yyarg)
+   ZfxParser :: ZfxParser  (zeno::ZfxScanner &scanner_yyarg, zeno::ZfxExecute &driver_yyarg)
 #if YYDEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),
@@ -170,10 +164,10 @@ namespace  zeno  {
       driver (driver_yyarg)
   {}
 
-   Parser ::~ Parser  ()
+   ZfxParser ::~ ZfxParser  ()
   {}
 
-   Parser ::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
+   ZfxParser ::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
   {}
 
   /*---------.
@@ -183,33 +177,33 @@ namespace  zeno  {
 
 
   // by_state.
-   Parser ::by_state::by_state () YY_NOEXCEPT
+   ZfxParser ::by_state::by_state () YY_NOEXCEPT
     : state (empty_state)
   {}
 
-   Parser ::by_state::by_state (const by_state& that) YY_NOEXCEPT
+   ZfxParser ::by_state::by_state (const by_state& that) YY_NOEXCEPT
     : state (that.state)
   {}
 
   void
-   Parser ::by_state::clear () YY_NOEXCEPT
+   ZfxParser ::by_state::clear () YY_NOEXCEPT
   {
     state = empty_state;
   }
 
   void
-   Parser ::by_state::move (by_state& that)
+   ZfxParser ::by_state::move (by_state& that)
   {
     state = that.state;
     that.clear ();
   }
 
-   Parser ::by_state::by_state (state_type s) YY_NOEXCEPT
+   ZfxParser ::by_state::by_state (state_type s) YY_NOEXCEPT
     : state (s)
   {}
 
-   Parser ::symbol_kind_type
-   Parser ::by_state::kind () const YY_NOEXCEPT
+   ZfxParser ::symbol_kind_type
+   ZfxParser ::by_state::kind () const YY_NOEXCEPT
   {
     if (state == empty_state)
       return symbol_kind::S_YYEMPTY;
@@ -217,10 +211,10 @@ namespace  zeno  {
       return YY_CAST (symbol_kind_type, yystos_[+state]);
   }
 
-   Parser ::stack_symbol_type::stack_symbol_type ()
+   ZfxParser ::stack_symbol_type::stack_symbol_type ()
   {}
 
-   Parser ::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
+   ZfxParser ::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
     : super_type (YY_MOVE (that.state), YY_MOVE (that.location))
   {
     switch (that.kind ())
@@ -230,11 +224,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.YY_MOVE_OR_COPY< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -264,7 +257,7 @@ namespace  zeno  {
 #endif
   }
 
-   Parser ::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
+   ZfxParser ::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
     : super_type (s, YY_MOVE (that.location))
   {
     switch (that.kind ())
@@ -274,11 +267,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -307,8 +299,8 @@ namespace  zeno  {
   }
 
 #if YY_CPLUSPLUS < 201103L
-   Parser ::stack_symbol_type&
-   Parser ::stack_symbol_type::operator= (const stack_symbol_type& that)
+   ZfxParser ::stack_symbol_type&
+   ZfxParser ::stack_symbol_type::operator= (const stack_symbol_type& that)
   {
     state = that.state;
     switch (that.kind ())
@@ -318,11 +310,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (that.value);
         break;
@@ -350,8 +341,8 @@ namespace  zeno  {
     return *this;
   }
 
-   Parser ::stack_symbol_type&
-   Parser ::stack_symbol_type::operator= (stack_symbol_type& that)
+   ZfxParser ::stack_symbol_type&
+   ZfxParser ::stack_symbol_type::operator= (stack_symbol_type& that)
   {
     state = that.state;
     switch (that.kind ())
@@ -361,11 +352,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (that.value);
         break;
@@ -398,7 +388,7 @@ namespace  zeno  {
 
   template <typename Base>
   void
-   Parser ::yy_destroy_ (const char* yymsg, basic_symbol<Base>& yysym) const
+   ZfxParser ::yy_destroy_ (const char* yymsg, basic_symbol<Base>& yysym) const
   {
     if (yymsg)
       YY_SYMBOL_PRINT (yymsg, yysym);
@@ -407,7 +397,7 @@ namespace  zeno  {
 #if YYDEBUG
   template <typename Base>
   void
-   Parser ::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
+   ZfxParser ::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
   {
     std::ostream& yyoutput = yyo;
     YY_USE (yyoutput);
@@ -426,7 +416,7 @@ namespace  zeno  {
 #endif
 
   void
-   Parser ::yypush_ (const char* m, YY_MOVE_REF (stack_symbol_type) sym)
+   ZfxParser ::yypush_ (const char* m, YY_MOVE_REF (stack_symbol_type) sym)
   {
     if (m)
       YY_SYMBOL_PRINT (m, sym);
@@ -434,7 +424,7 @@ namespace  zeno  {
   }
 
   void
-   Parser ::yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym)
+   ZfxParser ::yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym)
   {
 #if 201103L <= YY_CPLUSPLUS
     yypush_ (m, stack_symbol_type (s, std::move (sym)));
@@ -445,40 +435,40 @@ namespace  zeno  {
   }
 
   void
-   Parser ::yypop_ (int n) YY_NOEXCEPT
+   ZfxParser ::yypop_ (int n) YY_NOEXCEPT
   {
     yystack_.pop (n);
   }
 
 #if YYDEBUG
   std::ostream&
-   Parser ::debug_stream () const
+   ZfxParser ::debug_stream () const
   {
     return *yycdebug_;
   }
 
   void
-   Parser ::set_debug_stream (std::ostream& o)
+   ZfxParser ::set_debug_stream (std::ostream& o)
   {
     yycdebug_ = &o;
   }
 
 
-   Parser ::debug_level_type
-   Parser ::debug_level () const
+   ZfxParser ::debug_level_type
+   ZfxParser ::debug_level () const
   {
     return yydebug_;
   }
 
   void
-   Parser ::set_debug_level (debug_level_type l)
+   ZfxParser ::set_debug_level (debug_level_type l)
   {
     yydebug_ = l;
   }
 #endif // YYDEBUG
 
-   Parser ::state_type
-   Parser ::yy_lr_goto_state_ (state_type yystate, int yysym)
+   ZfxParser ::state_type
+   ZfxParser ::yy_lr_goto_state_ (state_type yystate, int yysym)
   {
     int yyr = yypgoto_[yysym - YYNTOKENS] + yystate;
     if (0 <= yyr && yyr <= yylast_ && yycheck_[yyr] == yystate)
@@ -488,25 +478,25 @@ namespace  zeno  {
   }
 
   bool
-   Parser ::yy_pact_value_is_default_ (int yyvalue) YY_NOEXCEPT
+   ZfxParser ::yy_pact_value_is_default_ (int yyvalue) YY_NOEXCEPT
   {
     return yyvalue == yypact_ninf_;
   }
 
   bool
-   Parser ::yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT
+   ZfxParser ::yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT
   {
     return yyvalue == yytable_ninf_;
   }
 
   int
-   Parser ::operator() ()
+   ZfxParser ::operator() ()
   {
     return parse ();
   }
 
   int
-   Parser ::parse ()
+   ZfxParser ::parse ()
   {
     int yyn;
     /// Length of the RHS of the rule being reduced.
@@ -649,11 +639,10 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_exp: // exp
+      case symbol_kind::S_28_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
       case symbol_kind::S_32_func_content: // func-content
-      case symbol_kind::S_parencontent: // parencontent
       case symbol_kind::S_term: // term
         yylhs.value.emplace< std::shared_ptr<ZfxASTNode> > ();
         break;
@@ -694,165 +683,140 @@ namespace  zeno  {
           switch (yyn)
             {
   case 2: // calclist: %empty
-#line 106 "parser.y"
+#line 99 "zfxparser.y"
                 {}
-#line 700 "parser.cpp"
+#line 689 "zfxparser.cpp"
     break;
 
-  case 3: // calclist: calclist exp EOL
-#line 106 "parser.y"
-                                    {
+  case 3: // calclist: calclist exp-statement EOL
+#line 99 "zfxparser.y"
+                                              {
     yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > ();
-    driver.setASTResult(yylhs.value.as < std::shared_ptr<ZfxASTNode> > ());
+    //driver.setASTResult($$);
 }
-#line 709 "parser.cpp"
+#line 698 "zfxparser.cpp"
     break;
 
-  case 4: // exp: factor
-#line 111 "parser.y"
-                        { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 715 "parser.cpp"
+  case 4: // exp-statement: factor
+#line 104 "zfxparser.y"
+                                { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
+#line 704 "zfxparser.cpp"
     break;
 
-  case 5: // exp: exp ADD factor
-#line 112 "parser.y"
-                        { 
-            std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
-            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
+  case 5: // exp-statement: exp-statement ADD factor
+#line 105 "zfxparser.y"
+                                {
+                std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
+                yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
-#line 724 "parser.cpp"
+#line 713 "zfxparser.cpp"
     break;
 
-  case 6: // exp: exp SUB factor
-#line 116 "parser.y"
-                        {
-            std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
-            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
+  case 6: // exp-statement: exp-statement SUB factor
+#line 109 "zfxparser.y"
+                               {
+                std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
+                yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
-#line 733 "parser.cpp"
+#line 722 "zfxparser.cpp"
     break;
 
   case 7: // factor: term
-#line 122 "parser.y"
+#line 115 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 739 "parser.cpp"
+#line 728 "zfxparser.cpp"
     break;
 
   case 8: // factor: factor MUL term
-#line 123 "parser.y"
-                        { 
-            std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
-            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MUL, children);
+#line 116 "zfxparser.y"
+                        {
+                std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
+                yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MUL, children);
             }
-#line 748 "parser.cpp"
+#line 737 "zfxparser.cpp"
     break;
 
   case 9: // factor: factor DIV term
-#line 127 "parser.y"
+#line 120 "zfxparser.y"
                       {
             std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
-            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
-            }
-#line 757 "parser.cpp"
+            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, DIV, children);
+        }
+#line 746 "zfxparser.cpp"
     break;
 
   case 10: // zenvar: VARNAME
-#line 133 "parser.y"
+#line 126 "zfxparser.y"
                 { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeZenVarNode(yystack_[0].value.as < string > ()); }
-#line 763 "parser.cpp"
+#line 752 "zfxparser.cpp"
     break;
 
   case 11: // zenvar: DOLLAR
-#line 134 "parser.y"
+#line 127 "zfxparser.y"
              { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeZenVarNode(""); }
-#line 769 "parser.cpp"
+#line 758 "zfxparser.cpp"
     break;
 
-  case 12: // funcargs: exp
-#line 136 "parser.y"
-                         { yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = std::vector<std::shared_ptr<ZfxASTNode>>({yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()}); }
-#line 775 "parser.cpp"
+  case 12: // funcargs: exp-statement
+#line 129 "zfxparser.y"
+                                   { yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = std::vector<std::shared_ptr<ZfxASTNode>>({yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()}); }
+#line 764 "zfxparser.cpp"
     break;
 
-  case 13: // funcargs: funcargs COMMA exp
-#line 137 "parser.y"
-                         { yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()); yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > (); }
-#line 781 "parser.cpp"
+  case 13: // funcargs: funcargs COMMA exp-statement
+#line 130 "zfxparser.y"
+                                   { yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()); yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > (); }
+#line 770 "zfxparser.cpp"
     break;
 
   case 14: // func-content: LPAREN funcargs RPAREN
-#line 139 "parser.y"
+#line 133 "zfxparser.y"
                                      { 
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, yystack_[1].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ());
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->isParenthesisNodeComplete = true;
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->func_match = Match_Exactly;
     }
-#line 791 "parser.cpp"
+#line 780 "zfxparser.cpp"
     break;
 
-  case 15: // func-content: LPAREN funcargs
-#line 144 "parser.y"
-                      { 
-        yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, yystack_[0].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ());
-        yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->isParenthesisNodeComplete = false;
-        yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->func_match = Match_LeftPAREN;
-    }
-#line 801 "parser.cpp"
-    break;
-
-  case 16: // func-content: %empty
-#line 149 "parser.y"
-             {
-        yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, {});
-        yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->func_match = Match_Nothing;
-    }
-#line 810 "parser.cpp"
-    break;
-
-  case 17: // parencontent: LPAREN exp RPAREN
-#line 154 "parser.y"
-                                { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > (); yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->paren_match = Match_Exactly; }
-#line 816 "parser.cpp"
-    break;
-
-  case 18: // term: NUMBER
-#line 160 "parser.y"
+  case 15: // term: NUMBER
+#line 141 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNumberNode(yystack_[0].value.as < float > ()); }
-#line 822 "parser.cpp"
+#line 786 "zfxparser.cpp"
     break;
 
-  case 19: // term: LITERAL
-#line 161 "parser.y"
+  case 16: // term: LITERAL
+#line 142 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeStringNode(yystack_[0].value.as < string > ()); }
-#line 828 "parser.cpp"
+#line 792 "zfxparser.cpp"
     break;
 
-  case 20: // term: UNCOMPSTR
-#line 162 "parser.y"
+  case 17: // term: UNCOMPSTR
+#line 143 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeQuoteStringNode(yystack_[0].value.as < string > ()); }
-#line 834 "parser.cpp"
+#line 798 "zfxparser.cpp"
     break;
 
-  case 21: // term: parencontent
-#line 163 "parser.y"
+  case 18: // term: LPAREN exp-statement RPAREN
+#line 144 "zfxparser.y"
+                                  { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > (); }
+#line 804 "zfxparser.cpp"
+    break;
+
+  case 19: // term: SUB exp-statement
+#line 145 "zfxparser.y"
+                                  { yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value = -1 * std::get<float>(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value); yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
+#line 810 "zfxparser.cpp"
+    break;
+
+  case 20: // term: zenvar
+#line 146 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 840 "parser.cpp"
+#line 816 "zfxparser.cpp"
     break;
 
-  case 22: // term: SUB exp
-#line 164 "parser.y"
-                        { yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value = -1 * std::get<float>(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value); yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 846 "parser.cpp"
-    break;
-
-  case 23: // term: zenvar
-#line 165 "parser.y"
-                        { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 852 "parser.cpp"
-    break;
-
-  case 24: // term: FUNC func-content
-#line 166 "parser.y"
+  case 21: // term: FUNC func-content
+#line 147 "zfxparser.y"
                          { 
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ();
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->opVal = DEFAULT_FUNCVAL;
@@ -860,17 +824,11 @@ namespace  zeno  {
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->value = yystack_[1].value.as < string > ();
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->isParenthesisNode = true;
     }
-#line 864 "parser.cpp"
-    break;
-
-  case 25: // term: %empty
-#line 173 "parser.y"
-             { /*$$ = driver.makeEmptyNode();*/ }
-#line 870 "parser.cpp"
+#line 828 "zfxparser.cpp"
     break;
 
 
-#line 874 "parser.cpp"
+#line 832 "zfxparser.cpp"
 
             default:
               break;
@@ -1043,7 +1001,7 @@ namespace  zeno  {
   }
 
   void
-   Parser ::error (const syntax_error& yyexc)
+   ZfxParser ::error (const syntax_error& yyexc)
   {
     error (yyexc.location, yyexc.what ());
   }
@@ -1054,7 +1012,7 @@ namespace  zeno  {
      apostrophe, a comma, or backslash (other than backslash-backslash).
      YYSTR is taken from yytname.  */
   std::string
-   Parser ::yytnamerr_ (const char *yystr)
+   ZfxParser ::yytnamerr_ (const char *yystr)
   {
     if (*yystr == '"')
       {
@@ -1089,21 +1047,21 @@ namespace  zeno  {
   }
 
   std::string
-   Parser ::symbol_name (symbol_kind_type yysymbol)
+   ZfxParser ::symbol_name (symbol_kind_type yysymbol)
   {
     return yytnamerr_ (yytname_[yysymbol]);
   }
 
 
 
-  //  Parser ::context.
-   Parser ::context::context (const  Parser & yyparser, const symbol_type& yyla)
+  //  ZfxParser ::context.
+   ZfxParser ::context::context (const  ZfxParser & yyparser, const symbol_type& yyla)
     : yyparser_ (yyparser)
     , yyla_ (yyla)
   {}
 
   int
-   Parser ::context::expected_tokens (symbol_kind_type yyarg[], int yyargn) const
+   ZfxParser ::context::expected_tokens (symbol_kind_type yyarg[], int yyargn) const
   {
     // Actual number of expected tokens
     int yycount = 0;
@@ -1142,7 +1100,7 @@ namespace  zeno  {
 
 
   int
-   Parser ::yy_syntax_error_arguments_ (const context& yyctx,
+   ZfxParser ::yy_syntax_error_arguments_ (const context& yyctx,
                                                  symbol_kind_type yyarg[], int yyargn) const
   {
     /* There are many possibilities here to consider:
@@ -1182,7 +1140,7 @@ namespace  zeno  {
 
   // Generate an error message.
   std::string
-   Parser ::yysyntax_error_ (const context& yyctx) const
+   ZfxParser ::yysyntax_error_ (const context& yyctx) const
   {
     // Its maximum.
     enum { YYARGS_MAX = 5 };
@@ -1222,83 +1180,83 @@ namespace  zeno  {
   }
 
 
-  const signed char  Parser ::yypact_ninf_ = -16;
+  const signed char  ZfxParser ::yypact_ninf_ = -23;
 
-  const signed char  Parser ::yytable_ninf_ = -1;
+  const signed char  ZfxParser ::yytable_ninf_ = -1;
 
   const signed char
-   Parser ::yypact_[] =
+   ZfxParser ::yypact_[] =
   {
-     -16,     0,   -16,   -16,   -16,    -9,   -16,   -16,   -16,    16,
-      16,     4,    13,   -16,   -16,   -16,    16,   -16,   -16,     1,
-     -16,    16,    16,    16,    16,    20,    -2,   -16,    13,    13,
-     -16,   -16,   -16,    16,    20
+     -23,     0,   -23,   -23,   -23,   -22,   -23,   -23,   -23,    15,
+      15,    16,   -14,   -23,   -23,    15,   -23,   -23,     1,   -23,
+      15,    15,    15,    15,     5,     6,   -23,   -14,   -14,   -23,
+     -23,   -23,    15,     5
   };
 
   const signed char
-   Parser ::yydefact_[] =
+   ZfxParser ::yydefact_[] =
   {
-       2,    25,     1,    18,    19,    16,    20,    11,    10,    25,
-      25,     0,     4,    23,    21,     7,    25,    24,    22,     0,
-       3,    25,    25,    25,    25,    12,    15,    17,     5,     6,
-       8,     9,    14,    25,    13
+       2,     0,     1,    15,    16,     0,    17,    11,    10,     0,
+       0,     0,     4,    20,     7,     0,    21,    19,     0,     3,
+       0,     0,     0,     0,    12,     0,    18,     5,     6,     8,
+       9,    14,     0,    13
   };
 
   const signed char
-   Parser ::yypgoto_[] =
+   ZfxParser ::yypgoto_[] =
   {
-     -16,   -16,    -7,   -15,   -16,   -16,   -16,   -16,    19
+     -23,   -23,    -8,    17,   -23,   -23,   -23,    13
   };
 
   const signed char
-   Parser ::yydefgoto_[] =
+   ZfxParser ::yydefgoto_[] =
   {
-       0,     1,    11,    12,    13,    26,    17,    14,    15
+       0,     1,    11,    12,    13,    25,    16,    14
   };
 
   const signed char
-   Parser ::yytable_[] =
+   ZfxParser ::yytable_[] =
   {
-       2,    32,    18,    19,    27,     3,    28,    29,    33,    25,
-      20,     4,     5,     6,     7,     8,    16,    21,     9,    22,
-      21,     3,    22,     0,     0,    10,    34,     4,     5,     6,
-       7,     8,     0,    23,     9,    24,    21,     0,    22,     0,
-       0,    10,    30,    31
+       2,    17,    18,    15,    26,     3,    22,    24,    23,    31,
+       0,     4,     5,     6,     7,     8,    32,    20,     9,    21,
+       3,    20,    19,    21,    33,    10,     4,     5,     6,     7,
+       8,     0,    20,     9,    21,    29,    30,    27,    28,     0,
+      10
   };
 
   const signed char
-   Parser ::yycheck_[] =
+   ZfxParser ::yycheck_[] =
   {
-       0,     3,     9,    10,     3,     5,    21,    22,    10,    16,
-       6,    11,    12,    13,    14,    15,    25,    16,    18,    18,
-      16,     5,    18,    -1,    -1,    25,    33,    11,    12,    13,
-      14,    15,    -1,    20,    18,    22,    16,    -1,    18,    -1,
-      -1,    25,    23,    24
+       0,     9,    10,    25,     3,     5,    20,    15,    22,     3,
+      -1,    11,    12,    13,    14,    15,    10,    16,    18,    18,
+       5,    16,     6,    18,    32,    25,    11,    12,    13,    14,
+      15,    -1,    16,    18,    18,    22,    23,    20,    21,    -1,
+      25
   };
 
   const signed char
-   Parser ::yystos_[] =
+   ZfxParser ::yystos_[] =
   {
        0,    27,     0,     5,    11,    12,    13,    14,    15,    18,
-      25,    28,    29,    30,    33,    34,    25,    32,    28,    28,
-       6,    16,    18,    20,    22,    28,    31,     3,    29,    29,
-      34,    34,     3,    10,    28
+      25,    28,    29,    30,    33,    25,    32,    28,    28,     6,
+      16,    18,    20,    22,    28,    31,     3,    29,    29,    33,
+      33,     3,    10,    28
   };
 
   const signed char
-   Parser ::yyr1_[] =
+   ZfxParser ::yyr1_[] =
   {
        0,    26,    27,    27,    28,    28,    28,    29,    29,    29,
-      30,    30,    31,    31,    32,    32,    32,    33,    34,    34,
-      34,    34,    34,    34,    34,    34
+      30,    30,    31,    31,    32,    33,    33,    33,    33,    33,
+      33,    33
   };
 
   const signed char
-   Parser ::yyr2_[] =
+   ZfxParser ::yyr2_[] =
   {
        0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
-       1,     1,     1,     3,     3,     2,     0,     3,     1,     1,
-       1,     1,     2,     1,     2,     0
+       1,     1,     1,     3,     3,     1,     1,     1,     3,     2,
+       1,     2
   };
 
 
@@ -1306,28 +1264,28 @@ namespace  zeno  {
   // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
   // First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
   const char*
-  const  Parser ::yytname_[] =
+  const  ZfxParser ::yytname_[] =
   {
   "END", "error", "\"invalid token\"", "RPAREN", "IDENTIFIER", "NUMBER",
   "EOL", "FRAME", "FPS", "PI", "COMMA", "LITERAL", "FUNC", "UNCOMPSTR",
   "DOLLAR", "VARNAME", "ADD", "\"+\"", "SUB", "\"-\"", "MUL", "\"*\"",
-  "DIV", "\"/\"", "NEG", "LPAREN", "$accept", "calclist", "exp", "factor",
-  "zenvar", "funcargs", "func-content", "parencontent", "term", YY_NULLPTR
+  "DIV", "\"/\"", "NEG", "LPAREN", "$accept", "calclist", "exp-statement",
+  "factor", "zenvar", "funcargs", "func-content", "term", YY_NULLPTR
   };
 #endif
 
 
 #if YYDEBUG
   const unsigned char
-   Parser ::yyrline_[] =
+   ZfxParser ::yyrline_[] =
   {
-       0,   106,   106,   106,   111,   112,   116,   122,   123,   127,
-     133,   134,   136,   137,   139,   144,   149,   154,   160,   161,
-     162,   163,   164,   165,   166,   173
+       0,    99,    99,    99,   104,   105,   109,   115,   116,   120,
+     126,   127,   129,   130,   133,   141,   142,   143,   144,   145,
+     146,   147
   };
 
   void
-   Parser ::yy_stack_print_ () const
+   ZfxParser ::yy_stack_print_ () const
   {
     *yycdebug_ << "Stack now";
     for (stack_type::const_iterator
@@ -1339,7 +1297,7 @@ namespace  zeno  {
   }
 
   void
-   Parser ::yy_reduce_print_ (int yyrule) const
+   ZfxParser ::yy_reduce_print_ (int yyrule) const
   {
     int yylno = yyrline_[yyrule];
     int yynrhs = yyr2_[yyrule];
@@ -1354,19 +1312,15 @@ namespace  zeno  {
 #endif // YYDEBUG
 
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 } //  zeno 
-#line 1360 "parser.cpp"
+#line 1318 "zfxparser.cpp"
 
-#line 175 "parser.y"
+#line 155 "zfxparser.y"
 
 
 // Bison expects us to provide implementation - otherwise linker complains
-void zeno::Parser::error(const location &loc , const std::string &message) {
-        
-        // Location should be initialized inside scanner action, but is not in this example.
-        // Let's grab location directly from driver class.
-	// cout << "Error: " << message << endl << "Location: " << loc << endl;
-
+void zeno::ZfxParser::error(const location &loc , const std::string &message) {
     cout << "Error: " << message << endl << "Error location: " << driver.location() << endl;
 }
+

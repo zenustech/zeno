@@ -5,6 +5,7 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/Graph.h>
+#include <zeno/formula/zfxexecute.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -59,6 +60,25 @@ static void vectors_wrangle
         }
     }
 }
+
+struct AttributeWrangle : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        ZfxExecute zfx(code, get_path());
+        int ret = zfx.parse();
+    }
+};
+
+ZENDEFNODE(AttributeWrangle, {
+    {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+     {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
+     {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
+    {{"PrimitiveObject", "prim"}},
+    {},
+    {"zenofx"},
+});
+
 
 struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
