@@ -12,7 +12,7 @@
 
 
 PythonNode::PythonNode(const NodeUtilParam& params, QGraphicsItem* parent)
-    : ZenoNode(params, parent)
+    : ZenoNodeNew(params, parent)
 {
 
 }
