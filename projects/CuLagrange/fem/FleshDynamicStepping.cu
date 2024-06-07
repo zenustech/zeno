@@ -833,7 +833,10 @@ struct FleshDynamicStepping : INode {
                         T stiffness = (2.0066 * mu + 1.0122 * lambda) * b_verts("strength",vi);
 
 
-                        auto alpha = stiffness * bone_driven_weight * bcws("strength",vi) * bcws("cnorm",vi) * eles("vol",ei) * eles("bdw",ei);
+                        auto area = (T)1.0;
+                        if(b_verts.hasProperty("area"))
+                            area = b_verts("area",vi);
+                        auto alpha = area * stiffness * bone_driven_weight * bcws("strength",vi) * bcws("cnorm",vi) * eles("vol",ei) * eles("bdw",ei);
 
                         for(size_t i = 0;i != 4;++i){
                             auto tmp = -pdiff * alpha * w[i]; 
@@ -1336,6 +1339,7 @@ struct FleshDynamicStepping : INode {
         auto bverts = typename ZenoParticles::particles_t({
             {"x",3},
             {"intersect",1},
+            {"area",1},
             {"strength",1}},0,zs::memsrc_e::device);
         if(has_input<ZenoParticles>("driven_boudary") && zsparticles->hasAuxData(driven_tag)){
             auto zsbones = get_input<ZenoParticles>("driven_boudary");
@@ -1353,6 +1357,12 @@ struct FleshDynamicStepping : INode {
                 TILEVEC_OPS::copy(cudaPol,zsbones_verts,"intersect",bverts,"intersect");
             else
                TILEVEC_OPS::fill(cudaPol,bverts,"intersect",(T)0.0); 
+
+            if(zsbones_verts.hasProperty("area")) {
+                TILEVEC_OPS::copy(cudaPol,zsbones_verts,"area",bverts,"area");
+                std::cout << "use dynamic area driven weight" << std::endl;
+            } else
+                TILEVEC_OPS::fill(cudaPol,bverts,"area",(T)1.0);
 
             const auto& inbbw = (*zsparticles)[driven_tag];
             bbw.resize(inbbw.size());
