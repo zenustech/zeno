@@ -57,7 +57,6 @@ dollar \$
 zenvarname \$[A-Za-z_]+
 compareop (<|<=|>=|>)
 
-
 %%
 %{
   // C++ 兼容的词法分析器的规则，step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
@@ -89,12 +88,14 @@ compareop (<|<=|>=|>)
 "("       { return zeno::ZfxParser::make_LPAREN(yytext,loc); }
 ")"       { return zeno::ZfxParser::make_RPAREN(yytext,loc); }
 ","       { return zeno::ZfxParser::make_COMMA(loc); }
+"?"       { return zeno::ZfxParser::make_QUESTION(yytext,loc); }
+":"       { return zeno::ZfxParser::make_COLON(yytext,loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
 {functoken} { return zeno::ZfxParser::make_FUNC(yytext, loc); }
 {dollar}  { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 {zenvarname} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
-{compareop}  { }
+{compareop}  { return zeno::ZfxParser::make_COMPARE(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;

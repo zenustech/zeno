@@ -23,6 +23,7 @@ public:
     std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeEmptyNode();
+    void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
 
     // Used to get last Scanner location. Used in error messages.
     unsigned int location() const;

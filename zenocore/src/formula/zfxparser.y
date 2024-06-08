@@ -79,6 +79,9 @@
 %token UNCOMPSTR
 %token DOLLAR
 %token VARNAME
+%token COMPARE
+%token QUESTION
+%token COLON
 
 %left ADD "+"
 %left SUB "-"
@@ -91,14 +94,14 @@
 
 %type <std::shared_ptr<ZfxASTNode>> exp-statement calclist factor term func-content zenvar
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs
-%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN
+%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN COMPARE QUESTION
 
 %start calclist
 
 %%
 calclist: %empty{}|calclist exp-statement EOL {
     $$ = $2;
-    //driver.setASTResult($$);
+    driver.setASTResult($$);
 };
 
 exp-statement: factor           { $$ = $1; }
@@ -136,6 +139,17 @@ func-content: LPAREN funcargs RPAREN {
         $$->func_match = Match_Exactly;
     }
 
+cond-statement: exp-statement COMPARE exp-statement {
+        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
+        $$ = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
+        $$->type = COMPOP;
+        $$->value = $2;
+    }
+
+condvar-statement: LPAREN exp-statement RPAREN QUESTION exp-statement COLON exp-statement {
+        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
+    }
+
 /* 不考虑空的情况 */
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
@@ -151,6 +165,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$->value = $1;
         $$->isParenthesisNode = true;
     }
+    | cond-statement { $$ = $1; }
     ;
 %%
 

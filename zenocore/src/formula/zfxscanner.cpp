@@ -767,7 +767,7 @@ YY_RULE_SETUP
 case 17:
 YY_RULE_SETUP
 #line 98 "zfxscanner.l"
-{ }
+{ return zeno::ZfxParser::make_COMPARE(yytext, loc); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 #line 99 "zfxscanner.l"

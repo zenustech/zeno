@@ -58,7 +58,7 @@ endif()
 
 if(WIN32)
     find_package(cryptopp CONFIG REQUIRED)
-    target_link_libraries(zenovis PRIVATE cryptopp::cryptopp)
+    target_link_libraries(zenovis PRIVATE cryptopp-static)
 else()
     target_link_libraries(zenovis PRIVATE cryptopp)
 endif()

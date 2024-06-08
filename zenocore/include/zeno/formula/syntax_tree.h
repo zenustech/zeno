@@ -17,6 +17,7 @@ enum nodeType {
     FOUROPERATIONS,     //四则运算+ - * / %
     STRING,             //字符串
     ZENVAR,
+    COMPOP,             //操作符
     PLACEHOLDER,
 };
 

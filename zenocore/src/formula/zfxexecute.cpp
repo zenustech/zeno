@@ -37,27 +37,56 @@ ZENO_API int ZfxExecute::parse() {
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children) {
-    return nullptr;
+    auto pNode = newNode(type, op, children);
+    return pNode;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeNewNumberNode(float value) {
-    return nullptr;
+    auto pNode = newNumberNode(value);
+    return pNode;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeStringNode(std::string text) {
-    return nullptr;
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = STRING;
+    spNode->opVal = UNDEFINE_OP;
+    spNode->value = text.substr(1, text.length() - 2);
+    return spNode;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeZenVarNode(std::string text) {
-    return nullptr;
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = ZENVAR;
+    spNode->opVal = UNDEFINE_OP;
+    if (!text.empty())
+        spNode->value = text.substr(1);
+    else
+        spNode->value = text;
+    return spNode;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {
-    return nullptr;
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = STRING;
+    spNode->opVal = UNDEFINE_OP;
+    spNode->value = text.substr(1);
+    return spNode;
+}
+
+void ZfxExecute::setASTResult(std::shared_ptr<ZfxASTNode> pNode) {
+    int j;
+    j = 0;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeEmptyNode() {
-    return nullptr;
+    std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
+    if (!n)
+    {
+        exit(0);
+    }
+    n->type = PLACEHOLDER;
+    n->value = 0;
+    return n;
 }
 
 unsigned int ZfxExecute::location() const {
