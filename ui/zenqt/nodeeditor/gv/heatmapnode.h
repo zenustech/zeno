@@ -1,11 +1,12 @@
 #ifndef __HEATMAP_NODE_H__
 #define __HEATMAP_NODE_H__
 
-#include "zenonode.h"
+#include "zenonodenew.h"
 
-class MakeHeatMapNode : public ZenoNode
+class MakeHeatMapNode : public ZenoNodeNew
 {
-	Q_OBJECT
+    Q_OBJECT
+    typedef ZenoNodeNew _base;
 public:
 	MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
 	~MakeHeatMapNode();

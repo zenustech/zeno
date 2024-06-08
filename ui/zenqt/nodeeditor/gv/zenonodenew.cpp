@@ -138,20 +138,12 @@ void ZenoNodeNew::initLayout()
     m_headerWidget = initHeaderWidget();
     m_bodyWidget = initBodyWidget();
     m_outputObjSockets = initVerticalSockets(false);
-    ZLayoutBackground* customWidget = nullptr;
-    if (auto customLayout = initCustomParamWidgets())
-    {
-        customWidget = new ZLayoutBackground(this);
-        customWidget->setLayout(customLayout);
-    }
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
     mainLayout->addLayout(m_inputObjSockets);
     mainLayout->addSpacing(6);
     mainLayout->addItem(m_headerWidget);
-    if (customWidget)
-        mainLayout->addItem(customWidget);
     mainLayout->addItem(m_bodyWidget);
     mainLayout->addSpacing(6);
     mainLayout->addLayout(m_outputObjSockets);
@@ -358,6 +350,11 @@ ZLayoutBackground* ZenoNodeNew::initBodyWidget()
     connect(paramsM, &ParamsModel::rowsMoved, this, &ZenoNodeNew::onViewParamsMoved);
     bool ret = connect(paramsM, &ParamsModel::layoutChanged, this, &ZenoNodeNew::onLayoutChanged);
 
+    if (auto pLayout = initCustomParamWidgets())
+    {
+        m_bodyLayout->addLayout(pLayout);
+        m_bodyLayout->addSpacing(margin);
+    }
     m_inputsLayout = initSockets(paramsM, true);
     m_bodyLayout->addLayout(m_inputsLayout);
 

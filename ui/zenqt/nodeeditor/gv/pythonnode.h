@@ -1,9 +1,9 @@
 #ifndef __PYTHON_NODE_H__
 #define __PYTHON_NODE_H__
 
-#include "zenonode.h"
+#include "zenonodenew.h"
 
-class PythonNode : public ZenoNode
+class PythonNode : public ZenoNodeNew
 {
     Q_OBJECT
 public:
