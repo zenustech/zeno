@@ -145,7 +145,7 @@ func-content: LPAREN funcargs RPAREN {
         $$->func_match = Match_Exactly;
     }
 
-cond-statement: exp-statement COMPARE exp-statement {
+cond-statement: term COMPARE term {
         std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
         $$ = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
         $$->type = COMPOP;
@@ -153,8 +153,8 @@ cond-statement: exp-statement COMPARE exp-statement {
     }
 
 /* 条件表达式 */
-condvar-statement: LPAREN exp-statement RPAREN QUESTION exp-statement COLON exp-statement {
-        std::vector<std::shared_ptr<ZfxASTNode>> children({$2, $5, $7});
+condvar-statement: cond-statement QUESTION exp-statement COLON exp-statement {
+        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3, $5});
         $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, children);
     }
 

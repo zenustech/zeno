@@ -840,9 +840,9 @@ namespace  zeno  {
 #line 841 "zfxparser.cpp"
     break;
 
-  case 16: // cond-statement: exp-statement COMPARE exp-statement
+  case 16: // cond-statement: term COMPARE term
 #line 148 "zfxparser.y"
-                                                    {
+                                  {
         std::vector<std::shared_ptr<ZfxASTNode>> children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->type = COMPOP;
@@ -851,10 +851,10 @@ namespace  zeno  {
 #line 852 "zfxparser.cpp"
     break;
 
-  case 17: // condvar-statement: LPAREN exp-statement RPAREN QUESTION exp-statement COLON exp-statement
+  case 17: // condvar-statement: cond-statement QUESTION exp-statement COLON exp-statement
 #line 156 "zfxparser.y"
-                                                                                          {
-        std::vector<std::shared_ptr<ZfxASTNode>> children({yystack_[5].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
+                                                                             {
+        std::vector<std::shared_ptr<ZfxASTNode>> children({yystack_[4].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, children);
     }
 #line 861 "zfxparser.cpp"
@@ -1299,19 +1299,18 @@ namespace  zeno  {
   }
 
 
-  const signed char  ZfxParser ::yypact_ninf_ = -25;
+  const signed char  ZfxParser ::yypact_ninf_ = -24;
 
-  const signed char  ZfxParser ::yytable_ninf_ = -10;
+  const signed char  ZfxParser ::yytable_ninf_ = -1;
 
   const signed char
    ZfxParser ::yypact_[] =
   {
-     -25,    15,   -25,   -25,   -25,   -25,   -25,    27,   -18,    27,
-      27,    10,   -24,     1,   -25,   -25,   -25,   -25,    51,    -3,
-      27,   -25,    13,    -2,   -25,    27,    27,    27,    27,    27,
-       9,    27,   -25,    51,     8,    20,    51,    51,    46,    46,
-      47,    48,   -25,    51,   -25,    27,    27,    51,   -13,    27,
-      51
+     -24,     5,   -24,   -24,   -24,   -24,   -24,    24,   -23,    24,
+      24,    -5,     4,    -9,    31,   -24,   -24,     6,     9,    -6,
+      24,   -24,   -24,     3,   -24,    24,    24,    24,    24,    29,
+      24,    24,    24,   -24,     9,    12,   -24,     4,     4,     6,
+       6,   -24,    25,     6,     9,   -24,    24,    24,     9,     9
   };
 
   const signed char
@@ -1320,49 +1319,44 @@ namespace  zeno  {
        2,     0,     1,    21,    22,    23,    10,     0,    11,     0,
        0,     0,     4,    26,    28,    29,    30,     7,    18,     0,
        0,    27,    25,     0,     3,     0,     0,     0,     0,     0,
-       0,     0,    20,    13,     0,    24,    16,     0,     5,     6,
-       7,     7,    12,    19,    15,     0,     0,    14,     0,     0,
-      17
+       0,     0,     0,    20,    13,     0,    24,     5,     6,     8,
+       9,    12,     0,    16,    19,    15,     0,     0,    14,    17
   };
 
   const signed char
    ZfxParser ::yypgoto_[] =
   {
-     -25,   -25,    -1,    16,   -25,   -25,   -25,   -25,   -25,   -25,
-     -25,    34
+     -24,   -24,    -7,    19,   -24,   -24,   -24,   -24,   -24,   -24,
+     -24,   -20
   };
 
   const signed char
    ZfxParser ::yydefgoto_[] =
   {
-       0,     1,    37,    12,    13,    34,    21,    14,    15,    19,
+       0,     1,    11,    12,    13,    35,    21,    14,    15,    19,
       16,    17
   };
 
   const signed char
    ZfxParser ::yytable_[] =
   {
-      11,    35,    25,    28,    49,    29,    18,    31,    22,    23,
-      26,    44,    27,    25,    20,     2,    24,    32,    45,    33,
-       3,    26,    30,    27,    36,    25,     4,     5,    25,     6,
-      43,    42,     3,    26,     7,    27,    46,     8,     4,     5,
-       9,     6,    38,    39,    47,    48,     7,    10,    50,     8,
-      -8,    -9,     9,    -8,    -9,     0,     0,    -8,    -9,    10,
-       0,    -4,    40,    41,    -8,    -9,    25,    -8,    -9,    -4,
-       0,    -4,     0,    28,    26,    29,    27
+      18,    24,    22,    23,    32,     2,    36,    39,    40,    20,
+       3,    43,    29,    34,    33,    45,     4,     5,    25,     6,
+      26,    31,    46,    42,     7,    44,    25,     8,    26,     3,
+       9,    27,    25,    28,    26,     4,     5,    10,     6,    48,
+      49,     0,    47,     7,    37,    38,     8,    30,    25,     9,
+      26,    41,     0,     0,     0,     0,    10
   };
 
   const signed char
    ZfxParser ::yycheck_[] =
   {
-       1,     3,    15,    27,    17,    29,     7,    10,     9,    10,
-      23,     3,    25,    15,    32,     0,     6,    20,    10,    20,
-       5,    23,    21,    25,    25,    15,    11,    12,    15,    14,
-      31,    22,     5,    23,    19,    25,    16,    22,    11,    12,
-      25,    14,    26,    27,    45,    46,    19,    32,    49,    22,
-       3,     3,    25,     6,     6,    -1,    -1,    10,    10,    32,
-      -1,    15,    28,    29,    17,    17,    15,    20,    20,    23,
-      -1,    25,    -1,    27,    23,    29,    25
+       7,     6,     9,    10,    10,     0,     3,    27,    28,    32,
+       5,    31,    21,    20,    20,     3,    11,    12,    23,    14,
+      25,    15,    10,    30,    19,    32,    23,    22,    25,     5,
+      25,    27,    23,    29,    25,    11,    12,    32,    14,    46,
+      47,    -1,    17,    19,    25,    26,    22,    16,    23,    25,
+      25,    22,    -1,    -1,    -1,    -1,    32
   };
 
   const signed char
@@ -1370,10 +1364,9 @@ namespace  zeno  {
   {
        0,    34,     0,     5,    11,    12,    14,    19,    22,    25,
       32,    35,    36,    37,    40,    41,    43,    44,    35,    42,
-      32,    39,    35,    35,     6,    15,    23,    25,    27,    29,
-      21,    10,    20,    35,    38,     3,    35,    35,    36,    36,
-      44,    44,    22,    35,     3,    10,    16,    35,    35,    17,
-      35
+      32,    39,    35,    35,     6,    23,    25,    27,    29,    21,
+      16,    15,    10,    20,    35,    38,     3,    36,    36,    44,
+      44,    22,    35,    44,    35,     3,    10,    17,    35,    35
   };
 
   const signed char
@@ -1389,7 +1382,7 @@ namespace  zeno  {
    ZfxParser ::yyr2_[] =
   {
        0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
-       1,     1,     3,     1,     3,     3,     3,     7,     1,     3,
+       1,     1,     3,     1,     3,     3,     3,     5,     1,     3,
        3,     1,     1,     1,     3,     2,     1,     2,     1,     1,
        1
   };
@@ -1453,7 +1446,7 @@ namespace  zeno  {
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 1457 "zfxparser.cpp"
+#line 1450 "zfxparser.cpp"
 
 #line 185 "zfxparser.y"
 

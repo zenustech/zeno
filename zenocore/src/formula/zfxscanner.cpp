@@ -614,10 +614,10 @@ YY_DECL
 		}
 
 	{
-#line 61 "zfxscanner.l"
+#line 60 "zfxscanner.l"
 
 
-#line 64 "zfxscanner.l"
+#line 63 "zfxscanner.l"
   // C++ 兼容的词法分析器的规则，step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
   loc.step();
 
@@ -681,16 +681,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 68 "zfxscanner.l"
+#line 67 "zfxscanner.l"
 {
                 return ZfxParser::make_NUMBER(std::strtof(yytext,0),loc); // strtof函数将字符串转换为浮点数
             }
 	YY_BREAK
 case 2:
-#line 73 "zfxscanner.l"
+#line 72 "zfxscanner.l"
 case 3:
 YY_RULE_SETUP
-#line 73 "zfxscanner.l"
+#line 72 "zfxscanner.l"
 {
             /* 跳过注释和空白符号 */
             // step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
@@ -701,7 +701,7 @@ YY_RULE_SETUP
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 80 "zfxscanner.l"
+#line 79 "zfxscanner.l"
 {
             loc.lines(yyleng);  //使用lines函数来更新位置信息中的符号
             loc.step();
@@ -710,108 +710,108 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 86 "zfxscanner.l"
+#line 85 "zfxscanner.l"
 { return zeno::ZfxParser::make_ADD(loc); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 87 "zfxscanner.l"
+#line 86 "zfxscanner.l"
 { return zeno::ZfxParser::make_SUB(loc); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 88 "zfxscanner.l"
+#line 87 "zfxscanner.l"
 { return zeno::ZfxParser::make_MUL(loc); }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 89 "zfxscanner.l"
+#line 88 "zfxscanner.l"
 { return zeno::ZfxParser::make_DIV(loc); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 90 "zfxscanner.l"
+#line 89 "zfxscanner.l"
 { return zeno::ZfxParser::make_LPAREN(yytext,loc); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 91 "zfxscanner.l"
+#line 90 "zfxscanner.l"
 { return zeno::ZfxParser::make_RPAREN(yytext,loc); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 92 "zfxscanner.l"
+#line 91 "zfxscanner.l"
 { return zeno::ZfxParser::make_COMMA(loc); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 93 "zfxscanner.l"
+#line 92 "zfxscanner.l"
 { return zeno::ZfxParser::make_QUESTION(yytext,loc); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 94 "zfxscanner.l"
+#line 93 "zfxscanner.l"
 { return zeno::ZfxParser::make_COLON(yytext,loc); }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 95 "zfxscanner.l"
+#line 94 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOT(yytext,loc); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 96 "zfxscanner.l"
+#line 95 "zfxscanner.l"
 { return zeno::ZfxParser::make_LBRACKET(yytext,loc); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 97 "zfxscanner.l"
+#line 96 "zfxscanner.l"
 { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 98 "zfxscanner.l"
+#line 97 "zfxscanner.l"
 { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 99 "zfxscanner.l"
+#line 98 "zfxscanner.l"
 { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 100 "zfxscanner.l"
+#line 99 "zfxscanner.l"
 { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 101 "zfxscanner.l"
+#line 100 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 102 "zfxscanner.l"
+#line 101 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 103 "zfxscanner.l"
+#line 102 "zfxscanner.l"
 { return zeno::ZfxParser::make_COMPARE(yytext, loc); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 104 "zfxscanner.l"
+#line 103 "zfxscanner.l"
 { return yyterminate(); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 105 "zfxscanner.l"
+#line 104 "zfxscanner.l"
 {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;
           }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 109 "zfxscanner.l"
+#line 108 "zfxscanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 817 "zfxscanner.cpp"
@@ -1775,6 +1775,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 109 "zfxscanner.l"
+#line 108 "zfxscanner.l"
 
 
