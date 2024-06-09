@@ -65,6 +65,21 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeZenVarNode(std::string text) {
     return spNode;
 }
 
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text) {
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = ZENVAR;
+    spNode->opVal = UNDEFINE_OP;
+    spNode->value = text;
+    return spNode;
+}
+
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component) {
+    std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
+    childNode->value = component;
+    pVarNode->children.push_back(childNode);
+    return pVarNode;
+}
+
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {
     std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = STRING;
@@ -74,8 +89,7 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {
 }
 
 void ZfxExecute::setASTResult(std::shared_ptr<ZfxASTNode> pNode) {
-    int j;
-    j = 0;
+    m_vecCommands.push_back(pNode);
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeEmptyNode() {

@@ -18,6 +18,10 @@ enum nodeType {
     STRING,             //字符串
     ZENVAR,
     COMPOP,             //操作符
+    CONDEXP,            //条件表达式
+    ARRAY,
+    MATRIX,
+    COMPVISIT,          //访问元素分量，比如vec.x vec.y vec.z
     PLACEHOLDER,
 };
 

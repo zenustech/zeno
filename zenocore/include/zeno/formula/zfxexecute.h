@@ -21,7 +21,9 @@ public:
     std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
     std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component);
     std::shared_ptr<ZfxASTNode> makeEmptyNode();
     void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
 

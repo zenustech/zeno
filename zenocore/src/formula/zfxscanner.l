@@ -90,11 +90,14 @@ compareop (<|<=|>=|>)
 ","       { return zeno::ZfxParser::make_COMMA(loc); }
 "?"       { return zeno::ZfxParser::make_QUESTION(yytext,loc); }
 ":"       { return zeno::ZfxParser::make_COLON(yytext,loc); }
+"\."      { return zeno::ZfxParser::make_DOT(yytext,loc); }
+"{"       { return zeno::ZfxParser::make_LBRACKET(yytext,loc); }
+"}"       { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
-{functoken} { return zeno::ZfxParser::make_FUNC(yytext, loc); }
+{functoken} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
 {dollar}  { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
-{zenvarname} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
+{zenvarname} { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 {compareop}  { return zeno::ZfxParser::make_COMPARE(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {

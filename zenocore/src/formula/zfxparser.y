@@ -75,13 +75,17 @@
 %token PI
 %token COMMA
 %token LITERAL
-%token FUNC
 %token UNCOMPSTR
 %token DOLLAR
-%token VARNAME
+%token DOLLARVARNAME
 %token COMPARE
 %token QUESTION
 %token COLON
+%token ZFXVAR
+%token LBRACKET
+%token RBRACKET
+%token DOT
+%token VARNAME
 
 %left ADD "+"
 %left SUB "-"
@@ -92,9 +96,9 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> exp-statement calclist factor term func-content zenvar
-%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs
-%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN COMPARE QUESTION
+%type <std::shared_ptr<ZfxASTNode>> exp-statement calclist factor term func-content zenvar array-stmt cond-statement condvar-statement
+%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME
 
 %start calclist
 
@@ -126,8 +130,10 @@ factor: term            { $$ = $1; }
         }
     ;
 
-zenvar: VARNAME { $$ = driver.makeZenVarNode($1); }
-    | DOLLAR { $$ = driver.makeZenVarNode(""); };
+zenvar: DOLLARVARNAME { $$ = driver.makeZenVarNode($1); }
+    | VARNAME { $$ = driver.makeZfxVarNode($1); }
+    | zenvar DOT VARNAME { $$ = driver.makeComponentVisit($1, $3); }
+    ;
 
 funcargs: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp-statement { $1.push_back($3); $$ = $1; }
@@ -146,11 +152,18 @@ cond-statement: exp-statement COMPARE exp-statement {
         $$->value = $2;
     }
 
+/* 条件表达式 */
 condvar-statement: LPAREN exp-statement RPAREN QUESTION exp-statement COLON exp-statement {
-        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
+        std::vector<std::shared_ptr<ZfxASTNode>> children({$2, $5, $7});
+        $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, children);
     }
 
-/* 不考虑空的情况 */
+arrcontents: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
+    | arrcontents COMMA exp-statement { $1.push_back($3); $$ = $1; }
+
+array-stmt: LBRACKET arrcontents RBRACKET { 
+        $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
+    }
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
@@ -158,7 +171,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LPAREN exp-statement RPAREN { $$ = $2; }
     | SUB exp-statement %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
     | zenvar            { $$ = $1; }
-    | FUNC func-content  { 
+    | VARNAME func-content  { 
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;
         $$->type = FUNC;
@@ -166,6 +179,8 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$->isParenthesisNode = true;
     }
     | cond-statement { $$ = $1; }
+    | condvar-statement { $$ = $1; }
+    | array-stmt { $$ = $1; }
     ;
 %%
 

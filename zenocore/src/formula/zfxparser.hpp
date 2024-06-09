@@ -432,20 +432,30 @@ namespace  zeno  {
       // factor
       // zenvar
       // func-content
+      // cond-statement
+      // condvar-statement
+      // array-stmt
       // term
       char dummy2[sizeof (std::shared_ptr<ZfxASTNode>)];
 
       // funcargs
+      // arrcontents
       char dummy3[sizeof (std::vector<std::shared_ptr<ZfxASTNode>>)];
 
       // RPAREN
       // IDENTIFIER
       // LITERAL
-      // FUNC
       // UNCOMPSTR
       // DOLLAR
-      // VARNAME
+      // DOLLARVARNAME
       // COMPARE
+      // QUESTION
+      // COLON
+      // ZFXVAR
+      // LBRACKET
+      // RBRACKET
+      // DOT
+      // VARNAME
       // LPAREN
       char dummy4[sizeof (string)];
     };
@@ -509,17 +519,23 @@ namespace  zeno  {
     TOKEN_PI = 264,                // PI
     TOKEN_COMMA = 265,             // COMMA
     TOKEN_LITERAL = 266,           // LITERAL
-    TOKEN_FUNC = 267,              // FUNC
-    TOKEN_UNCOMPSTR = 268,         // UNCOMPSTR
-    TOKEN_DOLLAR = 269,            // DOLLAR
-    TOKEN_VARNAME = 270,           // VARNAME
-    TOKEN_COMPARE = 271,           // COMPARE
-    TOKEN_ADD = 272,               // ADD
-    TOKEN_SUB = 274,               // SUB
-    TOKEN_MUL = 276,               // MUL
-    TOKEN_DIV = 278,               // DIV
-    TOKEN_NEG = 280,               // NEG
-    TOKEN_LPAREN = 281             // LPAREN
+    TOKEN_UNCOMPSTR = 267,         // UNCOMPSTR
+    TOKEN_DOLLAR = 268,            // DOLLAR
+    TOKEN_DOLLARVARNAME = 269,     // DOLLARVARNAME
+    TOKEN_COMPARE = 270,           // COMPARE
+    TOKEN_QUESTION = 271,          // QUESTION
+    TOKEN_COLON = 272,             // COLON
+    TOKEN_ZFXVAR = 273,            // ZFXVAR
+    TOKEN_LBRACKET = 274,          // LBRACKET
+    TOKEN_RBRACKET = 275,          // RBRACKET
+    TOKEN_DOT = 276,               // DOT
+    TOKEN_VARNAME = 277,           // VARNAME
+    TOKEN_ADD = 278,               // ADD
+    TOKEN_SUB = 280,               // SUB
+    TOKEN_MUL = 282,               // MUL
+    TOKEN_DIV = 284,               // DIV
+    TOKEN_NEG = 286,               // NEG
+    TOKEN_LPAREN = 287             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -536,7 +552,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 27, ///< Number of tokens.
+        YYNTOKENS = 33, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -550,29 +566,39 @@ namespace  zeno  {
         S_PI = 9,                                // PI
         S_COMMA = 10,                            // COMMA
         S_LITERAL = 11,                          // LITERAL
-        S_FUNC = 12,                             // FUNC
-        S_UNCOMPSTR = 13,                        // UNCOMPSTR
-        S_DOLLAR = 14,                           // DOLLAR
-        S_VARNAME = 15,                          // VARNAME
-        S_COMPARE = 16,                          // COMPARE
-        S_ADD = 17,                              // ADD
-        S_18_ = 18,                              // "+"
-        S_SUB = 19,                              // SUB
-        S_20_ = 20,                              // "-"
-        S_MUL = 21,                              // MUL
-        S_22_ = 22,                              // "*"
-        S_DIV = 23,                              // DIV
-        S_24_ = 24,                              // "/"
-        S_NEG = 25,                              // NEG
-        S_LPAREN = 26,                           // LPAREN
-        S_YYACCEPT = 27,                         // $accept
-        S_calclist = 28,                         // calclist
-        S_29_exp_statement = 29,                 // exp-statement
-        S_factor = 30,                           // factor
-        S_zenvar = 31,                           // zenvar
-        S_funcargs = 32,                         // funcargs
-        S_33_func_content = 33,                  // func-content
-        S_term = 34                              // term
+        S_UNCOMPSTR = 12,                        // UNCOMPSTR
+        S_DOLLAR = 13,                           // DOLLAR
+        S_DOLLARVARNAME = 14,                    // DOLLARVARNAME
+        S_COMPARE = 15,                          // COMPARE
+        S_QUESTION = 16,                         // QUESTION
+        S_COLON = 17,                            // COLON
+        S_ZFXVAR = 18,                           // ZFXVAR
+        S_LBRACKET = 19,                         // LBRACKET
+        S_RBRACKET = 20,                         // RBRACKET
+        S_DOT = 21,                              // DOT
+        S_VARNAME = 22,                          // VARNAME
+        S_ADD = 23,                              // ADD
+        S_24_ = 24,                              // "+"
+        S_SUB = 25,                              // SUB
+        S_26_ = 26,                              // "-"
+        S_MUL = 27,                              // MUL
+        S_28_ = 28,                              // "*"
+        S_DIV = 29,                              // DIV
+        S_30_ = 30,                              // "/"
+        S_NEG = 31,                              // NEG
+        S_LPAREN = 32,                           // LPAREN
+        S_YYACCEPT = 33,                         // $accept
+        S_calclist = 34,                         // calclist
+        S_35_exp_statement = 35,                 // exp-statement
+        S_factor = 36,                           // factor
+        S_zenvar = 37,                           // zenvar
+        S_funcargs = 38,                         // funcargs
+        S_39_func_content = 39,                  // func-content
+        S_40_cond_statement = 40,                // cond-statement
+        S_41_condvar_statement = 41,             // condvar-statement
+        S_arrcontents = 42,                      // arrcontents
+        S_43_array_stmt = 43,                    // array-stmt
+        S_term = 44                              // term
       };
     };
 
@@ -614,26 +640,36 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_29_exp_statement: // exp-statement
+      case symbol_kind::S_35_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_33_func_content: // func-content
+      case symbol_kind::S_39_func_content: // func-content
+      case symbol_kind::S_40_cond_statement: // cond-statement
+      case symbol_kind::S_41_condvar_statement: // condvar-statement
+      case symbol_kind::S_43_array_stmt: // array-stmt
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
+      case symbol_kind::S_arrcontents: // arrcontents
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (std::move (that.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_FUNC: // FUNC
       case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_DOLLAR: // DOLLAR
-      case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_DOLLARVARNAME: // DOLLARVARNAME
       case symbol_kind::S_COMPARE: // COMPARE
+      case symbol_kind::S_QUESTION: // QUESTION
+      case symbol_kind::S_COLON: // COLON
+      case symbol_kind::S_ZFXVAR: // ZFXVAR
+      case symbol_kind::S_LBRACKET: // LBRACKET
+      case symbol_kind::S_RBRACKET: // RBRACKET
+      case symbol_kind::S_DOT: // DOT
+      case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (std::move (that.value));
         break;
@@ -746,26 +782,36 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_29_exp_statement: // exp-statement
+      case symbol_kind::S_35_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_33_func_content: // func-content
+      case symbol_kind::S_39_func_content: // func-content
+      case symbol_kind::S_40_cond_statement: // cond-statement
+      case symbol_kind::S_41_condvar_statement: // condvar-statement
+      case symbol_kind::S_43_array_stmt: // array-stmt
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
 
       case symbol_kind::S_funcargs: // funcargs
+      case symbol_kind::S_arrcontents: // arrcontents
         value.template destroy< std::vector<std::shared_ptr<ZfxASTNode>> > ();
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_FUNC: // FUNC
       case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_DOLLAR: // DOLLAR
-      case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_DOLLARVARNAME: // DOLLARVARNAME
       case symbol_kind::S_COMPARE: // COMPARE
+      case symbol_kind::S_QUESTION: // QUESTION
+      case symbol_kind::S_COLON: // COLON
+      case symbol_kind::S_ZFXVAR: // ZFXVAR
+      case symbol_kind::S_LBRACKET: // LBRACKET
+      case symbol_kind::S_RBRACKET: // RBRACKET
+      case symbol_kind::S_DOT: // DOT
+      case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_LPAREN: // LPAREN
         value.template destroy< string > ();
         break;
@@ -895,7 +941,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT ((token::TOKEN_RPAREN <= tok && tok <= token::TOKEN_IDENTIFIER)
-                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_COMPARE)
+                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_VARNAME)
                    || tok == token::TOKEN_LPAREN);
 #endif
       }
@@ -1130,21 +1176,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FUNC (string v, location_type l)
-      {
-        return symbol_type (token::TOKEN_FUNC, std::move (v), std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_FUNC (const string& v, const location_type& l)
-      {
-        return symbol_type (token::TOKEN_FUNC, v, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_UNCOMPSTR (string v, location_type l)
       {
         return symbol_type (token::TOKEN_UNCOMPSTR, std::move (v), std::move (l));
@@ -1175,16 +1206,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_VARNAME (string v, location_type l)
+      make_DOLLARVARNAME (string v, location_type l)
       {
-        return symbol_type (token::TOKEN_VARNAME, std::move (v), std::move (l));
+        return symbol_type (token::TOKEN_DOLLARVARNAME, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_VARNAME (const string& v, const location_type& l)
+      make_DOLLARVARNAME (const string& v, const location_type& l)
       {
-        return symbol_type (token::TOKEN_VARNAME, v, l);
+        return symbol_type (token::TOKEN_DOLLARVARNAME, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1200,6 +1231,111 @@ switch (yykind)
       make_COMPARE (const string& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_COMPARE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_QUESTION (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_QUESTION, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_QUESTION (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_QUESTION, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COLON (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_COLON, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COLON (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_COLON, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ZFXVAR (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_ZFXVAR, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ZFXVAR (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_ZFXVAR, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LBRACKET (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_LBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LBRACKET (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_LBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RBRACKET (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_RBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RBRACKET (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_RBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DOT (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_DOT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DOT (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_DOT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_VARNAME (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_VARNAME, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_VARNAME (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_VARNAME, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1622,8 +1758,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 74,     ///< Last index in yytable_.
-      yynnts_ = 8,  ///< Number of nonterminal symbols.
+      yylast_ = 76,     ///< Last index in yytable_.
+      yynnts_ = 12,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
 
@@ -1672,10 +1808,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26
+      25,    26,    27,    28,    29,    30,    31,    32
     };
     // Last valid token kind.
-    const int code_max = 281;
+    const int code_max = 287;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1699,26 +1835,36 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_29_exp_statement: // exp-statement
+      case symbol_kind::S_35_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_33_func_content: // func-content
+      case symbol_kind::S_39_func_content: // func-content
+      case symbol_kind::S_40_cond_statement: // cond-statement
+      case symbol_kind::S_41_condvar_statement: // condvar-statement
+      case symbol_kind::S_43_array_stmt: // array-stmt
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
+      case symbol_kind::S_arrcontents: // arrcontents
         value.copy< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_FUNC: // FUNC
       case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_DOLLAR: // DOLLAR
-      case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_DOLLARVARNAME: // DOLLARVARNAME
       case symbol_kind::S_COMPARE: // COMPARE
+      case symbol_kind::S_QUESTION: // QUESTION
+      case symbol_kind::S_COLON: // COLON
+      case symbol_kind::S_ZFXVAR: // ZFXVAR
+      case symbol_kind::S_LBRACKET: // LBRACKET
+      case symbol_kind::S_RBRACKET: // RBRACKET
+      case symbol_kind::S_DOT: // DOT
+      case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_LPAREN: // LPAREN
         value.copy< string > (YY_MOVE (that.value));
         break;
@@ -1759,26 +1905,36 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_29_exp_statement: // exp-statement
+      case symbol_kind::S_35_exp_statement: // exp-statement
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_33_func_content: // func-content
+      case symbol_kind::S_39_func_content: // func-content
+      case symbol_kind::S_40_cond_statement: // cond-statement
+      case symbol_kind::S_41_condvar_statement: // condvar-statement
+      case symbol_kind::S_43_array_stmt: // array-stmt
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
+      case symbol_kind::S_arrcontents: // arrcontents
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_RPAREN: // RPAREN
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_LITERAL: // LITERAL
-      case symbol_kind::S_FUNC: // FUNC
       case symbol_kind::S_UNCOMPSTR: // UNCOMPSTR
       case symbol_kind::S_DOLLAR: // DOLLAR
-      case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_DOLLARVARNAME: // DOLLARVARNAME
       case symbol_kind::S_COMPARE: // COMPARE
+      case symbol_kind::S_QUESTION: // QUESTION
+      case symbol_kind::S_COLON: // COLON
+      case symbol_kind::S_ZFXVAR: // ZFXVAR
+      case symbol_kind::S_LBRACKET: // LBRACKET
+      case symbol_kind::S_RBRACKET: // RBRACKET
+      case symbol_kind::S_DOT: // DOT
+      case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (YY_MOVE (s.value));
         break;
@@ -1850,7 +2006,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 1854 "zfxparser.hpp"
+#line 2010 "zfxparser.hpp"
 
 
 
