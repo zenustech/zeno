@@ -103,10 +103,14 @@
 %start calclist
 
 %%
-calclist: %empty{}|calclist exp-statement EOL {
-    $$ = $2;
-    driver.setASTResult($$);
-};
+calclist: END{
+            std::cout << "END" << std::endl;
+        }
+    | exp-statement calclist {
+            $$ = $1;
+            driver.setASTResult($$);
+        }
+    ;
 
 exp-statement: factor           { $$ = $1; }
     | exp-statement ADD factor  {

@@ -737,187 +737,189 @@ namespace  zeno  {
         {
           switch (yyn)
             {
-  case 2: // calclist: %empty
+  case 2: // calclist: END
 #line 106 "zfxparser.y"
-                {}
-#line 744 "zfxparser.cpp"
+             {
+            std::cout << "END" << std::endl;
+        }
+#line 746 "zfxparser.cpp"
     break;
 
-  case 3: // calclist: calclist exp-statement EOL
-#line 106 "zfxparser.y"
-                                              {
-    yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > ();
-    driver.setASTResult(yylhs.value.as < std::shared_ptr<ZfxASTNode> > ());
-}
-#line 753 "zfxparser.cpp"
+  case 3: // calclist: exp-statement calclist
+#line 109 "zfxparser.y"
+                             {
+            yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > ();
+            driver.setASTResult(yylhs.value.as < std::shared_ptr<ZfxASTNode> > ());
+        }
+#line 755 "zfxparser.cpp"
     break;
 
   case 4: // exp-statement: factor
-#line 111 "zfxparser.y"
+#line 115 "zfxparser.y"
                                 { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 759 "zfxparser.cpp"
+#line 761 "zfxparser.cpp"
     break;
 
   case 5: // exp-statement: exp-statement ADD factor
-#line 112 "zfxparser.y"
+#line 116 "zfxparser.y"
                                 {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
                 yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
-#line 768 "zfxparser.cpp"
+#line 770 "zfxparser.cpp"
     break;
 
   case 6: // exp-statement: exp-statement SUB factor
-#line 116 "zfxparser.y"
+#line 120 "zfxparser.y"
                                {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
                 yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
-#line 777 "zfxparser.cpp"
+#line 779 "zfxparser.cpp"
     break;
 
   case 7: // factor: term
-#line 122 "zfxparser.y"
+#line 126 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 783 "zfxparser.cpp"
+#line 785 "zfxparser.cpp"
     break;
 
   case 8: // factor: factor MUL term
-#line 123 "zfxparser.y"
+#line 127 "zfxparser.y"
                         {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
                 yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, MUL, children);
             }
-#line 792 "zfxparser.cpp"
+#line 794 "zfxparser.cpp"
     break;
 
   case 9: // factor: factor DIV term
-#line 127 "zfxparser.y"
+#line 131 "zfxparser.y"
                       {
             std::vector<std::shared_ptr<ZfxASTNode>>children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
             yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FOUROPERATIONS, DIV, children);
         }
-#line 801 "zfxparser.cpp"
+#line 803 "zfxparser.cpp"
     break;
 
   case 10: // zenvar: DOLLARVARNAME
-#line 133 "zfxparser.y"
+#line 137 "zfxparser.y"
                       { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeZenVarNode(yystack_[0].value.as < string > ()); }
-#line 807 "zfxparser.cpp"
+#line 809 "zfxparser.cpp"
     break;
 
   case 11: // zenvar: VARNAME
-#line 134 "zfxparser.y"
+#line 138 "zfxparser.y"
               { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeZfxVarNode(yystack_[0].value.as < string > ()); }
-#line 813 "zfxparser.cpp"
+#line 815 "zfxparser.cpp"
     break;
 
   case 12: // zenvar: zenvar DOT VARNAME
-#line 135 "zfxparser.y"
+#line 139 "zfxparser.y"
                          { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeComponentVisit(yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < string > ()); }
-#line 819 "zfxparser.cpp"
+#line 821 "zfxparser.cpp"
     break;
 
   case 13: // funcargs: exp-statement
-#line 138 "zfxparser.y"
+#line 142 "zfxparser.y"
                                    { yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = std::vector<std::shared_ptr<ZfxASTNode>>({yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()}); }
-#line 825 "zfxparser.cpp"
+#line 827 "zfxparser.cpp"
     break;
 
   case 14: // funcargs: funcargs COMMA exp-statement
-#line 139 "zfxparser.y"
+#line 143 "zfxparser.y"
                                    { yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()); yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > (); }
-#line 831 "zfxparser.cpp"
+#line 833 "zfxparser.cpp"
     break;
 
   case 15: // func-content: LPAREN funcargs RPAREN
-#line 142 "zfxparser.y"
+#line 146 "zfxparser.y"
                                      { 
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, yystack_[1].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ());
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->isParenthesisNodeComplete = true;
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->func_match = Match_Exactly;
     }
-#line 841 "zfxparser.cpp"
+#line 843 "zfxparser.cpp"
     break;
 
   case 16: // cond-statement: term COMPARE term
-#line 148 "zfxparser.y"
+#line 152 "zfxparser.y"
                                   {
         std::vector<std::shared_ptr<ZfxASTNode>> children({yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->type = COMPOP;
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->value = yystack_[1].value.as < string > ();
     }
-#line 852 "zfxparser.cpp"
+#line 854 "zfxparser.cpp"
     break;
 
   case 17: // condvar-statement: cond-statement QUESTION exp-statement COLON exp-statement
-#line 156 "zfxparser.y"
+#line 160 "zfxparser.y"
                                                                              {
         std::vector<std::shared_ptr<ZfxASTNode>> children({yystack_[4].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[2].value.as < std::shared_ptr<ZfxASTNode> > (), yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()});
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, children);
     }
-#line 861 "zfxparser.cpp"
+#line 863 "zfxparser.cpp"
     break;
 
   case 18: // arrcontents: exp-statement
-#line 161 "zfxparser.y"
+#line 165 "zfxparser.y"
                                       { yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = std::vector<std::shared_ptr<ZfxASTNode>>({yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()}); }
-#line 867 "zfxparser.cpp"
+#line 869 "zfxparser.cpp"
     break;
 
   case 19: // arrcontents: arrcontents COMMA exp-statement
-#line 162 "zfxparser.y"
+#line 166 "zfxparser.y"
                                       { yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()); yylhs.value.as < std::vector<std::shared_ptr<ZfxASTNode>> > () = yystack_[2].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > (); }
-#line 873 "zfxparser.cpp"
+#line 875 "zfxparser.cpp"
     break;
 
   case 20: // array-stmt: LBRACKET arrcontents RBRACKET
-#line 164 "zfxparser.y"
+#line 168 "zfxparser.y"
                                           { 
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, yystack_[1].value.as < std::vector<std::shared_ptr<ZfxASTNode>> > ());
     }
-#line 881 "zfxparser.cpp"
+#line 883 "zfxparser.cpp"
     break;
 
   case 21: // term: NUMBER
-#line 168 "zfxparser.y"
+#line 172 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNewNumberNode(yystack_[0].value.as < float > ()); }
-#line 887 "zfxparser.cpp"
+#line 889 "zfxparser.cpp"
     break;
 
   case 22: // term: LITERAL
-#line 169 "zfxparser.y"
+#line 173 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeStringNode(yystack_[0].value.as < string > ()); }
-#line 893 "zfxparser.cpp"
+#line 895 "zfxparser.cpp"
     break;
 
   case 23: // term: UNCOMPSTR
-#line 170 "zfxparser.y"
+#line 174 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeQuoteStringNode(yystack_[0].value.as < string > ()); }
-#line 899 "zfxparser.cpp"
+#line 901 "zfxparser.cpp"
     break;
 
   case 24: // term: LPAREN exp-statement RPAREN
-#line 171 "zfxparser.y"
+#line 175 "zfxparser.y"
                                   { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[1].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 905 "zfxparser.cpp"
+#line 907 "zfxparser.cpp"
     break;
 
   case 25: // term: SUB exp-statement
-#line 172 "zfxparser.y"
+#line 176 "zfxparser.y"
                                   { yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value = -1 * std::get<float>(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value); yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 911 "zfxparser.cpp"
+#line 913 "zfxparser.cpp"
     break;
 
   case 26: // term: zenvar
-#line 173 "zfxparser.y"
+#line 177 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 917 "zfxparser.cpp"
+#line 919 "zfxparser.cpp"
     break;
 
   case 27: // term: VARNAME func-content
-#line 174 "zfxparser.y"
+#line 178 "zfxparser.y"
                             { 
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ();
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->opVal = DEFAULT_FUNCVAL;
@@ -925,29 +927,29 @@ namespace  zeno  {
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->value = yystack_[1].value.as < string > ();
         yylhs.value.as < std::shared_ptr<ZfxASTNode> > ()->isParenthesisNode = true;
     }
-#line 929 "zfxparser.cpp"
+#line 931 "zfxparser.cpp"
     break;
 
   case 28: // term: cond-statement
-#line 181 "zfxparser.y"
+#line 185 "zfxparser.y"
                      { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 935 "zfxparser.cpp"
+#line 937 "zfxparser.cpp"
     break;
 
   case 29: // term: condvar-statement
-#line 182 "zfxparser.y"
+#line 186 "zfxparser.y"
                         { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 941 "zfxparser.cpp"
+#line 943 "zfxparser.cpp"
     break;
 
   case 30: // term: array-stmt
-#line 183 "zfxparser.y"
+#line 187 "zfxparser.y"
                  { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
-#line 947 "zfxparser.cpp"
+#line 949 "zfxparser.cpp"
     break;
 
 
-#line 951 "zfxparser.cpp"
+#line 953 "zfxparser.cpp"
 
             default:
               break;
@@ -1299,74 +1301,81 @@ namespace  zeno  {
   }
 
 
-  const signed char  ZfxParser ::yypact_ninf_ = -24;
+  const signed char  ZfxParser ::yypact_ninf_ = -26;
 
   const signed char  ZfxParser ::yytable_ninf_ = -1;
 
   const signed char
    ZfxParser ::yypact_[] =
   {
-     -24,     5,   -24,   -24,   -24,   -24,   -24,    24,   -23,    24,
-      24,    -5,     4,    -9,    31,   -24,   -24,     6,     9,    -6,
-      24,   -24,   -24,     3,   -24,    24,    24,    24,    24,    29,
-      24,    24,    24,   -24,     9,    12,   -24,     4,     4,     6,
-       6,   -24,    25,     6,     9,   -24,    24,    24,     9,     9
+      34,   -26,   -26,   -26,   -26,   -26,    46,   -25,    46,    46,
+      17,     4,   -21,    10,    19,   -26,   -26,    18,    -1,    -9,
+      46,   -26,   -26,     7,   -26,    46,    46,   -26,    46,    46,
+      15,    46,    46,    46,    46,   -26,    -1,     2,   -26,   -21,
+     -21,    18,    18,   -26,    -4,    18,   -21,    -1,   -26,    46,
+      46,    -1,    -1
   };
 
   const signed char
    ZfxParser ::yydefact_[] =
   {
-       2,     0,     1,    21,    22,    23,    10,     0,    11,     0,
+       0,     2,    21,    22,    23,    10,     0,    11,     0,     0,
        0,     0,     4,    26,    28,    29,    30,     7,    18,     0,
-       0,    27,    25,     0,     3,     0,     0,     0,     0,     0,
-       0,     0,     0,    20,    13,     0,    24,     5,     6,     8,
-       9,    12,     0,    16,    19,    15,     0,     0,    14,    17
+       0,    27,    25,     0,     1,     0,     0,     3,     0,     0,
+       0,     0,     0,     0,     0,    20,    13,     0,    24,     5,
+       4,     8,     9,    12,     0,    16,     6,    19,    15,     0,
+       0,    14,    17
   };
 
   const signed char
    ZfxParser ::yypgoto_[] =
   {
-     -24,   -24,    -7,    19,   -24,   -24,   -24,   -24,   -24,   -24,
-     -24,   -20
+     -26,    27,    -6,    16,   -26,   -26,   -26,   -26,   -26,   -26,
+     -26,    35
   };
 
   const signed char
    ZfxParser ::yydefgoto_[] =
   {
-       0,     1,    11,    12,    13,    35,    21,    14,    15,    19,
+       0,    10,    11,    12,    13,    37,    21,    14,    15,    19,
       16,    17
   };
 
   const signed char
    ZfxParser ::yytable_[] =
   {
-      18,    24,    22,    23,    32,     2,    36,    39,    40,    20,
-       3,    43,    29,    34,    33,    45,     4,     5,    25,     6,
-      26,    31,    46,    42,     7,    44,    25,     8,    26,     3,
-       9,    27,    25,    28,    26,     4,     5,    10,     6,    48,
-      49,     0,    47,     7,    37,    38,     8,    30,    25,     9,
-      26,    41,     0,     0,     0,     0,    10
+      18,    34,    22,    23,     1,    48,    28,    20,    29,     2,
+      38,    35,    49,    50,    36,     3,     4,    24,     5,    25,
+      22,    33,    25,     6,    33,    44,     7,    25,    47,    26,
+      25,    30,    33,    32,     1,    31,     9,    43,    27,     2,
+       0,    39,    40,    51,    52,     3,     4,     0,     5,    46,
+       0,     2,     0,     6,     0,     0,     7,     3,     4,     8,
+       5,     0,     0,    41,    42,     6,     9,    45,     7,     0,
+       0,     8,     0,     0,     0,     0,     0,     0,     9
   };
 
   const signed char
    ZfxParser ::yycheck_[] =
   {
-       7,     6,     9,    10,    10,     0,     3,    27,    28,    32,
-       5,    31,    21,    20,    20,     3,    11,    12,    23,    14,
-      25,    15,    10,    30,    19,    32,    23,    22,    25,     5,
-      25,    27,    23,    29,    25,    11,    12,    32,    14,    46,
-      47,    -1,    17,    19,    25,    26,    22,    16,    23,    25,
-      25,    22,    -1,    -1,    -1,    -1,    32
+       6,    10,     8,     9,     0,     3,    27,    32,    29,     5,
+       3,    20,    10,    17,    20,    11,    12,     0,    14,    23,
+      26,    25,    23,    19,    25,    31,    22,    23,    34,    25,
+      23,    21,    25,    15,     0,    16,    32,    22,    11,     5,
+      -1,    25,    26,    49,    50,    11,    12,    -1,    14,    33,
+      -1,     5,    -1,    19,    -1,    -1,    22,    11,    12,    25,
+      14,    -1,    -1,    28,    29,    19,    32,    32,    22,    -1,
+      -1,    25,    -1,    -1,    -1,    -1,    -1,    -1,    32
   };
 
   const signed char
    ZfxParser ::yystos_[] =
   {
-       0,    34,     0,     5,    11,    12,    14,    19,    22,    25,
-      32,    35,    36,    37,    40,    41,    43,    44,    35,    42,
-      32,    39,    35,    35,     6,    23,    25,    27,    29,    21,
-      16,    15,    10,    20,    35,    38,     3,    36,    36,    44,
-      44,    22,    35,    44,    35,     3,    10,    17,    35,    35
+       0,     0,     5,    11,    12,    14,    19,    22,    25,    32,
+      34,    35,    36,    37,    40,    41,    43,    44,    35,    42,
+      32,    39,    35,    35,     0,    23,    25,    34,    27,    29,
+      21,    16,    15,    25,    10,    20,    35,    38,     3,    36,
+      36,    44,    44,    22,    35,    44,    36,    35,     3,    10,
+      17,    35,    35
   };
 
   const signed char
@@ -1381,7 +1390,7 @@ namespace  zeno  {
   const signed char
    ZfxParser ::yyr2_[] =
   {
-       0,     2,     0,     3,     1,     3,     3,     1,     3,     3,
+       0,     2,     1,     2,     1,     3,     3,     1,     3,     3,
        1,     1,     3,     1,     3,     3,     3,     5,     1,     3,
        3,     1,     1,     1,     3,     2,     1,     2,     1,     1,
        1
@@ -1410,10 +1419,10 @@ namespace  zeno  {
   const unsigned char
    ZfxParser ::yyrline_[] =
   {
-       0,   106,   106,   106,   111,   112,   116,   122,   123,   127,
-     133,   134,   135,   138,   139,   142,   148,   156,   161,   162,
-     164,   168,   169,   170,   171,   172,   173,   174,   181,   182,
-     183
+       0,   106,   106,   109,   115,   116,   120,   126,   127,   131,
+     137,   138,   139,   142,   143,   146,   152,   160,   165,   166,
+     168,   172,   173,   174,   175,   176,   177,   178,   185,   186,
+     187
   };
 
   void
@@ -1446,9 +1455,9 @@ namespace  zeno  {
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 1450 "zfxparser.cpp"
+#line 1459 "zfxparser.cpp"
 
-#line 185 "zfxparser.y"
+#line 189 "zfxparser.y"
 
 
 // Bison expects us to provide implementation - otherwise linker complains

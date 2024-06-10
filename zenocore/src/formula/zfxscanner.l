@@ -78,7 +78,7 @@ compareop (<|<=|>=|>)
 \n      {
             loc.lines(yyleng);  //使用lines函数来更新位置信息中的符号
             loc.step();
-            return zeno::ZfxParser::make_EOL(zeno::location());
+            //return zeno::ZfxParser::make_EOL(zeno::location());
         }
 
 "+"       { return zeno::ZfxParser::make_ADD(loc); }
