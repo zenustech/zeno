@@ -52,10 +52,12 @@ number  {num1}|{num2}
 frame   \$F
 fps     \$FPS
 pi      \$PI
-functoken [A-Za-z][A-Za-z_0-9]*
+varname [A-Za-z][A-Za-z_0-9]*
 dollar \$
 zenvarname \$[A-Za-z_]+
 compareop (<|<=|>=|>)
+semicolon ;
+equalto \=
 
 %%
 %{
@@ -95,7 +97,9 @@ compareop (<|<=|>=|>)
 "}"       { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
-{functoken} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
+{varname} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
+{semicolon} { return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
+{equalto}   { return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
 {dollar}  { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 {zenvarname} { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 {compareop}  { return zeno::ZfxParser::make_COMPARE(yytext, loc); }

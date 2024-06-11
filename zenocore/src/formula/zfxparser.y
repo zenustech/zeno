@@ -86,6 +86,8 @@
 %token RBRACKET
 %token DOT
 %token VARNAME
+%token SEMICOLON
+%token EQUALTO
 
 %left ADD "+"
 %left SUB "-"
@@ -96,20 +98,39 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> exp-statement compareexp calclist factor term func-content zenvar array-stmt
+%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement exp-statement compareexp calclist factor term func-content zenvar array-stmt
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME SEMICOLON EQUALTO
 
 %start calclist
 
 %%
 calclist: END{
-            std::cout << "END" << std::endl;
-        }
-    | exp-statement calclist {
-            $$ = $1;
+            //std::cout << "END" << std::endl;
+            $$ = driver.makeNewNode(CODEBLOCK, DEFAULT_FUNCVAL, {});
             driver.setASTResult($$);
         }
+    | general-statement calclist {
+            addChild($2, $1);
+            $$ = $2;
+        }
+    ;
+
+general-statement: declare-statement SEMICOLON { $$ = $1; }
+    | exp-statement SEMICOLON { $$ = $1; }
+
+declare-statement: VARNAME VARNAME {
+                auto typeNode = driver.makeZfxVarNode($1);
+                auto nameNode = driver.makeZfxVarNode($2);
+                std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode});
+                $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
+            }
+    | VARNAME VARNAME EQUALTO exp-statement {
+                auto typeNode = driver.makeZfxVarNode($1);
+                auto nameNode = driver.makeZfxVarNode($2);
+                std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode, $4});
+                $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
+            }
     ;
 
 exp-statement: compareexp           { $$ = $1; }

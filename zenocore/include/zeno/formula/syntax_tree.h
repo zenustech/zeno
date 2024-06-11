@@ -23,6 +23,8 @@ enum nodeType {
     MATRIX,
     COMPVISIT,          //访问元素分量，比如vec.x vec.y vec.z
     PLACEHOLDER,
+    DECLARE,            //变量定义
+    CODEBLOCK,          //多个语法树作为children的代码块
 };
 
 enum operatorVals {
@@ -73,6 +75,7 @@ operatorVals funcName2Enum(std::string func);
 
 std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children);
 std::shared_ptr<ZfxASTNode> newNumberNode(float value);
+void addChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild);
 
 void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth, std::string& printContent);
 float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);

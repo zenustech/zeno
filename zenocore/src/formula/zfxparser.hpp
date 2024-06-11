@@ -428,6 +428,8 @@ namespace  zeno  {
       char dummy1[sizeof (float)];
 
       // calclist
+      // general-statement
+      // declare-statement
       // exp-statement
       // compareexp
       // factor
@@ -453,6 +455,8 @@ namespace  zeno  {
       // RBRACKET
       // DOT
       // VARNAME
+      // SEMICOLON
+      // EQUALTO
       // LPAREN
       char dummy4[sizeof (string)];
     };
@@ -527,12 +531,14 @@ namespace  zeno  {
     TOKEN_RBRACKET = 275,          // RBRACKET
     TOKEN_DOT = 276,               // DOT
     TOKEN_VARNAME = 277,           // VARNAME
-    TOKEN_ADD = 278,               // ADD
-    TOKEN_SUB = 280,               // SUB
-    TOKEN_MUL = 282,               // MUL
-    TOKEN_DIV = 284,               // DIV
-    TOKEN_NEG = 286,               // NEG
-    TOKEN_LPAREN = 287             // LPAREN
+    TOKEN_SEMICOLON = 278,         // SEMICOLON
+    TOKEN_EQUALTO = 279,           // EQUALTO
+    TOKEN_ADD = 280,               // ADD
+    TOKEN_SUB = 282,               // SUB
+    TOKEN_MUL = 284,               // MUL
+    TOKEN_DIV = 286,               // DIV
+    TOKEN_NEG = 288,               // NEG
+    TOKEN_LPAREN = 289             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -549,7 +555,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 33, ///< Number of tokens.
+        YYNTOKENS = 35, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -574,25 +580,29 @@ namespace  zeno  {
         S_RBRACKET = 20,                         // RBRACKET
         S_DOT = 21,                              // DOT
         S_VARNAME = 22,                          // VARNAME
-        S_ADD = 23,                              // ADD
-        S_24_ = 24,                              // "+"
-        S_SUB = 25,                              // SUB
-        S_26_ = 26,                              // "-"
-        S_MUL = 27,                              // MUL
-        S_28_ = 28,                              // "*"
-        S_DIV = 29,                              // DIV
-        S_30_ = 30,                              // "/"
-        S_NEG = 31,                              // NEG
-        S_LPAREN = 32,                           // LPAREN
-        S_YYACCEPT = 33,                         // $accept
-        S_calclist = 34,                         // calclist
-        S_35_exp_statement = 35,                 // exp-statement
-        S_compareexp = 36,                       // compareexp
-        S_factor = 37,                           // factor
-        S_zenvar = 38,                           // zenvar
-        S_funcargs = 39,                         // funcargs
-        S_40_func_content = 40,                  // func-content
-        S_term = 41                              // term
+        S_SEMICOLON = 23,                        // SEMICOLON
+        S_EQUALTO = 24,                          // EQUALTO
+        S_ADD = 25,                              // ADD
+        S_26_ = 26,                              // "+"
+        S_SUB = 27,                              // SUB
+        S_28_ = 28,                              // "-"
+        S_MUL = 29,                              // MUL
+        S_30_ = 30,                              // "*"
+        S_DIV = 31,                              // DIV
+        S_32_ = 32,                              // "/"
+        S_NEG = 33,                              // NEG
+        S_LPAREN = 34,                           // LPAREN
+        S_YYACCEPT = 35,                         // $accept
+        S_calclist = 36,                         // calclist
+        S_37_general_statement = 37,             // general-statement
+        S_38_declare_statement = 38,             // declare-statement
+        S_39_exp_statement = 39,                 // exp-statement
+        S_compareexp = 40,                       // compareexp
+        S_factor = 41,                           // factor
+        S_zenvar = 42,                           // zenvar
+        S_funcargs = 43,                         // funcargs
+        S_44_func_content = 44,                  // func-content
+        S_term = 45                              // term
       };
     };
 
@@ -634,11 +644,13 @@ namespace  zeno  {
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_37_general_statement: // general-statement
+      case symbol_kind::S_38_declare_statement: // declare-statement
+      case symbol_kind::S_39_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_40_func_content: // func-content
+      case symbol_kind::S_44_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
@@ -661,6 +673,8 @@ namespace  zeno  {
       case symbol_kind::S_RBRACKET: // RBRACKET
       case symbol_kind::S_DOT: // DOT
       case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_SEMICOLON: // SEMICOLON
+      case symbol_kind::S_EQUALTO: // EQUALTO
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (std::move (that.value));
         break;
@@ -773,11 +787,13 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_37_general_statement: // general-statement
+      case symbol_kind::S_38_declare_statement: // declare-statement
+      case symbol_kind::S_39_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_40_func_content: // func-content
+      case symbol_kind::S_44_func_content: // func-content
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
@@ -800,6 +816,8 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // RBRACKET
       case symbol_kind::S_DOT: // DOT
       case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_SEMICOLON: // SEMICOLON
+      case symbol_kind::S_EQUALTO: // EQUALTO
       case symbol_kind::S_LPAREN: // LPAREN
         value.template destroy< string > ();
         break;
@@ -929,7 +947,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT ((token::TOKEN_RPAREN <= tok && tok <= token::TOKEN_IDENTIFIER)
-                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_VARNAME)
+                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_EQUALTO)
                    || tok == token::TOKEN_LPAREN);
 #endif
       }
@@ -1324,6 +1342,36 @@ switch (yykind)
       make_VARNAME (const string& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_VARNAME, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SEMICOLON (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_SEMICOLON, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SEMICOLON (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_SEMICOLON, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EQUALTO (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_EQUALTO, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_EQUALTO (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_EQUALTO, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1746,9 +1794,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 64,     ///< Last index in yytable_.
-      yynnts_ = 9,  ///< Number of nonterminal symbols.
-      yyfinal_ = 19 ///< Termination state number.
+      yylast_ = 51,     ///< Last index in yytable_.
+      yynnts_ = 11,  ///< Number of nonterminal symbols.
+      yyfinal_ = 23 ///< Termination state number.
     };
 
 
@@ -1796,10 +1844,10 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    34
     };
     // Last valid token kind.
-    const int code_max = 287;
+    const int code_max = 289;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1823,11 +1871,13 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_37_general_statement: // general-statement
+      case symbol_kind::S_38_declare_statement: // declare-statement
+      case symbol_kind::S_39_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_40_func_content: // func-content
+      case symbol_kind::S_44_func_content: // func-content
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -1850,6 +1900,8 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // RBRACKET
       case symbol_kind::S_DOT: // DOT
       case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_SEMICOLON: // SEMICOLON
+      case symbol_kind::S_EQUALTO: // EQUALTO
       case symbol_kind::S_LPAREN: // LPAREN
         value.copy< string > (YY_MOVE (that.value));
         break;
@@ -1890,11 +1942,13 @@ switch (yykind)
         break;
 
       case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_37_general_statement: // general-statement
+      case symbol_kind::S_38_declare_statement: // declare-statement
+      case symbol_kind::S_39_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_40_func_content: // func-content
+      case symbol_kind::S_44_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
@@ -1917,6 +1971,8 @@ switch (yykind)
       case symbol_kind::S_RBRACKET: // RBRACKET
       case symbol_kind::S_DOT: // DOT
       case symbol_kind::S_VARNAME: // VARNAME
+      case symbol_kind::S_SEMICOLON: // SEMICOLON
+      case symbol_kind::S_EQUALTO: // EQUALTO
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (YY_MOVE (s.value));
         break;
@@ -1988,7 +2044,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 1992 "zfxparser.hpp"
+#line 2048 "zfxparser.hpp"
 
 
 

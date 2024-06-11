@@ -19,6 +19,8 @@ std::string getOperatorString(nodeType type, operatorVals op)
     case CONDEXP: return "CONDITION-EXP";
     case ARRAY: return "ARRAY";
     case MATRIX: return "MATRIX";
+    case DECLARE: return "DECLARE";
+    case CODEBLOCK: return "CODEBLOCK";
     default:
         break;
     }
@@ -43,7 +45,7 @@ std::string getOperatorString(nodeType type, operatorVals op)
     case ABS:
         return "abs";
     case DEFAULT_FUNCVAL:
-        return "default_funcVal";
+        return "";
     case UNDEFINE_OP:
         return "undefinedOp";
     default:
@@ -65,6 +67,11 @@ operatorVals funcName2Enum(std::string func)
         return ABS;
     }
     return UNDEFINE_OP;
+}
+
+void addChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild) {
+    spNode->children.insert(spNode->children.begin(), spChild);
+    spChild->parent = spNode;
 }
 
 std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children) {
@@ -91,7 +98,7 @@ std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<
         n->value = "/";
         break;
     case DEFAULT_FUNCVAL:
-        n->value = "default_funcVal";
+        n->value = "";
         break;
     case UNDEFINE_OP:
         n->value = "undefinedOp";
