@@ -66,7 +66,7 @@ ZENDEFNODE(ShaderPackVector, {
         {"float", "z", "0"},
         {"float", "w", "0"},
     },
-    {"out"},
+    {{"NumericObject","out"}},
     {
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },

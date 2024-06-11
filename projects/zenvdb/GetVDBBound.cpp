@@ -81,7 +81,7 @@ ZENDEFNODE(GetVDBVoxelSize, {
                             {
                                 {"", "vdbGrid", "", zeno::Socket_ReadOnly},
                             },
-                            {"dx", "dy", "dz", "dxyz"},
+                            {{"float","dx"}, {"float","dy"}, {"float","dz"}, {"vec3f","dxyz"}},
                             {},
                             {"openvdb"},
                         });

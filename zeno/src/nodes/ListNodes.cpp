@@ -18,7 +18,7 @@ struct ListLength : zeno::INode {
 
 ZENDEFNODE(ListLength, {
     {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
-    {"length"},
+    {{"int","length"}},
     {},
     {"list"},
 });
@@ -225,7 +225,7 @@ ZENDEFNODE(IsList, {
     {
         {"", "list", "", zeno::Socket_ReadOnly},
     },
-    {"result"},
+    {{"int","result"}},
     {},
     {"list"},
 });

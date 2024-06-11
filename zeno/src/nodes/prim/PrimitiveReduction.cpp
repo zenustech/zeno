@@ -59,7 +59,7 @@ ZENDEFNODE(PrimitiveReduction,
     { /* inputs: */ {
     {"", "prim", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "result",
+        {"NumericObject", "result"},
     }, /* params: */ {
     {"string", "attr", "pos"},
     {"enum avg max min absmax", "op", "avg"},
@@ -89,7 +89,7 @@ ZENDEFNODE(PrimReduction,{
         {"enum avg max min absmax", "op", "avg"},
     },
     {
-        {"result"},
+        {"NumericObject","result"},
     },
     {},
     {"primitive"},

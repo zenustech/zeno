@@ -110,7 +110,7 @@ struct SetRandomSeed : INode {
 
 ZENDEFNODE(SetRandomSeed, {
     {"routeIn", {"int", "seed", "0"}},
-    {"routeOut"},
+    {{"NumericObject","routeOut"}},
     {},
     {"deprecated"},
 });
