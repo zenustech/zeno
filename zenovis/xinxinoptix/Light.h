@@ -289,6 +289,9 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
             if (n_len <= 0) {return;}
 
+            lsr.dist = n_len * lsr.dist;
+            lsr.intensity = M_PIf/(lsr.dist * lsr.dist);
+
             auto tanU = t_len / n_len;
             auto tanV = b_len / n_len;
 
