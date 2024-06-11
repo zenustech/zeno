@@ -429,17 +429,14 @@ namespace  zeno  {
 
       // calclist
       // exp-statement
+      // compareexp
       // factor
       // zenvar
       // func-content
-      // cond-statement
-      // condvar-statement
-      // array-stmt
       // term
       char dummy2[sizeof (std::shared_ptr<ZfxASTNode>)];
 
       // funcargs
-      // arrcontents
       char dummy3[sizeof (std::vector<std::shared_ptr<ZfxASTNode>>)];
 
       // RPAREN
@@ -590,15 +587,12 @@ namespace  zeno  {
         S_YYACCEPT = 33,                         // $accept
         S_calclist = 34,                         // calclist
         S_35_exp_statement = 35,                 // exp-statement
-        S_factor = 36,                           // factor
-        S_zenvar = 37,                           // zenvar
-        S_funcargs = 38,                         // funcargs
-        S_39_func_content = 39,                  // func-content
-        S_40_cond_statement = 40,                // cond-statement
-        S_41_condvar_statement = 41,             // condvar-statement
-        S_arrcontents = 42,                      // arrcontents
-        S_43_array_stmt = 43,                    // array-stmt
-        S_term = 44                              // term
+        S_compareexp = 36,                       // compareexp
+        S_factor = 37,                           // factor
+        S_zenvar = 38,                           // zenvar
+        S_funcargs = 39,                         // funcargs
+        S_40_func_content = 40,                  // func-content
+        S_term = 41                              // term
       };
     };
 
@@ -641,18 +635,15 @@ namespace  zeno  {
 
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_39_func_content: // func-content
-      case symbol_kind::S_40_cond_statement: // cond-statement
-      case symbol_kind::S_41_condvar_statement: // condvar-statement
-      case symbol_kind::S_43_array_stmt: // array-stmt
+      case symbol_kind::S_40_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-      case symbol_kind::S_arrcontents: // arrcontents
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (std::move (that.value));
         break;
 
@@ -783,18 +774,15 @@ switch (yykind)
 
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_39_func_content: // func-content
-      case symbol_kind::S_40_cond_statement: // cond-statement
-      case symbol_kind::S_41_condvar_statement: // condvar-statement
-      case symbol_kind::S_43_array_stmt: // array-stmt
+      case symbol_kind::S_40_func_content: // func-content
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-      case symbol_kind::S_arrcontents: // arrcontents
         value.template destroy< std::vector<std::shared_ptr<ZfxASTNode>> > ();
         break;
 
@@ -1758,9 +1746,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 78,     ///< Last index in yytable_.
-      yynnts_ = 12,  ///< Number of nonterminal symbols.
-      yyfinal_ = 24 ///< Termination state number.
+      yylast_ = 64,     ///< Last index in yytable_.
+      yynnts_ = 9,  ///< Number of nonterminal symbols.
+      yyfinal_ = 19 ///< Termination state number.
     };
 
 
@@ -1836,18 +1824,15 @@ switch (yykind)
 
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_39_func_content: // func-content
-      case symbol_kind::S_40_cond_statement: // cond-statement
-      case symbol_kind::S_41_condvar_statement: // condvar-statement
-      case symbol_kind::S_43_array_stmt: // array-stmt
+      case symbol_kind::S_40_func_content: // func-content
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-      case symbol_kind::S_arrcontents: // arrcontents
         value.copy< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (that.value));
         break;
 
@@ -1906,18 +1891,15 @@ switch (yykind)
 
       case symbol_kind::S_calclist: // calclist
       case symbol_kind::S_35_exp_statement: // exp-statement
+      case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_39_func_content: // func-content
-      case symbol_kind::S_40_cond_statement: // cond-statement
-      case symbol_kind::S_41_condvar_statement: // condvar-statement
-      case symbol_kind::S_43_array_stmt: // array-stmt
+      case symbol_kind::S_40_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_funcargs: // funcargs
-      case symbol_kind::S_arrcontents: // arrcontents
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (s.value));
         break;
 
@@ -2006,7 +1988,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 2010 "zfxparser.hpp"
+#line 1992 "zfxparser.hpp"
 
 
 

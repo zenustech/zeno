@@ -96,7 +96,7 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> exp-statement calclist factor term func-content zenvar array-stmt cond-statement condvar-statement
+%type <std::shared_ptr<ZfxASTNode>> exp-statement compareexp calclist factor term func-content zenvar array-stmt
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
 %type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME
 
@@ -112,12 +112,28 @@ calclist: END{
         }
     ;
 
-exp-statement: factor           { $$ = $1; }
-    | exp-statement ADD factor  {
+exp-statement: compareexp           { $$ = $1; }
+    | exp-statement COMPARE compareexp  {
+                std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+                $$ = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
+                $$->value = $2;
+            }
+    | exp-statement COMPARE compareexp QUESTION exp-statement COLON exp-statement {
+                std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
+                auto spCond = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
+                spCond->value = $2;
+
+                std::vector<std::shared_ptr<ZfxASTNode>> exps({spCond, $5, $7});
+                $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, exps);
+            }
+    ;
+
+compareexp: factor              { $$ = $1; }
+    | compareexp ADD factor {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
-    | exp-statement SUB factor {
+    | compareexp SUB factor {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
@@ -149,25 +165,6 @@ func-content: LPAREN funcargs RPAREN {
         $$->func_match = Match_Exactly;
     }
 
-cond-statement: term COMPARE term {
-        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
-        $$ = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
-        $$->type = COMPOP;
-        $$->value = $2;
-    }
-
-/* 条件表达式 */
-condvar-statement: cond-statement QUESTION exp-statement COLON exp-statement {
-        std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3, $5});
-        $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, children);
-    }
-
-arrcontents: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
-    | arrcontents COMMA exp-statement { $1.push_back($3); $$ = $1; }
-
-array-stmt: LBRACKET arrcontents RBRACKET { 
-        $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
-    }
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
@@ -182,10 +179,15 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$->value = $1;
         $$->isParenthesisNode = true;
     }
-    | cond-statement { $$ = $1; }
-    | condvar-statement { $$ = $1; }
-    | array-stmt { $$ = $1; }
     ;
+
+arrcontents: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
+    | arrcontents COMMA exp-statement { $1.push_back($3); $$ = $1; }
+
+array-stmt: LBRACKET arrcontents RBRACKET { 
+        $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
+    }
+
 %%
 
 // Bison expects us to provide implementation - otherwise linker complains
