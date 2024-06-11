@@ -634,19 +634,19 @@ struct GraphicsManager {
                 } 
                 else 
                 {
-                    auto p2 = prim_in->verts[prim_in->tris[0][0]];
-                    auto p0 = prim_in->verts[prim_in->tris[0][1]];
-                    auto p1 = prim_in->verts[prim_in->tris[0][2]];
-                    auto e1 = p1 - p0;
-                    auto e2 = p2 - p1;
+                    auto v0 = prim_in->verts[0];
+                    auto v1 = prim_in->verts[1];
+                    auto v3 = prim_in->verts[3];
+                    auto e1 = v1 - v3;
+                    auto e2 = v0 - v1;
                     
-                    // p0 ---(+x)--> p1
+                    // v3 ---(+x)--> v1
                     // |||||||||||||(-)
                     // |||||||||||||(z)
                     // |||||||||||||(+)
-                    // p* <--(-x)--- p2
+                    // v2 <--(-x)--- v0
 
-                    p0 = p0 + e2; // p* as p0
+                    v3 = v3 + e2; // p* as p0
                     e2 = -e2;     // invert e2
                 
                     // facing down in local space
@@ -664,15 +664,15 @@ struct GraphicsManager {
                     clr = color;
                     extraStep();
 
-                    std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
-                    std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
-                    std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                    std::cout << "light: v"<<v3[0]<<" "<<v3[1]<<" "<<v3[2]<<"\n";
+                    std::cout << "light: v"<<v1[0]<<" "<<v1[1]<<" "<<v1[2]<<"\n";
+                    std::cout << "light: v"<<v0[0]<<" "<<v0[1]<<" "<<v0[2]<<"\n";
                     std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
                     std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
                     std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                     std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                    xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
+                    xinxinoptix::load_light(key, ld, v3.data(), e1.data(), e2.data());
                 }
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
