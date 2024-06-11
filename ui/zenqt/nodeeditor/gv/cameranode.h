@@ -1,11 +1,12 @@
 #ifndef __CAMERA_NODE_H__
 #define __CAMERA_NODE_H__
 
-#include "zenonode.h"
+#include "zenonodenew.h"
 
-class CameraNode : public ZenoNode
+class CameraNode : public ZenoNodeNew
 {
     Q_OBJECT
+    typedef ZenoNodeNew _base;
 public:
     CameraNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
     ~CameraNode();
@@ -19,9 +20,10 @@ private slots:
     void onEditClicked();
 };
 
-class LightNode : public ZenoNode
+class LightNode : public ZenoNodeNew
 {
     Q_OBJECT
+    typedef ZenoNodeNew _base;
 public:
     LightNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
     ~LightNode();

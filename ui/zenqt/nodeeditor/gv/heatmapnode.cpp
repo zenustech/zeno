@@ -8,7 +8,7 @@
 
 
 MakeHeatMapNode::MakeHeatMapNode(const NodeUtilParam& params, QGraphicsItem* parent)
-    : ZenoNode(params, parent)
+    : _base(params, parent)
 {
 
 }

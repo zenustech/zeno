@@ -22,6 +22,7 @@
 #include "model/GraphModel.h"
 #include "zenowelcomepage.h"
 #include "thumbnailview.h"
+#include "style/zenostyle.h"
 
 
 bool sceneMenuEvent(
@@ -78,7 +79,7 @@ bool ZFloatPanel::event(QEvent* event)
 bool ZFloatPanel::isDragArea()
 {
     int diff = cursor().pos().x() - this->pos().x();
-    bool ret = diff > 0 && diff < 20;
+    bool ret = diff > 0 && diff < ZenoStyle::dpiScaled(20);
     if (ret)
     {
         setCursor(Qt::SizeHorCursor);

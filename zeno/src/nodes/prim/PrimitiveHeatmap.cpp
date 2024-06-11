@@ -51,7 +51,7 @@ struct MakeHeatmap : zeno::INode {
 ZENDEFNODE(MakeHeatmap,
         { /* inputs: */ {{"color", "heatmap", "", zeno::NoSocket, zeno::Heatmap},
         }, /* outputs: */ {
-        "heatmap",
+            {"color", "heatmap"},
         }, /* params: */ {
         //{"int", "nres", "1024"},
         //{"string", "_RAMPS", "0 0 0.8 0.8 0.8 1"},
@@ -88,7 +88,7 @@ ZENDEFNODE(HeatmapFromImage,
     {"int", "startPos", "0"},
     {"int", "endPos", "-1"},
 }, /* outputs: */ {
-    "heatmap",
+    {"color", "heatmap"},
 }, /* params: */ {
 }, /* category: */ {
     "visualize",
@@ -136,7 +136,7 @@ ZENDEFNODE(HeatmapFromImage2,
                    {"float", "endPos", "1"},
                    {"int", "resample", "0"},
                }, /* outputs: */ {
-                   "heatmap",
+                   {"color", "heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -183,7 +183,7 @@ ZENDEFNODE(HeatmapFromPrimAttr,
                    {"int", "resample", "0"},
                    {"bool", "reverse Result", "false"},
                }, /* outputs: */ {
-                   "heatmap",
+                   {"color","heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -223,7 +223,7 @@ ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
             {"", "prim", "", zeno::Socket_ReadOnly},
             "attrName2",
-            {"", "heatmap", "", zeno::Socket_ReadOnly},
+            {"color", "heatmap", "", zeno::Socket_Primitve, zeno::Heatmap},
             {"float", "min", "0"},
             {"float", "max", "1"},
         }, /* outputs: */ {
@@ -250,7 +250,7 @@ struct PrimSample1D : zeno::INode {
 ZENDEFNODE(PrimSample1D, {
     {
         {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-        {"", "heatmap", "", zeno::Socket_ReadOnly},
+        {"color", "heatmap", "", zeno::Socket_Primitve},
         {"string", "srcChannel", "rho"},
         {"string", "dstChannel", "clr"},
         {"float", "remapMin", "0"},
