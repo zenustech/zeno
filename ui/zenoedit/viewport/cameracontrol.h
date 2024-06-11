@@ -26,7 +26,9 @@ public:
     void setPivot(glm::vec3 value);
     glm::quat getRotation();
     void setRotation(glm::quat value);
+    [[deprecated]]
     zeno::vec3f getCenter() const;
+    [[deprecated]]
     void setCenter(zeno::vec3f center);
     bool getOrthoMode() const;
     void setOrthoMode(bool OrthoMode);
@@ -47,15 +49,19 @@ public:
     void fakeWheelEvent(QWheelEvent* event);
     void fakeMouseDoubleClickEvent(QMouseEvent* event);
     void focus(QVector3D center, float radius);
+    [[deprecated]]
     QVector3D realPos() const;
-    QVector3D screenToWorldRay(float x, float y);
-    QVariant hitOnFloor(float x, float y);
+    glm::vec3 screenPosToRayWS(float x, float y);
+    std::optional<glm::vec3> screenHitOnFloorWS(float x, float y);
     void lookTo(zenovis::CameraLookToDir dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
     void resizeTransformHandler(int dir);
+    std::optional<glm::vec3> intersectRayPlane(
+            glm::vec3 ray_origin, glm::vec3 ray_direction,
+            glm::vec3 plane_point, glm::vec3 plane_normal);
 
 private:
     QPointF m_lastMidButtonPos;
@@ -63,6 +69,7 @@ private:
     QVector2D m_res;
     QSet<int> m_pressedKeys;
     std::optional<glm::vec3> hit_posWS;
+    glm::vec3 action_start_cam_posWS = {};
 
     std::weak_ptr<zeno::Picker> m_picker;
     std::weak_ptr<zeno::FakeTransformer> m_transformer;

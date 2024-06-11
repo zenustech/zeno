@@ -115,6 +115,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         if (hit_posWS.has_value()) {
             scene->camera->setPivot(hit_posWS.value());
         }
+        action_start_cam_posWS = scene->camera->getPos();
     }
     auto m_picker = this->m_picker.lock();
     auto m_transformer = this->m_transformer.lock();
@@ -143,11 +144,11 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
     auto front = scene->camera->get_lodfront();
-    auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+    auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
         if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
-            m_transformer->clickedAnyHandler(realPos(), dir, front))
+            m_transformer->clickedAnyHandler(getPos(), dir, front))
         {
             bTransform = true;
         }
@@ -273,9 +274,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         bTransform = m_transformer->isTransforming();
         // check if hover a handler
         auto front = scene->camera->get_lodfront();
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+        auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
         if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
-            m_transformer->hoveredAnyHandler(realPos(), dir, front);
+            m_transformer->hoveredAnyHandler(getPos(), dir, front);
         }
     }
 
@@ -294,9 +295,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     }
     else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
         // rot roll
+        float step = 1.0f;
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dy = ypos - m_lastMidButtonPos.y();
-        dy *= ratio / m_res[1];
+        dy *= ratio / m_res[1] * step;
         {
             auto rot = getRotation();
             rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
@@ -313,16 +315,29 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             // translate
-            auto left = getRotation() * glm::vec3(-1, 0, 0);
-            auto up = getRotation() * glm::vec3(0, 1, 0);
-            auto delta = left * dx + up * dy;
-            if (getOrthoMode()) {
-                delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
+            if (hit_posWS.has_value()) {
+                auto view = getRotation() * glm::vec3(0, 0, -1);
+                auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+                auto new_pos = intersectRayPlane(hit_posWS.value(), ray * (-1.0f), action_start_cam_posWS, view);
+                if (new_pos.has_value()) {
+                    setPos(new_pos.value());
+                }
             }
-            auto pos = getPos();
-            auto new_pos = getPos() + delta * getRadius();
-            setPos(new_pos);
+            else {
+                auto left = getRotation() * glm::vec3(-1, 0, 0);
+                auto up = getRotation() * glm::vec3(0, 1, 0);
+                auto delta = left * dx + up * dy;
+                if (getOrthoMode()) {
+                    delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
+                }
+                auto pos = getPos();
+                auto new_pos = getPos() + delta * getRadius();
+                setPos(new_pos);
+            }
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
+            float step = 4.0f;
+            dx *= step;
+            dy *= step;
             // rot yaw pitch
             setOrthoMode(false);
             {
@@ -343,8 +358,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
-                auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
-                auto camera_pos = realPos();
+                auto dir = screenPosToRayWS(event->pos().x() / res().x(), event->pos().y() / res().y());
 
                 // mouse pos
                 auto mouse_pos = glm::vec2(xpos, ypos);
@@ -356,7 +370,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
 
                 auto vp = scene->camera->m_proj * scene->camera->m_view;
-                m_transformer->transform(camera_pos, dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
+                m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
                 float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
@@ -493,29 +507,53 @@ QVector3D CameraControl::realPos() const {
     return {p[0], p[1], p[2]};
 }
 
+// 计算射线与平面的交点
+std::optional<glm::vec3> CameraControl::intersectRayPlane(
+        glm::vec3 ray_origin
+        , glm::vec3 ray_direction
+        , glm::vec3 plane_point
+        , glm::vec3 plane_normal
+) {
+    // 计算射线方向和平面法向量的点积
+    float denominator = glm::dot(plane_normal, ray_direction);
+
+    // 如果点积接近于0，说明射线与平面平行或在平面内
+    if (glm::abs(denominator) < 1e-6f) {
+        return std::nullopt; // 返回空，表示没有交点
+    }
+
+    // 计算射线起点到平面上一点的向量
+    glm::vec3 diff = plane_point - ray_origin;
+
+    // 计算t值
+    float t = glm::dot(diff, plane_normal) / denominator;
+
+    // 如果t < 0，说明交点在射线起点之前，返回空
+
+    if (t < 0) {
+        return std::nullopt;
+    }
+
+    // 计算交点
+    glm::vec3 intersection = ray_origin + t * ray_direction;
+
+    return intersection;
+}
+
 // x, y from [0, 1]
-QVector3D CameraControl::screenToWorldRay(float x, float y) {
-    auto _up = getRotation() * glm::vec3(0, 1, 0);
-    QVector3D up(_up.x, _up.y, _up.z);
-    QMatrix4x4 view;
-    view.setToIdentity();
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    view.lookAt(realPos(), center, up);
+glm::vec3 CameraControl::screenPosToRayWS(float x, float y)  {
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
     float v = std::tan(glm::radians(getFOV()) * 0.5f);
     float aspect = res().x() / res().y();
-    auto dir = QVector3D(v * x * aspect, v * y, -1);
-    dir = dir.normalized();
-    dir = view.inverted().mapVector(dir);
-    return dir;
+    auto dir = glm::normalize(glm::vec3(v * x * aspect, v * y, -1));
+    return getRotation() * dir;
 }
 
-QVariant CameraControl::hitOnFloor(float x, float y) {
-    auto dir = screenToWorldRay(x, y);
-    auto pos = realPos();
-    float t = (0 - pos.y()) / dir.y();
+std::optional<glm::vec3> CameraControl::screenHitOnFloorWS(float x, float y) {
+    auto dir = screenPosToRayWS(x, y);
+    auto pos = getPos();
+    float t = (0 - pos.y) / dir.y;
     if (t > 0) {
         auto p = pos + dir * t;
         return p;
