@@ -92,6 +92,18 @@ void ZfxExecute::setASTResult(std::shared_ptr<ZfxASTNode> pNode) {
     m_vecCommands.push_back(pNode);
 }
 
+ZENO_API void ZfxExecute::printSyntaxTree()
+{
+    std::string printContent = "\noriginal code: " + m_code + '\n';
+    if (m_vecCommands.empty()) {
+        printContent += "parser failed";
+    }
+    else {
+        print_syntax_tree(m_vecCommands[0], 0, printContent);
+    }
+    zeno::log_info(printContent);
+}
+
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeEmptyNode() {
     std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
     if (!n)

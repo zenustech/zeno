@@ -235,10 +235,12 @@ void Formula::debugASTNode(std::shared_ptr<ZfxASTNode> pNode) {
 
 ZENO_API void Formula::printSyntaxTree()
 {
-    printf("\n");
-    printf("original formula: %s\n", m_formula.c_str());
-    print_syntax_tree(m_rootNode, 0);
-    printf("\n");
+    zeno::log_info("--------------------------");
+    zeno::log_info("original formula: {}", m_formula);
+    std::string printContent;
+    print_syntax_tree(m_rootNode, 0, printContent);
+    zeno::log_info(printContent);
+    zeno::log_info("--------------------------");
 }
 
 ZENO_API std::optional<std::tuple<std::string, std::string, int>> Formula::getCurrFuncDescription()

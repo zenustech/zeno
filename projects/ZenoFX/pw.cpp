@@ -67,6 +67,7 @@ struct AttributeWrangle : zeno::INode {
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         ZfxExecute zfx(code, get_path());
         int ret = zfx.parse();
+        zfx.printSyntaxTree();
     }
 };
 

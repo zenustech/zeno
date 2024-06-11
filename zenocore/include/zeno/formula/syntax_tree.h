@@ -68,13 +68,13 @@ struct FuncContext {
     std::string nodePath;
 };
 
-char* getOperatorString(nodeType type, operatorVals op);
+std::string getOperatorString(nodeType type, operatorVals op);
 operatorVals funcName2Enum(std::string func);
 
 std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children);
 std::shared_ptr<ZfxASTNode> newNumberNode(float value);
 
-void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth);
+void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth, std::string& printContent);
 float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);
 
 void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos);  //当前函数名及处于第几个参数

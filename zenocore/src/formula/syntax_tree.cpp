@@ -1,6 +1,8 @@
 #include <zeno/formula/syntax_tree.h>
+#include <zeno/utils/log.h>
 
-char* getOperatorString(nodeType type, operatorVals op)
+
+std::string getOperatorString(nodeType type, operatorVals op)
 {
     if (type == FUNC)
         return "FUNC";
@@ -13,10 +15,13 @@ char* getOperatorString(nodeType type, operatorVals op)
     case ZENVAR: return "ZENVAR";
     case PLACEHOLDER: return "PLACEHOLDER";
     case FOUROPERATIONS: return "OP";
+    case COMPOP: return "COMPARE";
+    case CONDEXP: return "CONDITION-EXP";
+    case ARRAY: return "ARRAY";
+    case MATRIX: return "MATRIX";
     default:
         break;
     }
-
 
     switch (op) {
     case PLUS:
@@ -117,27 +122,34 @@ std::shared_ptr<ZfxASTNode> newNumberNode(float value) {
     return n;
 }
 
-void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth) {
-    const auto& printVal = [](std::shared_ptr<ZfxASTNode> root, char* prefix) {
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args)
+{
+    int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+    if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
+    auto size = static_cast<size_t>(size_s);
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), args ...);
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
+
+void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth, std::string& printContent) {
+    const auto& printVal = [&printContent](std::shared_ptr<ZfxASTNode> root, char* prefix) {
         if (std::holds_alternative<float>(root->value)) {
-            printf("%f ", std::get<float>(root->value));
+            printContent += string_format("%f ", std::get<float>(root->value));
         }
         else if (std::holds_alternative<int>(root->value)) {
-            printf("%d ", std::get<int>(root->value));
+            printContent += string_format("%d ", std::get<int>(root->value));
         }
         else if (std::holds_alternative<std::string>(root->value)) {
-            printf("%s ", std::get<std::string>(root->value).c_str());
+            printContent += std::get<std::string>(root->value) + " ";
         }
-
-        if (root->type == NUMBER)
-            printf("[%s]\n", getOperatorString(root->type, root->opVal));
-        else
-            printf("[%s]\n", getOperatorString(root->type, root->opVal));
+        printContent += "[" + getOperatorString(root->type, root->opVal) + "]\n";
     };
 
     if (root) {
         for (int i = 0; i < depth; ++i) {
-            printf("|  ");
+            printContent += "|  ";
         }
         if (std::shared_ptr<ZfxASTNode> spParent = root->parent.lock())
         {
@@ -159,7 +171,7 @@ void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth) {
             printVal(root, "root");
         }
         for (auto& child: root->children) {
-            print_syntax_tree(child, depth + 1);
+            print_syntax_tree(child, depth + 1, printContent);
         }
     }
 }
