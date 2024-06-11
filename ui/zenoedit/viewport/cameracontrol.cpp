@@ -115,7 +115,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         if (hit_posWS.has_value()) {
             scene->camera->setPivot(hit_posWS.value());
         }
-        action_start_cam_posWS = scene->camera->getPos();
     }
     auto m_picker = this->m_picker.lock();
     auto m_transformer = this->m_transformer.lock();
@@ -318,8 +317,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             if (hit_posWS.has_value()) {
                 auto view = getRotation() * glm::vec3(0, 0, -1);
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
-                auto new_pos = intersectRayPlane(hit_posWS.value(), ray * (-1.0f), action_start_cam_posWS, view);
+                auto new_pos = intersectRayPlane(hit_posWS.value(), ray * (-1.0f), getPos(), view);
                 if (new_pos.has_value()) {
+                    auto diff = new_pos.value() - getPos();
+                    setPivot(getPivot() + diff);
                     setPos(new_pos.value());
                 }
             }
