@@ -2,8 +2,9 @@
 # ^^^NONO^^^ Please add `export OpenVDB_DIR=/usr/local/lib/cmake/OpenVDB` in your .bashrc to YI-LAO-YONG-YI!!!!!!
 
 if (ZENO_NO_WARNING)
-    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -w")
-    add_compile_options(-w)
+    set(CMAKE_CXX_FLAGS "${ZENO_OLD_CXX_FLAGS} -Wno-error -fpermissive")
+    add_compile_options(-Wno-error)
+    add_compile_options(-fpermissive)
 endif()
 
 set(ZENO_EXTENSIONS

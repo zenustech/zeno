@@ -33,6 +33,7 @@ struct MatOutput {
     float transTintDepth;
     float transDistance;
     vec3 transScatterColor;
+    float abbe;
 
     float diffraction;
     vec3  diffractColor;

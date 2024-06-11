@@ -240,6 +240,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 return;
             }
             
+                prd->attanuation = vec3(0.0f);
+                optixTerminateRay();
+                return;
             if(specTrans > 0.0f){
 
                 if(thin == 0.0f && ior>=1.0f)
@@ -518,13 +521,6 @@ extern "C" __global__ void __closesthit__radiance()
     mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
-
-    if(prd->diffDepth>=1)
-        mats.roughness = clamp(mats.roughness, 0.2,0.99);
-    if(prd->diffDepth>=2)
-        mats.roughness = clamp(mats.roughness, 0.3,0.99);
-    if(prd->diffDepth>=3)
-        mats.roughness = clamp(mats.roughness, 0.5,0.99);
 
     
     if(prd->isSS == true) {
@@ -837,8 +833,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->depth++;
 
-    if(prd->depth>=3)
-        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
@@ -848,7 +842,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
-            dot(N, L), rd, rs, rt);
+            dot(N, L), rd, rs, rt,true,DisneyBSDF::SampleIOR(prd->wavelen/1000.0f,mats.ior,mats.abbe));
 
         prd->radiance_d = rd;
         prd->radiance_s = rs;
@@ -930,6 +924,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->_mask_ = EverythingMask;
     }
 
+        prd->_mask_ = EverythingMask;
     prd->radiance += mats.emission;
     if(length(mats.emission)>0)
     {

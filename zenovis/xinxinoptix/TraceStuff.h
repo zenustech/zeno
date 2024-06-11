@@ -92,6 +92,7 @@ struct RadiancePRD
     unsigned int flags;
     int          countEmitted;
     int          done;
+    int wavelen;
 
     int          medium;
     float        scatterDistance;

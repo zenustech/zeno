@@ -50,6 +50,7 @@ struct ShaderFinalize : INode {
             {1, "mat_transDistance"},
             {3, "mat_transScatterColor"},
             {1, "mat_ior"},
+            {1, "mat_abbe"},
 
             {1, "mat_diffraction"},
             {3, "mat_diffractColor"},
@@ -100,6 +101,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("transDistance", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("transScatterColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
+            get_input<IObject>("abbe", std::make_shared<NumericObject>(float(50.0f))),
 
             get_input<IObject>("diffraction", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("diffractColor", std::make_shared<NumericObject>(vec3f(0.0f))),
@@ -195,6 +197,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "transDistance", "10.0"},
         {"vec3f", "transScatterColor", "1.0,1.0,1.0"},
         {"float", "ior", "1.3"},
+        {"float", "abbe", "100.0"},
 
         {"float", "diffraction", "0.0"},
         {"vec3f", "diffractColor", "0.0,0.0,0.0"},

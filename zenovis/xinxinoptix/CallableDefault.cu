@@ -83,6 +83,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_transDistance = 0.0f;
     vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
+    float mat_abbe = 100.0f;
 
     float mat_diffraction = 0.0f;
     vec3  mat_diffractColor = vec3(0.0f);
@@ -141,6 +142,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_transDistance = 0.0f;
     vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
     float mat_ior = 1.0f;
+    float mat_abbe = 100.0f;
 
     float mat_diffraction = 0.0f;
     vec3  mat_diffractColor = vec3(0.0f);
@@ -196,6 +198,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.transDistance = max(mat_transDistance,0.1f);
     mats.transScatterColor = mat_transScatterColor;
     mats.ior = max(0.0f,mat_ior);
+    mats.abbe = mat_abbe;
 
     mats.diffraction = clamp(mat_diffraction, 0.0f, 1.0f);
     mats.diffractColor = clamp(mat_diffractColor, vec3(0.0f), vec3(1.0f));
