@@ -111,9 +111,9 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
-        hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-        if (hit_posWS.has_value()) {
-            scene->camera->setPivot(hit_posWS.value());
+        m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+        if (m_hit_posWS.has_value()) {
+            scene->camera->setPivot(m_hit_posWS.value());
         }
     }
     auto m_picker = this->m_picker.lock();
@@ -314,10 +314,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             // translate
-            if (hit_posWS.has_value()) {
-                auto view = getRotation() * glm::vec3(0, 0, -1);
+            if (m_hit_posWS.has_value()) {
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
-                auto new_pos = intersectRayPlane(hit_posWS.value(), ray * (-1.0f), getPos(), view);
+                auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
                 if (new_pos.has_value()) {
                     auto diff = new_pos.value() - getPos();
                     setPivot(getPivot() + diff);
@@ -325,8 +324,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 }
             }
             else {
-                auto left = getRotation() * glm::vec3(-1, 0, 0);
-                auto up = getRotation() * glm::vec3(0, 1, 0);
+                auto left = getRightDir() * -1.0f;
+                auto up = getUpDir();
                 auto delta = left * dx + up * dy;
                 if (getOrthoMode()) {
                     delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
@@ -394,12 +393,6 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
-    auto session = m_zenovis->getSession();
-    auto scene = session->get_scene();
-    hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-    if (hit_posWS.has_value()) {
-        scene->camera->setPivot(hit_posWS.value());
-    }
     int dy = 0;
     if (event->modifiers() & Qt::AltModifier)
         dy = event->angleDelta().x();
@@ -432,9 +425,34 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
         auto pos = getPos();
-        auto pivot = getPivot();
-        auto new_pos = (pos - pivot) * scale + pivot;
-        setPos(new_pos);
+        auto session = m_zenovis->getSession();
+        auto scene = session->get_scene();
+        auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+        if (hit_posWS.has_value()) {
+            auto pivot = hit_posWS.value();
+            auto new_pos = (pos - pivot) * scale + pivot;
+            setPos(new_pos);
+        }
+        else {
+            auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
+            auto pivot = posOnFloorWS;
+            if (dot((pivot - pos), getViewDir()) > 0) {
+                auto translate = (pivot - pos) * (1 - scale);
+                if (glm::length(translate) < 0.01) {
+                    translate = glm::normalize(translate) * 0.01f;
+                }
+                auto new_pos = translate + pos;
+                setPos(new_pos);
+            }
+            else {
+                auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
+                if (getPos().y < 0) {
+                    translate *= -1;
+                }
+                auto new_pos = translate + pos;
+                setPos(new_pos);
+            }
+        }
     }
     updatePerspective();
 
@@ -551,16 +569,11 @@ glm::vec3 CameraControl::screenPosToRayWS(float x, float y)  {
     return getRotation() * dir;
 }
 
-std::optional<glm::vec3> CameraControl::screenHitOnFloorWS(float x, float y) {
+glm::vec3 CameraControl::screenHitOnFloorWS(float x, float y) {
     auto dir = screenPosToRayWS(x, y);
     auto pos = getPos();
     float t = (0 - pos.y) / dir.y;
-    if (t > 0) {
-        auto p = pos + dir * t;
-        return p;
-    } else {
-        return {};
-    }
+    return pos + dir * t;
 }
 
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
@@ -749,8 +762,8 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     if (!middle_button_pressed) {
         return false;
     }
-    zeno::vec3f back = zeno::other_to_vec<3>(getRotation() * glm::vec3(0, 0, -1));
-    zeno::vec3f up = zeno::other_to_vec<3>(getRotation() * glm::vec3(0, 1, 0));
+    zeno::vec3f back = zeno::other_to_vec<3>(getViewDir());
+    zeno::vec3f up = zeno::other_to_vec<3>(getUpDir());
     zeno::vec3f left = zeno::cross(up, back);
     auto center = getCenter();
     float step = 1.0f;

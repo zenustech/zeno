@@ -52,7 +52,16 @@ public:
     [[deprecated]]
     QVector3D realPos() const;
     glm::vec3 screenPosToRayWS(float x, float y);
-    std::optional<glm::vec3> screenHitOnFloorWS(float x, float y);
+    glm::vec3 screenHitOnFloorWS(float x, float y);
+    glm::vec3 getViewDir() {
+        return getRotation() * glm::vec3(0, 0, -1);
+    };
+    glm::vec3 getUpDir() {
+        return getRotation() * glm::vec3(0, 1, 0);
+    };
+    glm::vec3 getRightDir() {
+        return getRotation() * glm::vec3(1, 0, 0);
+    };
     void lookTo(zenovis::CameraLookToDir dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);
@@ -68,7 +77,7 @@ private:
     QPoint m_boundRectStartPos;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
-    std::optional<glm::vec3> hit_posWS;
+    std::optional<glm::vec3> m_hit_posWS;
 
     std::weak_ptr<zeno::Picker> m_picker;
     std::weak_ptr<zeno::FakeTransformer> m_transformer;
