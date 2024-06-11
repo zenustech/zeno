@@ -1227,6 +1227,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         }
                     }
                 }
+                // add light map
+                for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
+                    if (ld.profileKey.size()) {
+                        realNeedTexPaths.emplace_back(ld.profileKey);
+                    }
+                    if (ld.textureKey.size()) {
+                        realNeedTexPaths.emplace_back(ld.textureKey);
+                    }
+                }
                 std::vector<std::string> needToRemoveTexPaths;
                 for(auto const &[tex, _]: OptixUtil::g_tex) {
                     if (std::find(realNeedTexPaths.begin(), realNeedTexPaths.end(), tex) != realNeedTexPaths.end()) {

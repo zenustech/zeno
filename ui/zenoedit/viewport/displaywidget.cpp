@@ -1383,12 +1383,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
-                auto _near = scene->camera->m_near;
-                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 0) {
-                    cz = scene->camera->m_near / depth;
+                    cz = scene->camera->inf_z_near / depth;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;

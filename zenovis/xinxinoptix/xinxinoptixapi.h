@@ -112,4 +112,5 @@ void updatePortalLights(const std::vector<Portal>& portals);
 void updateDistantLights(std::vector<zeno::DistantLightData>& dldl);
 // void optixUpdateUniforms(std::vector<float4> & inConstants);
 void optixUpdateUniforms(void *inConstants, std::size_t size);
+std::map<std::string, LightDat> &get_lightdats();
 }

@@ -2053,6 +2053,11 @@ static std::map<std::string, LightDat> lightdats;
 static std::vector<float2>  triangleLightCoords;
 static std::vector<float3>  triangleLightNormals;
 
+
+std::map<std::string, LightDat> &get_lightdats() {
+    return lightdats;
+}
+
 void unload_light(){
 
     lightdats.clear();

@@ -20,6 +20,7 @@ struct ZOptixCameraSettingInfo {
 };
 
 struct Camera {
+    float inf_z_near = 0.001f;
     int m_nx{512}, m_ny{512};
     glm::mat4x4 m_view{1}, m_proj{1};
 
