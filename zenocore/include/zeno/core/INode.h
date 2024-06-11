@@ -210,6 +210,10 @@ public:
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
+    void propagateDirty(ObjPath dependType);  //查询上游dependType类型节点并传播dirty
+    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstrems, std::string outParamName = "");
+    void mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
+
 private:
     std::string m_name;
     std::string m_nodecls;
