@@ -153,15 +153,18 @@ namespace VERTEX_FACE_SQRT_COLLISION {
         auto tn = t.template cast<DREAL>().normalized().template cast<REAL>();
         auto productn = tDiff.transpose() * tn;
 
-        alpha = alpha > 0 ? alpha : 0;
-        beta = beta > 0 ? beta : 0;
+        // alpha = alpha > 0 ? alpha : 0;
+        alpha = alpha > 0 ? alpha : -alpha;
+        beta = beta > 0 ? beta : -beta;
+        // beta = beta > 0 ? beta : 0;
 
         auto result = (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
         if(zs::isnan(result.norm())) {
             printf("nan cH detected %f %f %f %f\n",(float)alpha,(float)productn.norm(),(float)beta,(float)tDiff.norm());
         }
 
-        return (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
+        // return (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
+        return result;
         // auto H = (REAL)2.0 * _mu * ((REAL)alpha * (zs::dyadic_prod(productn,productn)) + (REAL)beta * tDiff.transpose() * tDiff);
         // make_pd(H);
         // return H; 
