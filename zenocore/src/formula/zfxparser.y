@@ -88,6 +88,20 @@
 %token VARNAME
 %token SEMICOLON
 %token EQUALTO
+%token IF
+%token FOR
+%token WHILE
+%token AUTOINC
+%token AUTODEC
+%token LSQBRACKET
+%token RSQBRACKET
+%token ADDASSIGN
+%token MULASSIGN
+%token SUBASSIGN
+%token DIVASSIGN
+%token RETURN
+%token CONTINUE
+%token BREAK
 
 %left ADD "+"
 %left SUB "-"
@@ -98,26 +112,61 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement exp-statement compareexp calclist factor term func-content zenvar array-stmt
+%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement for-condition for-step exp-statement if-statement compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin for-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME SEMICOLON EQUALTO
+%type <operatorVals> assign-op
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
 
-%start calclist
+%start zfx-program
 
 %%
-calclist: END{
-            //std::cout << "END" << std::endl;
+
+zfx-program: END {
+            std::cout << "END" << std::endl;
             $$ = driver.makeNewNode(CODEBLOCK, DEFAULT_FUNCVAL, {});
             driver.setASTResult($$);
         }
-    | general-statement calclist {
+    | multi-statements zfx-program {
+            addChild($2, $1);
+            $$ = $2;
+        }
+    ;
+
+multi-statements: %empty {
+            $$ = driver.makeNewNode(CODEBLOCK, DEFAULT_FUNCVAL, {});
+        }
+    | general-statement multi-statements {
             addChild($2, $1);
             $$ = $2;
         }
     ;
 
 general-statement: declare-statement SEMICOLON { $$ = $1; }
-    | exp-statement SEMICOLON { $$ = $1; }
+    | assign-statement SEMICOLON { $$ = $1; }
+    | if-statement { $$ = $1; }
+    | for-statement { $$ = $1; }
+    | jump-statement SEMICOLON { $$ = $1; }
+    | exp-statement SEMICOLON { $$ = $1; }      /*可参与四则运算，以及普通的函数调用。*/
+    ;
+
+assign-op: EQUALTO { $$ = AssignTo; }
+    | ADDASSIGN { $$ = AddAssign; }
+    | MULASSIGN { $$ = MulAssign; }
+    | SUBASSIGN { $$ = SubAssign; }
+    | DIVASSIGN { $$ = DivAssign; }
+    ;
+
+assign-statement: VARNAME assign-op exp-statement {
+            auto nameNode = driver.makeZfxVarNode($1);
+            std::vector<std::shared_ptr<ZfxASTNode>> children({nameNode, $3});
+            $$ = driver.makeNewNode(ASSIGNMENT, $2, children);
+        }
+    ;
+
+jump-statement: BREAK { $$ = driver.makeNewNode(JUMP, JUMP_BREAK, {}); }
+    | RETURN   { $$ = driver.makeNewNode(JUMP, JUMP_RETURN, {}); }
+    | CONTINUE { $$ = driver.makeNewNode(JUMP, JUMP_CONTINUE, {}); }
+    ;
 
 declare-statement: VARNAME VARNAME {
                 auto typeNode = driver.makeZfxVarNode($1);
@@ -131,6 +180,36 @@ declare-statement: VARNAME VARNAME {
                 std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode, $4});
                 $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
             }
+    ;
+
+code-block: LBRACKET multi-statements RBRACKET { $$ = $2; }
+    ;
+
+if-statement: IF LPAREN exp-statement RPAREN code-block {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
+            $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
+        }
+    ;
+
+for-begin: SEMICOLON { $$ = driver.makeEmptyNode(); }
+    | declare-statement SEMICOLON { $$ = $1; }
+    | assign-statement SEMICOLON { $$ = $1; }
+    | exp-statement SEMICOLON { $$ = $1; }
+    ;
+
+for-condition:  SEMICOLON { $$ = driver.makeEmptyNode(); }
+    | exp-statement SEMICOLON { $$ = $1; }
+    ;
+
+for-step: %empty { $$ = driver.makeEmptyNode(); }
+    | exp-statement { $$ = $1; }
+    | assign-statement { $$ = $1; }
+    ;
+
+for-statement: FOR LPAREN for-begin for-condition for-step RPAREN code-block {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $4, $5, $7});
+            $$ = driver.makeNewNode(FOR, DEFAULT_FUNCVAL, children);
+        }
     ;
 
 exp-statement: compareexp           { $$ = $1; }
@@ -151,11 +230,11 @@ exp-statement: compareexp           { $$ = $1; }
 
 compareexp: factor              { $$ = $1; }
     | compareexp ADD factor {
-                std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+                std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
     | compareexp SUB factor {
-                std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+                std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
     ;
@@ -171,9 +250,32 @@ factor: term            { $$ = $1; }
         }
     ;
 
-zenvar: DOLLARVARNAME { $$ = driver.makeZenVarNode($1); }
-    | VARNAME { $$ = driver.makeZfxVarNode($1); }
-    | zenvar DOT VARNAME { $$ = driver.makeComponentVisit($1, $3); }
+zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
+    | VARNAME           { $$ = driver.makeZfxVarNode($1); }
+    | zenvar DOT VARNAME {
+            $$ = driver.makeComponentVisit($1, $3);
+        }
+    | zenvar LSQBRACKET exp-statement RSQBRACKET {
+            $$ = $1;
+            $$->opVal = Indexing;
+            $$->children.push_back($3);
+        }
+    | AUTOINC zenvar {
+            $$ = $2;
+            $$->opVal = AutoIncreaseFirst;
+        }
+    | zenvar AUTOINC {
+            $$ = $1;
+            $$->opVal = AutoIncreaseLast;
+        }
+    | AUTODEC zenvar {
+            $$ = $2;
+            $$->opVal = AutoDecreaseFirst;
+        }
+    | zenvar AUTODEC {
+            $$ = $1;
+            $$->opVal = AutoDecreaseLast;
+        }
     ;
 
 funcargs: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }

@@ -57,6 +57,8 @@ dollar \$
 zenvarname \$[A-Za-z_]+
 compareop (<|<=|>=|>)
 semicolon ;
+autoinc \+\+
+autodec \-\-
 equalto \=
 
 %%
@@ -95,11 +97,34 @@ equalto \=
 "\."      { return zeno::ZfxParser::make_DOT(yytext,loc); }
 "{"       { return zeno::ZfxParser::make_LBRACKET(yytext,loc); }
 "}"       { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
+"\["       { return zeno::ZfxParser::make_LSQBRACKET(yytext,loc); }
+"\]"       { return zeno::ZfxParser::make_RSQBRACKET(yytext,loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
-{varname} { return zeno::ZfxParser::make_VARNAME(yytext, loc); }
+{autoinc} { return zeno::ZfxParser::make_AUTOINC(yytext, loc); }
+{autodec} { return zeno::ZfxParser::make_AUTODEC(yytext, loc); }
+{varname} { 
+        if (strcmp(yytext, "return") == 0) {
+            return zeno::ZfxParser::make_RETURN(yytext, loc);
+        } else if (strcmp(yytext, "break") == 0) {
+            return zeno::ZfxParser::make_BREAK(yytext, loc);
+        } else if (strcmp(yytext, "continue") == 0) {
+            return zeno::ZfxParser::make_CONTINUE(yytext, loc);
+        } else if (strcmp(yytext, "if") == 0) {
+            return zeno::ZfxParser::make_IF(yytext, loc);
+        } else if (strcmp(yytext, "while") == 0) {
+            return zeno::ZfxParser::make_WHILE(yytext, loc);
+        } else if (strcmp(yytext, "for") == 0) {
+            return zeno::ZfxParser::make_FOR(yytext, loc);
+        }
+        return zeno::ZfxParser::make_VARNAME(yytext, loc);
+}
 {semicolon} { return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
 {equalto}   { return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
+"\+\="      { return zeno::ZfxParser::make_ADDASSIGN(yytext, loc); }
+"\*\="      { return zeno::ZfxParser::make_MULASSIGN(yytext, loc); }
+"\-\="      { return zeno::ZfxParser::make_SUBASSIGN(yytext, loc); }
+"/\="       { return zeno::ZfxParser::make_DIVASSIGN(yytext, loc); }
 {dollar}  { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 {zenvarname} { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 {compareop}  { return zeno::ZfxParser::make_COMPARE(yytext, loc); }

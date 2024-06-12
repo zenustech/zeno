@@ -54,21 +54,10 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeStringNode(std::string text) {
     return spNode;
 }
 
-std::shared_ptr<ZfxASTNode> ZfxExecute::makeZenVarNode(std::string text) {
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text, operatorVals op) {
     std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = ZENVAR;
-    spNode->opVal = UNDEFINE_OP;
-    if (!text.empty())
-        spNode->value = text.substr(1);
-    else
-        spNode->value = text;
-    return spNode;
-}
-
-std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text) {
-    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
-    spNode->type = ZENVAR;
-    spNode->opVal = UNDEFINE_OP;
+    spNode->opVal = op;
     spNode->value = text;
     return spNode;
 }
@@ -89,17 +78,17 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {
 }
 
 void ZfxExecute::setASTResult(std::shared_ptr<ZfxASTNode> pNode) {
-    m_vecCommands.push_back(pNode);
+    m_root = pNode;
 }
 
 ZENO_API void ZfxExecute::printSyntaxTree()
 {
     std::string printContent = "\noriginal code: " + m_code + '\n';
-    if (m_vecCommands.empty()) {
+    if (!m_root) {
         printContent += "parser failed";
     }
     else {
-        print_syntax_tree(m_vecCommands[0], 0, printContent);
+        print_syntax_tree(m_root, 0, printContent);
     }
     zeno::log_info(printContent);
 }

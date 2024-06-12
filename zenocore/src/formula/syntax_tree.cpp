@@ -12,7 +12,26 @@ std::string getOperatorString(nodeType type, operatorVals op)
     case FUNC: return "FUNC";
     case NUMBER: return "NUMBER";
     case STRING: return "STRING";
-    case ZENVAR: return "ZENVAR";
+    case ZENVAR:
+    {
+        std::string var = "ZENVAR";
+        switch (op) {
+        case Indexing: var += " [Indexing]"; break;
+        case BulitInVar: var += " [$]"; break;
+        case AutoIncreaseFirst: var += " ++var"; break;
+        case AutoIncreaseLast: var += " var++"; break;
+        case AutoDecreaseFirst: var += " --var;"; break;
+        case AutoDecreaseLast: var += " var--"; break;
+        }
+        return var;
+    }
+    case JUMP: {
+        switch (op) {
+        case JUMP_BREAK: return "Break";
+        case JUMP_CONTINUE: return "Continue";
+        case JUMP_RETURN: return "Return";
+        }
+    }
     case PLACEHOLDER: return "PLACEHOLDER";
     case FOUROPERATIONS: return "OP";
     case COMPOP: return "COMPARE";
@@ -21,6 +40,19 @@ std::string getOperatorString(nodeType type, operatorVals op)
     case MATRIX: return "MATRIX";
     case DECLARE: return "DECLARE";
     case CODEBLOCK: return "CODEBLOCK";
+    case IF: return "IF";
+    case FOR: return "FOR";
+    case ASSIGNMENT: {
+        std::string var = "ASSIGN";
+        switch (op) {
+        case AssignTo: var += " ="; break;
+        case AddAssign: var += " +="; break;
+        case MulAssign: var += " *="; break;
+        case SubAssign: var += " -="; break;
+        case DivAssign: var += " /="; break;
+        }
+        return var;
+    }
     default:
         break;
     }

@@ -24,11 +24,17 @@ enum nodeType {
     COMPVISIT,          //访问元素分量，比如vec.x vec.y vec.z
     PLACEHOLDER,
     DECLARE,            //变量定义
+    ASSIGNMENT,           //赋值
+    IF,
+    FOR,
     CODEBLOCK,          //多个语法树作为children的代码块
+    JUMP,
 };
 
 enum operatorVals {
     UNDEFINE_OP = 0,
+    DEFAULT_FUNCVAL,
+
     //四则运算 nodeType对应FOUROPERATIONS
     PLUS,
     MINUS,
@@ -40,7 +46,24 @@ enum operatorVals {
     COS,
     COSH,
     ABS,
-    DEFAULT_FUNCVAL,
+
+    //以下仅针对变量
+    AssignTo,
+    AddAssign,
+    MulAssign,
+    SubAssign,
+    DivAssign,
+
+    JUMP_RETURN,
+    JUMP_CONTINUE,
+    JUMP_BREAK,
+
+    AutoIncreaseFirst,
+    AutoIncreaseLast,
+    AutoDecreaseFirst,
+    AutoDecreaseLast,
+    Indexing,
+    BulitInVar,     //$F, $FPS, $T
 };
 
 enum TokenMatchCase {

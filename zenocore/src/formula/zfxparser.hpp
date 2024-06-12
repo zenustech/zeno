@@ -427,19 +427,31 @@ namespace  zeno  {
       // NUMBER
       char dummy1[sizeof (float)];
 
-      // calclist
+      // assign-op
+      char dummy2[sizeof (operatorVals)];
+
+      // zfx-program
+      // multi-statements
       // general-statement
+      // assign-statement
+      // jump-statement
       // declare-statement
+      // code-block
+      // if-statement
+      // for-begin
+      // for-condition
+      // for-step
+      // for-statement
       // exp-statement
       // compareexp
       // factor
       // zenvar
       // func-content
       // term
-      char dummy2[sizeof (std::shared_ptr<ZfxASTNode>)];
+      char dummy3[sizeof (std::shared_ptr<ZfxASTNode>)];
 
       // funcargs
-      char dummy3[sizeof (std::vector<std::shared_ptr<ZfxASTNode>>)];
+      char dummy4[sizeof (std::vector<std::shared_ptr<ZfxASTNode>>)];
 
       // RPAREN
       // IDENTIFIER
@@ -457,8 +469,22 @@ namespace  zeno  {
       // VARNAME
       // SEMICOLON
       // EQUALTO
+      // IF
+      // FOR
+      // WHILE
+      // AUTOINC
+      // AUTODEC
+      // LSQBRACKET
+      // RSQBRACKET
+      // ADDASSIGN
+      // MULASSIGN
+      // SUBASSIGN
+      // DIVASSIGN
+      // RETURN
+      // CONTINUE
+      // BREAK
       // LPAREN
-      char dummy4[sizeof (string)];
+      char dummy5[sizeof (string)];
     };
 
     /// The size of the largest semantic type.
@@ -533,12 +559,26 @@ namespace  zeno  {
     TOKEN_VARNAME = 277,           // VARNAME
     TOKEN_SEMICOLON = 278,         // SEMICOLON
     TOKEN_EQUALTO = 279,           // EQUALTO
-    TOKEN_ADD = 280,               // ADD
-    TOKEN_SUB = 282,               // SUB
-    TOKEN_MUL = 284,               // MUL
-    TOKEN_DIV = 286,               // DIV
-    TOKEN_NEG = 288,               // NEG
-    TOKEN_LPAREN = 289             // LPAREN
+    TOKEN_IF = 280,                // IF
+    TOKEN_FOR = 281,               // FOR
+    TOKEN_WHILE = 282,             // WHILE
+    TOKEN_AUTOINC = 283,           // AUTOINC
+    TOKEN_AUTODEC = 284,           // AUTODEC
+    TOKEN_LSQBRACKET = 285,        // LSQBRACKET
+    TOKEN_RSQBRACKET = 286,        // RSQBRACKET
+    TOKEN_ADDASSIGN = 287,         // ADDASSIGN
+    TOKEN_MULASSIGN = 288,         // MULASSIGN
+    TOKEN_SUBASSIGN = 289,         // SUBASSIGN
+    TOKEN_DIVASSIGN = 290,         // DIVASSIGN
+    TOKEN_RETURN = 291,            // RETURN
+    TOKEN_CONTINUE = 292,          // CONTINUE
+    TOKEN_BREAK = 293,             // BREAK
+    TOKEN_ADD = 294,               // ADD
+    TOKEN_SUB = 296,               // SUB
+    TOKEN_MUL = 298,               // MUL
+    TOKEN_DIV = 300,               // DIV
+    TOKEN_NEG = 302,               // NEG
+    TOKEN_LPAREN = 303             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -555,7 +595,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 35, ///< Number of tokens.
+        YYNTOKENS = 49, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -582,27 +622,51 @@ namespace  zeno  {
         S_VARNAME = 22,                          // VARNAME
         S_SEMICOLON = 23,                        // SEMICOLON
         S_EQUALTO = 24,                          // EQUALTO
-        S_ADD = 25,                              // ADD
-        S_26_ = 26,                              // "+"
-        S_SUB = 27,                              // SUB
-        S_28_ = 28,                              // "-"
-        S_MUL = 29,                              // MUL
-        S_30_ = 30,                              // "*"
-        S_DIV = 31,                              // DIV
-        S_32_ = 32,                              // "/"
-        S_NEG = 33,                              // NEG
-        S_LPAREN = 34,                           // LPAREN
-        S_YYACCEPT = 35,                         // $accept
-        S_calclist = 36,                         // calclist
-        S_37_general_statement = 37,             // general-statement
-        S_38_declare_statement = 38,             // declare-statement
-        S_39_exp_statement = 39,                 // exp-statement
-        S_compareexp = 40,                       // compareexp
-        S_factor = 41,                           // factor
-        S_zenvar = 42,                           // zenvar
-        S_funcargs = 43,                         // funcargs
-        S_44_func_content = 44,                  // func-content
-        S_term = 45                              // term
+        S_IF = 25,                               // IF
+        S_FOR = 26,                              // FOR
+        S_WHILE = 27,                            // WHILE
+        S_AUTOINC = 28,                          // AUTOINC
+        S_AUTODEC = 29,                          // AUTODEC
+        S_LSQBRACKET = 30,                       // LSQBRACKET
+        S_RSQBRACKET = 31,                       // RSQBRACKET
+        S_ADDASSIGN = 32,                        // ADDASSIGN
+        S_MULASSIGN = 33,                        // MULASSIGN
+        S_SUBASSIGN = 34,                        // SUBASSIGN
+        S_DIVASSIGN = 35,                        // DIVASSIGN
+        S_RETURN = 36,                           // RETURN
+        S_CONTINUE = 37,                         // CONTINUE
+        S_BREAK = 38,                            // BREAK
+        S_ADD = 39,                              // ADD
+        S_40_ = 40,                              // "+"
+        S_SUB = 41,                              // SUB
+        S_42_ = 42,                              // "-"
+        S_MUL = 43,                              // MUL
+        S_44_ = 44,                              // "*"
+        S_DIV = 45,                              // DIV
+        S_46_ = 46,                              // "/"
+        S_NEG = 47,                              // NEG
+        S_LPAREN = 48,                           // LPAREN
+        S_YYACCEPT = 49,                         // $accept
+        S_50_zfx_program = 50,                   // zfx-program
+        S_51_multi_statements = 51,              // multi-statements
+        S_52_general_statement = 52,             // general-statement
+        S_53_assign_op = 53,                     // assign-op
+        S_54_assign_statement = 54,              // assign-statement
+        S_55_jump_statement = 55,                // jump-statement
+        S_56_declare_statement = 56,             // declare-statement
+        S_57_code_block = 57,                    // code-block
+        S_58_if_statement = 58,                  // if-statement
+        S_59_for_begin = 59,                     // for-begin
+        S_60_for_condition = 60,                 // for-condition
+        S_61_for_step = 61,                      // for-step
+        S_62_for_statement = 62,                 // for-statement
+        S_63_exp_statement = 63,                 // exp-statement
+        S_compareexp = 64,                       // compareexp
+        S_factor = 65,                           // factor
+        S_zenvar = 66,                           // zenvar
+        S_funcargs = 67,                         // funcargs
+        S_68_func_content = 68,                  // func-content
+        S_term = 69                              // term
       };
     };
 
@@ -643,14 +707,27 @@ namespace  zeno  {
         value.move< float > (std::move (that.value));
         break;
 
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_37_general_statement: // general-statement
-      case symbol_kind::S_38_declare_statement: // declare-statement
-      case symbol_kind::S_39_exp_statement: // exp-statement
+      case symbol_kind::S_53_assign_op: // assign-op
+        value.move< operatorVals > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_50_zfx_program: // zfx-program
+      case symbol_kind::S_51_multi_statements: // multi-statements
+      case symbol_kind::S_52_general_statement: // general-statement
+      case symbol_kind::S_54_assign_statement: // assign-statement
+      case symbol_kind::S_55_jump_statement: // jump-statement
+      case symbol_kind::S_56_declare_statement: // declare-statement
+      case symbol_kind::S_57_code_block: // code-block
+      case symbol_kind::S_58_if_statement: // if-statement
+      case symbol_kind::S_59_for_begin: // for-begin
+      case symbol_kind::S_60_for_condition: // for-condition
+      case symbol_kind::S_61_for_step: // for-step
+      case symbol_kind::S_62_for_statement: // for-statement
+      case symbol_kind::S_63_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_44_func_content: // func-content
+      case symbol_kind::S_68_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
@@ -675,6 +752,20 @@ namespace  zeno  {
       case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_SEMICOLON: // SEMICOLON
       case symbol_kind::S_EQUALTO: // EQUALTO
+      case symbol_kind::S_IF: // IF
+      case symbol_kind::S_FOR: // FOR
+      case symbol_kind::S_WHILE: // WHILE
+      case symbol_kind::S_AUTOINC: // AUTOINC
+      case symbol_kind::S_AUTODEC: // AUTODEC
+      case symbol_kind::S_LSQBRACKET: // LSQBRACKET
+      case symbol_kind::S_RSQBRACKET: // RSQBRACKET
+      case symbol_kind::S_ADDASSIGN: // ADDASSIGN
+      case symbol_kind::S_MULASSIGN: // MULASSIGN
+      case symbol_kind::S_SUBASSIGN: // SUBASSIGN
+      case symbol_kind::S_DIVASSIGN: // DIVASSIGN
+      case symbol_kind::S_RETURN: // RETURN
+      case symbol_kind::S_CONTINUE: // CONTINUE
+      case symbol_kind::S_BREAK: // BREAK
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (std::move (that.value));
         break;
@@ -710,6 +801,20 @@ namespace  zeno  {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const float& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, operatorVals&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const operatorVals& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -786,14 +891,27 @@ switch (yykind)
         value.template destroy< float > ();
         break;
 
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_37_general_statement: // general-statement
-      case symbol_kind::S_38_declare_statement: // declare-statement
-      case symbol_kind::S_39_exp_statement: // exp-statement
+      case symbol_kind::S_53_assign_op: // assign-op
+        value.template destroy< operatorVals > ();
+        break;
+
+      case symbol_kind::S_50_zfx_program: // zfx-program
+      case symbol_kind::S_51_multi_statements: // multi-statements
+      case symbol_kind::S_52_general_statement: // general-statement
+      case symbol_kind::S_54_assign_statement: // assign-statement
+      case symbol_kind::S_55_jump_statement: // jump-statement
+      case symbol_kind::S_56_declare_statement: // declare-statement
+      case symbol_kind::S_57_code_block: // code-block
+      case symbol_kind::S_58_if_statement: // if-statement
+      case symbol_kind::S_59_for_begin: // for-begin
+      case symbol_kind::S_60_for_condition: // for-condition
+      case symbol_kind::S_61_for_step: // for-step
+      case symbol_kind::S_62_for_statement: // for-statement
+      case symbol_kind::S_63_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_44_func_content: // func-content
+      case symbol_kind::S_68_func_content: // func-content
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
@@ -818,6 +936,20 @@ switch (yykind)
       case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_SEMICOLON: // SEMICOLON
       case symbol_kind::S_EQUALTO: // EQUALTO
+      case symbol_kind::S_IF: // IF
+      case symbol_kind::S_FOR: // FOR
+      case symbol_kind::S_WHILE: // WHILE
+      case symbol_kind::S_AUTOINC: // AUTOINC
+      case symbol_kind::S_AUTODEC: // AUTODEC
+      case symbol_kind::S_LSQBRACKET: // LSQBRACKET
+      case symbol_kind::S_RSQBRACKET: // RSQBRACKET
+      case symbol_kind::S_ADDASSIGN: // ADDASSIGN
+      case symbol_kind::S_MULASSIGN: // MULASSIGN
+      case symbol_kind::S_SUBASSIGN: // SUBASSIGN
+      case symbol_kind::S_DIVASSIGN: // DIVASSIGN
+      case symbol_kind::S_RETURN: // RETURN
+      case symbol_kind::S_CONTINUE: // CONTINUE
+      case symbol_kind::S_BREAK: // BREAK
       case symbol_kind::S_LPAREN: // LPAREN
         value.template destroy< string > ();
         break;
@@ -947,7 +1079,7 @@ switch (yykind)
       {
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT ((token::TOKEN_RPAREN <= tok && tok <= token::TOKEN_IDENTIFIER)
-                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_EQUALTO)
+                   || (token::TOKEN_LITERAL <= tok && tok <= token::TOKEN_BREAK)
                    || tok == token::TOKEN_LPAREN);
 #endif
       }
@@ -1377,6 +1509,216 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_IF (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_IF, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_IF (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_IF, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FOR (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_FOR, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_FOR (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_FOR, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_WHILE (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_WHILE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_WHILE (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_WHILE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AUTOINC (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_AUTOINC, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AUTOINC (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_AUTOINC, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AUTODEC (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_AUTODEC, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AUTODEC (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_AUTODEC, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LSQBRACKET (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_LSQBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LSQBRACKET (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_LSQBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RSQBRACKET (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_RSQBRACKET, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RSQBRACKET (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_RSQBRACKET, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ADDASSIGN (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_ADDASSIGN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ADDASSIGN (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_ADDASSIGN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MULASSIGN (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_MULASSIGN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_MULASSIGN (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_MULASSIGN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SUBASSIGN (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_SUBASSIGN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SUBASSIGN (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_SUBASSIGN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIVASSIGN (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_DIVASSIGN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DIVASSIGN (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_DIVASSIGN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RETURN (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_RETURN, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RETURN (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_RETURN, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CONTINUE (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_CONTINUE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_CONTINUE (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_CONTINUE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_BREAK (string v, location_type l)
+      {
+        return symbol_type (token::TOKEN_BREAK, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_BREAK (const string& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_BREAK, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_ADD (location_type l)
       {
         return symbol_type (token::TOKEN_ADD, std::move (l));
@@ -1534,7 +1876,7 @@ switch (yykind)
     // Tables.
     // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
     // STATE-NUM.
-    static const signed char yypact_[];
+    static const short yypact_[];
 
     // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
@@ -1567,7 +1909,7 @@ switch (yykind)
 
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const unsigned char yyrline_[];
+    static const short yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
@@ -1794,9 +2136,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 51,     ///< Last index in yytable_.
-      yynnts_ = 11,  ///< Number of nonterminal symbols.
-      yyfinal_ = 23 ///< Termination state number.
+      yylast_ = 182,     ///< Last index in yytable_.
+      yynnts_ = 21,  ///< Number of nonterminal symbols.
+      yyfinal_ = 46 ///< Termination state number.
     };
 
 
@@ -1844,10 +2186,12 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    34
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48
     };
     // Last valid token kind.
-    const int code_max = 289;
+    const int code_max = 303;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -1870,14 +2214,27 @@ switch (yykind)
         value.copy< float > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_37_general_statement: // general-statement
-      case symbol_kind::S_38_declare_statement: // declare-statement
-      case symbol_kind::S_39_exp_statement: // exp-statement
+      case symbol_kind::S_53_assign_op: // assign-op
+        value.copy< operatorVals > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_50_zfx_program: // zfx-program
+      case symbol_kind::S_51_multi_statements: // multi-statements
+      case symbol_kind::S_52_general_statement: // general-statement
+      case symbol_kind::S_54_assign_statement: // assign-statement
+      case symbol_kind::S_55_jump_statement: // jump-statement
+      case symbol_kind::S_56_declare_statement: // declare-statement
+      case symbol_kind::S_57_code_block: // code-block
+      case symbol_kind::S_58_if_statement: // if-statement
+      case symbol_kind::S_59_for_begin: // for-begin
+      case symbol_kind::S_60_for_condition: // for-condition
+      case symbol_kind::S_61_for_step: // for-step
+      case symbol_kind::S_62_for_statement: // for-statement
+      case symbol_kind::S_63_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_44_func_content: // func-content
+      case symbol_kind::S_68_func_content: // func-content
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -1902,6 +2259,20 @@ switch (yykind)
       case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_SEMICOLON: // SEMICOLON
       case symbol_kind::S_EQUALTO: // EQUALTO
+      case symbol_kind::S_IF: // IF
+      case symbol_kind::S_FOR: // FOR
+      case symbol_kind::S_WHILE: // WHILE
+      case symbol_kind::S_AUTOINC: // AUTOINC
+      case symbol_kind::S_AUTODEC: // AUTODEC
+      case symbol_kind::S_LSQBRACKET: // LSQBRACKET
+      case symbol_kind::S_RSQBRACKET: // RSQBRACKET
+      case symbol_kind::S_ADDASSIGN: // ADDASSIGN
+      case symbol_kind::S_MULASSIGN: // MULASSIGN
+      case symbol_kind::S_SUBASSIGN: // SUBASSIGN
+      case symbol_kind::S_DIVASSIGN: // DIVASSIGN
+      case symbol_kind::S_RETURN: // RETURN
+      case symbol_kind::S_CONTINUE: // CONTINUE
+      case symbol_kind::S_BREAK: // BREAK
       case symbol_kind::S_LPAREN: // LPAREN
         value.copy< string > (YY_MOVE (that.value));
         break;
@@ -1941,14 +2312,27 @@ switch (yykind)
         value.move< float > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_calclist: // calclist
-      case symbol_kind::S_37_general_statement: // general-statement
-      case symbol_kind::S_38_declare_statement: // declare-statement
-      case symbol_kind::S_39_exp_statement: // exp-statement
+      case symbol_kind::S_53_assign_op: // assign-op
+        value.move< operatorVals > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_50_zfx_program: // zfx-program
+      case symbol_kind::S_51_multi_statements: // multi-statements
+      case symbol_kind::S_52_general_statement: // general-statement
+      case symbol_kind::S_54_assign_statement: // assign-statement
+      case symbol_kind::S_55_jump_statement: // jump-statement
+      case symbol_kind::S_56_declare_statement: // declare-statement
+      case symbol_kind::S_57_code_block: // code-block
+      case symbol_kind::S_58_if_statement: // if-statement
+      case symbol_kind::S_59_for_begin: // for-begin
+      case symbol_kind::S_60_for_condition: // for-condition
+      case symbol_kind::S_61_for_step: // for-step
+      case symbol_kind::S_62_for_statement: // for-statement
+      case symbol_kind::S_63_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_44_func_content: // func-content
+      case symbol_kind::S_68_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
@@ -1973,6 +2357,20 @@ switch (yykind)
       case symbol_kind::S_VARNAME: // VARNAME
       case symbol_kind::S_SEMICOLON: // SEMICOLON
       case symbol_kind::S_EQUALTO: // EQUALTO
+      case symbol_kind::S_IF: // IF
+      case symbol_kind::S_FOR: // FOR
+      case symbol_kind::S_WHILE: // WHILE
+      case symbol_kind::S_AUTOINC: // AUTOINC
+      case symbol_kind::S_AUTODEC: // AUTODEC
+      case symbol_kind::S_LSQBRACKET: // LSQBRACKET
+      case symbol_kind::S_RSQBRACKET: // RSQBRACKET
+      case symbol_kind::S_ADDASSIGN: // ADDASSIGN
+      case symbol_kind::S_MULASSIGN: // MULASSIGN
+      case symbol_kind::S_SUBASSIGN: // SUBASSIGN
+      case symbol_kind::S_DIVASSIGN: // DIVASSIGN
+      case symbol_kind::S_RETURN: // RETURN
+      case symbol_kind::S_CONTINUE: // CONTINUE
+      case symbol_kind::S_BREAK: // BREAK
       case symbol_kind::S_LPAREN: // LPAREN
         value.move< string > (YY_MOVE (s.value));
         break;
@@ -2044,7 +2442,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 2048 "zfxparser.hpp"
+#line 2446 "zfxparser.hpp"
 
 
 

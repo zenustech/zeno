@@ -20,8 +20,7 @@ public:
     std::shared_ptr<ZfxASTNode> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children);
     std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
     std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
-    std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
-    std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::string text, operatorVals op = UNDEFINE_OP);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component);
     std::shared_ptr<ZfxASTNode> makeEmptyNode();
@@ -37,8 +36,7 @@ private:
     unsigned int m_location;          // Used by scanner
     std::string m_code;
     FuncContext* m_context;
-
-    std::vector<std::shared_ptr<ZfxASTNode>> m_vecCommands;
+    std::shared_ptr<ZfxASTNode> m_root;
 };
 
 }
