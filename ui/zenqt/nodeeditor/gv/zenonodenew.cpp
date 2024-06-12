@@ -555,13 +555,14 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
     for (int role : roles)
     {
         if (role != ROLE_PARAM_NAME
-            && role != ROLE_PARAM_TOOLTIP)
+            && role != ROLE_PARAM_TOOLTIP
+            && role != ROLE_PARAM_VISIBLE)
             return;
 
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
 
-        if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP)
+        if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP || role == ROLE_PARAM_VISIBLE)
         {
             QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
             for (int i = 0; i < layouts.size(); i++)
@@ -574,6 +575,13 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
                         pSocketLayout->updateSockName(paramName);   //only update name on control.
                     else if (role == ROLE_PARAM_TOOLTIP)
                         pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
+                    else if (role == ROLE_PARAM_VISIBLE)
+                    {
+                        auto bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+                        pSocketLayout->setVisible(bVisible);
+                        pSocketLayout->setSocketVisible(bVisible);
+                        emit inSocketPosChanged();
+                    }
                     break;
                 }
             }
@@ -716,6 +724,9 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
 
     pMiniLayout->initUI(cbSocket);
     pMiniLayout->setDebugName(sockName);
+    bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+    pMiniLayout->setVisible(bVisible);
+    pMiniLayout->setSocketVisible(bVisible);
 
     pBackground->setLayout(pMiniLayout);
     return pBackground;
@@ -957,7 +968,8 @@ QPointF ZenoNodeNew::getSocketPos(const QModelIndex& sockIdx, const QString keyN
             return QPointF(pSocket->center().x(), pSocket->sceneBoundingRect().bottom());
     }
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    if (bCollasped)
+    bool bVisible = sockIdx.data(ROLE_PARAM_VISIBLE).toBool();
+    if (bCollasped || !bVisible)
     {
         //zeno::log_warn("socket pos error");
         QRectF rc = m_headerWidget->sceneBoundingRect();

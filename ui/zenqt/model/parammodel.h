@@ -26,6 +26,7 @@ struct ParamItem
     zeno::NodeDataGroup group;
     std::optional<zeno::ControlProperty> optCtrlprops;
     QList<QPersistentModelIndex> links;
+    bool bVisible = true;
 };
 
 class ParamsModel : public QAbstractListModel

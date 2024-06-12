@@ -374,6 +374,11 @@ namespace zenoio
             tooltip = sockObj["tooltip"].GetString();
         }
 
+        bool bVisible = true;
+        if (sockObj.HasMember("visible")) {
+            bVisible = sockObj["visible"].GetBool();
+        }
+
         if (bPrimitiveType) {
             zeno::ParamPrimitive param;
             param.bInput = bInput;
@@ -385,6 +390,7 @@ namespace zenoio
             param.socketType = socketType;
             param.tooltip = tooltip;
             param.type = paramType;
+            param.bVisible = bVisible;
             if (bInput) {
                 //老zsg没有层级结构，直接用默认就行
                 if (ret.customUi.inputPrims.tabs.empty())

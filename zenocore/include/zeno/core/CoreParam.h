@@ -53,6 +53,7 @@ struct PrimitiveParam : CoreParam {
     std::list<std::shared_ptr<PrimitiveLink>> links;
     ParamControl control = NullControl;
     std::optional<ControlProperty> optCtrlprops;
+    bool bVisible = true;
 
     ParamPrimitive exportParam() const;
 };
