@@ -20,6 +20,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/GlobalVariable.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/io/zsg2reader.h>
 #include <zeno/io/zenwriter.h>
@@ -1616,6 +1617,10 @@ bool ZenoMainWindow::openFile(QString filePath)
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
+
+
+    //init $F globalVariable
+    zeno::getSession().globalVariableStack->overrideVariable(zeno::GVariable("$F", pGraphs->timeInfo().currFrame));
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
