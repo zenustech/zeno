@@ -1147,7 +1147,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 std::vector<std::string> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
                     for(auto tex: mtldet->tex2Ds) {
-                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0 || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
+                            || cachedSphereMaterials.count(mtldet->mtlidkey) > 0
+                            || mtldet->parameters.find("vol") != std::string::npos
+                        ) {
                             realNeedTexPaths.emplace_back(tex->path);
                         }
                     }
@@ -1173,6 +1176,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
                     OptixUtil::removeTexture(need_remove_tex);
+                }
+                for (const auto& realNeedTexPath: realNeedTexPaths) {
+                    OptixUtil::addTexture(realNeedTexPath);
                 }
             }
             for(auto const &[matkey, mtldet] : matMap)
@@ -1231,14 +1237,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     //std::cout<<callable<<std::endl;
 
                     std::vector<std::string> shaderTex;
-                    int texid=0;
                     for(auto tex:mtldet->tex2Ds)
                     {
-                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
-                            OptixUtil::addTexture(tex->path.c_str());
-                            shaderTex.emplace_back(tex->path);
-                            texid++;
-                        }
+                        shaderTex.emplace_back(tex->path);
                     }
 
                     ShaderPrepared shaderP; 
