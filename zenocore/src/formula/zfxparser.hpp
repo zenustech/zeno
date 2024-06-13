@@ -424,6 +424,9 @@ namespace  zeno  {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
+      // TRUE
+      // FALSE
+      // bool-stmt
       // array-mark
       char dummy1[sizeof (bool)];
 
@@ -549,47 +552,49 @@ namespace  zeno  {
     TOKEN_RPAREN = 258,            // RPAREN
     TOKEN_IDENTIFIER = 259,        // IDENTIFIER
     TOKEN_NUMBER = 260,            // NUMBER
-    TOKEN_EOL = 261,               // EOL
-    TOKEN_FRAME = 262,             // FRAME
-    TOKEN_FPS = 263,               // FPS
-    TOKEN_PI = 264,                // PI
-    TOKEN_COMMA = 265,             // COMMA
-    TOKEN_LITERAL = 266,           // LITERAL
-    TOKEN_UNCOMPSTR = 267,         // UNCOMPSTR
-    TOKEN_DOLLAR = 268,            // DOLLAR
-    TOKEN_DOLLARVARNAME = 269,     // DOLLARVARNAME
-    TOKEN_COMPARE = 270,           // COMPARE
-    TOKEN_QUESTION = 271,          // QUESTION
-    TOKEN_COLON = 272,             // COLON
-    TOKEN_ZFXVAR = 273,            // ZFXVAR
-    TOKEN_LBRACKET = 274,          // LBRACKET
-    TOKEN_RBRACKET = 275,          // RBRACKET
-    TOKEN_DOT = 276,               // DOT
-    TOKEN_VARNAME = 277,           // VARNAME
-    TOKEN_SEMICOLON = 278,         // SEMICOLON
-    TOKEN_EQUALTO = 279,           // EQUALTO
-    TOKEN_IF = 280,                // IF
-    TOKEN_FOR = 281,               // FOR
-    TOKEN_WHILE = 282,             // WHILE
-    TOKEN_AUTOINC = 283,           // AUTOINC
-    TOKEN_AUTODEC = 284,           // AUTODEC
-    TOKEN_LSQBRACKET = 285,        // LSQBRACKET
-    TOKEN_RSQBRACKET = 286,        // RSQBRACKET
-    TOKEN_ADDASSIGN = 287,         // ADDASSIGN
-    TOKEN_MULASSIGN = 288,         // MULASSIGN
-    TOKEN_SUBASSIGN = 289,         // SUBASSIGN
-    TOKEN_DIVASSIGN = 290,         // DIVASSIGN
-    TOKEN_RETURN = 291,            // RETURN
-    TOKEN_CONTINUE = 292,          // CONTINUE
-    TOKEN_BREAK = 293,             // BREAK
-    TOKEN_TYPE = 294,              // TYPE
-    TOKEN_ATTRAT = 295,            // ATTRAT
-    TOKEN_ADD = 296,               // ADD
-    TOKEN_SUB = 298,               // SUB
-    TOKEN_MUL = 300,               // MUL
-    TOKEN_DIV = 302,               // DIV
-    TOKEN_NEG = 304,               // NEG
-    TOKEN_LPAREN = 305             // LPAREN
+    TOKEN_TRUE = 261,              // TRUE
+    TOKEN_FALSE = 262,             // FALSE
+    TOKEN_EOL = 263,               // EOL
+    TOKEN_FRAME = 264,             // FRAME
+    TOKEN_FPS = 265,               // FPS
+    TOKEN_PI = 266,                // PI
+    TOKEN_COMMA = 267,             // COMMA
+    TOKEN_LITERAL = 268,           // LITERAL
+    TOKEN_UNCOMPSTR = 269,         // UNCOMPSTR
+    TOKEN_DOLLAR = 270,            // DOLLAR
+    TOKEN_DOLLARVARNAME = 271,     // DOLLARVARNAME
+    TOKEN_COMPARE = 272,           // COMPARE
+    TOKEN_QUESTION = 273,          // QUESTION
+    TOKEN_COLON = 274,             // COLON
+    TOKEN_ZFXVAR = 275,            // ZFXVAR
+    TOKEN_LBRACKET = 276,          // LBRACKET
+    TOKEN_RBRACKET = 277,          // RBRACKET
+    TOKEN_DOT = 278,               // DOT
+    TOKEN_VARNAME = 279,           // VARNAME
+    TOKEN_SEMICOLON = 280,         // SEMICOLON
+    TOKEN_EQUALTO = 281,           // EQUALTO
+    TOKEN_IF = 282,                // IF
+    TOKEN_FOR = 283,               // FOR
+    TOKEN_WHILE = 284,             // WHILE
+    TOKEN_AUTOINC = 285,           // AUTOINC
+    TOKEN_AUTODEC = 286,           // AUTODEC
+    TOKEN_LSQBRACKET = 287,        // LSQBRACKET
+    TOKEN_RSQBRACKET = 288,        // RSQBRACKET
+    TOKEN_ADDASSIGN = 289,         // ADDASSIGN
+    TOKEN_MULASSIGN = 290,         // MULASSIGN
+    TOKEN_SUBASSIGN = 291,         // SUBASSIGN
+    TOKEN_DIVASSIGN = 292,         // DIVASSIGN
+    TOKEN_RETURN = 293,            // RETURN
+    TOKEN_CONTINUE = 294,          // CONTINUE
+    TOKEN_BREAK = 295,             // BREAK
+    TOKEN_TYPE = 296,              // TYPE
+    TOKEN_ATTRAT = 297,            // ATTRAT
+    TOKEN_ADD = 298,               // ADD
+    TOKEN_SUB = 300,               // SUB
+    TOKEN_MUL = 302,               // MUL
+    TOKEN_DIV = 304,               // DIV
+    TOKEN_NEG = 306,               // NEG
+    TOKEN_LPAREN = 307             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -606,7 +611,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 51, ///< Number of tokens.
+        YYNTOKENS = 53, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -614,77 +619,80 @@ namespace  zeno  {
         S_RPAREN = 3,                            // RPAREN
         S_IDENTIFIER = 4,                        // IDENTIFIER
         S_NUMBER = 5,                            // NUMBER
-        S_EOL = 6,                               // EOL
-        S_FRAME = 7,                             // FRAME
-        S_FPS = 8,                               // FPS
-        S_PI = 9,                                // PI
-        S_COMMA = 10,                            // COMMA
-        S_LITERAL = 11,                          // LITERAL
-        S_UNCOMPSTR = 12,                        // UNCOMPSTR
-        S_DOLLAR = 13,                           // DOLLAR
-        S_DOLLARVARNAME = 14,                    // DOLLARVARNAME
-        S_COMPARE = 15,                          // COMPARE
-        S_QUESTION = 16,                         // QUESTION
-        S_COLON = 17,                            // COLON
-        S_ZFXVAR = 18,                           // ZFXVAR
-        S_LBRACKET = 19,                         // LBRACKET
-        S_RBRACKET = 20,                         // RBRACKET
-        S_DOT = 21,                              // DOT
-        S_VARNAME = 22,                          // VARNAME
-        S_SEMICOLON = 23,                        // SEMICOLON
-        S_EQUALTO = 24,                          // EQUALTO
-        S_IF = 25,                               // IF
-        S_FOR = 26,                              // FOR
-        S_WHILE = 27,                            // WHILE
-        S_AUTOINC = 28,                          // AUTOINC
-        S_AUTODEC = 29,                          // AUTODEC
-        S_LSQBRACKET = 30,                       // LSQBRACKET
-        S_RSQBRACKET = 31,                       // RSQBRACKET
-        S_ADDASSIGN = 32,                        // ADDASSIGN
-        S_MULASSIGN = 33,                        // MULASSIGN
-        S_SUBASSIGN = 34,                        // SUBASSIGN
-        S_DIVASSIGN = 35,                        // DIVASSIGN
-        S_RETURN = 36,                           // RETURN
-        S_CONTINUE = 37,                         // CONTINUE
-        S_BREAK = 38,                            // BREAK
-        S_TYPE = 39,                             // TYPE
-        S_ATTRAT = 40,                           // ATTRAT
-        S_ADD = 41,                              // ADD
-        S_42_ = 42,                              // "+"
-        S_SUB = 43,                              // SUB
-        S_44_ = 44,                              // "-"
-        S_MUL = 45,                              // MUL
-        S_46_ = 46,                              // "*"
-        S_DIV = 47,                              // DIV
-        S_48_ = 48,                              // "/"
-        S_NEG = 49,                              // NEG
-        S_LPAREN = 50,                           // LPAREN
-        S_YYACCEPT = 51,                         // $accept
-        S_52_zfx_program = 52,                   // zfx-program
-        S_53_multi_statements = 53,              // multi-statements
-        S_54_general_statement = 54,             // general-statement
-        S_55_array_or_exp = 55,                  // array-or-exp
-        S_56_assign_op = 56,                     // assign-op
-        S_57_assign_statement = 57,              // assign-statement
-        S_58_jump_statement = 58,                // jump-statement
-        S_arrcontent = 59,                       // arrcontent
-        S_arrcontents = 60,                      // arrcontents
-        S_61_array_stmt = 61,                    // array-stmt
-        S_62_array_mark = 62,                    // array-mark
-        S_63_declare_statement = 63,             // declare-statement
-        S_64_code_block = 64,                    // code-block
-        S_65_if_statement = 65,                  // if-statement
-        S_66_for_begin = 66,                     // for-begin
-        S_67_for_condition = 67,                 // for-condition
-        S_68_for_step = 68,                      // for-step
-        S_69_for_statement = 69,                 // for-statement
-        S_70_exp_statement = 70,                 // exp-statement
-        S_compareexp = 71,                       // compareexp
-        S_factor = 72,                           // factor
-        S_zenvar = 73,                           // zenvar
-        S_funcargs = 74,                         // funcargs
-        S_75_func_content = 75,                  // func-content
-        S_term = 76                              // term
+        S_TRUE = 6,                              // TRUE
+        S_FALSE = 7,                             // FALSE
+        S_EOL = 8,                               // EOL
+        S_FRAME = 9,                             // FRAME
+        S_FPS = 10,                              // FPS
+        S_PI = 11,                               // PI
+        S_COMMA = 12,                            // COMMA
+        S_LITERAL = 13,                          // LITERAL
+        S_UNCOMPSTR = 14,                        // UNCOMPSTR
+        S_DOLLAR = 15,                           // DOLLAR
+        S_DOLLARVARNAME = 16,                    // DOLLARVARNAME
+        S_COMPARE = 17,                          // COMPARE
+        S_QUESTION = 18,                         // QUESTION
+        S_COLON = 19,                            // COLON
+        S_ZFXVAR = 20,                           // ZFXVAR
+        S_LBRACKET = 21,                         // LBRACKET
+        S_RBRACKET = 22,                         // RBRACKET
+        S_DOT = 23,                              // DOT
+        S_VARNAME = 24,                          // VARNAME
+        S_SEMICOLON = 25,                        // SEMICOLON
+        S_EQUALTO = 26,                          // EQUALTO
+        S_IF = 27,                               // IF
+        S_FOR = 28,                              // FOR
+        S_WHILE = 29,                            // WHILE
+        S_AUTOINC = 30,                          // AUTOINC
+        S_AUTODEC = 31,                          // AUTODEC
+        S_LSQBRACKET = 32,                       // LSQBRACKET
+        S_RSQBRACKET = 33,                       // RSQBRACKET
+        S_ADDASSIGN = 34,                        // ADDASSIGN
+        S_MULASSIGN = 35,                        // MULASSIGN
+        S_SUBASSIGN = 36,                        // SUBASSIGN
+        S_DIVASSIGN = 37,                        // DIVASSIGN
+        S_RETURN = 38,                           // RETURN
+        S_CONTINUE = 39,                         // CONTINUE
+        S_BREAK = 40,                            // BREAK
+        S_TYPE = 41,                             // TYPE
+        S_ATTRAT = 42,                           // ATTRAT
+        S_ADD = 43,                              // ADD
+        S_44_ = 44,                              // "+"
+        S_SUB = 45,                              // SUB
+        S_46_ = 46,                              // "-"
+        S_MUL = 47,                              // MUL
+        S_48_ = 48,                              // "*"
+        S_DIV = 49,                              // DIV
+        S_50_ = 50,                              // "/"
+        S_NEG = 51,                              // NEG
+        S_LPAREN = 52,                           // LPAREN
+        S_YYACCEPT = 53,                         // $accept
+        S_54_zfx_program = 54,                   // zfx-program
+        S_55_multi_statements = 55,              // multi-statements
+        S_56_general_statement = 56,             // general-statement
+        S_57_array_or_exp = 57,                  // array-or-exp
+        S_58_assign_op = 58,                     // assign-op
+        S_59_bool_stmt = 59,                     // bool-stmt
+        S_60_assign_statement = 60,              // assign-statement
+        S_61_jump_statement = 61,                // jump-statement
+        S_arrcontent = 62,                       // arrcontent
+        S_arrcontents = 63,                      // arrcontents
+        S_64_array_stmt = 64,                    // array-stmt
+        S_65_array_mark = 65,                    // array-mark
+        S_66_declare_statement = 66,             // declare-statement
+        S_67_code_block = 67,                    // code-block
+        S_68_if_statement = 68,                  // if-statement
+        S_69_for_begin = 69,                     // for-begin
+        S_70_for_condition = 70,                 // for-condition
+        S_71_for_step = 71,                      // for-step
+        S_72_for_statement = 72,                 // for-statement
+        S_73_exp_statement = 73,                 // exp-statement
+        S_compareexp = 74,                       // compareexp
+        S_factor = 75,                           // factor
+        S_zenvar = 76,                           // zenvar
+        S_funcargs = 77,                         // funcargs
+        S_78_func_content = 78,                  // func-content
+        S_term = 79                              // term
       };
     };
 
@@ -721,7 +729,10 @@ namespace  zeno  {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_62_array_mark: // array-mark
+      case symbol_kind::S_TRUE: // TRUE
+      case symbol_kind::S_FALSE: // FALSE
+      case symbol_kind::S_59_bool_stmt: // bool-stmt
+      case symbol_kind::S_65_array_mark: // array-mark
         value.move< bool > (std::move (that.value));
         break;
 
@@ -729,30 +740,30 @@ namespace  zeno  {
         value.move< float > (std::move (that.value));
         break;
 
-      case symbol_kind::S_56_assign_op: // assign-op
+      case symbol_kind::S_58_assign_op: // assign-op
         value.move< operatorVals > (std::move (that.value));
         break;
 
-      case symbol_kind::S_52_zfx_program: // zfx-program
-      case symbol_kind::S_53_multi_statements: // multi-statements
-      case symbol_kind::S_54_general_statement: // general-statement
-      case symbol_kind::S_55_array_or_exp: // array-or-exp
-      case symbol_kind::S_57_assign_statement: // assign-statement
-      case symbol_kind::S_58_jump_statement: // jump-statement
+      case symbol_kind::S_54_zfx_program: // zfx-program
+      case symbol_kind::S_55_multi_statements: // multi-statements
+      case symbol_kind::S_56_general_statement: // general-statement
+      case symbol_kind::S_57_array_or_exp: // array-or-exp
+      case symbol_kind::S_60_assign_statement: // assign-statement
+      case symbol_kind::S_61_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_61_array_stmt: // array-stmt
-      case symbol_kind::S_63_declare_statement: // declare-statement
-      case symbol_kind::S_64_code_block: // code-block
-      case symbol_kind::S_65_if_statement: // if-statement
-      case symbol_kind::S_66_for_begin: // for-begin
-      case symbol_kind::S_67_for_condition: // for-condition
-      case symbol_kind::S_68_for_step: // for-step
-      case symbol_kind::S_69_for_statement: // for-statement
-      case symbol_kind::S_70_exp_statement: // exp-statement
+      case symbol_kind::S_64_array_stmt: // array-stmt
+      case symbol_kind::S_66_declare_statement: // declare-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_68_if_statement: // if-statement
+      case symbol_kind::S_69_for_begin: // for-begin
+      case symbol_kind::S_70_for_condition: // for-condition
+      case symbol_kind::S_71_for_step: // for-step
+      case symbol_kind::S_72_for_statement: // for-statement
+      case symbol_kind::S_73_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_75_func_content: // func-content
+      case symbol_kind::S_78_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
@@ -929,7 +940,10 @@ namespace  zeno  {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_62_array_mark: // array-mark
+      case symbol_kind::S_TRUE: // TRUE
+      case symbol_kind::S_FALSE: // FALSE
+      case symbol_kind::S_59_bool_stmt: // bool-stmt
+      case symbol_kind::S_65_array_mark: // array-mark
         value.template destroy< bool > ();
         break;
 
@@ -937,30 +951,30 @@ switch (yykind)
         value.template destroy< float > ();
         break;
 
-      case symbol_kind::S_56_assign_op: // assign-op
+      case symbol_kind::S_58_assign_op: // assign-op
         value.template destroy< operatorVals > ();
         break;
 
-      case symbol_kind::S_52_zfx_program: // zfx-program
-      case symbol_kind::S_53_multi_statements: // multi-statements
-      case symbol_kind::S_54_general_statement: // general-statement
-      case symbol_kind::S_55_array_or_exp: // array-or-exp
-      case symbol_kind::S_57_assign_statement: // assign-statement
-      case symbol_kind::S_58_jump_statement: // jump-statement
+      case symbol_kind::S_54_zfx_program: // zfx-program
+      case symbol_kind::S_55_multi_statements: // multi-statements
+      case symbol_kind::S_56_general_statement: // general-statement
+      case symbol_kind::S_57_array_or_exp: // array-or-exp
+      case symbol_kind::S_60_assign_statement: // assign-statement
+      case symbol_kind::S_61_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_61_array_stmt: // array-stmt
-      case symbol_kind::S_63_declare_statement: // declare-statement
-      case symbol_kind::S_64_code_block: // code-block
-      case symbol_kind::S_65_if_statement: // if-statement
-      case symbol_kind::S_66_for_begin: // for-begin
-      case symbol_kind::S_67_for_condition: // for-condition
-      case symbol_kind::S_68_for_step: // for-step
-      case symbol_kind::S_69_for_statement: // for-statement
-      case symbol_kind::S_70_exp_statement: // exp-statement
+      case symbol_kind::S_64_array_stmt: // array-stmt
+      case symbol_kind::S_66_declare_statement: // declare-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_68_if_statement: // if-statement
+      case symbol_kind::S_69_for_begin: // for-begin
+      case symbol_kind::S_70_for_condition: // for-condition
+      case symbol_kind::S_71_for_step: // for-step
+      case symbol_kind::S_72_for_statement: // for-statement
+      case symbol_kind::S_73_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_75_func_content: // func-content
+      case symbol_kind::S_78_func_content: // func-content
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
@@ -1107,6 +1121,18 @@ switch (yykind)
                    || (token::TOKEN_YYerror <= tok && tok <= token::TOKEN_YYUNDEF)
                    || (token::TOKEN_EOL <= tok && tok <= token::TOKEN_COMMA)
                    || (token::TOKEN_ADD <= tok && tok <= token::TOKEN_NEG));
+#endif
+      }
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, bool v, location_type l)
+        : super_type (token_kind_type (tok), std::move (v), std::move (l))
+#else
+      symbol_type (int tok, const bool& v, const location_type& l)
+        : super_type (token_kind_type (tok), v, l)
+#endif
+      {
+#if !defined _MSC_VER || defined __clang__
+        YY_ASSERT ((token::TOKEN_TRUE <= tok && tok <= token::TOKEN_FALSE));
 #endif
       }
 #if 201103L <= YY_CPLUSPLUS
@@ -1271,6 +1297,36 @@ switch (yykind)
       make_NUMBER (const float& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_NUMBER, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TRUE (bool v, location_type l)
+      {
+        return symbol_type (token::TOKEN_TRUE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TRUE (const bool& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_TRUE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FALSE (bool v, location_type l)
+      {
+        return symbol_type (token::TOKEN_FALSE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_FALSE (const bool& v, const location_type& l)
+      {
+        return symbol_type (token::TOKEN_FALSE, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2218,9 +2274,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 216,     ///< Last index in yytable_.
-      yynnts_ = 26,  ///< Number of nonterminal symbols.
-      yyfinal_ = 43 ///< Termination state number.
+      yylast_ = 241,     ///< Last index in yytable_.
+      yynnts_ = 27,  ///< Number of nonterminal symbols.
+      yyfinal_ = 46 ///< Termination state number.
     };
 
 
@@ -2270,10 +2326,10 @@ switch (yykind)
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    49,    50
+      45,    46,    47,    48,    49,    50,    51,    52
     };
     // Last valid token kind.
-    const int code_max = 305;
+    const int code_max = 307;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2292,7 +2348,10 @@ switch (yykind)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_62_array_mark: // array-mark
+      case symbol_kind::S_TRUE: // TRUE
+      case symbol_kind::S_FALSE: // FALSE
+      case symbol_kind::S_59_bool_stmt: // bool-stmt
+      case symbol_kind::S_65_array_mark: // array-mark
         value.copy< bool > (YY_MOVE (that.value));
         break;
 
@@ -2300,30 +2359,30 @@ switch (yykind)
         value.copy< float > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_56_assign_op: // assign-op
+      case symbol_kind::S_58_assign_op: // assign-op
         value.copy< operatorVals > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_52_zfx_program: // zfx-program
-      case symbol_kind::S_53_multi_statements: // multi-statements
-      case symbol_kind::S_54_general_statement: // general-statement
-      case symbol_kind::S_55_array_or_exp: // array-or-exp
-      case symbol_kind::S_57_assign_statement: // assign-statement
-      case symbol_kind::S_58_jump_statement: // jump-statement
+      case symbol_kind::S_54_zfx_program: // zfx-program
+      case symbol_kind::S_55_multi_statements: // multi-statements
+      case symbol_kind::S_56_general_statement: // general-statement
+      case symbol_kind::S_57_array_or_exp: // array-or-exp
+      case symbol_kind::S_60_assign_statement: // assign-statement
+      case symbol_kind::S_61_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_61_array_stmt: // array-stmt
-      case symbol_kind::S_63_declare_statement: // declare-statement
-      case symbol_kind::S_64_code_block: // code-block
-      case symbol_kind::S_65_if_statement: // if-statement
-      case symbol_kind::S_66_for_begin: // for-begin
-      case symbol_kind::S_67_for_condition: // for-condition
-      case symbol_kind::S_68_for_step: // for-step
-      case symbol_kind::S_69_for_statement: // for-statement
-      case symbol_kind::S_70_exp_statement: // exp-statement
+      case symbol_kind::S_64_array_stmt: // array-stmt
+      case symbol_kind::S_66_declare_statement: // declare-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_68_if_statement: // if-statement
+      case symbol_kind::S_69_for_begin: // for-begin
+      case symbol_kind::S_70_for_condition: // for-condition
+      case symbol_kind::S_71_for_step: // for-step
+      case symbol_kind::S_72_for_statement: // for-statement
+      case symbol_kind::S_73_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_75_func_content: // func-content
+      case symbol_kind::S_78_func_content: // func-content
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
@@ -2400,7 +2459,10 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_62_array_mark: // array-mark
+      case symbol_kind::S_TRUE: // TRUE
+      case symbol_kind::S_FALSE: // FALSE
+      case symbol_kind::S_59_bool_stmt: // bool-stmt
+      case symbol_kind::S_65_array_mark: // array-mark
         value.move< bool > (YY_MOVE (s.value));
         break;
 
@@ -2408,30 +2470,30 @@ switch (yykind)
         value.move< float > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_56_assign_op: // assign-op
+      case symbol_kind::S_58_assign_op: // assign-op
         value.move< operatorVals > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_52_zfx_program: // zfx-program
-      case symbol_kind::S_53_multi_statements: // multi-statements
-      case symbol_kind::S_54_general_statement: // general-statement
-      case symbol_kind::S_55_array_or_exp: // array-or-exp
-      case symbol_kind::S_57_assign_statement: // assign-statement
-      case symbol_kind::S_58_jump_statement: // jump-statement
+      case symbol_kind::S_54_zfx_program: // zfx-program
+      case symbol_kind::S_55_multi_statements: // multi-statements
+      case symbol_kind::S_56_general_statement: // general-statement
+      case symbol_kind::S_57_array_or_exp: // array-or-exp
+      case symbol_kind::S_60_assign_statement: // assign-statement
+      case symbol_kind::S_61_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_61_array_stmt: // array-stmt
-      case symbol_kind::S_63_declare_statement: // declare-statement
-      case symbol_kind::S_64_code_block: // code-block
-      case symbol_kind::S_65_if_statement: // if-statement
-      case symbol_kind::S_66_for_begin: // for-begin
-      case symbol_kind::S_67_for_condition: // for-condition
-      case symbol_kind::S_68_for_step: // for-step
-      case symbol_kind::S_69_for_statement: // for-statement
-      case symbol_kind::S_70_exp_statement: // exp-statement
+      case symbol_kind::S_64_array_stmt: // array-stmt
+      case symbol_kind::S_66_declare_statement: // declare-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_68_if_statement: // if-statement
+      case symbol_kind::S_69_for_begin: // for-begin
+      case symbol_kind::S_70_for_condition: // for-condition
+      case symbol_kind::S_71_for_step: // for-step
+      case symbol_kind::S_72_for_statement: // for-statement
+      case symbol_kind::S_73_exp_statement: // exp-statement
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_75_func_content: // func-content
+      case symbol_kind::S_78_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
@@ -2544,7 +2606,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 2548 "zfxparser.hpp"
+#line 2610 "zfxparser.hpp"
 
 
 

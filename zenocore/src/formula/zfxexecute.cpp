@@ -46,6 +46,18 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeNewNumberNode(float value) {
     return pNode;
 }
 
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeBoolNode(bool bVal) {
+    std::shared_ptr<ZfxASTNode> n = std::make_shared<ZfxASTNode>();
+    if (!n)
+    {
+        exit(0);
+    }
+    n->type = BOOLTYPE;
+    n->opVal = UNDEFINE_OP;
+    n->value = bVal;
+    return n;
+}
+
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeStringNode(std::string text) {
     std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = STRING;

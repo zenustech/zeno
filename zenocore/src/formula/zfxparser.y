@@ -68,6 +68,8 @@
 %token RPAREN
 %token <string>IDENTIFIER
 %token <float>NUMBER
+%token <bool>TRUE
+%token <bool>FALSE
 %token EOL
 %token END 0
 %token FRAME
@@ -118,7 +120,7 @@
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
 %type <operatorVals> assign-op
 %type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
-%type <bool> array-mark
+%type <bool> array-mark bool-stmt
 
 %start zfx-program
 
@@ -161,6 +163,10 @@ assign-op: EQUALTO { $$ = AssignTo; }
     | MULASSIGN { $$ = MulAssign; }
     | SUBASSIGN { $$ = SubAssign; }
     | DIVASSIGN { $$ = DivAssign; }
+    ;
+
+bool-stmt: TRUE { $$ = true; }
+    | FALSE { $$ = false; }
     ;
 
 assign-statement: zenvar assign-op array-or-exp {
@@ -305,7 +311,8 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
         }
     ;
 
-funcargs: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
+funcargs: %empty { $$ = std::vector<std::shared_ptr<ZfxASTNode>>(); }
+    | exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp-statement { $1.push_back($3); $$ = $1; }
     ;
 
@@ -319,6 +326,7 @@ func-content: LPAREN funcargs RPAREN {
 
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
+    | bool-stmt         { $$ = driver.makeBoolNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
     | LPAREN exp-statement RPAREN { $$ = $2; }

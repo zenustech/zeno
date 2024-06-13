@@ -19,6 +19,7 @@ public:
 
     std::shared_ptr<ZfxASTNode> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children);
     std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
+    std::shared_ptr<ZfxASTNode> makeBoolNode(bool bVal);
     std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::string text, operatorVals op = UNDEFINE_OP);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);

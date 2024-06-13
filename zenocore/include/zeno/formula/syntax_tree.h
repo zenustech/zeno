@@ -13,6 +13,7 @@
 enum nodeType {
     UNDEFINE = 0,
     NUMBER,             //数字
+    BOOLTYPE,
     FUNC,               //函数
     FOUROPERATIONS,     //四则运算+ - * / %
     STRING,             //字符串

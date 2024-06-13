@@ -128,6 +128,10 @@ equalto \=
                    strcmp(yytext, "matrix4") == 0)
         {
             return zeno::ZfxParser::make_TYPE(yytext, loc);
+        } else if (strcmp(yytext, "true") == 0) {
+            return zeno::ZfxParser::make_TRUE(yytext, loc);
+        } else if (strcmp(yytext, "false") == 0) {
+            return zeno::ZfxParser::make_FALSE(yytext, loc);
         }
         return zeno::ZfxParser::make_VARNAME(yytext, loc);
 }
