@@ -640,12 +640,14 @@ struct WrapperIES {
 
 inline std::map<std::string, WrapperIES> g_ies;
 
-inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_t)>& look) {
+// Create cumulative distribution function for importance sampling of spherical environment lights.
+// This is a textbook implementation for the CDF generation of a spherical HDR environment.
+// See "Physically Based Rendering" v2, chapter 14.6.5 on Infinite Area Lights.
 
-    auto& tex = g_tex[sky_tex.value()];
+inline void calc_sky_cdf_map(cuTexture* tex, int nx, int ny, int nc, std::function<float(uint32_t)>& look) {
 
-    auto &sky_nx = tex->width;
-    auto &sky_ny = tex->height;
+    tex->width  = nx;
+    tex->height = ny;
 
     auto &sky_avg = tex->average;
 
@@ -653,8 +655,6 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, std::function<float(uint32_
     auto &sky_pdf = tex->pdf;
     auto &sky_start = tex->start;
 
-    sky_nx = nx;
-    sky_ny = ny;
     //we need to recompute cdf
     sky_cdf.resize(nx*ny);
     sky_cdf.assign(nx*ny, 0);
@@ -708,7 +708,18 @@ static std::string calculateMD5(const std::vector<char>& input) {
     encoder.MessageEnd();
     return output;
 }
-inline void addTexture(std::string path)
+
+namespace detail {
+    template <typename T> struct is_void {
+        static constexpr bool value = false;
+    };
+    template <> struct is_void<void> {
+        static constexpr bool value = true;
+    };
+}
+
+template<typename TaskType=void>
+inline void addTexture(std::string path, TaskType* task=nullptr)
 {
     zeno::log_debug("loading texture :{}", path);
     std::string native_path = std::filesystem::u8path(path).string();
@@ -766,10 +777,10 @@ inline void addTexture(std::string path)
 
         g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
 
-        lookupTexture = [&](uint32_t idx) {
+        lookupTexture = [rgba](uint32_t idx) {
             return rgba[idx];
         };
-        cleanupTexture = [&]() {
+        cleanupTexture = [rgba]() {
             free(rgba);
         };
     }
@@ -828,7 +839,7 @@ inline void addTexture(std::string path)
             g_tex[path] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4);
         }
         
-        lookupTexture = [img](uint32_t idx) {
+        lookupTexture = [&img](uint32_t idx) {
             auto ptr = (float*)img->verts->data();
             return ptr[idx];
         };
@@ -846,10 +857,10 @@ inline void addTexture(std::string path)
         
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
 
-        lookupTexture = [&](uint32_t idx) {
+        lookupTexture = [img](uint32_t idx) {
             return img[idx];
         };
-        cleanupTexture = [&]() {
+        cleanupTexture = [img]() {
             stbi_image_free(img);
         };
     }
@@ -862,35 +873,25 @@ inline void addTexture(std::string path)
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
-        assert(img);
         
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
 
-        lookupTexture = [&](uint32_t idx) {
+        lookupTexture = [img](uint32_t idx) {
             return (float)img[idx] / 255;
         };
-        cleanupTexture = [&]() {
+        cleanupTexture = [img]() {
             stbi_image_free(img);
         };
     }
     g_tex[path]->md5 = md5Hash;
 
-    if(sky_tex.value() == path)
-    {
-        calc_sky_cdf_map(nx, ny, nc, lookupTexture);
-        auto& tex = g_tex[sky_tex.value()];
-        auto float_count = nx * ny * nc;
-        tex->rawData.resize(float_count);
-
-        for (size_t i=0; i<float_count; ++i) {
-            tex->rawData.at(i) = lookupTexture(i);
+    if constexpr (!detail::is_void<TaskType>::value) {
+        if (task != nullptr) {
+            (*task)(g_tex[path].get(), nx, ny, nc, lookupTexture);
         }
     }
-    cleanupTexture();
 
-    for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
-        zeno::log_info("-{}", i->first);
-    }
+    cleanupTexture();
 }
 inline void removeTexture(std::string path) {
     if (path.size()) {
@@ -905,6 +906,24 @@ inline void removeTexture(std::string path) {
         g_tex.erase(path);
         g_tex_last_write_time.erase(path);
     }
+}
+
+inline void addSkyTexture(std::string path) {
+    
+    auto task = [](cuTexture* tex, uint32_t nx, uint32_t ny, uint32_t nc, std::function<float(uint32_t)> &lookupTexture) {
+        
+        const auto float_count = nx * ny * nc;
+
+        auto& rawData = tex->rawData;
+        rawData.resize(float_count);
+        for (uint32_t i=0; i<float_count; ++i) {
+            rawData[i] = lookupTexture(i);
+        }
+
+        calc_sky_cdf_map(tex, nx, ny, nc, lookupTexture);
+    };
+
+    addTexture(path, &task);
 }
 
 struct OptixShaderCore {

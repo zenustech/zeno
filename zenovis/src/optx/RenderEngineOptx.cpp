@@ -701,7 +701,7 @@ struct GraphicsManager {
                     }
 
                     OptixUtil::sky_tex = path;
-                    OptixUtil::addTexture(path);
+                    OptixUtil::addSkyTexture(path);
                 } else {
                     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
                 }
@@ -1216,33 +1216,33 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cachedSphereMaterials = xinxinoptix::uniqueMatsForSphere();
             } // preserve material names for materials-only updating case 
 
-            //for (auto const &[key, obj]: graphicsMan->graphics)
             // Auto unload unused texure
             {
-                std::vector<std::string> realNeedTexPaths;
+                std::set<std::string> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
-                    for(auto tex: mtldet->tex2Ds) {
-                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
-                            || cachedSphereMaterials.count(mtldet->mtlidkey) > 0
-                            || mtldet->parameters.find("vol") != std::string::npos
-                        ) {
-                            realNeedTexPaths.emplace_back(tex->path);
+                    if (mtldet->parameters.find("vol") != std::string::npos
+                        || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
+                        || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) 
+                    {
+                        for(auto& tex: mtldet->tex2Ds) {
+                            realNeedTexPaths.insert(tex->path);
                         }
                     }
+                    
                 }
                 // add light map
                 for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
-                    if (ld.profileKey.size()) {
-                        realNeedTexPaths.emplace_back(ld.profileKey);
-                    }
+                    // if (ld.profileKey.size()) {
+                    //     realNeedTexPaths.emplace_back(ld.profileKey);
+                    // }
                     if (ld.textureKey.size()) {
-                        realNeedTexPaths.emplace_back(ld.textureKey);
+                        realNeedTexPaths.insert(ld.textureKey);
                     }
                 }
                 std::vector<std::string> needToRemoveTexPaths;
                 for(auto const &[tex, _]: OptixUtil::g_tex) {
-                    if (std::find(realNeedTexPaths.begin(), realNeedTexPaths.end(), tex) != realNeedTexPaths.end()) {
-                        continue;
+                    if (realNeedTexPaths.count(tex) > 0) {
+                        continue; 
                     }
                     if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
                         continue;

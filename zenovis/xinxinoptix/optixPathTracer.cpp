@@ -1697,7 +1697,7 @@ void optixinit( int argc, char* argv[] )
     OptixUtil::default_sky_tex = cur_path + "/hdr/Panorama.hdr";
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 
-    OptixUtil::addTexture(OptixUtil::sky_tex.value());
+    OptixUtil::addSkyTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
