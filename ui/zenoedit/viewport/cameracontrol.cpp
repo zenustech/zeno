@@ -333,8 +333,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 if (getOrthoMode()) {
                     delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
                 }
-                auto pos = getPos();
-                auto new_pos = getPos() + delta * getRadius();
+                auto diff = delta * getRadius();
+                setPivot(getPivot() + diff);
+                auto new_pos = getPos() + diff;
                 setPos(new_pos);
             }
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
