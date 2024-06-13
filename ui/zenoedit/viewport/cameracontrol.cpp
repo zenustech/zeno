@@ -8,6 +8,7 @@
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
 #include "glm/gtx/quaternion.hpp"
+#include "zeno/core/Session.h"
 #include <cmath>
 
 
@@ -111,9 +112,11 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
-        m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-        if (m_hit_posWS.has_value()) {
-            scene->camera->setPivot(m_hit_posWS.value());
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+            if (m_hit_posWS.has_value()) {
+                scene->camera->setPivot(m_hit_posWS.value());
+            }
         }
     }
     auto m_picker = this->m_picker.lock();
@@ -425,33 +428,40 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
         auto pos = getPos();
-        auto session = m_zenovis->getSession();
-        auto scene = session->get_scene();
-        auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-        if (hit_posWS.has_value()) {
-            auto pivot = hit_posWS.value();
-            auto new_pos = (pos - pivot) * scale + pivot;
-            setPos(new_pos);
-        }
-        else {
-            auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
-            auto pivot = posOnFloorWS;
-            if (dot((pivot - pos), getViewDir()) > 0) {
-                auto translate = (pivot - pos) * (1 - scale);
-                if (glm::length(translate) < 0.01) {
-                    translate = glm::normalize(translate) * 0.01f;
-                }
-                auto new_pos = translate + pos;
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            auto session = m_zenovis->getSession();
+            auto scene = session->get_scene();
+            auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+            if (hit_posWS.has_value()) {
+                auto pivot = hit_posWS.value();
+                auto new_pos = (pos - pivot) * scale + pivot;
                 setPos(new_pos);
             }
             else {
-                auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
-                if (getPos().y < 0) {
-                    translate *= -1;
+                auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
+                auto pivot = posOnFloorWS;
+                if (dot((pivot - pos), getViewDir()) > 0) {
+                    auto translate = (pivot - pos) * (1 - scale);
+                    if (glm::length(translate) < 0.01) {
+                        translate = glm::normalize(translate) * 0.01f;
+                    }
+                    auto new_pos = translate + pos;
+                    setPos(new_pos);
                 }
-                auto new_pos = translate + pos;
-                setPos(new_pos);
+                else {
+                    auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
+                    if (getPos().y < 0) {
+                        translate *= -1;
+                    }
+                    auto new_pos = translate + pos;
+                    setPos(new_pos);
+                }
             }
+        }
+        else {
+            auto pivot = getPivot();
+            auto new_pos = (pos - pivot) * scale + pivot;
+            setPos(new_pos);
         }
     }
     updatePerspective();

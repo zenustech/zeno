@@ -162,6 +162,8 @@ private:
     QPushButton *m_camera_setting = nullptr;
     QCheckBox *m_background;
     QCheckBox *m_uv_mode = nullptr;
+    QCheckBox *m_depth = nullptr;
+    QCheckBox *m_FPN = nullptr;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;
