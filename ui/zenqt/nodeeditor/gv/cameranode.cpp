@@ -104,7 +104,8 @@ void CameraNode::onEditClicked()
         if(CameraPattern == 0) {
             // FIXME Not work
             int frameId = sess->get_curr_frameid();
-            frameId = zeno::getSession().globalState->getFrameId();
+            //frameId = zeno::getSession().globalState->getFrameId();
+            frameId = std::get<int>(zeno::getSession().globalVariableStack->getVariable("$F"));
             inputs["frame"].defl = frameId;
 
             std::string other_prop;

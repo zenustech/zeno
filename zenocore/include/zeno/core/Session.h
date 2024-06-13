@@ -13,6 +13,7 @@ namespace zeno {
 struct Graph;
 struct Session;
 struct INode;
+struct GlobalVariableStack;
 
 struct INodeClass {
     CustomUI m_customui;
@@ -46,6 +47,7 @@ struct Session {
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
     std::unique_ptr<ReferManager> referManager;
+    std::unique_ptr<GlobalVariableStack> globalVariableStack;
 
     ZENO_API Session();
     ZENO_API ~Session();

@@ -68,6 +68,32 @@ namespace cc4{
 namespace zeno {
 namespace {
 
+//test
+struct TimeShift : zeno::INode {
+    virtual void preApply() override {
+        ParamPrimitive param = get_input_prim_param("offset");
+        int offset = std::get<int>(param.defl);
+        //覆盖$F
+        int currFrame = std::get<int>(getSession().globalVariableStack->getVariable("$F")) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), GVariable("$F", currFrame >= 0 ? currFrame : 0));
+        //计算上游
+        INode::preApply();
+    }
+    virtual void apply() override {
+        auto prim = get_input2<zeno::PrimitiveObject>("prim");
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(TimeShift, {
+    {
+        {"", "prim", "", Socket_ReadOnly},
+        {"int", "offset", "0", Socket_Primitve, Lineedit},
+    },
+    {"prim"},
+    {},
+    {"create"},
+    });
+
 struct CreateCube : zeno::INode {
     virtual void apply() override {
         auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));

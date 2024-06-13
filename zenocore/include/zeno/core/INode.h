@@ -16,6 +16,7 @@
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/GlobalVariable.h>
 #include <functional>
 
 namespace zeno {
@@ -210,9 +211,11 @@ public:
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
 
-    void propagateDirty(ObjPath dependType);  //查询上游dependType类型节点并传播dirty
-    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstrems, std::string outParamName = "");
+    void propagateDirty(GVariable globalvar);  //查询上游dependType类型节点并传播dirty
+    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::set<ObjPath>& upstrems, std::string outParamName = "");
     void mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
+    void removeDependGlobalVaraible(std::string name);
+    void addDependGlobalVaraible(std::string name, GlobalVariableType type);
 
 private:
     std::string m_name;
@@ -230,6 +233,8 @@ private:
     std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
+
+    std::map<std::string, GlobalVariableType> globalVariablesNameTypeMap;  //该节点依赖哪些全局变量<名称，类型>
 
     friend class SubnetNode;
 };

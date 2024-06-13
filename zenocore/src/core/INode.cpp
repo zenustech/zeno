@@ -406,7 +406,8 @@ zvariant INode::processPrimitive(PrimitiveParam* in_param)
         return nullptr;
     }
 
-    int frame = getGlobalState()->getFrameId();
+    //int frame = getGlobalState()->getFrameId();
+    int frame = std::get<int>(getSession().globalVariableStack->getVariable("$F"));
     //zany result;
 
     const ParamType type = in_param->type;
@@ -1396,26 +1397,26 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
-void INode::propagateDirty(std::string dependType)
+void INode::propagateDirty(GVariable globalvar)
 {
     std::set<ObjPath> depNodes;
     std::set<ObjPath> upstreams;
-    getUpstreamNodes(depNodes, dependType, upstreams);
+    getUpstreamNodes(depNodes, upstreams);
     for (auto& objPath : depNodes) {
         if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
-            node->mark_dirty_by_dependNodes(true, upstreams);
+            for (auto& [name, type] : node->globalVariablesNameTypeMap) {
+                if (name == globalvar.name && type == globalvar.gvarType) {
+                    node->mark_dirty_by_dependNodes(true, upstreams);
+                }
+            }
         }
     }
 }
 
-void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstreams, std::string outParamName)
+void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName)
 {
-    if (dependType == "timeNode") {
-        bool isdepNode = false;
-        //isdepNode = this->is_$F_Node();
-        if (isdepNode) {
-            depNodes.insert(m_uuidPath);
-        }
+    if (!globalVariablesNameTypeMap.empty()) {
+        depNodes.insert(m_uuidPath);
     }
 
     if (upstreams.find(m_uuidPath) != upstreams.end()) {
@@ -1423,9 +1424,9 @@ void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType
     }
     if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
     {
-        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &dependType, &upstreams](std::string paramName) {
+        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &upstreams](std::string paramName) {
             if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
-                suboutput->getUpstreamNodes(depNodes, dependType, upstreams);
+                suboutput->getUpstreamNodes(depNodes, upstreams);
                 upstreams.insert(suboutput->m_uuidPath);
             }
         };
@@ -1449,7 +1450,7 @@ void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType
                 if (outParam) {
                     auto outNode = outParam->m_wpNode.lock();
                     assert(outNode);
-                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    outNode->getUpstreamNodes(depNodes, upstreams, outParam->name);
                     upstreams.insert(outNode->m_uuidPath);
                 }
             }
@@ -1460,7 +1461,7 @@ void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType
                 if (outParam) {
                     auto outNode = outParam->m_wpNode.lock();
                     assert(outNode);
-                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    outNode->getUpstreamNodes(depNodes, upstreams, outParam->name);
                     upstreams.insert(outNode->m_uuidPath);
                 }
             }
@@ -1472,11 +1473,11 @@ void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType
     if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubInput")
     {
         upstreams.insert(spGraph->optParentSubgNode.value()->m_uuidPath);
-        auto parentSubgNodeGetUpstreamFunc = [&depNodes, dependType, &upstreams](CoreParam* outParam) {
+        auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams](CoreParam* outParam) {
             if (outParam) {
                 auto outNode = outParam->m_wpNode.lock();
                 assert(outNode);
-                outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                outNode->getUpstreamNodes(depNodes, upstreams, outParam->name);
                 upstreams.insert(outNode->m_uuidPath);
             }
         };
@@ -1576,12 +1577,25 @@ void INode::mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, st
                 parentSubgNodeMarkDirty(link->toparam);
             }
         }
+        spGraph->optParentSubgNode.value()->m_dirty = bOn;
+        spGraph->optParentSubgNode.value()->mark_dirty_by_dependNodes(m_dirty, nodesRange);
     }
+}
+
+void INode::removeDependGlobalVaraible(std::string name)
+{
+    globalVariablesNameTypeMap.erase(name);
+}
+
+void INode::addDependGlobalVaraible(std::string name, zeno::GlobalVariableType type)
+{
+    globalVariablesNameTypeMap.insert(std::make_pair(name, type));
 }
 
 float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
 {
-    int frame = getGlobalState()->getFrameId();
+    //int frame = getGlobalState()->getFrameId();
+    int frame = std::get<int>(getSession().globalVariableStack->getVariable("$F"));
     if (zeno::starts_with(formulaOrKFrame, "=")) {
         std::string code = formulaOrKFrame.substr(1);
         std::set<std::string>paths = zeno::getReferPath(code);

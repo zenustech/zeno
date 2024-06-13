@@ -1,5 +1,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/core/GlobalVariable.h>
 #include <zeno/utils/logger.h>
 
 namespace zeno {
@@ -49,12 +50,14 @@ ZENO_API void GlobalState::clearState() {
 }
 
 ZENO_API int GlobalState::getFrameId() const {
-    return frameid;
+    return std::get<int>(getSession().globalVariableStack->getVariable("$F"));
+    //return frameid;
 }
 
 ZENO_API void GlobalState::updateFrameId(int frame) {
     //todo: mutex
-    frameid = frame;
+    getSession().globalVariableStack->updateVariable(GVariable("$F", frame));
+    //frameid = frame;
 }
 
 ZENO_API bool GlobalState::is_working() const {
