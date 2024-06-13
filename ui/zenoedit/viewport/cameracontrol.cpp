@@ -284,7 +284,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 
     if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
         // zoom
-        {
+        if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false) == false) {
             float dy = ypos - m_lastMidButtonPos.y();
             auto step = 0.99f;
             float scale = glm::pow(step, -dy);
@@ -351,10 +351,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
                 setRotation(rot);
                 auto afterMat = glm::toMat3(rot);
-                auto pos = getPos();
-                auto pivot = getPivot();
-                auto new_pos = afterMat * glm::inverse(beforeMat) * (pos - pivot) + pivot;
-                setPos(new_pos);
+                if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
+                    setPivot(getPos());
+                }
+                else {
+                    auto pos = getPos();
+                    auto pivot = getPivot();
+                    auto new_pos = afterMat * glm::inverse(beforeMat) * (pos - pivot) + pivot;
+                    setPos(new_pos);
+                }
             }
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
@@ -428,41 +433,50 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
-        auto pos = getPos();
-        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
-            auto session = m_zenovis->getSession();
-            auto scene = session->get_scene();
-            auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-            if (hit_posWS.has_value()) {
-                auto pivot = hit_posWS.value();
-                auto new_pos = (pos - pivot) * scale + pivot;
-                setPos(new_pos);
-            }
-            else {
-                auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
-                auto pivot = posOnFloorWS;
-                if (dot((pivot - pos), getViewDir()) > 0) {
-                    auto translate = (pivot - pos) * (1 - scale);
-                    if (glm::length(translate) < 0.01) {
-                        translate = glm::normalize(translate) * 0.01f;
-                    }
-                    auto new_pos = translate + pos;
+        if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
+            auto FPN_move_speed = zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0);
+            FPN_move_speed += dy > 0? 1: -1;
+            zeno::getSession().userData().set2("viewport-FPN-move-speed", FPN_move_speed);
+            // TODO: move to status bar
+            zeno::log_info("First Person Navigation: movement speed level: {}", FPN_move_speed);
+        }
+        else {
+            auto pos = getPos();
+            if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+                auto session = m_zenovis->getSession();
+                auto scene = session->get_scene();
+                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+                if (hit_posWS.has_value()) {
+                    auto pivot = hit_posWS.value();
+                    auto new_pos = (pos - pivot) * scale + pivot;
                     setPos(new_pos);
                 }
                 else {
-                    auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
-                    if (getPos().y < 0) {
-                        translate *= -1;
+                    auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
+                    auto pivot = posOnFloorWS;
+                    if (dot((pivot - pos), getViewDir()) > 0) {
+                        auto translate = (pivot - pos) * (1 - scale);
+                        if (glm::length(translate) < 0.01) {
+                            translate = glm::normalize(translate) * 0.01f;
+                        }
+                        auto new_pos = translate + pos;
+                        setPos(new_pos);
                     }
-                    auto new_pos = translate + pos;
-                    setPos(new_pos);
+                    else {
+                        auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
+                        if (getPos().y < 0) {
+                            translate *= -1;
+                        }
+                        auto new_pos = translate + pos;
+                        setPos(new_pos);
+                    }
                 }
             }
-        }
-        else {
-            auto pivot = getPivot();
-            auto new_pos = (pos - pivot) * scale + pivot;
-            setPos(new_pos);
+            else {
+                auto pivot = getPivot();
+                auto new_pos = (pos - pivot) * scale + pivot;
+                setPos(new_pos);
+            }
         }
     }
     updatePerspective();
