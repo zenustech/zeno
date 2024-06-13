@@ -94,7 +94,9 @@ struct DistantLight : INode {
         auto dir2 = get_input2<zeno::vec2f>("Lat-Lon");
         // dir2[0] = fmod(dir2[0], 180.f);
         // dir2[1] = fmod(dir2[1], 180.f);
-        dir2 *= M_PIf / 180.f;
+
+        dir2[0] = glm::radians(dir2[0]);
+        dir2[1] = glm::radians(dir2[1]);
 
         zeno::vec3f dir3;
         dir3[1] = std::sin(dir2[0]);

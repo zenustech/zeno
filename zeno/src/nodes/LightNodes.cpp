@@ -6,6 +6,14 @@
 #include <zeno/types/LightObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <math.h>
+
+#ifndef M_PIf
+#define M_PIf (float)M_PI
+#endif
+
 #include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -201,7 +209,7 @@ struct LightNode : INode {
                 auto delta = glm::vec4(0.0);
                 delta[abs(info)-1] = 0.5f * scale[abs(info)-1];
 
-                if ( std::signbit(info) ) { // negative
+                if ( info < 0 ) { // negative
                     delta = -delta;
                 }
 
@@ -297,7 +305,8 @@ struct LightNode : INode {
 
                     LINES->reserve(LINES->size()*2);
                     VERTS.reserve(VERTS->size()*2);
-                    typeof(LINES) tmp(LINES->size());
+                    decltype(*&LINES) tmp = LINES;
+                    //tmp->resize(LINES->size());
 
                     std::transform(LINES.begin(), LINES.end(), tmp.begin(), 
                     [&](auto ele){ return ele + vertices_offset; });

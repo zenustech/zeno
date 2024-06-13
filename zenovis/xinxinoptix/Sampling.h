@@ -20,6 +20,10 @@
 #define FLT_MAX __FLT_MAX__
 #endif
 
+#ifndef uint
+using uint = unsigned int;
+#endif
+
 #ifdef __CUDACC_DEBUG__
     #define DCHECK assert
 #else

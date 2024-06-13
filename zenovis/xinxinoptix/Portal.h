@@ -257,9 +257,9 @@ struct PortalLight {
 
         struct Dummy {
             
-            typeof(image_dummy) image; 
-            typeof(dist_dummy) dist;
-            typeof(sat_dummy) sat;
+            decltype (image_dummy) _image; 
+            decltype (dist_dummy) _dist;
+            decltype (sat_dummy) _sat;
             Portal portal;
             Vector3f X,Y,Z;
         };
@@ -600,7 +600,7 @@ struct PortalLightList {
         }
 
         auto first = list.front().pack();
-        std::vector<typeof(first)> tmp;
+        std::vector<decltype(first)> tmp;
         tmp.reserve(list.size());
         tmp.push_back(first);
 
