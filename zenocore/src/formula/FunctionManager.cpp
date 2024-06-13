@@ -60,6 +60,10 @@ namespace zeno {
     float FunctionManager::callRef(const std::string& ref, FuncContext* pContext) {
         std::string fullPath, graphAbsPath;
 
+        if (ref.empty()) {
+            throw makeError<UnimplError>();
+        }
+
         graphAbsPath = pContext->nodePath.substr(0, pContext->nodePath.find_last_of('/'));
 
         if (ref.front() == '/') {

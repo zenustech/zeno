@@ -102,6 +102,7 @@
 %token RETURN
 %token CONTINUE
 %token BREAK
+%token TYPE
 
 %left ADD "+"
 %left SUB "-"
@@ -112,10 +113,11 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement for-condition for-step exp-statement if-statement compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin for-statement
+%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin for-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
 %type <operatorVals> assign-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
+%type <bool> array-mark
 
 %start zfx-program
 
@@ -149,6 +151,9 @@ general-statement: declare-statement SEMICOLON { $$ = $1; }
     | exp-statement SEMICOLON { $$ = $1; }      /*可参与四则运算，以及普通的函数调用。*/
     ;
 
+array-or-exp: exp-statement { $$ = $1; }
+    | array-stmt { $$ = $1; }
+
 assign-op: EQUALTO { $$ = AssignTo; }
     | ADDASSIGN { $$ = AddAssign; }
     | MULASSIGN { $$ = MulAssign; }
@@ -156,9 +161,8 @@ assign-op: EQUALTO { $$ = AssignTo; }
     | DIVASSIGN { $$ = DivAssign; }
     ;
 
-assign-statement: VARNAME assign-op exp-statement {
-            auto nameNode = driver.makeZfxVarNode($1);
-            std::vector<std::shared_ptr<ZfxASTNode>> children({nameNode, $3});
+assign-statement: zenvar assign-op array-or-exp {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
             $$ = driver.makeNewNode(ASSIGNMENT, $2, children);
         }
     ;
@@ -168,16 +172,32 @@ jump-statement: BREAK { $$ = driver.makeNewNode(JUMP, JUMP_BREAK, {}); }
     | CONTINUE { $$ = driver.makeNewNode(JUMP, JUMP_CONTINUE, {}); }
     ;
 
-declare-statement: VARNAME VARNAME {
-                auto typeNode = driver.makeZfxVarNode($1);
+arrcontent: exp-statement { $$ = $1; }
+    | array-stmt { $$ = $1; }
+    ;
+
+arrcontents: arrcontent            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
+    | arrcontents COMMA arrcontent { $1.push_back($3); $$ = $1; }
+    ;
+
+array-stmt: LBRACKET arrcontents RBRACKET { 
+        $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
+    }
+
+array-mark: %empty { $$ = false; }
+    | LSQBRACKET RSQBRACKET { $$ = true; }
+    ;
+
+declare-statement: TYPE VARNAME array-mark {
+                auto typeNode = driver.makeTypeNode($1, $3);
                 auto nameNode = driver.makeZfxVarNode($2);
                 std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode});
                 $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
             }
-    | VARNAME VARNAME EQUALTO exp-statement {
-                auto typeNode = driver.makeZfxVarNode($1);
+    | TYPE VARNAME array-mark EQUALTO array-or-exp {
+                auto typeNode = driver.makeTypeNode($1, $3);
                 auto nameNode = driver.makeZfxVarNode($2);
-                std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode, $4});
+                std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode, $5});
                 $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
             }
     ;
@@ -304,12 +324,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     }
     ;
 
-arrcontents: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
-    | arrcontents COMMA exp-statement { $1.push_back($3); $$ = $1; }
 
-array-stmt: LBRACKET arrcontents RBRACKET { 
-        $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
-    }
 
 %%
 

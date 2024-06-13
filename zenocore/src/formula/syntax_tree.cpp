@@ -53,6 +53,17 @@ std::string getOperatorString(nodeType type, operatorVals op)
         }
         return var;
     }
+    case VARIABLETYPE: {
+        switch (op) {
+        case TYPE_INT:      return "INT";
+        case TYPE_STRING:   return "STRING";
+        case TYPE_FLOAT:    return "FLOAT";
+        case TYPE_INT_ARR:  return "INT[]";
+        case TYPE_FLOAT_ARR:return "FLOAT[]";
+        default:
+            return "TYPE";
+        }
+    }
     default:
         break;
     }

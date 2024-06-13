@@ -823,72 +823,83 @@ YY_RULE_SETUP
             return zeno::ZfxParser::make_WHILE(yytext, loc);
         } else if (strcmp(yytext, "for") == 0) {
             return zeno::ZfxParser::make_FOR(yytext, loc);
+        } else if (strcmp(yytext, "int") == 0 ||
+                   strcmp(yytext, "float") == 0 ||
+                   strcmp(yytext, "string") == 0 ||
+                   strcmp(yytext, "vector2") == 0 ||
+                   strcmp(yytext, "vector3") == 0 ||
+                   strcmp(yytext, "vector4") == 0 ||
+                   strcmp(yytext, "matrix2") == 0 ||
+                   strcmp(yytext, "matrix3") == 0 ||
+                   strcmp(yytext, "matrix4") == 0)
+        {
+            return zeno::ZfxParser::make_TYPE(yytext, loc);
         }
         return zeno::ZfxParser::make_VARNAME(yytext, loc);
 }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 123 "zfxscanner.l"
+#line 134 "zfxscanner.l"
 { return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 124 "zfxscanner.l"
+#line 135 "zfxscanner.l"
 { return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 125 "zfxscanner.l"
+#line 136 "zfxscanner.l"
 { return zeno::ZfxParser::make_ADDASSIGN(yytext, loc); }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 126 "zfxscanner.l"
+#line 137 "zfxscanner.l"
 { return zeno::ZfxParser::make_MULASSIGN(yytext, loc); }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 127 "zfxscanner.l"
+#line 138 "zfxscanner.l"
 { return zeno::ZfxParser::make_SUBASSIGN(yytext, loc); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 128 "zfxscanner.l"
+#line 139 "zfxscanner.l"
 { return zeno::ZfxParser::make_DIVASSIGN(yytext, loc); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 129 "zfxscanner.l"
+#line 140 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 130 "zfxscanner.l"
+#line 141 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 131 "zfxscanner.l"
+#line 142 "zfxscanner.l"
 { return zeno::ZfxParser::make_COMPARE(yytext, loc); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 132 "zfxscanner.l"
+#line 143 "zfxscanner.l"
 { return yyterminate(); }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 133 "zfxscanner.l"
+#line 144 "zfxscanner.l"
 {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;
           }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 137 "zfxscanner.l"
+#line 148 "zfxscanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 891 "zfxscanner.cpp"
+#line 902 "zfxscanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1849,6 +1860,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 137 "zfxscanner.l"
+#line 148 "zfxscanner.l"
 
 

@@ -62,6 +62,40 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text, operato
     return spNode;
 }
 
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArray) {
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = VARIABLETYPE;
+    spNode->value = text;
+    if (text == "int") {
+        spNode->opVal = bArray ? TYPE_INT_ARR : TYPE_INT;
+    }
+    else if (text == "float") {
+        spNode->opVal = bArray ? TYPE_FLOAT_ARR : TYPE_FLOAT;
+    }
+    else if (text == "string") {
+        spNode->opVal = bArray ? TYPE_STRING_ARR : TYPE_STRING;
+    }
+    else if (text == "vector2") {
+        spNode->opVal = TYPE_VECTOR2;
+    }
+    else if (text == "vector3") {
+        spNode->opVal = TYPE_VECTOR3;
+    }
+    else if (text == "vector4") {
+        spNode->opVal = TYPE_VECTOR4;
+    }
+    else if (text == "matrix2") {
+        spNode->opVal = TYPE_MATRIX2;
+    }
+    else if (text == "matrix3") {
+        spNode->opVal = TYPE_MATRIX3;
+    }
+    else if (text == "matrix4") {
+        spNode->opVal = TYPE_MATRIX4;
+    }
+    return spNode;
+}
+
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component) {
     std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
     childNode->value = component;

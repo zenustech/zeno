@@ -29,6 +29,7 @@ enum nodeType {
     FOR,
     CODEBLOCK,          //多个语法树作为children的代码块
     JUMP,
+    VARIABLETYPE,       //变量类型，比如int vector3 float string等
 };
 
 enum operatorVals {
@@ -57,6 +58,19 @@ enum operatorVals {
     JUMP_RETURN,
     JUMP_CONTINUE,
     JUMP_BREAK,
+
+    TYPE_INT,
+    TYPE_INT_ARR,   //仅针对一维数组
+    TYPE_FLOAT,
+    TYPE_FLOAT_ARR,
+    TYPE_STRING,
+    TYPE_STRING_ARR,
+    TYPE_VECTOR2,
+    TYPE_VECTOR3,
+    TYPE_VECTOR4,
+    TYPE_MATRIX2,
+    TYPE_MATRIX3,
+    TYPE_MATRIX4,
 
     AutoIncreaseFirst,
     AutoIncreaseLast,
