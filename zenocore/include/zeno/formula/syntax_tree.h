@@ -77,6 +77,7 @@ enum operatorVals {
     AutoDecreaseFirst,
     AutoDecreaseLast,
     Indexing,
+    AttrMark,
     BulitInVar,     //$F, $FPS, $T
 };
 

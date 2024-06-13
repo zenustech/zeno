@@ -103,6 +103,7 @@
 %token CONTINUE
 %token BREAK
 %token TYPE
+%token ATTRAT
 
 %left ADD "+"
 %left SUB "-"
@@ -116,7 +117,7 @@
 %type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin for-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
 %type <operatorVals> assign-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
 %type <bool> array-mark
 
 %start zfx-program
@@ -153,6 +154,7 @@ general-statement: declare-statement SEMICOLON { $$ = $1; }
 
 array-or-exp: exp-statement { $$ = $1; }
     | array-stmt { $$ = $1; }
+    ;
 
 assign-op: EQUALTO { $$ = AssignTo; }
     | ADDASSIGN { $$ = AddAssign; }
@@ -183,6 +185,7 @@ arrcontents: arrcontent            { $$ = std::vector<std::shared_ptr<ZfxASTNode
 array-stmt: LBRACKET arrcontents RBRACKET { 
         $$ = driver.makeNewNode(ARRAY, DEFAULT_FUNCVAL, $2);
     }
+    ;
 
 array-mark: %empty { $$ = false; }
     | LSQBRACKET RSQBRACKET { $$ = true; }
@@ -272,6 +275,10 @@ factor: term            { $$ = $1; }
 
 zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
     | VARNAME           { $$ = driver.makeZfxVarNode($1); }
+    | ATTRAT zenvar {
+            $$ = $2;
+            $$->opVal = AttrMark;
+        }
     | zenvar DOT VARNAME {
             $$ = driver.makeComponentVisit($1, $3);
         }
@@ -300,6 +307,7 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
 
 funcargs: exp-statement            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp-statement { $1.push_back($3); $$ = $1; }
+    ;
 
 /* 暂不考虑不完整匹配的情况 */
 func-content: LPAREN funcargs RPAREN { 
@@ -307,6 +315,7 @@ func-content: LPAREN funcargs RPAREN {
         $$->isParenthesisNodeComplete = true;
         $$->func_match = Match_Exactly;
     }
+    ;
 
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }

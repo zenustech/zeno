@@ -18,6 +18,7 @@ std::string getOperatorString(nodeType type, operatorVals op)
         switch (op) {
         case Indexing: var += " [Indexing]"; break;
         case BulitInVar: var += " [$]"; break;
+        case AttrMark: var += "[@]"; break;
         case AutoIncreaseFirst: var += " ++var"; break;
         case AutoIncreaseLast: var += " var++"; break;
         case AutoDecreaseFirst: var += " --var;"; break;

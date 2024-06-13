@@ -99,6 +99,7 @@ equalto \=
 "}"       { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
 "\["       { return zeno::ZfxParser::make_LSQBRACKET(yytext,loc); }
 "\]"       { return zeno::ZfxParser::make_RSQBRACKET(yytext,loc); }
+"@"       { return zeno::ZfxParser::make_ATTRAT(yytext, loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
 {autoinc} { return zeno::ZfxParser::make_AUTOINC(yytext, loc); }
