@@ -57,6 +57,8 @@ struct LightNode : INode {
         auto spread = get_input2<zeno::vec2f>("spread");
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
+        
+        if (doubleside) { invertdir = false; }
 
         std::string type = get_input2<std::string>(lightTypeKey);
         auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
