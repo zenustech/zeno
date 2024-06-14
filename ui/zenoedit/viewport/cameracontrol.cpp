@@ -437,8 +437,10 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
             auto FPN_move_speed = zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0);
             FPN_move_speed += dy > 0? 1: -1;
             zeno::getSession().userData().set2("viewport-FPN-move-speed", FPN_move_speed);
-            // TODO: move to status bar
-            zeno::log_info("First Person Navigation: movement speed level: {}", FPN_move_speed);
+            auto pMainWindow = zenoApp->getMainWindow();
+            if (pMainWindow) {
+                pMainWindow->statusbarShowMessage(zeno::format("First Person Navigation: movement speed level: {}", FPN_move_speed), 10000);
+            }
         }
         else {
             auto pos = getPos();
