@@ -322,6 +322,9 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             float step = 4.0f;
             dx *= step;
+            if (getUpDir().y < 0) {
+                dx *= -1;
+            }
             dy *= step;
             // rot yaw pitch
             setOrthoMode(false);
