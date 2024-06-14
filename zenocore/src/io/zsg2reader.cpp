@@ -288,22 +288,37 @@ void Zsg2Reader::_parseSocket(
         }
     }
 
-    bool bPrimType = isPrimitiveType(paramType);
-
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
         paramType = zeno::convertToType(sockObj["type"].GetString());
         defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
-        if (bPrimType) {
-            socketType = zeno::Socket_Primitve;
+    }
+    if (!bInput && paramType == zeno::Param_Null)
+    {
+        auto& nodeClass = zeno::getSession().nodeClasses;
+        auto it = nodeClass.find(nodeCls);
+        if (it != nodeClass.end()) {
+            const auto& outputs = it->second->m_customui.outputPrims;
+            for (const auto& output : outputs)
+            {
+                if (output.name == sockName)
+                {
+                    paramType = output.type;
+                    break;
+                }
+            }
+        }
+    }
+    bool bPrimType = isPrimitiveType(paramType);
+    if (bPrimType) {
+        socketType = zeno::Socket_Primitve;
+    }
+    else {
+        if (bInput) {
+            //这种情况大概率是连对象，默认赋予Owing端口吧
+            socketType = zeno::Socket_Owning;
         }
         else {
-            if (bInput) {
-                //这种情况大概率是连对象，默认赋予Owing端口吧
-                socketType = zeno::Socket_Owning;
-            }
-            else {
-                socketType = zeno::Socket_Output;
-            }
+            socketType = zeno::Socket_Output;
         }
     }
 
