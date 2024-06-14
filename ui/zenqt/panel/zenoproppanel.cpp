@@ -85,7 +85,16 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
     if (value == oldValue)
         return true;
 
-    return UiHelper::qIndexSetData(m_idx, value, ROLE_NODE_NAME);
+    if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_idx.data(ROLE_GRAPH)))
+    {
+        QString name = pModel->updateNodeName(m_idx, value);
+        if (name != value)
+        {
+            QMessageBox::warning(nullptr, tr("Rename warring"), tr("The name %1 is existed").arg(value));
+            return false;
+        }
+    }
+    return true;
 }
 
 ZenoHintListWidget* ZenoPropPanel::getHintListInstance()

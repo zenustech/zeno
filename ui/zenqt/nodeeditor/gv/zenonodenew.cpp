@@ -474,10 +474,9 @@ ZGraphicsLayout* ZenoNodeNew::initCustomParamWidgets()
 void ZenoNodeNew::onNameUpdated(const QString& newName)
 {
     ZASSERT_EXIT(m_NameItem);
-    if (m_NameItem)
+    if (m_NameItem && newName != m_NameItem->text())
     {
-        const QString& name = m_index.data(ROLE_NODE_NAME).toString();
-        m_NameItem->setText(name);
+        m_NameItem->setText(newName);
         ZGraphicsLayout::updateHierarchy(m_NameItem);
     }
 }

@@ -202,15 +202,15 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
 
-    m_plblName = new QLabel("");
-    QFont fnt = QApplication::font();
-    m_plblName->setFont(fnt);
-    m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    QPalette palette = m_plblName->palette();
-    palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
-    m_plblName->setPalette(palette);
+    //m_plblName = new QLabel("");
+    //QFont fnt = QApplication::font();
+    //m_plblName->setFont(fnt);
+    //m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    //QPalette palette = m_plblName->palette();
+    //palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
+    //m_plblName->setPalette(palette);
 
-    m_pNameLineEdit = new ZLineEdit;
+    m_pNameLineEdit = new ZLineEdit (this);
     m_pNameLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 
     m_pFixBtn = new ZToolBarButton(true, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
@@ -219,7 +219,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     m_pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
     pToolLayout->addWidget(pIcon);
-    pToolLayout->addWidget(m_plblName);
+    //pToolLayout->addWidget(m_plblName);
     pToolLayout->addWidget(m_pNameLineEdit);
     pToolLayout->addStretch();
     pToolLayout->addWidget(m_pFixBtn);
@@ -273,7 +273,7 @@ void DockContent_Parameter::onNodesSelected(GraphModel* subgraph, const QModelIn
             }
 
             if (select) {
-                m_plblName->setText(idx.data(ROLE_NODE_NAME).toString());
+                //m_plblName->setText(idx.data(ROLE_NODE_NAME).toString());
                 m_pNameLineEdit->setText(idx.data(ROLE_NODE_NAME).toString());
                 return;
             }
@@ -296,7 +296,7 @@ void DockContent_Parameter::onNodeRemoved(QString nodeName)
 {
     if (m_pNameLineEdit->text() != nodeName)
         return;
-    m_plblName->setText("");
+    //m_plblName->setText("");
     m_pNameLineEdit->setText("");
 }
 
