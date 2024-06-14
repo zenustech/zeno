@@ -1622,7 +1622,7 @@ void INode::mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, st
     }
 }
 
-float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
+float INode::resolve(const std::string& expression, const ParamType type)
 {
     std::string code = expression;
     Formula fmla(code, get_path());
