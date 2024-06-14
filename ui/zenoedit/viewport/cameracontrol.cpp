@@ -333,6 +333,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 setRotation(rot);
                 auto afterMat = glm::toMat3(rot);
                 if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
+                    if (glm::abs(glm::dot(getRightDir(), {0, 1, 0})) > 0.01) {
+                        auto right_dir = glm::cross(getViewDir(), {0, 1, 0});
+                        auto up_dir = glm::cross(right_dir, getViewDir());
+                        glm::mat3 rotation;
+                        rotation[0] = right_dir;
+                        rotation[1] = up_dir;
+                        rotation[2] = -getViewDir();
+                        setRotation(glm::quat_cast(rotation));
+                    };
                     setPivot(getPos());
                 }
                 else {
