@@ -121,25 +121,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     }
     auto m_picker = this->m_picker.lock();
     auto m_transformer = this->m_transformer.lock();
-    if (scene->camera->m_need_sync) {
-        scene->camera->m_need_sync = false;
-        if (bool(m_picker) && scene->camera->m_auto_radius) {
-            m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
-                if (depth < 0.001f) {
-                    return;
-                }
-                glm::vec4 ndc = {0, 0, depth, 1};
-                glm::vec4 posCS = glm::inverse(scene->camera->m_proj) * ndc;
-                glm::vec4 posVS = posCS / posCS.w;
-                glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
-                glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
-                // TODO
-            });
-            int mid_x = int(this->res().x() * 0.5);
-            int mid_y = int(this->res().y() * 0.5);
-            m_picker->pick_depth(mid_x, mid_y);
-        }
-    }
     int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);

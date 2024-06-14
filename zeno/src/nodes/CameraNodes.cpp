@@ -35,9 +35,7 @@ struct CameraNode: zeno::INode{
             p++;
         }
         if (prop_vals.size() == 6) {
-            camera->isSet = true;
-            camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
-            camera->radius = prop_vals[5];
+            camera->pivot = {prop_vals[0], prop_vals[1], prop_vals[2]};
         }
 
         set_output("camera", std::move(camera));

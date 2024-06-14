@@ -5,6 +5,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <optional>
 
 namespace zeno {
 static glm::quat from_theta_phi(float theta, float phi) {
@@ -31,9 +32,7 @@ struct CameraData {
     float aperture{0.0f};
     float focalPlaneDistance{2.0f};
 
-    bool isSet = false;
-    vec3f center{0, 0, 0};
-    float radius{1};
+    std::optional<vec3f> pivot = std::nullopt;
 };
 
 struct CameraObject : IObjectClone<CameraObject>, CameraData {

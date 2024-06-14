@@ -46,9 +46,7 @@ struct Camera {
     glm::vec3 m_pivot = {};
     glm::quat m_rotation = {1, 0, 0, 0};
 
-    bool m_need_sync = false;
     bool m_block_window = false;
-    bool m_auto_radius = false;
 public:
     glm::vec3 get_lodfront() {
         return m_rotation * glm::vec3(0, 0, -1);

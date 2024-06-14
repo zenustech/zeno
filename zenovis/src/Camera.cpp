@@ -17,14 +17,12 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
 
-    // TODO
-    if (cam.isSet) {
+    if (cam.pivot.has_value()) {
+        this->m_pivot = zeno::vec_to_other<glm::vec3>(cam.pivot.value());
     }
     else {
+        this->m_pivot = zeno::vec_to_other<glm::vec3>(cam.pos);
     }
-
-    this->m_auto_radius = !cam.isSet;
-    this->m_need_sync = true;
 }
 
 void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
