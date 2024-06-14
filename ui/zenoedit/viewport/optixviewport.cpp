@@ -356,7 +356,10 @@ void OptixWorker::onSetData(
     float shutter_speed,
     float iso,
     bool aces,
-    bool exposure
+    bool exposure,
+    bool panorama_camera,
+    bool panorama_vr180,
+    float pupillary_distance
 ) {
 //    zeno::log_info("I am in optix thread, now I want to set value {}", iso);
     auto scene = m_zenoVis->getSession()->get_scene();
@@ -365,6 +368,9 @@ void OptixWorker::onSetData(
     scene->camera->zOptixCameraSettingInfo.iso = iso;
     scene->camera->zOptixCameraSettingInfo.aces = aces;
     scene->camera->zOptixCameraSettingInfo.exposure = exposure;
+    scene->camera->zOptixCameraSettingInfo.panorama_camera = panorama_camera;
+    scene->camera->zOptixCameraSettingInfo.panorama_vr180 = panorama_vr180;
+    scene->camera->zOptixCameraSettingInfo.pupillary_distance = pupillary_distance;
     scene->drawOptions->needRefresh = true;
 }
 
@@ -460,7 +466,10 @@ void ZOptixViewport::setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo va
             value.shutter_speed,
             value.iso,
             value.aces,
-            value.exposure
+            value.exposure,
+            value.panorama_camera,
+            value.panorama_vr180,
+            value.pupillary_distance
     );
 }
 

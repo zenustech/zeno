@@ -44,6 +44,19 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     m_exposure->setStyleSheet("color: white;");
     m_exposure->setChecked(info.exposure);
 
+    QCheckBox *m_panorama_camera = new QCheckBox(tr("PanoramaCamera"));
+    m_panorama_camera->setStyleSheet("color: white;");
+    m_panorama_camera->setChecked(info.panorama_camera);
+
+    QCheckBox *m_panorama_vr180 = new QCheckBox(tr("PanoramaVR180"));
+    m_panorama_vr180->setStyleSheet("color: white;");
+    m_panorama_vr180->setChecked(info.panorama_vr180);
+
+    QDoubleSpinBox* m_pupillary_distance = new QDoubleSpinBox();
+    m_pupillary_distance->setDecimals(3);
+    m_pupillary_distance->setRange(0.0, 10000);
+    m_pupillary_distance->setValue(info.pupillary_distance);
+
     mainLayout->addWidget(new QLabel("Aperture"));
     mainLayout->addWidget(m_aperture);
     mainLayout->addWidget(new QLabel("ShutterSpeed"));
@@ -52,6 +65,10 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     mainLayout->addWidget(m_iso);
     mainLayout->addWidget(m_aces);
     mainLayout->addWidget(m_exposure);
+    mainLayout->addWidget(m_panorama_camera);
+    mainLayout->addWidget(m_panorama_vr180);
+    mainLayout->addWidget(new QLabel("PupillaryDistance"));
+    mainLayout->addWidget(m_pupillary_distance);
 
     mainLayout->addLayout(buttonLayout);
 
@@ -77,6 +94,15 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     });
     connect(m_exposure, &QCheckBox::stateChanged, this, [&](int state) {
         info.exposure = state == Qt::Checked;
+    });
+    connect(m_panorama_camera, &QCheckBox::stateChanged, this, [&](int state) {
+        info.panorama_camera = state == Qt::Checked;
+    });
+    connect(m_panorama_vr180, &QCheckBox::stateChanged, this, [&](int state) {
+        info.panorama_vr180 = state == Qt::Checked;
+    });
+    connect(m_pupillary_distance, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [&](double value) {
+        info.pupillary_distance = value;
     });
 
 }

@@ -45,7 +45,7 @@ public slots:
     void onCleanUpView();
     void onSetBackground(bool bShowBg);
 
-    void onSetData(float, float, float, bool, bool);
+    void onSetData(float, float, float, bool, bool, bool, bool, float);
 
 private:
     Zenovis *m_zenoVis;
@@ -111,7 +111,7 @@ signals:
     void sig_cleanUpScene();
     void sig_cleanUpView();
     void sig_setBackground(bool bShowBg);
-    void sig_setdata_on_optix_thread(float, float, float, bool, bool);
+    void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
 
 public slots:
     void onFrameRunFinished(int frame);
