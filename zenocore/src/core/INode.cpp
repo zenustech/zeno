@@ -678,6 +678,7 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
         param.control = spParamObj->control;
         param.ctrlProps = spParamObj->optCtrlprops;
         param.defl = spParamObj->defl;
+        param.bVisible = spParamObj->bVisible;
         for (auto spLink : spParamObj->links) {
             param.links.push_back(getEdgeInfo(spLink));
         }
@@ -781,6 +782,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam->socketType = param.socketType;
     sparam->type = param.type;
     sparam->optCtrlprops = param.ctrlProps;
+    sparam->bVisible = param.bVisible;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1150,6 +1152,20 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, C
     return false;
 }
 
+ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible)
+{
+    CORE_API_BATCH
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+
+    if (spParam->bVisible != bVisible)
+    {
+        spParam->bVisible = bVisible;
+        CALLBACK_NOTIFY(update_param_visible, param, bVisible)
+            return true;
+    }
+    return false;
+}
+
 ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& params)
 {
     params_change_info ret;
@@ -1200,6 +1216,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 sparam->defl = param.defl;
                 sparam->control = param.control;
                 sparam->optCtrlprops = param.ctrlProps;
+                sparam->bVisible = param.bVisible;
             }
         }
     }
@@ -1422,7 +1439,190 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
-float INode::resolve(const std::string& expression, const ParamType type)
+void INode::propagateDirty(std::string dependType)
+{
+    std::set<ObjPath> depNodes;
+    std::set<ObjPath> upstreams;
+    getUpstreamNodes(depNodes, dependType, upstreams);
+    for (auto& objPath : depNodes) {
+        if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
+            node->mark_dirty_by_dependNodes(true, upstreams);
+        }
+    }
+}
+
+void INode::getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstreams, std::string outParamName)
+{
+    if (dependType == "timeNode") {
+        bool isdepNode = false;
+        //isdepNode = this->is_$F_Node();
+        if (isdepNode) {
+            depNodes.insert(m_uuidPath);
+        }
+    }
+
+    if (upstreams.find(m_uuidPath) != upstreams.end()) {
+        return;
+    }
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+    {
+        auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &dependType, &upstreams](std::string paramName) {
+            if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
+                suboutput->getUpstreamNodes(depNodes, dependType, upstreams);
+                upstreams.insert(suboutput->m_uuidPath);
+            }
+        };
+        if (outParamName != "") {
+            suboutoutGetUpstreamFunc(outParamName);
+        }
+        else {
+            for (auto& [name, param] : pSubnetNode->m_outputPrims) {
+                suboutoutGetUpstreamFunc(name);
+            }
+            for (auto& [name, param] : pSubnetNode->m_outputObjs) {
+                suboutoutGetUpstreamFunc(name);
+            }
+        }
+        upstreams.insert(m_uuidPath);
+    }
+    else {
+        for (auto& [name, param] : m_inputPrims) {
+            for (auto link : param->links) {
+                auto outParam = link->fromparam;
+                if (outParam) {
+                    auto outNode = outParam->m_wpNode.lock();
+                    assert(outNode);
+                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    upstreams.insert(outNode->m_uuidPath);
+                }
+            }
+        }
+        for (auto& [name, param] : m_inputObjs) {
+            for (auto link : param->links) {
+                auto outParam = link->fromparam;
+                if (outParam) {
+                    auto outNode = outParam->m_wpNode.lock();
+                    assert(outNode);
+                    outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                    upstreams.insert(outNode->m_uuidPath);
+                }
+            }
+        }
+        upstreams.insert(m_uuidPath);
+    }
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubInput")
+    {
+        upstreams.insert(spGraph->optParentSubgNode.value()->m_uuidPath);
+        auto parentSubgNodeGetUpstreamFunc = [&depNodes, dependType, &upstreams](CoreParam* outParam) {
+            if (outParam) {
+                auto outNode = outParam->m_wpNode.lock();
+                assert(outNode);
+                outNode->getUpstreamNodes(depNodes, dependType, upstreams, outParam->name);
+                upstreams.insert(outNode->m_uuidPath);
+            }
+        };
+        const auto& parentSubgNodePrimsInputs = spGraph->optParentSubgNode.value()->m_inputPrims;
+        if (parentSubgNodePrimsInputs.find(m_name) != parentSubgNodePrimsInputs.end()) {
+            for (auto link : parentSubgNodePrimsInputs.find(m_name)->second->links) {
+                parentSubgNodeGetUpstreamFunc(link->fromparam);
+            }
+        }
+        const auto& parentSubgNodeObjsInputs = spGraph->optParentSubgNode.value()->m_inputObjs;
+        if (parentSubgNodeObjsInputs.find(m_name) != parentSubgNodeObjsInputs.end()) {
+            for (auto link : parentSubgNodeObjsInputs.find(m_name)->second->links) {
+                parentSubgNodeGetUpstreamFunc(link->fromparam);
+            }
+        }
+    }
+}
+
+void INode::mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName)
+{
+    if (!nodesRange.empty()) {
+        if (nodesRange.find(m_uuidPath) == nodesRange.end()) {
+            return;
+        }
+    }
+    scope_exit sp([&] {
+        m_status = Node_DirtyReadyToRun;
+    reportStatus(m_dirty, m_status);
+        });
+
+    if (m_dirty == bOn)
+        return;
+
+    m_dirty = bOn;
+    if (m_dirty) {
+        for (auto& [name, param] : m_outputPrims) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty_by_dependNodes(m_dirty, nodesRange, inParam->name);
+                }
+            }
+        }
+        for (auto& [name, param] : m_outputObjs) {
+            for (auto link : param->links) {
+                auto inParam = link->toparam;
+                assert(inParam);
+                if (inParam) {
+                    auto inNode = inParam->m_wpNode.lock();
+                    assert(inNode);
+                    inNode->mark_dirty_by_dependNodes(m_dirty, nodesRange, inParam->name);
+                }
+            }
+        }
+    }
+
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+    {
+        auto subinputMarkDirty = [&pSubnetNode, &nodesRange](bool dirty, std::string paramName) {
+            if (auto subinput = pSubnetNode->subgraph->getNode(paramName))
+                subinput->mark_dirty_by_dependNodes(dirty, nodesRange);
+        };
+        if (inParamName != "") {
+            subinputMarkDirty(m_dirty, inParamName);
+        }
+        else {
+            for (auto& [name, param] : pSubnetNode->m_inputPrims)
+                subinputMarkDirty(m_dirty, name);
+            for (auto& [name, param] : pSubnetNode->m_inputObjs)
+                subinputMarkDirty(m_dirty, name);
+        }
+    }
+
+    std::shared_ptr<Graph> spGraph = graph.lock();
+    assert(spGraph);
+    if (spGraph->optParentSubgNode.has_value() && m_nodecls == "SubOutput")
+    {
+        auto parentSubgNodeMarkDirty = [&nodesRange](CoreParam* inParam) {
+            if (inParam) {
+                auto inNode = inParam->m_wpNode.lock();
+                assert(inNode);
+                inNode->mark_dirty_by_dependNodes(true, nodesRange, inParam->name);
+            }
+        };
+        const auto& parentSubgNodeOutputPrims = spGraph->optParentSubgNode.value()->m_outputPrims;
+        if (parentSubgNodeOutputPrims.find(m_name) != parentSubgNodeOutputPrims.end()) {
+            for (auto link : parentSubgNodeOutputPrims.find(m_name)->second->links) {
+                parentSubgNodeMarkDirty(link->toparam);
+            }
+        }
+        const auto& parentSubgNodeOutputObjs = spGraph->optParentSubgNode.value()->m_outputObjs;
+        if (parentSubgNodeOutputObjs.find(m_name) != parentSubgNodeOutputObjs.end()) {
+            for (auto link : parentSubgNodeOutputObjs.find(m_name)->second->links) {
+                parentSubgNodeMarkDirty(link->toparam);
+            }
+        }
+    }
+}
+
+float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
 {
     std::string code = expression;
     Formula fmla(code, get_path());

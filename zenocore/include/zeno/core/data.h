@@ -86,6 +86,7 @@ namespace zeno {
 
         std::string tooltip;
         bool bInput = true;
+        bool bVisible = true;
 
         ParamPrimitive() {}
         ParamPrimitive(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")

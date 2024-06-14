@@ -67,6 +67,11 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         [this](const std::string& name, zeno::ControlProperty controlProps) {
         updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
     });
+
+    spNode->register_update_param_visible(
+        [this](const std::string& name, bool bVisible) {
+        updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
+    });
 }
 
 void ParamsModel::initParamItems()
@@ -86,6 +91,7 @@ void ParamsModel::initParamItems()
         item.type = spParam.type;
         item.value = UiHelper::zvarToQVar(spParam.defl);
         item.connectProp = spParam.socketType;
+        item.bVisible = spParam.bVisible;
         item.group = zeno::Group_InputPrimitive;
         m_items.append(item);
     }
@@ -154,7 +160,10 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
                 auto paramItem = groupItem->child(k);
                 int row = indexFromName(paramItem->data(ROLE_PARAM_NAME).toString(), true);
                 if (row != -1)
+                {
                     paramItem->setData(m_items[row].value, ROLE_PARAM_VALUE);
+                    paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
+                }
             }
         }
     }
@@ -222,6 +231,15 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         return false;
     }
+    case ROLE_PARAM_VISIBLE:
+    {
+        auto spNode = m_wpNode.lock();
+        if (spNode) {
+            spNode->update_param_visible(param.name.toStdString(), value.toBool());
+            return true;
+        }
+        return false;
+    }
     default:
         return false;
     }
@@ -276,6 +294,8 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     {
         return m_nodeIdx.data(ROLE_NODE_NAME);
     }
+    case ROLE_PARAM_VISIBLE:
+        return param.bVisible;
     }
     return QVariant();
 }
@@ -602,6 +622,8 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
                 m_items[i].optCtrlprops = val.value<zeno::ControlProperty>();
+            else if (role == ROLE_PARAM_VISIBLE)
+                m_items[i].bVisible = val.toBool();
             QModelIndex idx = createIndex(i, 0);
             emit dataChanged(idx, idx, { role });
             break;

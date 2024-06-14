@@ -721,10 +721,10 @@ ZENDEFNODE(EvalFBXAnim,
                },  /* outputs: */
                {
                    "prim",
-                   "camera", "light", "matName", "meshName", "pathName", "bsPrimsOrigin",
+                   "camera", "light", {"string","matName"}, {"string", "meshName"}, {"string","pathName"}, "bsPrimsOrigin",
                    {"list", "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
-                   "writeData", "visibility"
+                   "writeData", {"bool", "visibility"}
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},

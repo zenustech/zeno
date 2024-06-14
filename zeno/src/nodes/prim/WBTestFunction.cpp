@@ -208,7 +208,7 @@ ZENDEFNODE(PrimTriPoints, {
     },
     /* outputs: */
     {
-        "points",
+        {"vec3i","points"},
     },
     /* params: */
     {

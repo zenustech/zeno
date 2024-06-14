@@ -501,7 +501,7 @@ ZENDEFNODE(StringToNumber, {{
 
                             {
                                 /* outputs: */
-                                "num_str",
+                                {"NumericObject","num_str"},
                             },
 
                             {

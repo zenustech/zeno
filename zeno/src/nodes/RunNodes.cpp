@@ -79,7 +79,7 @@ struct GetFrameTime : zeno::INode {
 
 ZENDEFNODE(GetFrameTime, {
     {},
-    {"time"},
+    {{"float","time"}},
     {},
     {"frame"},
 });
@@ -94,7 +94,7 @@ struct GetFrameTimeElapsed : zeno::INode {
 
 ZENDEFNODE(GetFrameTimeElapsed, {
     {},
-    {"time"},
+    {{"float","time"}},
     {},
     {"frame"},
 });
@@ -109,7 +109,7 @@ struct GetFrameNum : zeno::INode {
 
 ZENDEFNODE(GetFrameNum, {
     {},
-    {"FrameNum"},
+    {{"int","FrameNum"}},
     {},
     {"frame"},
 });
@@ -125,7 +125,7 @@ struct GetTime : zeno::INode {
 
 ZENDEFNODE(GetTime, {
     {},
-    {"time"},
+    {{"float","time"}},
     {},
     {"frame"},
 });
@@ -140,7 +140,7 @@ struct GetFramePortion : zeno::INode {
 
 ZENDEFNODE(GetFramePortion, {
     {},
-    {"FramePortion"},
+    {{"float","FramePortion"}},
     {},
     {"frame"},
 });
@@ -169,7 +169,7 @@ struct IntegrateFrameTime : zeno::INode {
 
 ZENDEFNODE(IntegrateFrameTime, {
     {{"", "desired_dt", "", zeno::Socket_ReadOnly}},
-    {"actual_dt"},
+    {{"float","actual_dt"}},
     {{"float", "min_scale", "0.0001"}},
     {"frame"},
 });

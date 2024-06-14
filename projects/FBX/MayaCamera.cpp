@@ -279,7 +279,12 @@ ZENDEFNODE(ExtractCamera,
                     "camobject"
                },  /* outputs: */
                {
-                   "pos", "up", "view", "fov", "aperture", "focalPlaneDistance"
+                   {"vec3f","pos"}, 
+                   {"vec3f","up"}, 
+                   {"vec3f","view"}, 
+                   {"float","fov"}, 
+                   {"float","aperture"}, 
+                   {"float","focalPlaneDistance"}
                },  /* params: */
                {
 

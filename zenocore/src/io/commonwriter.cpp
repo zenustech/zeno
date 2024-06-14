@@ -325,6 +325,9 @@ namespace zenoio
             default:
                 writer.String(iotags::params::socket_none);
             }
+
+            writer.Key("visible");
+            writer.Bool(param.bVisible);
         }
 
         if (!param.tooltip.empty())

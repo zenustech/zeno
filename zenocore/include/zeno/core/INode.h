@@ -98,6 +98,9 @@ public:
    ZENO_API bool update_param_control_prop(const std::string& name, ControlProperty props);
    CALLBACK_REGIST(update_param_control_prop, void, const std::string&, ControlProperty)
 
+   ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
+   CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
+
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
     ZENO_API void set_name(const std::string& name);
@@ -210,6 +213,10 @@ public:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
+
+    void propagateDirty(ObjPath dependType);  //查询上游dependType类型节点并传播dirty
+    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstrems, std::string outParamName = "");
+    void mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
 
 private:
     std::string m_name;

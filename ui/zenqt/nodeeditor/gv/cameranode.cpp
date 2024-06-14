@@ -16,7 +16,7 @@
 
 
 CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)
-    : ZenoNode(params, parent)
+    : _base(params, parent)
 {
     CameraPattern = pattern;
 }
@@ -127,7 +127,7 @@ void CameraNode::onEditClicked()
 }
 
 LightNode::LightNode(const NodeUtilParam &params, int pattern, QGraphicsItem *parent)
-    : ZenoNode(params, parent)
+    : _base(params, parent)
 {
 
 }

@@ -75,7 +75,7 @@ ZENDEFNODE(ExtractMatName,
                 "material", "key"
             },  /* outputs: */
             {
-                "name"
+                {"string","name"}
             },  /* params: */
             {
 
@@ -120,7 +120,7 @@ ZENDEFNODE(ExtractMatTexList,
                    {"IMaterial", "material"},
                },  /* outputs: */
                {
-                    "texLists", "name"
+                    "texLists", {"string","name"}
                },  /* params: */
                {
 
@@ -230,7 +230,7 @@ ZENDEFNODE(ExtractMatData,
             },  /* outputs: */
             {
                 {"list", "datas", ""},
-                "matName",
+                {"string","matName"},
                 {"list", "texLists", ""},
                 {"dict", "texMaps", ""},
                 {"dict", "matValues", ""},
@@ -303,7 +303,15 @@ ZENDEFNODE(ExtractCameraData,
            {"string", "key", "camera1"}, "camobject"
                },  /* outputs: */
                {
-                   "pos", "up", "view", "focL", "haov", "waov", "hfov", "filmW", "filmH"
+                   {"vec3f","pos"}, 
+                   {"vec3f","up"}, 
+                   {"vec3f","view"}, 
+                   {"float","focL"}, 
+                   {"float","haov"}, 
+                   {"float","waov"}, 
+                   {"float","hfov"},
+                   {"float", "filmW"}, 
+                   {"float","filmH"}
                },  /* params: */
                {
 

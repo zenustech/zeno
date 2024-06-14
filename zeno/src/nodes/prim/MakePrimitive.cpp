@@ -101,7 +101,7 @@ ZENDEFNODE(PrimitiveGetFaceCount,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
-    "size",
+        {"int","size"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",

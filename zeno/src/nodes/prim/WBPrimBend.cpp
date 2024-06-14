@@ -999,7 +999,7 @@ ZENDEFNODE(PrimGetAttr,
                    {"enum vert tri line loop poly", "method", "tri"},
                    {"int", "index", "0"},
                }, /* outputs: */ {
-                   "value",
+                   {"NumericObject","value"},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",
@@ -1849,7 +1849,7 @@ ZENDEFNODE(PrimHasAttr,
                    {"enum vert tri loop poly line", "scope", "vert"},
                    {"string", "attrName", "attr_x"},
                }, /* outputs: */ {
-                   "hasAttr",
+                   {"bool","hasAttr"},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",

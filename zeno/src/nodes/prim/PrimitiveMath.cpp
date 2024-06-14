@@ -43,7 +43,7 @@ ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
         {"", "prim", "", zeno::Socket_ReadOnly},
         {"", "bitangent", "", zeno::Socket_ReadOnly},
     },
-    {"boundMin2D", "boundMax2D"},
+    {{"vec2f", "boundMin2D"}, {"vec2f", "boundMax2D"}},
     {},
     {"math"},
 });

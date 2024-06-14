@@ -117,7 +117,7 @@ ZENDEFNODE(PrimitiveGetAttrValue, {
         {"int","index","0"},
     }, 
     {
-        "value",
+        {"NumericObject","value"},
     },
     {
         {"string", "name", "pos"},
