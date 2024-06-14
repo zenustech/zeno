@@ -171,6 +171,8 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
+        m_controls.clear();
+        m_floatColtrols.clear();
         if (m_tabWidget)
         {
             while (m_tabWidget->count() > 0)

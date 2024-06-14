@@ -1160,6 +1160,10 @@ ZENO_API void INode::init(const NodeData& dat)
         assert(spGraph);
         spGraph->viewNodeUpdated(m_name, m_bView);
     }
+    if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+    {
+        pSubnetNode->setCustomUi(dat.customUi);
+    }
     initParams(dat);
     m_dirty = true;
 }

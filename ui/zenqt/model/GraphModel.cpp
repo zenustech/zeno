@@ -815,7 +815,8 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
         QModelIndex linkIdx = fromParams->removeOneLink(from, edge);
         QModelIndex linkIdx2 = toParams->removeOneLink(to, edge);
         ZASSERT_EXIT(linkIdx == linkIdx2, false);
-        m_linkModel->removeRow(linkIdx.row());
+        if (linkIdx.isValid())
+            m_linkModel->removeRow(linkIdx.row());
     }
     GraphsManager::instance().currentModel()->markDirty(true);
     return true;
