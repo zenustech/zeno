@@ -302,13 +302,13 @@ struct LightNode : INode {
                 auto vertices_offset = VERTS.size();
 
                 if (doubleside) {
-
-                    LINES->reserve(LINES->size()*2);
+                    
                     VERTS.reserve(VERTS->size()*2);
-                    decltype(*&LINES) tmp = LINES;
-                    //tmp->resize(LINES->size());
+                    LINES.reserve(LINES->size()*2);
 
-                    std::transform(LINES.begin(), LINES.end(), tmp.begin(), 
+                    std::remove_reference<decltype(LINES)>::type tmp(LINES->size());
+
+                    std::transform(LINES.begin(), LINES.end(), tmp->begin(), 
                     [&](auto ele){ return ele + vertices_offset; });
 
                     LINES->insert(LINES.end(), tmp->begin(), tmp->end());

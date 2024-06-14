@@ -653,7 +653,7 @@ struct GraphicsManager {
                     auto ne2 = zeno::normalize(e2);
                     auto ne1 = zeno::normalize(e1);
                     nor = zeno::normalize(zeno::cross(ne2, ne1));
-                    if (ivD) { nor *= -1; }
+                    //if (ivD) { nor *= -1; }
 
                     if (prim_in->verts.has_attr("clr")) {
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
