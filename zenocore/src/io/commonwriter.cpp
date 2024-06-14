@@ -208,8 +208,8 @@ namespace zenoio
             writer.Key("socket-type");
             switch (param.socketType)
             {
-            case zeno::Socket_Output:   writer.String(iotags::params::socket_clone); break;
-            case zeno::Socket_Clone:    writer.String(iotags::params::socket_output); break;
+            case zeno::Socket_Output:   writer.String(iotags::params::socket_output); break;
+            case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
             case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
             case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
             case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
