@@ -28,6 +28,9 @@ enum nodeType {
     ASSIGNMENT,           //赋值
     IF,
     FOR,
+    FOREACH,
+    WHILE,
+    DOWHILE,
     CODEBLOCK,          //多个语法树作为children的代码块
     JUMP,
     VARIABLETYPE,       //变量类型，比如int vector3 float string等

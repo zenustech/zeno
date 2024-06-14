@@ -117,7 +117,12 @@ equalto \=
             return zeno::ZfxParser::make_WHILE(yytext, loc);
         } else if (strcmp(yytext, "for") == 0) {
             return zeno::ZfxParser::make_FOR(yytext, loc);
-        } else if (strcmp(yytext, "int") == 0 ||
+        } else if (strcmp(yytext, "foreach") == 0) {
+            return zeno::ZfxParser::make_FOREACH(yytext, loc);
+        } else if (strcmp(yytext, "do") == 0) {
+            return zeno::ZfxParser::make_DO(yytext, loc);
+        }
+        else if (strcmp(yytext, "int") == 0 ||
                    strcmp(yytext, "float") == 0 ||
                    strcmp(yytext, "string") == 0 ||
                    strcmp(yytext, "vector2") == 0 ||

@@ -43,6 +43,9 @@ std::string getOperatorString(nodeType type, operatorVals op)
     case CODEBLOCK: return "CODEBLOCK";
     case IF: return "IF";
     case FOR: return "FOR";
+    case FOREACH: return "FOREACH";
+    case WHILE: return "WHILE";
+    case DOWHILE: return "DO-WHILE";
     case ASSIGNMENT: {
         std::string var = "ASSIGN";
         switch (op) {

@@ -106,6 +106,8 @@
 %token BREAK
 %token TYPE
 %token ATTRAT
+%token FOREACH
+%token DO
 
 %left ADD "+"
 %left SUB "-"
@@ -116,10 +118,10 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin for-statement
-%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents
+%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement only-declare array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin loop-statement
+%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents foreach-step
 %type <operatorVals> assign-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
 %type <bool> array-mark bool-stmt
 
 %start zfx-program
@@ -149,7 +151,7 @@ multi-statements: %empty {
 general-statement: declare-statement SEMICOLON { $$ = $1; }
     | assign-statement SEMICOLON { $$ = $1; }
     | if-statement { $$ = $1; }
-    | for-statement { $$ = $1; }
+    | loop-statement { $$ = $1; }
     | jump-statement SEMICOLON { $$ = $1; }
     | exp-statement SEMICOLON { $$ = $1; }      /*可参与四则运算，以及普通的函数调用。*/
     ;
@@ -197,11 +199,15 @@ array-mark: %empty { $$ = false; }
     | LSQBRACKET RSQBRACKET { $$ = true; }
     ;
 
-declare-statement: TYPE VARNAME array-mark {
-                auto typeNode = driver.makeTypeNode($1, $3);
-                auto nameNode = driver.makeZfxVarNode($2);
-                std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode});
-                $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
+only-declare: TYPE VARNAME array-mark {
+    auto typeNode = driver.makeTypeNode($1, $3);
+    auto nameNode = driver.makeZfxVarNode($2);
+    std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode});
+    $$ = driver.makeNewNode(DECLARE, DEFAULT_FUNCVAL, children);
+}
+
+declare-statement: only-declare {
+                $$ = $1;
             }
     | TYPE VARNAME array-mark EQUALTO array-or-exp {
                 auto typeNode = driver.makeTypeNode($1, $3);
@@ -215,6 +221,10 @@ code-block: LBRACKET multi-statements RBRACKET { $$ = $2; }
     ;
 
 if-statement: IF LPAREN exp-statement RPAREN code-block {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
+            $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
+        }
+    | IF LPAREN exp-statement RPAREN general-statement {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
             $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
         }
@@ -235,9 +245,38 @@ for-step: %empty { $$ = driver.makeEmptyNode(); }
     | assign-statement { $$ = $1; }
     ;
 
-for-statement: FOR LPAREN for-begin for-condition for-step RPAREN code-block {
+foreach-step: VARNAME {
+            auto varNode = driver.makeZfxVarNode($1);
+            $$ = std::vector<std::shared_ptr<ZfxASTNode>>({varNode});
+        }
+    | TYPE VARNAME {
+            /* 类型不是必要的，只是为了兼容一些编程习惯，比如foreach(int a : arr)*/
+            auto varNode = driver.makeZfxVarNode($2);
+            $$ = std::vector<std::shared_ptr<ZfxASTNode>>({varNode});
+        }
+    | LSQBRACKET VARNAME COMMA VARNAME RSQBRACKET {
+            auto idxNode = driver.makeZfxVarNode($2);
+            auto varNode = driver.makeZfxVarNode($4);
+            $$ = std::vector<std::shared_ptr<ZfxASTNode>>({idxNode, varNode});
+        }
+    ;
+
+loop-statement: FOR LPAREN for-begin for-condition for-step RPAREN code-block {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $4, $5, $7});
             $$ = driver.makeNewNode(FOR, DEFAULT_FUNCVAL, children);
+        }
+    | FOREACH LPAREN foreach-step COLON zenvar RPAREN code-block {
+            $3.push_back($5);
+            $3.push_back($7);
+            $$ = driver.makeNewNode(FOREACH, DEFAULT_FUNCVAL, $3);
+        }
+    | WHILE LPAREN exp-statement RPAREN code-block {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
+            $$ = driver.makeNewNode(WHILE, DEFAULT_FUNCVAL, children);
+        }
+    | DO code-block WHILE LPAREN exp-statement RPAREN SEMICOLON {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$2, $5});
+            $$ = driver.makeNewNode(DOWHILE, DEFAULT_FUNCVAL, children);
         }
     ;
 
