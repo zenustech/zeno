@@ -85,7 +85,7 @@ public:
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
     void setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
-    void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
+    void placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up);
     void placeCamera(glm::vec3 pos, glm::quat rotation);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);

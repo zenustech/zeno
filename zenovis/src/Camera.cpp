@@ -41,12 +41,12 @@ static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, fl
             0.0f, 0.0f,  0.0f, -1.0f,
             0.0f, 0.0f, zNear,  0.0f);
 }
-void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
-    auto right = glm::cross(glm::normalize(front), glm::normalize(up));
+void Camera::placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up) {
+    auto right = glm::cross(glm::normalize(view), glm::normalize(up));
     glm::mat3 rotation;
     rotation[0] = right;
     rotation[1] = up;
-    rotation[2] = -front;
+    rotation[2] = -view;
 
     Camera::placeCamera(pos, glm::quat_cast(rotation));
 }

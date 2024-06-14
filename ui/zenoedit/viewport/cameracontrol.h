@@ -26,10 +26,6 @@ public:
     void setPivot(glm::vec3 value);
     glm::quat getRotation();
     void setRotation(glm::quat value);
-    [[deprecated]]
-    zeno::vec3f getCenter() const;
-    [[deprecated]]
-    void setCenter(zeno::vec3f center);
     bool getOrthoMode() const;
     void setOrthoMode(bool OrthoMode);
     float getRadius() const;
