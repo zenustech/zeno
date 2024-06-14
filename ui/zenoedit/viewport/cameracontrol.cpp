@@ -770,44 +770,37 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
     if (!middle_button_pressed) {
         return false;
     }
-    zeno::vec3f back = zeno::other_to_vec<3>(getViewDir());
-    zeno::vec3f up = zeno::other_to_vec<3>(getUpDir());
-    zeno::vec3f left = zeno::cross(up, back);
-    auto center = getCenter();
-    float step = 1.0f;
+    float step = glm::pow(1.2f, float(zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0)));
 
     bool processed = false;
     if (uKey == Qt::Key_Q) {
-        setCenter(center + zeno::vec3f(0, -1, 0) * step);
+        setPos(getPos() - getUpDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_E) {
-        setCenter(center + zeno::vec3f(0, 1, 0) * step);
+        setPos(getPos() + getUpDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_W) {
-        setCenter(center + back * step);
+        setPos(getPos() + getViewDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_S) {
-        setCenter(center - back * step);
+        setPos(getPos() - getViewDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_A) {
-        setCenter(center + left * step);
+        setPos(getPos() - getRightDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_D) {
-        setCenter(center - left * step);
+        setPos(getPos() + getRightDir() * step);
         processed = true;
     }
     if (processed) {
         updatePerspective();
-        return true;
     }
-    else {
-        return false;
-    }
+    return processed;
 }
 
 bool CameraControl::fakeKeyReleaseEvent(int uKey) {
