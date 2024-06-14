@@ -124,7 +124,7 @@ struct BulletQuatRotate : zeno::INode {
 
 ZENDEFNODE(BulletQuatRotate, {
     {"quat", "vec3"},
-    {"vec3"},
+    {{"vec3f","vec3"}},
     {},
     {"Bullet"}
 });
@@ -689,7 +689,7 @@ struct BulletColShapeCalcLocalInertia : zeno::INode {
 
 ZENDEFNODE(BulletColShapeCalcLocalInertia, {
 	{"colObject", {"float", "mass", "1"}},
-	{"localInertia"},
+    {{"vec3f","localInertia"}},
 	{{"enum true false", "isCompound", "false"}},
 	{"Bullet"}
 });
@@ -942,7 +942,10 @@ struct BulletObjectGetVel : zeno::INode {
 
 ZENDEFNODE(BulletObjectGetVel, {
     {"object"},
-    {"linearVel", "angularVel"},
+    {
+        {"vec3f","linearVel"},
+        {"vec3f","angularVel"}
+    },
     {},
     {"Bullet"},
 });
@@ -2926,7 +2929,7 @@ struct BulletMultiBodyGetLinkForce : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetLinkForce, {
                                               {"object", "linkIndex"},
-                                              {"force"},
+                                              {{"vec3f","force"}},
                                               {},
                                               {"Bullet"}
                                           });
@@ -2945,7 +2948,7 @@ struct BulletMultiBodyGetLinkTorque : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetLinkTorque, {
                                             {"object", "linkIndex"},
-                                            {"torque"},
+                                            {{"vec3f","torque"}},
                                             {},
                                             {"Bullet"}
                                         });
@@ -2970,7 +2973,7 @@ struct BulletMultiBodyGetJointVelPos : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetJointVelPos, {
                                               {"object", "linkIndex"},
-                                              {"vel", "pos"},
+                                              {{"float","vel"}, {"float","pos"}},
                                               {},
                                               {"Bullet"}
                                           });
@@ -3004,7 +3007,7 @@ struct BulletMultiBodyGetBaseTransform : zeno::INode {
 
  ZENDEFNODE(BulletMultiBodyGetBaseVelocity, {
                                                  {"object"},
-                                                 {"vel"},
+                                                 {{"vec3f","vel"}},
                                                  {},
                                                  {"Bullet"},
                                              });
@@ -3422,7 +3425,7 @@ struct BulletMultiBodyGetNumBodies : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetNumBodies, {
                                                    {"world"},
-                                                   {"numBodies"},
+                                                   {{"int","numBodies"}},
                                                    {},
                                                    {"Bullet"},
                                                });
@@ -3437,7 +3440,7 @@ struct BulletMultiBodyGetBodyId : zeno::INode {
 };
 ZENDEFNODE(BulletMultiBodyGetBodyId, {
                                             {"object"},
-                                            {"id"},
+                                            {{"int","id"}},
                                             {},
                                             {"Bullet"},
                                         });
@@ -3518,7 +3521,7 @@ struct BulletGetAABB : zeno::INode {
 
 ZENDEFNODE(BulletGetAABB, {
                                                 {"object"},
-                                                {"aabbMin", "aabbMax"},
+                                                {{"vec3f","aabbMin"}, {"vec3f","aabbMax"}},
                                                 {},
                                                 {"Bullet"},
                                             });

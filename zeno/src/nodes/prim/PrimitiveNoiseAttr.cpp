@@ -182,7 +182,7 @@ ZENDEFNODE(GetPerlinNoise,
     { /* inputs: */ {
     {"vec3f","vec3"},{"", "seed", "", zeno::Socket_ReadOnly},{"float", "freq", "1.0"},
     }, /* outputs: */ {
-    "noise",
+    {"vec3f", "noise"},
     }, /* params: */ {
     }, /* category: */ {
     "noise",

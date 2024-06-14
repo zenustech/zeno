@@ -197,7 +197,7 @@ ZENDEFNODE(PackNumericVecInt, {
         {"int", "z", "0"},
         {"int", "w", "0"},
     },
-    {"veci"},
+    {{"NumericObject","veci"}},
     {
         {"enum int vec2i vec3i vec4i", "type", "vec3i"},
     },
@@ -232,7 +232,7 @@ ZENDEFNODE(PackNumericVec, {
         {"float", "z", "0"},
         {"float", "w", "0"},
     },
-    {"vec"},
+    {{"NumericObject","vec"}},
     {
         {"enum float vec2f vec3f vec4f", "type", "vec3f"},
     },

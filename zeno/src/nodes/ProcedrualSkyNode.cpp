@@ -120,7 +120,7 @@ ZENDEFNODE(Blackbody, {
         {"float", "temperature", "6500"},
     },
     {
-        {"color"},
+        {"vec3f","color"},
     },
     {
     },

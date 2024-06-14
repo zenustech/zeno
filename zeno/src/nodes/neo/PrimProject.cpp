@@ -501,7 +501,7 @@ ZENDEFNODE(TestRayBox, {
                                {"box_max"},
                            },
                            {
-                               {"predicate"},
+                               {"int","predicate"},
                            },
                            {},
                            {"primitive"},

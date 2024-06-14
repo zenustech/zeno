@@ -57,6 +57,7 @@ public:
     virtual void onOptionsUpdated(int options) {};
     virtual void onViewUpdated(bool bView) {};
     virtual void setSelected(bool);
+    virtual void onNameUpdated(const QString& newName) {};
 
 signals:
     void nodePosChangedSignal();

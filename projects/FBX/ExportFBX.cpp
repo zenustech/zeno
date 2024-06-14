@@ -70,7 +70,7 @@ ZENDEFNODE(ExportFBX,
                 {"string", "outpath"}
             },  /* outputs: */
             {
-                "result"
+                {"int","result"}
             },  /* params: */
             {
 

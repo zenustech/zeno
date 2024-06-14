@@ -144,7 +144,7 @@ ZENDEFNODE(JsonToString, {
          "json",
      },
      {
-         "out"
+         {"string","out"}
      },
      {},
      {
@@ -276,7 +276,7 @@ ZENDEFNODE(JsonGetArraySize, {
         {"", "json", "", zeno::Socket_ReadOnly},
     },
     {
-        "size",
+        {"int", "size"},
     },
     {},
     {
@@ -352,7 +352,7 @@ ZENDEFNODE(JsonGetChild, {
         {"enum json int float string vec2f vec3f vec4f", "type"},
     },
     {
-        "out",
+        {"vec4f","out"},
     },
     {},
     {
