@@ -13,12 +13,11 @@
 namespace zeno
 {
 
-ZENO_API ZfxExecute::ZfxExecute(const std::string& code, const std::string& nodepath)
+ZENO_API ZfxExecute::ZfxExecute(const std::string& code, const ZfxContext& ctx)
     : m_location(0)
     , m_code(code)
-    , m_context(nullptr)
+    , m_context(ctx)
 {
-
 }
 
 ZENO_API ZfxExecute::~ZfxExecute()
@@ -33,6 +32,19 @@ ZENO_API int ZfxExecute::parse() {
     m_location = 0;
     inStream << m_code << std::endl;
     int ret = parser.parse();
+    return ret;
+}
+
+ZENO_API int ZfxExecute::execute() {
+    int ret = parse();
+    //TODO: error exception catch.
+    if (m_root) {
+        auto& funcMgr = zeno::getSession().funcManager;
+        funcMgr->executeZfx(m_root, m_context);
+    }
+    else {
+
+    }
     return ret;
 }
 

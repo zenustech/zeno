@@ -162,6 +162,19 @@ namespace zeno {
         throw makeError<UnimplError>();
     }
 
+    void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, const ZfxContext& ctx) {
+        //debug
+        printSyntaxTree(root, ctx.code);
+    }
+
+    zfxvariant FunctionManager::calcZfx(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext) {
+        switch (root->type)
+        {
+        case nodeType::NUMBER:
+        case nodeType::STRING:  return root->value;
+        }
+    }
+
     zvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext) {
         switch (root->type)
         {

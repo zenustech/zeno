@@ -8,7 +8,13 @@
 #include <cmath>
 #include <memory>
 #include <zeno/core/common.h>
+#include <zeno/core/INode.h>
+#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
+
+namespace zeno {
 
 enum nodeType {
     UNDEFINE = 0,
@@ -85,6 +91,15 @@ enum operatorVals {
     BulitInVar,     //$F, $FPS, $T
 };
 
+using zfxintarr = std::vector<int>;
+using zfxfloatarr = std::vector<float>;
+using zfxstringarr = std::vector<std::string>;
+
+using zfxvariant = std::variant<int, float, std::string, 
+    zfxintarr, zfxfloatarr, zfxstringarr,
+    glm::vec2, glm::vec3, glm::vec4, 
+    glm::mat2, glm::mat3, glm::mat4>;
+
 enum TokenMatchCase {
     Match_Nothing,
     Match_LeftPAREN,
@@ -98,7 +113,7 @@ struct ZfxASTNode {
     std::vector<std::shared_ptr<ZfxASTNode>> children;
     std::weak_ptr<ZfxASTNode> parent;
 
-    zeno::zvariant value;
+    zfxvariant value;
 
     TokenMatchCase func_match = Match_Nothing;
     TokenMatchCase paren_match = Match_Nothing;
@@ -106,6 +121,14 @@ struct ZfxASTNode {
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;
     bool bCompleted = false;
+};
+
+struct ZfxContext
+{
+    /* in */ zany spObject;
+    /* in */ std::weak_ptr<INode> spNode;
+    /* in */ const std::string code;
+    /* out */ std::string printContent;
 };
 
 struct FuncContext {
@@ -122,8 +145,13 @@ void addChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> sp
 void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth, std::string& printContent);
 float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);
 
+void printSyntaxTree(std::shared_ptr<ZfxASTNode> root, std::string original_code);
+
 void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos);  //当前函数名及处于第几个参数
 void preOrderVec(std::shared_ptr<ZfxASTNode> root, std::vector<std::shared_ptr<ZfxASTNode>>& tmplist);
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright);
+
+}
+
 #endif

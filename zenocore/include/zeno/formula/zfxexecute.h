@@ -5,6 +5,7 @@
 #include <memory>
 #include <regex>
 #include <zeno/core/data.h>
+#include <zeno/core/INode.h>
 #include "syntax_tree.h"
 
 namespace zeno {
@@ -12,10 +13,11 @@ namespace zeno {
 class ZfxExecute
 {
 public:
-    ZENO_API ZfxExecute(const std::string& code, const std::string& nodepath);
+    ZENO_API ZfxExecute(const std::string& code, const ZfxContext& ctx);
     ZENO_API ~ZfxExecute();
 
     ZENO_API int parse();
+    ZENO_API int execute();
 
     std::shared_ptr<ZfxASTNode> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children);
     std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
@@ -37,7 +39,7 @@ public:
 private:
     unsigned int m_location;          // Used by scanner
     std::string m_code;
-    FuncContext* m_context;
+    ZfxContext m_context;
     std::shared_ptr<ZfxASTNode> m_root;
 };
 

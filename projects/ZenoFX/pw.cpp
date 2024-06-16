@@ -63,11 +63,19 @@ static void vectors_wrangle
 
 struct AttributeWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        zany prim;
+        if (has_input("prim")) {
+            prim = get_input<zeno::PrimitiveObject>("prim");
+        }
+
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
-        ZfxExecute zfx(code, get_path());
-        int ret = zfx.parse();
-        zfx.printSyntaxTree();
+
+        ZfxContext ctx;
+        ctx.spNode = shared_from_this();
+        ctx.spObject = prim;
+        ctx.code = code;
+        ZfxExecute zfx(code, ctx);
+        zfx.execute();
     }
 };
 
