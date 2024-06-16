@@ -22,10 +22,8 @@ namespace zeno {
         void init();
         float callRef(const std::string& ref, FuncContext* pContext);
 
-        zvariant calc(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext);
-        zfxvariant calcZfx(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext);
-
-        zfxvariant execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext)
+        zfxvariant calc(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext);
+        zfxvariant execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
 
         std::map<std::string, FUNC_INFO> m_funcs;
     };

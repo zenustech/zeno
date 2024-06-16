@@ -167,15 +167,80 @@ namespace zeno {
         printSyntaxTree(root, ctx.code);
     }
 
-    zfxvariant FunctionManager::calcZfx(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext) {
+    zfxvariant FunctionManager::execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
         switch (root->type)
         {
-        case nodeType::NUMBER:
-        case nodeType::STRING:  return root->value;
+            case NUMBER:
+            case STRING:
+            case BOOLTYPE: return root->value;
+            case ZENVAR: {
+                switch (root->opVal) {
+                case Indexing: {
+                    root->value;
+                }
+                }
+            }
+            case FUNC:{
+                //函数
+            }
+            case FOUROPERATIONS:{
+                //四则运算+ - * / %
+            }
+            case COMPOP:{
+                //操作符
+            }             
+            case CONDEXP:{
+                //条件表达式
+            }            
+            case ARRAY:{
+        
+            }
+            case MATRIX:{
+        
+            }
+            case COMPVISIT:{
+                //访问元素分量，比如vec.x vec.y vec.z
+            }          
+            case PLACEHOLDER:{
+        
+            }
+            case DECLARE:{
+                //变量定义
+            }            
+            case ASSIGNMENT:{
+                //赋值
+            }
+            case IF:{
+        
+            }
+            case FOR:{
+        
+            }
+            case FOREACH:{
+        
+            }
+            case WHILE:{
+        
+            }
+            case DOWHILE:{
+        
+            }
+            case CODEBLOCK:{
+                //多个语法树作为children的代码块
+            }
+            case JUMP:{
+        
+            }
+            case VARIABLETYPE:{
+                //变量类型，比如int vector3 float string等
+            }
+            default: {
+
+            }
         }
     }
 
-    zvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext) {
+    zfxvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, FuncContext* pContext) {
         switch (root->type)
         {
             case nodeType::NUMBER:
@@ -188,11 +253,11 @@ namespace zeno {
                 }
                 else if (var == "FPS") {
                     //TODO
-                    return zvariant();
+                    return zfxvariant();
                 }
                 else if (var == "T") {
                     //TODO
-                    return zvariant();
+                    return zfxvariant();
                 }
             }
             case nodeType::FOUROPERATIONS:
@@ -201,8 +266,8 @@ namespace zeno {
                 {
                     throw makeError<UnimplError>();
                 }
-                zvariant lhs = calc(root->children[0], pContext);
-                zvariant rhs = calc(root->children[1], pContext);
+                zfxvariant lhs = calc(root->children[0], pContext);
+                zfxvariant rhs = calc(root->children[1], pContext);
 
                 const std::string& var = std::get<std::string>(root->value);
                 if (var == "+") {
@@ -221,7 +286,7 @@ namespace zeno {
                     return std::get<float>(lhs) / std::get<float>(rhs);
                 }
                 else {
-                    return zvariant();
+                    return zfxvariant();
                 }
             }
             case nodeType::FUNC:
@@ -265,7 +330,7 @@ namespace zeno {
                 }
             }
         }
-        return zvariant();
+        return zfxvariant();
     }
 
     void FunctionManager::init() {
