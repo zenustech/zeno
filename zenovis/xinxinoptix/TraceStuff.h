@@ -16,10 +16,6 @@
 #include "Host.h"
 #endif
 
-#ifndef uint
-using uint = unsigned int;
-#endif
-
 #define MISS_HIT 0
 #define DIFFUSE_HIT 1
 #define SPECULAR_HIT 2

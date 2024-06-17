@@ -9,22 +9,6 @@
 #include "Host.h"
 #endif
 
-struct LightSampleRecord {
-    float3 p;
-    float PDF;
-
-    float3 n;
-    float NoL;
-
-    float3 dir;
-    float dist;
-
-    float2 uv;
-
-    float intensity = 1.0f;
-    bool isDelta = false;
-};
-
 static constexpr float MinSphericalSampleArea = 3e-4f;
 static constexpr float MaxSphericalSampleArea = 6.22f;
 

@@ -306,7 +306,7 @@ extern "C" __global__ void __raygen__rg()
 
             //if(prd.depth>prd.max_depth) {
             float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth*2) {
+            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth) {
                 prd.done=true;
             } else {
                 prd.attenuation = prd.attenuation / RRprob;

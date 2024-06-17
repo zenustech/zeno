@@ -1682,14 +1682,6 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    //cleanup
-    zeno::getSession().globalComm->clearFrameState();
-    auto views = viewports();
-    for (auto view : views)
-    {
-        view->cleanUpScene();
-    }
-
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
@@ -2014,6 +2006,17 @@ bool ZenoMainWindow::saveQuit() {
             return false;
         }
     }
+
+    //cleanup
+    if (pModel) {
+        zeno::getSession().globalComm->clearFrameState();
+        auto views = viewports();
+        for (auto view : views)
+        {
+            view->cleanUpScene();
+        }
+    }
+
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());

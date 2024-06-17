@@ -36,6 +36,7 @@
 #include <zeno/para/parallel_sort.h>
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/pfm.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/utils/fileio.h>
 #include <zeno/types/MaterialObject.h>
@@ -81,6 +82,7 @@
 
 #include "LightBounds.h"
 #include "LightTree.h"
+#include "Portal.h"
 
 #include "ChiefDesignerEXR.h"
 using namespace zeno::ChiefDesignerEXR;
@@ -269,9 +271,6 @@ struct PathTracerState
     OptixTraversableHandle         meshHandleIAS;
     raii<CUdeviceptr>              meshBufferIAS;
 
-    OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
-    raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
-
     raii<CUdeviceptr>              d_vertices;
     raii<CUdeviceptr>              d_clr;
     raii<CUdeviceptr>              d_nrm;
@@ -290,17 +289,12 @@ struct PathTracerState
     raii<CUdeviceptr>              d_uniforms;
 
     raii<OptixModule>              ptx_module;
-    raii<OptixModule>              ptx_module2;
     OptixPipelineCompileOptions    pipeline_compile_options;
     OptixPipeline                  pipeline;
 
     OptixProgramGroup              raygen_prog_group;
     OptixProgramGroup              radiance_miss_group;
     OptixProgramGroup              occlusion_miss_group;
-    OptixProgramGroup              radiance_hit_group;
-    OptixProgramGroup              occlusion_hit_group;
-    OptixProgramGroup              radiance_hit_group2;
-    OptixProgramGroup              occlusion_hit_group2;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
@@ -311,7 +305,14 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
-    raii<CUdeviceptr> lightsbuf_p;
+
+    raii<CUdeviceptr> finite_lights_ptr;
+
+    PortalLightList  plights;
+    DistantLightList dlights;
+
+    //std::vector<Portal> portals; 
+    
     raii<CUdeviceptr> sky_cdf_p;
     raii<CUdeviceptr> sky_start;
     Params                         params;
@@ -1301,55 +1302,6 @@ void updateRootIAS()
 	state.params.handle = state.rootHandleIAS;
 }
 
-static void buildMeshAccel( PathTracerState& state )
-{
-    //
-    // copy mesh data to device
-    //
-    const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-                g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-
-    const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
-                g_mat_indices.data(),
-                mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-
-    // // Build triangle GAS // // One per SBT record for this build input
-    std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        g_mtlidlut.size(),
-        OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
-
-    OptixBuildInput triangle_input                           = {};
-    triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-    triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
-    triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
-    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( g_vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & state.d_vertices;
-    triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = state.d_mat_indices;
-    triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
-    triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
-
-    OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-    accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
-
-    buildXAS(state.context, accel_options, triangle_input, state.d_gas_output_buffer, state.d_gas_output_buffer);
-
-    state.d_vertices.reset();
-    state.d_mat_indices.reset();
-}
-
 static void createSBT( PathTracerState& state )
 {
         state.d_raygen_record.reset();
@@ -1357,7 +1309,6 @@ static void createSBT( PathTracerState& state )
         state.d_hitgroup_records.reset();
         state.d_callable_records.reset();
 
-        state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
         state.albedo_buffer_p.reset();
         state.normal_buffer_p.reset();
@@ -1742,8 +1693,11 @@ void optixinit( int argc, char* argv[] )
     auto cur_path = std::string(_pgmptr);
     cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
 #endif
-    OptixUtil::sky_tex = cur_path + "/hdr/Panorama.hdr";
-    OptixUtil::addTexture(OptixUtil::sky_tex.value());
+
+    OptixUtil::default_sky_tex = cur_path + "/hdr/Panorama.hdr";
+    OptixUtil::sky_tex = OptixUtil::default_sky_tex;
+
+    OptixUtil::addSkyTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
@@ -2110,6 +2064,14 @@ void unload_light(){
     triangleLightCoords.clear();
     triangleLightNormals.clear();
 
+    state.dlights = {};
+    state.plights = {};
+
+    state.params.dlights_ptr = 0llu;
+    state.params.plights_ptr = 0llu;
+
+    OptixUtil::portal_delayed.reset();
+
     std::cout << "Lights unload done. \n"<< std::endl;
 }
 
@@ -2161,6 +2123,60 @@ void using_hdr_sky(bool enable) {
 
 void show_background(bool enable) {
     state.params.show_background = enable;
+}
+
+void updatePortalLights(const std::vector<Portal>& portals) {
+
+    auto &tex = OptixUtil::g_tex[OptixUtil::sky_tex.value()];
+
+    auto& pll = state.plights;
+    auto& pls = pll.list;
+    pls.clear();
+    pls.reserve(std::max(portals.size(), 0llu) );
+
+    glm::mat4 rotation = glm::mat4(1.0f);
+    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_y), glm::vec3(0,1,0));
+    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_x), glm::vec3(1,0,0));
+    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_z), glm::vec3(0,0,1));
+    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot), glm::vec3(0,1,0));
+    
+    glm::mat4* rotation_ptr = nullptr;
+    if ( glm::mat4(1.0f) != rotation ) {
+        rotation_ptr = &rotation;
+    }
+
+    for (auto& portal : portals) {
+        auto pl = PortalLight(portal, (float3*)tex->rawData.data(), tex->width, tex->height, rotation_ptr);
+        pls.push_back(std::move(pl));
+    }
+
+    state.params.plights_ptr = (void*)pll.upload();
+}
+
+void updateDistantLights(std::vector<zeno::DistantLightData>& dldl) 
+{
+    if (dldl.empty()) {
+        state.dlights = {};
+        state.params.dlights_ptr = 0u;
+        return;
+    }
+
+    float power = 0.0f;
+
+    std::vector<float> cdf; cdf.reserve(dldl.size());
+
+    for (auto& dld : dldl) {
+        auto ppp = dld.color * dld.intensity;
+        power += (ppp[0] + ppp[1] + ppp[2]) / 3.0f;
+        cdf.push_back(power);
+    }
+
+    for(auto& c : cdf) {
+        c /= power;
+    }
+
+    state.dlights = DistantLightList {dldl, cdf};
+    state.params.dlights_ptr = (void*)state.dlights.upload();
 }
 
 void update_procedural_sky(
@@ -2363,7 +2379,7 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
 
 void buildLightTree() {
     camera_changed = true;
-    state.lightsbuf_p.reset();
+    state.finite_lights_ptr.reset();
 
     state.params.lightTreeSampler = 0llu;
     state.params.triangleLightCoordsBuffer = 0llu;
@@ -2549,13 +2565,13 @@ void buildLightTree() {
     buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
     CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+        reinterpret_cast<void**>( &state.finite_lights_ptr.reset() ),
         sizeof( GenericLight ) * std::max(lightsWrapper.g_lights.size(),(size_t)1)
         ) );
 
-    state.params.lights = (GenericLight*)(CUdeviceptr)state.lightsbuf_p;
+    state.params.lights = (GenericLight*)(CUdeviceptr)state.finite_lights_ptr;
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
+                reinterpret_cast<void*>( (CUdeviceptr)state.finite_lights_ptr ),
                 lightsWrapper.g_lights.data(), sizeof( GenericLight ) * lightsWrapper.g_lights.size(),
                 cudaMemcpyHostToDevice
                 ) );
@@ -2734,28 +2750,36 @@ OptixUtil::_compile_group.wait();
     theTimer.tock("Done Optix Shader Compile:");
 
     if (OptixUtil::sky_tex.has_value()) {
-        state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
-        state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
-        state.params.skyny = OptixUtil::sky_ny_map[OptixUtil::sky_tex.value()];
-        state.params.envavg = OptixUtil::sky_avg_map[OptixUtil::sky_tex.value()];
+
+        auto &tex = OptixUtil::g_tex[OptixUtil::sky_tex.value()];
+        if (tex.get() == 0) {
+            tex = OptixUtil::g_tex[OptixUtil::default_sky_tex];
+        }
+        
+        if (tex->texture == state.params.sky_texture) return;
+
+        state.params.sky_texture = tex->texture;
+        state.params.skynx = tex->width;
+        state.params.skyny = tex->height;
+        state.params.envavg = tex->average;
+
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
-                              sizeof(float2)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size() ) );
+                            sizeof(float)*tex->cdf.size() ) );
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
-                              sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size() ) );
+                              sizeof(int)*tex->start.size() ) );
+
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
-                   OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].data(),
-                   sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
+                   tex->cdf.data(),
+                   sizeof(float)*tex->cdf.size(),
                    cudaMemcpyHostToDevice);
-        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p)+sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
-                   OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].data(),
-                   sizeof(float)*OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].size(),
-                   cudaMemcpyHostToDevice);
+
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_start),
-                   OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].data(),
-                   sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size(),
+                   tex->start.data(),
+                   sizeof(int)*tex->start.size(),
                    cudaMemcpyHostToDevice);
+
         state.params.skycdf = reinterpret_cast<float *>((CUdeviceptr)state.sky_cdf_p);
-        state.params.sky_start = reinterpret_cast<int *>((CUdeviceptr)state.sky_start);
+        state.params.sky_start = reinterpret_cast<int*>((CUdeviceptr)state.sky_start);
 
     } else {
         state.params.skynx = 0;
@@ -2769,19 +2793,6 @@ void optixupdateend() {
         OptixUtil::createPipeline();
 
     printf("Pipeline created \n");
-        //static bool hadOnce = false;
-        //if (hadOnce) {
-    //OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
-    //state.raygen_prog_group ) );
-    //state.radiance_miss_group ) );
-    //state.occlusion_miss_group ) );
-    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
-    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
-    //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
-    //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
-    //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
-    //OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-        //} hadOnce = true;
 
         state.pipeline_compile_options = OptixUtil::pipeline_compile_options;
         state.pipeline = OptixUtil::pipeline;
@@ -3772,13 +3783,6 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
 void set_outside_random_number(int32_t outside_random_number) {
     state.params.outside_random_number = outside_random_number;
 }
-static void write_pfm(std::string& path, int w, int h, const float *rgb) {
-    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
-    std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
-    memcpy(data.data(), header.data(), header.size());
-    memcpy(data.data() + header.size(), rgb, w * h * sizeof(zeno::vec3f));
-    zeno::file_put_binary(data, path);
-}
 
 void *optixgetimg_extra(std::string name) {
     if (name == "diffuse") {
@@ -3926,13 +3930,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
                     std::string native_a_path = zeno::create_directories_when_write_file(a_path);
-                    write_pfm(native_a_path, w, h, _albedo_buffer);
+                    zeno::write_pfm(native_a_path.c_str(), w, h, _albedo_buffer);
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
                     std::string native_n_path = zeno::create_directories_when_write_file(n_path);
-                    write_pfm(native_n_path, w, h, _normal_buffer);
+                    zeno::write_pfm(native_n_path.c_str(), w, h, _normal_buffer);
                 }
             }
         }
@@ -3959,7 +3963,30 @@ void *optixgetimg(int &w, int &h) {
     //sutil::saveImage( outfile, buffer, false );
 //}
 
-void optixcleanup() {
+void optixCleanup() {
+
+    state.dlights = {};
+    state.params.dlights_ptr = 0u;
+
+    state.plights = {};
+    state.params.plights_ptr = 0u;
+
+    lightsWrapper.reset();
+    state.finite_lights_ptr.reset();
+    
+    state.params.sky_strength = 1.0f;
+    state.params.sky_texture;
+
+    for (auto& [k, v] : OptixUtil::g_tex) {
+        if (k != OptixUtil::default_sky_tex) {
+            OptixUtil::removeTexture(k);
+        }
+    }
+   
+    OptixUtil::sky_tex = OptixUtil::default_sky_tex;
+}
+
+void optixDestroy() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
