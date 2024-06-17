@@ -3977,11 +3977,12 @@ void optixCleanup() {
     state.params.sky_strength = 1.0f;
     state.params.sky_texture;
 
-    auto sky_path = OptixUtil::default_sky_tex;
-    auto sky_tex = OptixUtil::g_tex[sky_path];
-
-    OptixUtil::g_tex = { {sky_path, sky_tex} };
-    //OptixUtil::g_tex.at(sky_path) = sky_tex;
+    for (auto& [k, v] : OptixUtil::g_tex) {
+        if (k != OptixUtil::default_sky_tex) {
+            OptixUtil::removeTexture(k);
+        }
+    }
+   
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 }
 
