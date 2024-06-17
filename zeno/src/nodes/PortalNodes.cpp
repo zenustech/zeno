@@ -74,12 +74,16 @@ struct Clone : zeno::INode {
             return;
         }
         set_output("newObject", std::move(newobj));
+        set_output("origin", obj);
     }
 };
 
 ZENDEFNODE(Clone, {
     {"object"},
-    {"newObject"},
+    {
+        "newObject",
+        "origin",
+    },
     {},
     {"lifecycle"},
 });

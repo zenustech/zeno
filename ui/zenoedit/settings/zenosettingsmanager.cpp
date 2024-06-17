@@ -214,6 +214,7 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
         {ShortCut_View, QObject::tr("View"), "V"},
         {ShortCut_Once, QObject::tr("Once"), "C"},
         {ShortCut_Bypass, QObject::tr("Bypass"), "B"},
+        {ShortCut_Cache, QObject::tr("Cache"), "X"},
         {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"},
         {ShortCut_CoordSys, QObject::tr("CoordSys"), "M"},
         {ShortCut_InitHandler, QObject::tr("Init Handler"), "Backspace"},

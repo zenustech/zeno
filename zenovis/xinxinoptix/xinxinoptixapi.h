@@ -104,4 +104,5 @@ void using_hdr_sky(bool enable);
 void show_background(bool enable);
 // void optixUpdateUniforms(std::vector<float4> & inConstants);
 void optixUpdateUniforms(void *inConstants, std::size_t size);
+std::map<std::string, LightDat> &get_lightdats();
 }

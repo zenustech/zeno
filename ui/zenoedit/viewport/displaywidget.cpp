@@ -842,6 +842,12 @@ void DisplayWidget::onRecord()
             QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
             return;
         }
+        //send task to server
+        if (recInfo.bSendToServer)
+        {
+            sendTaskToServer(recInfo);
+            return;
+        }
         //validation.
 
         LAUNCH_PARAM launchParam;
@@ -1009,6 +1015,93 @@ void DisplayWidget::onRecord()
         }
     }
     m_sliderFeq = curSlidFeq;
+}
+
+void DisplayWidget::sendTaskToServer(const VideoRecInfo& info)
+{
+    QString cmd = info.exePath + " --record " + "true";
+    if (!zenoApp->graphsManagment())
+        return;
+    QString path = zenoApp->graphsManagment()->zsgPath();
+    if (!path.startsWith("O:") && !path.startsWith("M:") && !path.startsWith("P:"))
+    {
+        //copy zsg
+        QString destFileDir = "O:/sendToServer/" + info.taskName + QString::number(QDateTime::currentDateTime().toTime_t());
+        QFileInfo fileInfo(path);
+        QString fileName = fileInfo.fileName();
+        QDir dir(destFileDir);
+        dir.mkpath(destFileDir);
+        QString destFilePath = dir.filePath(fileName);
+        QFile sourceFile(path);
+        if (!sourceFile.copy(destFilePath)) {
+            zeno::log_error("Failed to copy file");
+            return;
+        }
+        else
+            path = destFilePath;
+    }
+    //task cmd
+    cmd = cmd + " --zsg " + path;
+    cmd = cmd + " --sample " + QString::number(info.numOptix);
+    cmd = cmd + " --optix " + "1";
+    cmd = cmd + " --path " + info.record_path;
+    cmd = cmd +  " --pixel " + QString("%1x%2").arg(info.res[0]).arg(info.res[1]);
+    cmd = cmd + " --aov " + "0";
+    cmd = cmd +  " --needDenoise " + QString::number(info.needDenoise);
+    cmd = cmd +  " --exr " + QString::number(info.bExportEXR);
+    cmd = cmd +  " --videoname " + info.videoname;
+    cmd = cmd +  " --video " + QString::number(info.bExportVideo);
+    cmd = cmd + " --cachePath " + "C:/tmp/";
+    if (zenoApp->getMainWindow())
+    {
+        auto timelineInfo = zenoApp->getMainWindow()->timelineInfo();
+        cmd = cmd +  " --sframe " + QString::number(timelineInfo.beginFrame);
+        cmd = cmd +  " --frame " + QString::number(timelineInfo.endFrame - timelineInfo.beginFrame + 1);
+    }
+
+    //save json file
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    {
+        JsonArrayBatch arrayBatch(writer);
+        {
+            JsonObjBatch objBatch(writer);
+            QString key = info.taskName + ":all";
+            writer.Key(key.toUtf8());
+            {
+                JsonObjBatch objBatch1(writer);
+                writer.Key("cmds");
+                {
+                    JsonArrayBatch cmdBatch(writer);
+                    writer.String(cmd.toUtf8());
+                }
+                writer.Key("deps");
+                {
+                    JsonArrayBatch depsBatch(writer);
+                }
+                writer.Key("name");
+                writer.String(key.toUtf8());
+            }
+        }
+    }
+    QString str = QString::fromUtf8(s.GetString());
+    QFileInfo fileInfo(path);
+    QString filePath = fileInfo.dir().absolutePath() + "/"+ info.taskName + ".json";
+    QFile file(filePath);
+    zeno::log_debug("saving {} chars to file [{}]", str.size(), filePath.toStdString());
+    if (!file.open(QIODevice::WriteOnly)) {
+        zeno::log_error("Failed to open file for write: {} ({})", filePath.toStdString(),
+            file.errorString().toStdString());
+        return;
+    }
+    file.write(str.toUtf8());
+    file.close();
+    //python script
+    QString script = R"(import os
+os.system("python O:/send.py --file %1 --name %2"))";
+    script = script.arg(filePath, info.taskName);
+    AppHelper::pythonExcute(script);
+    file.remove();
 }
 
 void DisplayWidget::onFrameFinish(int frame)
@@ -1244,11 +1337,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_MESH);
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_LINE);
             else
-                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_VERTEX);
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
@@ -1260,7 +1353,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         node_context += prim_name + ":" + e.toStdString() + " ";
 
                 if (picker)
-                    picker->load_from_str(node_context, scene->select_mode, zeno::SELECTION_MODE::NORMAL);
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
                 picker->sync_to_scene();
@@ -1272,6 +1365,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 picker->sync_to_scene();
                 picker->focus("");
                 picker->set_picked_elems_callback({});
+                {
+                    picker->clear();
+                    scene->set_select_mode(zenovis::PICK_MODE::PICK_OBJECT);
+                }
             }
         }
         zenoApp->getMainWindow()->updateViewport();
@@ -1286,12 +1383,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
-                auto _near = scene->camera->m_near;
-                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
                 if (depth != 0) {
-                    cz = scene->camera->m_near / depth;
+                    cz = scene->camera->inf_z_near / depth;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
