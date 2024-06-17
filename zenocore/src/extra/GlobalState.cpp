@@ -50,13 +50,14 @@ ZENO_API void GlobalState::clearState() {
 }
 
 ZENO_API int GlobalState::getFrameId() const {
-    return std::get<int>(getSession().globalVariableStack->getVariable("$F"));
+    auto frame = getSession().getGlobalVarialbe("$F");
+    return std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0;
     //return frameid;
 }
 
 ZENO_API void GlobalState::updateFrameId(int frame) {
     //todo: mutex
-    getSession().globalVariableStack->updateVariable(GVariable("$F", frame));
+    getSession().updateGlobalVariable("$F", frame);
     //frameid = frame;
 }
 

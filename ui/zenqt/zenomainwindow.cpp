@@ -1620,7 +1620,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
 
     //init $F globalVariable
-    zeno::getSession().globalVariableStack->overrideVariable(zeno::GVariable("$F", pGraphs->timeInfo().currFrame));
+    zeno::getSession().overrideGlobalVariable("$F", pGraphs->timeInfo().currFrame);
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });

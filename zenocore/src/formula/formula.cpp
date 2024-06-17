@@ -54,8 +54,7 @@ float Formula::getResult() const {
 }
 
 int Formula::getFrameNum() {
-    //int frame = zeno::getSession().globalState->getFrameId();
-    int frame = std::get<int>(getSession().globalVariableStack->getVariable("$F"));
+    int frame = zeno::getSession().globalState->getFrameId();
     return frame;
 }
 

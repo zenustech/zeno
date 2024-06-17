@@ -74,8 +74,9 @@ struct TimeShift : zeno::INode {
         ParamPrimitive param = get_input_prim_param("offset");
         int offset = std::get<int>(param.defl);
         //覆盖$F
-        int currFrame = std::get<int>(getSession().globalVariableStack->getVariable("$F")) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), GVariable("$F", currFrame >= 0 ? currFrame : 0));
+        zvariant frame = getSession().getGlobalVarialbe("$F");
+        int currFrame = (std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", currFrame >= 0 ? currFrame : 0);
         //计算上游
         INode::preApply();
     }
