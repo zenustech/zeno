@@ -20,6 +20,7 @@
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
+#include <zeno/core/GlobalVariable.h>
 
 namespace zeno {
 
@@ -72,6 +73,7 @@ ZENO_API Session::Session()
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
     , referManager(std::make_unique<ReferManager>())
+    , globalVariableManager(std::make_unique<GlobalVariableManager>())
 {
     initNodeCates();
 }
@@ -165,6 +167,21 @@ void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus s
     if (m_funcNodeStatus) {
         m_funcNodeStatus(path, bDirty, status);
     }
+}
+
+ZENO_API zeno::zvariant Session::getGlobalVarialbe(std::string name)
+{
+    return globalVariableManager->getVariable(name);
+}
+
+ZENO_API bool Session::overrideGlobalVariable(std::string name, zvariant var)
+{
+    return globalVariableManager->overrideVariable(zeno::GVariable(name, var));
+}
+
+ZENO_API bool Session::updateGlobalVariable(std::string name, zvariant var)
+{
+    return globalVariableManager->updateVariable(GVariable("$F", var));
 }
 
 ZENO_API int Session::registerObjId(const std::string& objprefix)
