@@ -337,6 +337,16 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     return m_frames.back().view_objects;
 }
 
+ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
+{
+    std::lock_guard lck(m_mtx);
+    if (!callback)
+        return;
+
+    callback();
+}
+
+
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
         const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,

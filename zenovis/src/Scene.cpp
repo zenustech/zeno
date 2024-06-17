@@ -62,17 +62,19 @@ void Scene::cleanupView()
 
 void Scene::cleanUpScene()
 {
-    if (objectsMan)
-        objectsMan->clear_objects();
+        zeno::getSession().globalComm->clear_objects([this](){
+            if (objectsMan)
+                objectsMan->clear_objects();
 
-    if (!renderMan)
-        return;
+            if (!renderMan)
+                return;
 
-    RenderEngine* pEngine = renderMan->getEngine();
-    if (pEngine) {
-        pEngine->update();
-        pEngine->cleanupAssets();
-    }
+            RenderEngine* pEngine = renderMan->getEngine();
+            if (pEngine) {
+                pEngine->update();
+                pEngine->cleanupAssets();
+            }
+        });
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
