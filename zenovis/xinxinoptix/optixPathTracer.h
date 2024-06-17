@@ -166,6 +166,7 @@ struct Params
     float3*      frame_buffer_T;
     float3*      frame_buffer_B;
     float3*      frame_buffer_M;
+    float3*      frame_buffer_P;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
