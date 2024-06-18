@@ -95,7 +95,7 @@ struct ZSComputeRBFWeights : INode {
 
         rbf_weights = typename ZenoParticles::particles_t({
             {"inds",1},
-            {"w",1}},close_proximity.size(),zs::memsrc_e::device,0);
+            {"w",1}},close_proximity.size(),zs::memsrc_e::device);
 
         auto varience = get_input2<float>("varience");
 
@@ -252,7 +252,7 @@ struct ZSComputeSurfaceBaryCentricWeights : INode {
 
         sampler = typename ZenoParticles::particles_t({
             {"inds",1},
-            {"w",1}},csPT.size() * 3,zs::memsrc_e::device,0);
+            {"w",1}},csPT.size() * 3,zs::memsrc_e::device);
         
         zs::Vector<int> nm_updated{dverts.get_allocator(),dverts.size()};
         cudaPol(zs::range(nm_updated),[] ZS_LAMBDA(auto& cnt) mutable {cnt = 0;});     
@@ -1174,14 +1174,14 @@ struct ZSComputeBaryCentricWeights : INode {
             {"inds",1},
             {"w",4},
             {"strength",1},
-            {"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
+            {"cnorm",1}},everts.size(),zs::memsrc_e::device);
         
 
         // auto topo_tag = tag + std::string("_topo");
         // auto &bcw_topo = (*zsvolume)[topo_tag];
 
         // auto e_dim = e_eles.getPropertySize("inds");
-        // bcw_topo = typename ZenoParticles::particles_t({{"inds",e_dim}},e_eles.size(),zs::memsrc_e::device,0);
+        // bcw_topo = typename ZenoParticles::particles_t({{"inds",e_dim}},e_eles.size(),zs::memsrc_e::device);
 
 
         auto cudaExec = zs::cuda_exec();
@@ -1393,7 +1393,7 @@ struct ZSSampleEmbedVectorField : zeno::INode {
         if(!sampler->hasAuxData(tag)){
             fmt::print("no specified bcw channel detected, create a new one...\n");
             auto& sample_bcw = (*sampler)[tag];
-            sample_bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},verts.size(),zs::memsrc_e::device,0);
+            sample_bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},verts.size(),zs::memsrc_e::device);
         }
         const auto& sample_bcw = (*sampler)[tag];
 
@@ -1464,7 +1464,7 @@ struct ZSSampleEmbedTagField : zeno::INode {
         if(!sampler->hasAuxData(tag)){
             fmt::print("no specified bcw channel detected, create a new one...\n");
             auto& sample_bcw = (*sampler)[tag];
-            sample_bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},verts.size(),zs::memsrc_e::device,0);
+            sample_bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4}},verts.size(),zs::memsrc_e::device);
         }
         const auto& sample_bcw = (*sampler)[tag];
 

@@ -143,7 +143,7 @@ namespace zeno {
         const zs::vec<T,3>& b2,
         T& toc,
         zs::vec<T,6>& bary,
-        const T& eta = (T)0.1) {
+        const T& eta = (T)0.001) {
 
         auto v0 = b0 - a0;
         auto v1 = b1 - a1;
