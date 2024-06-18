@@ -89,7 +89,7 @@
 %token DOT
 %token VARNAME
 %token SEMICOLON
-%token EQUALTO
+%token ASSIGNTO
 %token IF
 %token FOR
 %token WHILE
@@ -102,7 +102,7 @@
 %token SUBASSIGN
 %token DIVASSIGN
 %token LESSTHAN
-$token LESSEQUAL
+%token LESSEQUAL
 %token GREATTHAN
 %token GREATEQUAL
 %token RETURN
@@ -112,6 +112,8 @@ $token LESSEQUAL
 %token ATTRAT
 %token FOREACH
 %token DO
+%token EQUALTO
+%token NOTEQUAL
 
 %left ADD "+"
 %left SUB "-"
@@ -125,7 +127,7 @@ $token LESSEQUAL
 %type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement only-declare array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin loop-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents foreach-step
 %type <operatorVals> assign-op compare-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK LESSTHAN LESSEQUAL GREATTHAN GREATEQUAL
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON ASSIGNTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK LESSTHAN LESSEQUAL GREATTHAN GREATEQUAL EQUALTO NOTEQUAL
 %type <bool> array-mark bool-stmt
 
 %start zfx-program
@@ -164,7 +166,7 @@ array-or-exp: exp-statement { $$ = $1; }
     | array-stmt { $$ = $1; }
     ;
 
-assign-op: EQUALTO { $$ = AssignTo; }
+assign-op: ASSIGNTO { $$ = AssignTo; }
     | ADDASSIGN { $$ = AddAssign; }
     | MULASSIGN { $$ = MulAssign; }
     | SUBASSIGN { $$ = SubAssign; }
@@ -213,7 +215,7 @@ only-declare: TYPE VARNAME array-mark {
 declare-statement: only-declare {
                 $$ = $1;
             }
-    | TYPE VARNAME array-mark EQUALTO array-or-exp {
+    | TYPE VARNAME array-mark ASSIGNTO array-or-exp {
                 auto typeNode = driver.makeTypeNode($1, $3);
                 auto nameNode = driver.makeZfxVarNode($2);
                 std::vector<std::shared_ptr<ZfxASTNode>> children({typeNode, nameNode, $5});
@@ -288,6 +290,8 @@ compare-op: LESSTHAN { $$ = Less; }
     | LESSEQUAL { $$ = LessEqual; }
     | GREATTHAN { $$ = Greater; }
     | GREATEQUAL { $$ = GreaterEqual; }
+    | EQUALTO { $$ = Equal; }
+    | NOTEQUAL { $$ = NotEqual; }
     ;
 
 exp-statement: compareexp           { $$ = $1; }
@@ -336,7 +340,7 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
         }
     | zenvar DOT VARNAME {
             $$ = driver.makeComponentVisit($1, $3);
-            $$->opVal = NameVisit;
+            $$->opVal = COMPVISIT;
         }
     | zenvar LSQBRACKET exp-statement RSQBRACKET {
             $$ = $1;

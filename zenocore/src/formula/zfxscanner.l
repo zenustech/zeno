@@ -141,7 +141,7 @@ equalto \=
         return zeno::ZfxParser::make_VARNAME(yytext, loc);
 }
 {semicolon} { return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
-{equalto}   { return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
+{equalto}   { return zeno::ZfxParser::make_ASSIGNTO(yytext, loc); }
 "\+\="      { return zeno::ZfxParser::make_ADDASSIGN(yytext, loc); }
 "\*\="      { return zeno::ZfxParser::make_MULASSIGN(yytext, loc); }
 "\-\="      { return zeno::ZfxParser::make_SUBASSIGN(yytext, loc); }
@@ -152,6 +152,8 @@ equalto \=
 "<="        { return zeno::ZfxParser::make_LESSEQUAL(yytext, loc); }
 ">"         { return zeno::ZfxParser::make_GREATTHAN(yytext, loc); }
 ">="        { return zeno::ZfxParser::make_GREATEQUAL(yytext, loc); }
+"=="        { return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
+"!="        { return zeno::ZfxParser::make_NOTEQUAL(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;

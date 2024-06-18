@@ -185,18 +185,6 @@ namespace zeno {
         }, value);
     }
 
-    template <class T = void>
-    struct zeno_less_equal {
-        using _FIRST_ARGUMENT_TYPE_NAME _CXX17_DEPRECATE_ADAPTOR_TYPEDEFS = T;
-        using _SECOND_ARGUMENT_TYPE_NAME _CXX17_DEPRECATE_ADAPTOR_TYPEDEFS = T;
-        using _RESULT_TYPE_NAME _CXX17_DEPRECATE_ADAPTOR_TYPEDEFS = bool;
-
-        constexpr bool operator()(const T& _Left, const T& _Right) const
-            noexcept(noexcept(_Fake_copy_init<bool>(_Left > _Right))) /* strengthened */ {
-            return _Left <= _Right;
-        }
-    };
-
     template<typename Operator>
     zfxvariant calc_exp(const zfxvariant& lhs, const zfxvariant& rhs, Operator method) {
         return std::visit([method](auto&& lval, auto&& rval)->zfxvariant {
@@ -273,14 +261,6 @@ namespace zeno {
             else {
                 throw UnimplError("");
             }
-
-            //if constexpr (!std::is_constructible_v<T, E>) {
-            //    throw makeError<TypeError>(typeid(T), typeid(E), "calc_expression");
-            //}
-            //else {
-            //    std::plus<T> op;
-            //    return op(T(lval), T(rval));
-            //}
         }, lhs, rhs);
     }
 
@@ -300,6 +280,7 @@ namespace zeno {
         glm::mat3 mm = mat3 * mat4;
         mm = mat1 * mat2;
 
+        zfxvariant bval = calc_exp(mat1, mat2, std::equal_to());
         zfxvariant mmm = calc_exp(mat1, mat2, std::multiplies());
 
         //glm::mat3 mm2 = glm::dot(mat1, mat2);
@@ -487,6 +468,8 @@ namespace zeno {
                 case LessEqual:     return calc_exp(args[0], args[1], std::less_equal());
                 case Greater:       return calc_exp(args[0], args[1], std::greater());
                 case GreaterEqual:  return calc_exp(args[0], args[1], std::greater_equal());
+                case Equal:         return calc_exp(args[0], args[1], std::equal_to());
+                case NotEqual:      return calc_exp(args[0], args[1], std::not_equal_to());
                 default:
                     throw makeError<UnimplError>("compare op error");
                 }

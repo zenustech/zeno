@@ -64,6 +64,8 @@ enum operatorVals {
     LessEqual,
     Greater,
     GreaterEqual,
+    Equal,
+    NotEqual,
 
     //以下仅针对变量
     AssignTo,
