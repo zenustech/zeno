@@ -2132,7 +2132,7 @@ void updatePortalLights(const std::vector<Portal>& portals) {
     auto& pll = state.plights;
     auto& pls = pll.list;
     pls.clear();
-    pls.reserve(std::max(portals.size(), 0llu) );
+    pls.reserve(std::max(portals.size(), size_t(0)) );
 
     glm::mat4 rotation = glm::mat4(1.0f);
     rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_y), glm::vec3(0,1,0));
