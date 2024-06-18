@@ -208,6 +208,11 @@ void ZenoGvHelper::setCtrlProperties(QGraphicsItem *item,  const QVariant &value
                     pSpinBox->setSliderInfo(info);
                 }
             }
+            ZenoParamPathEdit* pEditItem = qgraphicsitem_cast<ZenoParamPathEdit*>(item);
+            if (pEditItem && map.contains("filter"))
+            {
+                pEditItem->setProperty("filter", map["filter"]);
+            }
     }
 }
 

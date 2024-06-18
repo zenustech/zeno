@@ -1387,16 +1387,8 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         //clean up opengl components.
 
         auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-        for (ZTabDockWidget *pDock : docks) {
-            pDock->close();
-            try {
-                //pDock->testCleanupGL();
-            } catch (...) {
-                //QString errMsg = QString::fromLatin1(e.what());
-                int j;
-                j = 0;
-            }
-            //delete pDock;
+        for (ZTabDockWidget* pDock : docks) {
+            pDock->cleanupView();
         }
 
         // trigger destroy event
@@ -1690,14 +1682,6 @@ bool ZenoMainWindow::openFile(QString filePath)
     if (!pModel)
         return false;
 
-    //cleanup
-    zeno::getSession().globalComm->clearFrameState();
-    auto views = viewports();
-    for (auto view : views)
-    {
-        view->cleanUpScene();
-    }
-
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
@@ -1799,6 +1783,40 @@ bool ZenoMainWindow::isOnlyOptixWindow() const
 bool ZenoMainWindow::isRecordByCommandLine() const
 {
     return m_bRecordByCommandLine;
+}
+
+void ZenoMainWindow::openFileAndUpdateParam(const QString& zsgPath, const QString& paramsJson)
+{
+    if (!zsgPath.isEmpty())
+    {
+        openFile(zsgPath);
+    }
+    if (!paramsJson.isEmpty())
+    {
+        qDebug() << paramsJson;
+        //parse paramsJson
+        rapidjson::Document configDoc;
+        configDoc.Parse(paramsJson.toUtf8());
+        if (!configDoc.IsObject())
+        {
+            zeno::log_error("config file is corrupted");
+        }
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        FuckQMap<QString, CommandParam> commands = pGraphsModel->commandParams();
+        for (auto& [key, param] : commands)
+        {
+            if (configDoc.HasMember(param.name.toUtf8()))
+            {
+                const auto& value = UiHelper::parseJson(configDoc[param.name.toStdString().c_str()], nullptr);
+                const auto& index = pGraphsModel->indexFromPath(key);
+                if (index.isValid())
+                {
+                    pGraphsModel->ModelSetData(index, value, ROLE_PARAM_VALUE);
+                }
+            }
+        }
+    }
 }
 
 void ZenoMainWindow::sortRecentFile(QStringList &lst) 
@@ -1988,6 +2006,17 @@ bool ZenoMainWindow::saveQuit() {
             return false;
         }
     }
+
+    //cleanup
+    if (pModel) {
+        zeno::getSession().globalComm->clearFrameState();
+        auto views = viewports();
+        for (auto view : views)
+        {
+            view->cleanUpScene();
+        }
+    }
+
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());

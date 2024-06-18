@@ -15,6 +15,7 @@
 #ifdef ZENO_ENABLE_OPTIX
     #include "../xinxinoptix/xinxinoptixapi.h"
 #endif
+//#include <magic_enum.hpp>
 #include <cstdlib>
 #include <map>
 
@@ -48,19 +49,32 @@ Scene::Scene()
         switchRenderEngine("bate");
 }
 
-void Scene::cleanUpScene()
+void Scene::cleanupView()
 {
-    if (objectsMan)
-        objectsMan->clear_objects();
-
     if (!renderMan)
         return;
 
     RenderEngine* pEngine = renderMan->getEngine();
     if (pEngine) {
-        pEngine->update();
-        pEngine->cleanupOptix();
+        pEngine->cleanupWhenExit();
     }
+}
+
+void Scene::cleanUpScene()
+{
+        zeno::getSession().globalComm->clear_objects([this](){
+            if (objectsMan)
+                objectsMan->clear_objects();
+
+            if (!renderMan)
+                return;
+
+            RenderEngine* pEngine = renderMan->getEngine();
+            if (pEngine) {
+                pEngine->update();
+                pEngine->cleanupAssets();
+            }
+        });
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
@@ -102,6 +116,13 @@ bool Scene::loadFrameObjects(int frameid) {
     return inserted;
 }
 
+void Scene::set_select_mode(PICK_MODE _select_mode) {
+//    zeno::log_info("{} -> {}", magic_enum::enum_name(select_mode), magic_enum::enum_name(_select_mode));
+    select_mode = _select_mode;
+}
+PICK_MODE Scene::get_select_mode() {
+    return select_mode;
+}
 void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {

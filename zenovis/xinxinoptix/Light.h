@@ -7,6 +7,8 @@
 // #include "DisneyBSDF.h"
 #include "proceduralSky.h"
 
+#include "Portal.h"
+
 static __inline__ __device__
 vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf)
 {
@@ -210,8 +212,7 @@ static __forceinline__ __device__
 void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadingP, const float3& ray_dir, 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
-    const float3 wo = normalize(-ray_dir); 
-    float3 light_attenuation = vec3(1.0f);
+    const float3 wo = normalize(-ray_dir);
 
     const float _SKY_PROB_ = params.skyLightProbablity();
 
@@ -287,6 +288,9 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             auto b_len = dot(-lsr.dir, light.B);
 
             if (n_len <= 0) {return;}
+
+            lsr.dist = n_len * lsr.dist;
+            lsr.intensity = M_PIf/(lsr.dist * lsr.dist);
 
             auto tanU = t_len / n_len;
             auto tanV = b_len / n_len;
@@ -415,7 +419,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             shadowPRD.maxDistance = lsr.dist;
             
             traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD);
-            light_attenuation = shadowPRD.attanuation;
+            auto light_attenuation = shadowPRD.attanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
 
@@ -446,69 +450,125 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
     
     } else {
 
-        float env_weight_sum = 1e-8f;
-        int NSamples = prd->depth<=2?1:1;//16 / pow(4.0f, (float)prd->depth-1);
-        for(int samples=0;samples<NSamples;samples++) {
+        auto shadeTask = [&](float3 sampleDir, float samplePDF, float3 illum, const bool mis) {\
 
-            bool hasenv = params.skynx | params.skyny;
-            hasenv = params.usingHdrSky && hasenv;
-            float envpdf = 1.0f;
 
-            vec3 sunLightDir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
-                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf)
-                                    : vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
-            auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                    params.sunSoftness * 0.0f); //perturb the sun to have some softness
-            sun_dir = hasenv ? normalize(sunLightDir):normalize(sun_dir);
-
-            float tmpPdf;
-            auto illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                        40, // be careful
-                                        .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
-            if(tmpPdf <= 0.0f) { return; }
-
-            auto Ldir = sun_dir;
-
-            if (envpdf < __FLT_DENORM_MIN__) {
-                return;
-            }
-
-            shadowPRD.maxDistance = 1e16f;
-            traceOcclusion(params.handle, shadowPRD.origin, sun_dir,
-                        1e-5f, // tmin
-                        1e16f, // tmax,
+            shadowPRD.attanuation = vec3(1.0);
+            shadowPRD.maxDistance = FLT_MAX;
+            traceOcclusion(params.handle, shadowPRD.origin, sampleDir,
+                        0, // tmin
+                        FLT_MAX, // tmax,
                         &shadowPRD);
-            light_attenuation = shadowPRD.attanuation;
 
-            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
+            if (nullptr==RadianceWithoutShadow && lengthSquared(shadowPRD.attanuation) == 0.0f) return;
 
-            auto inverseProb = 1.0f/_SKY_PROB_;
-            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF);
+            auto bxdf_value = evalBxDF(sampleDir, wo, scatterPDF);
 
-            float tmp = 1.0f;
+            float tmp = 1.0f / samplePDF;
 
-            if constexpr(_MIS_) {
-                float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, scatterPDF);
+            if (mis) {
+                float misWeight = BRDFBasics::PowerHeuristic(samplePDF, scatterPDF);
                 misWeight = misWeight>0.0f?misWeight:1.0f;
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
-                misWeight = tmpPdf>1e-5f?misWeight:0.0f;
+                misWeight = samplePDF>1e-5f?misWeight:0.0f;
 
-                tmp = (1.0f / NSamples) * misWeight * inverseProb  / tmpPdf;
-            } else {
-                tmp = (1.0f / NSamples) * inverseProb / tmpPdf;
-            }
+                tmp *= misWeight;
+            } 
 
             float3 radianceNoShadow = illum * tmp * bxdf_value; 
 
             if (nullptr != RadianceWithoutShadow) {
-                *RadianceWithoutShadow = radianceNoShadow;
+                *RadianceWithoutShadow += radianceNoShadow;
             }
 
             if constexpr (!detail::is_void<TypeAux>::value) {
-                (*taskAux)(illum * tmp * light_attenuation);
+                (*taskAux)(illum * tmp * shadowPRD.attanuation);
             }// TypeAux
 
-            prd->radiance += radianceNoShadow * light_attenuation; // with shadow
+            prd->radiance += radianceNoShadow * shadowPRD.attanuation; // with shadow
+        }; // shadeTask
+
+        UF = UF / _SKY_PROB_;
+        UF = clamp(UF, 0.0f, 1.0f);
+
+        auto binsearch = [&](float* cdf, uint min, uint max) {
+            //auto idx = min;
+            while(min < max) {
+                auto _idx_ = (min + max) / 2;
+                auto _cdf_ = cdf[_idx_];
+
+                if (_cdf_ > UF) {
+                    max = _idx_; continue; //include
+                }
+                if (_cdf_ < UF) {
+                    min = _idx_+1; continue;
+                }
+                min = _idx_; break;
+            }
+            return min;
+        };
+
+        auto dlights = reinterpret_cast<DistantLightList*>(params.dlights_ptr);
+        
+        if (nullptr != dlights && dlights->COUNT()) {
+
+            auto idx = binsearch(dlights->cdf, 0, dlights->COUNT());
+            auto& dlight = dlights->list[idx];
+            auto dlight_dir = reinterpret_cast<vec3&>(dlight.direction);
+
+            auto sample_dir = BRDFBasics::halfPlaneSample(prd->seed, dlight_dir, dlight.angle/180.0f);
+            auto sample_prob = _SKY_PROB_ / dlights->COUNT();
+
+            if (dlight.intensity > 0) {
+                auto ccc = dlight.color * dlight.intensity;
+                auto illum = reinterpret_cast<float3&>(ccc);
+                shadeTask(sample_dir, sample_prob, illum, false);
+            }
+        }
+        
+        auto plights = reinterpret_cast<PortalLightList*>(params.plights_ptr);
+
+        if (plights != nullptr && plights->COUNT()) {
+
+            uint idx = binsearch(plights->cdf, 0, plights->COUNT());
+            auto plight = &plights->list[idx];
+
+            LightSampleRecord lsr; lsr.PDF = 0.0f;
+            float2 uu = { prd->rndf(), prd->rndf() };
+            float3 color {};
+            
+            plight->sample(lsr, reinterpret_cast<const Vector3f&>(shadingP), uu, color);
+            
+            lsr.PDF *= plights->pdf[idx] * _SKY_PROB_;
+            if (lsr.PDF > 0) {
+                //auto suv = sphereUV(lsr.dir, true);
+                //color = (vec3)texture2D(params.sky_texture, vec2(suv.x, suv.y));
+                shadeTask(lsr.dir, lsr.PDF, color * params.sky_strength, false);
+            }
+            return;
+        }
+
+        { // SKY
+            bool hasenv = params.skynx | params.skyny;
+            hasenv = params.usingHdrSky && hasenv;
+            float envpdf = 1.0f;
+
+            vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
+
+            vec3 sample_dir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
+                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf)
+                                    : BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
+                                                    params.sunSoftness * 0.0f);
+            sample_dir = normalize(sample_dir);
+
+            float samplePDF;
+            float3 illum = envSky(sample_dir, sunLightDir, make_float3(0., 0., 1.),
+                                        40, // be careful
+                                        .45, 15., 1.030725f * 0.3f, params.elapsedTime, samplePDF);\
+            samplePDF *= _SKY_PROB_;
+            if(samplePDF <= 0.0f) { return; }
+
+            shadeTask(sample_dir, samplePDF, illum, true);
         }
     }
 };

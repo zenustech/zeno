@@ -196,6 +196,9 @@ struct Params
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
 
+    void*    dlights_ptr;
+    void*    plights_ptr;
+
     float skyLightProbablity() {
 
         if (sky_strength <= 0.0f)

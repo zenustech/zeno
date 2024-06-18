@@ -34,7 +34,7 @@
 #include <zeno/types/TextureObject.h>
 
 #ifndef uint
-typedef unsigned int uint;
+using uint = unsigned int;
 #endif
 
 struct GridWrapper {

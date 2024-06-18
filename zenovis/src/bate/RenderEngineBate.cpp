@@ -16,6 +16,7 @@ struct RenderEngineBate : RenderEngine {
     std::unique_ptr<IGraphicDraw> primHighlight;
     std::unique_ptr<FrameBufferRender> fbr;
     Scene *scene;
+    bool released = false;
 
     auto setupState() {
         return std::tuple{
@@ -44,6 +45,9 @@ struct RenderEngineBate : RenderEngine {
     }
 
     void draw(bool record) override {
+        if (released) {
+            return;
+        }
         auto guard = setupState();
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
@@ -92,8 +96,19 @@ struct RenderEngineBate : RenderEngine {
         }
     }
 
-    void cleanupOptix() override {
+    void cleanupAssets() override {
 
+    }
+
+    void cleanupWhenExit() override {
+        released = true;
+        scene->shaderMan = nullptr;
+        scene->drawOptions->handler = nullptr;
+        vao = nullptr;
+        graphicsMan = nullptr;
+        hudGraphics.clear();
+        primHighlight = nullptr;
+        fbr = nullptr;
     }
 };
 

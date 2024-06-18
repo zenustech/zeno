@@ -82,7 +82,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, m_far, m_near);
     } else {
-        m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), m_near);
+        m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), inf_z_near);
     }
 }
 
@@ -107,7 +107,7 @@ void Camera::updateMatrix() {
 void Camera::setResolution(int nx, int ny) {
     m_nx = nx;
     m_ny = ny;
-    m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), m_near);
+    m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), inf_z_near);
 }
 void Camera::setResolutionInfo(bool block, int nx, int ny)
 {
