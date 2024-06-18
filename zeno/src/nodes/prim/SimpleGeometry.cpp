@@ -21,6 +21,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -1409,6 +1410,48 @@ ZENDEFNODE(CreateCylinder, {
         {"int", "lons", "32"},
     },
     {"prim"},
+    {},
+    {"create"},
+});
+struct CreateFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
+    }
+};
+
+ZENDEFNODE(CreateFolder, {
+    {
+        {"directory", "folderPath"}
+    },
+    {},
+    {},
+    {"create"},
+});
+
+struct RemoveFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (fs::exists(folderPath)) {
+            std::error_code errorCode;
+            fs::remove_all(folderPath, errorCode);
+            if (get_input2<bool>("clean")) {
+                fs::create_directories(folderPath);
+            }
+        }
+    }
+};
+
+ZENDEFNODE(RemoveFolder, {
+    {
+        {"directory", "folderPath"},
+        {"bool", "clean", "false"},
+    },
+    {},
     {},
     {"create"},
 });

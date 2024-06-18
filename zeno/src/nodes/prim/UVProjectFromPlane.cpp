@@ -730,6 +730,10 @@ struct WriteImageFile_v2 : INode {
             stbi_flip_vertically_on_write(1);
             stbi_write_png(path.c_str(), w, h, n, data.data(),0);
         }
+        else if(type == "hdr"){
+            stbi_flip_vertically_on_write(1);
+            stbi_write_hdr(path.c_str(), w, h, 3, (float*)image->verts.data());
+        }
         else if(type == "exr"){
             std::vector<float> data2(w * h * n);
             for (int i = 0; i < w * h; i++) {
@@ -768,7 +772,7 @@ ZENDEFNODE(WriteImageFile_v2, {
     {
         {"image"},
         {"writepath", "path"},
-        {"enum png jpg exr pfm", "type", "png"},
+        {"enum png jpg exr pfm hdr", "type", "png"},
         {"mask"},
         {"bool", "linear_to_srgb_when_save", "0"},
     },
