@@ -255,7 +255,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
+    if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
         // zoom
         if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false) == false) {
             float dy = ypos - m_lastMidButtonPos.y();
@@ -268,7 +268,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
-    else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+    else if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
         // rot roll
         float step = 1.0f;
         float ratio = QApplication::desktop()->devicePixelRatio();
