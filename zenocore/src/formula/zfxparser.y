@@ -101,6 +101,10 @@
 %token MULASSIGN
 %token SUBASSIGN
 %token DIVASSIGN
+%token LESSTHAN
+$token LESSEQUAL
+%token GREATTHAN
+%token GREATEQUAL
 %token RETURN
 %token CONTINUE
 %token BREAK
@@ -120,8 +124,8 @@
 
 %type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement only-declare array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin loop-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents foreach-step
-%type <operatorVals> assign-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK
+%type <operatorVals> assign-op compare-op
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON EQUALTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK LESSTHAN LESSEQUAL GREATTHAN GREATEQUAL
 %type <bool> array-mark bool-stmt
 
 %start zfx-program
@@ -280,15 +284,21 @@ loop-statement: FOR LPAREN for-begin for-condition for-step RPAREN code-block {
         }
     ;
 
+compare-op: LESSTHAN { $$ = Less; }
+    | LESSEQUAL { $$ = LessEqual; }
+    | GREATTHAN { $$ = Greater; }
+    | GREATEQUAL { $$ = GreaterEqual; }
+    ;
+
 exp-statement: compareexp           { $$ = $1; }
-    | exp-statement COMPARE compareexp  {
+    | exp-statement compare-op compareexp  {
                 std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
-                $$ = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
+                $$ = driver.makeNewNode(COMPOP, $2, children);
                 $$->value = $2;
             }
-    | exp-statement COMPARE compareexp QUESTION exp-statement COLON exp-statement {
+    | exp-statement compare-op compareexp QUESTION exp-statement COLON exp-statement {
                 std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
-                auto spCond = driver.makeNewNode(COMPOP, DEFAULT_FUNCVAL, children);
+                auto spCond = driver.makeNewNode(COMPOP, $2, children);
                 spCond->value = $2;
 
                 std::vector<std::shared_ptr<ZfxASTNode>> exps({spCond, $5, $7});
@@ -326,6 +336,7 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
         }
     | zenvar DOT VARNAME {
             $$ = driver.makeComponentVisit($1, $3);
+            $$->opVal = NameVisit;
         }
     | zenvar LSQBRACKET exp-statement RSQBRACKET {
             $$ = $1;

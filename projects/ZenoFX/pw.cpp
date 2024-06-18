@@ -6,6 +6,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/Graph.h>
 #include <zeno/formula/zfxexecute.h>
+#include <zeno/core/FunctionManager.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -63,7 +64,7 @@ static void vectors_wrangle
 
 struct AttributeWrangle : zeno::INode {
     virtual void apply() override {
-        zany prim;
+        std::shared_ptr<PrimitiveObject> prim;
         if (has_input("prim")) {
             prim = get_input<zeno::PrimitiveObject>("prim");
         }
@@ -74,8 +75,11 @@ struct AttributeWrangle : zeno::INode {
         ctx.spNode = shared_from_this();
         ctx.spObject = prim;
         ctx.code = code;
-        ZfxExecute zfx(code, ctx);
-        zfx.execute();
+        //ZfxExecute zfx(code, ctx);
+        //zfx.execute();
+
+        auto& funcMgr = zeno::getSession().funcManager;
+        funcMgr->testExp();
     }
 };
 

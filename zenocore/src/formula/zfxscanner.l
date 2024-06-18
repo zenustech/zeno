@@ -148,7 +148,10 @@ equalto \=
 "/\="       { return zeno::ZfxParser::make_DIVASSIGN(yytext, loc); }
 {dollar}  { return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 {zenvarname} { return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
-{compareop}  { return zeno::ZfxParser::make_COMPARE(yytext, loc); }
+"<"         { return zeno::ZfxParser::make_LESSTHAN(yytext, loc); }
+"<="        { return zeno::ZfxParser::make_LESSEQUAL(yytext, loc); }
+">"         { return zeno::ZfxParser::make_GREATTHAN(yytext, loc); }
+">="        { return zeno::ZfxParser::make_GREATEQUAL(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;

@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <zeno/types/PrimitiveObject.h>
 
 
 namespace zeno {
@@ -28,7 +29,6 @@ enum nodeType {
     CONDEXP,            //条件表达式
     ARRAY,
     MATRIX,
-    COMPVISIT,          //访问元素分量，比如vec.x vec.y vec.z
     PLACEHOLDER,
     DECLARE,            //变量定义
     ASSIGNMENT,           //赋值
@@ -51,12 +51,19 @@ enum operatorVals {
     MINUS,
     MUL,
     DIV,
+
     //函数 nodeType对应FUNC
     SIN,
     SINH,
     COS,
     COSH,
     ABS,
+
+    //比较符号
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
 
     //以下仅针对变量
     AssignTo,
@@ -88,6 +95,7 @@ enum operatorVals {
     AutoDecreaseLast,
     Indexing,
     AttrMark,
+    COMPVISIT,      //a.x, a.y, a.z
     BulitInVar,     //$F, $FPS, $T
 };
 
@@ -125,9 +133,9 @@ struct ZfxASTNode {
 
 struct ZfxContext
 {
-    /* in */ zany spObject;
+    /* in */ std::shared_ptr<PrimitiveObject> spObject;
     /* in */ std::weak_ptr<INode> spNode;
-    /* in */ const std::string code;
+    /* in */ std::string code;
     /* out */ std::string printContent;
 };
 

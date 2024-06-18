@@ -1631,9 +1631,10 @@ float INode::resolve(const std::string& expression, const ParamType type)
     {
         auto& funcMgr = zeno::getSession().funcManager;
         auto& astRoot = fmla.getASTResult();
-        FuncContext ctx;
-        ctx.nodePath = get_path();
-        zvariant res = funcMgr->calc(astRoot, &ctx);
+        ZfxContext ctx;
+        ctx.code = code;
+        ctx.spNode = shared_from_this();
+        zfxvariant res = funcMgr->calc(astRoot, &ctx);
         if (std::holds_alternative<int>(res)) {
             return std::get<int>(res);
         }
