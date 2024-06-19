@@ -3918,8 +3918,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
             }
             else {
-                zeno::create_directories_when_write_file(exr_path);
-                save_exr((float3 *)optixgetimg_extra("color", w, h).data(), w, h, exr_path);
+                std::string jpg_native_path = zeno::create_directories_when_write_file(path);
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 path = path.substr(0, path.size() - 4);
                 save_png_color(path + ".aov.diffuse.png", w, h,  optixgetimg_extra("diffuse", w, h).data());
                 save_png_color(path + ".aov.specular.png", w, h,  optixgetimg_extra("specular", w, h).data());
