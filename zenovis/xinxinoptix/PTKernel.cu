@@ -357,11 +357,11 @@ extern "C" __global__ void __raygen__rg()
     if( subframe_index > 0 )
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
-        const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
-        const float3 accum_color_prev_d = make_float3( params.accum_buffer_D[ image_index ]);
-        const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
-        const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
-        const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
+        const float3 accum_color_prev   = params.accum_buffer[ image_index ];
+        const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
+        const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
+        const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
+        const float3 accum_color_prev_b = params.accum_buffer_B[ image_index ];
         const float3 accum_mask_prev    = params.frame_buffer_M[ image_index ];
         accum_color   = mix( vec3(accum_color_prev), accum_color, a );
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
@@ -380,11 +380,11 @@ extern "C" __global__ void __raygen__rg()
         }
     }
 
-    params.accum_buffer[ image_index ] = make_float4( accum_color.x, accum_color.y, accum_color.z, 1.0f);
-    params.accum_buffer_D[ image_index ] = make_float4( accum_color_d.x,accum_color_d.y,accum_color_d.z, 1.0f);
-    params.accum_buffer_S[ image_index ] = make_float4( accum_color_s.x,accum_color_s.y, accum_color_s.z, 1.0f);
-    params.accum_buffer_T[ image_index ] = make_float4( accum_color_t.x,accum_color_t.y,accum_color_t.z, 1.0f);
-    params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
+    params.accum_buffer[ image_index ]   = make_float3( accum_color.x, accum_color.y, accum_color.z);
+    params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
+    params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
+    params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
+    params.accum_buffer_B[ image_index ] = accum_color_b;
 
 
     vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, false, false);

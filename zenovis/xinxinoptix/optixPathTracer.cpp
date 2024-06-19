@@ -568,9 +568,9 @@ static void initLaunchParams( PathTracerState& state )
 
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float4 )
+                state.params.width * state.params.height * sizeof( float3 )
                 ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
     auto& params = state.params;
 
@@ -628,25 +628,25 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_d .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_s .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
     CUDA_CHECK( cudaMallocManaged(
                 reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
@@ -660,10 +660,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
                 ) );
     state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
-    state.params.accum_buffer_D = (float4*)(CUdeviceptr)state.accum_buffer_d;
-    state.params.accum_buffer_S = (float4*)(CUdeviceptr)state.accum_buffer_s;
-    state.params.accum_buffer_T = (float4*)(CUdeviceptr)state.accum_buffer_t;
-    state.params.accum_buffer_B = (float4*)(CUdeviceptr)state.accum_buffer_b;
+    state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
+    state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
+    state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
+    state.params.accum_buffer_B = (float3*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
 
