@@ -40,7 +40,7 @@ ZENO_API int ZfxExecute::execute() {
     //TODO: error exception catch.
     if (m_root) {
         auto& funcMgr = zeno::getSession().funcManager;
-        funcMgr->executeZfx(m_root, m_context);
+        funcMgr->executeZfx(m_root, &m_context);
     }
     else {
 

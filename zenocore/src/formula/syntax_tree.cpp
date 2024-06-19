@@ -39,7 +39,6 @@ namespace zeno {
         case COMPOP: return "COMPARE";
         case CONDEXP: return "CONDITION-EXP";
         case ARRAY: return "ARRAY";
-        case MATRIX: return "MATRIX";
         case DECLARE: return "DECLARE";
         case CODEBLOCK: return "CODEBLOCK";
         case IF: return "IF";

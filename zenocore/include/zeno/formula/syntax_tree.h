@@ -28,7 +28,6 @@ enum nodeType {
     COMPOP,             //操作符
     CONDEXP,            //条件表达式
     ARRAY,
-    MATRIX,
     PLACEHOLDER,
     DECLARE,            //变量定义
     ASSIGNMENT,           //赋值
@@ -105,7 +104,7 @@ using zfxintarr = std::vector<int>;
 using zfxfloatarr = std::vector<float>;
 using zfxstringarr = std::vector<std::string>;
 
-using zfxvariant = std::variant<int, float, std::string, 
+using zfxvariant = std::variant<int, float, std::string,
     zfxintarr, zfxfloatarr, zfxstringarr,
     glm::vec2, glm::vec3, glm::vec4, 
     glm::mat2, glm::mat3, glm::mat4>;
@@ -139,6 +138,7 @@ struct ZfxContext
     /* in */ std::weak_ptr<INode> spNode;
     /* in */ std::string code;
     /* out */ std::string printContent;
+    /* out */ operatorVals jumpFlag;
 };
 
 struct FuncContext {

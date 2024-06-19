@@ -75,11 +75,11 @@ struct AttributeWrangle : zeno::INode {
         ctx.spNode = shared_from_this();
         ctx.spObject = prim;
         ctx.code = code;
-        //ZfxExecute zfx(code, ctx);
-        //zfx.execute();
+        ZfxExecute zfx(code, ctx);
+        zfx.execute();
 
-        auto& funcMgr = zeno::getSession().funcManager;
-        funcMgr->testExp();
+        //auto& funcMgr = zeno::getSession().funcManager;
+        //funcMgr->testExp();
     }
 };
 
