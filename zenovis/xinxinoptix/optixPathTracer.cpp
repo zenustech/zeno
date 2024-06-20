@@ -3785,26 +3785,30 @@ void set_outside_random_number(int32_t outside_random_number) {
     state.params.outside_random_number = outside_random_number;
 }
 
-void *optixgetimg_extra(std::string name) {
+std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
+    std::vector<float> tex_data(w * h * 3);
     if (name == "diffuse") {
-        return output_buffer_diffuse->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_d.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "specular") {
-        return output_buffer_specular->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_s.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "transmit") {
-        return output_buffer_transmit->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_t.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "background") {
-        return output_buffer_background->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_b.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "mask") {
-        return output_buffer_mask->getHostPointer();
+        std::copy_n((float*) output_buffer_mask->getHostPointer(), tex_data.size(), tex_data.data());
     }
     else if (name == "color") {
-        return output_buffer_color->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
-    throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    else {
+        throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    }
+    return tex_data;
 }
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
@@ -3880,7 +3884,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
         if (enable_output_mask) {
             path = path.substr(0, path.size() - 4);
-            save_png_data(path + "_mask.png", w, h,  (float*)optixgetimg_extra("mask"));
+            save_png_data(path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
         // AOV
         if (enable_output_aov) {
@@ -3888,12 +3892,12 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 zeno::create_directories_when_write_file(exr_path);
                 SaveMultiLayerEXR(
                         {
-                                (float*)optixgetimg_extra("color"),
-                                (float*)optixgetimg_extra("diffuse"),
-                                (float*)optixgetimg_extra("specular"),
-                                (float*)optixgetimg_extra("transmit"),
-                                (float*)optixgetimg_extra("background"),
-                                (float*)optixgetimg_extra("mask"),
+                                optixgetimg_extra2("color", w, h).data(),
+                                optixgetimg_extra2("diffuse", w, h).data(),
+                                optixgetimg_extra2("specular", w, h).data(),
+                                optixgetimg_extra2("transmit", w, h).data(),
+                                optixgetimg_extra2("background", w, h).data(),
+                                optixgetimg_extra2("mask", w, h).data(),
                         },
                         w,
                         h,
@@ -3911,17 +3915,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             }
             else {
                 path = path.substr(0, path.size() - 4);
-                save_png_color(path + ".aov.diffuse.png", w, h,  (float*)optixgetimg_extra("diffuse"));
-                save_png_color(path + ".aov.specular.png", w, h,  (float*)optixgetimg_extra("specular"));
-                save_png_color(path + ".aov.transmit.png", w, h,  (float*)optixgetimg_extra("transmit"));
-                save_png_data(path + ".aov.background.png", w, h,  (float*)optixgetimg_extra("background"));
-                save_png_data(path + ".aov.mask.png", w, h,  (float*)optixgetimg_extra("mask"));
+                save_png_color(path + ".aov.diffuse.png",   w, h,  optixgetimg_extra2("diffuse", w, h).data());
+                save_png_color(path + ".aov.specular.png",  w, h,  optixgetimg_extra2("specular", w, h).data());
+                save_png_color(path + ".aov.transmit.png",  w, h,  optixgetimg_extra2("transmit", w, h).data());
+                save_png_data(path + ".aov.background.png", w, h,  optixgetimg_extra2("background", w, h).data());
+                save_png_data(path + ".aov.mask.png",       w, h,  optixgetimg_extra2("mask", w, h).data());
             }
         }
         else {
             if (enable_output_exr) {
                 zeno::create_directories_when_write_file(exr_path);
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
             }
             else {
                 std::string jpg_native_path = zeno::create_directories_when_write_file(path);
