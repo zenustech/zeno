@@ -10,6 +10,7 @@
 #include <variant>
 #include <functional>
 #include <zeno/utils/format.h>
+#include <numeric>
 
 
 namespace zeno {
