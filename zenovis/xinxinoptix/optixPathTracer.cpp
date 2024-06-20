@@ -571,15 +571,15 @@ static void initLaunchParams( PathTracerState& state )
 
     CUDA_CHECK( cudaMallocManaged(
             reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
+            params.width * params.height * sizeof( ushort3 )
             ) );
-    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    state.params.albedo_buffer = (ushort3*)(CUdeviceptr)state.albedo_buffer_p;
     
     CUDA_CHECK( cudaMallocManaged(
             reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
+            params.width * params.height * sizeof( ushort3 )
             ) );
-    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    state.params.normal_buffer = (ushort3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -640,15 +640,15 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
 
     CUDA_CHECK( cudaMallocManaged(
                 reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
+                params.width * params.height * sizeof( ushort3 )
                 ) );
-    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    state.params.albedo_buffer = (ushort3*)(CUdeviceptr)state.albedo_buffer_p;
     
     CUDA_CHECK( cudaMallocManaged(
                 reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
+                params.width * params.height * sizeof( ushort3 )
                 ) );
-    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    state.params.normal_buffer = (ushort3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
@@ -3877,17 +3877,24 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 std::string jpg_native_path = zeno::create_directories_when_write_file(path);
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
-                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                    std::vector<float3> temp_buffer(w * h);
+                    const ushort3* _albedo_buffer = reinterpret_cast<ushort3 *>(state.albedo_buffer_p.handle);
+                    for (auto i = 0; i < w * h; i++) {
+                        temp_buffer[i] = toFloat(_albedo_buffer[i]);
+                    }
                     //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
                     auto a_path = path + ".albedo.pfm";
                     std::string native_a_path = zeno::create_directories_when_write_file(a_path);
-                    zeno::write_pfm(native_a_path.c_str(), w, h, _albedo_buffer);
+                    zeno::write_pfm(native_a_path.c_str(), w, h, (float*)temp_buffer.data());
 
-                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                    const ushort3* _normal_buffer = reinterpret_cast<ushort3*>(state.normal_buffer_p.handle);
+                    for (auto i = 0; i < w * h; i++) {
+                        temp_buffer[i] = toFloat(_normal_buffer[i]);
+                    }
                     //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
                     auto n_path = path + ".normal.pfm";
                     std::string native_n_path = zeno::create_directories_when_write_file(n_path);
-                    zeno::write_pfm(native_n_path.c_str(), w, h, _normal_buffer);
+                    zeno::write_pfm(native_n_path.c_str(), w, h, (float*)temp_buffer.data());
                 }
             }
         }

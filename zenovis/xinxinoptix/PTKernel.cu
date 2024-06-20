@@ -399,10 +399,10 @@ extern "C" __global__ void __raygen__rg()
 
         if (params.denoise) {
 
-            const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
+            const float3 accum_albedo_prev = half3_to_float3(params.albedo_buffer[ image_index ]);
             tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
 
-            const float3 accum_normal_prev = params.normal_buffer[ image_index ];
+            const float3 accum_normal_prev = half3_to_float3(params.normal_buffer[ image_index ]);
             tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
         }
     }
@@ -417,8 +417,8 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer_M[ image_index ] = accum_mask;
 
     if (params.denoise) {
-        params.albedo_buffer[ image_index ] = tmp_albedo;
-        params.normal_buffer[ image_index ] = tmp_normal;
+        params.albedo_buffer[ image_index ] = float3_to_half3(tmp_albedo);
+        params.normal_buffer[ image_index ] = float3_to_half3(tmp_normal);
     }
 }
 
