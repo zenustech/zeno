@@ -30,3 +30,7 @@ float3 toFloat(ushort3 in) {
         __half2float(z),
     };
 }
+float toFloat(ushort1 in) {
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
+}

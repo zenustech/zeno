@@ -634,7 +634,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
-        params.width * params.height * sizeof( ushort3 )
+        params.width * params.height * sizeof( ushort1 )
             ) );
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
@@ -653,7 +653,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
-    state.params.accum_buffer_B = (ushort3*)(CUdeviceptr)state.accum_buffer_b;
+    state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
 
@@ -3736,13 +3736,13 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_t.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "background") {
-        std::vector<ushort3> temp_buffer(w * h);
-        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(ushort3) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        std::vector<ushort1> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(ushort1) * temp_buffer.size(), cudaMemcpyDeviceToHost);
         for (auto i = 0; i < temp_buffer.size(); i++) {
-            float3 v = toFloat(temp_buffer[i]);
-            tex_data[i * 3 + 0] = v.x;
-            tex_data[i * 3 + 1] = v.y;
-            tex_data[i * 3 + 2] = v.z;
+            float v = toFloat(temp_buffer[i]);
+            tex_data[i * 3 + 0] = v;
+            tex_data[i * 3 + 1] = v;
+            tex_data[i * 3 + 2] = v;
         }
     }
     else if (name == "mask") {

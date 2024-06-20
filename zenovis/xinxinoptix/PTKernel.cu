@@ -119,6 +119,20 @@ float3 half3_to_float3(ushort3 in)
     return v;
 }
 
+static __inline__ __device__
+ushort1 float_to_half(float in)
+{
+    half x = __float2half(in);
+    return reinterpret_cast<ushort1&>(x);
+}
+
+static __inline__ __device__
+float half_to_float(ushort1 in)
+{
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
+}
+
 extern "C" __global__ void __raygen__rg()
 {
 
@@ -388,7 +402,11 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
         const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
         const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
-        const float3 accum_color_prev_b = half3_to_float3(params.accum_buffer_B[ image_index ]);
+        const float3 accum_color_prev_b = {
+                half_to_float(params.accum_buffer_B[ image_index ]),
+                half_to_float(params.accum_buffer_B[ image_index ]),
+                half_to_float(params.accum_buffer_B[ image_index ]),
+        };
         const float3 accum_mask_prev    = params.frame_buffer_M[ image_index ];
         accum_color   = mix( vec3(accum_color_prev), accum_color, a );
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
@@ -411,7 +429,7 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
     params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
     params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
-    params.accum_buffer_B[ image_index ] = float3_to_half3(accum_color_b);
+    params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
 
     params.frame_buffer[ image_index ] = make_color ( accum_color );
     params.frame_buffer_M[ image_index ] = accum_mask;

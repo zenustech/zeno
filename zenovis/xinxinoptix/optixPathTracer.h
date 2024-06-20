@@ -158,7 +158,7 @@ struct Params
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
     float3*      accum_buffer_T;
-    ushort3*     accum_buffer_B;
+    ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
     float3*      frame_buffer_M;
 
