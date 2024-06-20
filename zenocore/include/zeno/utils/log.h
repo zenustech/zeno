@@ -32,11 +32,17 @@ ZENO_API void set_log_level(log_level_t level);
 ZENO_API void set_log_stream(std::ostream &osin);
 ZENO_API bool __check_log_level(log_level_t level);
 ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, std::string_view msg);
+ZENO_API void __impl_only_print(std::string_view msg);
 
 template <class ...Args>
 void log_print(log_level_t level, __with_source_location<std::string_view> const &msg, Args &&...args) {
     if (__check_log_level(level))
         __impl_log_print(level, msg.location(), format(msg.value(), std::forward<Args>(args)...));
+}
+
+template <class ...Args>
+void log_only_print(__with_source_location<std::string_view> const& msg, Args &&...args) {
+    __impl_only_print(format(msg.value(), std::forward<Args>(args)...));
 }
 
 #define _ZENO_PER_LOG_LEVEL(x) \

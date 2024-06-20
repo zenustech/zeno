@@ -28,7 +28,6 @@ namespace zeno {
         void init();
         float callRef(const std::string& ref, ZfxContext* pContext);
         zfxvariant eval(const std::string& func, const std::vector<zfxvariant>& args, ZfxContext* pContext);
-        void autoIncDec(std::shared_ptr<ZfxASTNode> spVar);
         void pushStack();
         void popStack();
 

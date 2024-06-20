@@ -74,6 +74,10 @@ void ZenoApplication::onThreadLogReady(const QString& msg)
             mgr.appendLog(QtFatalMsg, "zeno", 0, msg);
         }
     }
+    else {
+        auto& mgr = GraphsManager::instance();
+        mgr.appendLog(QtDebugMsg, "zeno", 0, msg);
+    }
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)

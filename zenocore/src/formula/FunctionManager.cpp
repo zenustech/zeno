@@ -9,6 +9,7 @@
 #include <regex>
 #include <variant>
 #include <functional>
+#include <zeno/utils/format.h>
 
 
 namespace zeno {
@@ -169,7 +170,7 @@ namespace zeno {
 
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
         //debug
-        printSyntaxTree(root, pCtx->code);
+        //printSyntaxTree(root, pCtx->code);
         execute(root, pCtx);
     }
 
@@ -353,18 +354,11 @@ namespace zeno {
         }, var);
     }
 
-    void FunctionManager::autoIncDec(std::shared_ptr<ZfxASTNode> spVar) {
-        if (spVar->type == ZENVAR && (spVar->opVal == AutoIncreaseLast || spVar->opVal == AutoDecreaseLast)) {
-
-        }
-    }
-
     std::vector<zfxvariant> FunctionManager::process_args(std::shared_ptr<ZfxASTNode> parent, ZfxContext* pContext) {
         std::vector<zfxvariant> args;
         for (auto pChild : parent->children) {
             zfxvariant argval = execute(pChild, pContext);
             args.push_back(argval);
-            autoIncDec(pChild);
         }
         return args;
     }
@@ -439,7 +433,13 @@ namespace zeno {
                 break;
             }
             case TYPE_INT_ARR: {
-                if (!std::holds_alternative<zfxintarr>(newvar)) {
+                if (std::holds_alternative<zfxfloatarr>(newvar)) {
+                    zfxfloatarr floatarr;
+                    for (auto&& val : std::get<zfxfloatarr>(newvar))
+                        floatarr.push_back(val);
+                    newvar = floatarr;
+                }
+                else if (!std::holds_alternative<zfxintarr>(newvar)) {
                     throw makeError<UnimplError>("type dismatch TYPE_INT_ARR");
                 }
                 break;
@@ -457,7 +457,13 @@ namespace zeno {
                 break;
             }
             case TYPE_FLOAT_ARR: {
-                if (!std::holds_alternative<zfxfloatarr>(newvar)) {
+                if (std::holds_alternative<zfxintarr>(newvar)) {
+                    zfxintarr intarr;
+                    for (auto&& val : std::get<zfxintarr>(newvar))
+                        intarr.push_back(val);
+                    newvar = intarr;
+                }
+                else if (!std::holds_alternative<zfxfloatarr>(newvar)) {
                     throw makeError<UnimplError>("type dismatch TYPE_FLOAT_ARR");
                 }
                 break;
@@ -564,8 +570,8 @@ namespace zeno {
                     dataType = TYPE_FLOAT_ARR;
                     current = zfxfloatarr();
                 }
-                else if (dataType == TYPE_FLOAT_ARR) {
-                    auto arr = std::get<zfxfloatarr>(current);
+                if (dataType == TYPE_FLOAT_ARR) {
+                    auto& arr = std::get<zfxfloatarr>(current);
                     arr.push_back(std::get<int>(arg));
                 }
                 else {
@@ -573,34 +579,34 @@ namespace zeno {
                 }
             }
             else if (std::holds_alternative<float>(arg)) {
-                if (dataType != UNDEFINE_OP && dataType != TYPE_FLOAT && dataType != TYPE_INT) {
+                if (dataType != UNDEFINE_OP && dataType != TYPE_FLOAT_ARR) {
                     throw makeError<UnimplError>("data type inconsistent");
                 }
                 if (dataType == UNDEFINE_OP) {
                     dataType = TYPE_FLOAT_ARR;
                     current = zfxfloatarr();
                 }
-                else if (dataType == TYPE_FLOAT_ARR) {
-                    auto arr = std::get<zfxfloatarr>(current);
+                if (dataType == TYPE_FLOAT_ARR) {
+                    auto& arr = std::get<zfxfloatarr>(current);
                     arr.push_back(std::get<float>(arg));
                 }
             }
             else if (std::holds_alternative<std::string>(arg)) {
-                if (dataType != UNDEFINE_OP && dataType != TYPE_STRING) {
+                if (dataType != UNDEFINE_OP && dataType != TYPE_STRING_ARR) {
                     throw makeError<UnimplError>("data type inconsistent");
                 }
                 if (dataType == UNDEFINE_OP) {
-                    dataType = TYPE_FLOAT_ARR;
+                    dataType = TYPE_STRING_ARR;
                     current = zfxstringarr();
                 }
-                else if (dataType == TYPE_STRING_ARR) {
-                    auto arr = std::get<zfxstringarr>(current);
+                if (dataType == TYPE_STRING_ARR) {
+                    auto& arr = std::get<zfxstringarr>(current);
                     arr.push_back(std::get<std::string>(arg));
                 }
             }
             //不考虑intarr，因为glm的vector/matrix都是储存float
             else if (std::holds_alternative<zfxfloatarr>(arg)) {
-                if (dataType != UNDEFINE_OP && dataType != TYPE_FLOAT_ARR && dataType != TYPE_INT_ARR) {
+                if (dataType != UNDEFINE_OP && dataType != TYPE_MATRIX2 && dataType != TYPE_MATRIX3 && dataType != TYPE_MATRIX4) {
                     throw makeError<UnimplError>("data type inconsistent");
                 }
 
@@ -623,20 +629,20 @@ namespace zeno {
 
                 //{{0, 1}, {2, 3}}
                 if (dataType == TYPE_MATRIX2 && arr.size() == 2 && idx < 2) {
-                    auto mat = std::get<glm::mat2>(current);
+                    auto& mat = std::get<glm::mat2>(current);
                     mat[idx][0] = arr[0];
                     mat[idx][1] = arr[1];
                 }
                 //{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
                 else if (dataType == TYPE_MATRIX3 && arr.size() == 3 && idx < 3) {
-                    auto mat = std::get<glm::mat3>(current);
+                    auto& mat = std::get<glm::mat3>(current);
                     mat[idx][0] = arr[0];
                     mat[idx][1] = arr[1];
                     mat[idx][2] = arr[2];
                 }
                 //{{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}, {0, 0, 1, 1}}
                 else if (dataType == TYPE_MATRIX4 && arr.size() == 4 && idx < 4) {
-                    auto mat = std::get<glm::mat4>(current);
+                    auto& mat = std::get<glm::mat4>(current);
                     mat[idx][0] = arr[0];
                     mat[idx][1] = arr[1];
                     mat[idx][2] = arr[2];
@@ -726,9 +732,17 @@ namespace zeno {
                 }
                 case AutoIncreaseLast:
                 case AutoDecreaseLast:  //在外面再自增/减
+                {
+                    const std::string& varname = get_zfxvar<std::string>(root->value);
+                    zfxvariant var = getVariable(varname);
+                    zfxvariant updatevar = var;
+                    selfIncOrDec(updatevar, AutoIncreaseLast == root->opVal);
+                    assignVariable(varname, updatevar);
+                    return var;
+                }
                 default: {
                     const std::string& varname = get_zfxvar<std::string>(root->value);
-                    zfxvariant& var = getVariable(varname);
+                    const zfxvariant& var = getVariable(varname);
                     return var;
                 }
                 }
@@ -743,7 +757,7 @@ namespace zeno {
             case FOUROPERATIONS: {
                 //四则运算+ - * / %
                 std::vector<zfxvariant> args = process_args(root, pContext);
-                if (args.size() == 2) {
+                if (args.size() != 2) {
                     throw makeError<UnimplError>("op args");
                 }
                 switch (root->opVal) {
@@ -831,7 +845,6 @@ namespace zeno {
                 else {
                     std::shared_ptr<ZfxASTNode> valueNode = root->children[2];
                     newvar = execute(valueNode, pContext);
-                    autoIncDec(valueNode);
                 }
 
                 std::string varname = get_zfxvar<std::string>(nameNode->value);
@@ -899,37 +912,17 @@ namespace zeno {
                 }
                 case BulitInVar: {
                     //TODO: 什么情况下需要修改这种变量
-                    std::string attrname = get_zfxvar<std::string>(valNode->value);
-                    if (attrname.size() < 2 || attrname[0] != '$') {
-                        throw makeError<UnimplError>("build in var");
-                    }
-                    attrname = attrname.substr(1);
-                    if (attrname == "F") {
-                        //TODO
-                    }
-                    else if (attrname == "T") {
-                        //TODO
-                    }
-                    else if (attrname == "FPS") {
-                        //TODO
-                    }
+                    //$F $T这些貌似不能通过脚本去改，houdini也是这样，不知道有没有例外
+                    throw makeError<UnimplError>("Read-only variable cannot be modified.");
                 }
                 case AutoDecreaseFirst: 
-                case AutoIncreaseFirst: {
-                    const std::string& varname = get_zfxvar<std::string>(valNode->value);
-                    autoIncDec(valNode);
-                    const zfxvariant& var = getVariable(varname);
-                    assignVariable(targetvar, var);
-                    return var;
-                }
+                case AutoIncreaseFirst:
                 case AutoIncreaseLast:
-                case AutoDecreaseLast:  //在外面再自增/减
+                case AutoDecreaseLast:
                 default: {
-                    const std::string& varname = get_zfxvar<std::string>(valNode->value);
-                    const zfxvariant& var = getVariable(varname);
-                    assignVariable(targetvar, var);
-                    autoIncDec(valNode);
-                    return var;
+                    //先自增/减,再赋值，似乎没有意义，所以忽略
+                    assignVariable(targetvar, res);
+                    return zfxvariant();
                 }
                 }
                 break;
@@ -994,16 +987,16 @@ namespace zeno {
                     execute(forStep, pContext);
                     cond = get_zfxvar<int>(execute(forCond, pContext));
                 }
-
+                break;
             }
             case FOREACH:{
-                
+                break;
             }
             case WHILE:{
-                
+                break;
             }
             case DOWHILE:{
-        
+                break;
             }
             case CODEBLOCK:{
                 //多个语法树作为children的代码块
@@ -1126,6 +1119,31 @@ namespace zeno {
         return zfxvariant();
     }
 
+    std::string format_variable_size(const char* fmt, std::vector<zfxvariant> args) {
+        return std::accumulate(
+            std::begin(args),
+            std::end(args),
+            std::string{ fmt },
+            [](std::string toFmt, zfxvariant arg) {
+                return std::visit([toFmt](auto&& val)->std::string {
+                    using T = std::decay_t<decltype(val)>;
+                    if constexpr (std::is_same_v<T, int>) {
+                        return format(toFmt, val);
+                    }
+                    else if constexpr (std::is_same_v<T, float>) {
+                        return format(toFmt, val);
+                    }
+                    else if constexpr (std::is_same_v<T, std::string>) {
+                        return format(toFmt, val);
+                    }
+                    else {
+                        throw makeError<UnimplError>("error type on format string");
+                    }
+                    }, arg);
+            }
+        );
+    }
+
     zfxvariant FunctionManager::eval(const std::string& funcname, const std::vector<zfxvariant>& args, ZfxContext* pContext) {
         if (funcname == "ref") {
             if (args.size() != 1)
@@ -1133,6 +1151,19 @@ namespace zeno {
             const std::string ref = get_zfxvar<std::string>(args[0]);
             float res = callRef(ref, pContext);
             return res;
+        }
+        else if (funcname == "log") {
+            if (args.empty()) {
+                throw makeError<UnimplError>("empty args on log");
+            }
+            std::string formatString = get_zfxvar<std::string>(args[0]);
+
+            std::vector<zfxvariant> _args = args;
+            _args.erase(_args.begin());
+
+            std::string ret = format_variable_size(formatString.c_str(), _args);
+            zeno::log_only_print(ret);
+            //pContext->printContent += ret;
         }
         else {
             //先简单匹配调用

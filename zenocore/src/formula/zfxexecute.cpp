@@ -90,7 +90,7 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArr
     std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = VARIABLETYPE;
     spNode->value = text;
-    if (text == "int") {
+    if (text == "int" || text == "bool") {
         spNode->opVal = bArray ? TYPE_INT_ARR : TYPE_INT;
     }
     else if (text == "float") {

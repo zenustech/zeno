@@ -1010,22 +1010,25 @@ void DockContent_View::initConnections()
     connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
-    connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
-        auto &ud = zeno::getSession().userData();
-        ud.set2("optix_show_background", state > 0);
 
-        {
-            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
-            ZASSERT_EXIT(pZenoVis);
-            auto session = pZenoVis->getSession();
-            ZASSERT_EXIT(session);
-            auto scene = session->get_scene();
-            ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
-            m_pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        }
-    });
+    if (m_background) {
+        connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
+                auto &ud = zeno::getSession().userData();
+                ud.set2("optix_show_background", state > 0);
+
+                {
+                    Zenovis *pZenoVis = m_pDisplay->getZenoVis();
+                    ZASSERT_EXIT(pZenoVis);
+                    auto session = pZenoVis->getSession();
+                    ZASSERT_EXIT(session);
+                    auto scene = session->get_scene();
+                    ZASSERT_EXIT(scene);
+                    scene->objectsMan->needUpdateLight = true;
+                    m_pDisplay->setSimpleRenderOption();
+                    zenoApp->getMainWindow()->updateViewport();
+                }
+            });
+    }
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
 

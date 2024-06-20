@@ -124,6 +124,7 @@ equalto \=
         }
         else if (strcmp(yytext, "int") == 0 ||
                    strcmp(yytext, "float") == 0 ||
+                   strcmp(yytext, "bool") == 0 ||
                    strcmp(yytext, "string") == 0 ||
                    strcmp(yytext, "vector2") == 0 ||
                    strcmp(yytext, "vector3") == 0 ||
