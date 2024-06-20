@@ -160,7 +160,7 @@ struct Params
     float3*      accum_buffer_T;
     ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
-    float3*      frame_buffer_M;
+    ushort3*     frame_buffer_M;
 
     float3*      debug_buffer;
     ushort3*     albedo_buffer;

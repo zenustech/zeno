@@ -253,7 +253,6 @@ ushort2 halfNormal(float4 in)
 #endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_mask;
 using Vertex = float4;
 
 struct PathTracerState
@@ -300,6 +299,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
+    raii<CUdeviceptr> accum_buffer_m;
 
     raii<CUdeviceptr> finite_lights_ptr;
 
@@ -613,7 +613,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
-    (*output_buffer_mask).resize( params.width, params.height );
 
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
@@ -631,6 +630,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
         params.width * params.height * sizeof( float3 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_m .reset()),
+        params.width * params.height * sizeof( ushort3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
@@ -653,6 +656,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
+    state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
@@ -677,7 +681,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
-    state.params.frame_buffer_M = (*output_buffer_mask      ).map();
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
     for(int j=0;j<1;j++){
@@ -710,7 +713,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       }
     }
     output_buffer.unmap();
-    (*output_buffer_mask      ).unmap();
 
     try {
         CUDA_SYNC_CHECK();
@@ -1606,14 +1608,6 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_o->setStream( 0 );
-    }
-    if (!output_buffer_mask) {
-      output_buffer_mask.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_mask->setStream( 0 );
     }
 #ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
@@ -3746,7 +3740,14 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
         }
     }
     else if (name == "mask") {
-        std::copy_n((float*) output_buffer_mask->getHostPointer(), tex_data.size(), tex_data.data());
+        std::vector<ushort3> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_m.handle, sizeof(ushort3) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            float3 v = toFloat(temp_buffer[i]);
+            tex_data[i * 3 + 0] = v.x;
+            tex_data[i * 3 + 1] = v.y;
+            tex_data[i * 3 + 2] = v.z;
+        }
     }
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
@@ -3978,7 +3979,6 @@ void optixDestroy() {
     OptixUtil::shaderCoreLUT.clear();
 
     output_buffer_o           .reset();
-    output_buffer_mask        .reset();
     g_StaticMeshPieces        .clear();
     g_meshPieces              .clear();
     state = {};

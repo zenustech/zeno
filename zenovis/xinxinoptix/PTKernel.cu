@@ -407,7 +407,7 @@ extern "C" __global__ void __raygen__rg()
                 half_to_float(params.accum_buffer_B[ image_index ]),
                 half_to_float(params.accum_buffer_B[ image_index ]),
         };
-        const float3 accum_mask_prev    = params.frame_buffer_M[ image_index ];
+        const float3 accum_mask_prev    = half3_to_float3(params.frame_buffer_M[ image_index ]);
         accum_color   = mix( vec3(accum_color_prev), accum_color, a );
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
         accum_color_s = mix( vec3(accum_color_prev_s), accum_color_s, a );
@@ -432,7 +432,7 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
 
     params.frame_buffer[ image_index ] = make_color ( accum_color );
-    params.frame_buffer_M[ image_index ] = accum_mask;
+    params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = float3_to_half3(tmp_albedo);
