@@ -991,12 +991,141 @@ namespace zeno {
                 break;
             }
             case FOREACH:{
+                //对应文法：FOREACH LPAREN foreach-step COLON zenvar RPAREN code-block
+                //foreach-step 可能有一个或两个子成员，并返回vec<ASTNode>
+                int nChild = root->children.size();
+                if (nChild == 3 || nChild == 4) {
+                    //没有索引
+                    auto idxNode = nChild == 3 ? nullptr : root->children[0];
+                    auto varNode = nChild == 3 ? root->children[0] : root->children[1];
+                    auto arrNode = nChild == 3 ? root->children[1] : root->children[2];
+                    auto codeSeg = nChild == 3 ? root->children[2] : root->children[3];
+                    if (!varNode || !arrNode || !codeSeg)
+                        throw makeError<UnimplError>("elements on foreach error.");
+
+                    zfxvariant arr = execute(arrNode, pContext);
+
+                    //压栈
+                    pushStack();
+                    scope_exit sp([this]() {this->popStack(); });
+
+                    //定义idxNode所指向的名称为值 i
+                    //定义varNode所指向的名称为值 arrtest[i]
+                    std::string idxName;
+                    if (idxNode) {
+                        idxName = get_zfxvar<std::string>(idxNode->value);
+                        declareVariable(idxName);
+                    }
+                    const std::string& varName = get_zfxvar<std::string>(varNode->value);
+                    declareVariable(varName);
+
+                    std::visit([&](auto&& val) {
+                        using T = std::decay_t<decltype(val)>;
+                        if constexpr (std::is_same_v<T, zfxintarr> ||
+                            std::is_same_v<T, zfxfloatarr> ||
+                            std::is_same_v<T, zfxstringarr>) {
+
+                            for (int i = 0; i < val.size(); i++) {
+                                //修改变量和索引的值为i, arrtest[i];
+                                if (idxNode) {
+                                    assignVariable(idxName, i);
+                                }
+                                assignVariable(varName, val[i]);
+
+                                //修改定义后，再次运行code
+                                execute(codeSeg, pContext);
+
+                                //检查是否有跳转, continue在execute内部已经跳出了，这里不需要处理
+                                if (pContext->jumpFlag == JUMP_BREAK ||
+                                    pContext->jumpFlag == JUMP_RETURN) {
+                                    return;
+                                }
+                            }
+                        }
+                        else if constexpr (std::is_same_v<T, glm::vec2> ||
+                            std::is_same_v<T, glm::vec3> ||
+                            std::is_same_v<T, glm::vec4>) {
+
+                            for (int i = 0; i < val.length(); i++) {
+                                //修改变量和索引的值为i, arrtest[i];
+                                if (idxNode) {
+                                    assignVariable(idxName, i);
+                                }
+                                assignVariable(varName, val[i]);
+
+                                //修改定义后，再次运行code
+                                execute(codeSeg, pContext);
+
+                                //检查是否有跳转, continue在execute内部已经跳出了，这里不需要处理
+                                if (pContext->jumpFlag == JUMP_BREAK ||
+                                    pContext->jumpFlag == JUMP_RETURN) {
+                                    return;
+                                }
+                            }
+                        }
+                        else {
+                            throw makeError<UnimplError>("foreach error: no array type");
+                        }
+                    }, arr);
+                    return zfxvariant();
+                }
+                else {
+                    throw makeError<UnimplError>("foreach error.");
+                }
                 break;
             }
             case WHILE:{
+                if (root->children.size() != 2) {
+                    throw makeError<UnimplError>("while failed.");
+                }
+   
+                auto forCond = root->children[0];
+                auto loopContent = root->children[1];
+
+                //压栈
+                pushStack();
+                scope_exit sp([this]() {this->popStack(); });
+
+                int cond = get_zfxvar<int>(execute(forCond, pContext));
+                while (cond) {
+                    execute(loopContent, pContext);     //CodeBlock里面可能会多压栈一次，没关系，变量都是看得到的
+
+                    if (pContext->jumpFlag == JUMP_BREAK)
+                        break;
+                    if (pContext->jumpFlag == JUMP_CONTINUE)
+                        continue;
+                    if (pContext->jumpFlag == JUMP_RETURN)
+                        return zfxvariant();
+
+                    cond = get_zfxvar<int>(execute(forCond, pContext));
+                }
                 break;
             }
             case DOWHILE:{
+                if (root->children.size() != 2) {
+                    throw makeError<UnimplError>("while failed.");
+                }
+
+                auto forCond = root->children[1];
+                auto loopContent = root->children[0];
+
+                //压栈
+                pushStack();
+                scope_exit sp([this]() {this->popStack(); });
+                int cond = 0;
+
+                do {
+                    execute(loopContent, pContext);     //CodeBlock里面可能会多压栈一次，没关系，变量都是看得到的
+
+                    if (pContext->jumpFlag == JUMP_BREAK)
+                        break;
+                    if (pContext->jumpFlag == JUMP_CONTINUE)
+                        continue;
+                    if (pContext->jumpFlag == JUMP_RETURN)
+                        return zfxvariant();
+                    int cond = get_zfxvar<int>(execute(forCond, pContext));
+                } while (cond);
+
                 break;
             }
             case CODEBLOCK:{
