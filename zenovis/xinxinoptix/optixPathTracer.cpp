@@ -2063,7 +2063,6 @@ void using_hdr_sky(bool enable) {
 
 void show_background(bool enable) {
     state.params.show_background = enable;
-    state.params.subframe_index = 0;
 }
 
 void updatePortalLights(const std::vector<Portal>& portals) {
