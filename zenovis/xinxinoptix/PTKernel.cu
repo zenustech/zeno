@@ -386,24 +386,7 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
     params.accum_buffer_B[ image_index ] = accum_color_b;
 
-
-    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t), aperture, shutter_speed, iso, midGray, false, false);
-
-
-    float3 out_color = rgb_mapped;
-    float3 out_color_d = d_mapped;
-    float3 out_color_s = s_mapped;
-    float3 out_color_t = t_mapped;
-    float3 out_color_b = accum_color_b;
-    params.frame_buffer[ image_index ] = make_color ( out_color );
-    params.frame_buffer_C[ image_index ] = out_color;
-    params.frame_buffer_D[ image_index ] = out_color_d;
-    params.frame_buffer_S[ image_index ] = out_color_s;
-    params.frame_buffer_T[ image_index ] = out_color_t;
-    params.frame_buffer_B[ image_index ] = accum_color_b;
+    params.frame_buffer[ image_index ] = make_color ( accum_color );
     params.frame_buffer_M[ image_index ] = accum_mask;
 
     if (params.denoise) {

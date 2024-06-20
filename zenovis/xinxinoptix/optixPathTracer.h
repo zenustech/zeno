@@ -160,11 +160,6 @@ struct Params
     float3*      accum_buffer_T;
     float3*      accum_buffer_B;
     uchar4*      frame_buffer;
-    float3*      frame_buffer_C;
-    float3*      frame_buffer_D;
-    float3*      frame_buffer_S;
-    float3*      frame_buffer_T;
-    float3*      frame_buffer_B;
     float3*      frame_buffer_M;
 
     float3*      debug_buffer;

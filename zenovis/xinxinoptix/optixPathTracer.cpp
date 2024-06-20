@@ -253,11 +253,6 @@ ushort2 halfNormal(float4 in)
 #endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_mask;
 using Vertex = float4;
 
@@ -618,11 +613,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
-    (*output_buffer_color).resize( params.width, params.height );
-    (*output_buffer_diffuse).resize( params.width, params.height );
-    (*output_buffer_specular).resize( params.width, params.height );
-    (*output_buffer_transmit).resize( params.width, params.height );
-    (*output_buffer_background).resize( params.width, params.height );
     (*output_buffer_mask).resize( params.width, params.height );
 
     // Realloc accumulation buffer
@@ -687,11 +677,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
-    state.params.frame_buffer_C = (*output_buffer_color     ).map();
-    state.params.frame_buffer_D = (*output_buffer_diffuse   ).map();
-    state.params.frame_buffer_S = (*output_buffer_specular  ).map();
-    state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
-    state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.frame_buffer_M = (*output_buffer_mask      ).map();
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
@@ -725,11 +710,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       }
     }
     output_buffer.unmap();
-    (*output_buffer_color   ).unmap();
-    (*output_buffer_diffuse   ).unmap();
-    (*output_buffer_specular  ).unmap();
-    (*output_buffer_transmit  ).unmap();
-    (*output_buffer_background).unmap();
     (*output_buffer_mask      ).unmap();
 
     try {
@@ -1626,46 +1606,6 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_o->setStream( 0 );
-    }
-    if (!output_buffer_color) {
-      output_buffer_color.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_color->setStream( 0 );
-    }
-    if (!output_buffer_diffuse) {
-      output_buffer_diffuse.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_diffuse->setStream( 0 );
-    }
-    if (!output_buffer_specular) {
-      output_buffer_specular.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_specular->setStream( 0 );
-    }
-    if (!output_buffer_transmit) {
-      output_buffer_transmit.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_transmit->setStream( 0 );
-    }
-    if (!output_buffer_background) {
-      output_buffer_background.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_background->setStream( 0 );
     }
     if (!output_buffer_mask) {
       output_buffer_mask.emplace(
@@ -4025,10 +3965,6 @@ void optixDestroy() {
     OptixUtil::shaderCoreLUT.clear();
 
     output_buffer_o           .reset();
-    output_buffer_diffuse     .reset();
-    output_buffer_specular    .reset();
-    output_buffer_transmit    .reset();
-    output_buffer_background  .reset();
     output_buffer_mask        .reset();
     g_StaticMeshPieces        .clear();
     g_meshPieces              .clear();
