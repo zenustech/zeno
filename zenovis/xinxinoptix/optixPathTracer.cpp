@@ -1489,20 +1489,6 @@ static void cleanupState( PathTracerState& state )
     OPTIX_CHECK(optixModuleDestroy(OptixUtil::ray_module));
     OPTIX_CHECK(optixModuleDestroy(OptixUtil::sphere_module));
 
-    cleanupSpheresGPU();
-    lightsWrapper.reset();
-    
-    for (auto& ele : list_volume) {
-        cleanupVolume(*ele);
-    }
-    list_volume.clear();
-
-    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
-        cleanupVolume(*val);
-    }
-    OptixUtil::g_vdb_cached_map.clear();
-    OptixUtil::g_ies.clear();
-
     std::cout << "optix cleanup" << std::endl;
 }
 
@@ -2056,7 +2042,10 @@ void using_hdr_sky(bool enable) {
 }
 
 void show_background(bool enable) {
-    state.params.show_background = enable;
+    if (enable != state.params.show_background) {
+        state.params.show_background = enable;
+        state.params.subframe_index = 0;
+    }
 }
 
 void updatePortalLights(const std::vector<Portal>& portals) {
@@ -3943,14 +3932,34 @@ void optixCleanup() {
     }
    
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
+
+    cleanupSpheresGPU();
+    lightsWrapper.reset();
+    
+    for (auto& ele : list_volume) {
+        cleanupVolume(*ele);
+    }
+    list_volume.clear();
+
+    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
+        cleanupVolume(*val);
+    }
+    OptixUtil::g_vdb_cached_map.clear();
+    OptixUtil::g_ies.clear();
+
+    g_StaticMeshPieces.clear();
+    g_meshPieces.clear();
 }
 
 void optixDestroy() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
+        optixCleanup();
         cleanupState( state );
         rtMaterialShaders.clear();
+
+        OptixUtil::shaderCoreLUT.clear();
 
         OPTIX_CHECK(optixPipelineDestroy(state.pipeline));
         OPTIX_CHECK(optixDeviceContextDestroy(state.context));
@@ -3958,16 +3967,7 @@ void optixDestroy() {
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
     }
-////    state.d_vertices.reset();
-////    state.d_clr.reset();
-////    state.d_mat_indices.reset();
-////    state.d_nrm.reset();
-////    state.d_tan.reset();
-////    state.d_uv.reset();
-//        std::memset((void *)&state, 0, sizeof(state));
-//        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
-//
-//
+
     context                  .handle=0;
     pipeline                 .handle=0;
     ray_module               .handle=0;
@@ -3976,17 +3976,11 @@ void optixDestroy() {
     radiance_miss_group      .handle=0;
     occlusion_miss_group     .handle=0;
 
-    OptixUtil::shaderCoreLUT.clear();
-
     output_buffer_o           .reset();
-    g_StaticMeshPieces        .clear();
-    g_meshPieces              .clear();
     state = {};
-    isPipelineCreated               = false;
-
-
-            
+    isPipelineCreated = false;         
 }
+
 #if 0
         if( outfile.empty() )
         {
