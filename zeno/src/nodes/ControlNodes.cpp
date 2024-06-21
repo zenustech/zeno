@@ -352,11 +352,11 @@ struct IfElse : zeno::INode {
 
 ZENDEFNODE(IfElse, {
     {
-        {"", "true", "", zeno::Socket_ReadOnly},
-        {"", "false", "", zeno::Socket_ReadOnly},
+        {"", "true", "", Socket_WildCard, NullControl, "wildCard"},
+        {"", "false", "", Socket_WildCard, NullControl, "wildCard"},
         {"bool", "cond"},
     },
-    {"result"},
+    {{"","result","",Socket_WildCard, NullControl, "wildCard"}},
     {},
     {"control"},
 });

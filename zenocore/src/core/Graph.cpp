@@ -325,6 +325,20 @@ ZENO_API void Graph::init(const GraphData& graph) {
         bool bExist = false;
         bool bOutputPrim = outNode->isPrimitiveType(false, link.outParam, bExist);
         bool bInputPrim = inNode->isPrimitiveType(true, link.inParam, bExist);
+
+        auto outSocketType = outNode->get_socket_type(link.outParam);
+        auto inSocketType = inNode->get_socket_type(link.inParam);
+        if (bInputPrim != bOutputPrim && inSocketType != outSocketType)
+        {
+            if (inSocketType == Socket_WildCard && inNode->update_data_group(link.inParam, true, bInputPrim))
+            {
+                bInputPrim = bOutputPrim;
+            }
+            else if (outSocketType == Socket_WildCard && outNode->update_data_group(link.outParam, false, bOutputPrim))
+            {
+                bOutputPrim = bInputPrim;
+            }
+        }
         if (!bExist) {
             //legacy param case:
             //TODO:
@@ -738,6 +752,20 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     bool bExist = false;
     bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
     bool bInputPrim = inNode->isPrimitiveType(true, edge.inParam, bExist);
+
+    auto outSocketType = outNode->get_socket_type(edge.outParam);
+    auto inSocketType = inNode->get_socket_type(edge.inParam);
+    if (bInputPrim != bOutputPrim && inSocketType != outSocketType)
+    {
+        if (inSocketType == Socket_WildCard && inNode->update_data_group(edge.inParam, true, bInputPrim))
+        {
+            bInputPrim = bOutputPrim;
+        }
+        else if (outSocketType == Socket_WildCard && outNode->update_data_group(edge.outParam, false, bOutputPrim))
+        {
+            bOutputPrim = bInputPrim;
+        }
+    }
     if (!bExist) {
         zeno::log_warn("no exist param for edge.");
         return false;
@@ -803,6 +831,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
         outNode->init_primitive_link(false, edge.outParam, spLink);
         inNode->init_primitive_link(true, edge.inParam, spLink);
+        adjustEdge.bObjLink = false;
     }
     else {
         std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
@@ -810,6 +839,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         spLink->tokey = edge.inKey;
         outNode->init_object_link(false, edge.outParam, spLink);
         inNode->init_object_link(true, edge.inParam, spLink);
+        adjustEdge.bObjLink = true;
     }
 
     inNode->mark_dirty(true);

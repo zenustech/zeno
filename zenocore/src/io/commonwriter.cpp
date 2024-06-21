@@ -203,7 +203,7 @@ namespace zenoio
         writer.Key("type");
         writer.String(zeno::paramTypeToString(param.type).c_str());
 
-        if (param.bInput)
+        //if (param.bInput)
         {
             writer.Key("socket-type");
             switch (param.socketType)
@@ -213,11 +213,16 @@ namespace zenoio
             case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
             case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
             case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+            case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
             default:
                 writer.String(iotags::params::socket_none);
             }
         }
-
+        if (!param.wildCardGroup.empty())
+        {
+            writer.Key("wild_card_group");
+            writer.String(param.wildCardGroup.c_str());
+        }
         if (!param.tooltip.empty())
         {
             writer.Key("tooltip");
@@ -324,6 +329,7 @@ namespace zenoio
             case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
             case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
             case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+            case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
             default:
                 writer.String(iotags::params::socket_none);
             }

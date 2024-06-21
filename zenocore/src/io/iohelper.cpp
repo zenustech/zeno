@@ -178,6 +178,9 @@ namespace zenoio
         else if (sockType == iotags::params::socket_primitive) {
             return zeno::Socket_Primitve;
         }
+        else if (sockType == iotags::params::socket_wildcard) {
+            return zeno::Socket_WildCard;
+        }
     }
 
     zeno::GraphData fork(

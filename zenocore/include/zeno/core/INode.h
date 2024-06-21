@@ -97,6 +97,10 @@ public:
    ZENO_API bool update_param_control_prop(const std::string& name, ControlProperty props);
    CALLBACK_REGIST(update_param_control_prop, void, const std::string&, ControlProperty)
 
+  ZENO_API bool update_data_group(const std::string& name, bool bInput, bool bPrim);
+  CALLBACK_REGIST(update_data_group, void, const std::string&, zeno::NodeDataGroup)
+  CALLBACK_REGIST(data_group_changed, void)
+
    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
 
@@ -129,6 +133,7 @@ public:
     bool removeLink(bool bInput, const EdgeInfo& edge);
     zvariant resolveInput(std::string const& id);
     void mark_dirty_objs();
+    SocketType get_socket_type(const std::string& param_name) const;
 
 protected:
     ZENO_API virtual void complete();

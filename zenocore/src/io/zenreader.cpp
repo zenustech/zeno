@@ -333,6 +333,11 @@ namespace zenoio
             socketType = getSocketTypeByDesc(sockType);
         }
 
+        std::string wildCardGroup;
+        if (sockObj.HasMember("wild_card_group"))
+        {
+            wildCardGroup = sockObj["wild_card_group"].GetString();
+        }
         //link:
         if (bInput && sockObj.HasMember("links") && sockObj["links"].IsArray())
         {
@@ -391,6 +396,7 @@ namespace zenoio
             param.tooltip = tooltip;
             param.type = paramType;
             param.bVisible = bVisible;
+            param.wildCardGroup = wildCardGroup;
             if (bInput) {
                 //老zsg没有层级结构，直接用默认就行
                 if (ret.customUi.inputPrims.tabs.empty())
@@ -417,6 +423,7 @@ namespace zenoio
             param.socketType = socketType;
             param.tooltip = tooltip;
             param.type = paramType;
+            param.wildCardGroup = wildCardGroup;
             if (bInput) {
                 ret.customUi.inputObjs.emplace_back(param);
             }

@@ -675,6 +675,7 @@ void GraphModel::_initLink()
         //objects links init
         for (auto param : nodedata.customUi.inputObjs) {
             for (auto link : param.links) {
+                link.bObjLink = true;
                 _addLink(link);
             }
         }
@@ -683,6 +684,7 @@ void GraphModel::_initLink()
             for (auto group : tab.groups) {
                 for (auto param : group.params) {
                     for (auto link : param.links) {
+                        link.bObjLink = false;
                         _addLink(link);
                     }
                 }

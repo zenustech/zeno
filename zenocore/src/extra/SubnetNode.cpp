@@ -54,6 +54,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     }
 
     params_change_info changes;
+    std::set<std::pair<std::string, zeno::ParamType>> paramTypeChanges;
 
     for (auto _pair : params) {
         if (const auto& pParam = std::get_if<ParamObject>(&_pair.param))
@@ -177,7 +178,13 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 spParam->socketType = param.socketType;
                 if (param.bInput)
                 {
-                    update_param_type(spParam->name, param.type);
+                    if (param.type != spParam->type)
+                    {
+                        paramTypeChanges.insert({ newname, param.type});
+                        //update_param_type(spParam->name, param.type);
+                        //if (auto spNode = subgraph->getNode(oldname))
+                        //    spNode->update_param_type("port", param.type);
+                    }
                     update_param_control(spParam->name, param.control);
                     update_param_control_prop(spParam->name, param.ctrlProps.value());
                 }
@@ -263,6 +270,11 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         }
         for (auto name : changes.remove_outputs) {
             subgraph->removeNode(name);
+        }
+
+        for (const auto& [name, type] : paramTypeChanges)
+        {
+            update_param_type(name, type);
         }
     }
     return changes;

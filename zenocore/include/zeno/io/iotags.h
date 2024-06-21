@@ -24,6 +24,7 @@ namespace iotags {
         constexpr const char* socket_output = "output";
         constexpr const char* socket_owning = "owning";
         constexpr const char* socket_primitive = "primitive";
+        constexpr const char* socket_wildcard = "wildcard";
 
         //legacy desc params
         constexpr const char* legacy_inputs = "legacy_inputs";

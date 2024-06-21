@@ -240,7 +240,7 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
 
     m_dstPos = inNode->getSocketPos(inSockIdx, inKey);
     m_srcPos = outNode->getSocketPos(outSockIdx, outKey);
-    m_bObjLink = inSockIdx.data(ROLE_SOCKET_TYPE).toInt() != zeno::Socket_Primitve;
+    m_bObjLink = edge.bObjLink;
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -414,7 +414,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         QPen pen;
         pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(83, 83, 85));
         pen.setWidthF(ZenoStyle::scaleWidth(3));
-        if (inSockProp == zeno::Socket_Primitve)
+        if (!m_bObjLink)
             pen.setStyle(Qt::DashLine);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->setPen(pen);
@@ -424,7 +424,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     }
     else
     {
-        if (inSockProp != zeno::Socket_Primitve) {
+        if (m_bObjLink) {
             painter->save();
             QPen pen;
             pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(192, 36, 36, 153));

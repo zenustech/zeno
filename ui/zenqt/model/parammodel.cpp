@@ -72,6 +72,14 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         [this](const std::string& name, bool bVisible) {
         updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
     });
+
+    spNode->register_update_data_group([this](const std::string& name, zeno::NodeDataGroup group) {
+        updateParamData(QString::fromStdString(name), group, ROLE_PARAM_GROUP);
+    });
+
+    spNode->register_data_group_changed([this]() {
+        emit layoutChanged();
+    });
 }
 
 void ParamsModel::initParamItems()
@@ -296,6 +304,8 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_PARAM_VISIBLE:
         return param.bVisible;
+    case ROLE_PARAM_GROUP:
+        return param.group;
     }
     return QVariant();
 }
@@ -624,13 +634,15 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].optCtrlprops = val.value<zeno::ControlProperty>();
             else if (role == ROLE_PARAM_VISIBLE)
                 m_items[i].bVisible = val.toBool();
+            else if (role == ROLE_PARAM_GROUP)
+                m_items[i].group = (zeno::NodeDataGroup)val.toInt();
             QModelIndex idx = createIndex(i, 0);
             emit dataChanged(idx, idx, { role });
             break;
         }
     }
     //object inputs do not need to update custom model
-    if (role == ROLE_SOCKET_TYPE)
+    if (role == ROLE_SOCKET_TYPE || role == ROLE_PARAM_GROUP)
         return;
     Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
     auto pItems = m_customParamsM->findItems(name, flags);
