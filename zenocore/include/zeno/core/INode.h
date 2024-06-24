@@ -16,6 +16,7 @@
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/GlobalVariable.h>
 #include <functional>
 
 namespace zeno {
@@ -65,7 +66,7 @@ public:
     CALLBACK_REGIST(set_view, void, bool)
     ZENO_API bool is_view() const;
 
-    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true);
+    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true, bool bRecursively = true);
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
@@ -213,10 +214,6 @@ public:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
-
-    void propagateDirty(ObjPath dependType);  //查询上游dependType类型节点并传播dirty
-    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstrems, std::string outParamName = "");
-    void mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
 
 private:
     std::string m_name;
