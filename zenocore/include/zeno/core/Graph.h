@@ -139,6 +139,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
+    bool isLinkVaild(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;

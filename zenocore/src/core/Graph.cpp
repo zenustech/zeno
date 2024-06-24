@@ -318,33 +318,15 @@ ZENO_API void Graph::init(const GraphData& graph) {
     }
     //import edges
     for (const auto& link : graph.links) {
+        if (!isLinkVaild(link))
+            continue;
         std::shared_ptr<INode> outNode = getNode(link.outNode);
         std::shared_ptr<INode> inNode = getNode(link.inNode);
-        assert(outNode && inNode);
 
         bool bExist = false;
         bool bOutputPrim = outNode->isPrimitiveType(false, link.outParam, bExist);
         bool bInputPrim = inNode->isPrimitiveType(true, link.inParam, bExist);
 
-        auto outSocketType = outNode->get_socket_type(link.outParam);
-        auto inSocketType = inNode->get_socket_type(link.inParam);
-        if (bInputPrim != bOutputPrim && inSocketType != outSocketType)
-        {
-            if (inSocketType == Socket_WildCard && inNode->update_data_group(link.inParam, true, bInputPrim))
-            {
-                bInputPrim = bOutputPrim;
-            }
-            else if (outSocketType == Socket_WildCard && outNode->update_data_group(link.outParam, false, bOutputPrim))
-            {
-                bOutputPrim = bInputPrim;
-            }
-        }
-        if (!bExist) {
-            //legacy param case:
-            //TODO:
-            continue;
-        }
-        assert(bInputPrim == bOutputPrim);
         if (bInputPrim) {
             std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
             outNode->init_primitive_link(false, link.outParam, spLink);
@@ -734,14 +716,8 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     return true;
 }
 
-ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
-    //如果输入端是dict/list，
-    //外部调用者在调用此api时，有如下规则：
-    //1.如果连进来的是dictlist，并且没有指定key，则认为是直接连此输入参数(类型为dictlist)
-    //2.如果连进来的是dictlist，并且指定了key，则认为是连入dictlist内部并作为输入端的子成员。
-    //3.如果连进来的是非dictlist，并且没有指定key，则认为是连入输入端dictlist并作为输入端的内部子成员。
-    CORE_API_BATCH
-
+bool zeno::Graph::isLinkVaild(const EdgeInfo& edge)
+{
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
         return false;
@@ -753,19 +729,6 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
     bool bInputPrim = inNode->isPrimitiveType(true, edge.inParam, bExist);
 
-    auto outSocketType = outNode->get_socket_type(edge.outParam);
-    auto inSocketType = inNode->get_socket_type(edge.inParam);
-    if (bInputPrim != bOutputPrim && inSocketType != outSocketType)
-    {
-        if (inSocketType == Socket_WildCard && inNode->update_data_group(edge.inParam, true, bInputPrim))
-        {
-            bInputPrim = bOutputPrim;
-        }
-        else if (outSocketType == Socket_WildCard && outNode->update_data_group(edge.outParam, false, bOutputPrim))
-        {
-            bOutputPrim = bInputPrim;
-        }
-    }
     if (!bExist) {
         zeno::log_warn("no exist param for edge.");
         return false;
@@ -774,6 +737,86 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         zeno::log_warn("link type no match.");
         return false;
     }
+
+    SocketType outSocketType;
+    ParamType outParamType;
+    if (bOutputPrim)
+    {
+        const auto& spParam = outNode->get_output_prim_param(edge.outParam);
+        outSocketType = spParam.socketType;
+        outParamType = spParam.type;
+    }
+    else
+    {
+        const auto& spParam = outNode->get_output_obj_param(edge.outParam);
+        outSocketType = spParam.socketType;
+        outParamType = spParam.type;
+    }
+    SocketType inSocketType;
+    ParamType inParamType;
+    if (bOutputPrim)
+    {
+        const auto& spParam = inNode->get_input_prim_param(edge.inParam);
+        inSocketType = spParam.socketType;
+        inParamType = spParam.type;
+    }
+    else
+    {
+        const auto& spParam = inNode->get_input_obj_param(edge.inParam);
+        inSocketType = spParam.socketType;
+        inParamType = spParam.type;
+    }
+
+    if (outSocketType == zeno::Socket_WildCard && inSocketType == zeno::Socket_WildCard)
+    {
+        zeno::log_warn("wildcard can not link wildcard.");
+        return false;
+    }
+    if (outSocketType == zeno::Socket_WildCard)
+    {
+        const auto& params = outNode->getWildCardParams(edge.outParam, bOutputPrim);
+        for (const auto& param : params)
+        {
+            outNode->update_param_type(param, bOutputPrim, inParamType);
+            if (param == edge.outParam)
+                outParamType = inParamType;
+        }
+    }
+    if (inSocketType == zeno::Socket_WildCard)
+    {
+        const auto& params = inNode->getWildCardParams(edge.inParam, bInputPrim);
+        for (const auto& param : params)
+        {
+            inNode->update_param_type(param, bInputPrim, outParamType);
+            if (param == edge.inParam)
+                inParamType = outParamType;
+        }
+    }
+    if (inParamType != outParamType)
+    {
+        zeno::log_warn("param type no match.");
+        return false;
+    }
+    return true;
+}
+
+ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
+    //如果输入端是dict/list，
+    //外部调用者在调用此api时，有如下规则：
+    //1.如果连进来的是dictlist，并且没有指定key，则认为是直接连此输入参数(类型为dictlist)
+    //2.如果连进来的是dictlist，并且指定了key，则认为是连入dictlist内部并作为输入端的子成员。
+    //3.如果连进来的是非dictlist，并且没有指定key，则认为是连入输入端dictlist并作为输入端的内部子成员。
+    CORE_API_BATCH
+
+    if (!isLinkVaild(edge))
+        return false;
+
+    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+
+    bool bExist = false;
+    bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
+    bool bInputPrim = inNode->isPrimitiveType(true, edge.inParam, bExist);
 
     EdgeInfo adjustEdge = edge;
 

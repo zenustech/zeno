@@ -274,7 +274,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 
         for (const auto& [name, type] : paramTypeChanges)
         {
-            update_param_type(name, type);
+            update_param_type(name, true, type);
         }
     }
     return changes;

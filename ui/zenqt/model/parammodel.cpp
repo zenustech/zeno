@@ -72,14 +72,6 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         [this](const std::string& name, bool bVisible) {
         updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
     });
-
-    spNode->register_update_data_group([this](const std::string& name, zeno::NodeDataGroup group) {
-        updateParamData(QString::fromStdString(name), group, ROLE_PARAM_GROUP);
-    });
-
-    spNode->register_data_group_changed([this]() {
-        emit layoutChanged();
-    });
 }
 
 void ParamsModel::initParamItems()

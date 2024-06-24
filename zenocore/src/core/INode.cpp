@@ -262,28 +262,6 @@ void INode::mark_dirty_objs()
     }
 }
 
-SocketType INode::get_socket_type(const std::string& param_name) const
-{
-    SocketType socketType = NoSocket;
-    if (m_inputObjs.find(param_name) != m_inputObjs.end()) {
-        const auto& spParam = m_inputObjs.find(param_name)->second;
-        socketType = spParam->socketType;
-    }
-    else if (m_outputObjs.find(param_name) != m_outputObjs.end()) {
-        const auto& spParam = m_outputObjs.find(param_name)->second;
-        socketType = spParam->socketType;
-    }
-    else if (m_inputPrims.find(param_name) != m_inputPrims.end()) {
-        const auto& spParam = m_inputPrims.find(param_name)->second;
-        socketType = spParam->socketType;
-    }
-    else if (m_outputPrims.find(param_name) != m_outputPrims.end()) {
-        const auto& spParam = m_outputPrims.find(param_name)->second;
-        socketType = spParam->socketType;
-    }
-    return socketType;
-} 
-
 ZENO_API void INode::complete() {}
 
 ZENO_API void INode::preApply() {
@@ -1143,207 +1121,42 @@ ZENO_API bool zeno::INode::update_param_socket_type(const std::string& param, So
     return false;
 }
 
-ZENO_API bool zeno::INode::update_param_type(const std::string& param, ParamType type)
+ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPrim, ParamType type)
 {
     CORE_API_BATCH
-    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
-    if (type != spParam->type)
-    {
-        spParam->type = type;
-        CALLBACK_NOTIFY(update_param_type, param, type)
-        if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(this))
+        if (bPrim)
         {
-            if (auto spNode = pSubnetNode->subgraph->getNode(param))
+            bool bInput = m_inputPrims.find(param) != m_inputPrims.end();
+            const auto& prims = bInput ? m_inputPrims : m_outputPrims;
+            auto& prim = prims.find(param);
+            if (prim != prims.end())
             {
-                bool bExist = false;
-                bool bPrim = spNode->isPrimitiveType(false, "port", bExist);
-                if (bExist && bPrim != zeno::isPrimitiveType(type))
-                    spNode->update_data_group("port", false, bPrim);
+                auto& spParam = prim->second;
+                if (type != spParam->type)
+                {
+                    spParam->type = type;
+                    CALLBACK_NOTIFY(update_param_type, param, type) 
+                        return true;
+                }
             }
         }
-            return true;
-    }
+        else 
+        {
+            bool bInput = m_inputObjs.find(param) != m_inputObjs.end();
+            const auto& objects = bInput ? m_inputObjs : m_outputObjs;
+            auto& object = objects.find(param);
+            if (object != objects.end())
+            {
+                auto& spParam = object->second;
+                if (type != spParam->type)
+                {
+                    spParam->type = type;
+                    CALLBACK_NOTIFY(update_param_type, param, type)
+                        return true;
+                }
+            }
+        }
     return false;
-}
-
-ZENO_API bool zeno::INode::update_data_group(const std::string& name, bool bInput, bool bPrim)
-{
-    CORE_API_BATCH
-    if (bPrim)
-    {
-        const auto& spPrimParam = bInput ? m_inputPrims.find(name)->second : m_outputPrims.find(name)->second;
-        const auto group = spPrimParam->wildCardGroup;
-        if (group.empty())
-        {
-            std::unique_ptr<ObjectParam> objParam = std::make_unique<ObjectParam>();
-            objParam->bInput = spPrimParam->bInput;
-            objParam->type = spPrimParam->type;
-            objParam->socketType = spPrimParam->socketType;
-            objParam->m_idModify = spPrimParam->m_idModify;
-            objParam->m_wpNode = spPrimParam->m_wpNode;
-            objParam->wildCardGroup = spPrimParam->wildCardGroup;
-            const auto paramName = spPrimParam->name;
-            objParam->name = paramName;
-            if (bInput)
-            {
-                m_inputObjs.insert(std::make_pair(paramName, std::move(objParam)));
-                m_inputPrims.erase(paramName);
-                CALLBACK_NOTIFY(update_data_group, paramName, zeno::Group_InputObject)
-            }
-            else
-            {
-                m_outputObjs.insert(std::make_pair(paramName, std::move(objParam)));
-                m_outputPrims.erase(paramName);
-                CALLBACK_NOTIFY(update_data_group, paramName, zeno::Group_OutputObject)
-            }
-        }
-        else
-        {
-            std::vector<ObjectParam> input_params;
-            for (auto iter = m_inputPrims.begin(); iter != m_inputPrims.end();iter++)
-            {
-                const auto& spParam = iter->second;
-                if (!spParam->links.empty())
-                    return false;
-                if (spParam->socketType != Socket_WildCard || spParam->wildCardGroup != group)
-                {
-                    continue;
-                }
-                ObjectParam objParam;
-                objParam.bInput = spParam->bInput;
-                objParam.type = spParam->type;
-                objParam.socketType = spParam->socketType;
-                objParam.m_idModify = spParam->m_idModify;
-                objParam.m_wpNode = spParam->m_wpNode;
-                objParam.wildCardGroup = spParam->wildCardGroup;
-                objParam.name = spParam->name;
-                input_params.push_back(objParam);
-            }
-            std::vector<ObjectParam> output_params;
-            for (auto iter = m_outputPrims.begin(); iter != m_outputPrims.end();iter++)
-            {
-                const auto& spParam = iter->second;
-                if (!spParam->links.empty())
-                    return false;
-                if (spParam->socketType != Socket_WildCard || spParam->wildCardGroup != group)
-                {
-                    continue;
-                }
-                ObjectParam objParam;
-                objParam.bInput = spParam->bInput;
-                objParam.type = spParam->type;
-                objParam.socketType = spParam->socketType;
-                objParam.m_idModify = spParam->m_idModify;
-                objParam.m_wpNode = spParam->m_wpNode;
-                objParam.wildCardGroup = spParam->wildCardGroup;
-                objParam.name = spParam->name;
-                output_params.push_back(objParam);
-            }
-            for (auto param : input_params)
-            {
-                std::unique_ptr<ObjectParam> objParam = std::make_unique<ObjectParam>(param);
-                m_inputObjs.insert(std::make_pair(param.name, std::move(objParam)));
-                m_inputPrims.erase(param.name);
-                CALLBACK_NOTIFY(update_data_group, param.name, zeno::Group_InputObject)
-            }
-            for (auto param : output_params)
-            {
-                std::unique_ptr<ObjectParam> objParam = std::make_unique<ObjectParam>(param);
-                m_outputObjs.insert(std::make_pair(param.name, std::move(objParam)));
-                m_outputPrims.erase(param.name);
-                CALLBACK_NOTIFY(update_data_group, param.name, zeno::Group_OutputObject)
-            }
-        }
-    }
-    else
-    {
-        const auto& spObjParam = bInput ? m_inputObjs.find(name)->second : m_outputObjs.find(name)->second;
-        const auto group = spObjParam->wildCardGroup;
-        if (group.empty())
-        {
-            std::unique_ptr<PrimitiveParam> primParam = std::make_unique<PrimitiveParam>();
-            primParam->bInput = spObjParam->bInput;
-            primParam->type = spObjParam->type;
-            primParam->socketType = spObjParam->socketType;
-            primParam->m_idModify = spObjParam->m_idModify;
-            primParam->m_wpNode = spObjParam->m_wpNode;
-            primParam->wildCardGroup = spObjParam->wildCardGroup;
-            const auto paramName = spObjParam->name;
-            primParam->name = paramName;
-            if (bInput)
-            {
-                m_inputPrims.insert(std::make_pair(paramName, std::move(primParam)));
-                m_inputObjs.erase(paramName);
-                CALLBACK_NOTIFY(update_data_group, paramName, zeno::Group_InputPrimitive)
-            }
-            else
-            {
-                m_outputPrims.insert(std::make_pair(paramName, std::move(primParam)));
-                m_outputObjs.erase(paramName);
-                CALLBACK_NOTIFY(update_data_group, paramName, zeno::Group_OutputPrimitive)
-            }
-        }
-        else
-        {
-            std::vector<PrimitiveParam> input_params;
-            for (auto iter = m_inputObjs.begin(); iter != m_inputObjs.end();iter++)
-            {
-                const auto& spParam = iter->second;
-                if (!spParam->links.empty())
-                    return false;
-                if (spParam->socketType != Socket_WildCard || spParam->wildCardGroup != group)
-                {
-                    continue;
-                }
-                PrimitiveParam primParam;
-                primParam.bInput = spParam->bInput;
-                primParam.type = spParam->type;
-                primParam.socketType = spParam->socketType;
-                primParam.m_idModify = spParam->m_idModify;
-                primParam.m_wpNode = spParam->m_wpNode;
-                primParam.wildCardGroup = spParam->wildCardGroup;
-                primParam.name = spParam->name;
-                input_params.push_back(primParam);
-                
-            }
-            std::vector<PrimitiveParam> output_params;
-            for (auto iter = m_outputObjs.begin(); iter != m_outputObjs.end();iter++)
-            {
-                const auto& spParam = iter->second;
-                if (!spParam->links.empty())
-                    return false;
-                if (spParam->socketType != Socket_WildCard || spParam->wildCardGroup != group)
-                {
-                    continue;
-                }
-                PrimitiveParam primParam;
-                primParam.bInput = spParam->bInput;
-                primParam.type = spParam->type;
-                primParam.socketType = spParam->socketType;
-                primParam.m_idModify = spParam->m_idModify;
-                primParam.m_wpNode = spParam->m_wpNode;
-                primParam.wildCardGroup = spParam->wildCardGroup;
-                primParam.name = spParam->name;
-                output_params.push_back(primParam);
-            }
-            for (auto param : input_params)
-            {
-                std::unique_ptr<PrimitiveParam> primParam = std::make_unique<PrimitiveParam>(param);
-                m_inputPrims.insert(std::make_pair(param.name, std::move(primParam)));
-                m_inputObjs.erase(param.name);
-                CALLBACK_NOTIFY(update_data_group, param.name, zeno::Group_InputPrimitive)
-            }
-            for (auto param : output_params)
-            {
-                std::unique_ptr<PrimitiveParam> primParam = std::make_unique<PrimitiveParam>(param);
-                m_outputPrims.insert(std::make_pair(param.name, std::move(primParam)));
-                m_outputObjs.erase(param.name);
-                CALLBACK_NOTIFY(update_data_group, param.name, zeno::Group_OutputPrimitive)
-            }
-        }
-    }
-    CALLBACK_NOTIFY(data_group_changed);
-    return true;
 }
 
 ZENO_API bool zeno::INode::update_param_control(const std::string& param, ParamControl control)
@@ -1892,6 +1705,72 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
             return fVal;
         }
     }
+}
+
+std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param_name, bool bPrim)
+{
+    std::vector<std::string> params;
+    if (bPrim)
+    {
+        std::string wildCardGroup;
+        if (m_inputPrims.find(param_name) != m_inputPrims.end())
+        {
+            wildCardGroup = m_inputPrims.find(param_name)->second->wildCardGroup;
+        }
+        else if (m_outputPrims.find(param_name) != m_outputPrims.end())
+        {
+            wildCardGroup = m_outputPrims.find(param_name)->second->wildCardGroup;
+        }
+        for (const auto&[name, spParam] : m_inputPrims)
+        {
+            if (spParam->wildCardGroup == wildCardGroup)
+            {
+                if (!spParam->links.empty())
+                    return std::vector<std::string>();
+                params.push_back(name);
+            }
+        }
+        for (const auto& [name, spParam] : m_outputPrims)
+        {
+            if (spParam->wildCardGroup == wildCardGroup)
+            {
+                if (!spParam->links.empty())
+                    return std::vector<std::string>();
+                params.push_back(name);
+            }
+        }
+    } 
+    else
+    {
+        std::string wildCardGroup;
+        if (m_inputObjs.find(param_name) != m_inputObjs.end())
+        {
+            wildCardGroup = m_inputObjs.find(param_name)->second->wildCardGroup;
+        }
+        else if (m_outputObjs.find(param_name) != m_outputObjs.end())
+        {
+            wildCardGroup = m_outputObjs.find(param_name)->second->wildCardGroup;
+        }
+        for (const auto& [name, spParam] : m_inputObjs)
+        {
+            if (spParam->wildCardGroup == wildCardGroup)
+            {
+                if (!spParam->links.empty())
+                    return std::vector<std::string>();
+                params.push_back(name);
+            }
+        }
+        for (const auto& [name, spParam] : m_outputObjs)
+        {
+            if (spParam->wildCardGroup == wildCardGroup)
+            {
+                if (!spParam->links.empty())
+                    return std::vector<std::string>();
+                params.push_back(name);
+            }
+        }
+    }
+    return params;
 }
 
 template<class T, class E> T INode::resolveVec(const zvariant& defl, const ParamType type)
