@@ -1050,29 +1050,7 @@ ZENO_API NodeData INode::exportInfo() const
             }
         }
     }
-    auto inputPrims = zeno::customUiToParams(node.customUi.inputPrims);
-    for (const auto& param : m_inputPrims)
-    {
-        bool bExist = false;
-        for (const auto& input : inputPrims)
-        {
-            if (param.first == input.name)
-            {
-                bExist = true;
-                break;
-            }
-        }
-        if (!bExist)
-        {
-            auto& iter = node.customUi.inputPrims.tabs.begin();
-            if (iter != node.customUi.inputPrims.tabs.end())
-            {
-                auto& groupIter = iter->groups.begin();
-                if (groupIter != iter->groups.end())
-                    groupIter->params.push_back(param.second->exportParam());
-            }
-        }
-    }
+
     node.customUi.outputPrims.clear();
     for (auto& [name, paramObj] : m_outputPrims)
     {
@@ -1235,8 +1213,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
 {
     for (const ParamObject& paramObj : dat.customUi.inputObjs)
     {
-        if (m_inputPrims.find(paramObj.name) != m_inputPrims.end())
-            m_inputPrims.erase(paramObj.name);
         auto iter = m_inputObjs.find(paramObj.name);
         if (iter == m_inputObjs.end()) {
             add_input_obj_param(paramObj);
@@ -1251,8 +1227,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
         {
             for (auto param : group.params)
             {
-                if (m_inputObjs.find(param.name) != m_inputObjs.end())
-                    m_inputObjs.erase(param.name);
                 auto iter = m_inputPrims.find(param.name);
                 if (iter == m_inputPrims.end()) {
                     add_input_prim_param(param);
@@ -1269,14 +1243,10 @@ ZENO_API void INode::initParams(const NodeData& dat)
     for (const ParamPrimitive& param : dat.customUi.outputPrims)
     {
         add_output_prim_param(param);
-        if (m_outputObjs.find(param.name) != m_outputObjs.end())
-            m_outputObjs.erase(param.name);
     }
     for (const ParamObject& paramObj : dat.customUi.outputObjs)
     {
         add_output_obj_param(paramObj);
-        if (m_outputPrims.find(paramObj.name) != m_outputPrims.end())
-            m_outputPrims.erase(paramObj.name);
     }
 }
 
