@@ -187,19 +187,10 @@ inline void SaveMultiLayerEXR_half(
     OutputFile file (exrFilePath, header);
     FrameBuffer frameBuffer;
 
-    std::vector<std::vector<half>> data;
-    for (half *rgb: pixels) {
-        std::vector<half> half_rgb(width * height * 3);
-        for (auto i = 0; i < half_rgb.size(); i++) {
-            half_rgb[i] = rgb[i];
-        }
-        data.push_back(std::move(half_rgb));
-    }
-
     for (auto i = 0; i < channels.size(); i++) {
-        frameBuffer.insert (zeno::format("{}R", channels[i]), Slice ( HALF, (char*) &data[i][0], sizeof (half) * 3, sizeof (half) * width * 3));
-        frameBuffer.insert (zeno::format("{}G", channels[i]), Slice ( HALF, (char*) &data[i][1], sizeof (half) * 3, sizeof (half) * width * 3));
-        frameBuffer.insert (zeno::format("{}B", channels[i]), Slice ( HALF, (char*) &data[i][2], sizeof (half) * 3, sizeof (half) * width * 3));
+        frameBuffer.insert (zeno::format("{}R", channels[i]), Slice ( HALF, (char*) &pixels[i][0], sizeof (half) * 3, sizeof (half) * width * 3));
+        frameBuffer.insert (zeno::format("{}G", channels[i]), Slice ( HALF, (char*) &pixels[i][1], sizeof (half) * 3, sizeof (half) * width * 3));
+        frameBuffer.insert (zeno::format("{}B", channels[i]), Slice ( HALF, (char*) &pixels[i][2], sizeof (half) * 3, sizeof (half) * width * 3));
     }
 
     file.setFrameBuffer (frameBuffer);
