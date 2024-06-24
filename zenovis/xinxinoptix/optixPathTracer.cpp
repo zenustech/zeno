@@ -253,12 +253,6 @@ ushort2 halfNormal(float4 in)
 #endif
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_mask;
 using Vertex = float4;
 
 struct PathTracerState
@@ -305,6 +299,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
+    raii<CUdeviceptr> accum_buffer_m;
 
     raii<CUdeviceptr> finite_lights_ptr;
 
@@ -568,9 +563,9 @@ static void initLaunchParams( PathTracerState& state )
 
     CUDA_CHECK( cudaMalloc(
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float4 )
+                state.params.width * state.params.height * sizeof( float3 )
                 ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
     auto& params = state.params;
 
@@ -618,35 +613,33 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
-    (*output_buffer_color).resize( params.width, params.height );
-    (*output_buffer_diffuse).resize( params.width, params.height );
-    (*output_buffer_specular).resize( params.width, params.height );
-    (*output_buffer_transmit).resize( params.width, params.height );
-    (*output_buffer_background).resize( params.width, params.height );
-    (*output_buffer_mask).resize( params.width, params.height );
 
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_d .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_s .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( float3 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_m .reset()),
+        params.width * params.height * sizeof( ushort3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
-        params.width * params.height * sizeof( float4 )
+        params.width * params.height * sizeof( ushort1 )
             ) );
-    state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
     CUDA_CHECK( cudaMallocManaged(
                 reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
@@ -660,10 +653,11 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
                 ) );
     state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
-    state.params.accum_buffer_D = (float4*)(CUdeviceptr)state.accum_buffer_d;
-    state.params.accum_buffer_S = (float4*)(CUdeviceptr)state.accum_buffer_s;
-    state.params.accum_buffer_T = (float4*)(CUdeviceptr)state.accum_buffer_t;
-    state.params.accum_buffer_B = (float4*)(CUdeviceptr)state.accum_buffer_b;
+    state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
+    state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
+    state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
+    state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
+    state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
 
@@ -687,12 +681,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
-    state.params.frame_buffer_C = (*output_buffer_color     ).map();
-    state.params.frame_buffer_D = (*output_buffer_diffuse   ).map();
-    state.params.frame_buffer_S = (*output_buffer_specular  ).map();
-    state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
-    state.params.frame_buffer_B = (*output_buffer_background).map();
-    state.params.frame_buffer_M = (*output_buffer_mask      ).map();
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
     for(int j=0;j<1;j++){
@@ -725,12 +713,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       }
     }
     output_buffer.unmap();
-    (*output_buffer_color   ).unmap();
-    (*output_buffer_diffuse   ).unmap();
-    (*output_buffer_specular  ).unmap();
-    (*output_buffer_transmit  ).unmap();
-    (*output_buffer_background).unmap();
-    (*output_buffer_mask      ).unmap();
 
     try {
         CUDA_SYNC_CHECK();
@@ -1612,54 +1594,6 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_o->setStream( 0 );
-    }
-    if (!output_buffer_color) {
-      output_buffer_color.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_color->setStream( 0 );
-    }
-    if (!output_buffer_diffuse) {
-      output_buffer_diffuse.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_diffuse->setStream( 0 );
-    }
-    if (!output_buffer_specular) {
-      output_buffer_specular.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_specular->setStream( 0 );
-    }
-    if (!output_buffer_transmit) {
-      output_buffer_transmit.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_transmit->setStream( 0 );
-    }
-    if (!output_buffer_background) {
-      output_buffer_background.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_background->setStream( 0 );
-    }
-    if (!output_buffer_mask) {
-      output_buffer_mask.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_mask->setStream( 0 );
     }
 #ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
@@ -3773,26 +3707,93 @@ void set_outside_random_number(int32_t outside_random_number) {
     state.params.outside_random_number = outside_random_number;
 }
 
-void *optixgetimg_extra(std::string name) {
+std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
+    std::vector<float> tex_data(w * h * 3);
     if (name == "diffuse") {
-        return output_buffer_diffuse->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_d.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "specular") {
-        return output_buffer_specular->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_s.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "transmit") {
-        return output_buffer_transmit->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_t.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "background") {
-        return output_buffer_background->getHostPointer();
+        std::vector<ushort1> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(ushort1) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            float v = toFloat(temp_buffer[i]);
+            tex_data[i * 3 + 0] = v;
+            tex_data[i * 3 + 1] = v;
+            tex_data[i * 3 + 2] = v;
+        }
     }
     else if (name == "mask") {
-        return output_buffer_mask->getHostPointer();
+        std::vector<ushort3> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_m.handle, sizeof(ushort3) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            float3 v = toFloat(temp_buffer[i]);
+            tex_data[i * 3 + 0] = v.x;
+            tex_data[i * 3 + 1] = v.y;
+            tex_data[i * 3 + 2] = v.z;
+        }
     }
     else if (name == "color") {
-        return output_buffer_color->getHostPointer();
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
-    throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    else {
+        throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    }
+    return tex_data;
+}
+
+std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
+    std::vector<half> tex_data(w * h * 3);
+    if (name == "diffuse") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_d.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "specular") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_s.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "transmit") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_t.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "background") {
+        std::vector<half> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i * 3 + 0] = temp_buffer[i];
+            tex_data[i * 3 + 1] = temp_buffer[i];
+            tex_data[i * 3 + 2] = temp_buffer[i];
+        }
+    }
+    else if (name == "mask") {
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_m.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
+    else if (name == "color") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_p.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else {
+        throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    }
+    zeno::image_flip_vertical((ushort3*)tex_data.data(), w, h);
+    return tex_data;
 }
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
@@ -3868,20 +3869,20 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
         if (enable_output_mask) {
             path = path.substr(0, path.size() - 4);
-            save_png_data(path + "_mask.png", w, h,  (float*)optixgetimg_extra("mask"));
+            save_png_data(path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
         // AOV
         if (enable_output_aov) {
             if (enable_output_exr) {
                 zeno::create_directories_when_write_file(exr_path);
-                SaveMultiLayerEXR(
+                SaveMultiLayerEXR_half(
                         {
-                                (float*)optixgetimg_extra("color"),
-                                (float*)optixgetimg_extra("diffuse"),
-                                (float*)optixgetimg_extra("specular"),
-                                (float*)optixgetimg_extra("transmit"),
-                                (float*)optixgetimg_extra("background"),
-                                (float*)optixgetimg_extra("mask"),
+                                optixgetimg_extra3("color", w, h).data(),
+                                optixgetimg_extra3("diffuse", w, h).data(),
+                                optixgetimg_extra3("specular", w, h).data(),
+                                optixgetimg_extra3("transmit", w, h).data(),
+                                optixgetimg_extra3("background", w, h).data(),
+                                optixgetimg_extra3("mask", w, h).data(),
                         },
                         w,
                         h,
@@ -3899,17 +3900,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             }
             else {
                 path = path.substr(0, path.size() - 4);
-                save_png_color(path + ".aov.diffuse.png", w, h,  (float*)optixgetimg_extra("diffuse"));
-                save_png_color(path + ".aov.specular.png", w, h,  (float*)optixgetimg_extra("specular"));
-                save_png_color(path + ".aov.transmit.png", w, h,  (float*)optixgetimg_extra("transmit"));
-                save_png_data(path + ".aov.background.png", w, h,  (float*)optixgetimg_extra("background"));
-                save_png_data(path + ".aov.mask.png", w, h,  (float*)optixgetimg_extra("mask"));
+                save_png_color(path + ".aov.diffuse.png",   w, h,  optixgetimg_extra2("diffuse", w, h).data());
+                save_png_color(path + ".aov.specular.png",  w, h,  optixgetimg_extra2("specular", w, h).data());
+                save_png_color(path + ".aov.transmit.png",  w, h,  optixgetimg_extra2("transmit", w, h).data());
+                save_png_data(path + ".aov.background.png", w, h,  optixgetimg_extra2("background", w, h).data());
+                save_png_data(path + ".aov.mask.png",       w, h,  optixgetimg_extra2("mask", w, h).data());
             }
         }
         else {
             if (enable_output_exr) {
                 zeno::create_directories_when_write_file(exr_path);
-                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
             }
             else {
                 std::string jpg_native_path = zeno::create_directories_when_write_file(path);
@@ -4018,12 +4019,6 @@ void optixDestroy() {
     occlusion_miss_group     .handle=0;
 
     output_buffer_o           .reset();
-    output_buffer_diffuse     .reset();
-    output_buffer_specular    .reset();
-    output_buffer_transmit    .reset();
-    output_buffer_background  .reset();
-    output_buffer_mask        .reset();
-
     state = {};
     isPipelineCreated = false;         
 }
