@@ -163,8 +163,8 @@ struct Params
     ushort3*     frame_buffer_M;
 
     float3*      debug_buffer;
-    ushort3*     albedo_buffer;
-    ushort3*     normal_buffer;
+    float3*      albedo_buffer;
+    float3*      normal_buffer;
 
     unsigned int width;
     unsigned int height;
