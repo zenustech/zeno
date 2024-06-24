@@ -3746,6 +3746,55 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
     }
     return tex_data;
 }
+
+std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
+    std::vector<half> tex_data(w * h * 3);
+    if (name == "diffuse") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_d.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "specular") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_s.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "transmit") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_t.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else if (name == "background") {
+        std::vector<half> temp_buffer(w * h);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i * 3 + 0] = temp_buffer[i];
+            tex_data[i * 3 + 1] = temp_buffer[i];
+            tex_data[i * 3 + 2] = temp_buffer[i];
+        }
+    }
+    else if (name == "mask") {
+        cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_m.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
+    else if (name == "color") {
+        std::vector<float> temp_buffer(w * h * 3);
+        cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_p.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
+        for (auto i = 0; i < temp_buffer.size(); i++) {
+            tex_data[i] = temp_buffer[i];
+        }
+    }
+    else {
+        throw std::runtime_error("invalid optixgetimg_extra name: " + name);
+    }
+    zeno::image_flip_vertical((ushort3*)tex_data.data(), w, h);
+    return tex_data;
+}
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
     std::copy_n(ptr, w * h, data.data());
@@ -3826,14 +3875,14 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         if (enable_output_aov) {
             if (enable_output_exr) {
                 zeno::create_directories_when_write_file(exr_path);
-                SaveMultiLayerEXR(
+                SaveMultiLayerEXR_half(
                         {
-                                optixgetimg_extra2("color", w, h).data(),
-                                optixgetimg_extra2("diffuse", w, h).data(),
-                                optixgetimg_extra2("specular", w, h).data(),
-                                optixgetimg_extra2("transmit", w, h).data(),
-                                optixgetimg_extra2("background", w, h).data(),
-                                optixgetimg_extra2("mask", w, h).data(),
+                                optixgetimg_extra3("color", w, h).data(),
+                                optixgetimg_extra3("diffuse", w, h).data(),
+                                optixgetimg_extra3("specular", w, h).data(),
+                                optixgetimg_extra3("transmit", w, h).data(),
+                                optixgetimg_extra3("background", w, h).data(),
+                                optixgetimg_extra3("mask", w, h).data(),
                         },
                         w,
                         h,
