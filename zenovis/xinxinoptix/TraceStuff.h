@@ -57,6 +57,7 @@ struct ShadowPRD {
     uint8_t nonThinTransHit;
 
     VolumePRD vol;
+    float3 ShadowNormal;
 
     float rndf() {
         return rnd(seed);
