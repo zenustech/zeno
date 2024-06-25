@@ -697,9 +697,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     ) );
 
         //CUDA_SYNC_CHECK();
-
-            /* printf("mama%d\n", std::this_thread::get_id()); */
-            /* fflush(stdout); */
+        
         OPTIX_CHECK( optixLaunch(
                     state.pipeline,
                     0,
@@ -2560,7 +2558,7 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
 
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->moduleIS = &OptixUtil::sphere_module;
-            shaderCore->loadProgram(0, "--define-macro=_SPHERE_");
+            shaderCore->loadProgram(1, "--define-macro=_SPHERE_");
             shaderCoreLUT.emplace(std::tuple{"DeflMatShader.cu", ShaderMaker::Sphere}, shaderCore);
         });
 
@@ -2568,16 +2566,12 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
             auto shader_string = sutil::lookupIncFile("Light.cu");
 
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
-            shaderCore->loadProgram(0);
+            shaderCore->loadProgram(2);
             shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Mesh}, shaderCore);
-        });
 
-        OptixUtil::_compile_group.run([&] () {
-            auto shader_string = sutil::lookupIncFile("Light.cu");
-
-            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->moduleIS = &OptixUtil::sphere_module;
-            shaderCore->loadProgram(0);
+            shaderCore->loadProgram(3);
             shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Sphere}, shaderCore);
         });
 
@@ -2586,7 +2580,7 @@ void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders)
 
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, 
                                                     "__closesthit__radiance_volume", "__anyhit__occlusion_volume", "__intersection__volume");
-            shaderCore->loadProgram(0);
+            shaderCore->loadProgram(4);
             shaderCoreLUT.emplace(std::tuple{"volume.cu", ShaderMaker::Volume}, shaderCore);
         });
 

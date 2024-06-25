@@ -76,6 +76,19 @@ inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 inline bool isPipelineCreated = false;
 ////end material independent stuffs
+
+inline static auto DefaultCompileOptions() {
+    OptixModuleCompileOptions module_compile_options = {};
+#if defined( NDEBUG )
+    module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#else 
+    module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
+    return module_compile_options;
+}
+
 inline void createContext()
 {
     // Initialize CUDA
@@ -85,7 +98,11 @@ inline void createContext()
     OPTIX_CHECK( optixInit() );
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
+#if defined( NDEBUG )
+    options.logCallbackLevel          = 0;
+#else
     options.logCallbackLevel          = 4;
+#endif
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
     pipeline_compile_options = {};
@@ -98,14 +115,7 @@ inline void createContext()
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
     pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
-    OptixModuleCompileOptions module_compile_options = {};
-    #if defined( NDEBUG )
-        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-    #else 
-        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-    #endif
+    OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
     OptixBuiltinISOptions builtin_is_options {};
 
@@ -169,16 +179,8 @@ static std::vector<char> readData(std::string const& filename)
 
 inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const char *macro=nullptr, tbb::task_group* _c_group = nullptr)
 {
-    OptixModuleCompileOptions module_compile_options = {};
+    OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-#if defined( NDEBUG )
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-#else
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-
-#endif
 
     char log[2048];
     size_t sizeof_log = sizeof( log );
@@ -203,7 +205,7 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         compilerOptions.push_back(macro);
     }
 
-    const char* input = sutil::getInputData( source, macro, name, inputSize, is_success, nullptr, compilerOptions);
+    const char* input = sutil::getCodePTX( source, macro, name, inputSize, is_success, nullptr, compilerOptions);
 
     if(is_success==false)
     {
