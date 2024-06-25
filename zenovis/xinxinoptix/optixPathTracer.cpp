@@ -257,7 +257,6 @@ std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_mask;
-std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_pos;
 using Vertex = float4;
 
 struct PathTracerState
@@ -624,7 +623,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     (*output_buffer_transmit).resize( params.width, params.height );
     (*output_buffer_background).resize( params.width, params.height );
     (*output_buffer_mask).resize( params.width, params.height );
-    (*output_buffer_pos).resize( params.width, params.height );
 
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
@@ -694,7 +692,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.frame_buffer_M = (*output_buffer_mask      ).map();
-    state.params.frame_buffer_P = (*output_buffer_pos       ).map();
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
     for(int j=0;j<1;j++){
@@ -733,7 +730,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     (*output_buffer_transmit  ).unmap();
     (*output_buffer_background).unmap();
     (*output_buffer_mask      ).unmap();
-    (*output_buffer_pos       ).unmap();
 
     try {
         CUDA_SYNC_CHECK();
@@ -1727,14 +1723,6 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_mask->setStream( 0 );
-    }
-    if (!output_buffer_pos) {
-      output_buffer_pos.emplace(
-          output_buffer_type,
-          state.params.width,
-          state.params.height
-      );
-      output_buffer_pos->setStream( 0 );
     }
 #ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
@@ -3808,9 +3796,6 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "mask") {
         return output_buffer_mask->getHostPointer();
     }
-    else if (name == "pos") {
-        return output_buffer_pos->getHostPointer();
-    }
     else if (name == "color") {
         return output_buffer_color->getHostPointer();
     }
@@ -3904,7 +3889,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                                 (float*)optixgetimg_extra("transmit"),
                                 (float*)optixgetimg_extra("background"),
                                 (float*)optixgetimg_extra("mask"),
-                                (float*)optixgetimg_extra("pos"),
                         },
                         w,
                         h,
@@ -3915,7 +3899,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                                 "transmit.",
                                 "background.",
                                 "mask.",
-                                "pos.",
                         },
                         exr_path.c_str()
                 );
@@ -4015,7 +3998,6 @@ void optixcleanup() {
     output_buffer_transmit    .reset();
     output_buffer_background  .reset();
     output_buffer_mask        .reset();
-    output_buffer_pos         .reset();
     g_StaticMeshPieces        .clear();
     g_meshPieces              .clear();
     state = {};
