@@ -3961,10 +3961,16 @@ void optixCleanup() {
     state.params.sky_strength = 1.0f;
     state.params.sky_texture;
 
-    for (auto& [k, v] : OptixUtil::g_tex) {
+    std::vector<std::string> keys;
+
+    for (auto& [k, _] : OptixUtil::g_tex) {
         if (k != OptixUtil::default_sky_tex) {
-            OptixUtil::removeTexture(k);
+            keys.push_back(k);
         }
+    }
+
+    for (auto& k : keys) {
+        OptixUtil::removeTexture(k);
     }
    
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
