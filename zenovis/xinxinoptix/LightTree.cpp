@@ -20,7 +20,7 @@ LightTreeSampler::LightTreeSampler(std::vector<GenericLight> &lights) {
         LightBounds lightBounds = light.bounds();
 
         if (lightBounds.phi > 0) {
-            bvhLights.push_back(std::make_pair(i, lightBounds));
+            bvhLights.push_back(std::make_pair((int)i, lightBounds));
             rootBounds = Union(rootBounds, lightBounds.bounds);
         }
     }
