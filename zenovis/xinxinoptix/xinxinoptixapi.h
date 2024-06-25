@@ -52,7 +52,6 @@ void buildLightTree();
 void optixupdateend();
 
 void set_window_size(int nx, int ny);
-zeno::vec2i get_window_size();
 void set_outside_random_number(int32_t outside_random_number);
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture);
 void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
@@ -62,7 +61,6 @@ void load_object(std::string const &key, std::string const &mtlid, const std::st
 void unload_object(std::string const &key);
 void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
 void unload_inst(const std::string &key);
-void *optixgetimg_extra(std::string name);
 
 struct LightDat {
     std::vector<float> v0;

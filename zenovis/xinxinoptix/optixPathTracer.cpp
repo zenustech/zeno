@@ -3714,10 +3714,6 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-zeno::vec2i get_window_size() {
-    return zeno::vec2i(state.params.width, state.params.height);
-}
-
 void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
     state.params.physical_camera_aperture = aperture;
     state.params.physical_camera_shutter_speed = shutter_speed;
