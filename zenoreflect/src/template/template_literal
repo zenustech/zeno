@@ -1,0 +1,10 @@
+#pragma once
+
+namespace zeno::reflect {
+    struct text {
+        static const char* RTTI;
+        static const char* GENERATED_TEMPLATE_HEADER_TEMPLATE;
+        static const char* REFLECTED_TYPE_REGISTER;
+        static const char* REFLECTED_METADATA;
+    };
+}

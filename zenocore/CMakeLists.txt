@@ -92,6 +92,16 @@ if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()
 
+#生成反射信息
+add_subdirectory(reflectCrates)
+include(${CMAKE_SOURCE_DIR}/zenoreflect/cmake/ReflectionUtils.cmake)
+file(GLOB_RECURSE headersFile CONFIGURE_DEPENDS include/*.h)
+make_absolute_paths(REFLECTION_HEADERS 
+    ${headersFile}
+) 
+zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}" "${LIBREFLECT_PCH_PATH}" "${ZENO_REFLECTION_GENERATED_HEADERS_DIR}")
+target_link_libraries(zenocore PUBLIC zenocorelibreflect zenocorelibgenerated)
+
 #if (ZENO_NO_WARNING)
     #if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         #target_compile_options(zeno PUBLIC $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:-Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null>>)
