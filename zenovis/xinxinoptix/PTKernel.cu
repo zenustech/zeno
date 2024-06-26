@@ -92,6 +92,47 @@ vec3 PhysicalCamera(vec3 in,
   mapped = in * exposure;
   return  enableExposure? (enableACES? ACESFilm(mapped):mapped ) : (enableACES? ACESFilm(in) : in);
 }
+
+static __inline__ __device__
+ushort3 float3_to_half3(float3 in)
+{
+    half x = __float2half(in.x);
+    half y = __float2half(in.y);
+    half z = __float2half(in.z);
+    ushort3 v;
+    v.x = reinterpret_cast<unsigned short&>(x);
+    v.y = reinterpret_cast<unsigned short&>(y);
+    v.z = reinterpret_cast<unsigned short&>(z);
+    return v;
+}
+
+static __inline__ __device__
+float3 half3_to_float3(ushort3 in)
+{
+    half x = reinterpret_cast<half&>(in.x);
+    half y = reinterpret_cast<half&>(in.y);
+    half z = reinterpret_cast<half&>(in.z);
+    float3 v;
+    v.x = __half2float(x);
+    v.y = __half2float(y);
+    v.z = __half2float(z);
+    return v;
+}
+
+static __inline__ __device__
+ushort1 float_to_half(float in)
+{
+    half x = __float2half(in);
+    return reinterpret_cast<ushort1&>(x);
+}
+
+static __inline__ __device__
+float half_to_float(ushort1 in)
+{
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
+}
+
 extern "C" __global__ void __raygen__rg()
 {
 
@@ -309,7 +350,7 @@ extern "C" __global__ void __raygen__rg()
 
             //if(prd.depth>prd.max_depth) {
             float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth*2) {
+            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth) {
                 prd.done=true;
             } else {
                 prd.attenuation = prd.attenuation / RRprob;
@@ -360,12 +401,16 @@ extern "C" __global__ void __raygen__rg()
     if( subframe_index > 0 )
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
-        const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
-        const float3 accum_color_prev_d = make_float3( params.accum_buffer_D[ image_index ]);
-        const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
-        const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
-        const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
-        const float3 accum_mask_prev    = params.frame_buffer_M[ image_index ];
+        const float3 accum_color_prev   = params.accum_buffer[ image_index ];
+        const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
+        const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
+        const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
+        const float3 accum_color_prev_b = {
+                half_to_float(params.accum_buffer_B[ image_index ]),
+                half_to_float(params.accum_buffer_B[ image_index ]),
+                half_to_float(params.accum_buffer_B[ image_index ]),
+        };
+        const float3 accum_mask_prev    = half3_to_float3(params.frame_buffer_M[ image_index ]);
         accum_color   = mix( vec3(accum_color_prev), accum_color, a );
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
         accum_color_s = mix( vec3(accum_color_prev_s), accum_color_s, a );
@@ -383,31 +428,14 @@ extern "C" __global__ void __raygen__rg()
         }
     }
 
-    params.accum_buffer[ image_index ] = make_float4( accum_color.x, accum_color.y, accum_color.z, 1.0f);
-    params.accum_buffer_D[ image_index ] = make_float4( accum_color_d.x,accum_color_d.y,accum_color_d.z, 1.0f);
-    params.accum_buffer_S[ image_index ] = make_float4( accum_color_s.x,accum_color_s.y, accum_color_s.z, 1.0f);
-    params.accum_buffer_T[ image_index ] = make_float4( accum_color_t.x,accum_color_t.y,accum_color_t.z, 1.0f);
-    params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
-
-
-    vec3 rgb_mapped = PhysicalCamera(vec3(accum_color), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 d_mapped = PhysicalCamera(vec3(accum_color_d), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 s_mapped = PhysicalCamera(vec3(accum_color_s), aperture, shutter_speed, iso, midGray, false, false);
-    vec3 t_mapped = PhysicalCamera(vec3(accum_color_t), aperture, shutter_speed, iso, midGray, false, false);
-
-
-    float3 out_color = rgb_mapped;
-    float3 out_color_d = d_mapped;
-    float3 out_color_s = s_mapped;
-    float3 out_color_t = t_mapped;
-    float3 out_color_b = accum_color_b;
-    params.frame_buffer[ image_index ] = make_color ( out_color );
-    params.frame_buffer_C[ image_index ] = out_color;
-    params.frame_buffer_D[ image_index ] = out_color_d;
-    params.frame_buffer_S[ image_index ] = out_color_s;
-    params.frame_buffer_T[ image_index ] = out_color_t;
-    params.frame_buffer_B[ image_index ] = accum_color_b;
-    params.frame_buffer_M[ image_index ] = click_pos;
+    params.accum_buffer[ image_index ]   = make_float3( accum_color.x, accum_color.y, accum_color.z);
+    params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
+    params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
+    params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
+    params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
+    params.frame_buffer[ image_index ] = make_color ( accum_color );
+    params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
+    params.frame_buffer_M[ image_index ] = float3_to_half3(click_pos);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

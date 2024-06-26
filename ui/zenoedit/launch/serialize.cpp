@@ -13,7 +13,7 @@ using namespace JsonHelper;
 
 QSet<QString> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
     });
 
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};

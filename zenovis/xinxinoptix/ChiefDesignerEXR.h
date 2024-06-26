@@ -161,4 +161,40 @@ inline void SaveMultiLayerEXR(
     file.writePixels (height);
 }
 
+inline void SaveMultiLayerEXR_half(
+    std::vector<half*> pixels
+    , int width
+    , int height
+    , std::vector<std::string> channels
+    , const char* exrFilePath
+) {
+    using namespace Imath;
+    using namespace Imf;
+
+    Header header(width, height);
+    ChannelList channelList;
+
+    const char *std_suffix = "RGB";
+    for (auto channel: channels) {
+        for (int i = 0; i < 3; i++) {
+            std::string name = zeno::format("{}{}", channel, std_suffix[i]);
+            channelList.insert(name, Channel(HALF));
+        }
+    }
+
+    header.channels() = channelList;
+
+    OutputFile file (exrFilePath, header);
+    FrameBuffer frameBuffer;
+
+    for (auto i = 0; i < channels.size(); i++) {
+        frameBuffer.insert (zeno::format("{}R", channels[i]), Slice ( HALF, (char*) &pixels[i][0], sizeof (half) * 3, sizeof (half) * width * 3));
+        frameBuffer.insert (zeno::format("{}G", channels[i]), Slice ( HALF, (char*) &pixels[i][1], sizeof (half) * 3, sizeof (half) * width * 3));
+        frameBuffer.insert (zeno::format("{}B", channels[i]), Slice ( HALF, (char*) &pixels[i][2], sizeof (half) * 3, sizeof (half) * width * 3));
+    }
+
+    file.setFrameBuffer (frameBuffer);
+    file.writePixels (height);
+}
+
 }

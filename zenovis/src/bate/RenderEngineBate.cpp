@@ -97,7 +97,7 @@ struct RenderEngineBate : RenderEngine {
         }
     }
 
-    void cleanupOptix() override {
+    void cleanupAssets() override {
 
     }
 
