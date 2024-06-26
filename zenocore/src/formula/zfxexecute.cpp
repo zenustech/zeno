@@ -86,6 +86,10 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text, operato
     return spNode;
 }
 
+void ZfxExecute::markZfxAttr(std::shared_ptr<ZfxASTNode> pVarNode) {
+    pVarNode->bAttr = true;
+}
+
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArray) {
     std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
     spNode->type = VARIABLETYPE;

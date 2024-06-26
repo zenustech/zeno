@@ -34,6 +34,8 @@ enum nodeType {
     IF,
     FOR,
     FOREACH,
+    FOREACH_ATTR,
+    EACH_ATTRS,
     WHILE,
     DOWHILE,
     CODEBLOCK,          //多个语法树作为children的代码块
@@ -95,7 +97,6 @@ enum operatorVals {
     AutoDecreaseFirst,
     AutoDecreaseLast,
     Indexing,
-    AttrMark,
     COMPVISIT,      //a.x, a.y, a.z
     BulitInVar,     //$F, $FPS, $T
 };
@@ -115,7 +116,15 @@ enum TokenMatchCase {
     Match_Exactly,      //fully match
 };
 
+enum ZfxRunOver {
+    RunOver_Points,
+    RunOver_Face,
+    RunOver_Geom,
+};
+
 struct ZfxASTNode {
+    std::string code;
+
     enum operatorVals opVal;
     enum nodeType type;
 
@@ -130,6 +139,9 @@ struct ZfxASTNode {
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;
     bool bCompleted = false;
+    bool AttrAssociateVar = false;      //属性相关变量的赋值，比如int a = @P.y,  b=  @N.x; 后续要被剔除。
+    bool bAttr = false;                 //属性值，@P @N @Cd
+    int sortOrderNum = 0;               //用于先后顺序排序的值
 };
 
 struct ZfxContext
@@ -137,12 +149,10 @@ struct ZfxContext
     /* in */ std::shared_ptr<PrimitiveObject> spObject;
     /* in */ std::weak_ptr<INode> spNode;
     /* in */ std::string code;
+    /* in */ bool bParsingAttr = false;     //刚parse的语法树还需要对带有属性的进行处理，在外面套一层foreach循环以遍历属性
+    /* in */ ZfxRunOver runover = RunOver_Points;
     /* out */ std::string printContent;
     /* out */ operatorVals jumpFlag;
-};
-
-struct FuncContext {
-    std::string nodePath;
 };
 
 std::string getOperatorString(nodeType type, operatorVals op);
@@ -151,6 +161,7 @@ operatorVals funcName2Enum(std::string func);
 std::shared_ptr<ZfxASTNode> newNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> Children);
 std::shared_ptr<ZfxASTNode> newNumberNode(float value);
 void addChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild);
+void appendChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild);
 
 void print_syntax_tree(std::shared_ptr<ZfxASTNode> root, int depth, std::string& printContent);
 float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);
@@ -161,6 +172,14 @@ void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& p
 void preOrderVec(std::shared_ptr<ZfxASTNode> root, std::vector<std::shared_ptr<ZfxASTNode>>& tmplist);
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright);
+
+void findAllZenVar(std::shared_ptr<ZfxASTNode> root, std::set<std::string>& vars);
+
+int markOrder(std::shared_ptr<ZfxASTNode> root, int startIndex);
+
+std::shared_ptr<ZfxASTNode> clone(std::shared_ptr<ZfxASTNode> spNode);
+
+std::string decompile(std::shared_ptr<ZfxASTNode> root, std::string indent = "");
 
 }
 

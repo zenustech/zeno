@@ -171,8 +171,12 @@ namespace zeno {
 
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
         //debug
+        //
+        markOrder(root, 0);
+        parsingAttr(root, pCtx);
+        removeAttrvarDeclareAssign(root, pCtx);
         //printSyntaxTree(root, pCtx->code);
-        execute(root, pCtx);
+        zeno::log_only_print(decompile(root));
     }
 
     template <class T>
@@ -372,7 +376,7 @@ namespace zeno {
         m_variables.pop_back();
     }
 
-    zfxvariant& FunctionManager::getVariableRef(const std::string& name) {
+    ZfxVariable& FunctionManager::getVariableRef(const std::string& name) {
         for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); iter++) {
             auto iter_ = iter->find(name);
             if (iter_ != iter->end()) {
@@ -386,13 +390,13 @@ namespace zeno {
         for (auto iter = m_variables.rbegin(); iter != m_variables.rend(); iter++) {
             auto iter_ = iter->find(name);
             if (iter_ != iter->end()) {
-                return iter_->second;
+                return iter_->second.value;
             }
         }
         throw makeError<KeyError>(name, "variable `" + name + "` not founded");
     }
 
-    bool FunctionManager::declareVariable(const std::string& name, zfxvariant var) {
+    bool FunctionManager::declareVariable(const std::string& name, ZfxVariable var) {
         if (m_variables.empty()) {
             return false;
         }
@@ -404,17 +408,26 @@ namespace zeno {
         return true;
     }
 
-    bool FunctionManager::assignVariable(const std::string& name, zfxvariant var) {
+    bool FunctionManager::declareVariable(const std::string& name, zfxvariant var) {
         if (m_variables.empty()) {
             return false;
         }
-        //如果有多个重名定义，直接找最浅的栈对应的变量值。
         auto iterCurrentStack = m_variables.rbegin();
-        auto iterVar = iterCurrentStack->find(name);
-        if (iterVar == iterCurrentStack->end()) {
+        if (iterCurrentStack->find(name) != iterCurrentStack->end()) {
             return false;
         }
-        iterVar->second = var;
+        ZfxVariable variable;
+        variable.value = var;
+        iterCurrentStack->insert(std::make_pair(name, variable));
+        return true;
+    }
+
+    bool FunctionManager::assignVariable(const std::string& name, ZfxVariable var) {
+        if (m_variables.empty()) {
+            return false;
+        }
+        ZfxVariable& self = getVariableRef(name);
+        self = var;
         return true;
     }
 
@@ -660,6 +673,347 @@ namespace zeno {
         return current;
     }
 
+    void FunctionManager::getDependingVariables(const std::string& assignedVar, std::set<std::string>& vars) {
+        //功能：求得被赋值变量assignedVar的所有表达式所关联的所有变量即属性，以及这些变量后续的关联，依次递归
+        if (assignedVar.empty())
+            return;
+
+        if (assignedVar.at(0) == '@')
+            return;
+
+        //防止重复添加的情况
+        if (vars.find(assignedVar) != vars.end())
+            return;
+
+        ZfxVariable& zenvar = getVariableRef(assignedVar);
+
+        for (auto iter = zenvar.assignStmts.rbegin(); iter != zenvar.assignStmts.rend(); iter++)
+        {
+            auto spStmt = *iter;
+            if (!spStmt)
+                throw makeError<UnimplError>("stmt nullptr");
+
+            std::set<std::string> depvars;
+            findAllZenVar(spStmt, depvars);
+
+            for (auto depvar : depvars) {
+                //assignedVar变量依赖了属性，或者自身，就直接添加到结果里，无须再递归查询。
+                if (depvar.at(0) == '@' || depvar == assignedVar) {
+                    vars.insert(depvar);
+                    continue;
+                }
+                getDependingVariables(depvar, vars);
+            }
+        }
+    }
+
+    void FunctionManager::removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
+        for (auto iter = root->children.begin(); iter != root->children.end();) {
+            removeAttrvarDeclareAssign(*iter, pContext);
+            if ((*iter)->AttrAssociateVar) {
+                iter = root->children.erase(iter);
+            }
+            else {
+                iter++;
+            }
+        }
+    }
+
+    std::set<std::string> FunctionManager::parsingAttr(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
+        if (!root) {
+            throw makeError<UnimplError>("null ASTNODE");
+        }
+        switch (root->type)
+        {
+        case NUMBER:
+        case STRING:
+        case BOOLTYPE:  return {};
+        case ZENVAR: {
+            if (root->bAttr) {
+                std::string attrname = get_zfxvar<std::string>(root->value);
+                return { attrname };
+            }
+            else {
+                //普通变量也可能是属性变量。
+                const std::string& varname = get_zfxvar<std::string>(root->value);
+                ZfxVariable& newvar = getVariableRef(varname);
+                return newvar.attachAttrs;
+            }
+        }
+        case DECLARE: {
+            //变量定义
+            int nChildren = root->children.size();
+            if (nChildren != 2 && nChildren != 3) {
+                throw makeError<UnimplError>("args of DECLARE");
+            }
+            std::shared_ptr<ZfxASTNode> typeNode = root->children[0];
+            std::shared_ptr<ZfxASTNode> nameNode = root->children[1];
+            ZfxVariable newvar;
+            bool bOnlyDeclare = nChildren == 2;
+            operatorVals vartype = typeNode->opVal;
+            if (bOnlyDeclare) {
+                switch (vartype)
+                {
+                case TYPE_INT:      newvar.value = 0; break;
+                case TYPE_INT_ARR:  newvar.value = zfxintarr();   break;
+                case TYPE_FLOAT:    newvar.value = 0.f;   break;
+                case TYPE_FLOAT_ARR:    newvar.value = zfxfloatarr(); break;
+                case TYPE_STRING:       newvar.value = "";    break;
+                case TYPE_STRING_ARR:   newvar.value = zfxstringarr(); break;
+                case TYPE_VECTOR2:  newvar.value = glm::vec2(); break;
+                case TYPE_VECTOR3:  newvar.value = glm::vec3(); break;
+                case TYPE_VECTOR4:  newvar.value = glm::vec4(); break;
+                case TYPE_MATRIX2:  newvar.value = glm::mat2(); break;
+                case TYPE_MATRIX3:  newvar.value = glm::mat3(); break;
+                case TYPE_MATRIX4:  newvar.value = glm::mat4(); break;
+                }
+            }
+            else {
+                std::shared_ptr<ZfxASTNode> valueNode = root->children[2];
+                newvar.attachAttrs = parsingAttr(valueNode, pContext);
+                if (!newvar.attachAttrs.empty()) {
+                    root->AttrAssociateVar = true;
+                }
+            }
+
+            //validateVar(vartype, newvar.value);
+            auto spClonedStmt = clone(root);
+            newvar.assignStmts.push_back(spClonedStmt);
+
+            std::string varname = get_zfxvar<std::string>(nameNode->value);
+            //暂时不考虑自定义结构体
+            bool bret = declareVariable(varname, newvar);
+            if (!bret) {
+                throw makeError<UnimplError>("assign variable failed.");
+            }
+
+            bret = assignVariable(varname, newvar);
+            if (!bret) {
+                throw makeError<UnimplError>("assign variable failed.");
+            }
+            break;
+        }
+        case ASSIGNMENT: {
+            //赋值
+            if (root->children.size() != 2) {
+                throw makeError<UnimplError>("assign variable failed.");
+            }
+            std::shared_ptr<ZfxASTNode> zenvarNode = root->children[0];
+            std::shared_ptr<ZfxASTNode> valNode = root->children[1];
+
+            const std::string& targetvar = get_zfxvar<std::string>(zenvarNode->value);
+            ZfxVariable& var = getVariableRef(targetvar);
+            var.attachAttrs = parsingAttr(valNode, pContext);
+            auto spClonedStmt = clone(root);
+            var.assignStmts.push_back(spClonedStmt);
+
+            if (zenvarNode->bAttr) {
+                //需要套foreach循环
+            }
+            else {
+                if (!var.attachAttrs.empty()) {
+                    root->AttrAssociateVar = true;
+                }
+            }
+            break;
+        }
+        case FUNC:
+        {
+            std::string funcname =  get_zfxvar<std::string>(root->value);
+            if (funcname == "log") {
+                //看起来只有属性赋值和log才需要嵌入foreach
+                embeddingForeach(root, pContext);
+                break;
+            }
+        }
+        case FOUROPERATIONS:
+        case COMPOP:
+        case CONDEXP:
+        {
+            //运算操作本身不能嵌入，交由外部的赋值或者函数解决。
+            std::set<std::string> attrnames;
+            for (auto pChild : root->children) {
+                std::set<std::string> names = parsingAttr(pChild, pContext);
+                attrnames.insert(names.begin(), names.end());
+            }
+            return attrnames;
+        }
+        case IF:
+        case WHILE:
+        case DOWHILE:
+        {
+            //先parse代码段下的属性变量
+            parsingAttr(root->children[1], pContext);
+            //再处理条件段的属性展开问题。
+            embeddingForeach(root, pContext);
+            return {};
+        }
+        case FOR:
+        {
+            //压栈
+            pushStack();
+            scope_exit sp([this]() {this->popStack(); });
+
+            std::set<std::string> attrnames;
+            //直接把底下所有元素全部parse一遍就可以了
+            for (auto pChild : root->children) {
+                std::set<std::string> names = parsingAttr(pChild, pContext);
+                attrnames.insert(names.begin(), names.end());
+            }
+            //houdini的for循环可能不套。
+            embeddingForeach(root, pContext);
+            return attrnames;
+        }
+        case FOREACH:
+        {
+            //压栈
+            pushStack();
+            scope_exit sp([this]() {this->popStack(); });
+
+            int nChild = root->children.size();
+            auto idxNode = nChild == 3 ? nullptr : root->children[0];
+            auto varNode = nChild == 3 ? root->children[0] : root->children[1];
+            auto arrNode = nChild == 3 ? root->children[1] : root->children[2];
+            auto codeSeg = nChild == 3 ? root->children[2] : root->children[3];
+
+            //这里要预先定义好枚举变量的值，后续才能parse，否则会出现无定义变量
+            std::string idxName;
+            if (idxNode) {
+                idxName = get_zfxvar<std::string>(idxNode->value);
+                declareVariable(idxName);
+            }
+            const std::string& varName = get_zfxvar<std::string>(varNode->value);
+            declareVariable(varName);
+
+            std::set<std::string> attrnames;
+            std::set<std::string> names = parsingAttr(arrNode, pContext);
+            attrnames.insert(names.begin(), names.end());
+            names = parsingAttr(codeSeg, pContext);
+            attrnames.insert(names.begin(), names.end());
+            return attrnames;
+        }
+        case CODEBLOCK:
+        {
+            pushStack();
+            scope_exit sp([this]() {this->popStack(); });
+
+            std::set<std::string> attrnames;
+            for (auto pChild : root->children) {
+                std::set<std::string> names = parsingAttr(pChild, pContext);
+                attrnames.insert(names.begin(), names.end());
+            }
+            return attrnames;
+        }
+        case JUMP:
+        {
+        }
+        default:
+        {
+            
+        }
+        }
+        return {};
+    }
+
+    void FunctionManager::embeddingForeach(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext)
+    {
+        //如果该函数节点的底层用到了属性相关变量：
+        std::set<std::string> vars;
+        findAllZenVar(root, vars);
+
+        std::set<std::string> allDepVars;
+        for (auto var : vars) {
+            //判断var是不是属性相关变量
+            ZfxVariable& refVar = getVariableRef(var);
+            if (refVar.attachAttrs.empty())
+                continue;
+
+            std::set<std::string> depVars;
+            getDependingVariables(var, depVars);
+            allDepVars.insert(depVars.begin(), depVars.end());
+        }
+
+        //找到所有定义赋值statements，统统塞到一个容器里
+        std::vector<std::shared_ptr<ZfxASTNode>> allStmtsForVars;
+        std::set<std::string> allAttrs;
+        for (auto var : allDepVars) {
+            if (var.at(0) == '@') {
+                allAttrs.insert(var);
+                continue;
+            }
+            ZfxVariable& refVar = getVariableRef(var);
+            if (refVar.attachAttrs.empty()) continue;
+            allStmtsForVars.insert(allStmtsForVars.end(),
+                refVar.assignStmts.begin(), refVar.assignStmts.end());
+        }
+
+        if (allAttrs.empty())
+            return;
+
+        //直接对所有statements在语法树的顺序进行排序
+        std::sort(allStmtsForVars.begin(), allStmtsForVars.end(), [=](const auto& lhs, const auto& rhs) {
+            return lhs->sortOrderNum < rhs->sortOrderNum;
+            });
+
+        //套foreach遍历属性.
+        std::shared_ptr<ZfxASTNode> spForeach = std::make_shared<ZfxASTNode>();
+        spForeach->type = FOREACH_ATTR;
+
+        //在each里声明所有属性变量
+        std::shared_ptr<ZfxASTNode> spEach = std::make_shared<ZfxASTNode>();
+        spEach->type = EACH_ATTRS;
+        for (auto var : allAttrs) {
+            std::shared_ptr<ZfxASTNode> spAttrNode = std::make_shared<ZfxASTNode>();
+            spAttrNode->type = ZENVAR;
+            spAttrNode->value = var;
+            spAttrNode->bAttr = true;
+            appendChild(spEach, spAttrNode);
+        }
+
+        std::shared_ptr<ZfxASTNode> spForBody = std::make_shared<ZfxASTNode>();
+        spForBody->type = CODEBLOCK;
+        for (auto spStmt : allStmtsForVars) {
+            appendChild(spForBody, spStmt);
+        }
+        //把当前代码拷一份套到foreach循环的body里。
+        appendChild(spForBody, clone(root));
+
+        appendChild(spForeach, spEach);
+        appendChild(spForeach, spForBody);
+
+        //让spForeach替换掉root.
+        auto parent = root->parent.lock();
+        auto& children = parent->children;
+        auto& iterRoot = std::find(children.begin(), children.end(), root);
+        auto idxRoot = std::distance(children.begin(), iterRoot);
+        children[idxRoot] = spForeach;
+        spForeach->parent = parent;
+    }
+
+    void FunctionManager::updateGeomAttr(const std::string& attrname, zfxvariant value, operatorVals op, zfxvariant opval, ZfxContext* pContext)
+    {
+        if (attrname == "P") {
+            if (op == Indexing) {
+
+            }
+            else if (op == COMPVISIT) {
+
+            }
+            else {
+
+            }
+        }
+        else if (attrname == "N") {
+
+        }
+        else if (attrname == "Cd") {
+
+        }
+        else if (attrname == "ptnum") {
+
+        }
+    }
+
     zfxvariant FunctionManager::execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
         if (!root) {
             throw makeError<UnimplError>("Indexing Error.");
@@ -670,37 +1024,27 @@ namespace zeno {
             case STRING:
             case BOOLTYPE: return root->value;
             case ZENVAR: {
+                zfxvariant var;
+                //这里指的是取zenvar的值用于上层的计算或者输出，赋值并不会走到这里
+
+                //属性值在执行的时候是需要在一个外部的foreach里执行，并且储存到当前的堆栈里。
+                const std::string& varname = get_zfxvar<std::string>(root->value);
+                var = getVariable(varname);
+
                 switch (root->opVal) {
                 case Indexing: {
                     if (root->children.size() != 1) {
                         throw makeError<UnimplError>("Indexing Error.");
                     }
-                    const std::string& varname = get_zfxvar<std::string>(root->value);
                     int idx = get_zfxvar<int>(execute(root->children[0], pContext));
-                    const zfxvariant& var = getVariable(varname);
                     zfxvariant elemvar = get_array_element(var, idx);
                     return elemvar;
-                }
-                case AttrMark: {
-                    std::string attrname = get_zfxvar<std::string>(root->value);
-                    //@P @N
-                    //先支持常见的:
-                    if (attrname == "P" || attrname == "N") {
-                        auto& attrval = pContext->spObject->attr<zeno::vec3f>(attrname);
-                        auto p = zeno::vec_to_other<glm::vec3>(attrval[0]);
-                        zfxvariant var = p;
-                    }
-                    else {
-                        throw makeError<UnimplError>("Indexing Error.");
-                    }
                 }
                 case COMPVISIT: {
                     if (root->children.size() != 1) {
                         throw makeError<UnimplError>("Indexing Error on NameVisit");
                     }
-                    const std::string& varname = get_zfxvar<std::string>(root->value);
                     std::string component = get_zfxvar<std::string>(root->children[0]->value);
-                    const zfxvariant& var = getVariable(varname);
                     return get_element_by_name(var, component);
                 }
                 case BulitInVar: {
@@ -720,30 +1064,23 @@ namespace zeno {
                     }
                 }
                 case AutoIncreaseFirst: {
-                    const std::string& varname = get_zfxvar<std::string>(root->value);
-                    zfxvariant& var = getVariable(varname);
                     selfIncOrDec(var, true);
                     return var;
                 }
                 case AutoDecreaseFirst: {
-                    const std::string& varname = get_zfxvar<std::string>(root->value);
-                    zfxvariant& var = getVariable(varname);
                     selfIncOrDec(var, false);
                     return var;
                 }
                 case AutoIncreaseLast:
                 case AutoDecreaseLast:  //在外面再自增/减
                 {
+                    //TODO: @P.x++这种情况没考虑
                     const std::string& varname = get_zfxvar<std::string>(root->value);
-                    zfxvariant var = getVariable(varname);
-                    zfxvariant updatevar = var;
-                    selfIncOrDec(updatevar, AutoIncreaseLast == root->opVal);
-                    assignVariable(varname, updatevar);
-                    return var;
+                    ZfxVariable& varself = getVariableRef(varname);
+                    selfIncOrDec(varself.value, AutoIncreaseLast == root->opVal);
+                    return varself.value;
                 }
                 default: {
-                    const std::string& varname = get_zfxvar<std::string>(root->value);
-                    const zfxvariant& var = getVariable(varname);
                     return var;
                 }
                 }
@@ -823,29 +1160,29 @@ namespace zeno {
                 }
                 std::shared_ptr<ZfxASTNode> typeNode = root->children[0];
                 std::shared_ptr<ZfxASTNode> nameNode = root->children[1];
-                zfxvariant newvar;
+                ZfxVariable newvar;
                 bool bOnlyDeclare = nChildren == 2;
                 operatorVals vartype = typeNode->opVal;
                 if (bOnlyDeclare) {
                     switch (vartype)
                     {
-                    case TYPE_INT:      newvar = 0; break;
-                    case TYPE_INT_ARR:  newvar = zfxintarr();   break;
-                    case TYPE_FLOAT:    newvar = 0.f;   break;
-                    case TYPE_FLOAT_ARR:    newvar = zfxfloatarr(); break;
-                    case TYPE_STRING:       newvar = "";    break;
-                    case TYPE_STRING_ARR:   newvar = zfxstringarr(); break;
-                    case TYPE_VECTOR2:  newvar = glm::vec2(); break;
-                    case TYPE_VECTOR3:  newvar = glm::vec3(); break;
-                    case TYPE_VECTOR4:  newvar = glm::vec4(); break;
-                    case TYPE_MATRIX2:  newvar = glm::mat2(); break;
-                    case TYPE_MATRIX3:  newvar = glm::mat3(); break;
-                    case TYPE_MATRIX4:  newvar = glm::mat4(); break;
+                    case TYPE_INT:      newvar.value = 0; break;
+                    case TYPE_INT_ARR:  newvar.value = zfxintarr();   break;
+                    case TYPE_FLOAT:    newvar.value = 0.f;   break;
+                    case TYPE_FLOAT_ARR:    newvar.value = zfxfloatarr();   break;
+                    case TYPE_STRING:       newvar.value = "";              break;
+                    case TYPE_STRING_ARR:   newvar.value = zfxstringarr();  break;
+                    case TYPE_VECTOR2:  newvar.value = glm::vec2(); break;
+                    case TYPE_VECTOR3:  newvar.value = glm::vec3(); break;
+                    case TYPE_VECTOR4:  newvar.value = glm::vec4(); break;
+                    case TYPE_MATRIX2:  newvar.value = glm::mat2(); break;
+                    case TYPE_MATRIX3:  newvar.value = glm::mat3(); break;
+                    case TYPE_MATRIX4:  newvar.value = glm::mat4(); break;
                     }
                 }
                 else {
                     std::shared_ptr<ZfxASTNode> valueNode = root->children[2];
-                    newvar = execute(valueNode, pContext);
+                    newvar.value = execute(valueNode, pContext);
                 }
 
                 std::string varname = get_zfxvar<std::string>(nameNode->value);
@@ -855,7 +1192,7 @@ namespace zeno {
                     throw makeError<UnimplError>("assign variable failed.");
                 }
 
-                validateVar(vartype, newvar);
+                validateVar(vartype, newvar.value);
 
                 bret = assignVariable(varname, newvar);
                 if (!bret) {
@@ -875,56 +1212,49 @@ namespace zeno {
 
                 zfxvariant res = execute(valNode, pContext);
 
-                //直接解析变量
-                switch (zenvarNode->opVal) {
-                case Indexing: {
-                    if (valNode->children.size() != 1) {
-                        throw makeError<UnimplError>("Indexing Error.");
+                if (zenvarNode->bAttr) {
+                    std::string attrname = targetvar;
+                    zfxvariant opval;
+                    if (!zenvarNode->children.empty()) {
+                        opval = execute(zenvarNode->children[0], pContext);
                     }
-                    const std::string& varname = get_zfxvar<std::string>(valNode->value);
-                    int idx = get_zfxvar<int>(execute(valNode->children[0], pContext));
-                    zfxvariant& var = getVariableRef(varname);
-                    set_array_element(var, idx, res);
-                    return zfxvariant();  //无需返回什么具体的值
+                    updateGeomAttr(attrname, res, zenvarNode->opVal, opval, pContext);
                 }
-                case AttrMark: {
-                    std::string attrname = get_zfxvar<std::string>(valNode->value);
-                    //@P @N
-                    //先支持常见的:
-                    if (attrname == "P" || attrname == "N") {
-                        auto& attrval = pContext->spObject->attr<zeno::vec3f>(attrname);
-                        auto p = zeno::vec_to_other<glm::vec3>(attrval[0]);
-                        zfxvariant var = p;
-                        //set attr on prim.
+                else {
+                    //直接解析变量
+                    ZfxVariable& var = getVariableRef(targetvar);
+                    switch (zenvarNode->opVal) {
+                    case Indexing: {
+                        if (zenvarNode->children.size() != 1) {
+                            throw makeError<UnimplError>("Indexing Error.");
+                        }
+                        int idx = get_zfxvar<int>(execute(zenvarNode->children[0], pContext));
+                        set_array_element(var.value, idx, res);
+                        return zfxvariant();  //无需返回什么具体的值
                     }
-                    else {
-                        throw makeError<UnimplError>("Indexing Error.");
+                    case COMPVISIT: {
+                        if (zenvarNode->children.size() != 1) {
+                            throw makeError<UnimplError>("Indexing Error on NameVisit");
+                        }
+                        std::string component = get_zfxvar<std::string>(zenvarNode->children[0]->value);
+                        set_element_by_name(var.value, component, res);
+                        return zfxvariant();
                     }
-                }
-                case COMPVISIT: {
-                    if (valNode->children.size() != 1) {
-                        throw makeError<UnimplError>("Indexing Error on NameVisit");
+                    case BulitInVar: {
+                        //TODO: 什么情况下需要修改这种变量
+                        //$F $T这些貌似不能通过脚本去改，houdini也是这样，不知道有没有例外
+                        throw makeError<UnimplError>("Read-only variable cannot be modified.");
                     }
-                    const std::string& varname = get_zfxvar<std::string>(valNode->value);
-                    std::string component = get_zfxvar<std::string>(valNode->children[0]->value);
-                    zfxvariant& var = getVariableRef(varname);
-                    set_element_by_name(var, varname, res);
-                    return zfxvariant();
-                }
-                case BulitInVar: {
-                    //TODO: 什么情况下需要修改这种变量
-                    //$F $T这些貌似不能通过脚本去改，houdini也是这样，不知道有没有例外
-                    throw makeError<UnimplError>("Read-only variable cannot be modified.");
-                }
-                case AutoDecreaseFirst: 
-                case AutoIncreaseFirst:
-                case AutoIncreaseLast:
-                case AutoDecreaseLast:
-                default: {
-                    //先自增/减,再赋值，似乎没有意义，所以忽略
-                    assignVariable(targetvar, res);
-                    return zfxvariant();
-                }
+                    case AutoDecreaseFirst: 
+                    case AutoIncreaseFirst:
+                    case AutoIncreaseLast:
+                    case AutoDecreaseLast:
+                    default: {
+                        //先自增/减,再赋值，似乎没有意义，所以忽略
+                        var.value = res;
+                        return zfxvariant();
+                    }
+                    }
                 }
                 break;
             }
@@ -1028,9 +1358,14 @@ namespace zeno {
                             for (int i = 0; i < val.size(); i++) {
                                 //修改变量和索引的值为i, arrtest[i];
                                 if (idxNode) {
-                                    assignVariable(idxName, i);
+                                    ZfxVariable zfxvar;
+                                    zfxvar.value = i;
+                                    assignVariable(idxName, zfxvar);
                                 }
-                                assignVariable(varName, val[i]);
+
+                                ZfxVariable zfxvar;
+                                zfxvar.value = val[i];
+                                assignVariable(varName, zfxvar);
 
                                 //修改定义后，再次运行code
                                 execute(codeSeg, pContext);
@@ -1049,9 +1384,14 @@ namespace zeno {
                             for (int i = 0; i < val.length(); i++) {
                                 //修改变量和索引的值为i, arrtest[i];
                                 if (idxNode) {
-                                    assignVariable(idxName, i);
+                                    ZfxVariable zfxvar;
+                                    zfxvar.value = i;
+                                    assignVariable(idxName, zfxvar);
                                 }
-                                assignVariable(varName, val[i]);
+
+                                ZfxVariable zfxvar;
+                                zfxvar.value = val[i];
+                                assignVariable(varName, zfxvar);
 
                                 //修改定义后，再次运行code
                                 execute(codeSeg, pContext);

@@ -159,7 +159,8 @@ general-statement: declare-statement SEMICOLON { $$ = $1; }
     | if-statement { $$ = $1; }
     | loop-statement { $$ = $1; }
     | jump-statement SEMICOLON { $$ = $1; }
-    | exp-statement SEMICOLON { $$ = $1; }      /*可参与四则运算，以及普通的函数调用。*/
+    | exp-statement SEMICOLON { $$ = $1; }      /*可参与四则运算，以及普通的函数调用。 | code-block { $$ = $1; }*/
+    | code-block { $$ = $1; }
     ;
 
 array-or-exp: exp-statement { $$ = $1; }
@@ -171,6 +172,9 @@ assign-op: ASSIGNTO { $$ = AssignTo; }
     | MULASSIGN { $$ = MulAssign; }
     | SUBASSIGN { $$ = SubAssign; }
     | DIVASSIGN { $$ = DivAssign; }
+    ;
+
+code-block: LBRACKET multi-statements RBRACKET { $$ = $2; }
     ;
 
 bool-stmt: TRUE { $$ = true; }
@@ -223,17 +227,18 @@ declare-statement: only-declare {
             }
     ;
 
-code-block: LBRACKET multi-statements RBRACKET { $$ = $2; }
-    ;
+
 
 if-statement: IF LPAREN exp-statement RPAREN code-block {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
             $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
         }
+    /*  处理不带中括号的代码段很麻烦，先不支持
     | IF LPAREN exp-statement RPAREN general-statement {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
             $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
         }
+    */
     ;
 
 for-begin: SEMICOLON { $$ = driver.makeEmptyNode(); }
@@ -336,7 +341,7 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
     | VARNAME           { $$ = driver.makeZfxVarNode($1); }
     | ATTRAT zenvar {
             $$ = $2;
-            $$->opVal = AttrMark;
+            driver.markZfxAttr($$);
         }
     | zenvar DOT VARNAME {
             $$ = driver.makeComponentVisit($1, $3);

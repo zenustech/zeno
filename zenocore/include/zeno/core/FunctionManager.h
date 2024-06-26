@@ -10,9 +10,16 @@
 
 namespace zeno {
 
+    struct ZfxVariable
+    {
+        zfxvariant value;
+        std::set<std::string> attachAttrs;
+        std::vector<std::shared_ptr<ZfxASTNode>> assignStmts;
+    };
+
     class FunctionManager
     {
-        using VariableTable = std::map<std::string, zfxvariant>;
+        using VariableTable = std::map<std::string, ZfxVariable>;
         using ZfxVarRef = VariableTable::const_iterator;
 
     public:
@@ -30,14 +37,20 @@ namespace zeno {
         zfxvariant eval(const std::string& func, const std::vector<zfxvariant>& args, ZfxContext* pContext);
         void pushStack();
         void popStack();
+        void updateGeomAttr(const std::string& attrname, zfxvariant value, operatorVals op, zfxvariant opval, ZfxContext* pContext);
 
         zfxvariant getVariable(const std::string& name) const;
-        zfxvariant& getVariableRef(const std::string& name);
+        ZfxVariable& getVariableRef(const std::string& name);
         bool declareVariable(const std::string& name, zfxvariant var = zfxvariant());
-        bool assignVariable(const std::string& name, zfxvariant var);
+        bool declareVariable(const std::string& name, ZfxVariable var);
+        bool assignVariable(const std::string& name, ZfxVariable var);
         void validateVar(operatorVals varType, zfxvariant& newvar);
         zfxvariant parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxContext* pContext);
         zfxvariant execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        std::set<std::string> parsingAttr(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        void removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        void embeddingForeach(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        void getDependingVariables(const std::string& assignedVar, std::set<std::string>& vars);
         std::vector<zfxvariant> process_args(std::shared_ptr<ZfxASTNode> parent, ZfxContext* pContext);
 
         std::map<std::string, FUNC_INFO> m_funcs;

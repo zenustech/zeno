@@ -441,13 +441,13 @@ namespace  zeno  {
       // multi-statements
       // general-statement
       // array-or-exp
+      // code-block
       // assign-statement
       // jump-statement
       // arrcontent
       // array-stmt
       // only-declare
       // declare-statement
-      // code-block
       // if-statement
       // for-begin
       // for-condition
@@ -699,16 +699,16 @@ namespace  zeno  {
         S_64_general_statement = 64,             // general-statement
         S_65_array_or_exp = 65,                  // array-or-exp
         S_66_assign_op = 66,                     // assign-op
-        S_67_bool_stmt = 67,                     // bool-stmt
-        S_68_assign_statement = 68,              // assign-statement
-        S_69_jump_statement = 69,                // jump-statement
-        S_arrcontent = 70,                       // arrcontent
-        S_arrcontents = 71,                      // arrcontents
-        S_72_array_stmt = 72,                    // array-stmt
-        S_73_array_mark = 73,                    // array-mark
-        S_74_only_declare = 74,                  // only-declare
-        S_75_declare_statement = 75,             // declare-statement
-        S_76_code_block = 76,                    // code-block
+        S_67_code_block = 67,                    // code-block
+        S_68_bool_stmt = 68,                     // bool-stmt
+        S_69_assign_statement = 69,              // assign-statement
+        S_70_jump_statement = 70,                // jump-statement
+        S_arrcontent = 71,                       // arrcontent
+        S_arrcontents = 72,                      // arrcontents
+        S_73_array_stmt = 73,                    // array-stmt
+        S_74_array_mark = 74,                    // array-mark
+        S_75_only_declare = 75,                  // only-declare
+        S_76_declare_statement = 76,             // declare-statement
         S_77_if_statement = 77,                  // if-statement
         S_78_for_begin = 78,                     // for-begin
         S_79_for_condition = 79,                 // for-condition
@@ -761,8 +761,8 @@ namespace  zeno  {
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_67_bool_stmt: // bool-stmt
-      case symbol_kind::S_73_array_mark: // array-mark
+      case symbol_kind::S_68_bool_stmt: // bool-stmt
+      case symbol_kind::S_74_array_mark: // array-mark
         value.move< bool > (std::move (that.value));
         break;
 
@@ -779,13 +779,13 @@ namespace  zeno  {
       case symbol_kind::S_63_multi_statements: // multi-statements
       case symbol_kind::S_64_general_statement: // general-statement
       case symbol_kind::S_65_array_or_exp: // array-or-exp
-      case symbol_kind::S_68_assign_statement: // assign-statement
-      case symbol_kind::S_69_jump_statement: // jump-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_69_assign_statement: // assign-statement
+      case symbol_kind::S_70_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_72_array_stmt: // array-stmt
-      case symbol_kind::S_74_only_declare: // only-declare
-      case symbol_kind::S_75_declare_statement: // declare-statement
-      case symbol_kind::S_76_code_block: // code-block
+      case symbol_kind::S_73_array_stmt: // array-stmt
+      case symbol_kind::S_75_only_declare: // only-declare
+      case symbol_kind::S_76_declare_statement: // declare-statement
       case symbol_kind::S_77_if_statement: // if-statement
       case symbol_kind::S_78_for_begin: // for-begin
       case symbol_kind::S_79_for_condition: // for-condition
@@ -983,8 +983,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_67_bool_stmt: // bool-stmt
-      case symbol_kind::S_73_array_mark: // array-mark
+      case symbol_kind::S_68_bool_stmt: // bool-stmt
+      case symbol_kind::S_74_array_mark: // array-mark
         value.template destroy< bool > ();
         break;
 
@@ -1001,13 +1001,13 @@ switch (yykind)
       case symbol_kind::S_63_multi_statements: // multi-statements
       case symbol_kind::S_64_general_statement: // general-statement
       case symbol_kind::S_65_array_or_exp: // array-or-exp
-      case symbol_kind::S_68_assign_statement: // assign-statement
-      case symbol_kind::S_69_jump_statement: // jump-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_69_assign_statement: // assign-statement
+      case symbol_kind::S_70_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_72_array_stmt: // array-stmt
-      case symbol_kind::S_74_only_declare: // only-declare
-      case symbol_kind::S_75_declare_statement: // declare-statement
-      case symbol_kind::S_76_code_block: // code-block
+      case symbol_kind::S_73_array_stmt: // array-stmt
+      case symbol_kind::S_75_only_declare: // only-declare
+      case symbol_kind::S_76_declare_statement: // declare-statement
       case symbol_kind::S_77_if_statement: // if-statement
       case symbol_kind::S_78_for_begin: // for-begin
       case symbol_kind::S_79_for_condition: // for-condition
@@ -2446,9 +2446,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 385,     ///< Last index in yytable_.
+      yylast_ = 349,     ///< Last index in yytable_.
       yynnts_ = 30,  ///< Number of nonterminal symbols.
-      yyfinal_ = 54 ///< Termination state number.
+      yyfinal_ = 56 ///< Termination state number.
     };
 
 
@@ -2523,8 +2523,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_67_bool_stmt: // bool-stmt
-      case symbol_kind::S_73_array_mark: // array-mark
+      case symbol_kind::S_68_bool_stmt: // bool-stmt
+      case symbol_kind::S_74_array_mark: // array-mark
         value.copy< bool > (YY_MOVE (that.value));
         break;
 
@@ -2541,13 +2541,13 @@ switch (yykind)
       case symbol_kind::S_63_multi_statements: // multi-statements
       case symbol_kind::S_64_general_statement: // general-statement
       case symbol_kind::S_65_array_or_exp: // array-or-exp
-      case symbol_kind::S_68_assign_statement: // assign-statement
-      case symbol_kind::S_69_jump_statement: // jump-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_69_assign_statement: // assign-statement
+      case symbol_kind::S_70_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_72_array_stmt: // array-stmt
-      case symbol_kind::S_74_only_declare: // only-declare
-      case symbol_kind::S_75_declare_statement: // declare-statement
-      case symbol_kind::S_76_code_block: // code-block
+      case symbol_kind::S_73_array_stmt: // array-stmt
+      case symbol_kind::S_75_only_declare: // only-declare
+      case symbol_kind::S_76_declare_statement: // declare-statement
       case symbol_kind::S_77_if_statement: // if-statement
       case symbol_kind::S_78_for_begin: // for-begin
       case symbol_kind::S_79_for_condition: // for-condition
@@ -2645,8 +2645,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_67_bool_stmt: // bool-stmt
-      case symbol_kind::S_73_array_mark: // array-mark
+      case symbol_kind::S_68_bool_stmt: // bool-stmt
+      case symbol_kind::S_74_array_mark: // array-mark
         value.move< bool > (YY_MOVE (s.value));
         break;
 
@@ -2663,13 +2663,13 @@ switch (yykind)
       case symbol_kind::S_63_multi_statements: // multi-statements
       case symbol_kind::S_64_general_statement: // general-statement
       case symbol_kind::S_65_array_or_exp: // array-or-exp
-      case symbol_kind::S_68_assign_statement: // assign-statement
-      case symbol_kind::S_69_jump_statement: // jump-statement
+      case symbol_kind::S_67_code_block: // code-block
+      case symbol_kind::S_69_assign_statement: // assign-statement
+      case symbol_kind::S_70_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_72_array_stmt: // array-stmt
-      case symbol_kind::S_74_only_declare: // only-declare
-      case symbol_kind::S_75_declare_statement: // declare-statement
-      case symbol_kind::S_76_code_block: // code-block
+      case symbol_kind::S_73_array_stmt: // array-stmt
+      case symbol_kind::S_75_only_declare: // only-declare
+      case symbol_kind::S_76_declare_statement: // declare-statement
       case symbol_kind::S_77_if_statement: // if-statement
       case symbol_kind::S_78_for_begin: // for-begin
       case symbol_kind::S_79_for_condition: // for-condition

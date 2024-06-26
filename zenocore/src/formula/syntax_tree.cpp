@@ -3,6 +3,19 @@
 
 namespace zeno {
 
+    template <class T>
+    static T get_zfxvar(zfxvariant value) {
+        return std::visit([](auto const& val) -> T {
+            using V = std::decay_t<decltype(val)>;
+            if constexpr (!std::is_constructible_v<T, V>) {
+                throw makeError<TypeError>(typeid(T), typeid(V), "get<zfxvariant>");
+            }
+            else {
+                return T(val);
+            }
+        }, value);
+    }
+
     std::string getOperatorString(nodeType type, operatorVals op)
     {
         if (type == FUNC)
@@ -19,7 +32,6 @@ namespace zeno {
             switch (op) {
             case Indexing: var += " [Indexing]"; break;
             case BulitInVar: var += " [$]"; break;
-            case AttrMark: var += "[@]"; break;
             case AutoIncreaseFirst: var += " ++var"; break;
             case AutoIncreaseLast: var += " var++"; break;
             case AutoDecreaseFirst: var += " --var;"; break;
@@ -122,6 +134,11 @@ namespace zeno {
 
     void addChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild) {
         spNode->children.insert(spNode->children.begin(), spChild);
+        spChild->parent = spNode;
+    }
+
+    void appendChild(std::shared_ptr<ZfxASTNode> spNode, std::shared_ptr<ZfxASTNode> spChild) {
+        spNode->children.push_back(spChild);
         spChild->parent = spNode;
     }
 
@@ -337,6 +354,264 @@ namespace zeno {
                 preOrderVec(child, tmplist);
             }
         }
+    }
+
+    int markOrder(std::shared_ptr<ZfxASTNode> root, int startIndex) {
+        for (auto spChild : root->children) {
+            startIndex = markOrder(spChild, startIndex);
+        }
+        root->sortOrderNum = startIndex + 1;
+        return startIndex + 1;
+    }
+
+    void findAllZenVar(std::shared_ptr<ZfxASTNode> root, std::set<std::string>& vars) {
+        for (auto spChild : root->children) {
+            if (spChild->type == ZENVAR) {
+                if (std::holds_alternative<std::string>(spChild->value)) {
+                    std::string varname = std::get<std::string>(spChild->value);
+                    if (spChild->bAttr) {
+                        varname = "@" + varname;
+                    }
+                    vars.insert(varname);
+                }
+            }
+            else {
+                //找依赖变量只是为了找属性依赖，不能跨越block的范围。
+                if (spChild->type != CODEBLOCK)
+                    findAllZenVar(spChild, vars);
+            }
+        }
+    }
+
+    std::string decompile(std::shared_ptr<ZfxASTNode> root, std::string indent) {
+        if (!root) {
+            return "";
+        }
+        switch (root->type)
+        {
+        case BOOLTYPE:
+        case NUMBER: {
+            return indent + std::visit([](auto const& val) -> std::string {
+                using V = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<int, V> || std::is_same_v<float, V>) {
+                    return std::to_string(val);
+                }
+                else {
+                    throw makeError("ERROR TYPE OF NUMBER");
+                }
+            }, root->value);
+        }
+        case STRING: {
+            std::string res = indent + '"' + get_zfxvar<std::string>(root->value) + '"';
+            return res;
+        }
+        case ZENVAR: {
+            std::string varname = get_zfxvar<std::string>(root->value);
+            if (root->opVal == COMPVISIT) {
+                if (root->children.size() == 1) {
+                    varname = varname + "." + get_zfxvar<std::string>(root->children[0]->value);
+                }
+            }
+            else if (root->opVal == Indexing) {
+                if (root->children.size() == 1) {
+                    varname = varname + "[" + decompile(root->children[0]) + "]";
+                }
+            }
+            else if (root->opVal == BulitInVar) {
+                varname = "$" + varname;
+            }
+            return indent + varname;
+        }
+        case DECLARE: {
+            int N = root->children.size();
+            if (N < 2) {
+                throw makeError("ERROR ARGS NUMBER OF DECLARE");
+            }
+            auto spType = root->children[0];
+            auto spVarName = root->children[1];
+            std::string res;
+            res = get_zfxvar<std::string>(spType->value);
+            res += " ";
+            res += get_zfxvar<std::string>(spVarName->value);
+            if (N == 3) {
+                auto spValueNode = root->children[2];
+                res += " = " + decompile(spValueNode);
+            }
+            res += ";";
+            return indent + res;
+        }
+        case ASSIGNMENT: {
+            if (root->children.size() != 2) {
+                throw makeError("ERROR ARGS NUMBER OF ASSIGNMENT");
+            }
+            auto varNode = root->children[0];
+            auto valueNode = root->children[1];
+            std::string res;
+            res = decompile(varNode);
+            res += " = ";
+            res += decompile(valueNode);
+            res += ";";
+            return indent + res;
+        }
+        case FUNC:
+        {
+            std::string funcname = get_zfxvar<std::string>(root->value);
+            std::string res = funcname;
+            res += "(";
+            for (int i = 0; i < root->children.size(); i++) {
+                auto spChild = root->children[i];
+                res += decompile(spChild);
+                if (i < root->children.size() - 1)
+                    res += ",";
+                else
+                    res += "";
+            }
+            res += ")";
+            return indent + res;
+        }
+        case FOUROPERATIONS:
+        case COMPOP:
+        {
+            std::string res;
+            if (root->children.size() != 2) {
+                throw makeError("ERROR ARGS NUMBER OF OP");
+            }
+
+            std::string op;
+            switch (root->opVal)
+            {
+            case Less:  op = "<"; break;
+            case LessEqual: op = "<="; break;
+            case Greater:   op = ">";   break;
+            case GreaterEqual:  op = ">=";  break;
+            case Equal: op = "=="; break;
+            case NotEqual:  op = "!="; break;
+            default:
+                op = "what?";
+            }
+
+            res = decompile(root->children[0]) + op + decompile(root->children[1]);
+            return indent + res;
+        }
+        case CONDEXP:
+        {
+            if (root->children.size() != 3) {
+                throw makeError("ERROR ARGS NUMBER OF CONDEXP");
+            }
+            auto spCond = root->children[0];
+            auto yesStmt = root->children[1];
+            auto noStmt = root->children[2];
+            std::string res;
+            res = "(" + decompile(spCond) + ") ? " + decompile(yesStmt) + " : " + decompile(noStmt) + ";";
+            return indent + res;
+        }
+        case IF:
+        {
+            std::string res;
+            if (root->children.size() != 2) {
+                throw makeError("ERROR ARGS NUMBER OF IF");
+            }
+            res = "if (" + decompile(root->children[0]) + ")\n" +
+                decompile(root->children[1], indent);
+            return indent + res;
+        }
+        case WHILE:
+        {
+            std::string res;
+            if (root->children.size() != 2) {
+                throw makeError("ERROR ARGS NUMBER OF IF");
+            }
+            res = "while (" + decompile(root->children[0]) + ")\n" +
+                decompile(root->children[1], indent);
+            return indent + res;
+        }
+        case DOWHILE:
+        {
+            std::string res;
+            if (root->children.size() != 2) {
+                throw makeError("ERROR ARGS NUMBER OF IF");
+            }
+            res = "do\n" + decompile(root->children[1], indent) + "while (" + decompile(root->children[0]) + ")\n";
+            return indent + res;
+        }
+        case FOR:
+        {
+            std::string res;
+            res = "for(" + decompile(root->children[0]) + "; " + decompile(root->children[1]) + "; "
+                + decompile(root->children[2]) + ")\n" + decompile(root->children[3], indent);
+            return indent + res;
+        }
+        case FOREACH:
+        {
+            std::string res = "foreach(";
+            auto foreachCode = root->children.back();
+            auto& children = root->children;
+            if (children.size() == 4) {
+                res += "[" + get_zfxvar<std::string>(children[0]->value) + "," + get_zfxvar<std::string>(children[1]->value) + "]";
+                res += " : " + get_zfxvar<std::string>(children[2]->value) + ")";
+            }
+            else{
+                res += get_zfxvar<std::string>(children[0]->value);
+                res += " : " + get_zfxvar<std::string>(children[1]->value) + ")";
+            }
+            res += decompile(foreachCode, indent);
+            return indent + res;
+        }
+        case FOREACH_ATTR:
+        {
+            std::string res = "foreach_attr([";
+            std::vector<std::string> attrs;
+            for (int i = 0; i < root->children[0]->children.size(); i++)
+            {
+                auto spVar = root->children[0]->children[i];
+                res += (get_zfxvar<std::string>(spVar->value));
+                if (i < root->children[0]->children.size() - 1)
+                    res += ", ";
+                else
+                    res += "";
+            }
+            res += "] : prim)\n";
+            res += decompile(root->children[1], indent);
+            return indent + res;
+        }
+        case CODEBLOCK:
+        {
+            std::string res;
+            res = indent + "{\n";
+            for (auto spChild : root->children) {
+                res += decompile(spChild, indent + "    ") + "\n";
+            }
+            res += indent + "}";
+            return res;
+        }
+        case JUMP:
+        {
+        }
+        default:
+        {
+
+        }
+        }
+        return "";
+    }
+
+    std::shared_ptr<ZfxASTNode> clone(std::shared_ptr<ZfxASTNode> spNode) {
+        if (!spNode)
+            return nullptr;
+        std::shared_ptr<ZfxASTNode> spCloned = std::make_shared<ZfxASTNode>();
+        spCloned->code = spNode->code;
+        spCloned->value = spNode->value;
+        spCloned->bAttr = spNode->bAttr;
+        spCloned->AttrAssociateVar = false;
+        spCloned->sortOrderNum = spNode->sortOrderNum;
+        spCloned->type = spNode->type;
+        spCloned->opVal = spNode->opVal;
+        for (auto spChild : spNode->children) {
+            auto spClonedChild = clone(spChild);
+            spCloned->children.push_back(spClonedChild);
+            spClonedChild->parent = spCloned;
+        }
+        return spCloned;
     }
 
     bool checkparentheses(std::string& exp, int& addleft, int& addright)
