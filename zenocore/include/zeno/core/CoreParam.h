@@ -38,6 +38,7 @@ struct CoreParam {
     SocketType socketType = NoSocket;
     bool bInput = true;
     bool m_idModify = false;    //该output param输出的obj是新创建的(false)还是基于已有的修改(true)
+    std::string wildCardGroup;
 };
 
 struct ObjectParam : CoreParam {

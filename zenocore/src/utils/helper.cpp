@@ -277,6 +277,7 @@ namespace zeno {
                     param.control = getDefaultControl(param.type);
                 param.tooltip = param_desc.doc;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 default.params.emplace_back(std::move(param));
             }
             else
@@ -288,6 +289,7 @@ namespace zeno {
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = true;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.inputObjs.emplace_back(std::move(param));
             }
         }
@@ -328,6 +330,7 @@ namespace zeno {
                 param.control = NullControl;
                 param.tooltip = param_desc.doc;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.outputPrims.emplace_back(std::move(param));
             }
             else
@@ -340,6 +343,7 @@ namespace zeno {
                     param.socketType = param_desc.socketType;
                 param.bInput = true;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.outputObjs.emplace_back(std::move(param));
             }
         }

@@ -1,12 +1,12 @@
 #ifndef __SUBNETNODE_H__
 #define __SUBNETNODE_H__
 
-#include "zenonode.h"
+#include "zenonodenew.h"
 
-class SubnetNode : public ZenoNode
+class SubnetNode : public ZenoNodeNew
 {
     Q_OBJECT
-    typedef ZenoNode _base;
+    typedef ZenoNodeNew _base;
 public:
     SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
     ~SubnetNode();

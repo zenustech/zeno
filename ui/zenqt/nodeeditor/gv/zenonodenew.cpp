@@ -167,8 +167,8 @@ ZGraphicsLayout* ZenoNodeNew::initVerticalSockets(bool bInput)
         if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
             continue;
 
-        auto type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
-        if (type != zeno::Socket_Owning && type != zeno::Socket_ReadOnly && type != zeno::Socket_Clone)
+        auto group = paramIdx.data(ROLE_PARAM_GROUP).toInt();
+        if (group != zeno::Group_InputObject && group != zeno::Group_OutputObject)
             continue;
 
         addOnlySocketToLayout(pSocketLayout, paramIdx);
@@ -439,11 +439,11 @@ void ZenoNodeNew::onLayoutChanged()
     for (int r = 0; r < paramsM->rowCount(); r++)
     {
         const QModelIndex& paramIdx = paramsM->index(r, 0);
-        auto type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+        auto group = paramIdx.data(ROLE_PARAM_GROUP).toInt();
         if (!paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         
-        if (type == zeno::Socket_ReadOnly || type == zeno::Socket_Clone || type == zeno::Socket_Owning)
+        if (group == zeno::Group_InputObject)
             addOnlySocketToLayout(m_inputObjSockets, paramIdx);
         else
             m_inputsLayout->addItem(addSocket(paramIdx, true));
@@ -452,11 +452,11 @@ void ZenoNodeNew::onLayoutChanged()
     for (int r = 0; r < paramsM->rowCount(); r++)
     {
         const QModelIndex& paramIdx = paramsM->index(r, 0);
-        auto type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+        auto group = paramIdx.data(ROLE_PARAM_GROUP).toInt();
         if (paramIdx.data(ROLE_ISINPUT).toBool())
             continue;
         
-        if (type == zeno::Socket_ReadOnly || type == zeno::Socket_Clone || type == zeno::Socket_Owning)
+        if (group == zeno::Group_OutputObject)
             addOnlySocketToLayout(m_outputObjSockets, paramIdx);
         else
             m_outputsLayout->addItem(addSocket(paramIdx, false));
@@ -555,7 +555,8 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
     {
         if (role != ROLE_PARAM_NAME
             && role != ROLE_PARAM_TOOLTIP
-            && role != ROLE_PARAM_VISIBLE)
+            && role != ROLE_PARAM_VISIBLE
+            && role != ROLE_PARAM_GROUP)
             return;
 
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
@@ -670,8 +671,8 @@ ZGraphicsLayout* ZenoNodeNew::initSockets(ParamsModel* pModel, const bool bInput
         const QModelIndex& paramIdx = pModel->index(r, 0);
         if (paramIdx.data(ROLE_ISINPUT).toBool() != bInput)
             continue;
-        auto type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
-        if (type != zeno::Socket_Primitve)
+        auto group = paramIdx.data(ROLE_PARAM_GROUP).toInt();
+        if (group != zeno::Group_InputPrimitive && group != zeno::Group_OutputPrimitive)
             continue;
         pSocketsLayout->addItem(addSocket(paramIdx, bInput));
     }
@@ -734,16 +735,7 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
 
 void ZenoNodeNew::onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName)
 {
-    ZenoSocketItem* pSocket = nullptr;
-    for (ZSocketLayout* socklayout : getSocketLayouts(bInput))
-    {
-        if (ZenoSocketItem* pItem = socklayout->socketItemByIdx(paramIdx, keyName))
-        {
-            pSocket = pItem;
-            break;
-        }
-    }
-    //ZenoSocketItem* pSocket = getSocketItem(paramIdx, keyName);
+    ZenoSocketItem* pSocket = getSocketItem(paramIdx, keyName);
     if (pSocket == nullptr)
         return;
 

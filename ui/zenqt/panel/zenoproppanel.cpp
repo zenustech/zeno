@@ -734,6 +734,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
+    if (topLeft.data(ROLE_PARAM_GROUP) != zeno::Group_InputPrimitive)
+        return;
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
