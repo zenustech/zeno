@@ -3641,9 +3641,6 @@ void set_window_size(int nx, int ny) {
     camera_changed = true;
     resize_dirty = true;
 }
-zeno::vec2i get_window_size() {
-    return zeno::vec2i(state.params.width, state.params.height);
-}
 void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
     state.params.physical_camera_aperture = aperture;
     state.params.physical_camera_shutter_speed = shutter_speed;
@@ -3816,6 +3813,16 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
     zeno::image_flip_vertical((ushort3*)tex_data.data(), w, h);
     return tex_data;
 }
+
+glm::vec3 get_click_pos(int x, int y) {
+    int w = state.params.width;
+    int h = state.params.height;
+    auto frame_buffer_pos = optixgetimg_extra2("pos", w, h);
+    auto index = x + (h - 1 - y) * w;
+    auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
+    return posWS;
+}
+
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
     std::copy_n(ptr, w * h, data.data());

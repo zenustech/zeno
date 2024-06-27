@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 
+#include <glm/glm.hpp>
 #include "optixSphere.h"
 #include "zeno/utils/vec.h"
 #include "zeno/types/LightObject.h"
@@ -66,8 +67,7 @@ void load_object(std::string const &key, std::string const &mtlid, const std::st
 void unload_object(std::string const &key);
 void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
 void unload_inst(const std::string &key);
-zeno::vec2i get_window_size();
-std::vector<float> optixgetimg_extra2(std::string name, int w, int h);
+glm::vec3 get_click_pos(int x, int y);
 
 struct LightDat {
     std::vector<float> v0;

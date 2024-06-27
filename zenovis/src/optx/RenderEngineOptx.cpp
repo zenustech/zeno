@@ -932,10 +932,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
     std::optional<glm::vec3> getClickedPos(int x, int y) override {
-        auto [nx, ny] = xinxinoptix::get_window_size();
-        auto frame_buffer_pos = xinxinoptix::optixgetimg_extra2("pos", nx, ny);
-        auto index = x + (ny - 1 - y) * nx;
-        auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
+        glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
         if (posWS == glm::vec3()) {
             return {};
         }
