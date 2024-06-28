@@ -431,6 +431,18 @@ namespace zeno {
             else if (root->opVal == BulitInVar) {
                 varname = "$" + varname;
             }
+            else if (root->opVal == AutoIncreaseFirst) {
+                varname = "++" + varname;
+            }
+            else if (root->opVal == AutoIncreaseLast) {
+                varname = varname + "++";
+            }
+            else if (root->opVal == AutoDecreaseFirst) {
+                varname = "--" + varname;
+            }
+            else if (root->opVal == AutoDecreaseLast) {
+                varname = varname + "--";
+            }
             return indent + varname;
         }
         case DECLARE: {
@@ -459,7 +471,15 @@ namespace zeno {
             auto valueNode = root->children[1];
             std::string res;
             res = decompile(varNode);
-            res += " = ";
+            switch (root->opVal)
+            {
+            case AssignTo: res += " = "; break;
+            case AddAssign: res += " += "; break;
+            case MulAssign: res += " *= "; break;
+            case DivAssign: res += " /= "; break;
+            default:
+                res += " what? "; break;
+            }
             res += decompile(valueNode);
             res += ";";
             return indent + res;

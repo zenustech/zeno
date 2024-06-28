@@ -750,16 +750,21 @@ namespace zeno {
         case STRING:
         case BOOLTYPE:  return {};
         case ZENVAR: {
-            if (root->bAttr) {
-                std::string attrname = get_zfxvar<std::string>(root->value);
-                return { attrname };
+            std::string varname = get_zfxvar<std::string>(root->value);
+            ZfxVariable& newvar = getVariableRef(varname);
+            if (!newvar.attachAttrs.empty() &&
+                (root->opVal == AutoIncreaseFirst ||
+                root->opVal == AutoIncreaseLast ||
+                root->opVal == AutoDecreaseFirst ||
+                root->opVal == AutoDecreaseLast))
+            {
+                //与属性值相关的变量的自增操作要加进去。
+                root->AttrAssociateVar = true;
+                auto spClonedStmt = clone(root);
+                spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
+                newvar.assignStmts.push_back(spClonedStmt);
             }
-            else {
-                //普通变量也可能是属性变量。
-                const std::string& varname = get_zfxvar<std::string>(root->value);
-                ZfxVariable& newvar = getVariableRef(varname);
-                return newvar.attachAttrs;
-            }
+            return newvar.attachAttrs;
         }
         case DECLARE: {
             //变量定义
@@ -826,11 +831,10 @@ namespace zeno {
             //普通变量的赋值
             const std::string& targetvar = get_zfxvar<std::string>(zenvarNode->value);
             ZfxVariable& var = getVariableRef(targetvar);
-            var.attachAttrs = parsingAttr(valNode, spOverrideStmt, pContext);
-            if (zenvarNode->bAttr) {
-                //被赋值本身也可能是属性
-                var.attachAttrs.insert(targetvar);
-            }
+
+            std::set<std::string> rightsideAttrs;
+            rightsideAttrs = parsingAttr(valNode, spOverrideStmt, pContext);
+            var.attachAttrs.insert(rightsideAttrs.begin(), rightsideAttrs.end());
 
             auto spClonedStmt = clone(root);
             spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
