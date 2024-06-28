@@ -9,6 +9,7 @@
 #include "viewport/displaywidget.h"
 #include "util/jsonhelper.h"
 #include "util/apphelper.h"
+#include <DockManager.h>
 
 
 PtrLayoutNode findNode(PtrLayoutNode root, ads::CDockWidget* pWidget)
@@ -140,6 +141,29 @@ QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)
     return strJson;
 }
 
+QString exportLayout(ads::CDockManager* pManager)
+{
+    rapidjson::StringBuffer s;
+    PRETTY_WRITER writer(s);
+    writer.StartObject();
+    writer.Key("state");
+    QByteArray xmldata = pManager->saveState();
+    writer.String(xmldata);
+    writer.Key("widgets");
+    writer.StartArray();
+    for (const auto& pWidget : pManager->dockWidgetsMap())
+    {
+        if (pWidget->widget())
+        {
+            writer.String(pWidget->objectName().toStdString().c_str());
+        }
+    }
+    writer.EndArray();
+    writer.EndObject();
+    QString strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
 void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString &filePath)
 {
     QFile f(filePath);
@@ -174,6 +198,28 @@ PtrLayoutNode readLayout(const QString& content)
     return _readLayout(doc.GetObject());
 }
 
+bool readLayout(const QString& content, QString& state, QStringList& widgets)
+{
+    rapidjson::Document doc;
+    QByteArray bytes = content.toUtf8();
+    doc.Parse(bytes);
+    if (!doc.IsObject())
+    {
+        return false;
+    }
+    auto obj = doc.GetObject();
+    if (obj.HasMember("state"))
+        state = obj["state"].GetString();
+    if (obj.HasMember("widgets"))
+    {
+        auto array = obj["widgets"].GetArray();
+        for (int i = 0; i < array.Size(); i++)
+        {
+            widgets << array[i].GetString();
+        }
+    }
+    return true;
+}
 PtrLayoutNode readLayout(const rapidjson::Value& objValue)
 {
     return _readLayout(objValue);

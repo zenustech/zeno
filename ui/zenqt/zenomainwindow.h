@@ -202,8 +202,10 @@ private:
     void initAllDockWidgets();
     void initWindowProperty();
     void initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockWidget* pCake, PtrLayoutNode root);
+    void addDockWidget(ads::CDockAreaWidget* cakeArea, const QString& name);
     void _resizeDocks(PtrLayoutNode root);
     void resetDocks(PtrLayoutNode root);
+    void resetDocks(const QString& state, const QStringList& widgets);
     void initTimeline();
     void recordRecentFile(const QString& filePath);
     void saveLayout2();
