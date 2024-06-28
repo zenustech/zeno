@@ -296,7 +296,7 @@ struct StringRegexSearch : zeno::INode {
                 }
                 auto zstr = std::make_shared<zeno::StringObject>();
                 zstr->set(w.str());
-                matched_substr_list->arr.push_back(std::move(zstr));
+                matched_substr_list->push_back(std::move(zstr));
             }
 
             str = res.suffix().str();

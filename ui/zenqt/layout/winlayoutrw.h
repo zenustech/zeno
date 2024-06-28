@@ -14,6 +14,7 @@ typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;
 namespace ads
 {
     class CDockManager;
+    class CDockWidget;
 }
 
 enum LayoutNodeType
