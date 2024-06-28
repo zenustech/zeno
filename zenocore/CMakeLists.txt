@@ -94,8 +94,14 @@ endif()
 
 #生成反射信息
 add_subdirectory(reflectCrates)
+target_include_directories(zenocore PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/reflectCrates/libreflect/include
+	${CMAKE_CURRENT_SOURCE_DIR}/reflectCrates/libgenerated/include
+)
 include(${CMAKE_SOURCE_DIR}/zenoreflect/cmake/ReflectionUtils.cmake)
-file(GLOB_RECURSE headersFile CONFIGURE_DEPENDS include/*.h)
+set(headersFile 
+	include/zeno/core/GlobalVariable.h
+)
 make_absolute_paths(REFLECTION_HEADERS 
     ${headersFile}
 ) 

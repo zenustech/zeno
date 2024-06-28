@@ -1,8 +1,6 @@
-#ifndef __CORE_GLOBALVARIABLE_H__
-#define __CORE_GLOBALVARIABLE_H__
+#pragma once
 
 #include <zeno/core/common.h>
-#include <zeno/core/Graph.h>
 #include <zeno/utils/helper.h>
 
 #include <zeno/utils/api.h>
@@ -92,5 +90,3 @@ struct GlobalVariableOverride {
 };
 
 }
-
-#endif
