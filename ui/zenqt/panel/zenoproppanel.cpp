@@ -171,6 +171,8 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
+        m_controls.clear();
+        m_floatColtrols.clear();
         if (m_tabWidget)
         {
             while (m_tabWidget->count() > 0)
@@ -732,6 +734,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
+    if (topLeft.data(ROLE_PARAM_GROUP) != zeno::Group_InputPrimitive)
+        return;
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 

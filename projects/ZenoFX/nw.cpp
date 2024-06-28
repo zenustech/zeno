@@ -85,7 +85,17 @@ struct NumericWrangle : zeno::INode {
             auto par = zeno::objectToLiterial<zeno::NumericValue>(obj);
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
+                if constexpr (std::is_convertible_v<T,zeno::vec4f>) {
+                    parvals.push_back(v[0]);
+                    parvals.push_back(v[1]);
+                    parvals.push_back(v[2]);
+                    parvals.push_back(v[3]);
+                    parnames.emplace_back(key, 0);
+                    parnames.emplace_back(key, 1);
+                    parnames.emplace_back(key, 2);
+                    parnames.emplace_back(key, 3);
+                    return 4;
+                } else if constexpr (std::is_convertible_v<T, zeno::vec3f>) {
                     parvals.push_back(v[0]);
                     parvals.push_back(v[1]);
                     parvals.push_back(v[2]);

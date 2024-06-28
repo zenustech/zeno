@@ -185,8 +185,8 @@ struct ZSRetrieveVectorField : zeno::INode {
 
         std::vector<zs::PropertyTag> tags{{"x",3},{"vec",3}};
 
-        auto vec_buffer = typename ZenoParticles::particles_t(tags,on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
-        auto zsvec_buffer = zs::Vector<float>(on_elm ? eles.size() : verts.size(),zs::memsrc_e::device,0);
+        auto vec_buffer = typename ZenoParticles::particles_t(tags,on_elm ? eles.size() : verts.size(),zs::memsrc_e::device);
+        auto zsvec_buffer = zs::Vector<float>(on_elm ? eles.size() : verts.size(),zs::memsrc_e::device);
         // transfer the data from gpu to cpu
         constexpr auto cuda_space = execspace_e::cuda;
         auto cudaPol = cuda_exec();
@@ -862,8 +862,8 @@ struct ZSGaussianSampler : zeno::INode {
         }
         int dim = source_dim;
 
-        auto src = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"inds",1}},0,zs::memsrc_e::device,0);
-        auto dst = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"mark",1}},0,zs::memsrc_e::device,0);
+        auto src = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"inds",1}},0,zs::memsrc_e::device);
+        auto dst = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"mark",1}},0,zs::memsrc_e::device);
 
         int source_simplex_size = srcQuads.getPropertySize("inds");
         if(srcType == "vert"){

@@ -69,6 +69,7 @@ namespace zeno {
         SocketProperty prop = Socket_Normal;
         std::string tooltip;
         bool bInput = true;
+        std::string wildCardGroup;
     };
 
     //primitive
@@ -87,6 +88,7 @@ namespace zeno {
         std::string tooltip;
         bool bInput = true;
         bool bVisible = true;
+        std::string wildCardGroup;
 
         ParamPrimitive() {}
         ParamPrimitive(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")

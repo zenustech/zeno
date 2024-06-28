@@ -340,7 +340,6 @@ void OptixWorker::load_objects()
     m_zenoVis->load_objects(objs);
 }
 
-
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
     , m_zenovis(nullptr)

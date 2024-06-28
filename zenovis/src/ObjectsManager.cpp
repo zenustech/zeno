@@ -41,6 +41,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
 
 void ObjectsManager::clear_objects() {
     objects.clear();
+    lightObjects.clear();
 }
 
 std::optional<zeno::IObject* > ObjectsManager::get(std::string nid) {

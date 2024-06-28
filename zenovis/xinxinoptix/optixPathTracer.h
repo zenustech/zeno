@@ -154,18 +154,13 @@ struct CameraInfo
 struct Params
 {
     unsigned int subframe_index;
-    float4*      accum_buffer;
-    float4*      accum_buffer_D;
-    float4*      accum_buffer_S;
-    float4*      accum_buffer_T;
-    float4*      accum_buffer_B;
+    float3*      accum_buffer;
+    float3*      accum_buffer_D;
+    float3*      accum_buffer_S;
+    float3*      accum_buffer_T;
+    ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
-    float3*      frame_buffer_C;
-    float3*      frame_buffer_D;
-    float3*      frame_buffer_S;
-    float3*      frame_buffer_T;
-    float3*      frame_buffer_B;
-    float3*      frame_buffer_M;
+    ushort3*     frame_buffer_M;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
@@ -195,6 +190,9 @@ struct Params
 
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
+
+    void*    dlights_ptr;
+    void*    plights_ptr;
 
     float skyLightProbablity() {
 

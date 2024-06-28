@@ -258,7 +258,8 @@ namespace zeno {
                 param.name = param_desc.name;
                 param.type = type;
                 param.defl = zeno::str2var(param_desc.defl, param.type);
-                param.socketType = param_desc.socketType;
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
                 if (param_desc.control != NullControl)
                     param.control = param_desc.control;
                 if (starts_with(param_desc.type, "enum ")) {
@@ -277,6 +278,7 @@ namespace zeno {
                     param.control = getDefaultControl(param.type);
                 param.tooltip = param_desc.doc;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 default.params.emplace_back(std::move(param));
             }
             else
@@ -285,8 +287,10 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.socketType = param_desc.socketType;
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
                 param.bInput = true;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.inputObjs.emplace_back(std::move(param));
             }
         }
@@ -322,10 +326,12 @@ namespace zeno {
                 param.name = param_desc.name;
                 param.type = type;
                 param.defl = zeno::str2var(param_desc.defl, param.type);
-                param.socketType = param_desc.socketType;
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
                 param.control = NullControl;
                 param.tooltip = param_desc.doc;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.outputPrims.emplace_back(std::move(param));
             }
             else
@@ -334,9 +340,11 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.socketType = param_desc.socketType;
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
                 param.bInput = true;
                 param.prop = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
                 ui.outputObjs.emplace_back(std::move(param));
             }
         }

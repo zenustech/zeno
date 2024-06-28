@@ -16,6 +16,7 @@
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/GlobalVariable.h>
 #include <functional>
 
 namespace zeno {
@@ -66,7 +67,7 @@ public:
     CALLBACK_REGIST(set_view, void, bool)
     ZENO_API bool is_view() const;
 
-    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true);
+    ZENO_API void mark_dirty(bool bOn, bool bWholeSubnet = true, bool bRecursively = true);
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
@@ -89,7 +90,7 @@ public:
    ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
-   ZENO_API bool update_param_type(const std::string& name, ParamType type);
+   ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
 
    ZENO_API bool update_param_control(const std::string& name, ParamControl control);
@@ -130,6 +131,7 @@ public:
     bool removeLink(bool bInput, const EdgeInfo& edge);
     zvariant resolveInput(std::string const& id);
     void mark_dirty_objs();
+    std::vector<std::string> getWildCardParams(const std::string& name, bool bPrim);
 
 protected:
     ZENO_API virtual void complete();
@@ -213,10 +215,6 @@ public:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
-
-    void propagateDirty(ObjPath dependType);  //查询上游dependType类型节点并传播dirty
-    void getUpstreamNodes(std::set<ObjPath>& depNodes, std::string dependType, std::set<ObjPath>& upstrems, std::string outParamName = "");
-    void mark_dirty_by_dependNodes(bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
 
 private:
     std::string m_name;

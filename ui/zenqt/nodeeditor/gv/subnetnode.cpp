@@ -39,7 +39,7 @@ public:
 
 
 SubnetNode::SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent)
-    : ZenoNode(params, parent)
+    : _base(params, parent)
     , m_bInput(bInput)
 {
 

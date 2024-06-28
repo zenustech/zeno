@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/extra/ContextManaged.h>
@@ -352,15 +353,41 @@ struct IfElse : zeno::INode {
 
 ZENDEFNODE(IfElse, {
     {
-        {"", "true", "", zeno::Socket_ReadOnly},
-        {"", "false", "", zeno::Socket_ReadOnly},
+        {"", "true", "", Socket_WildCard, NullControl, "wildCard"},
+        {"", "false", "", Socket_WildCard, NullControl, "wildCard"},
         {"bool", "cond"},
     },
-    {"result"},
+    {{"","result","",Socket_WildCard, NullControl, "wildCard"}},
     {},
     {"control"},
 });
 
+//test
+struct TimeShift : zeno::INode {
+    virtual void preApply() override {
+        ParamPrimitive param = get_input_prim_param("offset");
+        int offset = std::get<int>(param.defl);
+        //∏≤∏«$F
+        zvariant frame = getSession().getGlobalVarialbe("$F");
+        int currFrame = (std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", currFrame >= 0 ? currFrame : 0);
+        //º∆À„…œ”Œ
+        INode::preApply();
+    }
+    virtual void apply() override {
+        auto prim = get_input2<zeno::PrimitiveObject>("prim");
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(TimeShift, {
+    {
+        {"", "prim", "", Socket_ReadOnly},
+        {"int", "offset", "0", Socket_Primitve, Lineedit},
+    },
+    {"prim"},
+    {},
+    {"control"},
+    });
 
 /*** Start Of - ZHXX Control Flow ***
 

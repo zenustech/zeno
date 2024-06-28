@@ -13,6 +13,7 @@ typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;
 
 namespace ads
 {
+    class CDockManager;
     class CDockWidget;
 }
 
@@ -50,8 +51,10 @@ PtrLayoutNode findNode(PtrLayoutNode root, ads::CDockWidget* pWidget);
 PtrLayoutNode findParent(PtrLayoutNode root, ads::CDockWidget* pWidget);
 void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString& filePath);
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin);
+QString exportLayout(ads::CDockManager *pManager);
 PtrLayoutNode readLayoutFile(const QString& filePath);
 PtrLayoutNode readLayout(const QString& content);
+bool readLayout(const QString& content, QString& state, QStringList& widgets);
 PtrLayoutNode readLayout(const rapidjson::Value& objValue);
 int getDockSize(PtrLayoutNode root, bool bHori);
 PtrLayoutNode _readLayout(const rapidjson::Value& objValue);

@@ -1205,17 +1205,10 @@ void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
-                auto _near = scene->camera->m_near;
-                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 1) {
-                    depth = depth * 2 - 1;
-                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-//                    glm::vec4 ndc = {0, 0, depth, 1};
-//                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-//                    clip_c /= clip_c.w;
-//                    cz = -clip_c.z;
+                if (depth != 0) {
+                    cz = scene->camera->inf_z_near / depth;
                 }
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;

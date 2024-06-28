@@ -34,7 +34,11 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
-    setBrush(QColor("#CCA44E"), QColor("#FFF000"));
+    
+    if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
+        setBrush(QColor("#4B9EF4"), QColor("#5FD2FF"));
+    else
+        setBrush(QColor("#CCA44E"), QColor("#FFF000"));
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
@@ -319,7 +323,7 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     if (m_bInput || type != zeno::Socket_Owning || links.isEmpty())
     {
         qreal alpha = bOn ? 0.8 : 0.5;
-        QColor col = type == zeno::Socket_Owning ? QColor("#4876FF") : type == zeno::Socket_ReadOnly ? QColor("#8C8C8C") : QColor("#CD6839");
+        QColor col = type == zeno::Socket_Owning ? QColor("#4876FF") : type == zeno::Socket_ReadOnly ? QColor("#8C8C8C") : type == zeno::Socket_WildCard ? QColor("#4B9EF4") : QColor("#CD6839");
         col.setAlphaF(alpha);
         painter->setBrush(col);
     }

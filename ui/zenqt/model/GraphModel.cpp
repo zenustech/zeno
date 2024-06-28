@@ -679,6 +679,7 @@ void GraphModel::_initLink()
         //objects links init
         for (auto param : nodedata.customUi.inputObjs) {
             for (auto link : param.links) {
+                link.bObjLink = true;
                 _addLink(link);
             }
         }
@@ -687,6 +688,7 @@ void GraphModel::_initLink()
             for (auto group : tab.groups) {
                 for (auto param : group.params) {
                     for (auto link : param.links) {
+                        link.bObjLink = false;
                         _addLink(link);
                     }
                 }
@@ -819,7 +821,8 @@ bool GraphModel::_removeLink(const zeno::EdgeInfo& edge)
         QModelIndex linkIdx = fromParams->removeOneLink(from, edge);
         QModelIndex linkIdx2 = toParams->removeOneLink(to, edge);
         ZASSERT_EXIT(linkIdx == linkIdx2, false);
-        m_linkModel->removeRow(linkIdx.row());
+        if (linkIdx.isValid())
+            m_linkModel->removeRow(linkIdx.row());
     }
     GraphsManager::instance().currentModel()->markDirty(true);
     return true;

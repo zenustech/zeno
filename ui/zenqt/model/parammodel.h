@@ -70,6 +70,7 @@ public:
 signals:
     void linkAboutToBeInserted(const zeno::EdgeInfo& link);
     void linkAboutToBeRemoved(const zeno::EdgeInfo& link);
+    void portTypeChanged(const QModelIndex& idx, bool bPrime);
 
 private slots:
     void onCustomModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());

@@ -17,6 +17,8 @@
 #include "variantptr.h"
 #include "model/parammodel.h"
 #include <zeno/core/ReferManager.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 GraphsManager::GraphsManager(QObject* parent)
@@ -146,6 +148,7 @@ bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
     }
 
     zenoio::AppSettings settings;       //TODO:
+    settings.timeline = zenoApp->getMainWindow()->timelineInfo();
 
     zeno::GraphData graph = zeno::getSession().mainGraph->exportGraph();
 

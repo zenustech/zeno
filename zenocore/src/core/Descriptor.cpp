@@ -8,11 +8,13 @@ SocketDescriptor::SocketDescriptor(
         std::string const &defl,
         SocketType connProp,
         ParamControl ctrl,
+        std::string const& wildCard,
         std::string const &doc)
         : type(type)
         , name(name)
         , defl(defl)
         , doc(doc)
+        , wildCard(wildCard)
         , socketType(connProp)
         , control(ctrl) {}
 

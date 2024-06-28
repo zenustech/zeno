@@ -92,6 +92,13 @@ struct vec3{
 
 struct vec2{
     float x, y;
+
+    __forceinline__ __device__ float& operator[](unsigned int index) {
+        auto ptr= &this->x;
+        ptr += index;
+        return *ptr;
+    }
+    
     __forceinline__ __device__ vec2(const float2 &_v)
     {
         x = _v.x;

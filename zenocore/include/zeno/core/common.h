@@ -105,7 +105,9 @@ namespace zeno {
         Socket_Clone,
         Socket_Owning,
         //primitive
-        Socket_Primitve
+        Socket_Primitve,
+
+        Socket_WildCard
     };
 
     enum NodeDataGroup

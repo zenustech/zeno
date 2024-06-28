@@ -13,6 +13,7 @@ namespace zeno {
 struct Graph;
 struct Session;
 struct INode;
+struct GlobalVariableManager;
 
 struct INodeClass {
     CustomUI m_customui;
@@ -47,6 +48,7 @@ struct Session {
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
     std::unique_ptr<ReferManager> referManager;
+    std::unique_ptr<GlobalVariableManager> globalVariableManager;
     std::unique_ptr<FunctionManager> funcManager;
 
     ZENO_API Session();
@@ -80,6 +82,10 @@ struct Session {
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
     void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
+    //globalVariable
+    ZENO_API zvariant getGlobalVarialbe(std::string name);;
+    ZENO_API bool overrideGlobalVariable(std::string name, zvariant var);
+    ZENO_API bool updateGlobalVariable(std::string name, zvariant var);
 
 private:
     void initNodeCates();

@@ -5,6 +5,8 @@
 #include "zensim/math/DihedralAngle.hpp"
 
 namespace zeno { namespace CONSTRAINT {
+    using namespace zs;
+
 // FOR CLOTH SIMULATION
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_DistanceConstraint(
@@ -76,14 +78,14 @@ namespace zeno { namespace CONSTRAINT {
     constexpr bool solve_DistanceConstraint(
         const VECTOR3d &p0, const SCALER& invMass0, 
         const VECTOR3d &p1, const SCALER& invMass1,
-        const VECTOR3d &pp0,
-        const VECTOR3d &pp1,
+        const VECTOR3d &pp0,const VECTOR3d &pp1,
         const SCALER& restLength,
         const SCALER& xpbd_affiliation,
         const SCALER& kdamp_ratio,
         const SCALER& dt,
         SCALER& lambda,
-        VECTOR3d &corr0, VECTOR3d &corr1)
+        VECTOR3d &corr0, VECTOR3d &corr1,
+        bool stretch_resistence_only = false)
     {				
         SCALER wsum = invMass0 + invMass1;
         if(wsum < static_cast<SCALER>(1e-6)) {
@@ -92,42 +94,47 @@ namespace zeno { namespace CONSTRAINT {
 
         VECTOR3d n = p0 - p1;
         SCALER d = n.norm();
+        if(d > static_cast<SCALER>(1e-6)) {
+            n /= d;
+        }
+        else {
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+            return false;
+        }     
+
+
         SCALER C = d - restLength;
 
-        if (d > static_cast<SCALER>(1e-6))
-            n /= d;
-        else
-        {
+        SCALER alpha = 0.0;
+        if (xpbd_affiliation != 0.0){
+            alpha = static_cast<SCALER>(1.0) / (xpbd_affiliation * dt * dt);
+        }
+
+
+        if(stretch_resistence_only && C < 0) {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
             return false;
         }
 
+        auto gradC = n;
 
-        SCALER alpha = 0.0;
-        if (xpbd_affiliation != 0.0)
-        {
-            alpha = static_cast<SCALER>(1.0) / (xpbd_affiliation * dt * dt);
-        }
-
-        const auto& gradC = n;
-
-        SCALER dsum = 0.0, gamma = 1.0;
+        SCALER dsum = 0.0, gamma = 0.0;
         if(kdamp_ratio > 0) {
             auto beta = kdamp_ratio * dt * dt;
             gamma = alpha * beta / dt;
-            dsum = gamma * n.dot((p0 - pp0) - (p1 - pp1));
+            dsum = gamma * gradC.dot((p0 - pp0) - (p1 - pp1));
             // gamma += 1.0;
         }
 
-        const SCALER delta_lambda = -(C + alpha * lambda + dsum) / ((gamma + static_cast<SCALER>(1.0)) * wsum + alpha);
+        const SCALER dL = -(C + alpha * lambda + dsum) / ((gamma + static_cast<float>(1.0))* wsum + alpha);
+        const VECTOR3d dp = n * dL;
 
-        lambda += delta_lambda;
+        lambda += dL;
 
-        const VECTOR3d pt = n * delta_lambda;
-
-        corr0 =  invMass0 * pt;
-        corr1 = -invMass1 * pt;
+        corr0 =  invMass0 * dp;
+        corr1 = -invMass1 * dp;
         return true;
     }
 
@@ -254,20 +261,6 @@ namespace zeno { namespace CONSTRAINT {
         ds[2] = VECTOR3d{grad[1 * 3 + 0],grad[1 * 3 + 1],grad[1 * 3 + 2]};
         ds[3] = VECTOR3d{grad[2 * 3 + 0],grad[2 * 3 + 1],grad[2 * 3 + 2]};
         ds[1] = VECTOR3d{grad[3 * 3 + 0],grad[3 * 3 + 1],grad[3 * 3 + 2]};
-        // for(int i = 0;i != 4;++i)
-        //     ds[i] = VECTOR3d{grad[i * 3 + 0],grad[i * 3 + 1],grad[i * 3 + 2]};
-
-        // for(int i = 0;i != 4;++i){
-        //     printf("ds[%d] : %f %f %f\n",i,
-        //         (float)ds[i][0],
-        //         (float)ds[i][1],
-        //         (float)ds[i][2]);
-        // }
-
-
-        // SCALER alpha = 0.0;
-        // if (stiffness != 0.0)
-        //     alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
 
         SCALER sum_normGradC = 
             invMass0 * ds[0].l2NormSqr() +
@@ -384,7 +377,7 @@ namespace zeno { namespace CONSTRAINT {
        const VECTOR3d& pp2,
        const VECTOR3d& pp3,
        const SCALER& restAngle,
-       const SCALER& restAngleSign,
+    //    const SCALER& restAngleSign,
        const SCALER& xpbd_affliation,
        const SCALER& dt,
        const SCALER& kdamp_ratio,
@@ -408,7 +401,7 @@ namespace zeno { namespace CONSTRAINT {
            alpha = static_cast<SCALER>(1.0) / (xpbd_affliation * dt * dt);
 
         SCALER dsum = 0.0;
-        SCALER gamma = 1.0;
+        SCALER gamma = 0.0;
         if(kdamp_ratio > 0) {
             auto beta = kdamp_ratio * dt * dt;
             gamma = alpha * beta / dt;
@@ -906,96 +899,109 @@ namespace zeno { namespace CONSTRAINT {
 
 // FOR ELASTIC RODS SIMULATION
 // ----------------------------------------------------------------------------------------------
-//     template<typename VECTOR3d,typename SCALER,typename QUATERNION>
-//     constexpr bool solve_StretchShearConstraint(
-//         const VECTOR3d& p0, SCALER invMass0,
-//         const VECTOR3d& p1, SCALER invMass1,
-//         const QUATERNION& q0, SCALER invMassq0,
-//         const VECTOR3d& stretchingAndShearingKs,
-//         const SCALER restLength,
-//         VECTOR3d& corr0, VECTOR3d& corr1, QUATERNION& corrq0)
-//     {
-//         VECTOR3d d3;	//third director d3 = q0 * e_3 * q0_conjugate
-//         d3[0] = static_cast<SCALER>(2.0) * (q0.x() * q0.z() + q0.w() * q0.y());
-//         d3[1] = static_cast<SCALER>(2.0) * (q0.y() * q0.z() - q0.w() * q0.x());
-//         d3[2] = q0.w() * q0.w() - q0.x() * q0.x() - q0.y() * q0.y() + q0.z() * q0.z();
+template<typename VECTOR3d,typename SCALER,typename QUATERNION,
+        enable_if_all<std::is_convertible_v<typename VECTOR3d::value_type,SCALER>,
+                std::is_convertible_v<typename QUATERNION::value_type,SCALER>,
+                VECTOR3d::dim == 1,VECTOR3d::extent == 3,
+                QUATERNION::dim == 1,QUATERNION::extent == 4> = 0>
+constexpr bool solve_StretchShearConstraint(
+    const VECTOR3d& p0, SCALER invMass0,
+    const VECTOR3d& p1, SCALER invMass1,
+    const QUATERNION& q0, SCALER invMassq0,
+    const VECTOR3d& stretchingAndShearingKs,
+    const SCALER restLength,
+    VECTOR3d& corr0, VECTOR3d& corr1, QUATERNION& corrq0)
+{
+    constexpr auto eps = zs::limits<SCALER>::epsilon();
+    VECTOR3d d3{};	//third director d3 = q0 * e_3 * q0_conjugate
+    d3[0] = static_cast<SCALER>(2.0) * (q0.x() * q0.z() + q0.w() * q0.y());
+    d3[1] = static_cast<SCALER>(2.0) * (q0.y() * q0.z() - q0.w() * q0.x());
+    d3[2] = q0.w() * q0.w() - q0.x() * q0.x() - q0.y() * q0.y() + q0.z() * q0.z();
 
-//         VECTOR3d gamma = (p1 - p0) / restLength - d3;
-//         gamma /= (invMass1 + invMass0) / restLength + invMassq0 * static_cast<SCALER>(4.0)*restLength + eps;
+    VECTOR3d gamma = (p1 - p0) / restLength - d3;
+    gamma /= (invMass1 + invMass0) / restLength + invMassq0 * static_cast<SCALER>(4.0)*restLength + eps;
 
-//         if (std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[1]) < eps && std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[2]) < eps)	//all Ks are approx. equal
-//             for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
-//         else	//diffenent stretching and shearing Ks. Transform diag(Ks[0], Ks[1], Ks[2]) into world space using Ks_w = R(q0) * diag(Ks[0], Ks[1], Ks[2]) * R^T(q0) and multiply it with gamma
-//         {
-//             MATRIX3d R = q0.toRotationMatrix();
-//             gamma = (R.transpose() * gamma).eval();
-//             for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
-//             gamma = (R * gamma).eval();
-//         }
+    if (zs::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[1]) < eps && zs::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[2]) < eps)	//all Ks are approx. equal
+        for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
+    else	//diffenent stretching and shearing Ks. Transform diag(Ks[0], Ks[1], Ks[2]) into world space using Ks_w = R(q0) * diag(Ks[0], Ks[1], Ks[2]) * R^T(q0) and multiply it with gamma
+    {
+        // MATRIX3d R = q0.toRotationMatrix();
+        auto R = quaternion2matrix(q0);
+        gamma = R.transpose() * gamma;
+        for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
+        gamma = R * gamma;
+    }
 
-//         corr0 = invMass0 * gamma;
-//         corr1 = -invMass1 * gamma;
+    corr0 = invMass0 * gamma;
+    corr1 = -invMass1 * gamma;
 
-//         QUATERNION q_e_3_bar(q0.z(), -q0.y(), q0.x(), -q0.w());	//compute q*e_3.conjugate (cheaper than quaternion product)
-//         corrq0 = QUATERNION(0.0, gamma.x(), gamma.y(), gamma.z()) * q_e_3_bar;
-//         corrq0.coeffs() *= static_cast<SCALER>(2.0) * invMassq0 * restLength;
+    QUATERNION q_e_3_bar{-q0.y(), q0.x(), -q0.w(), q0.z()};	//compute q*e_3.conjugate (cheaper than quaternion product)
+    corrq0 = quaternionMultiply(QUATERNION{gamma.x(), gamma.y(), gamma.z(), 0.0 },q_e_3_bar);
+    
+    corrq0 *= static_cast<SCALER>(2.0) * invMassq0 * restLength;
 
-//         return true;
-//     }
+    return true;
+}
 
 // // ----------------------------------------------------------------------------------------------
-//     template<typename VECTOR3d,typename SCALER,typename QUATERNION>
-//     constexpr bool solve_BendTwistConstraint(
-//         const QUATERNION& q0, SCALER invMassq0,
-//         const QUATERNION& q1, SCALER invMassq1,
-//         const VECTOR3d& bendingAndTwistingKs,
-//         const QUATERNION& restDarbouxVector,
-//         QUATERNION& corrq0, QUATERNION& corrq1)
-//     {
-//         QUATERNION omega = q0.conjugate() * q1;   //darboux vector
+template<typename VECTOR3d,typename SCALER,typename QUATERNION,
+        enable_if_all<std::is_convertible_v<typename VECTOR3d::value_type,SCALER>,
+                std::is_convertible_v<typename QUATERNION::value_type,SCALER>,
+                VECTOR3d::dim == 1,VECTOR3d::extent == 3,
+                QUATERNION::dim == 1,QUATERNION::extent == 4> = 0>
+constexpr bool solve_BendTwistConstraint(
+    const QUATERNION& q0, SCALER invMassq0,
+    const QUATERNION& q1, SCALER invMassq1,
+    const VECTOR3d& bendingAndTwistingKs,
+    const QUATERNION& restDarbouxVector,
+    QUATERNION& corrq0, QUATERNION& corrq1)
+{
+    QUATERNION omega = quaternionConjugateMultiply(q0,q1);   //darboux vector
 
-//         QUATERNION omega_plus;
-//         omega_plus.coeffs() = omega.coeffs() + restDarbouxVector.coeffs();     //delta Omega with -Omega_0
-//         omega.coeffs() = omega.coeffs() - restDarbouxVector.coeffs();                 //delta Omega with + omega_0
-//         if (omega.l2NormSqr() > omega_plus.l2NormSqr()) omega = omega_plus;
+    QUATERNION omega_plus;
+    omega_plus = omega + restDarbouxVector;     //delta Omega with -Omega_0
+    omega = omega - restDarbouxVector;                 //delta Omega with + omega_0
+    if (omega.l2NormSqr() > omega_plus.l2NormSqr()) omega = omega_plus;
 
-//         for (int i = 0; i < 3; i++) omega.coeffs()[i] *= bendingAndTwistingKs[i] / (invMassq0 + invMassq1 + static_cast<SCALER>(1.0e-6));
-//         omega.w() = 0.0;    //discrete Darboux vector does not have vanishing scalar part
+    for (int i = 0; i < 3; i++) omega[i] *= bendingAndTwistingKs[i] / (invMassq0 + invMassq1 + static_cast<SCALER>(1.0e-6));
+    omega.w() = 0.0;    //discrete Darboux vector does not have vanishing scalar part
 
-//         corrq0 = q1 * omega;
-//         corrq1 = q0 * omega;
-//         corrq0.coeffs() *= invMassq0;
-//         corrq1.coeffs() *= -invMassq1;
-//         return true;
-//     }
+    // corrq0 = q1 * omega;
+    corrq0 = quaternionMultiply(q1,omega);
+    // corrq1 = q0 * omega;
+    corrq1 = quaternionMultiply(q0,omega);
+    corrq0 *= invMassq0;
+    corrq1 *= -invMassq1;
+    return true;
+}
 
-//     // ----------------------------------------------------------------------------------------------
-//     template<typename VECTOR3d,typename SCALER>
-//     constexpr bool solve_PerpendiculaBisectorConstraint(
-//         const VECTOR3d &p0, SCALER invMass0,
-//         const VECTOR3d &p1, SCALER invMass1,
-//         const VECTOR3d &p2, SCALER invMass2,
-//         const SCALER stiffness,
-//         VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2)
-//     {
-//         const VECTOR3d pm = 0.5 * (p0 + p1);
-//         const VECTOR3d p0p2 = p0 - p2;
-//         const VECTOR3d p2p1 = p2 - p1;
-//         const VECTOR3d p1p0 = p1 - p0;
-//         const VECTOR3d p2pm = p2 - pm;
+// ----------------------------------------------------------------------------------------------
+template<typename VECTOR3d,typename SCALER>
+constexpr bool solve_PerpendiculaBisectorConstraint(
+    const VECTOR3d &p0, SCALER invMass0,
+    const VECTOR3d &p1, SCALER invMass1,
+    const VECTOR3d &p2, SCALER invMass2,
+    const SCALER stiffness,
+    VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2)
+{
+    const VECTOR3d pm = 0.5 * (p0 + p1);
+    const VECTOR3d p0p2 = p0 - p2;
+    const VECTOR3d p2p1 = p2 - p1;
+    const VECTOR3d p1p0 = p1 - p0;
+    const VECTOR3d p2pm = p2 - pm;
 
-//         SCALER wSum = invMass0 * p0p2.l2NormSqr() + invMass1 * p2p1.l2NormSqr() + invMass2 * p1p0.l2NormSqr();
-//         if (wSum < eps)
-//             return false;
+    SCALER wSum = invMass0 * p0p2.l2NormSqr() + invMass1 * p2p1.l2NormSqr() + invMass2 * p1p0.l2NormSqr();
+    if (wSum < eps)
+        return false;
 
-//         const SCALER lambda = stiffness * p2pm.dot(p1p0) / wSum;
+    const SCALER lambda = stiffness * p2pm.dot(p1p0) / wSum;
 
-//         corr0 = -invMass0 * lambda * p0p2;
-//         corr1 = -invMass1 * lambda * p2p1;
-//         corr2 = -invMass2 * lambda * p1p0;
+    corr0 = -invMass0 * lambda * p0p2;
+    corr1 = -invMass1 * lambda * p2p1;
+    corr2 = -invMass2 * lambda * p1p0;
 
-//         return true;
-//     }
+    return true;
+}
 
 //     // ----------------------------------------------------------------------------------------------
 //     template<typename VECTOR3d,typename SCALER>
