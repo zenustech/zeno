@@ -64,8 +64,8 @@ ZENDEFNODE(PrimitiveAttrPicker, {
     },
     // outputs
     {
-    {"list"},
-    {"PrimitiveObject", "outPrim"}
+    {"PrimitiveObject", "outPrim"},
+    {"list"}
     },
     // params
     {{"string", "selected", ""}},

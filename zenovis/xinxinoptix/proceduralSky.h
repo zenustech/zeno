@@ -292,30 +292,6 @@ static __inline__ __device__ vec3 proceduralSky(
     return col;
 }
 
-static __inline__ __device__ vec3 hdrSky2(
-    vec3 dir
-){
-  dir = dir
-            .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z))
-            .rotY(to_radians(params.sky_rot));
-            
-  vec3 uv = sphereUV(dir, true);
-  vec3 col = vec3(0);
-  for(int jj=-2;jj<=2;jj++)
-  {
-    for(int ii=-2;ii<=2;ii++)
-    {
-      float dx = (float)ii / (float)(params.skynx);
-      float dy = (float)jj / (float)(params.skyny);
-      col = col + (vec3)texture2D(params.sky_texture, vec2(uv[0] + dx, uv[1] + dy)) * params.sky_strength;
-    }
-  }
-
-  return col/9.0f;
-}
-
 static __inline__ __device__ vec3 hdrSky(
         vec3 dir, float upperBound,  float isclamp, float &pdf
 ){
@@ -363,10 +339,7 @@ static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvi
 
     return retColor;
 }
-static __inline__ __device__ vec3 envSky2(vec3 dir)
-{
-  return hdrSky2(dir);
-}
+
 static __inline__ __device__ vec3 envSky(
     vec3 dir,
     vec3 sunLightDir,

@@ -21,7 +21,7 @@ namespace zeno {
 std::vector<std::filesystem::path> cachepath(3);
 std::unordered_set<std::string> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
     });
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
@@ -336,6 +336,16 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     std::lock_guard lck(m_mtx);
     return m_frames.back().view_objects;
 }
+
+ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
+{
+    std::lock_guard lck(m_mtx);
+    if (!callback)
+        return;
+
+    callback();
+}
+
 
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,

@@ -8,6 +8,7 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <string_view>
+#include <algorithm>
 #include <regex>
 #include <charconv>
 
@@ -87,7 +88,7 @@ ZENDEFNODE(StringEqual, {
 struct PrintString : zeno::INode {
     virtual void apply() override {
         auto str = get_input2<std::string>("str");
-        printf("PrintString: %s\n", str.c_str());
+        printf("%s\n", str.c_str());
     }
 };
 
@@ -231,9 +232,18 @@ ZENDEFNODE(StringFormatNumStr, {
 
 struct StringRegexMatch : zeno::INode {
     virtual void apply() override {
+        using namespace std::regex_constants;
+
         auto str = get_input2<std::string>("str");
         auto regex_str = get_input2<std::string>("regex");
-        std::regex self_regex(regex_str);
+
+        auto case_sensitive = get_input2<bool>("case_sensitive");
+
+        auto default_flags = ECMAScript;
+        if(!case_sensitive)
+            default_flags |= icase;
+
+        std::regex self_regex(regex_str,default_flags);
         int output = std::regex_match(str, self_regex);
 
         set_output2("output", output);
@@ -244,6 +254,7 @@ ZENDEFNODE(StringRegexMatch, {
     {
         {"string", "str", ""},
         {"string", "regex", ""},
+        {"bool","case_sensitive","1"}
     },
     {
         {"int", "output"}
@@ -251,6 +262,65 @@ ZENDEFNODE(StringRegexMatch, {
     {},
     {"string"},
 });
+
+struct StringRegexSearch : zeno::INode {
+    virtual void apply() override {
+        using namespace std::regex_constants;
+
+        auto str = get_input2<std::string>("str");
+        
+        auto regex_str = get_input2<std::string>("regex");
+        auto case_sensitive = get_input2<bool>("case_sensitive");
+
+        std::smatch res{};
+
+        auto flags = ECMAScript;
+        if(!case_sensitive)
+            flags |= icase;
+
+        std::regex self_regex(regex_str,flags);
+
+        auto matched_substr_list = std::make_shared<zeno::ListObject>();
+
+        // int search_success = std::regex_search(str,res,self_regex);
+        int search_success = 0;
+        
+
+        while(std::regex_search(str,res,self_regex)) {
+            search_success = 1;
+            auto is_first_matched = true;
+            for(auto w : res) {
+                if(is_first_matched) {
+                    is_first_matched = false;
+                    continue;
+                }
+                auto zstr = std::make_shared<zeno::StringObject>();
+                zstr->set(w.str());
+                matched_substr_list->arr.push_back(std::move(zstr));
+            }
+
+            str = res.suffix().str();
+        }
+
+        set_output2("search_success",search_success);
+        set_output("res",std::move(matched_substr_list));
+    }
+};
+
+ZENDEFNODE(StringRegexSearch, {
+    {
+        {"string", "str", ""},
+        {"string", "regex", ""},
+        {"bool","case_sensitive","1"}
+    },
+    {
+        {"int", "search_success"},
+        {"res"}
+    },
+    {},
+    {"string"},
+});
+
 
 struct StringSplitAndMerge: zeno::INode{
     

@@ -341,6 +341,23 @@ void OptixWorker::load_objects()
 }
 
 
+void OptixWorker::onSetData(
+    float aperture,
+    float shutter_speed,
+    float iso,
+    bool aces,
+    bool exposure
+) {
+//    zeno::log_info("I am in optix thread, now I want to set value {}", iso);
+    auto scene = m_zenoVis->getSession()->get_scene();
+    scene->camera->zOptixCameraSettingInfo.aperture = aperture;
+    scene->camera->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
+    scene->camera->zOptixCameraSettingInfo.iso = iso;
+    scene->camera->zOptixCameraSettingInfo.aces = aces;
+    scene->camera->zOptixCameraSettingInfo.exposure = exposure;
+    scene->drawOptions->needRefresh = true;
+}
+
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
     , m_zenovis(nullptr)
