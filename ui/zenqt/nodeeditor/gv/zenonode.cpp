@@ -1393,7 +1393,7 @@ void ZenoNode::onZoomed()
         m_NameItemTip->setBrush(QColor("#CCCCCC"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         m_NameItemTip->setFont(font2);
-        m_NameItemTip->show();
+        //m_NameItemTip->show();
     }
     if (m_NameItemTip) 
     {

@@ -173,8 +173,9 @@ namespace zeno {
         //debug
         //
         markOrder(root, 0);
-        parsingAttr(root, pCtx);
+        parsingAttr(root, nullptr, pCtx);
         removeAttrvarDeclareAssign(root, pCtx);
+        //markOrder(root, 0);
         //printSyntaxTree(root, pCtx->code);
         zeno::log_only_print(decompile(root));
     }
@@ -382,6 +383,12 @@ namespace zeno {
             if (iter_ != iter->end()) {
                 return iter->at(name);
             }
+        }
+        if (!name.empty() && name.at(0) == '@') {
+            ZfxVariable var;
+            var.attachAttrs.insert(name);
+            declareVariable(name, var);
+            return getVariableRef(name);
         }
         throw makeError<KeyError>(name, "variable `" + name + "` not founded");
     }
@@ -678,8 +685,9 @@ namespace zeno {
         if (assignedVar.empty())
             return;
 
-        if (assignedVar.at(0) == '@')
-            return;
+        //属性赋值也有依赖链，不能直接跳过。
+        //if (assignedVar.at(0) == '@')
+        //    return;
 
         //防止重复添加的情况
         if (vars.find(assignedVar) != vars.end())
@@ -698,16 +706,29 @@ namespace zeno {
 
             for (auto depvar : depvars) {
                 //assignedVar变量依赖了属性，或者自身，就直接添加到结果里，无须再递归查询。
-                if (depvar.at(0) == '@' || depvar == assignedVar) {
+                if (depvar == assignedVar) {
                     vars.insert(depvar);
                     continue;
                 }
+                //if (depvar.at(0) == '@') {
+                //    vars.insert(depvar);
+                //}
                 getDependingVariables(depvar, vars);
             }
         }
     }
 
     void FunctionManager::removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
+        if (root->bOverridedIfLoop && root->type == IF) {
+            //这里做一件巧妙的事情，就是把条件改为true，间接地废弃了这个if
+            //好处是可以让递归程序继续遍历代码段的部分，删除该删的声明语句。
+            auto& children = root->children;
+            auto trueCond = std::make_shared<ZfxASTNode>();
+            trueCond->type = NUMBER;
+            trueCond->value = 1;
+            children[0] = trueCond;
+        }
+
         for (auto iter = root->children.begin(); iter != root->children.end();) {
             removeAttrvarDeclareAssign(*iter, pContext);
             if ((*iter)->AttrAssociateVar) {
@@ -719,7 +740,7 @@ namespace zeno {
         }
     }
 
-    std::set<std::string> FunctionManager::parsingAttr(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
+    std::set<std::string> FunctionManager::parsingAttr(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext) {
         if (!root) {
             throw makeError<UnimplError>("null ASTNODE");
         }
@@ -770,7 +791,7 @@ namespace zeno {
             }
             else {
                 std::shared_ptr<ZfxASTNode> valueNode = root->children[2];
-                newvar.attachAttrs = parsingAttr(valueNode, pContext);
+                newvar.attachAttrs = parsingAttr(valueNode, spOverrideStmt, pContext);
                 if (!newvar.attachAttrs.empty()) {
                     root->AttrAssociateVar = true;
                 }
@@ -778,6 +799,7 @@ namespace zeno {
 
             //validateVar(vartype, newvar.value);
             auto spClonedStmt = clone(root);
+            spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
             newvar.assignStmts.push_back(spClonedStmt);
 
             std::string varname = get_zfxvar<std::string>(nameNode->value);
@@ -801,28 +823,36 @@ namespace zeno {
             std::shared_ptr<ZfxASTNode> zenvarNode = root->children[0];
             std::shared_ptr<ZfxASTNode> valNode = root->children[1];
 
+            //普通变量的赋值
             const std::string& targetvar = get_zfxvar<std::string>(zenvarNode->value);
             ZfxVariable& var = getVariableRef(targetvar);
-            var.attachAttrs = parsingAttr(valNode, pContext);
+            var.attachAttrs = parsingAttr(valNode, spOverrideStmt, pContext);
+            if (zenvarNode->bAttr) {
+                //被赋值本身也可能是属性
+                var.attachAttrs.insert(targetvar);
+            }
+
             auto spClonedStmt = clone(root);
+            spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
             var.assignStmts.push_back(spClonedStmt);
+            if (!var.attachAttrs.empty() && !zenvarNode->bAttr) {
+                root->AttrAssociateVar = true;
+                //打了整个标记后面是要删除这个语句的。
+            }
 
             if (zenvarNode->bAttr) {
                 //需要套foreach循环
-            }
-            else {
-                if (!var.attachAttrs.empty()) {
-                    root->AttrAssociateVar = true;
-                }
+                embeddingForeach(root, spOverrideStmt, pContext);
+                break;
             }
             break;
         }
         case FUNC:
         {
             std::string funcname =  get_zfxvar<std::string>(root->value);
-            if (funcname == "log") {
+            if (!isEvalFunction(funcname)) {
                 //看起来只有属性赋值和log才需要嵌入foreach
-                embeddingForeach(root, pContext);
+                embeddingForeach(root, spOverrideStmt, pContext);
                 break;
             }
         }
@@ -833,19 +863,45 @@ namespace zeno {
             //运算操作本身不能嵌入，交由外部的赋值或者函数解决。
             std::set<std::string> attrnames;
             for (auto pChild : root->children) {
-                std::set<std::string> names = parsingAttr(pChild, pContext);
+                std::set<std::string> names = parsingAttr(pChild, spOverrideStmt, pContext);
                 attrnames.insert(names.begin(), names.end());
             }
             return attrnames;
         }
         case IF:
+        {
+            //经考察houdini的规则，发现houdini会把（带有属性变量）的条件，嵌到里面的执行语句里。
+
+            //因此这里首先检查条件表达式是否包含属性相关变量
+            auto spCond = root->children[0];
+            auto spExecute = root->children[1];
+            auto& condAttrs = parsingAttr(spCond, spOverrideStmt, pContext);
+
+            std::set<std::string> attrs;
+            if (spOverrideStmt || condAttrs.empty()) {
+                attrs = parsingAttr(spExecute, spOverrideStmt, pContext);
+                //如果外部已经有if覆盖了，那么当前这个内部的if，也不需要了。
+                if (spOverrideStmt)
+                    root->bOverridedIfLoop = true;
+            }
+            else {
+                //当前的这个root（条件段）包含了属性，内部所有执行语句都要带上这个override stmt，
+                //并且忽略赋值和定义语句（因为override stmt已经包含了，没必要再加了）
+                attrs = parsingAttr(spExecute, root, pContext);
+                root->bOverridedIfLoop = true;
+            }
+            return attrs;
+        }
         case WHILE:
         case DOWHILE:
         {
             //先parse代码段下的属性变量
-            parsingAttr(root->children[1], pContext);
+            std::set<std::string> attrs = parsingAttr(root->children[1], spOverrideStmt, pContext);
+
+            //houdini的规则里，条件也要收集并嵌入到属性变量表达式里的。
+
             //再处理条件段的属性展开问题。
-            embeddingForeach(root, pContext);
+            //embeddingForeach(root, pContext);
             return {};
         }
         case FOR:
@@ -857,11 +913,11 @@ namespace zeno {
             std::set<std::string> attrnames;
             //直接把底下所有元素全部parse一遍就可以了
             for (auto pChild : root->children) {
-                std::set<std::string> names = parsingAttr(pChild, pContext);
+                std::set<std::string> names = parsingAttr(pChild, spOverrideStmt, pContext);
                 attrnames.insert(names.begin(), names.end());
             }
             //houdini的for循环可能不套。
-            embeddingForeach(root, pContext);
+            //embeddingForeach(root, pContext);
             return attrnames;
         }
         case FOREACH:
@@ -886,9 +942,9 @@ namespace zeno {
             declareVariable(varName);
 
             std::set<std::string> attrnames;
-            std::set<std::string> names = parsingAttr(arrNode, pContext);
+            std::set<std::string> names = parsingAttr(arrNode, spOverrideStmt, pContext);
             attrnames.insert(names.begin(), names.end());
-            names = parsingAttr(codeSeg, pContext);
+            names = parsingAttr(codeSeg, spOverrideStmt, pContext);
             attrnames.insert(names.begin(), names.end());
             return attrnames;
         }
@@ -899,7 +955,7 @@ namespace zeno {
 
             std::set<std::string> attrnames;
             for (auto pChild : root->children) {
-                std::set<std::string> names = parsingAttr(pChild, pContext);
+                std::set<std::string> names = parsingAttr(pChild, spOverrideStmt, pContext);
                 attrnames.insert(names.begin(), names.end());
             }
             return attrnames;
@@ -915,18 +971,120 @@ namespace zeno {
         return {};
     }
 
-    void FunctionManager::embeddingForeach(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext)
+    bool FunctionManager::isEvalFunction(const std::string& funcname) {
+        //暂时先这么判断，后续会有函数信息注册全局表
+        if (funcname != "sin" &&
+            funcname != "cos" &&
+            funcname != "sinh" &&
+            funcname != "cosh" &&
+            funcname != "abs" &&
+            funcname != "rand" &&
+            funcname != "ref" &&
+            funcname != "volumesample" &&
+            funcname != "colormap"
+            ) {
+            return false;
+        }
+        return true;
+    }
+
+    bool FunctionManager::removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs)
+    {
+        switch (root->type)
+        {
+        case NUMBER:            //数字
+        case BOOLTYPE:
+        case STRING:            //字符串
+            return false;
+        case FUNC:              //函数
+        {
+            const std::string& funcname = get_zfxvar<std::string>(root->value);
+            if (!isEvalFunction(funcname) && root->sortOrderNum != currentExecId)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        case ZENVAR:
+        {
+            if (root->bAttr) {
+                const std::string& attrname = get_zfxvar<std::string>(root->value);
+                allFindAttrs.insert(attrname);
+            }
+            return false;
+            //不处理自增自减的情况，太麻烦了。
+        }
+        case FOUROPERATIONS:    //四则运算+ - * / %
+
+        case COMPOP:            //操作符
+        case CONDEXP:           //条件表达式
+        case ARRAY:
+        case PLACEHOLDER:
+        case IF:
+        case FOR:
+        case FOREACH:
+        case FOREACH_ATTR:
+        case EACH_ATTRS:
+        case WHILE:
+        case DOWHILE:
+        case CODEBLOCK:         //多个语法树作为children的代码块
+        case JUMP:
+        {
+            for (auto iter = root->children.begin(); iter != root->children.end();)
+            {
+                bool ret = removeIrrelevantCode(*iter, currentExecId, allDepvars, allFindAttrs);
+                if (ret) {
+                    iter = root->children.erase(iter);
+                }else{
+                    iter++;
+                }
+            }
+            return false;
+        }
+        case DECLARE:           //变量定义
+        {
+            //if (root->children.size() == 3)
+            //    removeIrrelevantCode(root->children[2], currentExecId, allDepvars, allFindAttrs);
+            return false;
+        }
+        case ASSIGNMENT:          //赋值
+        {
+            std::shared_ptr<ZfxASTNode> zenvarNode = root->children[0];
+            const std::string& targetvar = get_zfxvar<std::string>(zenvarNode->value);
+            if (allDepvars.find(targetvar) == allDepvars.end()) {
+                //其他无关变量的赋值，要清除掉。
+                return true;
+            }
+            return false;
+        }
+        }
+        return false;
+    }
+
+    void FunctionManager::embeddingForeach(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext)
     {
         //如果该函数节点的底层用到了属性相关变量：
         std::set<std::string> vars;
         findAllZenVar(root, vars);
+        //只有当前语句确实关联了属性，才去找override语句关联的属性。
+        if (!vars.empty())
+            findAllZenVar(spOverrideStmt, vars);
 
         std::set<std::string> allDepVars;
         for (auto var : vars) {
+            //如果var是属性，直接添加进去
+            if (var.at(0) == '@') {
+                allDepVars.insert(var);
+                continue;
+            }
+
             //判断var是不是属性相关变量
             ZfxVariable& refVar = getVariableRef(var);
             if (refVar.attachAttrs.empty())
                 continue;
+
+            allDepVars.insert(refVar.attachAttrs.begin(), refVar.attachAttrs.end());
 
             std::set<std::string> depVars;
             getDependingVariables(var, depVars);
@@ -939,16 +1097,36 @@ namespace zeno {
         for (auto var : allDepVars) {
             if (var.at(0) == '@') {
                 allAttrs.insert(var);
-                continue;
             }
             ZfxVariable& refVar = getVariableRef(var);
-            if (refVar.attachAttrs.empty()) continue;
+            if (refVar.attachAttrs.empty())
+                continue;
             allStmtsForVars.insert(allStmtsForVars.end(),
                 refVar.assignStmts.begin(), refVar.assignStmts.end());
         }
 
         if (allAttrs.empty())
             return;
+
+        //去掉所有被外部覆盖掉的语句
+        for (auto iter = allStmtsForVars.begin(); iter != allStmtsForVars.end();)
+        {
+            /*
+                比如if (@P.x > 3) {
+                        int b = @P.x + 2;
+                        b += 2;
+                        int c = @N.y +...
+                上述代码里，if条件式内部每一个定义赋值语句，都会被储存到变量的语句列表里（以方便查询依赖关系）
+                但是这些定义赋值语句，是不需要逐个拆出来添加到allStmtsForVars里的，因为后面我们会把
+                整个if语段塞进去。
+             */
+            if ((*iter)->bOverridedStmt) {
+                iter = allStmtsForVars.erase(iter);
+            }
+            else {
+                iter++;
+            }
+        }
 
         //直接对所有statements在语法树的顺序进行排序
         std::sort(allStmtsForVars.begin(), allStmtsForVars.end(), [=](const auto& lhs, const auto& rhs) {
@@ -958,6 +1136,33 @@ namespace zeno {
         //套foreach遍历属性.
         std::shared_ptr<ZfxASTNode> spForeach = std::make_shared<ZfxASTNode>();
         spForeach->type = FOREACH_ATTR;
+
+        std::shared_ptr<ZfxASTNode> spForBody = std::make_shared<ZfxASTNode>();
+        spForBody->type = CODEBLOCK;
+        for (auto spStmt : allStmtsForVars) {
+            appendChild(spForBody, spStmt);
+        }
+
+        if (spOverrideStmt) {
+            auto spClonedOverride = clone(spOverrideStmt);
+            //这个拷贝过来的覆盖语句，需要删除所有与allDepVars无关的执行语句，也保留所有条件代码(if for while)
+            //暂时先不考虑这些代码块里 存在 属性相关变量自增的情况，毕竟太不常见。
+
+            //刚好用到了排序的id，因为是clone，所以应该是一致的，用来标识当前函数的拷贝。
+            //顺带收集一下这个override stmt下所有属性变量，用于foreach的枚举。
+            removeIrrelevantCode(spClonedOverride, root->sortOrderNum, allDepVars, allAttrs);
+
+            //直接把override stmt加进去就行了。不用管当前的stmt了(已经被包含在override里头了）。
+            appendChild(spForBody, spClonedOverride);
+        }
+        else {
+            //把当前代码拷一份套到foreach循环的body里。
+            //属性赋值操作无须拷贝，因为已经包含在allStmtsForVars里头了。
+            if (root->type != ASSIGNMENT) {
+                auto currentExecuteStmt = clone(root);
+                appendChild(spForBody, currentExecuteStmt);
+            }
+        }
 
         //在each里声明所有属性变量
         std::shared_ptr<ZfxASTNode> spEach = std::make_shared<ZfxASTNode>();
@@ -969,14 +1174,6 @@ namespace zeno {
             spAttrNode->bAttr = true;
             appendChild(spEach, spAttrNode);
         }
-
-        std::shared_ptr<ZfxASTNode> spForBody = std::make_shared<ZfxASTNode>();
-        spForBody->type = CODEBLOCK;
-        for (auto spStmt : allStmtsForVars) {
-            appendChild(spForBody, spStmt);
-        }
-        //把当前代码拷一份套到foreach循环的body里。
-        appendChild(spForBody, clone(root));
 
         appendChild(spForeach, spEach);
         appendChild(spForeach, spForBody);

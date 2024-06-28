@@ -1011,6 +1011,7 @@ void ZenoNodeNew::onZoomed()
     }
     else if (m_NameItemTip == nullptr) 
     {
+        /*
         const QString& nodeCls = m_index.data(ROLE_NODE_NAME).toString();
         m_NameItemTip = new ZSimpleTextItem(nodeCls, this);
 
@@ -1022,13 +1023,14 @@ void ZenoNodeNew::onZoomed()
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         m_NameItemTip->setFont(font2);
         m_NameItemTip->show();
+        */
     }
     if (m_NameItemTip) 
     {
         QString name = m_index.data(ROLE_NODE_NAME).toString();
         if (m_NameItemTip->text() != name)
             m_NameItemTip->setText(name);
-        m_NameItemTip->setPos(QPointF(m_headerWidget->pos().x(), -ZenoStyle::scaleWidth(36)));
+        //m_NameItemTip->setPos(QPointF(m_headerWidget->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
 }
 

@@ -88,6 +88,14 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text, operato
 
 void ZfxExecute::markZfxAttr(std::shared_ptr<ZfxASTNode> pVarNode) {
     pVarNode->bAttr = true;
+    std::string& varname = std::get<std::string>(pVarNode->value);
+    if (varname.empty()) {
+        return;
+    }
+    //属性变量必须要带上@。
+    if (varname.at(0) != '@') {
+        varname.insert(varname.begin(), '@');
+    }
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArray) {

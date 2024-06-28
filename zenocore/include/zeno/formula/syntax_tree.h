@@ -140,6 +140,8 @@ struct ZfxASTNode {
     bool isParenthesisNodeComplete = false;
     bool bCompleted = false;
     bool AttrAssociateVar = false;      //属性相关变量的赋值，比如int a = @P.y,  b=  @N.x; 后续要被剔除。
+    bool bOverridedStmt = false;        //会被if条件覆盖的stmt，不会嵌入到foreach属性循环里。
+    bool bOverridedIfLoop = false;      //会被if条件覆盖的if/while/for语句。
     bool bAttr = false;                 //属性值，@P @N @Cd
     int sortOrderNum = 0;               //用于先后顺序排序的值
 };
@@ -177,9 +179,11 @@ void findAllZenVar(std::shared_ptr<ZfxASTNode> root, std::set<std::string>& vars
 
 int markOrder(std::shared_ptr<ZfxASTNode> root, int startIndex);
 
+void removeAstNode(std::shared_ptr<ZfxASTNode> root);
+
 std::shared_ptr<ZfxASTNode> clone(std::shared_ptr<ZfxASTNode> spNode);
 
-std::string decompile(std::shared_ptr<ZfxASTNode> root, std::string indent = "");
+std::string decompile(std::shared_ptr<ZfxASTNode> root, const std::string& indent = "");
 
 }
 

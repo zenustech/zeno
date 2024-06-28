@@ -356,6 +356,13 @@ namespace zeno {
         }
     }
 
+    void removeAstNode(std::shared_ptr<ZfxASTNode> root) {
+        auto parent = root->parent.lock();
+        if (!parent) return;
+        parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), root)
+            , parent->children.end());
+    }
+
     int markOrder(std::shared_ptr<ZfxASTNode> root, int startIndex) {
         for (auto spChild : root->children) {
             startIndex = markOrder(spChild, startIndex);
@@ -365,13 +372,12 @@ namespace zeno {
     }
 
     void findAllZenVar(std::shared_ptr<ZfxASTNode> root, std::set<std::string>& vars) {
+        if (!root)
+            return;
         for (auto spChild : root->children) {
             if (spChild->type == ZENVAR) {
                 if (std::holds_alternative<std::string>(spChild->value)) {
                     std::string varname = std::get<std::string>(spChild->value);
-                    if (spChild->bAttr) {
-                        varname = "@" + varname;
-                    }
                     vars.insert(varname);
                 }
             }
@@ -383,7 +389,7 @@ namespace zeno {
         }
     }
 
-    std::string decompile(std::shared_ptr<ZfxASTNode> root, std::string indent) {
+    std::string decompile(std::shared_ptr<ZfxASTNode> root, const std::string& indent) {
         if (!root) {
             return "";
         }
@@ -403,6 +409,11 @@ namespace zeno {
         }
         case STRING: {
             std::string res = indent + '"' + get_zfxvar<std::string>(root->value) + '"';
+            return res;
+        }
+        case ARRAY: {
+            std::string res = "ARRAY";
+
             return res;
         }
         case ZENVAR: {
@@ -486,6 +497,10 @@ namespace zeno {
             case GreaterEqual:  op = ">=";  break;
             case Equal: op = "=="; break;
             case NotEqual:  op = "!="; break;
+            case PLUS: op = "+"; break;
+            case MINUS: op = "-"; break;
+            case MUL: op = "*"; break;
+            case DIV: op = "/"; break;
             default:
                 op = "what?";
             }
@@ -586,6 +601,16 @@ namespace zeno {
         }
         case JUMP:
         {
+            std::string op;
+            switch (root->opVal)
+            {
+            case JUMP_RETURN:  op = "return"; break;
+            case JUMP_CONTINUE: op = "continue"; break;
+            case JUMP_BREAK:   op = "break";   break;
+            default:
+                op = "what?";
+            }
+            return indent + op;
         }
         default:
         {

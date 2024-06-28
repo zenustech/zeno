@@ -47,11 +47,13 @@ namespace zeno {
         void validateVar(operatorVals varType, zfxvariant& newvar);
         zfxvariant parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxContext* pContext);
         zfxvariant execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
-        std::set<std::string> parsingAttr(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        std::set<std::string> parsingAttr(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
         void removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
-        void embeddingForeach(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        void embeddingForeach(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
         void getDependingVariables(const std::string& assignedVar, std::set<std::string>& vars);
         std::vector<zfxvariant> process_args(std::shared_ptr<ZfxASTNode> parent, ZfxContext* pContext);
+        bool removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs);
+        bool isEvalFunction(const std::string& funcname);
 
         std::map<std::string, FUNC_INFO> m_funcs;
         std::vector<VariableTable> m_variables;
