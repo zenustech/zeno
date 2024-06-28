@@ -913,6 +913,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_FPN = new QCheckBox(tr("FPN"));
         m_FPN->setStyleSheet("color: white;");
         pToolLayout->addWidget(m_FPN);
+        m_Reset = new QPushButton(tr("Reset"));
+        pToolLayout->addWidget(m_Reset);
     }
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
@@ -971,6 +973,13 @@ void DockContent_View::initConnections()
 //                zeno::log_info("set ZOptixCameraSettingInfo");
                 m_pDisplay->onSetCamera(info);
             }
+        });
+    }
+    if (m_Reset) {
+        connect(m_Reset, &QPushButton::clicked, this, [=](bool bToggled) {
+            auto *scene = m_pDisplay->getZenoVis()->getSession()->get_scene();
+            scene->camera->reset();
+            m_pDisplay->updateFrame();
         });
     }
 

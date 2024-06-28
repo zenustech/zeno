@@ -31,6 +31,7 @@ struct ZOptixCameraSettingInfo {
 struct Camera {
     float inf_z_near = 0.001f;
     int m_nx{512}, m_ny{512};
+    // TODO: remove
     glm::mat4x4 m_view{1}, m_proj{1};
 
     float m_near = 0.01f;
@@ -48,6 +49,12 @@ struct Camera {
 
     bool m_block_window = false;
 public:
+    void reset() {
+        m_pos = {0, 0, 5};
+        m_pivot = {};
+        m_rotation = {1, 0, 0, 0};
+        updateMatrix();
+    }
     glm::vec3 get_lodfront() {
         return m_rotation * glm::vec3(0, 0, -1);
     }
