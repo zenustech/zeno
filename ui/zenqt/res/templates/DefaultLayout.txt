@@ -1,186 +1,31 @@
 {
-	"Default Layout 1":{
-		"orientation": "V",
-		"left": {
-			"widget": {
-				"geometry": {
-					"x": 0.0,
-					"y": 0.01801363192498684,
-					"width": 1.0,
-					"height": 0.4152872562408447
-				},
-				"tabs": [
-					"View"
-				]
-			}
-		},
-		"right": {
-			"widget": {
-				"geometry": {
-					"x": 0.0,
-					"y": 0.4352482855319977,
-					"width": 1.0,
-					"height": 0.49805256724357607
-				},
-				"tabs": [
-					"Editor"
-				]
-			}
-		}
-	},
-	"Default Layout 2":{
-		"orientation": "V",
-		"left": {
-			"orientation": "H",
-			"left": {
-				"widget": {
-					"geometry": {
-						"x": 0.0,
-						"y": 0.01801363192498684,
-						"width": 0.7278645634651184,
-						"height": 0.4152872562408447
-					},
-					"tabs": [
-						"View"
-					]
-				}
-			},
-			"right": {
-				"widget": {
-					"geometry": {
-						"x": 0.7289062738418579,
-						"y": 0.01801363192498684,
-						"width": 0.2710937559604645,
-						"height": 0.4152872562408447
-					},
-					"tabs": [
-						"Logger"
-					]
-				}
-			}
-		},
-		"right": {
-			"orientation": "H",
-			"left": {
-				"widget": {
-					"geometry": {
-						"x": 0.0,
-						"y": 0.4352482855319977,
-						"width": 0.8252604007720947,
-						"height": 0.49805256724357607
-					},
-					"tabs": [
-						"Editor"
-					]
-				}
-			},
-			"right": {
-				"widget": {
-					"geometry": {
-						"x": 0.8263021111488342,
-						"y": 0.4352482855319977,
-						"width": 0.17369791865348817,
-						"height": 0.49805256724357607
-					},
-					"tabs": [
-						"Parameter"
-					]
-				}
-			}
-		}
-	},
-	"Default Layout 3":{
-		"orientation": "H",
-		"left": {
-			"orientation": "V",
-			"left": {
-				"widget": {
-					"geometry": {
-						"x": 0.0020833334419876339,
-						"y": 0.03441494703292847,
-						"width": 0.5067708492279053,
-						"height": 0.6430678367614746
-					},
-					"tabs": [
-						"View"
-					]
-				}
-			},
-			"right": {
-				"widget": {
-					"geometry": {
-						"x": 0.0020833334419876339,
-						"y": 0.6814159154891968,
-						"width": 0.5067708492279053,
-						"height": 0.21632251143455506
-					},
-					"tabs": [
-						"Parameter",
-						"Data",
-						"Logger"
-					]
-				}
-			}
-		},
-		"right": {
-			"widget": {
-				"geometry": {
-					"x": 0.510937511920929,
-					"y": 0.03441494703292847,
-					"width": 0.4869791567325592,
-					"height": 0.8633235096931458
-				},
-				"tabs": [
-					"Editor"
-				]
-			}
-		}
-	},
-	"Default Layout 4":{
-		"orientation": "V",
-			"left": {
-				"orientation": "H",
-				"left": {
-					"widget": {
-						"geometry": {
-							"x": 0.0020833334419876339,
-							"y": 0.03441494703292847,
-							"width": 0.5927083492279053,
-							"height": 0.39036381244659426
-						},
-						"tabs": [
-							"View"
-						]
-					}
-				},
-				"right": {
-					"widget": {
-						"geometry": {
-							"x": 0.596875011920929,
-							"y": 0.03441494703292847,
-							"width": 0.4010416567325592,
-							"height": 0.39036381244659426
-						},
-						"tabs": [
-							"Logger",
-							"Parameter",
-							"Data"
-						]
-					}
-				}
-			},
-			"right": {
-				"widget": {
-					"geometry": {
-						"x": 0.0020833334419876339,
-						"y": 0.4287118911743164,
-						"width": 0.9958333373069763,
-						"height": 0.4690265357494354
-					},
-					"tabs": [
-						"Editor"
-					]
-				}
-			}
-	}
+    "Default Layout 1": {
+        "state": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><QtAdvancedDockingSystem Version=\"1\" UserVersion=\"0\" Containers=\"1\"><Container Floating=\"0\"><Splitter Orientation=\"-\" Count=\"2\"><Splitter Orientation=\"|\" Count=\"2\"><Area Tabs=\"1\" Current=\"View\"><Widget Name=\"View\" Closed=\"0\"/></Area><Area Tabs=\"1\" Current=\"Logger\"><Widget Name=\"Logger\" Closed=\"0\"/></Area><Sizes>1909 1908 </Sizes></Splitter><Splitter Orientation=\"|\" Count=\"2\"><Area Tabs=\"1\" Current=\"Editor\"><Widget Name=\"Editor\" Closed=\"0\"/></Area><Area Tabs=\"1\" Current=\"Parameter\"><Widget Name=\"Parameter\" Closed=\"0\"/></Area><Sizes>3026 791 </Sizes></Splitter><Sizes>917 916 </Sizes></Splitter></Container></QtAdvancedDockingSystem>", 
+        "widgets": [
+            "View", 
+            "Logger", 
+            "Editor", 
+            "Parameter"
+        ]
+    }, 
+    "Default Layout 2": {
+        "state": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><QtAdvancedDockingSystem Version=\"1\" UserVersion=\"0\" Containers=\"1\"><Container Floating=\"0\"><Splitter Orientation=\"-\" Count=\"1\"><Splitter Orientation=\"|\" Count=\"2\"><Splitter Orientation=\"-\" Count=\"2\"><Area Tabs=\"1\" Current=\"View\"><Widget Name=\"View\" Closed=\"0\"/></Area><Area Tabs=\"3\" Current=\"Logger\"><Widget Name=\"Parameter\" Closed=\"0\"/><Widget Name=\"Data\" Closed=\"0\"/><Widget Name=\"Logger\" Closed=\"0\"/></Area><Sizes>917 916 </Sizes></Splitter><Area Tabs=\"1\" Current=\"Editor\"><Widget Name=\"Editor\" Closed=\"0\"/></Area><Sizes>1946 1871 </Sizes></Splitter><Sizes>1840 </Sizes></Splitter></Container></QtAdvancedDockingSystem>", 
+        "widgets": [
+            "Parameter", 
+            "Data", 
+            "Logger", 
+            "Editor", 
+            "View"
+        ]
+    }, 
+    "Default Layout 3": {
+        "state": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><QtAdvancedDockingSystem Version=\"1\" UserVersion=\"0\" Containers=\"1\"><Container Floating=\"0\"><Splitter Orientation=\"-\" Count=\"2\"><Splitter Orientation=\"|\" Count=\"2\"><Area Tabs=\"1\" Current=\"View\"><Widget Name=\"View\" Closed=\"0\"/></Area><Area Tabs=\"3\" Current=\"Data\"><Widget Name=\"Logger\" Closed=\"0\"/><Widget Name=\"Parameter\" Closed=\"0\"/><Widget Name=\"Data\" Closed=\"0\"/></Area><Sizes>1909 1908 </Sizes></Splitter><Area Tabs=\"1\" Current=\"Editor\"><Widget Name=\"Editor\" Closed=\"0\"/></Area><Sizes>863 970 </Sizes></Splitter></Container></QtAdvancedDockingSystem>", 
+        "widgets": [
+            "Data", 
+            "Parameter", 
+            "Editor", 
+            "Logger", 
+            "View"
+        ]
+    }
 }

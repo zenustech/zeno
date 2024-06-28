@@ -352,7 +352,7 @@ void ZenoMainWindow::saveDockLayout()
         ZASSERT_EXIT(m_pDockManager);
 
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-        //settings.beginGroup("layout");
+        settings.beginGroup("layout");
         if (settings.childGroups().indexOf(name) != -1)
         {
             QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"),
@@ -365,19 +365,16 @@ void ZenoMainWindow::saveDockLayout()
             }
         }
 
-        QString layoutInfo;// = exportLayout(m_layoutRoot, size());
-
-        //QByteArray xmldata = m_pDockManager->saveState();
-        //layoutInfo = QString::fromUtf8(xmldata, xmldata.size());
+        QString layoutInfo = exportLayout(m_pDockManager);        
 
         m_pDockManager->addPerspective(name);
 
-        //settings.beginGroup(name);
-        //settings.setValue("content", layoutInfo);
+        settings.beginGroup(name);
+        settings.setValue("content", layoutInfo);
         m_pDockManager->savePerspectives(settings);
 
-        //settings.endGroup();
-        //settings.endGroup();
+        settings.endGroup();
+        settings.endGroup();
         loadSavedLayout();
     }
 }
@@ -397,6 +394,24 @@ void ZenoMainWindow::onLangChanged(bool bChecked)
         tr("Please restart Zeno to apply changes."),
         QMessageBox::Ok, this);
     msg.exec();
+}
+
+void ZenoMainWindow::resetDocks(const QString& state, const QStringList& widgets)
+{
+    auto dockWidgets = m_pDockManager->dockWidgetsMap();
+    for (auto pair : dockWidgets)
+    {
+        pair->closeDockWidget();
+        m_pDockManager->removeDockWidget(pair);
+    }
+
+
+    ads::CDockWidget* cake = new ads::CDockWidget(UiHelper::generateUuid("dock"));
+    ads::CDockAreaWidget* cakeArea = m_pDockManager->addDockWidget(ads::TopDockWidgetArea, cake);
+    for (const auto& name :widgets)
+        addDockWidget(cakeArea, name);
+    m_pDockManager->restoreState(state.toUtf8());
+    m_nResizeTimes = 2;
 }
 
 void ZenoMainWindow::resetDocks(PtrLayoutNode root)
@@ -444,6 +459,69 @@ void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
 #endif
 }
 
+void ZenoMainWindow::addDockWidget(ads::CDockAreaWidget* cakeArea, const QString& name)
+{
+    auto pDockElem = new ads::CDockWidget(name);
+
+    PANEL_TYPE type = UiHelper::title2Type(name);
+    switch (type)
+    {
+    case PANEL_GL_VIEW:
+    {
+        auto pView = new DockContent_View(true);
+        pView->initUI();
+        pDockElem->setWidget(pView, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_EDITOR:
+    {
+        auto pEditor = new DockContent_Editor;
+        pEditor->initUI();
+        pDockElem->setWidget(pEditor, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_NODE_PARAMS:
+    {
+        auto pParams = new DockContent_Parameter;
+        pParams->initUI();
+        pDockElem->setWidget(pParams, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_NODE_DATA:
+    {
+        auto pObjectData = new ZenoSpreadsheet;
+        pDockElem->setWidget(pObjectData, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_LOG:
+    {
+        auto pLog = new DockContent_Log;
+        pLog->initUI();
+        pDockElem->setWidget(pLog, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_IMAGE:
+    {
+        auto pImage = new DockContent_Image;
+        pImage->initUI();
+        pDockElem->setWidget(pImage, ads::CDockWidget::ForceNoScrollArea);
+        break;
+    }
+    case PANEL_OPTIX_VIEW:
+    {
+        break;
+    }
+    case PANEL_COMMAND_PARAMS:
+    {
+        break;
+    }
+    case PANEL_OPEN_PATH:
+    {
+        break;
+    }
+    }
+    m_pDockManager->addDockWidgetTabToArea(pDockElem, cakeArea);
+}
 void ZenoMainWindow::initDocksWidget(ads::CDockAreaWidget* cakeArea, ads::CDockWidget* pLeft, PtrLayoutNode root)
 {
     if (!root)
@@ -634,8 +712,14 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
     }
     if (!content.isEmpty()) 
     {
-        PtrLayoutNode root = readLayout(content);
-        resetDocks(root);
+        QString state;
+        QStringList widgets;
+        if (readLayout(content.toUtf8(), state, widgets))
+        {
+            resetDocks(state, widgets);
+        }
+        //PtrLayoutNode root = readLayout(content);
+        //resetDocks(root);
     } 
     else 
     {
@@ -729,6 +813,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     QVBoxLayout* pWidLayout = new QVBoxLayout;
 
     m_pDockManager = new ads::CDockManager(docks);
+    m_pDockManager->setConfigFlag(ads::CDockManager::XmlCompressionEnabled, false);
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     //m_pDockManager->loadPerspectives(settings);
 
