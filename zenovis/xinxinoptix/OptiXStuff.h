@@ -367,40 +367,133 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
 
     return loadPPMTexture( ppm_filename, make_float3(1,1,1), nullptr );
 }
-inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
+
+#include "stb_dxt.h"
+
+inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc, bool blockCompression=false)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
-    std::vector<uchar4> data;
-    data.resize(nx*ny);
-    for(int j=0;j<ny;j++)
-    for(int i=0;i<nx;i++)
-    {
-        size_t idx = j*nx + i;
-        data[idx] = {
-            nc>=1?(img[idx*nc + 0]):(unsigned char)0,
-            nc>=2?(img[idx*nc + 1]):(unsigned char)0,
-            nc>=3?(img[idx*nc + 2]):(unsigned char)0,
-            nc>=4?(img[idx*nc + 3]):(unsigned char)0,
-        };
-    }
+
+    std::vector<uchar4> alt;
     
-    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(8, 8, 8, 8, cudaChannelFormatKindUnsigned);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
-    if (rc != cudaSuccess) {
-        std::cout<<"texture space alloc failed\n";
-        return 0;
+    if (nc == 3) { 
+        auto count = nx * ny;    
+        alt.resize(count);
+
+        for (size_t i=0; i<count; ++i) {
+            alt[i] = { img[i*nc + 0], img[i*nc + 1], img[i*nc + 2], 255u };
+        }
+        nc = 4;
+        img = (unsigned char*)alt.data();
     }
-    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(), 
-                             nx * sizeof(unsigned char) * 4,
-                             nx * sizeof(unsigned char) * 4,
-                             ny, 
-                             cudaMemcpyHostToDevice);
+
+    cudaError_t rc;
+
+    blockCompression = true;
+
+    if (nx%4 || ny%4) {
+        blockCompression = false;
+    }
+ 
+    if (blockCompression == false) {
+        std::vector<int> xyzw(4, 0);
+        for (int i=0; i<nc; ++i) {xyzw[i] = 8;}
+
+        cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindUnsigned);
+        rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+        if (rc != cudaSuccess) {
+            std::cout<<"texture space alloc failed\n";
+            return 0;
+        }
+        // rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, img, 
+        //                         nx * sizeof(unsigned char) * nc,
+        //                         nx * sizeof(unsigned char) * nc,
+        //                         ny, 
+        //                         cudaMemcpyHostToDevice);
+
+        rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, img, sizeof(unsigned char) * nc * nx * ny, cudaMemcpyHostToDevice);
+
+    } else {
+
+        if (nc == 1) {
+
+            std::vector<unsigned char> result {};
+            result.reserve(8 * (nx/4) * (ny/4));
+
+            std::vector<unsigned char> block(16, 0);
+            std::vector<unsigned char> packed(8, 0);
+
+            for (size_t i=0; i<ny; i+=4) { // row
+                for (size_t j=0; j<nx; j+=4) { // col
+
+                    for (size_t k=0; k<16; ++k) {
+                        auto offset_i = k / 4;
+                        auto offset_j = k % 4;
+
+                        auto index = nx * (i+offset_i) + (j+offset_j);
+                        block[k] = img[index]; 
+                    }
+
+                    stb_compress_bc4_block(packed.data(), block.data());
+                    result.insert(result.end(), packed.begin(), packed.end());
+                }
+            }
+
+            cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed4>();
+            rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+
+            if (rc != cudaSuccess) {
+                std::cout<<"texture space alloc failed\n";
+                return 0;
+            }
+
+            rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, result.data(), result.size(), cudaMemcpyHostToDevice);
+        
+        } else if (nc == 4) {
+
+            std::vector<unsigned char> result {};
+            result.reserve(16 * (nx/4) * (ny/4));
+
+            std::vector<uchar4> block(16, {});
+            std::vector<unsigned char> packed(16, 0);
+
+            for (size_t i=0; i<ny; i+=4) { // row
+                for (size_t j=0; j<nx; j+=4) { // col
+
+                    for (size_t k=0; k<16; ++k) {
+                        auto offset_i = k / 4;
+                        auto offset_j = k % 4;
+
+                        auto index = nx * (i+offset_i) + (j+offset_j);
+
+                        uchar4* tmp_ptr = (uchar4*)img;
+                        block[k] = *(tmp_ptr+index); 
+                    }
+
+                    stb_compress_dxt_block(packed.data(), (unsigned char*)block.data(), 1, STB_DXT_HIGHQUAL);
+                    result.insert(result.end(), packed.begin(), packed.end());
+                }
+            }
+
+            cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed3>();
+            rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+
+            if (rc != cudaSuccess) {
+                std::cout<<"texture space alloc failed\n";
+                return 0;
+            }
+
+            rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, result.data(), result.size(), cudaMemcpyHostToDevice);
+        } 
+    }
+
     if (rc != cudaSuccess) {
         std::cout<<"texture data copy failed\n";
         cudaFreeArray(texture->gpuImageArray);
         texture->gpuImageArray = nullptr;
         return 0;
     }
+
     cudaResourceDesc resourceDescriptor = { };
     resourceDescriptor.resType = cudaResourceTypeArray;
     resourceDescriptor.res.array.array = texture->gpuImageArray;
@@ -816,10 +909,21 @@ inline void addTexture(std::string path, TaskType* task=nullptr)
         }
         nx = std::max(img->userData().get2<int>("w"), 1);
         ny = std::max(img->userData().get2<int>("h"), 1);
-        int channels = std::max(img->userData().get2<int>("channels"), 3);
-        nc = 3;
+        int channels = std::max(img->userData().get2<int>("channels"), 1);
 
-        if (channels == 3) {
+        nc = channels;
+
+        if (channels == 1) {
+
+            std::vector<unsigned char> ucdata;
+            ucdata.resize(img->verts.size());
+            for(int i=0;i<img->verts.size();i++)
+            {
+              ucdata[i] = (unsigned char)(img->verts[i][0] * 255.0);
+            }
+            g_tex[path] = makeCudaTexture(ucdata.data(), nx, ny, nc);
+            
+        } else if (channels == 3) {
             std::vector<unsigned char> ucdata;
             ucdata.resize(img->verts.size()*3);
             for(int i=0;i<img->verts.size()*3;i++)
