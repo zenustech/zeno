@@ -15,13 +15,22 @@ namespace zeno {
         zfxvariant value;
         std::set<std::string> attachAttrs;
         std::vector<std::shared_ptr<ZfxASTNode>> assignStmts;
+        bool bAttrUpdated = false;
+    };
+
+    using VariableTable = std::map<std::string, ZfxVariable>;
+    using ZfxVarRef = VariableTable::const_iterator;
+    using PointsIterator = AttrVector<vec3f>::iterator;
+
+    struct ZfxStackEnv
+    {
+        VariableTable table;
+        bool bAttrAddOrRemoved = false;
+        PointsIterator iterRunOverObjs;
     };
 
     class FunctionManager
     {
-        using VariableTable = std::map<std::string, ZfxVariable>;
-        using ZfxVarRef = VariableTable::const_iterator;
-
     public:
         FunctionManager();
         std::vector<std::string> getCandidates(const std::string& prefix, bool bFunc) const;
@@ -55,8 +64,14 @@ namespace zeno {
         bool removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs);
         bool isEvalFunction(const std::string& funcname);
 
+        zfxvariant getAttrValue(const std::string& attrname, PointsIterator iter, ZfxContext* pContext);
+        PointsIterator getPointsBeginIter(ZfxContext* pContext);
+        PointsIterator getPointsNextIter(ZfxContext* pContext);
+        PointsIterator getPointsEndIter(ZfxContext* pContext);
+        void commitToPrim(PointsIterator currIter);
+
         std::map<std::string, FUNC_INFO> m_funcs;
-        std::vector<VariableTable> m_variables;
+        std::vector<ZfxStackEnv> m_stacks;
     };
 }
 

@@ -185,6 +185,9 @@ std::shared_ptr<ZfxASTNode> clone(std::shared_ptr<ZfxASTNode> spNode);
 
 std::string decompile(std::shared_ptr<ZfxASTNode> root, const std::string& indent = "");
 
+zfxvariant operator+(const zfxvariant& lhs, const zfxvariant& rhs);
+zfxvariant operator-(const zfxvariant& lhs, const zfxvariant& rhs);
+
 }
 
 #endif

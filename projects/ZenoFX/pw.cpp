@@ -73,10 +73,13 @@ struct AttributeWrangle : zeno::INode {
 
         ZfxContext ctx;
         ctx.spNode = shared_from_this();
-        ctx.spObject = prim;
+        if (prim)
+            ctx.spObject = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
         ctx.code = code;
         ZfxExecute zfx(code, ctx);
         zfx.execute();
+
+        set_output("prim", ctx.spObject);
 
         //auto& funcMgr = zeno::getSession().funcManager;
         //funcMgr->testExp();

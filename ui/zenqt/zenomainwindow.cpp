@@ -653,7 +653,7 @@ void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefa
         QAction *pCustomLayout_ = new QAction(name);
         connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
             loadDockLayout(name, isDefault); 
-            //updateLatestLayout(name);
+            updateLatestLayout(name);
         });
         actions.append(pCustomLayout_);
     }
