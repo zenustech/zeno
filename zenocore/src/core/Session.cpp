@@ -86,6 +86,12 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
+
+    //if (clsname == "CreatePlane") {
+    //    int j;
+    //    j = 0;
+    //}
+
     CustomUI ui = descToCustomui(desc);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, clsname);
     nodeClasses.emplace(clsname, std::move(cls));

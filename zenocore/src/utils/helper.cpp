@@ -20,7 +20,7 @@ namespace zeno {
         else if (type == "vec2f") { return Param_Vec2f; }
         else if (type == "vec3f") { return Param_Vec3f; }
         else if (type == "vec4f") { return Param_Vec4f; }
-        else if (type == "prim") { return Param_Prim; }
+        else if (type == "prim" || type == "PrimitiveObject") { return Param_Prim; }
         else if (type == "list") { return Param_List; }
         else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return Param_Dict; }
         else if (type == "colorvec3f") { return Param_Vec3f; }
@@ -340,6 +340,10 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
+                if (param.type == Param_Null) {
+                    if (param.name == "prim")
+                        param.type = Param_Prim;
+                }
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = true;
