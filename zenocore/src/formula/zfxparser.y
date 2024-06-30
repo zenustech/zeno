@@ -114,6 +114,8 @@
 %token DO
 %token EQUALTO
 %token NOTEQUAL
+%token OR
+%token AND
 
 %left ADD "+"
 %left SUB "-"
@@ -124,10 +126,10 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement only-declare array-or-exp for-condition for-step exp-statement if-statement arrcontent compareexp zfx-program multi-statements factor term func-content zenvar array-stmt for-begin loop-statement
+%type <std::shared_ptr<ZfxASTNode>> general-statement declare-statement jump-statement code-block assign-statement only-declare array-or-exp for-condition for-step exp-statement orexp andexp if-statement arrcontent addsubexp zfx-program multi-statements compareexp factor term func-content zenvar array-stmt for-begin loop-statement
 %type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs arrcontents foreach-step
 %type <operatorVals> assign-op compare-op
-%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON ASSIGNTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK LESSTHAN LESSEQUAL GREATTHAN GREATEQUAL EQUALTO NOTEQUAL
+%type <string> LITERAL UNCOMPSTR DOLLAR DOLLARVARNAME RPAREN COMPARE QUESTION ZFXVAR LBRACKET RBRACKET DOT COLON TYPE ATTRAT VARNAME SEMICOLON ASSIGNTO IF FOR FOREACH DO WHILE AUTOINC AUTODEC LSQBRACKET RSQBRACKET ADDASSIGN MULASSIGN SUBASSIGN DIVASSIGN RETURN CONTINUE BREAK LESSTHAN LESSEQUAL GREATTHAN GREATEQUAL EQUALTO NOTEQUAL OR AND
 %type <bool> array-mark bool-stmt
 
 %start zfx-program
@@ -299,32 +301,51 @@ compare-op: LESSTHAN { $$ = Less; }
     | NOTEQUAL { $$ = NotEqual; }
     ;
 
-exp-statement: compareexp           { $$ = $1; }
-    | exp-statement compare-op compareexp  {
-                std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
-                $$ = driver.makeNewNode(COMPOP, $2, children);
-                $$->value = $2;
-            }
-    | exp-statement compare-op compareexp QUESTION exp-statement COLON exp-statement {
-                std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
-                auto spCond = driver.makeNewNode(COMPOP, $2, children);
-                spCond->value = $2;
-
-                std::vector<std::shared_ptr<ZfxASTNode>> exps({spCond, $5, $7});
-                $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, exps);
-            }
+exp-statement: orexp           { $$ = $1; }
     ;
 
-compareexp: factor              { $$ = $1; }
-    | compareexp ADD factor {
+orexp: andexp           { $$ = $1; }
+    | orexp OR andexp   {
+        std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+        $$ = driver.makeNewNode(FOUROPERATIONS, OR, children);
+    }
+    ;
+
+andexp: compareexp      { $$ = $1; }
+    | andexp AND compareexp {
+        std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+        $$ = driver.makeNewNode(FOUROPERATIONS, AND, children);    
+    }
+    ;
+
+compareexp: addsubexp   { $$ = $1; }
+    | compareexp compare-op addsubexp {
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(COMPOP, $2, children);
+            $$->value = $2;
+        }
+    | compareexp compare-op addsubexp QUESTION exp-statement COLON exp-statement {
+            std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
+            auto spCond = driver.makeNewNode(COMPOP, $2, children);
+            spCond->value = $2;
+
+            std::vector<std::shared_ptr<ZfxASTNode>> exps({spCond, $5, $7});
+            $$ = driver.makeNewNode(CONDEXP, DEFAULT_FUNCVAL, exps);
+        }
+    ;
+
+addsubexp: factor              { $$ = $1; }
+    | addsubexp ADD factor {
                 std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
             }
-    | compareexp SUB factor {
+    | addsubexp SUB factor {
                 std::vector<std::shared_ptr<ZfxASTNode>> children({$1, $3});
                 $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
             }
     ;
+
+
 
 factor: term            { $$ = $1; }
     | factor MUL term   {

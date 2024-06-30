@@ -93,6 +93,10 @@ namespace zeno {
             return "mul";
         case DIV:
             return "div";
+        case OR:
+            return "or";
+        case AND:
+            return "and";
         case SIN:
             return "sin";
         case SINH:
@@ -164,6 +168,12 @@ namespace zeno {
             break;
         case DIV:
             n->value = "/";
+            break;
+        case AND:
+            n->value = "&&";
+            break;
+        case OR:
+            n->value = "||";
             break;
         case DEFAULT_FUNCVAL:
             n->value = "";

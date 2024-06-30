@@ -170,6 +170,8 @@ namespace zeno {
     }
 
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
+        //printSyntaxTree(root, pCtx->code);
+        //return;
         //debug
         //
         markOrder(root, 0);
@@ -238,6 +240,12 @@ namespace zeno {
                 else if constexpr (std::is_same_v<Op, std::greater_equal<>>) {
                     throw UnimplError("");
                 }
+                else if constexpr (std::is_same_v<Op, std::logical_or<>>) {
+                    throw UnimplError("");
+                }
+                else if constexpr (std::is_same_v<Op, std::logical_and<>>) {
+                    throw UnimplError("");
+                }
                 else
                 {
                     return method(lval, rval);
@@ -263,6 +271,12 @@ namespace zeno {
                 {
                     //glm的实现里，乘法是顺序相反的，比如A*B, 其实是我们理解的B * A.
                     return method(rval, lval);
+                }
+                else if constexpr (std::is_same_v<Op, std::logical_or<>>) {
+                    throw UnimplError("");
+                }
+                else if constexpr (std::is_same_v<Op, std::logical_and<>>) {
+                    throw UnimplError("");
                 }
                 else {
                     return method(lval, rval);
@@ -1317,6 +1331,8 @@ namespace zeno {
                 case MINUS: return calc_exp(args[0], args[1], std::minus());
                 case MUL:   return calc_exp(args[0], args[1], std::multiplies());
                 case DIV:   return calc_exp(args[0], args[1], std::divides());
+                case AND:   return calc_exp(args[0], args[1], std::logical_and());
+                case OR:   return calc_exp(args[0], args[1], std::logical_or());
                 default:
                     throw makeError<UnimplError>("op error");
                 }
@@ -1496,60 +1512,6 @@ namespace zeno {
                     }
                     }
                 }
-                break;
-            }
-            case FOREACH_ATTR: {
-
-                //压栈
-                pushStack();
-                scope_exit sp([&]() {
-                    //commit to object
-
-                    this->popStack();
-                });
-
-                assert(root->children.size() == 2);
-
-                //定义所有属性变量
-                auto spAttrs = root->children[0];
-                assert(EACH_ATTRS == spAttrs->type);
-
-                auto spBody = root->children[1];
-                assert(CODEBLOCK == spBody->type);
-
-                //先假定在points层面遍历
-                for (auto spAttr : spAttrs->children)
-                {
-                    const std::string attrname = get_zfxvar<std::string>(spAttr->value);
-                    declareVariable(attrname);
-                }
-
-                //根据runover决定遍历的集合
-                if (pContext->runover == RunOver_Points)
-                {
-                    auto iter = getPointsBeginIter(pContext);
-
-                    m_stacks.rbegin()->iterRunOverObjs = iter;
-
-                    while (iter != getPointsEndIter(pContext)) {
-
-                        for (auto spAttr : spAttrs->children)
-                        {
-                            const std::string attrname = get_zfxvar<std::string>(spAttr->value);
-                            zfxvariant elemval = getAttrValue(attrname, iter, pContext);
-                            auto& attrRef = getVariableRef(attrname);
-                            attrRef.value = elemval;
-                        }
-
-                        execute(spBody, pContext);
-
-                        //commit changes on attr value into prim.
-                        commitToPrim(iter);
-
-                        iter = getPointsNextIter(pContext);
-                    }
-                }
-
                 break;
             }
             case IF:{
@@ -1782,6 +1744,58 @@ namespace zeno {
             }
             case VARIABLETYPE:{
                 //变量类型，比如int vector3 float string等
+            }
+            case FOREACH_ATTR: {
+
+                //压栈
+                pushStack();
+                scope_exit sp([&]() {
+                    this->popStack();
+                    });
+
+                assert(root->children.size() == 2);
+
+                //定义所有属性变量
+                auto spAttrs = root->children[0];
+                assert(EACH_ATTRS == spAttrs->type);
+
+                auto spBody = root->children[1];
+                assert(CODEBLOCK == spBody->type);
+
+                //先假定在points层面遍历
+                for (auto spAttr : spAttrs->children)
+                {
+                    const std::string attrname = get_zfxvar<std::string>(spAttr->value);
+                    declareVariable(attrname);
+                }
+
+                //根据runover决定遍历的集合
+                if (pContext->runover == RunOver_Points)
+                {
+                    auto iter = getPointsBeginIter(pContext);
+
+                    m_stacks.rbegin()->iterRunOverObjs = iter;
+
+                    while (iter != getPointsEndIter(pContext)) {
+
+                        for (auto spAttr : spAttrs->children)
+                        {
+                            const std::string attrname = get_zfxvar<std::string>(spAttr->value);
+                            zfxvariant elemval = getAttrValue(attrname, iter, pContext);
+                            auto& attrRef = getVariableRef(attrname);
+                            attrRef.value = elemval;
+                        }
+
+                        execute(spBody, pContext);
+
+                        //commit changes on attr value into prim.
+                        commitToPrim(iter);
+
+                        iter = getPointsNextIter(pContext);
+                    }
+                }
+
+                break;
             }
             default: {
                 break;

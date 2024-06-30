@@ -52,6 +52,8 @@ enum operatorVals {
     MINUS,
     MUL,
     DIV,
+    OR,
+    AND,
 
     //º¯Êý nodeType¶ÔÓ¦FUNC
     SIN,
