@@ -20,13 +20,12 @@ namespace zeno {
 
     using VariableTable = std::map<std::string, ZfxVariable>;
     using ZfxVarRef = VariableTable::const_iterator;
-    using PointsIterator = AttrVector<vec3f>::iterator;
 
     struct ZfxStackEnv
     {
         VariableTable table;
         bool bAttrAddOrRemoved = false;
-        PointsIterator iterRunOverObjs;
+        size_t indexToCurrentElem = 0;
     };
 
     class FunctionManager
@@ -64,11 +63,10 @@ namespace zeno {
         bool removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs);
         bool isEvalFunction(const std::string& funcname);
 
-        zfxvariant getAttrValue(const std::string& attrname, PointsIterator iter, ZfxContext* pContext);
-        PointsIterator getPointsBeginIter(ZfxContext* pContext);
-        PointsIterator getPointsNextIter(ZfxContext* pContext);
-        PointsIterator getPointsEndIter(ZfxContext* pContext);
-        void commitToPrim(PointsIterator currIter);
+        zfxvariant getCurrentAttrValue(const std::string& attrname, ZfxContext* pContext);
+        void enumNextElement(ZfxContext* pContext);
+        bool continueToRunover(ZfxContext* pContext);
+        void commitToPrim(ZfxContext* pContext);
 
         std::map<std::string, FUNC_INFO> m_funcs;
         std::vector<ZfxStackEnv> m_stacks;

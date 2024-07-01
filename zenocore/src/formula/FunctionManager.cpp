@@ -180,8 +180,8 @@ namespace zeno {
         //markOrder(root, 0);
         //printSyntaxTree(root, pCtx->code);
         zeno::log_only_print(decompile(root));
-        if (pCtx->spObject)
-            execute(root, pCtx);
+        //if (pCtx->spObject)
+        //    execute(root, pCtx);
     }
 
     template <class T>
@@ -863,9 +863,21 @@ namespace zeno {
             rightsideAttrs = parsingAttr(valNode, spOverrideStmt, pContext);
             var.attachAttrs.insert(rightsideAttrs.begin(), rightsideAttrs.end());
 
-            auto spClonedStmt = clone(root);
-            spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
-            var.assignStmts.push_back(spClonedStmt);
+
+            //属性变量的赋值本身一定会执行，无须添加到表达式容器里，例如：
+            /*
+                @N = @P;
+                log("N.x = {}", @N.x);  //输出@N时，@N = @P已经被执行了
+            if (!zenvarNode->bAttr)
+            //这个关联到属性赋值的情况较为复杂...
+            */
+            {
+
+                auto spClonedStmt = clone(root);
+                spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
+                var.assignStmts.push_back(spClonedStmt);
+            }
+
             if (!var.attachAttrs.empty() && !zenvarNode->bAttr) {
                 root->AttrAssociateVar = true;
                 //打了整个标记后面是要删除这个语句的。
@@ -1102,6 +1114,7 @@ namespace zeno {
         if (!vars.empty())
             findAllZenVar(spOverrideStmt, vars);
 
+        bool bArgsAllAttr = true;
         std::set<std::string> allDepVars;
         for (auto var : vars) {
             //如果var是属性，直接添加进去
@@ -1110,6 +1123,7 @@ namespace zeno {
                 continue;
             }
 
+            bArgsAllAttr = false;
             //判断var是不是属性相关变量
             ZfxVariable& refVar = getVariableRef(var);
             if (refVar.attachAttrs.empty())
@@ -1139,6 +1153,14 @@ namespace zeno {
         if (allAttrs.empty())
             return;
 
+        //如果当前执行语句仅仅包含属性，则无须任何前置定义/赋值，因为属性是现值获取的
+        /*
+        if (bArgsAllAttr)
+        {
+            allStmtsForVars.clear();
+        }
+        */
+
         //去掉所有被外部覆盖掉的语句
         for (auto iter = allStmtsForVars.begin(); iter != allStmtsForVars.end();)
         {
@@ -1158,6 +1180,17 @@ namespace zeno {
                 iter++;
             }
         }
+
+        /*
+        if (root->type == ASSIGNMENT) {
+            assert(root->children.size() == 2);
+            std::shared_ptr<ZfxASTNode> zenvarNode = root->children[0];
+            std::shared_ptr<ZfxASTNode> valNode = root->children[1];
+            if (zenvarNode->bAttr) {
+                allStmtsForVars.push_back(clone(root));
+            }
+        }
+        */
 
         //直接对所有statements在语法树的顺序进行排序
         std::sort(allStmtsForVars.begin(), allStmtsForVars.end(), [=](const auto& lhs, const auto& rhs) {
@@ -1772,29 +1805,22 @@ namespace zeno {
                 //根据runover决定遍历的集合
                 if (pContext->runover == RunOver_Points)
                 {
-                    auto iter = getPointsBeginIter(pContext);
-
-                    m_stacks.rbegin()->iterRunOverObjs = iter;
-
-                    while (iter != getPointsEndIter(pContext)) {
-
+                    m_stacks.rbegin()->indexToCurrentElem = 0;
+                    while (continueToRunover(pContext))
+                    {
                         for (auto spAttr : spAttrs->children)
                         {
                             const std::string attrname = get_zfxvar<std::string>(spAttr->value);
-                            zfxvariant elemval = getAttrValue(attrname, iter, pContext);
+                            zfxvariant elemval = getCurrentAttrValue(attrname, pContext);
                             auto& attrRef = getVariableRef(attrname);
                             attrRef.value = elemval;
                         }
-
                         execute(spBody, pContext);
-
                         //commit changes on attr value into prim.
-                        commitToPrim(iter);
-
-                        iter = getPointsNextIter(pContext);
+                        commitToPrim(pContext);
+                        enumNextElement(pContext);
                     }
                 }
-
                 break;
             }
             default: {
@@ -1804,32 +1830,51 @@ namespace zeno {
         return zfxvariant();
     }
 
-    PointsIterator FunctionManager::getPointsBeginIter(ZfxContext* pContext) {
+    bool FunctionManager::continueToRunover(ZfxContext* pContext) {
         assert(pContext->spObject);
-        return pContext->spObject->verts.begin();
+        auto topStack = m_stacks.rbegin();
+        assert(topStack != m_stacks.rend());
+
+        size_t index = topStack->indexToCurrentElem;
+        if (pContext->runover == RunOver_Points) {
+            return index < pContext->spObject->verts->size();
+        }
+        else if (pContext->runover == RunOver_Face) {
+            //TODO
+            return false;
+        }
+        else if (pContext->runover == RunOver_Geom) {
+            //整个几何体只遍历一次
+            return false;
+        }
     }
 
-    PointsIterator FunctionManager::getPointsNextIter(ZfxContext* pContext) {
+    void FunctionManager::enumNextElement(ZfxContext* pContext) {
         assert(pContext->spObject);
-        for (auto iter = m_stacks.rbegin(); iter != m_stacks.rend(); iter++) {
-            if (iter->iterRunOverObjs != getPointsEndIter(pContext)) {
-                if (iter->bAttrAddOrRemoved) {
-                    return iter->iterRunOverObjs;
+        auto topStack = m_stacks.rbegin();
+        assert(topStack != m_stacks.rend());
+
+        size_t& index = topStack->indexToCurrentElem;
+        if (pContext->runover == RunOver_Points) {
+            if (index < pContext->spObject->verts->size())
+            {
+                if (topStack->bAttrAddOrRemoved) {
+
                 }
                 else {
-                    return ++iter->iterRunOverObjs;
+                    index++;
                 }
             }
         }
-        throw makeError<UnimplError>("error on iteration from runover prims");
+        else if (pContext->runover == RunOver_Face) {
+            //TODO
+        }
+        else if (pContext->runover == RunOver_Geom) {
+            index = 1;
+        }
     }
 
-    PointsIterator FunctionManager::getPointsEndIter(ZfxContext* pContext) {
-        assert(pContext->spObject);
-        return pContext->spObject->verts.end();
-    }
-
-    void FunctionManager::commitToPrim(PointsIterator currIter) {
+    void FunctionManager::commitToPrim(ZfxContext* pContext) {
         //找到当前堆栈的所有属性，逐一提交
         assert(!m_stacks.empty());
         auto topStack = m_stacks.rbegin();
@@ -1839,75 +1884,94 @@ namespace zeno {
             if (!iter->second.bAttrUpdated)
                 continue;
             assert(!varname.empty());
-            auto& vec = *currIter;
-            if (varname.at(0) == '@') {
-                if (varname == "@P") {
-                    std::visit([&](auto&& val) {
-                        using T = std::decay_t<decltype(val)>;
-                        if constexpr (std::is_same_v<T, glm::vec2>) {
-                            vec[0] = val[0];
-                            vec[1] = val[1];
-                        }
-                        else if constexpr (std::is_same_v<T, glm::vec3>) {
-                            vec[0] = val[0];
-                            vec[1] = val[1];
-                            vec[2] = val[2];
-                        }
-                        else if constexpr (std::is_same_v<T, glm::vec4>) {
-                            vec[0] = val[0];
-                            vec[1] = val[1];
-                            vec[2] = val[2];
-                            vec[3] = val[3];
+            int idx = static_cast<int>(topStack->indexToCurrentElem);
+
+            if (pContext->runover == RunOver_Points) {
+                
+                if (varname.at(0) == '@') {
+                    if (varname == "@P") {
+                        auto& vec = pContext->spObject->attr<vec3f>("pos")[idx];
+                        std::visit([&](auto&& val) {
+                            using T = std::decay_t<decltype(val)>;
+                            if constexpr (std::is_same_v<T, glm::vec3>) {
+                                vec[0] = val[0];
+                                vec[1] = val[1];
+                                vec[2] = val[2];
+                            }
+                            else {
+                                throw makeError<UnimplError>("error type of @P stored on stack");
+                            }
+                        }, iter->second.value);
+                    }
+                    else if (varname == "@N") {
+                        if (!pContext->spObject->has_attr("nrm")) {
+                            throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
                         }
                         else {
-                            throw makeError<UnimplError>("error type of @P stored on stack");
+                            auto& vec = pContext->spObject->attr<vec3f>("nrm")[idx];
+                            std::visit([&](auto&& val) {
+                                using T = std::decay_t<decltype(val)>;
+                                if constexpr (std::is_same_v<T, glm::vec3>) {
+                                    vec[0] = val[0];
+                                    vec[1] = val[1];
+                                    vec[2] = val[2];
+                                }
+                                else {
+                                    throw makeError<UnimplError>("error type of @P stored on stack");
+                                }
+                            }, iter->second.value);
                         }
-                    }, iter->second.value);
+                    }
+                    else if (varname == "@ptnum") {
+                        throw makeError<UnimplError>("@ptnum is not allowed to be modified as it is a read-only attr");
+                        assert(false);
+                    }
+                    else {
+                        //TODO
+                    }
                 }
-                else if (varname == "@N") {
+            }
+            else if (pContext->runover == RunOver_Face) {
+                //TODO
+            }
+            else if (pContext->runover == RunOver_Geom) {
 
-                }
-                else if (varname == "@ptnum") {
-                    assert(false);
-                }
-                else {
-                    //TODO
-                }
             }
         }
     }
 
-    zfxvariant FunctionManager::getAttrValue(const std::string& attrname, PointsIterator iter, ZfxContext* pContext) {
-        if (attrname == "@P") {
-            auto& vec = *iter;
-            int n = vec.size();
-            if (n == 2) {
-                return glm::vec2(vec[0], vec[1]);
-            }
-            else if (n == 3) {
+    zfxvariant FunctionManager::getCurrentAttrValue(const std::string& attrname, ZfxContext* pContext) {
+        if (pContext->runover == RunOver_Points) {
+            auto topStack = m_stacks.rbegin();
+            int idx = static_cast<int>(topStack->indexToCurrentElem);
+            assert(topStack != m_stacks.rend());
+            if (attrname == "@P") {
+                const auto& vec = pContext->spObject->attr<vec3f>("pos")[idx];
                 return glm::vec3(vec[0], vec[1], vec[2]);
             }
-            else if (n == 4) {
-                return glm::vec4(vec[0], vec[1], vec[2], vec[3]);
+            else if (attrname == "@ptnum") {
+                return idx;
+            }
+            else if (attrname == "@N") {
+                if (pContext->spObject->has_attr("nrm")) {
+                    const auto& nrm = pContext->spObject->attr<vec3f>("nrm")[idx];
+                    return glm::vec3(nrm[0], nrm[1], nrm[2]);
+                }
+                else {
+                    throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
+                }
+            }
+            else if (attrname == "@Cd") {
+                return zfxvariant();
             }
             else {
-                throw makeError<UnimplError>("invalid vector size from attrs of prim");
+                return zfxvariant();
             }
+        }
+        else if (pContext->runover == RunOver_Face) {
             return zfxvariant();
         }
-        else if (attrname == "@ptnum") {
-            auto beginIter = getPointsBeginIter(pContext);
-            int idx = std::distance(beginIter, iter);
-            return idx;
-        }
-        else if (attrname == "@N") {
-            //TODO
-            return zfxvariant();
-        }
-        else if (attrname == "@Cd") {
-            return zfxvariant();
-        }
-        else {
+        else if (pContext->runover == RunOver_Geom) {
             return zfxvariant();
         }
     }
