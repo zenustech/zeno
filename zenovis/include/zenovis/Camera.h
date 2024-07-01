@@ -31,8 +31,6 @@ struct ZOptixCameraSettingInfo {
 struct Camera {
     float inf_z_near = 0.001f;
     int m_nx{512}, m_ny{512};
-    // TODO: remove
-    glm::mat4x4 m_view{1}, m_proj{1};
 
     float m_near = 0.01f;
     float m_far = 20000.0f;
@@ -97,6 +95,26 @@ public:
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
     void updateMatrix();
+    glm::mat4x4 get_view_matrix() {
+        return glm::lookAt(m_pos, m_pos + get_lodfront(), get_lodup());
+    }
+    static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear) {
+        float f = 1.0f / tan(fovY_radians / 2.0f);
+        return glm::mat4(
+                f / aspectWbyH, 0.0f,  0.0f,  0.0f,
+                0.0f,    f,  0.0f,  0.0f,
+                0.0f, 0.0f,  0.0f, -1.0f,
+                0.0f, 0.0f, zNear,  0.0f);
+    }
+    glm::mat4x4 get_proj_matrix() {
+        if (m_ortho_mode) {
+            auto radius = get_radius();
+            return glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
+                radius, m_far, m_near);
+        } else {
+            return MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), inf_z_near);
+        }
+    }
 };
 
 } // namespace zenovis

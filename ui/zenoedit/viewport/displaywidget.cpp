@@ -1400,7 +1400,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
                 // zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
                 glm::vec4 cc = {cx, cy, -cz, 1};
-                auto wc = glm::inverse(scene->camera->m_view) * cc;
+                auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
                 wc /= wc.w;
                 // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
                 auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");

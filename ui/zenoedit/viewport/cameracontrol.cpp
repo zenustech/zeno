@@ -363,7 +363,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 mouse_start[0] = (2 * mouse_start[0] / res().x()) - 1;
                 mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
 
-                auto vp = scene->camera->m_proj * scene->camera->m_view;
+                auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
                 m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {

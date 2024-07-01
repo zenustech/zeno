@@ -131,7 +131,7 @@ struct RenderEngineBate : RenderEngine {
         auto cy = v * tan(glm::radians(fov) / 2) * cz;
         auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
         glm::vec4 cc = {cx, cy, -cz, 1};
-        auto wc = glm::inverse(scene->camera->m_view) * cc;
+        auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
         wc /= wc.w;
         return glm::vec3(wc);
     }
