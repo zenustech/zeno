@@ -16,6 +16,8 @@
 #include "iotags.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zspinboxslider.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 static CONTROL_ITEM_INFO controlList[] = {
     {"Tab", CONTROL_NONE, "", ":/icons/parameter_control_tab.svg"},
@@ -188,6 +190,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
     connect(m_ui->cbTypes, SIGNAL(currentIndexChanged(int)), this, SLOT(onTypeItemChanged(int)));
+    connect(m_ui->m_pathFilterEdit, SIGNAL(editingFinished()), this, SLOT(onPathFilterFinished()));
 
     m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
     connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
@@ -458,6 +461,9 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
                 }
                 return pCurrentItem->data(ROLE_PARAM_VALUE);
             };
+            cbSets.cbSwitch = [=](bool bOn) {
+                zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
+            };
             QWidget *valueControl = zenoui::createWidget(deflVal, ctrl, dataType, cbSets, controlProperties);
             if (valueControl) {
                 valueControl->setEnabled(bEditable);
@@ -648,6 +654,19 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
         m_ui->editStep->setText(QString::number(info.step));
         m_ui->editMin->setText(QString::number(info.min));
         m_ui->editMax->setText(QString::number(info.max));
+    } else if (ctrl == CONTROL_READPATH || ctrl == CONTROL_WRITEPATH)
+    {
+        m_ui->stackProperties->setCurrentIndex(3);
+        QVariantMap pros = controlProperties.toMap();
+        if (pros.find("filter") != pros.end())
+        {
+            QString filter = pros["filter"].toString();
+            m_ui->m_pathFilterEdit->setText(filter);
+        }
+        else
+        {
+            m_ui->m_pathFilterEdit->setText("");
+        }
     } else {
         m_ui->stackProperties->setCurrentIndex(0);
     }
@@ -836,6 +855,26 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
     updateSliderInfo();
 }
 
+void ZEditParamLayoutDlg::onPathFilterFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    CONTROL_PROPERTIES properties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES).value<CONTROL_PROPERTIES>();
+    QString filter = m_ui->m_pathFilterEdit->text();
+    properties["filter"] = filter;
+    proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+    //update control.
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem) {
+        QWidget* pControl = pLayoutItem->widget();
+        if (pControl) {
+            pControl->setProperty("filter", filter);
+        }
+    }
+}
+
 void ZEditParamLayoutDlg::onControlItemChanged(int idx)
 {
     const QString& controlName = m_ui->cbControl->itemText(idx);
@@ -863,6 +902,9 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         value = UiHelper::initDefaultValue(dataType);
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initVariantByControl(ctrl); };
+    cbSets.cbSwitch = [=](bool bOn) {
+        zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
+    };
     QWidget *valueControl = zenoui::createWidget(value, ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));
@@ -898,6 +940,9 @@ void ZEditParamLayoutDlg::onTypeItemChanged(int idx)
     };
     QVariant controlProperties = layerIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     cbSets.cbGetIndexData = [=]() -> QVariant { return pItem->data(ROLE_PARAM_VALUE); };
+    cbSets.cbSwitch = [=](bool bOn) {
+        zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
+    };
     QWidget *valueControl = zenoui::createWidget(pItem->data(ROLE_PARAM_VALUE), pItem->m_ctrl, dataType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(m_pGraphsModel->IsSubGraphNode(m_nodeIdx));

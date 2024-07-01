@@ -41,7 +41,7 @@ namespace zeno {
             
             auto& halfEdge = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
             halfEdge = typename ZenoParticles::particles_t({{"local_vertex_id",1},{"to_face",1},{"opposite_he",1},{"next_he",1}},
-                tris.size() * 3,zs::memsrc_e::device,0);
+                tris.size() * 3,zs::memsrc_e::device);
     
             auto cudaPol = zs::cuda_exec();
     
@@ -186,7 +186,7 @@ namespace zeno {
             });
     
             auto &surfEdges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-            surfEdges = typename ZenoParticles::particles_t({{"inds", 2},{"he_inds",1}}, edgeSet.size(),zs::memsrc_e::device,0);
+            surfEdges = typename ZenoParticles::particles_t({{"inds", 2},{"he_inds",1}}, edgeSet.size(),zs::memsrc_e::device);
             cudaPol(zip(zs::range(edgeSet.size()),edgeSet._activeKeys),[
                 halfedges = proxy<space>({},halfEdge),
                 surfEdges = proxy<space>({},surfEdges),
@@ -208,7 +208,7 @@ namespace zeno {
     
             auto& boundaryHalfEdges = (*zsparticles)[ZenoParticles::s_surfBoundaryEdgeTag];
             boundaryHalfEdges = typename ZenoParticles::particles_t({{"he_inds",1}},
-                boundaryHalfEdgeSet.size(),zs::memsrc_e::device,0);
+                boundaryHalfEdgeSet.size(),zs::memsrc_e::device);
     
             cudaPol(zip(zs::range(boundaryHalfEdgeSet.size()),boundaryHalfEdgeSet._activeKeys),[
                 boundaryHalfEdges = boundaryHalfEdges.begin("he_inds",dim_c<1>,int_c)] ZS_LAMBDA(int id,const auto& key) mutable {
@@ -243,7 +243,7 @@ namespace zeno {
     
             auto& halfFacet = (*zsparticles)[ZenoParticles::s_tetHalfFacetTag];
             halfFacet = typename ZenoParticles::particles_t({{"opposite_hf",1},{"next_hf",1},{"to_tet",1},{"local_idx",1}},
-                    tets.size() * 4,zs::memsrc_e::device,0);
+                    tets.size() * 4,zs::memsrc_e::device);
     
             build_tetrahedra_half_facet(cudaPol,tets,halfFacet);
     
@@ -286,7 +286,7 @@ namespace zeno {
             });
             
             auto &surfEdges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-            surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, edgeSet.size(),zs::memsrc_e::device,0);	
+            surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, edgeSet.size(),zs::memsrc_e::device);	
             cudaPol(zip(zs::range(edgeSet.size()),edgeSet._activeKeys),[
                 surfEdges = proxy<space>({},surfEdges)] ZS_LAMBDA(auto ei,const auto& pair) mutable {
                     surfEdges.tuple(dim_c<2>,"inds",ei) = pair.reinterpret_bits(float_c);

@@ -103,8 +103,8 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
 template <typename Pol, typename TileVecT>
 zs::Vector<typename ZenoParticles::lbvh_t::Box>
 retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
-                          float radius = 0.f,
-                          const zs::SmallString &xTag = "xn") {
+                          const float& radius,
+                          const zs::SmallString &xTag) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   constexpr auto space = Pol::exec_tag::value;
@@ -225,7 +225,7 @@ void retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
 }
 
 // for ccd
-template <typename Pol, typename TileVecT0, typename TileVecT1, int codim = 3>
+template <typename Pol, typename TileVecT0, typename TileVecT1, int codim>
 zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     Pol &pol, const TileVecT0 &verts,
     const typename ZenoParticles::particles_t &eles, const TileVecT1 &vtemp,

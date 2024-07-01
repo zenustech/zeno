@@ -327,7 +327,7 @@ std::tuple<int, int, bool> DisplayWidget::getOriginWindowSizeInfo()
     return originWindowSizeInfo;
 }
 
-void DisplayWidget::cameraLookTo(int dir)
+void DisplayWidget::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     if (m_bGLView)
         m_glView->cameraLookTo(dir);
@@ -794,30 +794,30 @@ void DisplayWidget::onDockViewAction(bool triggered)
     switch (viewType)
     {
         case ACTION_ORIGIN_VIEW:
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
             break;
         case ACTION_FRONT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::front_view);
             break;
         }
         case ACTION_BACK_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_view);
             break;
         }
         case ACTION_RIGHT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::right_view);
             break;
         }
         case ACTION_LEFT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::left_view);
             break;
         }
         case ACTION_TOP_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::top_view);
             break;
         }
         case ACTION_BOTTOM_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::bottom_view);
             break;
         }
     }
@@ -1337,11 +1337,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_MESH);
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_LINE);
             else
-                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_VERTEX);
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
@@ -1353,7 +1353,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         node_context += prim_name + ":" + e.toStdString() + " ";
 
                 if (picker)
-                    picker->load_from_str(node_context, scene->select_mode, zeno::SELECTION_MODE::NORMAL);
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
                 picker->sync_to_scene();
@@ -1365,6 +1365,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 picker->sync_to_scene();
                 picker->focus("");
                 picker->set_picked_elems_callback({});
+                {
+                    picker->clear();
+                    scene->set_select_mode(zenovis::PICK_MODE::PICK_OBJECT);
+                }
             }
         }
         zenoApp->getMainWindow()->updateViewport();
@@ -1379,13 +1383,12 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
-                auto _near = scene->camera->m_near;
-                auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
-                auto cz = glm::length(scene->camera->m_lodcenter);
+                auto cz = glm::length(scene->camera->m_pos);
                 if (depth != 0) {
-                    cz = scene->camera->m_near / depth;
+                    cz = scene->camera->inf_z_near / depth;
                 }
+                zeno::log_info("click depth {}", depth);
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
                 // zeno::log_info("fov: {}", fov);
@@ -1397,11 +1400,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
                 // zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
                 glm::vec4 cc = {cx, cy, -cz, 1};
-                auto wc = glm::inverse(scene->camera->m_view) * cc;
+                auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
                 wc /= wc.w;
                 // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
                 auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
-                zeno::log_info("fetch {}", points.c_str());
+                zeno::log_info("fetch {}", wc);
                 points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
                 zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
             };

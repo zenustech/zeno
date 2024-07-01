@@ -10,8 +10,6 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 
-#ifdef ZENO_FBXSDK
-#include <fbxsdk.h>
 #include "zeno/utils/log.h"
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
@@ -23,6 +21,9 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <tinygltf/json.hpp>
 using Json = nlohmann::json;
+
+#ifdef ZENO_FBXSDK
+#include <fbxsdk.h>
 
 namespace FBX{
     void GetChildNodePathRecursive(FbxNode* node, std::string& path) {
@@ -1224,6 +1225,170 @@ ZENDEFNODE(NewFBXImportCamera, {
     {},
     {"primitive"},
 });
+// Create a cube mesh.
+FbxNode* CreateSkin(FbxScene* pScene, char* pName, std::shared_ptr<PrimitiveObject> prim) {
+    FbxMesh* lMesh = FbxMesh::Create(pScene, pName);
+
+    // Create control points.
+    lMesh->InitControlPoints(prim->verts.size());
+    FbxVector4* lControlPoints = lMesh->GetControlPoints();
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        lControlPoints[i] = FbxVector4(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
+    }
+
+    if (prim->verts.has_attr("nrm")) {
+        FbxGeometryElementNormal* lGeometryElementNormal= lMesh->CreateElementNormal();
+        lGeometryElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        lGeometryElementNormal->SetReferenceMode(FbxGeometryElement::eDirect);
+        auto &nrm = prim->verts.attr<vec3f>("nrm");
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            lGeometryElementNormal->GetDirectArray().Add(FbxVector4(nrm[i][0], nrm[i][1], nrm[i][2]));
+        }
+    }
+
+    // Create UV for Diffuse channel.
+    if (prim->loops.has_attr("uvs")) {
+        FbxGeometryElementUV* lUVDiffuseElement = lMesh->CreateElementUV( "DiffuseUV");
+        lUVDiffuseElement->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
+        lUVDiffuseElement->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+        for (auto i = 0; i < prim->uvs.size(); i++) {
+            lUVDiffuseElement->GetDirectArray().Add(FbxVector2(prim->uvs[i][0], prim->uvs[i][1]));
+        }
+
+        lUVDiffuseElement->GetIndexArray().SetCount(prim->loops.size());
+        auto &uvs = prim->loops.attr<int>("uvs");
+        for (auto i = 0; i < uvs.size(); i++) {
+            lUVDiffuseElement->GetIndexArray().SetAt(i, uvs[i]);
+        }
+    }
+
+    // Create polygons. Assign texture and texture UV indices.
+    for (auto i = 0; i < prim->polys.size(); i++) {
+        lMesh->BeginPolygon(-1, -1, -1, false);
+        auto poly = prim->polys[i];
+        for (auto j = 0; j < poly[1]; j++) {
+            lMesh->AddPolygon(prim->loops[poly[0] + j]);
+        }
+        lMesh->EndPolygon();
+    }
+
+    // create a FbxNode
+    FbxNode* lNode = FbxNode::Create(pScene,pName);
+
+    // set the node attribute
+    lNode->SetNodeAttribute(lMesh);
+
+    // set the shading mode to view texture
+    lNode->SetShadingMode(FbxNode::eTextureShading);
+
+    // rescale the cube
+//    lNode->LclScaling.Set(FbxVector4(0.3, 0.3, 0.3));
+
+    // return the FbxNode
+    return lNode;
+}
+
+void createSkeleton(FbxScene* scene, std::shared_ptr<PrimitiveObject> prim) {
+    std::vector<FbxNode*> boneNodes;
+    boneNodes.reserve(prim->verts.size() + 1);
+    {
+        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, "RootNode");
+        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
+        FbxNode* BoneNode = FbxNode::Create(scene, "RootNode");
+        BoneNode->SetNodeAttribute(SkeletonAttribute);
+        boneNodes.push_back(BoneNode);
+    }
+    auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+    auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+    auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
+        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, boneName.c_str());
+        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+        FbxNode* BoneNode = FbxNode::Create(scene, boneName.c_str());
+        BoneNode->SetNodeAttribute(SkeletonAttribute);
+        auto pos = prim->verts[i];
+        glm::mat4 matrix;
+        matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
+        matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
+        matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
+        matrix[3] = {pos[0], pos[1], pos[2], 1};
+        glm::vec3 Scale;
+        glm::quat Orientation;
+        glm::vec3 Translation;
+        glm::vec3 Skew;
+        glm::vec4 Perspective;
+        glm::decompose(matrix, Scale, Orientation, Translation, Skew, Perspective);
+        glm::vec3 rot = glm::eulerAngles(Orientation);
+
+        BoneNode->LclTranslation.Set(FbxDouble3(pos[0], pos[1], pos[2]));
+        BoneNode->LclRotation.Set(FbxDouble3(rot[0], rot[1], rot[2]));
+        BoneNode->LclScaling.Set(FbxDouble3(Scale[0], Scale[1], Scale[2]));
+        boneNodes.push_back(BoneNode);
+    }
+    std::set<int> has_parent;
+    for (auto i = 0; i < prim->loops.size() / 2; i++) {
+        auto p = prim->loops[i * 2 + 0] + 1;
+        auto c = prim->loops[i * 2 + 1] + 1;
+        boneNodes[p]->AddChild(boneNodes[c]);
+        has_parent.insert(c);
+    }
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        if (has_parent.count(i+1) == 0) {
+            boneNodes[0]->AddChild(boneNodes[i+1]);
+        }
+    }
+}
+struct NewFBXWrite : INode {
+    virtual void apply() override {
+        FbxManager* manager = FbxManager::Create();
+        FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
+        manager->SetIOSettings(ios);
+
+        // 创建一个场景
+        FbxScene* scene = FbxScene::Create(manager, "MyScene");
+        {
+            auto skin = get_input2<PrimitiveObject>("skin");
+            if (skin->tris.size()) {
+                primPolygonate(skin.get(), true);
+            }
+            if (get_input2<bool>("ConvertUnits")) {
+                for (auto i = 0; i < skin->verts.size(); i++) {
+                    skin->verts[i] *= 100.0f;
+                }
+            }
+            FbxNode* lSkin = CreateSkin(scene, "Mesh", skin);
+            scene->GetRootNode()->AddChild(lSkin);
+        }
+
+        // 导出场景到FBX文件
+        int fileFormat = manager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii");
+        FbxExporter* exporter = FbxExporter::Create(manager, "");
+        exporter->Initialize(get_input2<std::string>("path").c_str(), fileFormat, manager->GetIOSettings());
+        exporter->Export(scene);
+        exporter->Destroy();
+
+        // 清理
+        scene->Destroy();
+        manager->Destroy();
+    }
+};
+
+//ZENDEFNODE(NewFBXWrite, {
+//    {
+//        "skin",
+//        "skeleton",
+//        {"readpath", "path", "test0428.fbx"},
+//        {"bool", "ConvertUnits", "1"},
+//    },
+//    {
+//    },
+//    {},
+//    {"FBX"},
+//});
+}
+#endif
+namespace zeno {
 struct NewFBXBoneDeform : INode {
     std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
         auto boneName_count = prim->userData().get2<int>("boneName_count");
@@ -1308,7 +1473,7 @@ struct NewFBXBoneDeform : INode {
         auto &bi = prim->verts.add_attr<vec4i>("boneName");
         auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
         size_t vert_count = prim->verts.size();
-        #pragma omp parallel for
+#pragma omp parallel for
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
@@ -1507,166 +1672,4 @@ ZENDEFNODE(BoneTransformView, {
     {},
     {"debug"},
 });
-// Create a cube mesh.
-FbxNode* CreateSkin(FbxScene* pScene, char* pName, std::shared_ptr<PrimitiveObject> prim) {
-    FbxMesh* lMesh = FbxMesh::Create(pScene, pName);
-
-    // Create control points.
-    lMesh->InitControlPoints(prim->verts.size());
-    FbxVector4* lControlPoints = lMesh->GetControlPoints();
-    for (auto i = 0; i < prim->verts.size(); i++) {
-        lControlPoints[i] = FbxVector4(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
-    }
-
-    if (prim->verts.has_attr("nrm")) {
-        FbxGeometryElementNormal* lGeometryElementNormal= lMesh->CreateElementNormal();
-        lGeometryElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        lGeometryElementNormal->SetReferenceMode(FbxGeometryElement::eDirect);
-        auto &nrm = prim->verts.attr<vec3f>("nrm");
-        for (auto i = 0; i < prim->verts.size(); i++) {
-            lGeometryElementNormal->GetDirectArray().Add(FbxVector4(nrm[i][0], nrm[i][1], nrm[i][2]));
-        }
-    }
-
-    // Create UV for Diffuse channel.
-    if (prim->loops.has_attr("uvs")) {
-        FbxGeometryElementUV* lUVDiffuseElement = lMesh->CreateElementUV( "DiffuseUV");
-        lUVDiffuseElement->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
-        lUVDiffuseElement->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
-        for (auto i = 0; i < prim->uvs.size(); i++) {
-            lUVDiffuseElement->GetDirectArray().Add(FbxVector2(prim->uvs[i][0], prim->uvs[i][1]));
-        }
-
-        lUVDiffuseElement->GetIndexArray().SetCount(prim->loops.size());
-        auto &uvs = prim->loops.attr<int>("uvs");
-        for (auto i = 0; i < uvs.size(); i++) {
-            lUVDiffuseElement->GetIndexArray().SetAt(i, uvs[i]);
-        }
-    }
-
-    // Create polygons. Assign texture and texture UV indices.
-    for (auto i = 0; i < prim->polys.size(); i++) {
-        lMesh->BeginPolygon(-1, -1, -1, false);
-        auto poly = prim->polys[i];
-        for (auto j = 0; j < poly[1]; j++) {
-            lMesh->AddPolygon(prim->loops[poly[0] + j]);
-        }
-        lMesh->EndPolygon();
-    }
-
-    // create a FbxNode
-    FbxNode* lNode = FbxNode::Create(pScene,pName);
-
-    // set the node attribute
-    lNode->SetNodeAttribute(lMesh);
-
-    // set the shading mode to view texture
-    lNode->SetShadingMode(FbxNode::eTextureShading);
-
-    // rescale the cube
-//    lNode->LclScaling.Set(FbxVector4(0.3, 0.3, 0.3));
-
-    // return the FbxNode
-    return lNode;
 }
-
-void createSkeleton(FbxScene* scene, std::shared_ptr<PrimitiveObject> prim) {
-    std::vector<FbxNode*> boneNodes;
-    boneNodes.reserve(prim->verts.size() + 1);
-    {
-        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, "RootNode");
-        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
-        FbxNode* BoneNode = FbxNode::Create(scene, "RootNode");
-        BoneNode->SetNodeAttribute(SkeletonAttribute);
-        boneNodes.push_back(BoneNode);
-    }
-    auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
-    auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
-    auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
-    for (auto i = 0; i < prim->verts.size(); i++) {
-        auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
-        FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(scene, boneName.c_str());
-        SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-        FbxNode* BoneNode = FbxNode::Create(scene, boneName.c_str());
-        BoneNode->SetNodeAttribute(SkeletonAttribute);
-        auto pos = prim->verts[i];
-        glm::mat4 matrix;
-        matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
-        matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
-        matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
-        matrix[3] = {pos[0], pos[1], pos[2], 1};
-        glm::vec3 Scale;
-        glm::quat Orientation;
-        glm::vec3 Translation;
-        glm::vec3 Skew;
-        glm::vec4 Perspective;
-        glm::decompose(matrix, Scale, Orientation, Translation, Skew, Perspective);
-        glm::vec3 rot = glm::eulerAngles(Orientation);
-
-        BoneNode->LclTranslation.Set(FbxDouble3(pos[0], pos[1], pos[2]));
-        BoneNode->LclRotation.Set(FbxDouble3(rot[0], rot[1], rot[2]));
-        BoneNode->LclScaling.Set(FbxDouble3(Scale[0], Scale[1], Scale[2]));
-        boneNodes.push_back(BoneNode);
-    }
-    std::set<int> has_parent;
-    for (auto i = 0; i < prim->loops.size() / 2; i++) {
-        auto p = prim->loops[i * 2 + 0] + 1;
-        auto c = prim->loops[i * 2 + 1] + 1;
-        boneNodes[p]->AddChild(boneNodes[c]);
-        has_parent.insert(c);
-    }
-    for (auto i = 0; i < prim->verts.size(); i++) {
-        if (has_parent.count(i+1) == 0) {
-            boneNodes[0]->AddChild(boneNodes[i+1]);
-        }
-    }
-}
-struct NewFBXWrite : INode {
-    virtual void apply() override {
-        FbxManager* manager = FbxManager::Create();
-        FbxIOSettings* ios = FbxIOSettings::Create(manager, IOSROOT);
-        manager->SetIOSettings(ios);
-
-        // 创建一个场景
-        FbxScene* scene = FbxScene::Create(manager, "MyScene");
-        {
-            auto skin = get_input2<PrimitiveObject>("skin");
-            if (skin->tris.size()) {
-                primPolygonate(skin.get(), true);
-            }
-            if (get_input2<bool>("ConvertUnits")) {
-                for (auto i = 0; i < skin->verts.size(); i++) {
-                    skin->verts[i] *= 100.0f;
-                }
-            }
-            FbxNode* lSkin = CreateSkin(scene, "Mesh", skin);
-            scene->GetRootNode()->AddChild(lSkin);
-        }
-
-        // 导出场景到FBX文件
-        int fileFormat = manager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii");
-        FbxExporter* exporter = FbxExporter::Create(manager, "");
-        exporter->Initialize(get_input2<std::string>("path").c_str(), fileFormat, manager->GetIOSettings());
-        exporter->Export(scene);
-        exporter->Destroy();
-
-        // 清理
-        scene->Destroy();
-        manager->Destroy();
-    }
-};
-
-//ZENDEFNODE(NewFBXWrite, {
-//    {
-//        "skin",
-//        "skeleton",
-//        {"readpath", "path", "test0428.fbx"},
-//        {"bool", "ConvertUnits", "1"},
-//    },
-//    {
-//    },
-//    {},
-//    {"FBX"},
-//});
-}
-#endif

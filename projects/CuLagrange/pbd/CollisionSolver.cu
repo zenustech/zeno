@@ -64,6 +64,13 @@ struct DetangleCCDCollisionWithBoundary : INode {
         auto kboundary = get_input2<ZenoParticles>("boundary");
 
         
+        auto among_same_group = get_input2<bool>("among_same_group");
+        auto among_different_groups = get_input2<bool>("among_different_groups");
+
+        int group_strategy = 0;
+        group_strategy |= (among_same_group ? 1 : 0);
+        group_strategy |= (among_different_groups ? 2 : 0);
+
         auto boundary_velocity_scale = get_input2<float>("boundary_velocity_scale");
         // auto current_kx_tag = get_input2<std::string>("current_kx_tag");
         // auto pre_kx_tag = get_input2<std::string>("previous_kx_tag");
@@ -115,7 +122,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                 auto cur_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 -  w) + kverts.pack(dim_c<3>,"x",kvi) *  w;
                 auto pre_kvert = kverts.pack(dim_c<3>,"px",kvi) * (1 - pw) + kverts.pack(dim_c<3>,"x",kvi) * pw;
                 vtemp("collision_group",kvi + voffset) = kverts(collision_group_name,kvi);
-                vtemp.tuple(dim_c<3>,"X",kvi + voffset) = kverts.pack(dim_c<3>,"X",kvi);
+                // for alignment, we directly assign the current boundary as reference shape
+                vtemp.tuple(dim_c<3>,"X",kvi + voffset) = kverts.pack(dim_c<3>,"x",kvi);
                 vtemp.tuple(dim_c<3>,"x",kvi + voffset) = pre_kvert;
                 vtemp.tuple(dim_c<3>,"v",kvi + voffset) = (cur_kvert - pre_kvert) * boundary_velocity_scale;
                 vtemp("minv",kvi + voffset) = (T)0;
@@ -208,7 +216,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csPT,
                         impulse_buffer,
-                        impulse_count,true,true);
+                        impulse_count,true,true,false,group_strategy);
+                    // std::cout << "nm_PT_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
@@ -243,7 +252,8 @@ struct DetangleCCDCollisionWithBoundary : INode {
                         do_bvh_refit,
                         csEE,
                         impulse_buffer,
-                        impulse_count,true,true);
+                        impulse_count,true,true,false,group_strategy);
+                    // std::cout << "nm_EE_continuous_collisions : " << csPT.size() << std::endl;
                 }
             }
 
@@ -317,6 +327,8 @@ ZENDEFNODE(DetangleCCDCollisionWithBoundary, {{{"zsparticles"},
                                 {"int","substep_id","0"},
                                 {"int","nm_substeps","1"},
                                 {"float","boundary_velocity_scale","1"},
+                                {"bool","among_same_group","1"},
+                                {"bool","among_different_groups","1"}
                             },
 							{{"zsparticles"}},
 							{},
