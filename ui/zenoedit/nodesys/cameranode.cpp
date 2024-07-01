@@ -86,21 +86,23 @@ void CameraNode::onEditClicked()
         auto camera = *(scene->camera.get());
 
         INPUT_SOCKET pos = inputs["pos"];
-        vec = {camera.m_lodcenter[0], camera.m_lodcenter[1], camera.m_lodcenter[2]};
+        vec = {camera.m_pos[0], camera.m_pos[1], camera.m_pos[2]};
         info.name = "pos";
         info.oldValue = pos.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
+        auto m_lodup = camera.get_lodup();
+        auto m_lodfront = camera.get_lodfront();
         INPUT_SOCKET up = inputs["up"];
-        vec = {camera.m_lodup[0], camera.m_lodup[1], camera.m_lodup[2]};
+        vec = {m_lodup[0], m_lodup[1], m_lodup[2]};
         info.name = "up";
         info.oldValue = up.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         INPUT_SOCKET view = inputs["view"];
-        vec = {camera.m_lodfront[0], camera.m_lodfront[1], camera.m_lodfront[2]};
+        vec = {m_lodfront[0], m_lodfront[1], m_lodfront[2]};
         info.name = "view";
         info.oldValue = view.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
@@ -137,11 +139,11 @@ void CameraNode::onEditClicked()
 
             INPUT_SOCKET other = inputs["other"];
             std::string other_prop;
-            auto center = camera.m_center;
+            auto center = camera.m_pivot;
             other_prop += zeno::format("{},{},{},", center[0], center[1], center[2]);
-            other_prop += zeno::format("{},", camera.m_theta);
-            other_prop += zeno::format("{},", camera.m_phi);
-            other_prop += zeno::format("{},", camera.m_radius);
+            other_prop += zeno::format("{},", 0);
+            other_prop += zeno::format("{},", 0);
+            other_prop += zeno::format("{},", camera.get_radius());
             info.name = "other";
             info.oldValue = other.info.defaultValue;
             info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
@@ -191,10 +193,10 @@ void LightNode::onEditClicked(){
     PARAM_UPDATE_INFO info;
 
     auto camera = *(scene->camera.get());
-    auto original_pos = glm::vec3(camera.m_lodcenter);
+    auto original_pos = glm::vec3(camera.m_pos);
 //    auto pos = glm::normalize(glm::vec3(camProp[0], camProp[1], camProp[2]));
-    auto view = -1.0f * glm::normalize(camera.m_lodfront);
-    auto up = glm::normalize(camera.m_lodup);
+    auto view = -1.0f * glm::normalize(camera.get_lodfront());
+    auto up = glm::normalize(camera.get_lodup());
     auto right = glm::normalize(glm::cross(up, view));
 
     glm::mat3 rotation(right, up, view);

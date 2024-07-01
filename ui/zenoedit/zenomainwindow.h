@@ -56,6 +56,7 @@ public:
     bool isOnlyOptixWindow() const;
     bool isRecordByCommandLine() const;
     void openFileAndUpdateParam(const QString& path, const QString& paramJson);
+    void statusbarShowMessage(const std::string& text, int timeout = 0) const;
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;

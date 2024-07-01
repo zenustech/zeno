@@ -441,6 +441,7 @@ extern "C" __global__ void __closesthit__radiance()
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
     prd->mask_value = mats.mask_value;
+    prd->click_pos = P;
 
     if (prd->test_distance) {
     
