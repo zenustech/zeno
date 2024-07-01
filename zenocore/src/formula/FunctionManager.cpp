@@ -180,8 +180,8 @@ namespace zeno {
         //markOrder(root, 0);
         //printSyntaxTree(root, pCtx->code);
         zeno::log_only_print(decompile(root));
-        //if (pCtx->spObject)
-        //    execute(root, pCtx);
+        if (pCtx->spObject)
+            execute(root, pCtx);
     }
 
     template <class T>
@@ -757,6 +757,11 @@ namespace zeno {
         }
 
         for (auto iter = root->children.begin(); iter != root->children.end();) {
+            if (root->type == FOR && (*iter)->type != CODEBLOCK) {
+                //不能删除for循环的迭代条件。
+                iter++;
+                continue;
+            }
             removeAttrvarDeclareAssign(*iter, pContext);
             if ((*iter)->AttrAssociateVar) {
                 iter = root->children.erase(iter);
@@ -863,16 +868,21 @@ namespace zeno {
             rightsideAttrs = parsingAttr(valNode, spOverrideStmt, pContext);
             var.attachAttrs.insert(rightsideAttrs.begin(), rightsideAttrs.end());
 
-
-            //属性变量的赋值本身一定会执行，无须添加到表达式容器里，例如：
+            //属性变量的赋值本身一定会执行，且不能添加到表达式容器里，例如：
             /*
                 @N = @P;
                 log("N.x = {}", @N.x);  //输出@N时，@N = @P已经被执行了
-            if (!zenvarNode->bAttr)
-            //这个关联到属性赋值的情况较为复杂...
-            */
-            {
 
+                还有一种情况是，不能把@N被赋值的表达式记录到其他变量的声明赋值语句容器里：
+                b = @N;
+                @N = @P;
+                b += @N;
+                log(b);
+                如果b的执行过程，又执行了@N = @P，结果又得展开for循环，而且一开始的b的赋值其实获得的@N已经是 @N=@P执行过的
+                ，可见属性的赋值依赖链非常混乱!!!，所以只能简单处理，期望用户不要有过于复杂的属性赋值操作....
+            */
+            if (!zenvarNode->bAttr)
+            {
                 auto spClonedStmt = clone(root);
                 spClonedStmt->bOverridedStmt = spOverrideStmt != nullptr;
                 var.assignStmts.push_back(spClonedStmt);
@@ -1154,12 +1164,10 @@ namespace zeno {
             return;
 
         //如果当前执行语句仅仅包含属性，则无须任何前置定义/赋值，因为属性是现值获取的
-        /*
         if (bArgsAllAttr)
         {
             allStmtsForVars.clear();
         }
-        */
 
         //去掉所有被外部覆盖掉的语句
         for (auto iter = allStmtsForVars.begin(); iter != allStmtsForVars.end();)
@@ -1180,17 +1188,6 @@ namespace zeno {
                 iter++;
             }
         }
-
-        /*
-        if (root->type == ASSIGNMENT) {
-            assert(root->children.size() == 2);
-            std::shared_ptr<ZfxASTNode> zenvarNode = root->children[0];
-            std::shared_ptr<ZfxASTNode> valNode = root->children[1];
-            if (zenvarNode->bAttr) {
-                allStmtsForVars.push_back(clone(root));
-            }
-        }
-        */
 
         //直接对所有statements在语法树的顺序进行排序
         std::sort(allStmtsForVars.begin(), allStmtsForVars.end(), [=](const auto& lhs, const auto& rhs) {
@@ -1221,11 +1218,8 @@ namespace zeno {
         }
         else {
             //把当前代码拷一份套到foreach循环的body里。
-            //属性赋值操作无须拷贝，因为已经包含在allStmtsForVars里头了。
-            if (root->type != ASSIGNMENT) {
-                auto currentExecuteStmt = clone(root);
-                appendChild(spForBody, currentExecuteStmt);
-            }
+            auto currentExecuteStmt = clone(root);
+            appendChild(spForBody, currentExecuteStmt);
         }
 
         //在each里声明所有属性变量

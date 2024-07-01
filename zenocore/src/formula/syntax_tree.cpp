@@ -531,6 +531,8 @@ namespace zeno {
             case MINUS: op = "-"; break;
             case MUL: op = "*"; break;
             case DIV: op = "/"; break;
+            case AND: op = "&&"; break;
+            case OR: op = "||"; break;
             default:
                 op = "what?";
             }
