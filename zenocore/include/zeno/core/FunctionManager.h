@@ -12,14 +12,14 @@ namespace zeno {
 
     struct ZfxVariable
     {
-        zfxvariant value;
-        std::set<std::string> attachAttrs;
-        std::vector<std::shared_ptr<ZfxASTNode>> assignStmts;
-        bool bAttrUpdated = false;
+        std::vector<zfxvariant> value;  //如果是属性变量(bAttr=true)，那这个容器的大小就是runover（点线面）的元素个数，否则就是size=1
+        bool bAttr = false;     //是否与属性关联（好像没什么用）
+        bool bAttrUpdated = false;      //ZfxVariable也记录属性值（比如@P, @N @ptnum等），此标记记录在zfx执行中，属性值是否修改了
     };
 
     using VariableTable = std::map<std::string, ZfxVariable>;
     using ZfxVarRef = VariableTable::const_iterator;
+    using ZfxElemFilter = std::vector<char>;
 
     struct ZfxStackEnv
     {
@@ -42,32 +42,33 @@ namespace zeno {
     private:
         void init();
         float callRef(const std::string& ref, ZfxContext* pContext);
-        zfxvariant eval(const std::string& func, const std::vector<zfxvariant>& args, ZfxContext* pContext);
+        ZfxVariable eval(const std::string& func, const std::vector<ZfxVariable>& args, ZfxElemFilter& filter, ZfxContext* pContext);
         void pushStack();
         void popStack();
         void updateGeomAttr(const std::string& attrname, zfxvariant value, operatorVals op, zfxvariant opval, ZfxContext* pContext);
+        bool hasTrue(const ZfxVariable& cond, const ZfxElemFilter& filter, ZfxElemFilter& newFilter) const;
 
-        zfxvariant getVariable(const std::string& name) const;
-        ZfxVariable& getVariableRef(const std::string& name);
-        bool declareVariable(const std::string& name, zfxvariant var = zfxvariant());
-        bool declareVariable(const std::string& name, ZfxVariable var);
-        bool assignVariable(const std::string& name, ZfxVariable var);
-        void validateVar(operatorVals varType, zfxvariant& newvar);
-        zfxvariant parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxContext* pContext);
-        zfxvariant execute(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
+        ZfxVariable& getVariableRef(const std::string& name, ZfxContext* pContext);
+        bool declareVariable(const std::string& name);
+        bool assignVariable(const std::string& name, ZfxVariable var, ZfxContext* pContext);
+        void validateVar(operatorVals varType, ZfxVariable& newvar);
+        ZfxVariable parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxElemFilter& filter, ZfxContext* pContext);
+        ZfxVariable execute(std::shared_ptr<ZfxASTNode> root, ZfxElemFilter& filter, ZfxContext* pContext);
         std::set<std::string> parsingAttr(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
         void removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
         void embeddingForeach(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
         void getDependingVariables(const std::string& assignedVar, std::set<std::string>& vars);
-        std::vector<zfxvariant> process_args(std::shared_ptr<ZfxASTNode> parent, ZfxContext* pContext);
+        std::vector<ZfxVariable> process_args(std::shared_ptr<ZfxASTNode> parent, ZfxElemFilter& filter, ZfxContext* pContext);
         bool removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs);
         bool isEvalFunction(const std::string& funcname);
 
+        ZfxVariable getAttrValue(const std::string& attrname, ZfxContext* pContext);
+        void commitToPrim(const std::string& attrname, const ZfxVariable& val, ZfxElemFilter& filter, ZfxContext* pContext);
         zfxvariant getCurrentAttrValue(const std::string& attrname, ZfxContext* pContext);
         void enumNextElement(ZfxContext* pContext);
         bool continueToRunover(ZfxContext* pContext);
-        void commitToPrim(ZfxContext* pContext);
 
+        VariableTable m_globalAttrCached;
         std::map<std::string, FUNC_INFO> m_funcs;
         std::vector<ZfxStackEnv> m_stacks;
     };
