@@ -1,0 +1,136 @@
+#pragma once
+
+#include <cstring>
+#include <cstdint>
+#include <cstdlib>
+#include <new>
+#include <initializer_list> // Sadly we can't impl initializer_list by ourselves
+#include "reflect/macro.hpp"
+#include "reflect/polyfill.hpp"
+#include "reflect/traits/move.hpp"
+#include "reflect/traits/reference.hpp"
+#include "reflect/utils/assert"
+
+namespace zeno
+{
+namespace reflect
+{
+    template <typename T>
+    class ArrayList {
+    private:
+        void* m_data;
+        size_t m_size;
+        size_t m_capacity;
+
+        void resize_internal() {
+            size_t new_capacity = 8;
+            if (m_capacity != 0) {
+                new_capacity = m_capacity * 2;
+            }
+            T* new_data = static_cast<T*>(malloc(sizeof(T) * new_capacity));
+            for (size_t i = 0; i < m_size; ++i) {
+                new_data[i] = zeno::reflect::move(static_cast<T*>(m_data)[i]);
+            }
+            free(m_data);
+            m_data = new_data;
+            m_capacity = new_capacity;
+        }
+    public:
+        ArrayList(size_t init_size = 1) : m_size(0), m_capacity(init_size > 0 ? init_size : 1), m_data(malloc(sizeof(T) * (init_size > 0 ? init_size : 1))) {
+            memset(m_data, 0, init_size * sizeof(T));
+        }
+
+        ArrayList(std::initializer_list<T> init) : m_size(0), m_capacity(init.size()), m_data(malloc(sizeof(T) * init.size())) {
+            for (const T& item : init) {
+                add_item(zeno::reflect::move( const_cast<T&>(item) ));
+            }
+        }
+
+        ~ArrayList() {
+            free(m_data);
+        }
+
+        ArrayList(const ArrayList& other) : m_size(other.m_size), m_capacity(other.m_capacity), m_data(malloc(sizeof(T) * other.m_capacity)) {
+            for (size_t i = 0; i < other.m_size; ++i) {
+                static_cast<T*>(m_data)[i] = static_cast<T*>(other.m_data)[i];
+            }
+        }
+        ArrayList(ArrayList&& other) noexcept : m_data(other.m_data), m_size(other.m_size), m_capacity(other.m_capacity) {
+            other.m_data = nullptr;
+            other.m_size = 0;
+            other.m_capacity = 0;
+        }
+
+        LIBREFLECT_INLINE bool is_valid_index(size_t index) const {
+            return index < m_size;
+        }
+
+        size_t add_item(const T& value) {
+            if (m_size == m_capacity) {
+                resize_internal();
+            }
+            new (static_cast<T*>(m_data) + m_size) T(value);
+            return m_size++;
+        }
+
+        size_t add_item(T&& value) {
+            if (m_size == m_capacity) {
+                resize_internal();
+            }
+            new (static_cast<T*>(m_data) + m_size) T(zeno::reflect::forward<T>(value));
+            return m_size++;
+        }
+
+        size_t remove_last() {
+            if (m_size > 0) {
+                --m_size;
+            }
+            return m_size;
+        }
+
+        void remove_at(size_t index) {
+            if (is_valid_index(index)) {
+                for (size_t i = index; i < m_size - 1; ++i) {
+                    static_cast<T*>(m_data)[i] = zeno::reflect::move(static_cast<T*>(m_data)[i + 1]);
+                }
+            }
+        }
+
+        LIBREFLECT_INLINE T& operator[](size_t index) {
+            ZENO_CHECK(is_valid_index(index));
+            return static_cast<T*>(m_data)[index];
+        }
+
+        LIBREFLECT_INLINE const T& operator[](size_t index) const {
+            ZENO_CHECK(is_valid_index(index));
+            return static_cast<T*>(m_data)[index];
+        }
+
+        LIBREFLECT_INLINE size_t size() const {
+            return m_size;
+        }
+
+        LIBREFLECT_INLINE size_t capacity() const {
+            return m_capacity;
+        }
+
+        template <typename... Ts>
+        size_t emplace_item(Ts&&... vals) {
+            if (m_size == m_capacity) {
+                resize_internal();
+            }
+            new (static_cast<T*>(m_data) + m_size) T(zeno::reflect::forward<Ts>(vals)...);
+            return m_size++;
+        }
+
+        T* begin() const {
+            return static_cast<T*>(m_data);
+        }
+
+        T* end() const {
+            return static_cast<T*>(m_data) + m_size;
+        }
+    };
+}
+}
+

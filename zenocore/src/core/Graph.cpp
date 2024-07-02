@@ -22,6 +22,7 @@
 #include <regex>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -123,7 +124,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         std::regex pattern("\\$F");
         if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
             frame_nodes.insert(uuid);
-            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", GV_INT);
+            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
         }
     }
     else if (Param_Vec2f == spParam->type) {
@@ -138,7 +139,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", GV_INT);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }
@@ -155,7 +156,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", GV_INT);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }
@@ -172,7 +173,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", GV_INT);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }

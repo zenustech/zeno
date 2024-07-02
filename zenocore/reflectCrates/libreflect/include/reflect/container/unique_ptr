@@ -1,0 +1,75 @@
+#pragma once
+
+#include "reflect/traits/move.hpp"
+#include "reflect/traits/enable_if.hpp"
+
+namespace zeno
+{
+namespace reflect
+{
+    template<typename T>
+    class UniquePtr {
+    private:
+        T* ptr;
+
+    public:
+        template <typename U = T>
+        explicit UniquePtr(U* p = nullptr) : ptr(p) {}
+
+        UniquePtr(const UniquePtr&) = delete;
+        UniquePtr& operator=(const UniquePtr&) = delete;
+
+        UniquePtr(UniquePtr&& moving) noexcept : ptr(moving.ptr) {
+            moving.ptr = nullptr;
+        }
+
+        UniquePtr& operator=(UniquePtr&& moving) noexcept {
+            if (this != &moving) {
+                delete ptr;
+                ptr = moving.ptr;
+                moving.ptr = nullptr;
+            }
+            return *this;
+        }
+
+        ~UniquePtr() {
+            delete ptr;
+        }
+
+        T& operator*() const { return *ptr; }
+        T* operator->() const { return ptr; }
+
+        T* get() const { return ptr; }
+
+        T* release() {
+            T* temp = ptr;
+            ptr = nullptr;
+            return temp;
+        }
+
+        void reset(T* p = nullptr) {
+            T* old = ptr;
+            ptr = p;
+            delete old;
+        }
+
+        bool is_null() const { return ptr == nullptr; }
+
+        operator bool() {
+            return is_null();
+        }
+
+        template <typename U, typename = TTEnableIf<VTIsAssignable<U, T>>>
+        operator UniquePtr<U>() {
+            return UniquePtr<U>(release());
+        }
+    };
+
+    template <typename T, typename... Args>
+    UniquePtr<T> make_unique(Args&&... args) {
+        return UniquePtr<T>(new T(zeno::reflect::forward<Args>(args)...));
+    }
+
+}
+}
+

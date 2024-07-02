@@ -1,5 +1,6 @@
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/core/INode.h>
+#include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
 
 namespace zeno {
@@ -27,11 +28,11 @@ namespace zeno {
         }
         auto it = GlobalVariables.find(var.name);
         if (it == GlobalVariables.end()) {
-            GlobalVariables.insert(std::make_pair(var.name, OverrdeVector(std::stack<GVariable>({var}), var.gvarType) ));
+            GlobalVariables.insert(std::make_pair(var.name, OverrdeVector(std::stack<GVariable>({var}), var.gvar.type()) ));
             return true;
         }
         else {
-            if (it->second.variableType == var.gvarType) {
+            if (it->second.variableType.equal_fast(var.gvar.type())) {
                 it->second.stack.push(var);
                 return true;
             }
@@ -56,7 +57,7 @@ namespace zeno {
         } 
     }
 
-    zvariant GlobalVariableStack::getVariable(std::string varname)
+    zeno::reflect::Any GlobalVariableStack::getVariable(std::string varname)
     {
         auto it = GlobalVariables.find(varname);
         if (it != GlobalVariables.end()) {
@@ -64,53 +65,7 @@ namespace zeno {
                 return it->second.stack.top().gvar;
             }
         }
-        return zvariant();
-    }
-
-    GVariable::GVariable(std::string globalvarName, zvariant globalvar) : name(globalvarName), gvar(globalvar)
-    {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int>) {
-            gvarType = GV_INT;
-        }
-        else if constexpr (std::is_same_v<T, float>) {
-            gvarType = GV_FLOAT;
-        }
-        else if constexpr (std::is_same_v<T, std::string>) {
-            gvarType = GV_STRING;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2i>) {
-            gvarType = GV_VEC2I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2f>) {
-            gvarType = GV_VEC2F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3i>) {
-            gvarType = GV_VEC3I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3f>) {
-            gvarType = GV_VEC3F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4i>) {
-            gvarType = GV_VEC4I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4f>) {
-            gvarType = GV_VEC4F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2s>) {
-            gvarType = GV_VEC2S;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3s>) {
-            gvarType = GV_VEC3S;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4s>) {
-            gvarType = GV_VEC4S;
-        }
-        else {
-            gvarType = GV_UNDEFINE;
-        }
-        }, gvar);
+        return zeno::reflect::Any();
     }
 
     void GlobalVariableManager::propagateDirty(std::weak_ptr<INode> wpCurrNode, GVariable globalvar)
@@ -124,7 +79,7 @@ namespace zeno {
                 if (it != globalVariablesNameTypeMap.end())
                 {
                     for (auto& [name, type] : it->second) {
-                        if (name == globalvar.name && type == globalvar.gvarType) {
+                        if (name == globalvar.name && type.equal_fast(globalvar.gvar.type())) {
                             if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
                                 mark_dirty_by_dependNodes(node, true, upstreams);
                             }
@@ -314,12 +269,12 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::addDependGlobalVaraible(ObjPath nodepath, std::string name, GlobalVariableType type)
+    void GlobalVariableManager::addDependGlobalVaraible(ObjPath nodepath, std::string name, zeno::reflect::RTTITypeInfo type)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it == globalVariablesNameTypeMap.end())
         {
-            globalVariablesNameTypeMap.insert({ nodepath, std::map<std::string, GlobalVariableType>{ {name, type}} });
+            globalVariablesNameTypeMap.insert({ nodepath, std::map<std::string, zeno::reflect::RTTITypeInfo>{ {name, type}} });
         }
         else {
             it->second.insert({name, type});
@@ -341,12 +296,12 @@ namespace zeno {
         globalVariableStack.cancelOverride(varname, cancelVar);
     }
 
-    zeno::zvariant GlobalVariableManager::getVariable(std::string varname)
+    zeno::reflect::Any GlobalVariableManager::getVariable(std::string varname)
     {
         return globalVariableStack.getVariable(varname);
     }
 
-    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> node, std::string gvarName, zvariant var) : currNode(node)
+    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> wknode, std::string gvarName, zeno::reflect::Any var): currNode(wknode)
     {
         gvar = GVariable(gvarName, var);
         overrideSuccess = zeno::getSession().globalVariableManager->overrideVariable(gvar);

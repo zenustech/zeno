@@ -169,19 +169,19 @@ void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus s
     }
 }
 
-ZENO_API zeno::zvariant Session::getGlobalVarialbe(std::string name)
+ZENO_API zeno::reflect::Any Session::getGlobalVarialbe(std::string name)
 {
     return globalVariableManager->getVariable(name);
 }
 
-ZENO_API bool Session::overrideGlobalVariable(std::string name, zvariant var)
+ZENO_API bool Session::overrideGlobalVariable(std::string name, zeno::reflect::Any var)
 {
-    return globalVariableManager->overrideVariable(zeno::GVariable(name, var));
+    return globalVariableManager->overrideVariable(zeno::GVariable(name, zeno::reflect::move(var)));
 }
 
-ZENO_API bool Session::updateGlobalVariable(std::string name, zvariant var)
+ZENO_API bool Session::updateGlobalVariable(std::string name, zeno::reflect::Any var)
 {
-    return globalVariableManager->updateVariable(GVariable("$F", var));
+    return globalVariableManager->updateVariable(GVariable(name, zeno::reflect::move(var)));
 }
 
 ZENO_API int Session::registerObjId(const std::string& objprefix)

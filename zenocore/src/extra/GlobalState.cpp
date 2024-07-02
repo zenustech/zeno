@@ -2,6 +2,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/utils/logger.h>
+#include "reflect/reflection.generated.hpp"
 
 namespace zeno {
 
@@ -50,14 +51,14 @@ ZENO_API void GlobalState::clearState() {
 }
 
 ZENO_API int GlobalState::getFrameId() const {
-    auto frame = getSession().getGlobalVarialbe("$F");
-    return std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0;
+    zeno::reflect::Any frame = getSession().getGlobalVarialbe("$F");
+    return frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0;
     //return frameid;
 }
 
 ZENO_API void GlobalState::updateFrameId(int frame) {
     //todo: mutex
-    getSession().updateGlobalVariable("$F", frame);
+    getSession().updateGlobalVariable("$F", zeno::reflect::make_any<int>(frame));
     //frameid = frame;
 }
 
