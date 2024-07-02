@@ -1,7 +1,17 @@
+
 set(RELFECTION_GENERATION_ROOT_TARGET _Reflection_ROOT CACHE INTERNAL "Reflection generator dependencies for all targets")
 if(NOT TARGET _Reflection_ROOT)
     add_custom_target(${RELFECTION_GENERATION_ROOT_TARGET})
 endif()
+
+macro(make_absolute_paths out_var)
+    set(result_list)
+    foreach(path ${ARGN})
+        get_filename_component(abs_path "${path}" ABSOLUTE)
+        list(APPEND result_list "${abs_path}")
+    endforeach()
+    set(${out_var} "${result_list}")
+endmacro()
 
 function (zeno_get_target_property target property result)
     # IDK why with get_target_property only might lead to NOT_FOUND result
@@ -13,15 +23,6 @@ function (zeno_get_target_property target property result)
         set(${result} "")
     endif()
 endfunction(zeno_get_target_property)
-
-macro(make_absolute_paths out_var)
-    set(result_list)
-    foreach(path ${ARGN})
-        get_filename_component(abs_path "${path}" ABSOLUTE)
-        list(APPEND result_list "${abs_path}")
-    endforeach()
-    set(${out_var} "${result_list}")
-endmacro()
 
 function (get_target_include_dirs_recursive target result)
     # Get include dirs from a target recursive
@@ -45,7 +46,7 @@ endfunction(get_target_include_dirs_recursive)
 
 set(INTERMEDIATE_FILE_BASE_DIR "${CMAKE_BINARY_DIR}/intermediate")
 
-function(zeno_declare_reflection_support target reflection_headers LIBREFLECT_PCH_PATH ZENO_REFLECTION_GENERATED_HEADERS_DIR)
+function(zeno_declare_reflection_support target reflection_headers)
     # Call this function after all target source has been added
     set(splitor ",")
 
@@ -75,7 +76,7 @@ function(zeno_declare_reflection_support target reflection_headers LIBREFLECT_PC
         WORKING_DIRECTORY
             ${CMAKE_CURRENT_BINARY_DIR}
         COMMAND 
-            $<TARGET_FILE:ZenoReflect::generator> --include_dirs=\"$<JOIN:${INCLUDE_DIRS},${splitor}>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}\" --pre_include_header="${LIBREFLECT_PCH_PATH}" --input_source=\"${source_paths_string}\" --header_output="${ZENO_REFLECTION_GENERATED_HEADERS_DIR}" --stdc++=${CMAKE_CXX_STANDARD} $<IF:$<CONFIG:Debug>,-v,> --generated_source_path="${INTERMEDIATE_ALL_IN_ONE_FILE}"
+            $<TARGET_FILE:ZenoReflect::generator> --include_dirs=\"$<JOIN:${INCLUDE_DIRS},${splitor}>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}\" --pre_include_header="${LIBREFLECT_PCH_PATH}" --input_source=\"${source_paths_string}\" --header_output="${ZENO_REFLECTION_GENERATED_HEADERS_DIR}" --stdc++=${CMAKE_CXX_STANDARD} $<IF:$<CONFIG:Debug>,-v,> --generated_source_path="${INTERMEDIATE_ALL_IN_ONE_FILE}" --target_name="${target}"
         SOURCES 
             ${reflection_headers} 
         COMMENT 
@@ -83,5 +84,4 @@ function(zeno_declare_reflection_support target reflection_headers LIBREFLECT_PC
     )
     add_dependencies(${RELFECTION_GENERATION_ROOT_TARGET} ${REFLECTION_GENERATION_TARGET})
     add_dependencies(${target} ${RELFECTION_GENERATION_ROOT_TARGET})
-
 endfunction()

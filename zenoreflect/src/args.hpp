@@ -10,6 +10,7 @@ struct ControlFlags : public argparse::Args {
     bool& verbose = flag("v,verbose", "Print extra information");
     std::vector<std::string>& include_dirs = kwarg("I,include_dirs", "Include directories").multi_argument().set_default(std::vector<std::string>{});
     std::vector<std::string>& pre_include_headers = kwarg("H,pre_include_header", "Automatic place those headers in all sources").set_default(std::vector<std::string>{});
+    std::string& target_name = kwarg("T,target_name", "Target name of generating target");
 };
 
 ControlFlags parse_args(int argc, char** argv);

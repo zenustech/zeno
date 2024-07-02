@@ -42,6 +42,16 @@ size_t zeno::reflect::RTTITypeInfo::hash_code() const
     return m_hashcode;
 }
 
+size_t zeno::reflect::RTTITypeInfo::flags() const
+{
+    return m_flags;
+}
+
+bool zeno::reflect::RTTITypeInfo::has_flags(size_t in_flags) const
+{
+    return m_flags & in_flags;
+}
+
 REFLECT_STATIC_CONSTEXPR bool zeno::reflect::RTTITypeInfo::equal_fast(const RTTITypeInfo &other) const
 {
     return hash_code() == other.hash_code();

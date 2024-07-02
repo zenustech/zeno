@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Building library and executable in same directory to avoid "dll not found" problem in Windows
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
+
 set(REFLECTION_CMAKE_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 include(cmake/FindPackages.cmake)

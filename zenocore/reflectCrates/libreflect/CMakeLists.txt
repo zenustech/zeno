@@ -1,5 +1,5 @@
 
-add_library(zenocorelibreflect SHARED
+add_library(zenocoreLibreflect SHARED
     src/reflect.cpp
     src/registry.cpp
     src/typeinfo.cpp
@@ -9,12 +9,12 @@ add_library(zenocorelibreflect SHARED
     src/impl/exit.cpp
     src/impl/metadata.cpp
 )
-target_include_directories(zenocorelibreflect PUBLIC include)
-target_include_directories(zenocorelibreflect PRIVATE include/reflect)
-target_compile_definitions(zenocorelibreflect PRIVATE "LIBREFLECT_EXPORTS=1")
+target_include_directories(zenocoreLibreflect PUBLIC include)
+target_include_directories(zenocoreLibreflect PRIVATE include/reflect)
+target_compile_definitions(zenocoreLibreflect PRIVATE "LIBREFLECT_EXPORTS=1")
 
 set(PRE_INCLUDE_HEADER "${CMAKE_CURRENT_LIST_DIR}/include/reflect/core.hpp")
-#target_precompile_headers(zenocorelibreflect PUBLIC ${PRE_INCLUDE_HEADER})
-get_target_property(LIBREFLECT_INCLUDE_DIRS zenocorelibreflect INCLUDE_DIRECTORIES)
+# target_precompile_headers(zenocoreLibreflect PUBLIC ${PRE_INCLUDE_HEADER})
+get_target_property(LIBREFLECT_INCLUDE_DIRS zenocoreLibreflect INCLUDE_DIRECTORIES)
 set(LIBREFLECT_INCLUDE_DIRS ${LIBREFLECT_INCLUDE_DIRS} CACHE INTERNAL "LIBREFLECT_INCLUDE_DIRS")
 set(LIBREFLECT_PCH_PATH ${PRE_INCLUDE_HEADER} CACHE INTERNAL "Reflection PCH path")

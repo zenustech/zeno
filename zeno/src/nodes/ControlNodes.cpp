@@ -7,6 +7,9 @@
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/utils/safe_at.h>
 
+#include <zeno/core/GlobalVariable.h>
+#include "reflect/reflection.generated.hpp"
+
 namespace zeno {
 
 struct IBeginFor : zeno::INode {
@@ -368,9 +371,9 @@ struct TimeShift : zeno::INode {
         ParamPrimitive param = get_input_prim_param("offset");
         int offset = std::get<int>(param.defl);
         //∏≤∏«$F
-        zvariant frame = getSession().getGlobalVarialbe("$F");
-        int currFrame = (std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", currFrame >= 0 ? currFrame : 0);
+        zeno::reflect::Any frame = getSession().getGlobalVarialbe("$F");
+        int currFrame = (frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<int>(currFrame));
         //º∆À„…œ”Œ
         INode::preApply();
     }

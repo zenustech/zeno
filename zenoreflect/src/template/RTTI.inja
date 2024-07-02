@@ -1,6 +1,8 @@
 R"INJA(
 ///////////////////////////
 /// Begin RTTI of "{{ cppType }}"
+#ifndef _REFLECT_RTTI_GUARD_{{- name_normalized -}}_{{- hash }}
+#define _REFLECT_RTTI_GUARD_{{- name_normalized -}}_{{- hash }} 1
 {{ default(forwordDecl, "") }}
 namespace zeno
 {
@@ -11,12 +13,18 @@ namespace reflect
         static REFLECT_STATIC_CONSTEXPR RTTITypeInfo s = {
             "{{ name }}",
             {{ hash }}ULL,
-            static_cast<size_t>({%- if isPointer -%}TF_IsPointer | {%- endif -%} TF_None )
+            static_cast<size_t>(
+                {% if isPointer -%}TF_IsPointer | {%- endif -%} 
+                {% if isConst -%}TF_IsConst | {%- endif -%} 
+                {% if isRValueRef -%}TF_IsRValueRef | {%- endif -%} 
+                {% if isLValueRef -%}TF_IsLValueRef | {%- endif -%} 
+                TF_None )
         };
         return s;
     }
 }
 }
+#endif // _REFLECT_RTTI_GUARD_{{- name_normalized -}}_{{- hash }}
 /// End RTTI of "{{ cppType }}"
 ///////////////////////////
 )INJA";

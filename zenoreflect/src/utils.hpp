@@ -19,6 +19,7 @@ namespace clang {
     class CXXRecordDecl;
     class QualType;
     class Decl;
+    class Type;
 }
 
 namespace zeno {
@@ -44,6 +45,8 @@ std::vector<std::string_view> split(std::string_view str, std::string_view delim
 std::string get_file_path_in_header_output(std::string_view filename);
 std::string relative_path_to_header_output(std::string_view abs_path);
 void truncate_file(const std::string& path);
+bool mkdirs(std::string_view path);
+std::vector<std::string> find_files_with_extension(std::string_view root, std::string_view extension);
 
 std::string normalize_filename(std::string_view input);
 std::string convert_to_valid_cpp_var_name(std::string_view type_name);
@@ -56,6 +59,8 @@ inja::json parse_param_data(const clang::FieldDecl* param_decl);
 inja::json parse_metadata(const MetadataContainer& metadata);
 bool parse_metadata(inja::json& out, const clang::Decl* decl);
 bool parse_metadata(std::string& out, const clang::Decl* decl);
+
+const clang::Type* get_underlying_type(const clang::Type* type);
 
 namespace internal {
     template <typename T>

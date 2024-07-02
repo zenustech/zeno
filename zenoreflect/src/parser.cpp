@@ -29,7 +29,9 @@ ParserErrorCode generate_reflection_model(const TranslationUnit &unit, Reflectio
     out_model.debug_name = unit.identity_name;
     std::vector<std::string> args = zeno::reflect::get_parser_command_args(GLOBAL_CONTROL_FLAGS->cpp_version, GLOBAL_CONTROL_FLAGS->include_dirs, GLOBAL_CONTROL_FLAGS->pre_include_headers, GLOBAL_CONTROL_FLAGS->verbose);
 
-    const std::string gen_template_header_path = zeno::reflect::get_file_path_in_header_output(std::format("reflect/{}.generated.hpp", zeno::reflect::normalize_filename(unit.identity_name)));
+    const std::string template_header_dir = zeno::reflect::get_file_path_in_header_output(std::format("reflect/{}", GLOBAL_CONTROL_FLAGS->target_name));
+    const std::string gen_template_header_path = std::format("{}/{}.generated.hpp", template_header_dir, zeno::reflect::normalize_filename(unit.identity_name));
+    zeno::reflect::mkdirs(template_header_dir);
     zeno::reflect::truncate_file(gen_template_header_path);
     out_model.generated_headers.insert(gen_template_header_path);
 
@@ -47,11 +49,16 @@ ParserErrorCode generate_reflection_model(const TranslationUnit &unit, Reflectio
 
 ParserErrorCode post_generate_reflection_model(const ReflectionModel &model, const zeno::reflect::CodeCompilerState& state)
 {
+    const std::string generated_header_dir = zeno::reflect::get_file_path_in_header_output("reflect");
     const std::string generated_header_path = zeno::reflect::get_file_path_in_header_output("reflect/reflection.generated.hpp");
     std::ofstream ghp_stream(generated_header_path, std::ios::out | std::ios::trunc);
     ghp_stream << "#pragma once" << "\r\n";
-    for (const std::string& s : model.generated_headers) {
-        ghp_stream << std::format("#include \"{}\"", zeno::reflect::relative_path_to_header_output(s)) << "\r\n";
+    auto header_list = zeno::reflect::find_files_with_extension(generated_header_dir, ".hpp");
+    for (const std::string& s : header_list) {
+        const auto relative_path = zeno::reflect::relative_path_to_header_output(s);
+        if (zeno::reflect::relative_path_to_header_output(generated_header_path) != relative_path) {
+            ghp_stream << std::format("#include \"{}\"", relative_path) << "\r\n";
+        }
     }
 
     const std::string generated_target_source = GLOBAL_CONTROL_FLAGS->target_type_register_source_path;
@@ -69,23 +76,17 @@ ParserErrorCode pre_generate_reflection_model()
     return ParserErrorCode::Success;
 }
 
-TypeAliasMatchCallback::TypeAliasMatchCallback(ReflectionASTConsumer *context) : m_context(context) {}
+TemplateSpecializationMatchCallback::TemplateSpecializationMatchCallback(ReflectionASTConsumer *context) : m_context(context) {}
 
-void TypeAliasMatchCallback::run(const MatchFinder::MatchResult &result)
+void TemplateSpecializationMatchCallback::run(const MatchFinder::MatchResult &result)
 {
-    const TypeDecl* decll = nullptr;
-    QualType underlying_type;
-    if (const TypedefDecl* decl = result.Nodes.getNodeAs<TypedefDecl>(ASTLabels::TYPEDEF_LABEL)) {
-        underlying_type = decl->getUnderlyingType();
-        decll = decl;
-    } else if (const TypeAliasDecl* decl = result.Nodes.getNodeAs<TypeAliasDecl>(ASTLabels::TYPE_ALIAS_LABEL)) {
-        underlying_type = decl->getUnderlyingType();
-        decll = decl;
-    }
-
-    if (decll && m_context) {
-        // zeno::reflect::RTTITypeGenerator rtti(underlying_type);
-        // m_context->template_header_generator.add_rtti_block(rtti);
+    if (const ClassTemplateSpecializationDecl* spec_decl = result.Nodes.getNodeAs<ClassTemplateSpecializationDecl>(ASTLabels::TEMPLATE_SPECIALIZATION)) {
+        if (spec_decl->getSpecializedTemplate() && spec_decl->getSpecializedTemplate()->getNameAsString() == "_manual_register_rtti_type_internal") {
+            if (spec_decl->getTemplateArgs().size() == 1 && m_context) {
+                QualType type = spec_decl->getTemplateArgs().get(0).getAsType();
+                m_context->template_header_generator.add_rtti_type(type);
+            }
+        }
     }
 }
 
@@ -281,12 +282,10 @@ void ReflectionASTConsumer::HandleTranslationUnit(ASTContext &context)
 
     const std::string& gen_template_header_path = m_header_path;
 
-    // MatchFinder type_alias_finder{};
-    // DeclarationMatcher typealias_matcher = typeAliasDecl().bind(ASTLabels::TYPE_ALIAS_LABEL);
-    // DeclarationMatcher typedef_matcher = typedefDecl().bind(ASTLabels::TYPEDEF_LABEL);
-    // type_alias_finder.addMatcher(typealias_matcher, type_alias_handler.get());
-    // type_alias_finder.addMatcher(typedef_matcher, type_alias_handler.get());
-    // type_alias_finder.matchAST(context);
+    MatchFinder manual_rtti_register_finder{};
+    DeclarationMatcher template_spec_matcher = classTemplateSpecializationDecl().bind(ASTLabels::TEMPLATE_SPECIALIZATION);
+    manual_rtti_register_finder.addMatcher(template_spec_matcher, template_specialization_handler.get());
+    manual_rtti_register_finder.matchAST(context);
 
     DeclarationMatcher record_type_matcher = cxxRecordDecl().bind(ASTLabels::RECORD_LABEL);
     MatchFinder record_finder{};

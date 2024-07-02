@@ -68,12 +68,13 @@ struct ASTLabels {
     inline static const char* RECORD_LABEL = "cxxRecord";
     inline static const char* TYPEDEF_LABEL = "typedef";
     inline static const char* TYPE_ALIAS_LABEL = "typeAlias";
+    inline static const char* TEMPLATE_SPECIALIZATION = "templateSpecialization";
 };
 
 class ReflectionASTConsumer;
 
-struct TypeAliasMatchCallback : public clang::ast_matchers::MatchFinder::MatchCallback {
-    TypeAliasMatchCallback(ReflectionASTConsumer* context);
+struct TemplateSpecializationMatchCallback : public clang::ast_matchers::MatchFinder::MatchCallback {
+    TemplateSpecializationMatchCallback(ReflectionASTConsumer* context);
 
     void run(const clang::ast_matchers::MatchFinder::MatchResult &result) override;
 
@@ -103,7 +104,7 @@ public:
     clang::ASTContext* scoped_context = nullptr;
 private:
     std::unique_ptr<RecordTypeMatchCallback> record_type_handler = std::make_unique<RecordTypeMatchCallback>(this);
-    std::unique_ptr<TypeAliasMatchCallback> type_alias_handler = std::make_unique<TypeAliasMatchCallback>(this);
+    std::unique_ptr<TemplateSpecializationMatchCallback> template_specialization_handler = std::make_unique<TemplateSpecializationMatchCallback>(this);
 
     std::unordered_map<std::string, clang::QualType> type_name_mapping;
     zeno::reflect::CodeCompilerState& m_compiler_state;

@@ -15,6 +15,9 @@ namespace reflect
     enum TypeFlag {
         TF_None = 0,
         TF_IsPointer = 1 << 0,
+        TF_IsRValueRef = 1 << 1,
+        TF_IsLValueRef = 1 << 2,
+        TF_IsConst = 1 << 3,
     };
 
     class LIBREFLECT_API RTTITypeInfo {
@@ -29,6 +32,8 @@ namespace reflect
 
         const char* name() const;
         size_t hash_code() const;
+        size_t flags() const;
+        bool has_flags(size_t in_flags) const;
 
         /**
          * Compare two type info using hash code.
@@ -87,3 +92,32 @@ namespace reflect
     }
 }
 }
+
+#ifndef _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146
+#define _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146 1
+namespace zeno
+{
+namespace reflect
+{
+    class Any;
+}
+}
+
+
+namespace zeno
+{
+namespace reflect
+{
+    template <>
+    REFLECT_STATIC_CONSTEXPR const RTTITypeInfo& type_info<class zeno::reflect::Any>() {
+        static REFLECT_STATIC_CONSTEXPR RTTITypeInfo s = {
+            "class zeno::reflect::Any",
+            15554020952442124146ULL,
+            static_cast<size_t>(
+                TF_None )
+        };
+        return s;
+    }
+}
+}
+#endif // _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146

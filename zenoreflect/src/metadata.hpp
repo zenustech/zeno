@@ -5,6 +5,9 @@
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <map>
+#include <cctype>
+#include <stdexcept>
 
 enum class MetadataType : uint8_t {
     None = 0,
@@ -14,6 +17,7 @@ enum class MetadataType : uint8_t {
     EnumValue,
     StructField,
     FunctionParameter,
+    Trait,
 };
 
 MetadataType string_to_metadata_type(const std::string& str);
@@ -27,64 +31,54 @@ struct MetadataContainer {
     std::unordered_map<std::string, Value> properties;
 };
 
-/**
- * A CFG DSL garmmar parser
-*/
-class MetadataParser {
-public:
-    static MetadataContainer parse(const std::string &in_dsl);
+MetadataContainer parse_metadata_dsl(const std::string& in_dsl);
 
-protected:
-    enum class TokenType : uint8_t {
-        Unknown = 0,
-        EndOfFile,
-        LeftBracket,
-        RightBracket,
-        Equal,
-        Comma,
-        Word,
-    };
-
-    struct Token {
-        TokenType type;
-        // inclusive
-        size_t start_range;
-        // exclusive
-        size_t end_range;
-        // Word value
-        std::optional<std::string> word_value = std::nullopt;
-    };
-
-    std::string current_text;
-
-    size_t m_pos = 0;
-    size_t m_end;
-
-    std::optional<Token> current_token;
-
-    struct {
-        int32_t is_slate: 1;
-        int32_t inside_quote: 1;
-    } m_lexer_state;
-
-    struct {
-        int32_t found_type: 1;
-        int32_t aborted: 1;
-        int32_t key_value: 1; // 0 => key, 1 => value
-        int32_t inside_bracket: 1;
-        std::stringstream key_buffer;
-        std::stringstream value_buffer;
-    } m_parser_state;
-
-protected:
-    MetadataParser(std::string in_dsl);
-    // lexer
-    Token next_token();
-    MetadataContainer run();
-
-    bool is_aborted() const;
-
-    static bool is_operator(char c);
+enum class TokenType {
+    KEY, STRING, NUMBER, LIST_START, LIST_END, EQUAL, COMMA, END
 };
 
-MetadataContainer parse_metadata_dsl(const std::string& in_dsl);
+std::string token_type_to_string(TokenType type);
+
+struct Token {
+    TokenType type;
+    std::string value;
+};
+
+class Tokenizer {
+private:
+    std::string m_origin_string;
+    std::istringstream ss;
+    char current_char;
+
+public:
+    Tokenizer(const std::string& input);
+
+    Token next_token();
+
+    const std::string& origin_string() const;
+
+private:
+    void next_char();
+    void consume_whitespace();
+
+    Token number();
+    Token key();
+    Token string();
+};
+
+class Parser {
+private:
+    Tokenizer tokenizer;
+    Token current_token;
+public:
+    Parser(const std::string& input);
+
+    std::map<std::string, std::string> parse();
+
+private:
+    void next_token();
+
+    std::string expect(TokenType token_expected);
+    std::string parse_value();
+    std::string parse_list();
+};

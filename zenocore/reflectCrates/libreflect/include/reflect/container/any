@@ -23,119 +23,8 @@ namespace any
 
 
     template <typename T>
-    class ValueContainer : public IContainer {
-    public:
-        using ValueType = T;
-
-        ValueType m_value;
-
-        template <typename U = T>
-        ValueContainer(const U& value, TTEnableIf<VTIsCopyConstructible<U>, U>* = nullptr): m_value(value) {}
-
-        template <typename U = T>
-        ValueContainer(U&& value): m_value(zeno::reflect::move(value)) {}
-
-        template <typename U, typename... Args>
-        ValueContainer(TInPlaceType<U>, Args&&... args) : m_value(zeno::reflect::forward<Args>(args)...) {}
-
-        virtual const RTTITypeInfo& type() const override {
-            return type_info<std::decay_t<ValueType>>();
-        }
-
-        virtual bool is_type(const RTTITypeInfo& other_type) const override {
-#if REFLECT_LIBRARY_ANY_FASTPATH
-            return other_type.equal_fast(other_type);
-#else
-            return other_type == this->type();
-#endif
-        }
-
-        virtual IContainer* clone() const override {
-            if REFLECT_CONSTEXPR (VTIsCopyConstructible<T>) {
-                return new ValueContainer<ValueType>(m_value);
-            } else {
-                ZENO_CHECK(VTIsCopyConstructible<T>);
-            }
-        }
-    };
-
-    template <>
-    class ValueContainer<void> : public IContainer {
-    public:
-        using ValueType = void;
-
-        virtual const RTTITypeInfo& type() const override {
-            return type_info<ValueType>();
-        }
-
-        virtual bool is_type(const RTTITypeInfo& other_type) const override {
-#if REFLECT_LIBRARY_ANY_FASTPATH
-            return other_type.equal_fast(other_type);
-#else
-            return other_type == this->type();
-#endif
-        }
-
-        virtual IContainer* clone() const override {
-            return new ValueContainer<void>();
-        }
-    };
-
-    template <typename T>
-    class ValueContainer<T*> : public IContainer {
-    public:
-        using ValueType = T*;
-        ValueType m_value;
-
-        ValueContainer(ValueType value = nullptr) : m_value(value) {}
-
-        virtual const RTTITypeInfo& type() const override {
-            return type_info<ValueType>();
-        }
-
-        virtual bool is_type(const RTTITypeInfo& other_type) const override {
-#if REFLECT_LIBRARY_ANY_FASTPATH
-            return other_type.equal_fast(this->type());
-#else
-            return other_type == this->type();
-#endif
-        }
-
-        virtual IContainer* clone() const override {
-            if REFLECT_CONSTEXPR (VTIsCopyConstructible<T*>) {
-                return new ValueContainer<ValueType>(m_value);
-            } else {
-                ZENO_CHECK(VTIsCopyConstructible<T*>);
-            }
-        }
-    };
-
-    template <>
-    class ValueContainer<void*> : public IContainer {
-    public:
-        using ValueType = void*;
-        ValueType m_value;
-
-        ValueContainer(ValueType value = nullptr) : m_value(value) {}
-
-        virtual const RTTITypeInfo& type() const override {
-            return type_info<ValueType>();
-        }
-
-        virtual bool is_type(const RTTITypeInfo& other_type) const override {
-#if REFLECT_LIBRARY_ANY_FASTPATH
-            return other_type.equal_fast(this->type());
-#else
-            return other_type == this->type();
-#endif
-        }
-
-        virtual IContainer* clone() const override {
-            return new ValueContainer<void*>(m_value);
-        }
-    };
-
-};
+    class ValueContainer;
+}
 
     template <typename T, typename... Args>
     Any make_any(Args&&... args);
@@ -172,7 +61,12 @@ namespace any
 
         template <typename T>
         Any(T&& value) {
-            emplace<std::decay_t<T>>(zeno::reflect::forward<T>(value));
+            using DecayType = std::decay_t<T>;
+            if REFLECT_FORCE_CONSTEPXR (VTIsSame<DecayType, Any>) {
+                emplace(zeno::reflect::forward<T>(value));
+            } else {
+                emplace<DecayType>(zeno::reflect::forward<T>(value));
+            }
         }
 
         template <typename T, typename... Args>
@@ -207,15 +101,30 @@ namespace any
 
         template <typename T, typename... Args>
         void emplace(Args&&... args) {
+            using DecayType = std::decay_t<T>;
+            reset();
             if REFLECT_FORCE_CONSTEPXR (VTIsPointer<T>) {
-                // TODO: Fix TTDecay
-                using DecayType = std::decay_t<T>;
-                reset();
+                m_value_container = new any::ValueContainer<DecayType>(zeno::reflect::forward<Args>(args)...);
+            } else if REFLECT_FORCE_CONSTEPXR (VTIsSame<Any, T>) {
                 m_value_container = new any::ValueContainer<DecayType>(zeno::reflect::forward<Args>(args)...);
             } else {
-                using DecayType = std::decay_t<T>;
-                reset();
                 m_value_container = new any::ValueContainer<DecayType>(TInPlaceType<DecayType>(), zeno::reflect::forward<Args>(args)...);
+            }
+        }
+
+        void emplace(Any&& any) {
+            reset();
+            if (&any != this) {
+                m_value_container = any.m_value_container;
+                any.m_value_container = nullptr;
+                any.reset();
+            }
+        }
+
+        void emplace(const Any& any) {
+            reset();
+            if (&any != this && any.m_value_container) {
+                m_value_container = any.m_value_container->clone();
             }
         }
 
@@ -337,5 +246,147 @@ namespace any
         }
         return nullptr;
     }
+
+namespace any
+{
+
+    template <typename T>
+    class ValueContainer : public IContainer {
+    public:
+        using ValueType = T;
+
+        ValueType m_value;
+
+        template <typename U = T>
+        ValueContainer(const U& value, TTEnableIf<VTIsCopyConstructible<U>, U>* = nullptr): m_value(value) {}
+
+        template <typename U = T>
+        ValueContainer(U&& value): m_value(zeno::reflect::move(value)) {}
+
+        template <typename U, typename... Args>
+        ValueContainer(TInPlaceType<U>, Args&&... args) : m_value(zeno::reflect::forward<Args>(args)...) {}
+
+        virtual const RTTITypeInfo& type() const override {
+            return type_info<std::decay_t<ValueType>>();
+        }
+
+        virtual bool is_type(const RTTITypeInfo& other_type) const override {
+#if REFLECT_LIBRARY_ANY_FASTPATH
+            return other_type.equal_fast(other_type);
+#else
+            return other_type == this->type();
+#endif
+        }
+
+        virtual IContainer* clone() const override {
+            if REFLECT_CONSTEXPR (VTIsCopyConstructible<T>) {
+                return new ValueContainer<ValueType>(m_value);
+            } else {
+                ZENO_CHECK(VTIsCopyConstructible<T>);
+            }
+        }
+    };
+
+    template <>
+    class ValueContainer<void> : public IContainer {
+    public:
+        using ValueType = void;
+
+        virtual const RTTITypeInfo& type() const override {
+            return type_info<ValueType>();
+        }
+
+        virtual bool is_type(const RTTITypeInfo& other_type) const override {
+#if REFLECT_LIBRARY_ANY_FASTPATH
+            return other_type.equal_fast(other_type);
+#else
+            return other_type == this->type();
+#endif
+        }
+
+        virtual IContainer* clone() const override {
+            return new ValueContainer<void>();
+        }
+    };
+
+    template <typename T>
+    class ValueContainer<T*> : public IContainer {
+    public:
+        using ValueType = T*;
+        ValueType m_value;
+
+        ValueContainer(ValueType value = nullptr) : m_value(value) {}
+
+        virtual const RTTITypeInfo& type() const override {
+            return type_info<ValueType>();
+        }
+
+        virtual bool is_type(const RTTITypeInfo& other_type) const override {
+#if REFLECT_LIBRARY_ANY_FASTPATH
+            return other_type.equal_fast(this->type());
+#else
+            return other_type == this->type();
+#endif
+        }
+
+        virtual IContainer* clone() const override {
+            if REFLECT_CONSTEXPR (VTIsCopyConstructible<T*>) {
+                return new ValueContainer<ValueType>(m_value);
+            } else {
+                ZENO_CHECK(VTIsCopyConstructible<T*>);
+            }
+        }
+    };
+
+    template <>
+    class ValueContainer<void*> : public IContainer {
+    public:
+        using ValueType = void*;
+        ValueType m_value;
+
+        ValueContainer(ValueType value = nullptr) : m_value(value) {}
+
+        virtual const RTTITypeInfo& type() const override {
+            return type_info<ValueType>();
+        }
+
+        virtual bool is_type(const RTTITypeInfo& other_type) const override {
+#if REFLECT_LIBRARY_ANY_FASTPATH
+            return other_type.equal_fast(this->type());
+#else
+            return other_type == this->type();
+#endif
+        }
+
+        virtual IContainer* clone() const override {
+            return new ValueContainer<void*>(m_value);
+        }
+    };
+
+    template <>
+    class ValueContainer<Any> : public IContainer {
+    public:
+        using ValueType = Any;
+        ValueType m_value;
+
+        ValueContainer(const ValueType& value) : m_value(value) {}
+
+        ValueContainer(ValueType&& value) noexcept : m_value(zeno::reflect::move(value)) {}
+
+        virtual const RTTITypeInfo& type() const override {
+            return type_info<ValueType>();
+        }
+
+        virtual bool is_type(const RTTITypeInfo& other_type) const override {
+            return other_type == this->type();
+        }
+
+        virtual IContainer* clone() const override {
+            // 使用复制构造函数来处理Any的克隆，避免递归
+            return new ValueContainer<Any>(m_value);
+        }
+    };
+
+};
 }
 }

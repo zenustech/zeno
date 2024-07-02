@@ -6,10 +6,21 @@
 #include "reflect/container/arraylist"
 #include "reflect/container/string"
 
+#define REFLECT_REGISTER_RTTI_TYPE_MANUAL(Ty) \
+    namespace zeno { \
+    namespace reflect { \
+        template <> \
+        struct _manual_register_rtti_type_internal<Ty> {}; \
+    }}
+    
+
 namespace zeno
 {
 namespace reflect 
 {
+    template <typename T>
+    struct _manual_register_rtti_type_internal {};
+
     struct internal_utils {
         static LIBREFLECT_API int32_t allocate_new_id();
     };

@@ -106,7 +106,7 @@ make_absolute_paths(REFLECTION_HEADERS
     ${headersFile}
 ) 
 zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}" "${LIBREFLECT_PCH_PATH}" "${ZENO_REFLECTION_GENERATED_HEADERS_DIR}")
-target_link_libraries(zenocore PUBLIC zenocorelibreflect zenocorelibgenerated)
+target_link_libraries(zenocore PUBLIC zenocoreLibreflect zenocoreLibgenerated)
 
 #if (ZENO_NO_WARNING)
     #if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
