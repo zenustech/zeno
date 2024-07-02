@@ -1227,14 +1227,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             // Auto unload unused texure
             {
-                std::set<std::string> realNeedTexPaths;
+                std::map<std::string, bool> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (mtldet->parameters.find("vol") != std::string::npos
                         || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
                         || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) 
                     {
                         for(auto& tex: mtldet->tex2Ds) {
-                            realNeedTexPaths.insert(tex->path);
+                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
                         }
                     }
                     
@@ -1245,7 +1245,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     //     realNeedTexPaths.emplace_back(ld.profileKey);
                     // }
                     if (ld.textureKey.size()) {
-                        realNeedTexPaths.insert(ld.textureKey);
+                        realNeedTexPaths.insert( {ld.textureKey, false});
                     }
                 }
                 std::vector<std::string> needToRemoveTexPaths;
@@ -1265,7 +1265,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
                 for (const auto& realNeedTexPath: realNeedTexPaths) {
-                    OptixUtil::addTexture(realNeedTexPath);
+                    OptixUtil::addTexture(realNeedTexPath.first, realNeedTexPath.second);
                 }
             }
             for(auto const &[matkey, mtldet] : matMap)

@@ -262,6 +262,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             stbi_flip_vertically_on_write(false);
             stbi_write_png(tex->path.c_str(), width, height, 3, col.data(), 0);
         }
+        tex->blockCompression = get_input2<bool>("blockCompression");
 
     #define SET_TEX_WRAP(TEX, WRAP)                                    \
         if (WRAP == "REPEAT")                                          \
@@ -351,7 +352,8 @@ ZENDEFNODE(SmartTexture2D, {
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
-        {"enum raw srgb normal_map", "post_process", "raw"}
+        {"enum raw srgb normal_map", "post_process", "raw"},
+        {"bool", "blockCompression", "false"}
     },
     {
         {"shader", "out"},
