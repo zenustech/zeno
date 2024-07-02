@@ -4,6 +4,7 @@
 #include <stack>
 #include <vector>
 #include <numeric>
+#include <map>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -565,6 +566,25 @@ static std::shared_ptr<PrimitiveObject> fbx_prim_merge(std::vector<std::shared_p
         return prims[0];
     }
     auto prim = std::make_shared<PrimitiveObject>();
+    std::map<std::string, int> index;
+    std::map<std::pair<int, int>, int> mapping;
+    for (auto i = 0; i < prims.size(); i++) {
+        auto &ud = prims[i]->userData();
+        auto boneName_count = ud.get2<int>("boneName_count");
+        for (auto j = 0; j < boneName_count; j++) {
+            auto boneName = ud.get2<std::string>(zeno::format("boneName_{}", j));
+            if (index.count(boneName) == 0) {
+                auto bone_index = index.size();
+                index[boneName] = bone_index;
+            }
+            mapping[{i, j}] = index[boneName];
+        }
+    }
+    auto &ud = prim->userData();
+    ud.set2("boneName_count", int(index.size()));
+    for (auto &[k, v]: index) {
+        ud.set2(zeno::format("boneName_{}", v), k);
+    }
     return prim;
 }
 
