@@ -399,14 +399,8 @@ void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
     }
 }
 
-bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string name) {
-    FbxMesh* pMesh = pNode->GetMesh();
-    if (!pMesh) return false;
-    std::string nodeName = pNode->GetName();
-    if (name.size() > 0 && nodeName != name) {
-        return false;
-    }
-    prim->userData().set2("RootName", nodeName);
+static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
+    auto prim = std::make_shared<PrimitiveObject>();
 
     FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
     auto s = bindMatrix.GetS();
@@ -414,6 +408,7 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
 //    zeno::log_info("s {} {} {}", s[0], s[1], s[2]);
 //    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
 
+    FbxMesh* pMesh = pNode->GetMesh();
     int numVertices = pMesh->GetControlPointsCount();
     FbxVector4* vertices = pMesh->GetControlPoints();
     prim->verts.resize(numVertices);
@@ -562,7 +557,15 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
         }
         ud.set2("material", mat_json.dump());
     }
-    return true;
+    return prim;
+}
+
+static std::shared_ptr<PrimitiveObject> fbx_prim_merge(std::vector<std::shared_ptr<PrimitiveObject>> prims) {
+    if (prims.size() == 1) {
+        return prims[0];
+    }
+    auto prim = std::make_shared<PrimitiveObject>();
+    return prim;
 }
 
 struct NewFBXImportSkin : INode {
@@ -603,39 +606,37 @@ struct NewFBXImportSkin : INode {
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
-        auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
+        std::vector<std::shared_ptr<PrimitiveObject>> prims;
         if(lRootNode) {
+            auto rootName = get_input2<std::string>("rootName");
             for(int i = 0; i < lRootNode->GetChildCount(); i++) {
                 auto pNode = lRootNode->GetChild(i);
-                FbxMesh* pMesh = pNode->GetMesh();
-                if (pMesh) {
-                    std::string meshName = pNode->GetName();
-                    availableRootNames.emplace_back(meshName);
+                auto name = pNode->GetName();
+                if (pNode->GetMesh() == nullptr) {
+                    continue;
                 }
-            }
-            ud.set2("AvailableRootName_count", int(availableRootNames.size()));
-            for (int i = 0; i < availableRootNames.size(); i++) {
-                ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
+                availableRootNames.emplace_back(name);
+                if (rootName.size() && name != rootName) {
+                    continue;
+                }
+                prims.push_back(GetMesh(pNode));
             }
         }
-        auto rootName = get_input2<std::string>("rootName");
-        if(lRootNode) {
-            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                auto pNode = lRootNode->GetChild(i);
-                if (GetMesh(pNode, prim, rootName)) {
-                    break;
-                }
-            }
-        }
+        auto merged_prim = fbx_prim_merge(prims);
         if (get_input2<bool>("ConvertUnits")) {
-            for (auto & v: prim->verts) {
+            for (auto & v: merged_prim->verts) {
                 v = v * 0.01;
             }
         }
-        set_output("prim", prim);
+        auto &ud = merged_prim->userData();
+        ud.set2("version", vec3i(major, minor, revision));
+        ud.set2("AvailableRootName_count", int(availableRootNames.size()));
+        for (int i = 0; i < availableRootNames.size(); i++) {
+            ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
+        }
+        set_output("prim", merged_prim);
         // Destroy the SDK manager and all the other objects it was handling.
         lSdkManager->Destroy();
     }
