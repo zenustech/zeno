@@ -565,7 +565,11 @@ static std::shared_ptr<PrimitiveObject> fbx_prim_merge(std::vector<std::shared_p
     if (prims.size() == 1) {
         return prims[0];
     }
-    auto prim = std::make_shared<PrimitiveObject>();
+    std::vector<PrimitiveObject*> raw_prims;
+    for (auto &p: prims) {
+        raw_prims.push_back(p.get());
+    }
+    auto prim = primMergeWithFacesetMatid(raw_prims);
     std::map<std::string, int> index;
     std::map<std::pair<int, int>, int> mapping;
     for (auto i = 0; i < prims.size(); i++) {
@@ -578,6 +582,14 @@ static std::shared_ptr<PrimitiveObject> fbx_prim_merge(std::vector<std::shared_p
                 index[boneName] = bone_index;
             }
             mapping[{i, j}] = index[boneName];
+        }
+        auto &bi = prims[i]->verts.attr<vec4i>("boneName");
+        for (auto k = 0; k < prims[i]->verts.size(); k++) {
+            for (auto s = 0; s < 4; s++) {
+                if (bi[k][s] != -1) {
+                    bi[k][s] = mapping[{i, bi[k][s]}];
+                }
+            }
         }
     }
     auto &ud = prim->userData();
