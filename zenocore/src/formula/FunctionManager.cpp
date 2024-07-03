@@ -439,7 +439,7 @@ namespace zeno {
     }
 
     static void selfIncOrDec(ZfxVariable& var, bool bInc) {
-        for (auto val : var.value) {
+        for (auto& val : var.value) {
             std::visit([bInc](auto&& arg) {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
@@ -1324,10 +1324,10 @@ namespace zeno {
 
     bool FunctionManager::hasTrue(const ZfxVariable& cond, const ZfxElemFilter& filter, ZfxElemFilter& newFilter) const {
         int N = cond.value.size();
-        assert(N == filter.size());
+        assert(N == filter.size() || N == 1);
         newFilter = filter;
         bool bret = false;
-        for (int i = 0; i < filter.size(); i++) {
+        for (int i = 0; i < cond.value.size(); i++) {
             if (filter[i]) {
                 if (get_zfxvar<int>(cond.value[i]) ||
                     get_zfxvar<float>(cond.value[i]))
@@ -1759,32 +1759,6 @@ namespace zeno {
                 default:
                     throw makeError<UnimplError>("compare op error");
                 }
-            }             
-            case CONDEXP: {
-                //条件表达式
-                /*
-                std::vector<ZfxVariable> args = process_args(root, filter, pContext);
-                if (args.size() != 3) {
-                    throw makeError<UnimplError>("cond exp args");
-                }
-                return std::visit([args](auto&& val) -> zfxvariant {
-                    using T = std::decay_t<decltype(val)>;
-                    if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
-                        int condval = (int)val;
-                        if (condval) {
-                            return args[1];
-                        }
-                        else {
-                            return args[2];
-                        }
-                    }
-                    else {
-                        throw makeError<UnimplError>("condexp type error");
-                    }
-                }, args[0]);
-                */
-                //TODO
-                return ZfxVariable();
             }
             case ARRAY:{
                 return parseArray(root, filter, pContext);
@@ -1792,7 +1766,24 @@ namespace zeno {
             case PLACEHOLDER:{
                 return ZfxVariable();
             }
-            
+            case CONDEXP: {
+                //条件表达式
+                std::vector<ZfxVariable> args = process_args(root, filter, pContext);
+                if (args.size() != 3) {
+                    throw makeError<UnimplError>("cond exp args");
+                }
+                auto& pCond = args[0];
+
+                ZfxElemFilter newFilter;
+                if (hasTrue(pCond, filter, newFilter)) {
+                    auto pCodesExp = root->children[1];
+                    return execute(pCodesExp, newFilter, pContext);
+                }
+                else {
+                    auto pCodesExp = root->children[2];
+                    return execute(pCodesExp, newFilter, pContext);
+                }
+            }
             case IF:{
                 if (root->children.size() != 2) {
                     throw makeError<UnimplError>("if cond failed.");
@@ -2233,21 +2224,34 @@ namespace zeno {
             }
 
             //逐个调用输出
-            for (int i = 0; i < maxSize; i++) {
-                if (!filter[i]) continue;
-                std::vector<zfxvariant> formatargs;
-                for (int j = 0; j < _args.size(); j++) {
-                    auto& arg = _args[j];
-                    if (arg.value.size() < i) {
-                        formatargs.push_back(arg.value[0]);
+            if (maxSize > 1) {
+                //属性或相关变量的调用
+                for (int i = 0; i < maxSize; i++) {
+                    if (!filter[i]) continue;
+                    std::vector<zfxvariant> formatargs;
+                    for (int j = 0; j < _args.size(); j++) {
+                        auto& arg = _args[j];
+                        assert(!arg.value.empty());
+                        if (arg.value.size() < i) {
+                            formatargs.push_back(arg.value[0]);
+                        }
+                        else {
+                            formatargs.push_back(arg.value[i]);
+                        }
                     }
-                    else {
-                        formatargs.push_back(arg.value[i]);
-                    }
+                    std::string ret = format_variable_size(formatString.c_str(), formatargs);
+                    zeno::log_only_print(ret);
                 }
-                std::string ret = format_variable_size(formatString.c_str(), formatargs);
+            }
+            else {
+                std::vector<zfxvariant> __args;
+                for (auto __arg : _args) {
+                    __args.push_back(__arg.value[0]);
+                }
+                std::string ret = format_variable_size(formatString.c_str(), __args);
                 zeno::log_only_print(ret);
             }
+
             return ZfxVariable();
         }
         else {
@@ -2256,13 +2260,21 @@ namespace zeno {
                 if (args.size() != 1)
                     throw makeError<UnimplError>();
                 const auto& arg = args[0];
+                int N = arg.value.size();
                 ZfxVariable res;
-                res.value.resize(arg.value.size());
-                for (int i = 0; i < arg.value.size(); i++)
-                {
-                    if (!filter[i]) continue;
-                    float val = get_zfxvar<float>(arg.value[i]);
-                    res.value[i] = sin(val);
+                res.value.resize(N);
+                assert(N >= 1);
+                if (N > 1) {
+                    for (int i = 0; i < arg.value.size(); i++)
+                    {
+                        if (!filter[i]) continue;
+                        float val = get_zfxvar<float>(arg.value[i]);
+                        res.value[i] = sin(val);
+                    }
+                }
+                else {
+                    float val = get_zfxvar<float>(arg.value[0]);
+                    res.value[0] = sin(val);
                 }
                 return res;
             }
