@@ -16,6 +16,8 @@ inline void compress(unsigned char* packed, unsigned char* block) {
         stb_compress_bc4_block(packed, block);
     if constexpr (N == 2)
         stb_compress_bc5_block(packed, block);
+    if constexpr (N == 3)
+        stb_compress_dxt_block(packed, block, 0, STB_DXT_HIGHQUAL);
     if constexpr (N == 4)
         stb_compress_dxt_block(packed, block, 1, STB_DXT_HIGHQUAL);
 }
@@ -69,6 +71,20 @@ inline std::vector<unsigned char> compressBC4(unsigned char* one_byte_per_pixel,
 
 inline std::vector<unsigned char> compressBC5(unsigned char* two_byte_per_pixel, uint32_t nx, uint32_t ny) {
     return compressBCx<2>(two_byte_per_pixel, nx, ny);
+}
+
+inline std::vector<unsigned char> compressBC1(unsigned char* three_byte_per_pixel, uint32_t nx, uint32_t ny) {
+
+    auto raw = three_byte_per_pixel;
+
+    auto count = nx * ny;    
+    std::vector<uchar4> alt(count);
+
+    for (size_t i=0; i<count; ++i) {
+        alt[i] = { raw[i*3 + 0], raw[i*3 + 1], raw[i*3 + 2], 255u };
+    }
+    
+    return compressBCx<3, 4>((unsigned char*)alt.data(), nx, ny);
 }
 
 inline std::vector<unsigned char> compressBC3(unsigned char* four_byte_per_pixel, uint32_t nx, uint32_t ny) {

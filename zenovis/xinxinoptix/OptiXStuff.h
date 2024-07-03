@@ -419,6 +419,9 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
         } else if (nc == 2) {
             bc_data = compressBC5(img, nx, ny);
             channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed5>();
+        } else if (nc == 3) {
+            bc_data = compressBC1(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed1>();
         } else if (nc == 4) {
             bc_data = compressBC3(img, nx, ny);
             channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed3>();
