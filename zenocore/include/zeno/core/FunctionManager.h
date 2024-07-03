@@ -45,7 +45,6 @@ namespace zeno {
         ZfxVariable eval(const std::string& func, const std::vector<ZfxVariable>& args, ZfxElemFilter& filter, ZfxContext* pContext);
         void pushStack();
         void popStack();
-        void updateGeomAttr(const std::string& attrname, zfxvariant value, operatorVals op, zfxvariant opval, ZfxContext* pContext);
         bool hasTrue(const ZfxVariable& cond, const ZfxElemFilter& filter, ZfxElemFilter& newFilter) const;
 
         ZfxVariable& getVariableRef(const std::string& name, ZfxContext* pContext);
@@ -54,17 +53,10 @@ namespace zeno {
         void validateVar(operatorVals varType, ZfxVariable& newvar);
         ZfxVariable parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxElemFilter& filter, ZfxContext* pContext);
         ZfxVariable execute(std::shared_ptr<ZfxASTNode> root, ZfxElemFilter& filter, ZfxContext* pContext);
-        std::set<std::string> parsingAttr(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
-        void removeAttrvarDeclareAssign(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
-        void embeddingForeach(std::shared_ptr<ZfxASTNode> root, std::shared_ptr<ZfxASTNode> spOverrideStmt, ZfxContext* pContext);
-        void getDependingVariables(const std::string& assignedVar, std::set<std::string>& vars);
         std::vector<ZfxVariable> process_args(std::shared_ptr<ZfxASTNode> parent, ZfxElemFilter& filter, ZfxContext* pContext);
-        bool removeIrrelevantCode(std::shared_ptr<ZfxASTNode> root, int currentExecId, const std::set<std::string>& allDepvars, std::set<std::string>& allFindAttrs);
-        bool isEvalFunction(const std::string& funcname);
 
         ZfxVariable getAttrValue(const std::string& attrname, ZfxContext* pContext);
         void commitToPrim(const std::string& attrname, const ZfxVariable& val, ZfxElemFilter& filter, ZfxContext* pContext);
-        zfxvariant getCurrentAttrValue(const std::string& attrname, ZfxContext* pContext);
         void enumNextElement(ZfxContext* pContext);
         bool continueToRunover(ZfxContext* pContext);
 

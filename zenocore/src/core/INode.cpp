@@ -1219,6 +1219,11 @@ ZENO_API void INode::init(const NodeData& dat)
     if (!dat.name.empty())
         m_name = dat.name;
 
+    if (m_name == "selfinc") {
+        int j;
+        j = -0;
+    }
+
     m_pos = dat.uipos;
     m_bView = dat.bView;
     if (m_bView) {
