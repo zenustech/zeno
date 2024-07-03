@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <stb_dxt.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
@@ -9,26 +10,22 @@
 #include <vector_types.h>
 
 template <char N>
-inline void compress(std::vector<unsigned char> &packed, std::vector<unsigned char> &block) {
+inline void compress(unsigned char* packed, unsigned char* block) {
 
     if constexpr (N == 1)
-        return stb_compress_bc4_block(packed.data(), (unsigned char*)block.data());
+        stb_compress_bc4_block(packed, block);
     if constexpr (N == 2)
-        return stb_compress_bc5_block(packed.data(), (unsigned char*)block.data());
+        stb_compress_bc5_block(packed, block);
     if constexpr (N == 4)
-        return stb_compress_dxt_block(packed.data(), (unsigned char*)block.data(), 1, STB_DXT_HIGHQUAL);
+        stb_compress_dxt_block(packed, block, 1, STB_DXT_HIGHQUAL);
 }
 
-template <char N>
+template <char channel, char byte_per_source_pixel=channel>
 inline std::vector<unsigned char> compressBCx(unsigned char* img, uint32_t nx, uint32_t ny) {
 
-    static std::map<char, uint32_t> sizes {
-        { 1, 8 },
-        { 2, 16},
-        { 4, 16}
-    };
+    static const char sizes[] = { 0, 8, 16, 8, 16 };
 
-    const auto size_per_packed = sizes[N];
+    const auto size_per_packed = sizes[channel];
 
     auto count = size_per_packed * (nx/4) * (ny/4);
     std::vector<unsigned char> result(count);
@@ -39,8 +36,7 @@ inline std::vector<unsigned char> compressBCx(unsigned char* img, uint32_t nx, u
 
         bc_group.run([&, i]{
 
-            std::vector<unsigned char> block(16 * N, 0);
-            std::vector<unsigned char> packed(size_per_packed, 0);
+            std::vector<unsigned char> block(16 * byte_per_source_pixel, 0);
 
             for (size_t j=0; j<nx; j+=4) { // col
 
@@ -49,15 +45,15 @@ inline std::vector<unsigned char> compressBCx(unsigned char* img, uint32_t nx, u
                     //auto offset_j = k % 4;
 
                     auto index = nx * (i+offset_i) + (j);
-                    //raw_block[k] = img[index];
-                    auto dst_ptr = block.data() + k*N;
-                    auto src_ptr = img + index*N ;
-                    memcpy(dst_ptr, src_ptr, N * 4);
+
+                    auto dst_ptr = block.data() + k*byte_per_source_pixel;
+                    auto src_ptr = img + index*byte_per_source_pixel;
+                    memcpy(dst_ptr, src_ptr, byte_per_source_pixel * 4);
                 }
-                compress<N>(packed, block);
 
                 auto offset = size_per_packed * ((nx/4) * i/4 + j/4);
-                memcpy(result.data()+offset, packed.data(), packed.size());
+                auto packed = result.data()+offset;
+                compress<channel>(packed, block.data());
             }
 
         }); // run

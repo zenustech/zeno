@@ -378,7 +378,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
 
     std::vector<uchar4> alt;
     
-    if (nc == 3) { // cuda doesn't rgb, should be rgba 
+    if (nc == 3 && !blockCompression) { // cuda doesn't support raw rgb, should be raw rgba or compressed rgb 
         auto count = nx * ny;    
         alt.resize(count);
 
@@ -405,11 +405,6 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
             std::cout<<"texture space alloc failed\n";
             return 0;
         }
-        // rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, img, 
-        //                         nx * sizeof(unsigned char) * nc,
-        //                         nx * sizeof(unsigned char) * nc,
-        //                         ny, 
-        //                         cudaMemcpyHostToDevice);
 
         rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, img, sizeof(unsigned char) * nc * nx * ny, cudaMemcpyHostToDevice);
 
@@ -427,6 +422,9 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
         } else if (nc == 4) {
             bc_data = compressBC3(img, nx, ny);
             channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed3>();
+        } else {
+            std::cout<<"texture data unsupported \n";
+            return 0;
         }
         
         rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
