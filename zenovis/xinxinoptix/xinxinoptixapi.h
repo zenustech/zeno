@@ -12,6 +12,7 @@
 #include "zeno/types/LightObject.h"
 
 #include "Portal.h"
+#include "OptiXStuff.h"
 
 enum ShaderMaker {
     Mesh = 0,
@@ -27,7 +28,7 @@ struct ShaderPrepared {
     std::string callable;
     std::string parameters;
     
-    std::vector<std::string> tex_names;
+    std::vector<OptixUtil::TexKey> tex_keys;
 };
 
 namespace xinxinoptix {

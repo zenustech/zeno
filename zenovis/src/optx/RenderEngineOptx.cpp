@@ -697,7 +697,7 @@ struct GraphicsManager {
                 if (!path.empty()) {
                     if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path
                         && OptixUtil::sky_tex.value() != OptixUtil::default_sky_tex ) {
-                        OptixUtil::removeTexture(OptixUtil::sky_tex.value());
+                        OptixUtil::removeTexture( {OptixUtil::sky_tex.value(), false} );
                     }
 
                     OptixUtil::sky_tex = path;
@@ -1227,7 +1227,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             // Auto unload unused texure
             {
-                std::map<std::string, bool> realNeedTexPaths;
+                std::set<OptixUtil::TexKey> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (mtldet->parameters.find("vol") != std::string::npos
                         || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
@@ -1248,24 +1248,26 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         realNeedTexPaths.insert( {ld.textureKey, false});
                     }
                 }
-                std::vector<std::string> needToRemoveTexPaths;
-                for(auto const &[tex, _]: OptixUtil::g_tex) {
-                    if (realNeedTexPaths.count(tex) > 0) {
+                std::vector<OptixUtil::TexKey> needToRemoveTexPaths;
+                for(auto const &[key, _]: OptixUtil::tex_lut) {
+
+                    if (realNeedTexPaths.count(key) > 0) {
                         continue; 
                     }
-                    if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
+                    if (OptixUtil::sky_tex.has_value() && key.path == OptixUtil::sky_tex.value()) {
                         continue;
                     }
-                    if (tex == OptixUtil::default_sky_tex) {
+                    if (key.path == OptixUtil::default_sky_tex) {
                         continue;
                     }
-                    needToRemoveTexPaths.emplace_back(tex);
+                    needToRemoveTexPaths.emplace_back(key);
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
-                for (const auto& realNeedTexPath: realNeedTexPaths) {
-                    OptixUtil::addTexture(realNeedTexPath.first, realNeedTexPath.second);
+                for (const auto& realNeedTexKey: realNeedTexPaths) {
+
+                    OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
                 }
             }
             for(auto const &[matkey, mtldet] : matMap)
@@ -1323,12 +1325,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     callable.append(shadtpl2.second);
                     //std::cout<<callable<<std::endl;
 
-                    std::vector<std::string> shaderTex;
-                    for(auto tex:mtldet->tex2Ds)
-                    {
-                        shaderTex.emplace_back(tex->path);
-                    }
-
                     ShaderPrepared shaderP; 
 
                         shaderP.callable = callable;
@@ -1336,7 +1332,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.parameters = mtldet->parameters;
 
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.tex_names = shaderTex;
+                        for(auto tex:mtldet->tex2Ds)
+                        {
+                            shaderP.tex_keys.push_back( {tex->path, tex->blockCompression} );
+                        }
 
                     if (isVol) {
                         
