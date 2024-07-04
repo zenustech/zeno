@@ -12,6 +12,7 @@ class ZCodeEditor : public QCodeEditor
     Q_OBJECT
 public:
     explicit ZCodeEditor(const QString& text, QWidget* parent = nullptr);
+    void setFuncDescLabel(ZenoFuncDescriptionLabel* descLabel);
 signals:
     void editFinished(const QString& text);
 protected:

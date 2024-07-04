@@ -14,7 +14,7 @@
 #include <zeno/core/FunctionManager.h>
 
 ZCodeEditor::ZCodeEditor(const QString& text, QWidget *parent)
-    : QCodeEditor(parent), m_zfxHighLighter(new QZfxHighlighter), m_descLabel(new ZenoFuncDescriptionLabel)
+    : QCodeEditor(parent), m_zfxHighLighter(new QZfxHighlighter), m_descLabel(nullptr)
 {
     setCompleter(new ZPythonCompleter(this));
     setHighlighter(m_zfxHighLighter);
@@ -22,6 +22,11 @@ ZCodeEditor::ZCodeEditor(const QString& text, QWidget *parent)
     initUI();
 
     connect(this, &QTextEdit::cursorPositionChanged, this, &ZCodeEditor::slt_showFuncDesc);
+}
+
+void ZCodeEditor::setFuncDescLabel(ZenoFuncDescriptionLabel* descLabel)
+{
+    m_descLabel = descLabel;
 }
 
 void ZCodeEditor::focusOutEvent(QFocusEvent* e)
@@ -51,8 +56,13 @@ void ZCodeEditor::slt_showFuncDesc()
             if (!info.name.empty()) {
                 m_descLabel->setDesc(info, 0);
                 m_descLabel->setCurrentFuncName(info.name);
+
                 QFontMetrics metrics(this->font());
-                m_descLabel->move(QPoint(metrics.width(currLine.left(positionInLine)) + 20, (cursor.blockNumber() + 1) * metrics.height() + 5));
+                const QPoint& parentGlobalPos = m_descLabel->getPropPanelPos();
+                QPoint pos = mapToGlobal(QPoint(0, 0));
+                pos.setX(pos.x() - parentGlobalPos.x() + metrics.width(currLine.left(positionInLine)) + 20);
+                pos.setY(pos.y() - parentGlobalPos.y() + (cursor.blockNumber() + 1) * metrics.height() + 5);
+                m_descLabel->move(pos);
                 m_descLabel->show();
                 return;
             }
@@ -70,9 +80,6 @@ void ZCodeEditor::initUI()
     setAutoIndentation(true);
     setTabReplace(true);
     setTabReplaceSize(4);
-
-    m_descLabel->setParent(this);
-    m_descLabel->hide();
 }
 
 QSyntaxStyle* ZCodeEditor::loadStyle(const QString& path)

@@ -80,6 +80,9 @@ public:
     void setDesc(zeno::FUNC_INFO func, int pos);
     void setCurrentFuncName(std::string funcName);
     std::string getCurrentFuncName();
+    void setCalcPropPanelPosFunc(std::function<QPoint()> func);
+    QPoint getPropPanelPos();
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -87,4 +90,6 @@ protected:
 private:
     QLabel* m_label;
     std::string m_currentFunc;
+
+    std::function<QPoint()> m_getPropPanelPosfunc;
 };

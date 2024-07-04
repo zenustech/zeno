@@ -243,6 +243,16 @@ std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
     return m_currentFunc;
 }
 
+void ZenoFuncDescriptionLabel::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+{
+    m_getPropPanelPosfunc = func;
+}
+
+QPoint ZenoFuncDescriptionLabel::getPropPanelPos()
+{
+    return m_getPropPanelPosfunc();
+}
+
 bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)
 {
     if (this->isVisible())
