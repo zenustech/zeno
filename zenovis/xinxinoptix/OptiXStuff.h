@@ -800,10 +800,9 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
 
-        if(g_tex_last_write_time[path] == ftime) {
-            return;
+        if(g_tex_last_write_time[path] != ftime) {
+            should_reload = true;
         }
-        should_reload = true;
         g_tex_last_write_time[path] = ftime;
     } else {
         zeno::log_info("file {} doesn't exist", path);
@@ -813,7 +812,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
 
-    if ( md5_path_mapping.count(md5Hash) ) {
+    if ( md5_path_mapping.count(md5Hash) && !should_reload) {
 
         auto& alt_path = md5_path_mapping[md5Hash];
         auto alt_key = TexKey { alt_path, blockCompression };
