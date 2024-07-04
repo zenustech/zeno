@@ -1,7 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
     <section name="Keyword">
-        <name>zeno</name>
+		<name>function</name>
+		<name>zeno</name>
+		
+        <name>break</name>
+        <name>const</name>
+        <name>continue</name>
+        <name>do</name>
+        <name>else</name>
+        <name>export</name>
+        <name>for</name>
+		<name>foreach</name>
+        <name>if</name>
+        <name>import</name>
+        <name>return</name>
+        <name>struct</name>
+        <name>while</name>
+    </section>
+    <section name="Type">
+		<name>vector</name>
+		<name>array</name>
+		
+        <name>bool</name>
+        <name>double</name>
+        <name>float</name>
+        <name>int</name>
+        <name>void</name>
     </section>
     <section name="Function">
         <name>graph</name>
@@ -20,5 +45,12 @@
         <name>node</name>
         <name>addLink</name>
         <name>removeLink</name>
-    </section>
+		
+		<name>sin</name>
+		<name>sinh</name>
+		<name>cos</name>
+		<name>cosh</name>
+		<name>ref</name>
+		<name>rand</name>
+	</section>
 </root>

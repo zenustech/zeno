@@ -11,15 +11,6 @@
 
 using namespace zeno;
 
-static std::map<std::string, std::string> funcDescription({ 
-    //函数名，参数个数\n函数签名\n描述\nUSage:\nExample\n---
-    {"sin", "3\nfloat sin(float degrees)\nReturn the sine of argument\nUsage:\nExample:\n---"},
-    {"cos", "3\nfloat cos(float degrees)\nReturn the cosine of argument\nUsage:\nExample:\n---"},
-    {"sinh", "3\nfloat sinh(float degrees)\nReturn the sinh of argument\nUsage:\nExample:\n---"},
-    {"cosh", "3\nfloat cosh(float degrees)\nReturn the cosh of argument\nUsage:\nExample:\n---"},
-    {"abs", "3\nfloat abs(float degrees)\nReturn the abs of argument\nUsage:\nExample:\n---"},
-    });
-
 ZENO_API Formula::Formula(const std::string& formula, const std::string& nodepath)
     : m_location(0)
     , m_formula(formula)
@@ -243,19 +234,6 @@ ZENO_API void Formula::printSyntaxTree()
     zeno::log_info("--------------------------");
 }
 
-ZENO_API std::optional<std::tuple<std::string, std::string, int>> Formula::getCurrFuncDescription()
-{
-    //printSyntaxTree();
-    std::string funcName = "";
-    int paramPos = 0;
-    currFuncNamePos(m_rootNode, funcName, paramPos);
-    auto it = funcDescription.find(funcName);
-    if (it != funcDescription.end()) {
-        return std::optional<std::tuple<std::string, std::string, int>>(std::make_tuple(funcName, it->second, paramPos));
-    }
-    return nullopt;
-}
-
 ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
 {
     formula_tip_info ret;
@@ -356,24 +334,4 @@ ZENO_API formula_tip_info Formula::getRecommandTipInfo() const
         } while (last);
     }
     return ret;
-}
-
-ZENO_API std::vector<std::string> Formula::getHintList(std::string originTxt, std::string& candidateTxt)
-{
-    std::vector<std::string> list;
-    std::smatch match;
-    std::reverse(originTxt.begin(), originTxt.end());
-    if (std::regex_search(originTxt, match, std::regex("([0-9a-zA-Z]*[a-zA-Z])")) && match.size() == 2) {
-        std::string resStr = match[1].str();
-        if (originTxt.substr(0, resStr.size()) == resStr) {
-            std::reverse(resStr.begin(), resStr.end());
-            candidateTxt = resStr;
-            for (auto& [k, v] : funcDescription) {
-                if (k.substr(0, resStr.size()) == resStr) {
-                    list.push_back(k);
-                }
-            }
-        }
-    }
-    return list;
 }

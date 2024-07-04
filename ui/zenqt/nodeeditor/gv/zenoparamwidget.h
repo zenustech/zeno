@@ -364,7 +364,7 @@ class ZenoParamCodeEditor : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamCodeEditor(const QString& text, ZCodeEditor::CodeHighLighter = ZCodeEditor::HighLight_Python, ZCodeEditor::CodeCompleter = ZCodeEditor::Completer_Python, QGraphicsItem* parent = nullptr);
+    ZenoParamCodeEditor(const QString& text, QGraphicsItem* parent = nullptr);
     QString text() const;
     void setText(const QString& text);
 signals:

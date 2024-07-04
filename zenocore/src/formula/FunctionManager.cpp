@@ -53,7 +53,7 @@ namespace zeno {
         return iter->second.tip;
     }
 
-    FUNC_INFO FunctionManager::getFuncInfo(const std::string& funcName) const {
+    ZENO_API FUNC_INFO FunctionManager::getFuncInfo(const std::string& funcName) const {
         auto iter = m_funcs.find(funcName);
         if (iter == m_funcs.end()) {
             return FUNC_INFO();

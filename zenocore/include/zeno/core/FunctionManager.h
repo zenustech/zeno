@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <zeno/core/data.h>
+#include <zeno/utils/api.h>
 #include <zeno/formula/syntax_tree.h>
 #include <stack>
 

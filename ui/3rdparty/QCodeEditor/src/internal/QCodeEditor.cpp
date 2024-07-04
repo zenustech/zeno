@@ -4,7 +4,7 @@
 #include <QCodeEditor>
 #include <QStyleSyntaxHighlighter>
 #include <QFramedTextAttribute>
-#include <QCXXHighlighter>
+#include <QZfxHighlighter>
 
 
 // Qt
@@ -477,9 +477,9 @@ void QCodeEditor::proceedCompleterEnd(QKeyEvent *e)
 
 void QCodeEditor::keyPressEvent(QKeyEvent* e) {
 #if QT_VERSION >= 0x050A00
-  const int defaultIndent = tabStopDistance() / fontMetrics().averageCharWidth();
+    const int defaultIndent = m_replaceTab ? m_tabReplace.size() : tabStopDistance() / fontMetrics().averageCharWidth();
 #else
-  const int defaultIndent = tabStopWidth() / fontMetrics().averageCharWidth();
+    const int defaultIndent = m_replaceTab ? m_tabReplace.size() : tabStopWidth() / fontMetrics().averageCharWidth();
 #endif
 
   auto completerSkip = proceedCompleterBegin(e);

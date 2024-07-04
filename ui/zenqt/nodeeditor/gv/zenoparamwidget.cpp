@@ -1043,9 +1043,9 @@ bool ZenoParamDoubleSpinBox::eventFilter(QObject *obj, QEvent *event)
 }
 //////////////////////////////////////////////////////////////////////////////////////
 //code  editor
-ZenoParamCodeEditor::ZenoParamCodeEditor(const QString& text, ZCodeEditor::CodeHighLighter highlighter, ZCodeEditor::CodeCompleter completer, QGraphicsItem* parent /* = nullptr */)
+ZenoParamCodeEditor::ZenoParamCodeEditor(const QString& text, QGraphicsItem* parent /* = nullptr */)
 {
-    m_pCodeEditor = new ZCodeEditor(text, highlighter, completer);
+    m_pCodeEditor = new ZCodeEditor(text);
     setWidget(m_pCodeEditor);
     connect(m_pCodeEditor, &ZCodeEditor::editFinished, this, &ZenoParamCodeEditor::editFinished);
 }

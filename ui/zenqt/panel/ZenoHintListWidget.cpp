@@ -197,6 +197,7 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
 ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     : m_currentFunc("")
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     //setMinimumSize({ 100, 50 });
     m_label = new QLabel(this);
     m_label->setStyleSheet("QLabel{ font-size: 10pt; color: rgb(160, 178, 194)}");
