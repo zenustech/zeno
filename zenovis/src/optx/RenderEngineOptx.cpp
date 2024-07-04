@@ -931,6 +931,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
+        if (posWS == glm::vec3()) {
+            return {};
+        }
+        auto const &cam = *scene->camera;
+        posWS += cam.m_pos;
+        return posWS;
+    }
 
     auto setupState() {
         return std::tuple{
@@ -987,7 +996,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
@@ -1120,9 +1129,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate || camNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating camera");
-
-            auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
-            auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+            auto lodright = cam.m_rotation * glm::vec3(1, 0, 0);
+            auto lodup = cam.m_rotation * glm::vec3(0, 1, 0);
+            auto lodfront = cam.m_rotation * glm::vec3(0, 0, -1);
 
             std::random_device rd;
             std::mt19937 gen(rd());
@@ -1131,7 +1140,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
-                                        glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                        glm::value_ptr(lodfront), glm::value_ptr(cam.m_pos),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
             xinxinoptix::set_physical_camera_param(
                 cam.zOptixCameraSettingInfo.aperture,
@@ -1218,14 +1227,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             // Auto unload unused texure
             {
-                std::set<std::string> realNeedTexPaths;
+                std::map<std::string, bool> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (mtldet->parameters.find("vol") != std::string::npos
                         || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
                         || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) 
                     {
                         for(auto& tex: mtldet->tex2Ds) {
-                            realNeedTexPaths.insert(tex->path);
+                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
                         }
                     }
                     
@@ -1236,7 +1245,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     //     realNeedTexPaths.emplace_back(ld.profileKey);
                     // }
                     if (ld.textureKey.size()) {
-                        realNeedTexPaths.insert(ld.textureKey);
+                        realNeedTexPaths.insert( {ld.textureKey, false});
                     }
                 }
                 std::vector<std::string> needToRemoveTexPaths;
@@ -1256,7 +1265,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
                 for (const auto& realNeedTexPath: realNeedTexPaths) {
-                    OptixUtil::addTexture(realNeedTexPath);
+                    OptixUtil::addTexture(realNeedTexPath.first, realNeedTexPath.second);
                 }
             }
             for(auto const &[matkey, mtldet] : matMap)

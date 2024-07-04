@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 
+#include <glm/glm.hpp>
 #include "optixSphere.h"
 #include "zeno/utils/vec.h"
 #include "zeno/types/LightObject.h"
@@ -34,8 +35,8 @@ namespace xinxinoptix {
 std::set<std::string> uniqueMatsForMesh();
 
 void optixCleanup();
-
 void optixDestroy();
+
 void optixrender(int fbo = 0, int samples = 1, bool denoise = false, bool simpleRender = false);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
@@ -66,6 +67,7 @@ void load_object(std::string const &key, std::string const &mtlid, const std::st
 void unload_object(std::string const &key);
 void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
 void unload_inst(const std::string &key);
+glm::vec3 get_click_pos(int x, int y);
 
 struct LightDat {
     std::vector<float> v0;

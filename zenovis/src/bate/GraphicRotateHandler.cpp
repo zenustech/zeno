@@ -83,7 +83,7 @@ struct RotateHandler final : IGraphicHandler {
     }
 
     void draw() override {
-        auto dist = glm::distance(scene->camera->m_lodcenter, glm::vec3(center[0], center[1], center[2]));
+        auto dist = glm::distance(scene->camera->m_pos, glm::vec3(center[0], center[1], center[2]));
 
         bound = dist / 5.0f * scale;
 

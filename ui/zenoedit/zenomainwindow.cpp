@@ -2285,6 +2285,10 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
     }
 }
 
+void ZenoMainWindow::statusbarShowMessage(const std::string& text, int timeout) const {
+    m_ui->statusbar->showMessage(text.c_str(), timeout);
+}
+
 static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {
     auto pGraphs = zenoApp->graphsManagment();
     IGraphsModel* pModel = pGraphs->openZsgFile(inPath);
