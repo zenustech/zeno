@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/GeometryObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveTools.h>
@@ -9,6 +10,7 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
+#include <zeno/geo/geometryutil.h>
 #include <cmath>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -1427,5 +1429,27 @@ ZENDEFNODE(CreateCylinder, {
     {},
     {"create"},
 });
+
+
+struct HEdgeBasedPrim : zeno::INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> prim;
+        if (has_input("prim")) {
+            prim = get_input<zeno::PrimitiveObject>("prim");
+        }
+        auto spGeom = std::make_shared<GeometryObject>(prim.get());
+        set_output("prim", spGeom);
+    }
+};
+
+ZENDEFNODE(HEdgeBasedPrim, {
+    {
+        {"prim", "prim"}
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
+
 }
 }

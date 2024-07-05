@@ -11,6 +11,7 @@
 #include <functional>
 #include <zeno/utils/format.h>
 #include <numeric>
+#include <zeno/geo/geometryutil.h>
 
 
 namespace zeno {
@@ -171,6 +172,7 @@ namespace zeno {
 
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
         //printSyntaxTree(root, pCtx->code);
+        assert(pCtx->spObject);
         if (pCtx->spObject) {
             int nFilterSize = 0;
             switch (pCtx->runover)
@@ -1430,50 +1432,6 @@ namespace zeno {
         return ZfxVariable();
     }
 
-    bool FunctionManager::continueToRunover(ZfxContext* pContext) {
-        assert(pContext->spObject);
-        auto topStack = m_stacks.rbegin();
-        assert(topStack != m_stacks.rend());
-
-        size_t index = topStack->indexToCurrentElem;
-        if (pContext->runover == RunOver_Points) {
-            return index < pContext->spObject->verts->size();
-        }
-        else if (pContext->runover == RunOver_Face) {
-            //TODO
-            return false;
-        }
-        else if (pContext->runover == RunOver_Geom) {
-            //整个几何体只遍历一次
-            return false;
-        }
-    }
-
-    void FunctionManager::enumNextElement(ZfxContext* pContext) {
-        assert(pContext->spObject);
-        auto topStack = m_stacks.rbegin();
-        assert(topStack != m_stacks.rend());
-
-        size_t& index = topStack->indexToCurrentElem;
-        if (pContext->runover == RunOver_Points) {
-            if (index < pContext->spObject->verts->size())
-            {
-                if (topStack->bAttrAddOrRemoved) {
-
-                }
-                else {
-                    index++;
-                }
-            }
-        }
-        else if (pContext->runover == RunOver_Face) {
-            //TODO
-        }
-        else if (pContext->runover == RunOver_Geom) {
-            index = 1;
-        }
-    }
-
     zfxvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
         switch (root->type)
         {
@@ -1722,8 +1680,81 @@ namespace zeno {
                 res.value.push_back(rand());
                 return res;
             }
+            else if (funcname == "removepoint") {
+                if (args.size() != 1)
+                    throw makeError<UnimplError>();
+                const auto& arg = args[0];
+                int N = arg.value.size();
+                if (N == 0) return ZfxVariable();
+                bool bSucceed = false;
+
+                if (N < filter.size()) {
+                    assert(N == 1);
+                    int currrem = get_zfxvar<int>(arg.value[0]);
+                    bSucceed = removePoint(currrem, pContext);
+                    if (bSucceed) {
+                        //要调整filter，移除掉第currrem位置的元素
+                        filter.erase(filter.begin() + currrem);
+                        //所有储存在m_globalAttrCached里的属性都移除第currrem号元素，如果有ptnum，也要调整
+                        afterRemovePoint(currrem);
+                    }
+                    else {
+                        throw makeError<UnimplError>("error on removePoint");
+                    }
+                }
+                else {
+                    std::deque<int> remPoints;
+
+                    assert(N == filter.size());
+                    for (int i = 0; i < N; i++) {
+                        if (!filter[i]) continue;
+                        int pointnum = get_zfxvar<int>(arg.value[i]);
+                        remPoints.push_back(pointnum);
+                    }
+
+                    while (!remPoints.empty())
+                    {
+                        int currrem = remPoints.front();
+                        remPoints.pop_front();
+                        bSucceed = removePoint(currrem, pContext);
+                        if (bSucceed) {
+                            //要调整filter，移除掉第currrem位置的元素
+                            filter.erase(filter.begin() + currrem);
+                            //所有储存在m_globalAttrCached里的属性都移除第currrem号元素，如果有ptnum，也要调整
+                            afterRemovePoint(currrem);
+                            //最后将当前所有剩下的删除点的序号再自减
+                            for (auto iter = remPoints.begin(); iter != remPoints.end(); iter++) {
+                                *iter -= 1;
+                            }
+                        }
+                        else {
+                            throw makeError<UnimplError>("error on removePoint");
+                        }
+                    }
+                }
+            }
             else {
                 throw makeError<UnimplError>();
+            }
+        }
+    }
+
+    bool FunctionManager::removePoint(int pointnum, ZfxContext* pContext) {
+        /* 删除pointnum的点，如果成功，就返回原来下一个点的pointnum(应该就是pointnum)，失败就返回-1 */
+        return prim_remove_point(pContext->spObject.get(), pointnum);
+    }
+
+    void FunctionManager::afterRemovePoint(int rempoint) {
+        for (auto& [name, attrVar] : m_globalAttrCached) {
+            auto& attrvalues = attrVar.value;
+            if (name == "@ptnum") {
+                assert(rempoint < attrvalues.size());
+                for (int i = rempoint+1; i < attrvalues.size(); i++)
+                    attrvalues[i] = i - 1;
+                attrvalues.erase(attrvalues.begin() + rempoint);
+            }
+            else {
+                attrvalues.erase(attrvalues.begin() + rempoint);
             }
         }
     }

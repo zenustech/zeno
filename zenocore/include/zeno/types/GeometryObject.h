@@ -11,6 +11,8 @@ namespace zeno
 
 using Geo_Attribute = std::pair<std::string, AttrValue>;
 
+struct PrimitiveObject;
+
 struct Geo_Attributes : std::vector<Geo_Attribute>
 {
     template <class T>
@@ -27,28 +29,47 @@ struct Geo_Attributes : std::vector<Geo_Attribute>
 
 class GeometryObject : public IObjectClone<GeometryObject> {
 public:
-    struct Point
-    {
-        vec3f pos;
-        Geo_Attributes attr;
-    };
-    struct Vertex
-    {
-        int index = 0;  //index to m_points;
-        Geo_Attributes attr;
-    };
-    struct Primitive
-    {
-        std::vector<Vertex> vertices;
-        Geo_Attributes attr;
+
+    //struct Vertex
+    //{
+    //    int index = 0;  //index to m_points;
+    //    Geo_Attributes attr;
+    //};
+    //struct Primitive
+    //{
+    //    std::vector<Vertex> vertices;
+    //    Geo_Attributes attr;
+    //};
+
+    struct HEdge {
+        int pair = -1, next = -1;
+        int point = -1;  //the point which pointed by the hedge.
+        int face = -1;
     };
 
-    GeometryObject();
-    GeometryObject(const GeometryObject& geo);
+    struct Face {
+        int h = -1;      //any h-edge of this face.
+    };
+
+    struct Point {
+        vec3f pos;
+        //Geo_Attributes attr;  //TODO: attr supporting
+        int hEdge = -1;      //any h-edge starting from this Point
+    };
+
+    ZENO_API GeometryObject();
+    ZENO_API GeometryObject(const GeometryObject& geo);
+    ZENO_API GeometryObject(PrimitiveObject* prim);
 
 private:
-    std::vector<Primitive> m_prims;
+    void initFromPrim(PrimitiveObject* prim);
+    int checkHEdge(int fromPoint, int toPoint);
+    int getNextOutEdge(int fromPoint, int currentOutEdge);
+    int visit_allHalfEdge_from(int fromPoint, std::function<bool(int)> f);
+
     std::vector<Point> m_points;
+    std::vector<Face> m_faces;
+    std::vector<HEdge> m_hEdges;
 };
 
 }
