@@ -1438,7 +1438,8 @@ struct HEdgeBasedPrim : zeno::INode {
             prim = get_input<zeno::PrimitiveObject>("prim");
         }
         auto spGeom = std::make_shared<GeometryObject>(prim.get());
-        set_output("prim", spGeom);
+        auto spRes = spGeom->toPrimitive();
+        set_output("prim", spRes);
     }
 };
 

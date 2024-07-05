@@ -82,6 +82,7 @@ namespace zeno
             //一般是四边形
             m_hEdges.reserve(nFace * 4);
         }
+        m_faces.resize(nFace);
 
         for (int face = 0; face < nFace; face++) {
             std::vector<int> points;
@@ -98,6 +99,7 @@ namespace zeno
                 }
             }
 
+            Face f;
             int lastHedge = -1, firstHedge = -1;
             for (int i = 0; i < points.size(); i++) {
                 int vp = -1, vq = -1;
@@ -133,13 +135,18 @@ namespace zeno
                 int pairedge = checkHEdge(vq, vp);
                 if (pairedge >= 0) {
                     hedge.pair = pairedge;
+                    m_hEdges[pairedge].pair = hpq;
                 }
 
                 m_hEdges.emplace_back(hedge);
                 m_points[vp].edges.insert(hpq);
 
+                f.h = hpq;
+
                 lastHedge = hpq;
             }
+        
+            m_faces[face] = f;
         }
     }
 
