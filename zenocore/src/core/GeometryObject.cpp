@@ -17,44 +17,50 @@ namespace zeno
         initFromPrim(prim);
     }
 
-    int GeometryObject::visit_allHalfEdge_from(int fromPoint, std::function<bool(int)> f) {
-        assert(fromPoint < m_points.size());
-        int firstH = m_points[fromPoint].hEdge, h = firstH;
-        do {
-            const auto& hedge = m_hEdges[h];
-            h = m_hEdges[hedge.pair].next; //h.pair.next
-            int ret = -1;
-            if (f(h)) {
-                return ret;
+    ZENO_API std::shared_ptr<PrimitiveObject> GeometryObject::toPrimitive() const {
+        std::shared_ptr<PrimitiveObject> spPrim = std::make_shared<PrimitiveObject>();
+        spPrim->verts->resize(m_points.size());
+        for (int i = 0; i < m_points.size(); i++) {
+            spPrim->verts[i] = m_points[i].pos;
+            //TODO: attr
+        }
+
+        for (int i = 0; i < m_faces.size(); i++) {
+            auto& face = m_faces[i];
+            int firsth = face.h, h = firsth;
+            std::vector<int> points;
+            do {
+                const auto& hedge = m_hEdges[h];
+                points.push_back(hedge.point);
+                h = hedge.next;
+            } while (firsth != h);
+            //TODO: 两种大小都存在的情况
+            if (points.size() == 4) {
+
             }
-        } while (h != firstH);
+            else if (points.size() == 3) {
+                if (spPrim->tris.size() == 0) {
+                    spPrim->tris->resize(m_faces.size());
+                }
+                vec3i tri = { points[0],points[1], points[2] };
+                spPrim->tris[i] = std::move(tri);
+            }
+        }
+        return spPrim;
     }
 
     int GeometryObject::checkHEdge(int fromPoint, int toPoint) {
         assert(fromPoint < m_points.size());
-        int firstH = m_points[fromPoint].hEdge, h = firstH;
-        do {
-            if (h == -1)
-                return -1;
-            const auto& hedge = m_hEdges[h];
-            h = m_hEdges[hedge.pair].next; //h.pair.next
-            if (m_hEdges[h].point == toPoint) {
-                return h;
+        for (auto hedge : m_points[fromPoint].edges) {
+            if (m_hEdges[hedge].point == toPoint) {
+                return hedge;
             }
-        } while (h != firstH);
+        }
+        return -1;
     }
 
     int GeometryObject::getNextOutEdge(int fromPoint, int currentOutEdge) {
-        assert(fromPoint < m_points.size());
-        int firstH = m_points[fromPoint].hEdge, h = firstH;
-        do {
-            const auto& hedge = m_hEdges[h];
-            int hNext = m_hEdges[hedge.pair].next; //h.pair.next
-            int ret = -1;
-            if (h == currentOutEdge)
-                return hNext;
-            h = hNext;
-        } while (h != firstH);
+        return -1;
     }
 
     void GeometryObject::initFromPrim(PrimitiveObject* prim) {
@@ -92,7 +98,7 @@ namespace zeno
                 }
             }
 
-            int lastHedge = -1;
+            int lastHedge = -1, firstHedge = -1;
             for (int i = 0; i < points.size(); i++) {
                 int vp = -1, vq = -1;
                 if (i < points.size() - 1) {
@@ -103,41 +109,38 @@ namespace zeno
                     vp = points[i];
                     vq = points[0];
                 }
+
                 //vp->vq
-                int hpq = checkHEdge(vp, vq);
-                if (hpq == -1) {
-                    HEdge hedge;
-                    hedge.face = face;
-                    hedge.point = vq;
-                    hpq = m_hEdges.size();
-                    if (lastHedge != -1) {
-                        m_hEdges[lastHedge].next = hpq;
-                    }
-                    if (i == points.size() - 1) {
-                        hedge.next = m_points[points[0]].hEdge;
-                    }
-                    m_hEdges.emplace_back(hedge);
+                int hpq = -1;
+
+                HEdge hedge;
+                hedge.face = face;
+                hedge.point = vq;
+                hpq = m_hEdges.size();
+
+                if (lastHedge != -1) {
+                    m_hEdges[lastHedge].next = hpq;
                 }
-                m_points[vp].hEdge = hpq;
+                //TODO: 如果只有一条边会怎么样？
+                if (i == points.size() - 1) {
+                    hedge.next = firstHedge;
+                }
+                else if (i == 0) {
+                    firstHedge = hpq;
+                }
+
+                //check whether the pair edge exist
+                int pairedge = checkHEdge(vq, vp);
+                if (pairedge >= 0) {
+                    hedge.pair = pairedge;
+                }
+
+                m_hEdges.emplace_back(hedge);
+                m_points[vp].edges.insert(hpq);
 
                 lastHedge = hpq;
-
-                // vq->vp
-                int hqp = checkHEdge(vq, vp);
-                if (hqp == -1) {
-                    hqp = m_hEdges.size();
-                    m_hEdges.emplace_back(HEdge());
-
-                    HEdge& hedge = m_hEdges[hqp];
-                    hedge.face = -1;    //unknown face, may be a hole.
-                    hedge.point = vp;
-                    hedge.pair = hpq;
-                    hedge.next = hpq;
-
-                    m_hEdges[hpq].pair = hqp;
-                    hedge.next = getNextOutEdge(vp, hpq);
-                }
             }
         }
     }
+
 }

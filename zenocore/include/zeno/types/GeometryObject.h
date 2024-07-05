@@ -30,17 +30,6 @@ struct Geo_Attributes : std::vector<Geo_Attribute>
 class GeometryObject : public IObjectClone<GeometryObject> {
 public:
 
-    //struct Vertex
-    //{
-    //    int index = 0;  //index to m_points;
-    //    Geo_Attributes attr;
-    //};
-    //struct Primitive
-    //{
-    //    std::vector<Vertex> vertices;
-    //    Geo_Attributes attr;
-    //};
-
     struct HEdge {
         int pair = -1, next = -1;
         int point = -1;  //the point which pointed by the hedge.
@@ -54,18 +43,19 @@ public:
     struct Point {
         vec3f pos;
         //Geo_Attributes attr;  //TODO: attr supporting
-        int hEdge = -1;      //any h-edge starting from this Point
+        std::set<int> edges;    //all h-edge starting from this point.
+        //int hEdge = -1;       //any h-edge starting from this Point
     };
 
     ZENO_API GeometryObject();
     ZENO_API GeometryObject(const GeometryObject& geo);
     ZENO_API GeometryObject(PrimitiveObject* prim);
+    ZENO_API std::shared_ptr<PrimitiveObject> toPrimitive() const;
 
 private:
     void initFromPrim(PrimitiveObject* prim);
     int checkHEdge(int fromPoint, int toPoint);
     int getNextOutEdge(int fromPoint, int currentOutEdge);
-    int visit_allHalfEdge_from(int fromPoint, std::function<bool(int)> f);
 
     std::vector<Point> m_points;
     std::vector<Face> m_faces;
