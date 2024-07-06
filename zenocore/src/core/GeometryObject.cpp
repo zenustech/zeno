@@ -1,10 +1,24 @@
 #include <zeno/types/GeometryObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <assert.h>
+#include <zeno/formula/syntax_tree.h>
 
 
 namespace zeno
 {
+    template <class T>
+    static T get_zfxvar(zfxvariant value) {
+        return std::visit([](auto const& val) -> T {
+            using V = std::decay_t<decltype(val)>;
+            if constexpr (!std::is_constructible_v<T, V>) {
+                throw makeError<TypeError>(typeid(T), typeid(V), "get<zfxvariant>");
+            }
+            else {
+                return T(val);
+            }
+        }, value);
+    }
+
     ZENO_API GeometryObject::GeometryObject() {
 
     }
@@ -25,6 +39,14 @@ namespace zeno
             //TODO: attr
         }
 
+        int startIdx = 0;
+        if (m_bTriangle) {
+            spPrim->tris->resize(m_faces.size());
+        }
+        else {
+            spPrim->polys->resize(m_faces.size());
+        }
+
         for (int i = 0; i < m_faces.size(); i++) {
             auto& face = m_faces[i];
             int firsth = face.h, h = firsth;
@@ -34,16 +56,18 @@ namespace zeno
                 points.push_back(hedge.point);
                 h = hedge.next;
             } while (firsth != h);
-            //TODO: 两种大小都存在的情况
-            if (points.size() == 4) {
 
-            }
-            else if (points.size() == 3) {
-                if (spPrim->tris.size() == 0) {
-                    spPrim->tris->resize(m_faces.size());
-                }
+            if (m_bTriangle) {
                 vec3i tri = { points[0],points[1], points[2] };
                 spPrim->tris[i] = std::move(tri);
+            }
+            else {
+                int sz = points.size();
+                for (auto pt : points) {
+                    spPrim->loops.push_back(pt);
+                }
+                spPrim->polys.push_back({startIdx, sz});
+                startIdx += sz;
             }
         }
         return spPrim;
@@ -71,8 +95,8 @@ namespace zeno
         }
 
         int nFace = -1;
-        bool bTriangle = prim->loops->empty() && !prim->tris->empty();
-        if (bTriangle) {
+        m_bTriangle = prim->loops->empty() && !prim->tris->empty();
+        if (m_bTriangle) {
             nFace = prim->tris->size();
             m_hEdges.reserve(nFace * 3);
         }
@@ -86,7 +110,7 @@ namespace zeno
 
         for (int face = 0; face < nFace; face++) {
             std::vector<int> points;
-            if (bTriangle) {
+            if (m_bTriangle) {
                 auto const& ind = prim->tris[face];
                 points = { ind[0], ind[1], ind[2] };
             }
@@ -150,4 +174,33 @@ namespace zeno
         }
     }
 
+    int GeometryObject::get_point_count() const {
+        return m_points.size();
+    }
+
+    int GeometryObject::get_face_count() const {
+        return m_faces.size();
+    }
+
+    std::vector<vec3f> GeometryObject::get_points() const {
+        std::vector<vec3f> vecPoints;
+        vecPoints.resize(m_points.size());
+        for (int i = 0; i < vecPoints.size(); i++) {
+            vecPoints[i] = m_points[i].pos;
+        }
+        return vecPoints;
+    }
+
+    void GeometryObject::set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter) {
+        for (int i = 0; i < m_points.size(); i++) {
+            if (filter[i]) {
+                const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
+                m_points[i].pos = { vec.x, vec.y, vec.z };
+            }
+        }
+    }
+
+    void GeometryObject::set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter) {
+        //TODO
+    }
 }

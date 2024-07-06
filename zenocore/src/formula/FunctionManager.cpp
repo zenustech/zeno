@@ -12,6 +12,7 @@
 #include <zeno/utils/format.h>
 #include <numeric>
 #include <zeno/geo/geometryutil.h>
+#include <zeno/types/GeometryObject.h>
 
 
 namespace zeno {
@@ -170,21 +171,45 @@ namespace zeno {
         throw makeError<UnimplError>();
     }
 
+    static int getElementCount(std::shared_ptr<IObject> spObject, ZfxRunOver runover) {
+        switch (runover)
+        {
+        case RunOver_Points: {
+            if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(spObject)) {
+                return spGeo->get_point_count();
+            }
+            else if (auto spPrim = std::dynamic_pointer_cast<PrimitiveObject>(spObject)) {
+                return spPrim->verts->size();
+            }
+            else {
+                return 0;
+            }
+        }
+        case RunOver_Face:
+            if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(spObject)) {
+                return spGeo->get_face_count();
+            }
+            else if (auto spPrim = std::dynamic_pointer_cast<PrimitiveObject>(spObject)) {
+                if (spPrim->tris.size() > 0)
+                    return spPrim->tris.size();
+                else
+                    return spPrim->polys.size();
+            }
+            else {
+                return 0;
+            }
+        case RunOver_Geom: {
+            //only one element
+            return 1;
+        }
+        }
+    }
+
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
         //printSyntaxTree(root, pCtx->code);
         assert(pCtx->spObject);
         if (pCtx->spObject) {
-            int nFilterSize = 0;
-            switch (pCtx->runover)
-            {
-            case RunOver_Points: nFilterSize = pCtx->spObject->verts->size(); break;
-            case RunOver_Face:
-                //TODO;
-                break;
-            case RunOver_Geom:
-                nFilterSize = 1;
-                break;
-            }
+            int nFilterSize = getElementCount(pCtx->spObject, pCtx->runover);
             ZfxElemFilter filter(nFilterSize, 1);
             scope_exit sp([&] {m_globalAttrCached.clear(); });
             execute(root, filter, pCtx);
@@ -777,41 +802,51 @@ namespace zeno {
         return bret;
     }
 
+    static void commitToObject(std::shared_ptr<IObject> spObject, const ZfxVariable& val, const std::string& attr_name, ZfxElemFilter& filter) {
+        if (attr_name != "nrm" && attr_name != "pos") {
+            //supporting only @N and @P
+            return;
+        }
+
+        if (auto spPrim = std::dynamic_pointer_cast<PrimitiveObject>(spObject)) {
+            if (spPrim->has_attr(attr_name)) {
+                auto/*std::vector<vec3f>*/& attrvecs = spPrim->attr<vec3f>(attr_name);
+                assert(filter.size() == attrvecs.size());
+                for (int i = 0; i < attrvecs.size(); i++) {
+                    if (filter[i]) {
+                        const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
+                        attrvecs[i] = { vec.x, vec.y, vec.z };
+                    }
+                }
+            }
+            else {
+                throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
+            }
+        }
+        else if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(spObject)) {
+            if (attr_name == "pos") {
+                spGeo->set_points_pos(val, filter);
+            }
+            else if (attr_name == "nrm") {
+                spGeo->set_points_normal(val, filter);
+            }
+        }
+    }
+
     void FunctionManager::commitToPrim(const std::string& attrname, const ZfxVariable& val, ZfxElemFilter& filter, ZfxContext* pContext) {
         if (pContext->runover == RunOver_Points) {
             if (attrname == "@P") {
-                auto& P = pContext->spObject->attr<vec3f>("pos");
-                assert(filter.size() == P.size());
-                for (int i = 0; i < P.size(); i++) {
-                    if (filter[i]) {
-                        const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
-                        P[i] = { vec.x, vec.y, vec.z };
-                    }
-                }
+                commitToObject(pContext->spObject, val, "pos", filter);
             }
             else if (attrname == "@ptnum") {
                 throw makeError<UnimplError>("");
             }
             else if (attrname == "@N") {
-                if (pContext->spObject->has_attr("nrm")) {
-                    auto& nrms = pContext->spObject->attr<vec3f>("nrm");
-                    assert(filter.size() == nrms.size());
-                    for (int i = 0; i < nrms.size(); i++) {
-                        if (filter[i]) {
-                            const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
-                            nrms[i] = { vec.x, vec.y, vec.z };
-                        }
-                    }
-                }
-                else {
-                    throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
-                }
+                commitToObject(pContext->spObject, val, "nrm", filter);
             }
             else if (attrname == "@Cd") {
-                
             }
             else {
-                
             }
         }
         else if (pContext->runover == RunOver_Face) {
@@ -825,10 +860,11 @@ namespace zeno {
         }
     }
 
-    ZfxVariable FunctionManager::getAttrValue(const std::string& attrname, ZfxContext* pContext) {
-        if (pContext->runover == RunOver_Points) {
-            if (attrname == "@P") {
-                const auto& P = pContext->spObject->attr<vec3f>("pos");
+    static ZfxVariable getAttrValue_impl(std::shared_ptr<IObject> spObject, const std::string& attr_name) {
+        if (auto spPrim = std::dynamic_pointer_cast<PrimitiveObject>(spObject)) {
+            if (attr_name == "pos")
+            {
+                const auto& P = spPrim->attr<vec3f>("pos");
                 ZfxVariable res;
                 res.bAttr = true;
                 for (auto pos : P) {
@@ -836,8 +872,9 @@ namespace zeno {
                 }
                 return res;
             }
-            else if (attrname == "@ptnum") {
-                int N = pContext->spObject->verts->size();
+            if (attr_name == "ptnum")
+            {
+                int N = spPrim->verts->size();
                 ZfxVariable res;
                 res.value.resize(N);
                 res.bAttr = true;
@@ -845,9 +882,10 @@ namespace zeno {
                     res.value[i] = i;
                 return res;
             }
-            else if (attrname == "@N") {
-                if (pContext->spObject->has_attr("nrm")) {
-                    const auto& nrms = pContext->spObject->attr<vec3f>("nrm");
+            if (attr_name == "nrm")
+            {
+                if (spPrim->has_attr("nrm")) {
+                    const auto& nrms = spPrim->attr<vec3f>("nrm");
                     ZfxVariable res;
                     res.bAttr = true;
                     for (auto nrm : nrms) {
@@ -858,6 +896,26 @@ namespace zeno {
                 else {
                     throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
                 }
+            }
+        }
+        else if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(spObject)) {
+
+        }
+        else {
+            return ZfxVariable();
+        }
+    }
+
+    ZfxVariable FunctionManager::getAttrValue(const std::string& attrname, ZfxContext* pContext) {
+        if (pContext->runover == RunOver_Points) {
+            if (attrname == "@P") {
+                return getAttrValue_impl(pContext->spObject, "pos");
+            }
+            else if (attrname == "@ptnum") {
+                return getAttrValue_impl(pContext->spObject, "ptnum");
+            }
+            else if (attrname == "@N") {
+                return getAttrValue_impl(pContext->spObject, "nrm");
             }
             else if (attrname == "@Cd") {
                 return ZfxVariable();
@@ -1741,7 +1799,10 @@ namespace zeno {
 
     bool FunctionManager::removePoint(int pointnum, ZfxContext* pContext) {
         /* 删除pointnum的点，如果成功，就返回原来下一个点的pointnum(应该就是pointnum)，失败就返回-1 */
-        return prim_remove_point(pContext->spObject.get(), pointnum);
+        if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
+            return prim_remove_point(spGeo.get(), pointnum);
+        }
+        return false;
     }
 
     void FunctionManager::afterRemovePoint(int rempoint) {

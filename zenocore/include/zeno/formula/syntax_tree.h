@@ -150,7 +150,7 @@ struct ZfxASTNode {
 
 struct ZfxContext
 {
-    /* in */ std::shared_ptr<PrimitiveObject> spObject;
+    /* in */ std::shared_ptr<IObject> spObject;
     /* in */ std::weak_ptr<INode> spNode;
     /* in */ std::string code;
     /* in */ bool bParsingAttr = false;     //刚parse的语法树还需要对带有属性的进行处理，在外面套一层foreach循环以遍历属性

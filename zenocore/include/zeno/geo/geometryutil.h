@@ -3,9 +3,9 @@
 
 namespace zeno
 {
-    struct PrimitiveObject;
+    struct GeometryObject;
 
-    bool prim_remove_point(PrimitiveObject* prim, int ptnum);
+    bool prim_remove_point(GeometryObject* prim, int ptnum);
 
 }
 
