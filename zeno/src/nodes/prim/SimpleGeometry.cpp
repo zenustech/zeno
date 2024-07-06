@@ -1430,8 +1430,7 @@ ZENDEFNODE(CreateCylinder, {
     {"create"},
 });
 
-
-struct HEdgeBasedPrim : zeno::INode {
+struct HEdgeGeoSelfTest : zeno::INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> prim;
         if (has_input("prim")) {
@@ -1440,6 +1439,27 @@ struct HEdgeBasedPrim : zeno::INode {
         auto spGeom = std::make_shared<GeometryObject>(prim.get());
         auto spRes = spGeom->toPrimitive();
         set_output("prim", spRes);
+    }
+};
+
+ZENDEFNODE(HEdgeGeoSelfTest, {
+    {
+        {"prim", "prim"}
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
+
+
+struct HEdgeBasedPrim : zeno::INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> prim;
+        if (has_input("prim")) {
+            prim = get_input<zeno::PrimitiveObject>("prim");
+        }
+        auto spGeom = std::make_shared<GeometryObject>(prim.get());
+        set_output("prim", spGeom);
     }
 };
 

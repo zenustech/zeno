@@ -33,11 +33,8 @@ namespace zeno
 
     ZENO_API std::shared_ptr<PrimitiveObject> GeometryObject::toPrimitive() const {
         std::shared_ptr<PrimitiveObject> spPrim = std::make_shared<PrimitiveObject>();
-        spPrim->verts->resize(m_points.size());
-        for (int i = 0; i < m_points.size(); i++) {
-            spPrim->verts[i] = m_points[i].pos;
-            //TODO: attr
-        }
+        assert(m_points.size() == m_points_data.size());
+        spPrim->verts = m_points_data;
 
         int startIdx = 0;
         if (m_bTriangle) {
@@ -87,12 +84,14 @@ namespace zeno
         return -1;
     }
 
+    bool GeometryObject::has_point_attr(std::string const& name) const {
+        return m_points_data.has_attr(name);
+    }
+
     void GeometryObject::initFromPrim(PrimitiveObject* prim) {
 
         m_points.resize(prim->verts->size());
-        for (int i = 0; i < m_points.size(); i++) {
-            m_points[i].pos = prim->verts[i];
-        }
+        m_points_data = prim->verts;
 
         int nFace = -1;
         m_bTriangle = prim->loops->empty() && !prim->tris->empty();
@@ -169,7 +168,6 @@ namespace zeno
 
                 lastHedge = hpq;
             }
-        
             m_faces[face] = f;
         }
     }
@@ -183,24 +181,26 @@ namespace zeno
     }
 
     std::vector<vec3f> GeometryObject::get_points() const {
-        std::vector<vec3f> vecPoints;
-        vecPoints.resize(m_points.size());
-        for (int i = 0; i < vecPoints.size(); i++) {
-            vecPoints[i] = m_points[i].pos;
-        }
-        return vecPoints;
+        return m_points_data;
     }
 
     void GeometryObject::set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter) {
         for (int i = 0; i < m_points.size(); i++) {
             if (filter[i]) {
                 const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
-                m_points[i].pos = { vec.x, vec.y, vec.z };
+                m_points_data[i] = { vec.x, vec.y, vec.z };
             }
         }
     }
 
-    void GeometryObject::set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter) {
-        //TODO
+    void GeometryObject::set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter)
+    {
+        std::vector<vec3f>& nrms = m_points_data.attr<vec3f>("nrm");
+        for (int i = 0; i < m_points_data.size(); i++) {
+            if (filter[i]) {
+                const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
+                nrms[i] = { vec.x, vec.y, vec.z };
+            }
+        }
     }
 }

@@ -492,8 +492,8 @@ namespace zeno {
         if (name.at(0) == '@') {
             auto iter = m_globalAttrCached.find(name);
             if (iter == m_globalAttrCached.end()) {
-                m_globalAttrCached.insert(std::make_pair(name, ZfxVariable()));
-                iter = m_globalAttrCached.begin();
+                const auto& res = m_globalAttrCached.insert(std::make_pair(name, ZfxVariable()));
+                iter = res.first;
                 iter->second = getAttrValue(name, pContext);
             }
             return iter->second;
@@ -899,7 +899,41 @@ namespace zeno {
             }
         }
         else if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(spObject)) {
-
+            if (attr_name == "pos")
+            {
+                const auto& P = spGeo->get_points();
+                ZfxVariable res;
+                res.bAttr = true;
+                for (auto pos : P) {
+                    res.value.push_back(glm::vec3(pos[0], pos[1], pos[2]));
+                }
+                return res;
+            }
+            if (attr_name == "ptnum")
+            {
+                int N = spGeo->get_point_count();
+                ZfxVariable res;
+                res.value.resize(N);
+                res.bAttr = true;
+                for (int i = 0; i < N; i++)
+                    res.value[i] = i;
+                return res;
+            }
+            if (attr_name == "nrm")
+            {
+                if (spGeo->has_point_attr("nrm")) {
+                    const auto& nrms = spGeo->point_attr<vec3f>("nrm");
+                    ZfxVariable res;
+                    res.bAttr = true;
+                    for (auto nrm : nrms) {
+                        res.value.push_back(glm::vec3(nrm[0], nrm[1], nrm[2]));
+                    }
+                    return res;
+                }
+                else {
+                    throw makeError<UnimplError>("the prim has no attr about normal, you can check whether the option `hasNormal` is on");
+                }
+            }
         }
         else {
             return ZfxVariable();

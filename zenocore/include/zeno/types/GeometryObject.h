@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <zeno/types/AttrVector.h>
 #include <zeno/core/common.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/FunctionManager.h>
@@ -38,8 +39,6 @@ struct Face {
 };
 
 struct Point {
-    vec3f pos;
-    //Geo_Attributes attr;  //TODO: attr supporting
     std::set<int> edges;    //all h-edge starting from this point.
     //int hEdge = -1;       //any h-edge starting from this Point
 };
@@ -53,6 +52,14 @@ public:
     int get_point_count() const;
     int get_face_count() const;
     std::vector<vec3f> get_points() const;
+
+    bool has_point_attr(std::string const& name) const;
+
+    template <class T>
+    auto const& point_attr(std::string const& name) const {
+        return m_points_data.attr<T>(name);
+    }
+
     void set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter);
     void set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter);
 
@@ -61,9 +68,13 @@ private:
     int checkHEdge(int fromPoint, int toPoint);
     int getNextOutEdge(int fromPoint, int currentOutEdge);
 
-    std::vector<Point> m_points;
     std::vector<Face> m_faces;
+    AttrVector<int> m_faces_data;   //no based value
+
     std::vector<HEdge> m_hEdges;
+
+    std::vector<Point> m_points;
+    AttrVector<vec3f> m_points_data;    //corresponding with points.
 
     bool m_bTriangle = true;
 };

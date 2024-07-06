@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/GeometryObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -64,22 +65,21 @@ static void vectors_wrangle
 
 struct AttributeWrangle : zeno::INode {
     virtual void apply() override {
-        std::shared_ptr<PrimitiveObject> prim;
-        if (has_input("prim")) {
-            prim = get_input<zeno::PrimitiveObject>("prim");
-        }
-
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         ZfxContext ctx;
         ctx.spNode = shared_from_this();
-        ctx.spObject = prim->clone();
+        ctx.spObject = get_input("prim");
         ctx.code = code;
         ZfxExecute zfx(code, ctx);
         zfx.execute();
 
-        set_output("prim", ctx.spObject);
-
+        if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(ctx.spObject)) {
+            set_output("prim", spGeo->toPrimitive());
+        }
+        else {
+            set_output("prim", ctx.spObject);
+        }
         //auto& funcMgr = zeno::getSession().funcManager;
         //funcMgr->testExp();
     }
