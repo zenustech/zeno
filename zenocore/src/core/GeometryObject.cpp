@@ -23,10 +23,6 @@ namespace zeno
 
     }
 
-    ZENO_API GeometryObject::GeometryObject(const GeometryObject& geo) {
-
-    }
-
     ZENO_API GeometryObject::GeometryObject(PrimitiveObject* prim) {
         initFromPrim(prim);
     }

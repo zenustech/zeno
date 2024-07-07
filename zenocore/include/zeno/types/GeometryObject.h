@@ -40,13 +40,11 @@ struct Face {
 
 struct Point {
     std::set<int> edges;    //all h-edge starting from this point.
-    //int hEdge = -1;       //any h-edge starting from this Point
 };
 
 class GeometryObject : public IObjectClone<GeometryObject> {
 public:
     ZENO_API GeometryObject();
-    ZENO_API GeometryObject(const GeometryObject& geo);
     ZENO_API GeometryObject(PrimitiveObject* prim);
     ZENO_API std::shared_ptr<PrimitiveObject> toPrimitive() const;
     int get_point_count() const;

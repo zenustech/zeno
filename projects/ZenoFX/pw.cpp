@@ -69,7 +69,7 @@ struct AttributeWrangle : zeno::INode {
 
         ZfxContext ctx;
         ctx.spNode = shared_from_this();
-        ctx.spObject = get_input("prim");
+        ctx.spObject = get_input("prim")->clone();
         ctx.code = code;
         ZfxExecute zfx(code, ctx);
         zfx.execute();
