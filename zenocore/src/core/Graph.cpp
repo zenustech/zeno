@@ -183,6 +183,12 @@ void Graph::viewNodeUpdated(const std::string node, bool bView) {
     if (bView) {
         //TODO: only run calculation chain which associate with `node`.
         //getSession().run_main_graph();
+        //disable the previous view.
+        auto viewnodes = m_viewnodes;
+        for (auto nodename : viewnodes) {
+            auto spNode = getNode(nodename);
+            spNode->set_view(false);
+        }
         m_viewnodes.insert(node);
     }
     else {
