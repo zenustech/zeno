@@ -1824,6 +1824,7 @@ namespace zeno {
                         }
                     }
                 }
+                return ZfxVariable();
             }
             else {
                 throw makeError<UnimplError>();
@@ -1834,7 +1835,7 @@ namespace zeno {
     bool FunctionManager::removePoint(int pointnum, ZfxContext* pContext) {
         /* 删除pointnum的点，如果成功，就返回原来下一个点的pointnum(应该就是pointnum)，失败就返回-1 */
         if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
-            return prim_remove_point(spGeo.get(), pointnum);
+            return spGeo->remove_point(pointnum);
         }
         return false;
     }

@@ -203,4 +203,114 @@ namespace zeno
             }
         }
     }
+
+    int get_adjust_position(const std::vector<int>& remIndice, int oldindex) {
+        int numOfExceed = 0;
+        for (int remIdx : remIndice) {
+            if (oldindex >= remIdx)
+                numOfExceed++;
+            else
+                break;
+        }
+        return oldindex - numOfExceed;
+    }
+
+    bool GeometryObject::remove_point(int ptnum) {
+        if (m_bTriangle) {
+            std::set<int> _remFaces, _remHEdges;
+            if (ptnum < 0 || ptnum >= m_points.size())
+                return false;
+
+            for (int outEdge : m_points[ptnum].edges) {
+                assert(outEdge >= 0 && outEdge < m_hEdges.size());
+                auto& hedge = m_hEdges[outEdge];
+                _remFaces.insert(hedge.face);
+
+                int h = outEdge;
+                do {
+                    _remHEdges.insert(h);
+                    hedge = m_hEdges[h];
+                    h = hedge.next;
+                } while (h != outEdge);
+            }
+
+            std::vector<int> remFaces, remHEdges;
+            for (int idx : _remFaces)
+                remFaces.push_back(idx);
+            for (int idx : _remHEdges)
+                remHEdges.push_back(idx);
+
+            std::sort(remFaces.begin(), remFaces.end());
+            std::sort(remHEdges.begin(), remHEdges.end());
+
+            std::map<int, int> edgeIdxMapper;
+            for (int i = 0; i < m_hEdges.size(); i++) {
+                if (_remHEdges.find(i) != _remHEdges.end())
+                    continue;
+                int newIdx = get_adjust_position(remHEdges, i);
+                edgeIdxMapper.insert(std::make_pair(i, newIdx));
+            }
+
+            std::map<int, int> faceIdxMapper;
+            for (int i = 0; i < m_faces.size(); i++) {
+                if (_remFaces.find(i) != _remFaces.end())
+                    continue;
+                int newIdx = get_adjust_position(remFaces, i);
+                faceIdxMapper.insert(std::make_pair(i, newIdx));
+            }
+
+            m_points.erase(m_points.begin() + ptnum);
+            m_points_data.values.erase(m_points_data.values.begin() + ptnum);
+            for (auto iter = m_points_data.attrs.begin(); iter != m_points_data.attrs.end(); iter++)
+            {
+                std::visit([&](auto& val) {
+                    val.erase(val.begin() + ptnum);
+                }, iter->second);
+            }
+
+            //adjust all points
+            for (int i = 0; i < m_points.size(); i++) {
+                std::set<int> edges;
+                for (int h : m_points[i].edges) {
+                    edges.insert(edgeIdxMapper[h]);
+                }
+                m_points[i].edges = edges;
+            }
+
+            //adjust edges
+            for (int i = 0; i < m_hEdges.size(); i++)
+            {
+                auto& hedge = m_hEdges[i];
+                if (_remHEdges.find(i) != _remHEdges.end()) {
+                    hedge.face = -1;
+                }
+                else {
+                    hedge.pair = edgeIdxMapper[hedge.pair];
+                    hedge.next = edgeIdxMapper[hedge.next];
+                    hedge.face = faceIdxMapper[hedge.face];
+                    if (hedge.point >= ptnum) {
+                        hedge.point--;
+                    }
+                }
+            }
+            for (auto iter = m_hEdges.begin(); iter != m_hEdges.end();) {
+                if (iter->face == -1) {
+                    iter = m_hEdges.erase(iter);
+                }
+                else {
+                    iter++;
+                }
+            }
+
+            //adjust face
+            for (int i = m_faces.size() - 1; i >= 0; i--) {
+                if (_remFaces.find(i) != _remFaces.end()) {
+                    m_faces.erase(m_faces.begin() + i);
+                }
+                else {
+                    m_faces[i].h = edgeIdxMapper[m_faces[i].h];
+                }
+            }
+        }
+    }
 }
