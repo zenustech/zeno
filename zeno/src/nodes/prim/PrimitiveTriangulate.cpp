@@ -108,9 +108,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     } else {
         auto &loop_uv = prim->loops.attr<int>("uvs");
         auto &uvs = prim->uvs;
-        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];

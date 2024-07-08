@@ -68,7 +68,7 @@ struct PrimPerlinNoise : INode {
         auto detail = get_input2<float>("detail");
         auto roughness = get_input2<float>("roughness");
         auto disortion = get_input2<float>("disortion");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         auto average = get_input2<float>("average");
         auto strength = get_input2<float>("strength");
         auto outAttr = get_input2<std::string>("outAttr");

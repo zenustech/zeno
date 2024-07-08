@@ -30,10 +30,10 @@ ZENDEFNODE(ExtractAxis, {
 
 struct MakeAxis : zeno::INode {
     virtual void apply() override {
-        auto origin = get_input2<vec3f>("origin");
-        auto axisX = get_input2<vec3f>("axisX");
-        auto axisY = get_input2<vec3f>("axisY");
-        auto axisZ = get_input2<vec3f>("axisZ");
+        auto origin = get_input2<zeno::vec3f>("origin");
+        auto axisX = get_input2<zeno::vec3f>("axisX");
+        auto axisY = get_input2<zeno::vec3f>("axisY");
+        auto axisZ = get_input2<zeno::vec3f>("axisZ");
         auto p = std::make_shared<AxisObject>(origin, axisX, axisY, axisZ);
         auto by = get_param<std::string>("normalize");
         if (by == "X")

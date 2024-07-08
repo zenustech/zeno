@@ -65,9 +65,9 @@ struct MakeCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
 
-        camera->pos = get_input2<vec3f>("pos");
-        camera->up = get_input2<vec3f>("up");
-        camera->view = get_input2<vec3f>("view");
+        camera->pos = get_input2<zeno::vec3f>("pos");
+        camera->up = get_input2<zeno::vec3f>("up");
+        camera->view = get_input2<zeno::vec3f>("view");
         camera->ffar = get_input2<float>("far");
         camera->fnear = get_input2<float>("near");
         camera->fov = get_input2<float>("fov");
@@ -132,9 +132,9 @@ struct TargetCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
 
-        auto refUp = zeno::normalize(get_input2<vec3f>("refUp"));
-        auto pos = get_input2<vec3f>("pos");
-        auto target = get_input2<vec3f>("target");
+        auto refUp = zeno::normalize(get_input2<zeno::vec3f>("refUp"));
+        auto pos = get_input2<zeno::vec3f>("pos");
+        auto target = get_input2<zeno::vec3f>("target");
         auto AF = get_input2<bool>("AutoFocus");
         vec3f view = zeno::normalize(target - pos);
         vec3f right = zeno::cross(view, refUp);
@@ -180,12 +180,12 @@ ZENO_DEFNODE(TargetCamera)({
 struct MakeLight : INode {
     virtual void apply() override {
         auto light = std::make_unique<LightObject>();
-        light->lightDir = normalize(get_input2<vec3f>("lightDir"));
+        light->lightDir = normalize(get_input2<zeno::vec3f>("lightDir"));
         light->intensity = get_input2<float>("intensity");
-        light->shadowTint = get_input2<vec3f>("shadowTint");
+        light->shadowTint = get_input2<zeno::vec3f>("shadowTint");
         light->lightHight = get_input2<float>("lightHight");
         light->shadowSoftness = get_input2<float>("shadowSoftness");
-        light->lightColor = get_input2<vec3f>("lightColor");
+        light->lightColor = get_input2<zeno::vec3f>("lightColor");
         light->lightScale = get_input2<float>("lightScale");
         light->isEnabled = get_input2<bool>("isEnabled");
         set_output("light", std::move(light));

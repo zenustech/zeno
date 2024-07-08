@@ -27,9 +27,9 @@ struct AABBVoronoi : INode {
         auto triangulate = get_param<bool>("triangulate");
 
         auto bmin = has_input("bboxMin") ?
-            get_input<NumericObject>("bboxMin")->get<vec3f>() : vec3f(-1);
+            get_input<NumericObject>("bboxMin")->get<zeno::vec3f>() : zeno::vec3f(-1);
         auto bmax = has_input("bboxMax") ?
-            get_input<NumericObject>("bboxMax")->get<vec3f>() : vec3f(1);
+            get_input<NumericObject>("bboxMax")->get<zeno::vec3f>() : zeno::vec3f(1);
         auto minx = bmin[0];
         auto miny = bmin[1];
         auto minz = bmin[2];
@@ -45,7 +45,7 @@ struct AABBVoronoi : INode {
 
             if (has_input("particlesPrim")) {
                 auto particlesPrim = get_input<PrimitiveObject>("particlesPrim");
-                auto &parspos = particlesPrim->attr<vec3f>("pos");
+                auto &parspos = particlesPrim->attr<zeno::vec3f>("pos");
                 for (int i = 0; i < parspos.size(); i++) {
                     auto p = parspos[i];
                     pcon.put(i + 1, p[0], p[1], p[2]);
@@ -54,7 +54,7 @@ struct AABBVoronoi : INode {
                 auto numParticles = get_param<int>("numRandPoints");
                 wangsrng rng(numParticles);
                 for (int i = 0; i < numParticles; i++) {
-                    vec3f p(rng.next_float(),rng.next_float(),rng.next_float());
+                    zeno::vec3f p(rng.next_float(),rng.next_float(),rng.next_float());
                     p = p * (bmax - bmin) + bmin;
                     pcon.put(i + 1, p[0], p[1], p[2]);
                 }
@@ -96,7 +96,7 @@ struct AABBVoronoi : INode {
 
                 auto prim = std::make_shared<PrimitiveObject>();
 
-                auto &pos = prim->add_attr<vec3f>("pos");
+                auto &pos = prim->add_attr<zeno::vec3f>("pos");
                 for (int i = 0; i < (int)v.size(); i += 3) {
                     pos.emplace_back(v[i], v[i+1], v[i+2]);
                 }
@@ -108,7 +108,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->arr.push_back(objectFromLiterial(vec2i(cid, ncid)));
+                            neighs->arr.push_back(objectFromLiterial(zeno::vec2i(cid, ncid)));
                         }
                     }
                     int len = f_vert[j];
@@ -166,7 +166,7 @@ struct VoronoiFracture : AABBVoronoi {
         auto primA = get_input<PrimitiveObject>("meshPrim");
         auto VFA = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
-        auto bmin = primA->verts.size() ? primA->verts[0] : vec3f(0);
+        auto bmin = primA->verts.size() ? primA->verts[0] : zeno::vec3f(0);
         auto bmax = bmin;
         for (int i = 1; i < primA->verts.size(); i++) {
             bmin = zeno::min(primA->verts[i], bmin);
@@ -323,7 +323,7 @@ struct SimplifyVoroNeighborList : INode {
         auto newNeighList = std::make_shared<ListObject>();
 
         std::map<int, std::vector<int>> lut;
-        for (auto const &ind: neighList->getLiterial<vec2i>()) {
+        for (auto const &ind: neighList->getLiterial<zeno::vec2i>()) {
             auto x = ind[0], y = ind[1];
             lut[x].push_back(y);
             lut[y].push_back(x);
@@ -345,7 +345,7 @@ struct SimplifyVoroNeighborList : INode {
         }
 
         for (auto const &[x, y]: edges) {
-            newNeighList->arr.push_back(objectFromLiterial(vec2i(x, y)));
+            newNeighList->arr.push_back(objectFromLiterial(zeno::vec2i(x, y)));
         }
         set_output("newNeighList", std::move(newNeighList));
     }

@@ -71,10 +71,10 @@ public:
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
 
-        auto p1 = get_input<zeno::NumericObject>("p1")->get<vec3f>();
-        auto p2 = get_input<zeno::NumericObject>("p2")->get<vec3f>();
-        auto p3 = get_input<zeno::NumericObject>("p3")->get<vec3f>();
-        auto p4 = get_input<zeno::NumericObject>("p4")->get<vec3f>();
+        auto p1 = get_input<zeno::NumericObject>("p1")->get<zeno::vec3f>();
+        auto p2 = get_input<zeno::NumericObject>("p2")->get<zeno::vec3f>();
+        auto p3 = get_input<zeno::NumericObject>("p3")->get<zeno::vec3f>();
+        auto p4 = get_input<zeno::NumericObject>("p4")->get<zeno::vec3f>();
         auto invMass1 = get_input<zeno::NumericObject>("invMass1")->get<float>();
         auto invMass2 = get_input<zeno::NumericObject>("invMass2")->get<float>();
         auto invMass3 = get_input<zeno::NumericObject>("invMass3")->get<float>();

@@ -28,7 +28,7 @@ namespace zeno {
 struct UVProjectFromPlane : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &uv = prim->verts.add_attr<vec3f>("uv");
+        auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto refPlane = get_input<PrimitiveObject>("refPlane");
         if (refPlane->verts.size() != 4) {
             zeno::log_error("refPlane must be 1 * 1 plane!");
@@ -51,9 +51,9 @@ struct UVProjectFromPlane : zeno::INode {
             auto v = zeno::clamp(zeno::dot(proj, vDir) / vLength, 0, 1);
             uv[i] = zeno::vec3f(u,  v, 0);
         }
-        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
         for (auto i = 0; i < prim->tris.size(); i++) {
             auto tri = prim->tris[i];
             uv0[i] = uv[tri[0]];
@@ -163,13 +163,13 @@ struct PrimSample2D : zeno::INode {
         auto image = get_input2<PrimitiveObject>("image");
         auto wrap = get_input2<std::string>("wrap");
         auto filter = get_input2<std::string>("filter");
-        auto borderColor = get_input2<vec3f>("borderColor");
+        auto borderColor = get_input2<zeno::vec3f>("borderColor");
 
         auto invertU = get_input2<bool>("invert U");
         auto invertV = get_input2<bool>("invert V");
         auto scale = get_input2<float>("scale");
         auto rotate = get_input2<float>("rotate");
-        auto translate = get_input2<vec2f>("translate");
+        auto translate = get_input2<zeno::vec2f>("translate");
 
         glm::vec3 pre_scale = glm::vec3(scale, scale, 0 );
         if(invertU) pre_scale.x *= -1;
@@ -257,9 +257,9 @@ struct PrimSample2D : zeno::INode {
             }
         }
         else if (uvSource == "tris") {
-            auto uv0 = prim->tris.attr<vec3f>("uv0");
-            auto uv1 = prim->tris.attr<vec3f>("uv1");
-            auto uv2 = prim->tris.attr<vec3f>("uv2");
+            auto uv0 = prim->tris.attr<zeno::vec3f>("uv0");
+            auto uv1 = prim->tris.attr<zeno::vec3f>("uv1");
+            auto uv2 = prim->tris.attr<zeno::vec3f>("uv2");
 
             #pragma omp parallel for
             for (auto i = 0; i < prim->tris.size(); i++) {
@@ -512,7 +512,7 @@ struct ReadImageFile_v2 : INode {
             }
         }
         int w = image->userData().get2<int>("w");
-        auto &ij = image->verts.add_attr<vec3f>("ij");
+        auto &ij = image->verts.add_attr<zeno::vec3f>("ij");
         for (auto i = 0; i < image->verts.size(); i++) {
             ij[i] = vec3f(i % w, i / w, 0);
         }
@@ -880,7 +880,7 @@ struct EnvMapRot : INode {
 
         float rot_theta = y / float(h - 1) * 180;
 
-        auto dir = get_input2<vec3f>("dir");
+        auto dir = get_input2<zeno::vec3f>("dir");
         dir = zeno::normalize(dir);
         auto to_rot_theta = glm::degrees(acos(dir[1]));
         auto diff_rot_theta = to_rot_theta - rot_theta;
@@ -913,7 +913,7 @@ struct PrimLoadExrToChannel : INode {
         if (w * h != prim->size()) {
             throw zeno::makeError("PrimLoadExrToChannel image prim w and h not match!");
         }
-        auto &channel = prim->add_attr<vec3f>(get_input2<std::string>("channel"));
+        auto &channel = prim->add_attr<zeno::vec3f>(get_input2<std::string>("channel"));
         for (auto i = 0; i < w * h; i++) {
             channel[i] = image->verts[i];
         }

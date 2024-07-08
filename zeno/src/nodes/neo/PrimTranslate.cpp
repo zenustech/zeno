@@ -27,7 +27,7 @@ namespace {
 struct PrimTranslate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         primTranslate(prim.get(), offset);
         set_output("prim", get_input("prim"));
     }
@@ -48,7 +48,7 @@ ZENDEFNODE(PrimTranslate, {
 struct PrimScale : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto scale = get_input2<vec3f>("scale");
+        auto scale = get_input2<zeno::vec3f>("scale");
         primScale(prim.get(), scale);
         set_output("prim", get_input("prim"));
     }

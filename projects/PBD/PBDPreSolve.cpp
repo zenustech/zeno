@@ -37,7 +37,7 @@ struct PBDPreSolve : zeno::INode {
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
         prim->userData().set("dt", std::make_shared<NumericObject>(dt));
 
-        auto externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
+        auto externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
 
         auto &pos = prim->verts;
         auto &invMass = prim->verts.attr<float>("invMass");

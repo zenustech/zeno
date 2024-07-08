@@ -28,9 +28,9 @@ struct PrimitiveBent : zeno::INode {
         midPoint = std::min(limitMax, std::max(limitMin, midPoint));
         biasDir = std::min(1.f, std::max(0.f, biasDir));
 
-        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
-        auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<vec3f>() : vec3f(0, 1, 0);
-        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<vec3f>() : vec3f(1, 0, 0);
+        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>() : vec3f(1, 0, 0);
 
         orthonormal orb(direction, tangent);
         direction = orb.normal;

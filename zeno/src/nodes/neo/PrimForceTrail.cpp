@@ -71,7 +71,7 @@ struct PrimForceTrail : INode {
         });
 
         std::visit([&] (auto const &attractUDFCurve, auto const &driftCoordCurve) {
-            auto &forceArr = prim->verts.add_attr<vec3f>(forceAttr);
+            auto &forceArr = prim->verts.add_attr<zeno::vec3f>(forceAttr);
             parallel_for(prim->verts.size(), [&] (size_t i) {
                 auto pos = prim->verts[i];
 
