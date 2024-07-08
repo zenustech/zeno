@@ -10,6 +10,9 @@ target_link_libraries(zeno PRIVATE zpc_jit_py)
 target_link_libraries(zeno PRIVATE zshelper)
 
 #
+# find_package(PkgConfig)
+# pkg_check_modules(LIBFFI REQUIRED IMPORTED_TARGET libffi)
+# target_link_libraries(zeno PRIVATE PkgConfig::LIBFFI)
 target_sources(zeno PRIVATE
   pyzfx.cpp
 )
