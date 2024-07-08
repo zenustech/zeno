@@ -47,6 +47,7 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->load_objects2(objs);
     }
 
+    //deprecated
     void update() override {
         graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
@@ -101,6 +102,10 @@ struct RenderEngineBate : RenderEngine {
             fbr->draw_to_screen();
             fbr->destroy_buffers();
         }
+    }
+
+    void cleanupScene() override {
+        graphicsMan->graphics.m_curr.clear();
     }
 
     void cleanupAssets() override {

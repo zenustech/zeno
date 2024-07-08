@@ -123,6 +123,10 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::finalize();
     }
 
+    void cleanupScene() override {
+
+    }
+
     void cleanupAssets() override {
 
     }

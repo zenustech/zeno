@@ -60,6 +60,7 @@
 #include "DockManager.h"
 #include <zeno/io/zdareader.h>
 #include <QFileSystemWatcher> 
+#include "reflect/reflection.generated.hpp"
 
 
 const QString g_latest_layout = "LatestLayout";

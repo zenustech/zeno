@@ -525,6 +525,9 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
     if (cls == "GetFrameNum") {
         frame_nodes.insert(uuid);
     }
+    if (cls == "CameraNode") {   //相机相关节点和帧相关
+        frame_nodes.insert(uuid);
+    }
     if (cls == "Subnet") {
         subnet_nodes.insert(uuid);
     }

@@ -1039,6 +1039,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
+    //deprecated
     void update() override {
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
@@ -1561,6 +1562,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     ~RenderEngineOptx() override {
         xinxinoptix::optixDestroy();
+    }
+
+    void cleanupScene() override {
+        graphicsMan->objOrder.clear();
+        std::map<std::string, std::shared_ptr<zeno::IObject>> allviews;
+        zeno::getSession().objsMan->export_all_view_objs(allviews);
+        for (auto& [key, obj]: allviews) {
+            graphicsMan->remove_object(key);
+        }
+
+        lightNeedUpdate = true;
+        meshNeedUpdate = true;
+        matNeedUpdate = true;
+        scene->drawOptions->needRefresh = true;
     }
 
     void cleanupAssets() override {
