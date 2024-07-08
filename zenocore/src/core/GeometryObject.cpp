@@ -23,14 +23,75 @@ namespace zeno
 
     }
 
+    ZENO_API GeometryObject::GeometryObject(const GeometryObject& rhs) {
+        m_bTriangle = rhs.m_bTriangle;
+#if 0
+        auto spPrim = rhs.toPrimitive();
+        initFromPrim(spPrim.get());
+#else
+        m_points.resize(rhs.m_points.size());
+        m_faces.resize(rhs.m_faces.size());
+
+        for (int i = 0; i < m_points.size(); i++) {
+            auto p = std::make_shared<Point>();
+            auto& rp = rhs.m_points[i];
+            p->pos = rp->pos;
+            p->attr = rp->attr;
+            p->normal = rp->normal;
+            m_points[i] = std::move(p);
+        }
+
+        for (auto&[keyName, rEdge] : rhs.m_hEdges) {
+            auto spEdge = std::make_shared<HEdge>();
+            spEdge->id = rEdge->id;
+            spEdge->point = rEdge->point;
+            spEdge->face = rEdge->face;
+            m_hEdges.insert(std::make_pair(spEdge->id, spEdge));
+        }
+
+        for (int i = 0; i < m_faces.size(); i++) {
+            m_faces[i] = std::make_shared<Face>();
+        }
+
+        //adjust all pointers
+        for (int i = 0; i < m_points.size(); i++) {
+            for (auto rEdge : rhs.m_points[i]->edges) {
+                auto& spEdge = m_hEdges[rEdge->id];
+                m_points[i]->edges.insert(spEdge.get());
+            }
+        }
+
+        for (auto& [keyName, rhsptr] : rhs.m_hEdges)
+        {
+            auto p = m_hEdges[keyName];
+            p->face = rhsptr->face;
+            p->point = rhsptr->point;
+            if (rhsptr->pair)
+                p->pair = m_hEdges[rhsptr->pair->id].get();
+            p->next = m_hEdges[rhsptr->next->id].get();
+        }
+
+        for (int i = 0; i < m_faces.size(); i++) {
+            auto p = m_faces[i].get();
+            auto spEdge = m_hEdges[rhs.m_faces[i]->h->id];
+            m_faces[i]->h = spEdge.get();
+        }
+#endif
+    }
+
+    ZENO_API GeometryObject::~GeometryObject() {
+    }
+
     ZENO_API GeometryObject::GeometryObject(PrimitiveObject* prim) {
         initFromPrim(prim);
     }
 
     ZENO_API std::shared_ptr<PrimitiveObject> GeometryObject::toPrimitive() const {
         std::shared_ptr<PrimitiveObject> spPrim = std::make_shared<PrimitiveObject>();
-        assert(m_points.size() == m_points_data.size());
-        spPrim->verts = m_points_data;
+        spPrim->resize(m_points.size());
+        for (int i = 0; i < m_points.size(); i++) {
+            spPrim->verts[i] = m_points[i]->pos;
+        }
 
         int startIdx = 0;
         if (m_bTriangle) {
@@ -41,13 +102,14 @@ namespace zeno
         }
 
         for (int i = 0; i < m_faces.size(); i++) {
-            auto& face = m_faces[i];
-            int firsth = face.h, h = firsth;
+            auto face = m_faces[i].get();
+            HEdge* firsth = face->h;
+            HEdge* h = firsth;
             std::vector<int> points;
             do {
-                const auto& hedge = m_hEdges[h];
-                points.push_back(hedge.point);
-                h = hedge.next;
+                int index = getPointTo(h);
+                points.push_back(index);
+                h = h->next;
             } while (firsth != h);
 
             if (m_bTriangle) {
@@ -66,28 +128,43 @@ namespace zeno
         return spPrim;
     }
 
-    int GeometryObject::checkHEdge(int fromPoint, int toPoint) {
-        assert(fromPoint < m_points.size());
-        for (auto hedge : m_points[fromPoint].edges) {
-            if (m_hEdges[hedge].point == toPoint) {
+    HEdge* GeometryObject::checkHEdge(int fromPoint, int toPoint) {
+        assert(fromPoint < m_points.size() && toPoint < m_points.size() &&
+               fromPoint >= 0 && toPoint >= 0);
+        for (auto hedge : m_points[fromPoint]->edges) {
+            if (hedge->point == toPoint) {
                 return hedge;
             }
         }
-        return -1;
+        return nullptr;
     }
 
     int GeometryObject::getNextOutEdge(int fromPoint, int currentOutEdge) {
         return -1;
     }
 
+    int GeometryObject::getPointTo(HEdge* hedge) const {
+        return hedge->point;
+    }
+
     bool GeometryObject::has_point_attr(std::string const& name) const {
-        return m_points_data.has_attr(name);
+        if (m_points.empty())
+            return false;
+
+        if (name == "pos" || name == "nrm")
+            return true;
+
+        auto attr = m_points[0]->attr;
+        return attr.find(name) != attr.end();
     }
 
     void GeometryObject::initFromPrim(PrimitiveObject* prim) {
 
         m_points.resize(prim->verts->size());
-        m_points_data = prim->verts;
+        for (int i = 0; i < m_points.size(); i++) {
+            m_points[i] = std::make_shared<Point>();
+            m_points[i]->pos = prim->verts[i];
+        }
 
         int nFace = -1;
         m_bTriangle = prim->loops->empty() && !prim->tris->empty();
@@ -118,8 +195,10 @@ namespace zeno
                 }
             }
 
-            Face f;
-            int lastHedge = -1, firstHedge = -1;
+            //TODO: init data for Face
+            auto pFace = std::make_shared<Face>();
+
+            HEdge* lastHedge = 0, * firstHedge = 0;
             for (int i = 0; i < points.size(); i++) {
                 int vp = -1, vq = -1;
                 if (i < points.size() - 1) {
@@ -132,39 +211,39 @@ namespace zeno
                 }
 
                 //vp->vq
-                int hpq = -1;
+                auto hedge = std::make_shared<HEdge>();
+                std::string id = zeno::format("{}->{}", vp, vq);
+                hedge->id = id;
+                m_hEdges.insert(std::make_pair(id, hedge));
 
-                HEdge hedge;
-                hedge.face = face;
-                hedge.point = vq;
-                hpq = m_hEdges.size();
+                hedge->face = face;
+                hedge->point = vq;
 
-                if (lastHedge != -1) {
-                    m_hEdges[lastHedge].next = hpq;
+                if (lastHedge) {
+                    lastHedge->next = hedge.get();
                 }
                 //TODO: 如果只有一条边会怎么样？
                 if (i == points.size() - 1) {
-                    hedge.next = firstHedge;
+                    hedge->next = firstHedge;
                 }
                 else if (i == 0) {
-                    firstHedge = hpq;
+                    firstHedge = hedge.get();
                 }
 
                 //check whether the pair edge exist
-                int pairedge = checkHEdge(vq, vp);
-                if (pairedge >= 0) {
-                    hedge.pair = pairedge;
-                    m_hEdges[pairedge].pair = hpq;
+                auto pairedge = checkHEdge(vq, vp);
+                if (pairedge) {
+                    hedge->pair = pairedge;
+                    pairedge->pair = hedge.get();
                 }
 
-                m_hEdges.emplace_back(hedge);
-                m_points[vp].edges.insert(hpq);
+                m_points[vp]->edges.insert(hedge.get());
 
-                f.h = hpq;
-
-                lastHedge = hpq;
+                pFace->h = hedge.get();
+                lastHedge = hedge.get();
             }
-            m_faces[face] = f;
+
+            m_faces[face] = std::move(pFace);
         }
     }
 
@@ -177,135 +256,155 @@ namespace zeno
     }
 
     std::vector<vec3f> GeometryObject::get_points() const {
-        return m_points_data;
+        std::vector<vec3f> pos;
+        pos.resize(m_points.size());
+        for (int i = 0; i < m_points.size(); i++) {
+            pos[i] = m_points[i]->pos;
+        }
+        return pos;
+    }
+
+    std::vector<zfxvariant> GeometryObject::get_point_attr(std::string const& name) const {
+        std::vector<zfxvariant> res;
+        if (!has_point_attr(name))
+            return res;
+        res.resize(m_points.size());
+        bool bPos = name == "pos";
+        bool bNrm = name == "nrm";
+        for (int i = 0; i < m_points.size(); i++) {
+            auto pt = m_points[i].get();
+            if (bPos) {
+                res.push_back(glm::vec3(pt->pos[0], pt->pos[1], pt->pos[2]));
+            }
+            else if (bNrm) {
+                res.push_back(glm::vec3(pt->normal[0], pt->normal[1], pt->normal[2]));
+            }
+            else {
+                auto iter = pt->attr.find(name);
+                assert(iter != pt->attr.end());
+                res[i] = iter->second;
+            }
+        }
+        return res;
     }
 
     void GeometryObject::set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter) {
         for (int i = 0; i < m_points.size(); i++) {
             if (filter[i]) {
                 const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
-                m_points_data[i] = { vec.x, vec.y, vec.z };
+                m_points[i]->pos = { vec.x, vec.y, vec.z };
             }
         }
     }
 
     void GeometryObject::set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter)
     {
-        std::vector<vec3f>& nrms = m_points_data.attr<vec3f>("nrm");
-        for (int i = 0; i < m_points_data.size(); i++) {
+        for (int i = 0; i < m_points.size(); i++) {
             if (filter[i]) {
                 const glm::vec3& vec = get_zfxvar<glm::vec3>(val.value[i]);
-                nrms[i] = { vec.x, vec.y, vec.z };
+                m_points[i]->normal = { vec.x, vec.y, vec.z };
             }
         }
     }
 
-    int get_adjust_position(const std::vector<int>& remIndice, int oldindex) {
-        int numOfExceed = 0;
-        for (int remIdx : remIndice) {
-            if (oldindex >= remIdx)
-                numOfExceed++;
-            else
-                break;
-        }
-        return oldindex - numOfExceed;
+    std::tuple<Point*, HEdge*, HEdge*> GeometryObject::getPrev(HEdge* outEdge) {
+        HEdge* h = outEdge, *prev = nullptr;
+        Point* point = nullptr;
+        do {
+            prev = h;
+            point = m_points[h->point].get();
+            h = h->next;
+        } while (h && h->next != outEdge);
+        return { point, h, prev };
     }
 
     bool GeometryObject::remove_point(int ptnum) {
-        if (m_bTriangle) {
-            std::set<int> _remFaces, _remHEdges;
-            if (ptnum < 0 || ptnum >= m_points.size())
-                return false;
+        if (ptnum < 0 || ptnum >= m_points.size())
+            return false;
 
-            for (int outEdge : m_points[ptnum].edges) {
-                assert(outEdge >= 0 && outEdge < m_hEdges.size());
-                auto& hedge = m_hEdges[outEdge];
-                _remFaces.insert(hedge.face);
+        std::set<int> remFaces;
+        std::set<std::string> remHEdges;
 
-                int h = outEdge;
+        for (auto outEdge : m_points[ptnum]->edges) {
+            assert(outEdge);
+
+            HEdge* firstEdge = outEdge;
+            HEdge* nextEdge = firstEdge->next;
+            assert(nextEdge);
+            HEdge* nnextEdge = nextEdge->next;
+            assert(nnextEdge);
+
+            auto& [prevPoint, prevEdge, pprevEdge]= getPrev(outEdge);
+            assert(prevEdge && pprevEdge);
+            if (nextEdge && nnextEdge == prevEdge) {
+                //triangle，整个面和所有隶属这个面的半边都要移除
+                remFaces.insert(outEdge->face);
+
+                HEdge* h = outEdge;
+                HEdge* prev = nullptr;
                 do {
-                    _remHEdges.insert(h);
-                    hedge = m_hEdges[h];
-                    h = hedge.next;
+                    remHEdges.insert(h->id);
+                    //对面先置空自己
+                    if (h->pair)
+                        h->pair->pair = nullptr;
+                    if (prev) {
+                        //当前边的起点的edges也需要清除自己
+                        m_points[prev->point]->edges.erase(h);
+                    }
+                    prev = h;
+                    h = h->next;
                 } while (h != outEdge);
             }
+            else {
+                remHEdges.insert(outEdge->id);
+                remHEdges.insert(prevEdge->id);
 
-            std::vector<int> remFaces, remHEdges;
-            for (int idx : _remFaces)
-                remFaces.push_back(idx);
-            for (int idx : _remHEdges)
-                remHEdges.push_back(idx);
+                auto newEdge = std::make_shared<HEdge>();
 
-            std::sort(remFaces.begin(), remFaces.end());
-            std::sort(remHEdges.begin(), remHEdges.end());
+                std::string id = generateUUID();
+                newEdge->id = id;
+                m_hEdges.insert(std::make_pair(id, newEdge));
 
-            std::map<int, int> edgeIdxMapper;
-            for (int i = 0; i < m_hEdges.size(); i++) {
-                if (_remHEdges.find(i) != _remHEdges.end())
-                    continue;
-                int newIdx = get_adjust_position(remHEdges, i);
-                edgeIdxMapper.insert(std::make_pair(i, newIdx));
+                //connect between outEdge->point and prevPoint.
+                newEdge->point = outEdge->point;
+                newEdge->pair = nullptr;
+                newEdge->next = nextEdge;
+                newEdge->face = outEdge->face;
+
+                m_faces[newEdge->face]->h = newEdge.get();
+
+                pprevEdge->next = newEdge.get();
+                prevPoint->edges.erase(prevEdge);
+                prevPoint->edges.insert(newEdge.get());
             }
+        }
 
-            std::map<int, int> faceIdxMapper;
-            for (int i = 0; i < m_faces.size(); i++) {
-                if (_remFaces.find(i) != _remFaces.end())
-                    continue;
-                int newIdx = get_adjust_position(remFaces, i);
-                faceIdxMapper.insert(std::make_pair(i, newIdx));
-            }
+        m_points.erase(m_points.begin() + ptnum);
 
-            m_points.erase(m_points.begin() + ptnum);
-            m_points_data.values.erase(m_points_data.values.begin() + ptnum);
-            for (auto iter = m_points_data.attrs.begin(); iter != m_points_data.attrs.end(); iter++)
-            {
-                std::visit([&](auto& val) {
-                    val.erase(val.begin() + ptnum);
-                }, iter->second);
-            }
+        for (auto keyname : remHEdges) {
+            m_hEdges.erase(keyname);
+        }
 
-            //adjust all points
-            for (int i = 0; i < m_points.size(); i++) {
-                std::set<int> edges;
-                for (int h : m_points[i].edges) {
-                    edges.insert(edgeIdxMapper[h]);
-                }
-                m_points[i].edges = edges;
-            }
+        //adjust face
+        std::vector<int> _remFaces;
+        for (int idx : remFaces)
+            _remFaces.push_back(idx);
+        std::sort(_remFaces.begin(), _remFaces.end());
 
-            //adjust edges
-            for (int i = 0; i < m_hEdges.size(); i++)
-            {
-                auto& hedge = m_hEdges[i];
-                if (_remHEdges.find(i) != _remHEdges.end()) {
-                    hedge.face = -1;
-                }
-                else {
-                    hedge.pair = edgeIdxMapper[hedge.pair];
-                    hedge.next = edgeIdxMapper[hedge.next];
-                    hedge.face = faceIdxMapper[hedge.face];
-                    if (hedge.point >= ptnum) {
-                        hedge.point--;
-                    }
-                }
-            }
-            for (auto iter = m_hEdges.begin(); iter != m_hEdges.end();) {
-                if (iter->face == -1) {
-                    iter = m_hEdges.erase(iter);
-                }
-                else {
-                    iter++;
-                }
-            }
+        for (auto iter = _remFaces.rbegin(); iter != _remFaces.rend(); iter++) {
+            int rmIdx = *iter;
+            m_faces.erase(m_faces.begin() + rmIdx);
+        }
 
-            //adjust face
-            for (int i = m_faces.size() - 1; i >= 0; i--) {
-                if (_remFaces.find(i) != _remFaces.end()) {
-                    m_faces.erase(m_faces.begin() + i);
-                }
-                else {
-                    m_faces[i].h = edgeIdxMapper[m_faces[i].h];
-                }
+        for (auto& [_, hedge] : m_hEdges) {
+            if (hedge->point >= ptnum) {
+                hedge->point--;
+            }
+            for (auto remFaceId : _remFaces) {
+                if (hedge->face > remFaceId)
+                    hedge->face--;
+                else
+                    break;
             }
         }
     }

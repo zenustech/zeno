@@ -922,12 +922,9 @@ namespace zeno {
             if (attr_name == "nrm")
             {
                 if (spGeo->has_point_attr("nrm")) {
-                    const auto& nrms = spGeo->point_attr<vec3f>("nrm");
                     ZfxVariable res;
                     res.bAttr = true;
-                    for (auto nrm : nrms) {
-                        res.value.push_back(glm::vec3(nrm[0], nrm[1], nrm[2]));
-                    }
+                    res.value = spGeo->get_point_attr("nrm");
                     return res;
                 }
                 else {

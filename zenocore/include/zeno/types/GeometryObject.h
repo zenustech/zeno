@@ -28,35 +28,42 @@ struct Geo_Attributes : std::vector<Geo_Attribute>
     }
 };
 
+struct HEdge;
+struct Face;
+struct Point;
+
 struct HEdge {
-    int pair = -1, next = -1;
-    int point = -1;  //the point which pointed by the hedge.
+    std::string id;
+    HEdge* pair = 0, *next = 0;
+    int point = -1;
     int face = -1;
 };
 
 struct Face {
-    int h = -1;      //any h-edge of this face.
+    HEdge* h = 0;      //any h-edge of this face.
 };
 
 struct Point {
-    std::set<int> edges;    //all h-edge starting from this point.
+    vec3f pos = { 0, 0, 0 };
+    vec3f normal = { 0, 0, 0 };
+    std::map<std::string, zfxvariant> attr;
+    std::set<HEdge*> edges;    //all h-edge starting from this point.
 };
 
 class GeometryObject : public IObjectClone<GeometryObject> {
 public:
     ZENO_API GeometryObject();
+    ZENO_API GeometryObject(const GeometryObject& rhs);
     ZENO_API GeometryObject(PrimitiveObject* prim);
     ZENO_API std::shared_ptr<PrimitiveObject> toPrimitive() const;
+    ZENO_API ~GeometryObject();
+
     int get_point_count() const;
     int get_face_count() const;
     std::vector<vec3f> get_points() const;
 
     bool has_point_attr(std::string const& name) const;
-
-    template <class T>
-    auto const& point_attr(std::string const& name) const {
-        return m_points_data.attr<T>(name);
-    }
+    std::vector<zfxvariant> get_point_attr(std::string const& name) const;
 
     void set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter);
     void set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter);
@@ -64,17 +71,16 @@ public:
 
 private:
     void initFromPrim(PrimitiveObject* prim);
-    int checkHEdge(int fromPoint, int toPoint);
+    HEdge* checkHEdge(int fromPoint, int toPoint);
+    std::tuple<Point*, HEdge*, HEdge*> getPrev(HEdge* outEdge);
     int getNextOutEdge(int fromPoint, int currentOutEdge);
+    int getPointTo(HEdge* hedge) const;
 
-    std::vector<Face> m_faces;
-    AttrVector<int> m_faces_data;   //no based value
+    std::vector<std::shared_ptr<Face>> m_faces;
 
-    std::vector<HEdge> m_hEdges;
+    std::unordered_map<std::string, std::shared_ptr<HEdge>> m_hEdges;
 
-    std::vector<Point> m_points;
-    AttrVector<vec3f> m_points_data;    //corresponding with points.
-
+    std::vector<std::shared_ptr<Point>> m_points;
     bool m_bTriangle = true;
 };
 
