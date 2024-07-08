@@ -59,8 +59,6 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   if (WIN32)
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
-    string (REPLACE ";" " " ZS_PYTHON_LIBS "${ZS_OVERWRITE_PYTHON_LIBRARIES}")
-    separate_arguments(ZS_PYTHON_LIBS)
     add_custom_command(
       TARGET copy_py
       POST_BUILD
@@ -93,11 +91,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
       add_custom_command(
         TARGET copy_py
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        -DLIB=${lib}
-        -DDLL_DIR=${PYTHON_ENV_PATH}
-        -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
+        COMMAND ${CMAKE_COMMAND} -E copy lib $<TARGET_FILE_DIR:zpc_py_interop>
       )
     endforeach()
   else()
