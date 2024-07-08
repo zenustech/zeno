@@ -45,7 +45,7 @@ message("ZPY_SRC : ${ZPY_SRC}")
 foreach(ZPY_FILE IN LISTS ZPY_SRC)
     add_custom_command(
                 TARGET copy_zpy POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPY_FILE} ${RESOURCE_BASE_DIR}/resource/py_libs/zpy
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPY_FILE} ${PY_LIBS_DIR}/zpy
                 COMMENT "Copying zpy src file: ${ZPY_FILE}")
 endforeach()
 

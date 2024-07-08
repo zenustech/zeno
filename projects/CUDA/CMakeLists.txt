@@ -48,6 +48,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
   set(ENV{ZENO_BIN_DIR} "${ZENO_BIN_DIR}")
+  #[=[
   add_custom_command(
     TARGET copy_py
     POST_BUILD
@@ -56,6 +57,53 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit --user
     COMMENT "installing pyzpc into the specified conda environment: ${ZS_OVERWRITE_PYTHON_EXECUTABLE}"
   )
+  ]=]
+  set(PY_LIBS_DIR ${RESOURCE_BASE_DIR}/resource/py_libs)
+  set(PREFIX "lib")
+  if (WIN32)
+    set(SUFFIX ".dll")
+    set(PREFIX "")
+  elseif (APPLE)
+    set(SUFFIX ".dylib")
+  elseif (UNIX)
+    set(SUFFIX ".so")
+  else()
+    message(FATAL_ERROR "unknown system to determine shared library suffix")
+  endif()
+
+  set(ZPC_BINARIES "clang" 
+    "cudart" 
+    "cuda" 
+    "nvrtc" 
+    "omp" 
+    "zpccore" 
+    "zpccuda" 
+    "zpc_jit_clang" 
+    "zpc_jit_nvrtc" 
+    "zpcomp" 
+    "zpc_py_interop" 
+    "zpc" 
+    "zpctool")  # "zspartio", "zswhereami"
+
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CAPIS="${RESOURCE_BASE_DIR}/${PREFIX}zpc_py_interop${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_NVRTC="${RESOURCE_BASE_DIR}/${PREFIX}zpc_jit_nvrtc${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CLANG="${RESOURCE_BASE_DIR}/${PREFIX}zpc_jit_clang${SUFFIX}")
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/lib
+    COMMENT "creating pyzpc jit module directory at ${PY_LIBS_DIR}/zpcjit"
+  )
+  file(GLOB ZPC_JIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit/pyzpc/*.py)
+  message("ZPC_JIT_SRC : ${ZPC_JIT_SRC}")
+
+  foreach(ZPCJIT_FILE IN LISTS ZPC_JIT_SRC)
+    add_custom_command(
+      TARGET copy_py POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPCJIT_FILE} ${PY_LIBS_DIR}/zpcjit
+      COMMENT "Copying zpcjit src file: ${ZPCJIT_FILE}")
+  endforeach()
   if (WIN32)
     cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
@@ -107,6 +155,17 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
       COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
     )
   endif()
+
+  foreach(ZPC_BIN_FILE IN LISTS ZPC_BINARIES)
+  if(EXISTS ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX})
+    add_custom_command(
+      TARGET copy_py POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX} ${PY_LIBS_DIR}/zpcjit/zpc_jit/lib
+      COMMENT "Copying zpc binary file: ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX}")
+  else()
+    message(STATUS "${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX} not found.")
+  endif()
+  endforeach(ZPC_BIN_FILE IN LISTS ZPC_BINARIES)
 endif(ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
 
