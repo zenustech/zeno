@@ -50,7 +50,11 @@ static callback_t zpc_init_callback = [] (auto _) {
 #endif
     auto zeno_lib_path = exe_dir + "/" + ZENO_PYZPC_DLL_FILE; 
     auto py_libs_dir = exe_dir + "/resource/py_libs"; 
-    if (PyRun_SimpleString("import sys; sys.path.append('C\:/Develop/vcpkg/installed/x64-windows/tools/python3/DLLs'); ") < 0) {
+    if (PyRun_SimpleString(("import os; os.environ['PYTHONPATH'] = '" + exe_dir + "/DLLs';").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("os.environ['PYTHONHOME'] = '" + exe_dir + "';").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
         return;
     }
@@ -61,7 +65,7 @@ static callback_t zpc_init_callback = [] (auto _) {
         return;
     }
 #endif
-    if (PyRun_SimpleString(("sys.path.append('" + 
+    if (PyRun_SimpleString(("import sys; sys.path.append('" + 
         py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path + 
         "'); zpy.zeno_lib_path = '" + zeno_lib_path + "'").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
