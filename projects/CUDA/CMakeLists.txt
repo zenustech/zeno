@@ -48,16 +48,21 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
   set(ENV{ZENO_BIN_DIR} "${ZENO_BIN_DIR}")
-  #[=[
   add_custom_command(
     TARGET copy_py
     POST_BUILD
     COMMAND 
     ${CMAKE_COMMAND} -E env ZENO_BIN_DIR="${ZENO_BIN_DIR}"
-    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit --user
-    COMMENT "installing pyzpc into the specified conda environment: ${ZS_OVERWRITE_PYTHON_EXECUTABLE}"
+    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m ensurepip
+    COMMENT "preparing pip module"
   )
-  ]=]
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND 
+    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install numpy --user
+    COMMENT "installing numpy"
+  )
   set(PY_LIBS_DIR ${RESOURCE_BASE_DIR}/resource/py_libs)
   set(PREFIX "lib")
   if (WIN32)
