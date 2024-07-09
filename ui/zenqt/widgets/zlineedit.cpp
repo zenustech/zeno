@@ -124,7 +124,7 @@ void ZLineEdit::init()
                     }
                     else {
                         int pos = recommandInfo.func_args.argidx;
-                        m_descLabel->setDesc(recommandInfo.func_args.func, 0);
+                        m_descLabel->setDesc(recommandInfo.func_args.func, recommandInfo.func_args.argidx - 1);
                         m_descLabel->move(globalPos);
                         if (!m_descLabel->isVisible()) {
                             m_descLabel->show();

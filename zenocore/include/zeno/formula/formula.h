@@ -66,10 +66,7 @@ public:
     void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
     void debugASTNode(std::shared_ptr<ZfxASTNode> pNode);
     ZENO_API void printSyntaxTree();
-    ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
     ZENO_API formula_tip_info getRecommandTipInfo() const;
-    //regex
-    ZENO_API std::vector<std::string> getHintList(std::string originTxt, std::string& candidateTxt);
 
 private:
     unsigned int m_location;          // Used by scanner

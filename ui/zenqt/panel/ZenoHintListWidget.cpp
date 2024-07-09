@@ -197,6 +197,7 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
 ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     : m_currentFunc("")
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     //setMinimumSize({ 100, 50 });
     m_label = new QLabel(this);
     m_label->setStyleSheet("QLabel{ font-size: 10pt; color: rgb(160, 178, 194)}");
@@ -240,6 +241,16 @@ void ZenoFuncDescriptionLabel::setCurrentFuncName(std::string funcName)
 std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
 {
     return m_currentFunc;
+}
+
+void ZenoFuncDescriptionLabel::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+{
+    m_getPropPanelPosfunc = func;
+}
+
+QPoint ZenoFuncDescriptionLabel::getPropPanelPos()
+{
+    return m_getPropPanelPosfunc();
 }
 
 bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)

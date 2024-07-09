@@ -208,6 +208,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         m_hintlist->resetSize();
         m_hintlist->setCalcPropPanelPosFunc([pWidget]() -> QPoint {return pWidget->mapToGlobal(QPoint(0, 0)); });
         m_descLabel->setParent(pWidget);
+        m_descLabel->setCalcPropPanelPosFunc([pWidget]() -> QPoint {return pWidget->mapToGlobal(QPoint(0, 0)); });
         return;
     }
     m_tabWidget = new QTabWidget;
@@ -424,9 +425,10 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
 
         if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl)) {
             pLineEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
-        }
-        else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl)) {
+        } else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pControl)) {
             pVecEdit->setHintListWidget(m_hintlist.get(), m_descLabel.get());
+        }else if (ZCodeEditor* pCodeEditor = qobject_cast<ZCodeEditor*>(pControl)) {
+            pCodeEditor->setFuncDescLabel(m_descLabel.get());
         }
 
         _PANEL_CONTROL panelCtrl;

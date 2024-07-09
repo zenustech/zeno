@@ -18,7 +18,7 @@ set(INCLUDE_FILES
     include/QHighlightRule
     include/QHighlightBlockRule
     include/QCodeEditor
-    include/QCXXHighlighter
+    include/QZfxHighlighter
     include/QLineNumberArea
     include/QStyleSyntaxHighlighter
     include/QSyntaxStyle
@@ -34,7 +34,7 @@ set(INCLUDE_FILES
     include/internal/QHighlightRule.hpp
     include/internal/QHighlightBlockRule.hpp
     include/internal/QCodeEditor.hpp
-    include/internal/QCXXHighlighter.hpp
+    include/internal/QZfxHighlighter.hpp
     include/internal/QLineNumberArea.hpp
     include/internal/QStyleSyntaxHighlighter.hpp
     include/internal/QSyntaxStyle.hpp
@@ -53,7 +53,7 @@ set(INCLUDE_FILES
 set(SOURCE_FILES
     src/internal/QCodeEditor.cpp
     src/internal/QLineNumberArea.cpp
-    src/internal/QCXXHighlighter.cpp
+    src/internal/QZfxHighlighter.cpp
     src/internal/QSyntaxStyle.cpp
     src/internal/QStyleSyntaxHighlighter.cpp
     src/internal/QGLSLCompleter.cpp

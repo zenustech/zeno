@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <zeno/core/data.h>
+#include <zeno/utils/api.h>
 #include <zeno/formula/syntax_tree.h>
 #include <stack>
 
@@ -34,7 +35,7 @@ namespace zeno {
         FunctionManager();
         std::vector<std::string> getCandidates(const std::string& prefix, bool bFunc) const;
         std::string getFuncTip(const std::string& funcName, bool& bExist) const;
-        FUNC_INFO getFuncInfo(const std::string& funcName) const;
+        ZENO_API FUNC_INFO getFuncInfo(const std::string& funcName) const;
         void executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* ctx);
         zfxvariant calc(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
         ZENO_API void testExp();

@@ -1,5 +1,5 @@
 // QCodeEditor
-#include <QCXXHighlighter>
+#include <QZfxHighlighter>
 #include <QSyntaxStyle>
 #include <QLanguage>
 
@@ -7,17 +7,17 @@
 #include <QFile>
 
 
-QCXXHighlighter::QCXXHighlighter(QTextDocument* document) :
+QZfxHighlighter::QZfxHighlighter(QTextDocument* document) :
     QStyleSyntaxHighlighter(document),
     m_highlightRules     (),
-    m_includePattern     (QRegularExpression(R"(^\s*#\s*include\s*([<"][^:?"<>\|]+[">]))")),
+    //m_includePattern     (QRegularExpression(R"(^\s*#\s*include\s*([<"][^:?"<>\|]+[">]))")),
     m_functionPattern    (QRegularExpression(R"(\b([_a-zA-Z][_a-zA-Z0-9]*\s+)?((?:[_a-zA-Z][_a-zA-Z0-9]*\s*::\s*)*[_a-zA-Z][_a-zA-Z0-9]*)(?=\s*\())")),
     m_defTypePattern     (QRegularExpression(R"(\b([_a-zA-Z][_a-zA-Z0-9]*)\s+[_a-zA-Z][_a-zA-Z0-9]*\s*[;=])")),
     m_commentStartPattern(QRegularExpression(R"(/\*)")),
     m_commentEndPattern  (QRegularExpression(R"(\*/)"))
 {
     Q_INIT_RESOURCE(qcodeeditor_resources);
-    QFile fl(":/languages/cpp.xml");
+    QFile fl(":/languages/zpython.xml");
 
     if (!fl.open(QIODevice::ReadOnly))
     {
@@ -44,11 +44,17 @@ QCXXHighlighter::QCXXHighlighter(QTextDocument* document) :
         }
     }
 
-    // Numbers
+    //// Numbers
+    //m_highlightRules.append({
+    //    QRegularExpression(R"((?<=\b|\s|^)(?i)(?:(?:(?:(?:(?:\d+(?:'\d+)*)?\.(?:\d+(?:'\d+)*)(?:e[+-]?(?:\d+(?:'\d+)*))?)|(?:(?:\d+(?:'\d+)*)\.(?:e[+-]?(?:\d+(?:'\d+)*))?)|(?:(?:\d+(?:'\d+)*)(?:e[+-]?(?:\d+(?:'\d+)*)))|(?:0x(?:[0-9a-f]+(?:'[0-9a-f]+)*)?\.(?:[0-9a-f]+(?:'[0-9a-f]+)*)(?:p[+-]?(?:\d+(?:'\d+)*)))|(?:0x(?:[0-9a-f]+(?:'[0-9a-f]+)*)\.?(?:p[+-]?(?:\d+(?:'\d+)*))))[lf]?)|(?:(?:(?:[1-9]\d*(?:'\d+)*)|(?:0[0-7]*(?:'[0-7]+)*)|(?:0x[0-9a-f]+(?:'[0-9a-f]+)*)|(?:0b[01]+(?:'[01]+)*))(?:u?l{0,2}|l{0,2}u?)))(?=\b|\s|$))"),
+    //    "Number"
+    //});
+
+    // properties
     m_highlightRules.append({
-        QRegularExpression(R"((?<=\b|\s|^)(?i)(?:(?:(?:(?:(?:\d+(?:'\d+)*)?\.(?:\d+(?:'\d+)*)(?:e[+-]?(?:\d+(?:'\d+)*))?)|(?:(?:\d+(?:'\d+)*)\.(?:e[+-]?(?:\d+(?:'\d+)*))?)|(?:(?:\d+(?:'\d+)*)(?:e[+-]?(?:\d+(?:'\d+)*)))|(?:0x(?:[0-9a-f]+(?:'[0-9a-f]+)*)?\.(?:[0-9a-f]+(?:'[0-9a-f]+)*)(?:p[+-]?(?:\d+(?:'\d+)*)))|(?:0x(?:[0-9a-f]+(?:'[0-9a-f]+)*)\.?(?:p[+-]?(?:\d+(?:'\d+)*))))[lf]?)|(?:(?:(?:[1-9]\d*(?:'\d+)*)|(?:0[0-7]*(?:'[0-7]+)*)|(?:0x[0-9a-f]+(?:'[0-9a-f]+)*)|(?:0b[01]+(?:'[01]+)*))(?:u?l{0,2}|l{0,2}u?)))(?=\b|\s|$))"),
-        "Number"
-    });
+        QRegularExpression(R"([0-9a-zA-Z]?@[_0-9a-zA-Z]*)"),
+        "Property"
+        });
 
     // Strings
     m_highlightRules.append({
@@ -56,11 +62,11 @@ QCXXHighlighter::QCXXHighlighter(QTextDocument* document) :
         "String"
     });
 
-    // Define
+    // start with "#"
     m_highlightRules.append({
-        QRegularExpression(R"(#[a-zA-Z_]+)"),
-        "Preprocessor"
-    });
+        QRegularExpression(R"(^#.*$)"),
+        "StartWith#"
+        });
 
     // Single line
     m_highlightRules.append({
@@ -69,29 +75,29 @@ QCXXHighlighter::QCXXHighlighter(QTextDocument* document) :
     });
 }
 
-void QCXXHighlighter::highlightBlock(const QString& text)
+void QZfxHighlighter::highlightBlock(const QString& text)
 {
-    // Checking for include
-    {
-        auto matchIterator = m_includePattern.globalMatch(text);
+    //// Checking for include
+    //{
+    //    auto matchIterator = m_includePattern.globalMatch(text);
 
-        while (matchIterator.hasNext())
-        {
-            auto match = matchIterator.next();
+    //    while (matchIterator.hasNext())
+    //    {
+    //        auto match = matchIterator.next();
 
-            setFormat(
-                match.capturedStart(),
-                match.capturedLength(),
-                syntaxStyle()->getFormat("Preprocessor")
-            );
+    //        setFormat(
+    //            match.capturedStart(),
+    //            match.capturedLength(),
+    //            syntaxStyle()->getFormat("Preprocessor")
+    //        );
 
-            setFormat(
-                match.capturedStart(1),
-                match.capturedLength(1),
-                syntaxStyle()->getFormat("String")
-            );
-        }
-    }
+    //        setFormat(
+    //            match.capturedStart(1),
+    //            match.capturedLength(1),
+    //            syntaxStyle()->getFormat("String")
+    //        );
+    //    }
+    //}
     // Checking for function
     {
         auto matchIterator = m_functionPattern.globalMatch(text);
