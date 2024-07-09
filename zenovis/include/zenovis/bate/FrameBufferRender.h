@@ -128,7 +128,7 @@ struct FrameBufferRender {
         depth_texture = make_unique<Texture>();
         depth_texture->target = GL_TEXTURE_2D_MULTISAMPLE;
         CHECK_GL(glBindTexture(depth_texture->target, depth_texture->tex));
-        CHECK_GL(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH_COMPONENT, w, h, GL_TRUE));
+        CHECK_GL(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH_COMPONENT32F, w, h, GL_TRUE));
         CHECK_GL(glBindTexture(depth_texture->target, 0));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_texture->tex, 0));
 
@@ -150,7 +150,7 @@ struct FrameBufferRender {
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_tex->tex, 0));
 
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_depth_tex->tex));
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL));
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, screen_depth_tex->tex, 0));
