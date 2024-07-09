@@ -93,7 +93,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/lib
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include/zensim
     COMMENT "creating pyzpc jit module directory at ${PY_LIBS_DIR}/zpcjit"
   )
   file(GLOB ZPC_JIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit/pyzpc/*.py)
@@ -160,7 +160,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
   # prepare zpc headers for pyzpc
   add_custom_command(
     TARGET copy_py POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include/zensim
     COMMENT "Copying zpc source files: ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim")
   # prepare zpc libs for pyzpc
   foreach(ZPC_BIN_FILE IN LISTS ZPC_BINARIES)
