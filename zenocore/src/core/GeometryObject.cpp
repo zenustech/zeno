@@ -198,7 +198,7 @@ namespace zeno
             //TODO: init data for Face
             auto pFace = std::make_shared<Face>();
 
-            HEdge* lastHedge = 0, * firstHedge = 0;
+            HEdge* lastHedge = 0, *firstHedge = 0;
             for (int i = 0; i < points.size(); i++) {
                 int vp = -1, vq = -1;
                 if (i < points.size() - 1) {
@@ -239,9 +239,11 @@ namespace zeno
 
                 m_points[vp]->edges.insert(hedge.get());
 
-                pFace->h = hedge.get();
+                //pFace->h = hedge.get();
                 lastHedge = hedge.get();
             }
+            //统一取第一条半边作为face的“起点边”
+            pFace->h = firstHedge;
 
             m_faces[face] = std::move(pFace);
         }
@@ -418,4 +420,108 @@ namespace zeno
             */
         }
     }
+
+    int GeometryObject::facepoint(int face_id, int vert_id) const
+    {
+        if (face_id < 0 || face_id >= m_faces.size())
+            return -1;
+
+        auto h = m_faces[face_id]->h;
+        auto firsth = h;
+        do {
+            if (vert_id-- == 0) {
+                return h->point;
+            }
+            h = h->next;
+        } while (h != firsth);
+        return -1;
+    }
+
+    zfxintarr GeometryObject::facepoints(int face_id)
+    {
+        zfxintarr pts;
+        if (face_id < 0 || face_id >= m_faces.size())
+            return pts;
+
+        auto h = m_faces[face_id]->h;
+        auto firsth = h;
+        do {
+            pts.push_back(h->point);
+            h = h->next;
+        } while (h != firsth);
+        return pts;
+    }
+
+    zfxintarr GeometryObject::pointfaces(int point_id)
+    {
+        zfxintarr faces;
+        if (point_id < 0 || point_id >= m_points.size())
+            return faces;
+
+        for (auto h : m_points[point_id]->edges) {
+            faces.push_back(h->face);
+        }
+        return faces;
+    }
+
+    zfxintarr GeometryObject::pointvertex(int point_id)
+    {
+        zfxintarr vertices;
+        return vertices;
+    }
+
+    bool GeometryObject::createFaceAttr(int face_id, const std::string& attr_name)
+    {
+        return false;
+    }
+
+    bool GeometryObject::setFaceAttr(int face_id, const std::string& attr_name, const zfxvariant& val)
+    {
+        return false;
+    }
+
+    zfxvariant GeometryObject::getFaceAttr(int face_id, const std::string& attr_name) const
+    {
+        return zfxvariant();
+    }
+
+    bool GeometryObject::deleteFaceAttr(int face_id, const std::string& attr_name)
+    {
+        return false;
+    }
+
+    void GeometryObject::faceAddVert(int face_id, int point_id)
+    {
+
+    }
+
+    void GeometryObject::addpoint() {
+
+    }
+
+    void GeometryObject::addprim() {
+
+    }
+
+    void GeometryObject::addvertex() {
+
+    }
+
+    bool GeometryObject::remove_prim(int face_id) {
+        return false;
+    }
+
+    int GeometryObject::npoints() const {
+        return m_points.size();
+    }
+
+    int GeometryObject::nfaces() const {
+        return m_faces.size();
+    }
+
+    int GeometryObject::nvertices() const {
+        //TODO:
+        return -1;
+    }
+
 }

@@ -67,7 +67,36 @@ public:
 
     void set_points_pos(const ZfxVariable& val, ZfxElemFilter& filter);
     void set_points_normal(const ZfxVariable& val, ZfxElemFilter& filter);
+
+    //API:
+    //给定 face_id 和 vert_id，返回顶点索引编号 point_idx。
+    int facepoint(int face_id, int vert_id) const;
+
+    //通过 face_id，获取此 face 所有 points 索引编号。
+    zfxintarr facepoints(int face_id);
+
+    //返回包含指定 point 的 prim 列表。
+    zfxintarr pointfaces(int point_id);
+    zfxintarr pointvertex(int point_id);
+
+    bool createFaceAttr(int face_id, const std::string& attr_name);
+    bool setFaceAttr(int face_id, const std::string& attr_name, const zfxvariant& val);
+    zfxvariant getFaceAttr(int face_id, const std::string& attr_name) const;
+    bool deleteFaceAttr(int face_id, const std::string& attr_name);
+    void faceAddVert(int face_id, int point_id);
+
+    void addpoint();
+    void addprim();
+    void addvertex();
+
     bool remove_point(int ptnum);
+    bool remove_prim(int face_id);
+
+    int npoints() const;
+    int nfaces() const;
+    int nvertices() const;
+
+    //vertex先不考虑
 
 private:
     void initFromPrim(PrimitiveObject* prim);
