@@ -83,6 +83,7 @@ std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj);
 std::unique_ptr<IGraphicDraw> makeGraphicAxis(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicGrid(Scene *scene);
 std::unique_ptr<IGraphicDraw> makeGraphicSelectBox(Scene *scene);
+std::unique_ptr<IGraphicDraw> makeGraphicPainterCursor(Scene *scene);
 
 std::shared_ptr<IGraphicHandler> makeTransHandler(Scene *scene, zeno::vec3f center, float scale);
 std::shared_ptr<IGraphicHandler> makeScaleHandler(Scene *scene, zeno::vec3f center, float scale);

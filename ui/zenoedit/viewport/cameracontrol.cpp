@@ -237,6 +237,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
+    scene->painter_cursor = zeno::vec4f(xpos, ypos, m_res.x(), m_res.y());
 
     int moveButton = Qt::NoButton;
     int rotateButton = Qt::NoButton;

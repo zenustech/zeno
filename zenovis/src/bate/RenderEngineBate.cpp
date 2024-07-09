@@ -36,6 +36,7 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
         hudGraphics.push_back(makeGraphicSelectBox(scene));
+        hudGraphics.push_back(makeGraphicPainterCursor(scene));
 
         primHighlight = makePrimitiveHighlight(scene);
     }

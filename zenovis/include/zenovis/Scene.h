@@ -29,6 +29,7 @@ enum class PICK_MODE {
 
 struct Scene : zeno::disable_copy {
     std::optional<zeno::vec4f> select_box = {};
+    std::optional<zeno::vec4f> painter_cursor = {};
     std::unordered_set<std::string> selected = {};
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements = {};
     std::unique_ptr<Camera> camera;
