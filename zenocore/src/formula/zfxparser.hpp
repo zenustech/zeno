@@ -619,8 +619,9 @@ namespace  zeno  {
     TOKEN_SUB = 310,               // SUB
     TOKEN_MUL = 312,               // MUL
     TOKEN_DIV = 314,               // DIV
-    TOKEN_NEG = 316,               // NEG
-    TOKEN_LPAREN = 317             // LPAREN
+    TOKEN_MOD = 316,               // MOD
+    TOKEN_NEG = 318,               // NEG
+    TOKEN_LPAREN = 319             // LPAREN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -637,7 +638,7 @@ namespace  zeno  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 63, ///< Number of tokens.
+        YYNTOKENS = 65, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // END
         S_YYerror = 1,                           // error
@@ -700,41 +701,43 @@ namespace  zeno  {
         S_58_ = 58,                              // "*"
         S_DIV = 59,                              // DIV
         S_60_ = 60,                              // "/"
-        S_NEG = 61,                              // NEG
-        S_LPAREN = 62,                           // LPAREN
-        S_YYACCEPT = 63,                         // $accept
-        S_64_zfx_program = 64,                   // zfx-program
-        S_65_multi_statements = 65,              // multi-statements
-        S_66_general_statement = 66,             // general-statement
-        S_67_array_or_exp = 67,                  // array-or-exp
-        S_68_assign_op = 68,                     // assign-op
-        S_69_code_block = 69,                    // code-block
-        S_70_bool_stmt = 70,                     // bool-stmt
-        S_71_assign_statement = 71,              // assign-statement
-        S_72_jump_statement = 72,                // jump-statement
-        S_arrcontent = 73,                       // arrcontent
-        S_arrcontents = 74,                      // arrcontents
-        S_75_array_stmt = 75,                    // array-stmt
-        S_76_array_mark = 76,                    // array-mark
-        S_77_only_declare = 77,                  // only-declare
-        S_78_declare_statement = 78,             // declare-statement
-        S_79_if_statement = 79,                  // if-statement
-        S_80_for_begin = 80,                     // for-begin
-        S_81_for_condition = 81,                 // for-condition
-        S_82_for_step = 82,                      // for-step
-        S_83_foreach_step = 83,                  // foreach-step
-        S_84_loop_statement = 84,                // loop-statement
-        S_85_compare_op = 85,                    // compare-op
-        S_86_exp_statement = 86,                 // exp-statement
-        S_orexp = 87,                            // orexp
-        S_andexp = 88,                           // andexp
-        S_compareexp = 89,                       // compareexp
-        S_addsubexp = 90,                        // addsubexp
-        S_factor = 91,                           // factor
-        S_zenvar = 92,                           // zenvar
-        S_funcargs = 93,                         // funcargs
-        S_94_func_content = 94,                  // func-content
-        S_term = 95                              // term
+        S_MOD = 61,                              // MOD
+        S_62_ = 62,                              // "%"
+        S_NEG = 63,                              // NEG
+        S_LPAREN = 64,                           // LPAREN
+        S_YYACCEPT = 65,                         // $accept
+        S_66_zfx_program = 66,                   // zfx-program
+        S_67_multi_statements = 67,              // multi-statements
+        S_68_general_statement = 68,             // general-statement
+        S_69_array_or_exp = 69,                  // array-or-exp
+        S_70_assign_op = 70,                     // assign-op
+        S_71_code_block = 71,                    // code-block
+        S_72_bool_stmt = 72,                     // bool-stmt
+        S_73_assign_statement = 73,              // assign-statement
+        S_74_jump_statement = 74,                // jump-statement
+        S_arrcontent = 75,                       // arrcontent
+        S_arrcontents = 76,                      // arrcontents
+        S_77_array_stmt = 77,                    // array-stmt
+        S_78_array_mark = 78,                    // array-mark
+        S_79_only_declare = 79,                  // only-declare
+        S_80_declare_statement = 80,             // declare-statement
+        S_81_if_statement = 81,                  // if-statement
+        S_82_for_begin = 82,                     // for-begin
+        S_83_for_condition = 83,                 // for-condition
+        S_84_for_step = 84,                      // for-step
+        S_85_foreach_step = 85,                  // foreach-step
+        S_86_loop_statement = 86,                // loop-statement
+        S_87_compare_op = 87,                    // compare-op
+        S_88_exp_statement = 88,                 // exp-statement
+        S_orexp = 89,                            // orexp
+        S_andexp = 90,                           // andexp
+        S_compareexp = 91,                       // compareexp
+        S_addsubexp = 92,                        // addsubexp
+        S_factor = 93,                           // factor
+        S_zenvar = 94,                           // zenvar
+        S_funcargs = 95,                         // funcargs
+        S_96_func_content = 96,                  // func-content
+        S_term = 97                              // term
       };
     };
 
@@ -773,8 +776,8 @@ namespace  zeno  {
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_70_bool_stmt: // bool-stmt
-      case symbol_kind::S_76_array_mark: // array-mark
+      case symbol_kind::S_72_bool_stmt: // bool-stmt
+      case symbol_kind::S_78_array_mark: // array-mark
         value.move< bool > (std::move (that.value));
         break;
 
@@ -782,41 +785,41 @@ namespace  zeno  {
         value.move< float > (std::move (that.value));
         break;
 
-      case symbol_kind::S_68_assign_op: // assign-op
-      case symbol_kind::S_85_compare_op: // compare-op
+      case symbol_kind::S_70_assign_op: // assign-op
+      case symbol_kind::S_87_compare_op: // compare-op
         value.move< operatorVals > (std::move (that.value));
         break;
 
-      case symbol_kind::S_64_zfx_program: // zfx-program
-      case symbol_kind::S_65_multi_statements: // multi-statements
-      case symbol_kind::S_66_general_statement: // general-statement
-      case symbol_kind::S_67_array_or_exp: // array-or-exp
-      case symbol_kind::S_69_code_block: // code-block
-      case symbol_kind::S_71_assign_statement: // assign-statement
-      case symbol_kind::S_72_jump_statement: // jump-statement
+      case symbol_kind::S_66_zfx_program: // zfx-program
+      case symbol_kind::S_67_multi_statements: // multi-statements
+      case symbol_kind::S_68_general_statement: // general-statement
+      case symbol_kind::S_69_array_or_exp: // array-or-exp
+      case symbol_kind::S_71_code_block: // code-block
+      case symbol_kind::S_73_assign_statement: // assign-statement
+      case symbol_kind::S_74_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_75_array_stmt: // array-stmt
-      case symbol_kind::S_77_only_declare: // only-declare
-      case symbol_kind::S_78_declare_statement: // declare-statement
-      case symbol_kind::S_79_if_statement: // if-statement
-      case symbol_kind::S_80_for_begin: // for-begin
-      case symbol_kind::S_81_for_condition: // for-condition
-      case symbol_kind::S_82_for_step: // for-step
-      case symbol_kind::S_84_loop_statement: // loop-statement
-      case symbol_kind::S_86_exp_statement: // exp-statement
+      case symbol_kind::S_77_array_stmt: // array-stmt
+      case symbol_kind::S_79_only_declare: // only-declare
+      case symbol_kind::S_80_declare_statement: // declare-statement
+      case symbol_kind::S_81_if_statement: // if-statement
+      case symbol_kind::S_82_for_begin: // for-begin
+      case symbol_kind::S_83_for_condition: // for-condition
+      case symbol_kind::S_84_for_step: // for-step
+      case symbol_kind::S_86_loop_statement: // loop-statement
+      case symbol_kind::S_88_exp_statement: // exp-statement
       case symbol_kind::S_orexp: // orexp
       case symbol_kind::S_andexp: // andexp
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_addsubexp: // addsubexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_94_func_content: // func-content
+      case symbol_kind::S_96_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (std::move (that.value));
         break;
 
       case symbol_kind::S_arrcontents: // arrcontents
-      case symbol_kind::S_83_foreach_step: // foreach-step
+      case symbol_kind::S_85_foreach_step: // foreach-step
       case symbol_kind::S_funcargs: // funcargs
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (std::move (that.value));
         break;
@@ -1000,8 +1003,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_70_bool_stmt: // bool-stmt
-      case symbol_kind::S_76_array_mark: // array-mark
+      case symbol_kind::S_72_bool_stmt: // bool-stmt
+      case symbol_kind::S_78_array_mark: // array-mark
         value.template destroy< bool > ();
         break;
 
@@ -1009,41 +1012,41 @@ switch (yykind)
         value.template destroy< float > ();
         break;
 
-      case symbol_kind::S_68_assign_op: // assign-op
-      case symbol_kind::S_85_compare_op: // compare-op
+      case symbol_kind::S_70_assign_op: // assign-op
+      case symbol_kind::S_87_compare_op: // compare-op
         value.template destroy< operatorVals > ();
         break;
 
-      case symbol_kind::S_64_zfx_program: // zfx-program
-      case symbol_kind::S_65_multi_statements: // multi-statements
-      case symbol_kind::S_66_general_statement: // general-statement
-      case symbol_kind::S_67_array_or_exp: // array-or-exp
-      case symbol_kind::S_69_code_block: // code-block
-      case symbol_kind::S_71_assign_statement: // assign-statement
-      case symbol_kind::S_72_jump_statement: // jump-statement
+      case symbol_kind::S_66_zfx_program: // zfx-program
+      case symbol_kind::S_67_multi_statements: // multi-statements
+      case symbol_kind::S_68_general_statement: // general-statement
+      case symbol_kind::S_69_array_or_exp: // array-or-exp
+      case symbol_kind::S_71_code_block: // code-block
+      case symbol_kind::S_73_assign_statement: // assign-statement
+      case symbol_kind::S_74_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_75_array_stmt: // array-stmt
-      case symbol_kind::S_77_only_declare: // only-declare
-      case symbol_kind::S_78_declare_statement: // declare-statement
-      case symbol_kind::S_79_if_statement: // if-statement
-      case symbol_kind::S_80_for_begin: // for-begin
-      case symbol_kind::S_81_for_condition: // for-condition
-      case symbol_kind::S_82_for_step: // for-step
-      case symbol_kind::S_84_loop_statement: // loop-statement
-      case symbol_kind::S_86_exp_statement: // exp-statement
+      case symbol_kind::S_77_array_stmt: // array-stmt
+      case symbol_kind::S_79_only_declare: // only-declare
+      case symbol_kind::S_80_declare_statement: // declare-statement
+      case symbol_kind::S_81_if_statement: // if-statement
+      case symbol_kind::S_82_for_begin: // for-begin
+      case symbol_kind::S_83_for_condition: // for-condition
+      case symbol_kind::S_84_for_step: // for-step
+      case symbol_kind::S_86_loop_statement: // loop-statement
+      case symbol_kind::S_88_exp_statement: // exp-statement
       case symbol_kind::S_orexp: // orexp
       case symbol_kind::S_andexp: // andexp
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_addsubexp: // addsubexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_94_func_content: // func-content
+      case symbol_kind::S_96_func_content: // func-content
       case symbol_kind::S_term: // term
         value.template destroy< std::shared_ptr<ZfxASTNode> > ();
         break;
 
       case symbol_kind::S_arrcontents: // arrcontents
-      case symbol_kind::S_83_foreach_step: // foreach-step
+      case symbol_kind::S_85_foreach_step: // foreach-step
       case symbol_kind::S_funcargs: // funcargs
         value.template destroy< std::vector<std::shared_ptr<ZfxASTNode>> > ();
         break;
@@ -2141,6 +2144,21 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
+      make_MOD (location_type l)
+      {
+        return symbol_type (token::TOKEN_MOD, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_MOD (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_MOD, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
       make_NEG (location_type l)
       {
         return symbol_type (token::TOKEN_NEG, std::move (l));
@@ -2246,7 +2264,7 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const unsigned char yydefgoto_[];
@@ -2498,7 +2516,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 326,     ///< Last index in yytable_.
+      yylast_ = 321,     ///< Last index in yytable_.
       yynnts_ = 33,  ///< Number of nonterminal symbols.
       yyfinal_ = 59 ///< Termination state number.
     };
@@ -2551,10 +2569,10 @@ switch (yykind)
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
       45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    61,    62
+      55,    56,    57,    58,    59,    60,    61,    62,    63,    64
     };
     // Last valid token kind.
-    const int code_max = 317;
+    const int code_max = 319;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2575,8 +2593,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_70_bool_stmt: // bool-stmt
-      case symbol_kind::S_76_array_mark: // array-mark
+      case symbol_kind::S_72_bool_stmt: // bool-stmt
+      case symbol_kind::S_78_array_mark: // array-mark
         value.copy< bool > (YY_MOVE (that.value));
         break;
 
@@ -2584,41 +2602,41 @@ switch (yykind)
         value.copy< float > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_68_assign_op: // assign-op
-      case symbol_kind::S_85_compare_op: // compare-op
+      case symbol_kind::S_70_assign_op: // assign-op
+      case symbol_kind::S_87_compare_op: // compare-op
         value.copy< operatorVals > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_64_zfx_program: // zfx-program
-      case symbol_kind::S_65_multi_statements: // multi-statements
-      case symbol_kind::S_66_general_statement: // general-statement
-      case symbol_kind::S_67_array_or_exp: // array-or-exp
-      case symbol_kind::S_69_code_block: // code-block
-      case symbol_kind::S_71_assign_statement: // assign-statement
-      case symbol_kind::S_72_jump_statement: // jump-statement
+      case symbol_kind::S_66_zfx_program: // zfx-program
+      case symbol_kind::S_67_multi_statements: // multi-statements
+      case symbol_kind::S_68_general_statement: // general-statement
+      case symbol_kind::S_69_array_or_exp: // array-or-exp
+      case symbol_kind::S_71_code_block: // code-block
+      case symbol_kind::S_73_assign_statement: // assign-statement
+      case symbol_kind::S_74_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_75_array_stmt: // array-stmt
-      case symbol_kind::S_77_only_declare: // only-declare
-      case symbol_kind::S_78_declare_statement: // declare-statement
-      case symbol_kind::S_79_if_statement: // if-statement
-      case symbol_kind::S_80_for_begin: // for-begin
-      case symbol_kind::S_81_for_condition: // for-condition
-      case symbol_kind::S_82_for_step: // for-step
-      case symbol_kind::S_84_loop_statement: // loop-statement
-      case symbol_kind::S_86_exp_statement: // exp-statement
+      case symbol_kind::S_77_array_stmt: // array-stmt
+      case symbol_kind::S_79_only_declare: // only-declare
+      case symbol_kind::S_80_declare_statement: // declare-statement
+      case symbol_kind::S_81_if_statement: // if-statement
+      case symbol_kind::S_82_for_begin: // for-begin
+      case symbol_kind::S_83_for_condition: // for-condition
+      case symbol_kind::S_84_for_step: // for-step
+      case symbol_kind::S_86_loop_statement: // loop-statement
+      case symbol_kind::S_88_exp_statement: // exp-statement
       case symbol_kind::S_orexp: // orexp
       case symbol_kind::S_andexp: // andexp
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_addsubexp: // addsubexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_94_func_content: // func-content
+      case symbol_kind::S_96_func_content: // func-content
       case symbol_kind::S_term: // term
         value.copy< std::shared_ptr<ZfxASTNode> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_arrcontents: // arrcontents
-      case symbol_kind::S_83_foreach_step: // foreach-step
+      case symbol_kind::S_85_foreach_step: // foreach-step
       case symbol_kind::S_funcargs: // funcargs
         value.copy< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (that.value));
         break;
@@ -2702,8 +2720,8 @@ switch (yykind)
     {
       case symbol_kind::S_TRUE: // TRUE
       case symbol_kind::S_FALSE: // FALSE
-      case symbol_kind::S_70_bool_stmt: // bool-stmt
-      case symbol_kind::S_76_array_mark: // array-mark
+      case symbol_kind::S_72_bool_stmt: // bool-stmt
+      case symbol_kind::S_78_array_mark: // array-mark
         value.move< bool > (YY_MOVE (s.value));
         break;
 
@@ -2711,41 +2729,41 @@ switch (yykind)
         value.move< float > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_68_assign_op: // assign-op
-      case symbol_kind::S_85_compare_op: // compare-op
+      case symbol_kind::S_70_assign_op: // assign-op
+      case symbol_kind::S_87_compare_op: // compare-op
         value.move< operatorVals > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_64_zfx_program: // zfx-program
-      case symbol_kind::S_65_multi_statements: // multi-statements
-      case symbol_kind::S_66_general_statement: // general-statement
-      case symbol_kind::S_67_array_or_exp: // array-or-exp
-      case symbol_kind::S_69_code_block: // code-block
-      case symbol_kind::S_71_assign_statement: // assign-statement
-      case symbol_kind::S_72_jump_statement: // jump-statement
+      case symbol_kind::S_66_zfx_program: // zfx-program
+      case symbol_kind::S_67_multi_statements: // multi-statements
+      case symbol_kind::S_68_general_statement: // general-statement
+      case symbol_kind::S_69_array_or_exp: // array-or-exp
+      case symbol_kind::S_71_code_block: // code-block
+      case symbol_kind::S_73_assign_statement: // assign-statement
+      case symbol_kind::S_74_jump_statement: // jump-statement
       case symbol_kind::S_arrcontent: // arrcontent
-      case symbol_kind::S_75_array_stmt: // array-stmt
-      case symbol_kind::S_77_only_declare: // only-declare
-      case symbol_kind::S_78_declare_statement: // declare-statement
-      case symbol_kind::S_79_if_statement: // if-statement
-      case symbol_kind::S_80_for_begin: // for-begin
-      case symbol_kind::S_81_for_condition: // for-condition
-      case symbol_kind::S_82_for_step: // for-step
-      case symbol_kind::S_84_loop_statement: // loop-statement
-      case symbol_kind::S_86_exp_statement: // exp-statement
+      case symbol_kind::S_77_array_stmt: // array-stmt
+      case symbol_kind::S_79_only_declare: // only-declare
+      case symbol_kind::S_80_declare_statement: // declare-statement
+      case symbol_kind::S_81_if_statement: // if-statement
+      case symbol_kind::S_82_for_begin: // for-begin
+      case symbol_kind::S_83_for_condition: // for-condition
+      case symbol_kind::S_84_for_step: // for-step
+      case symbol_kind::S_86_loop_statement: // loop-statement
+      case symbol_kind::S_88_exp_statement: // exp-statement
       case symbol_kind::S_orexp: // orexp
       case symbol_kind::S_andexp: // andexp
       case symbol_kind::S_compareexp: // compareexp
       case symbol_kind::S_addsubexp: // addsubexp
       case symbol_kind::S_factor: // factor
       case symbol_kind::S_zenvar: // zenvar
-      case symbol_kind::S_94_func_content: // func-content
+      case symbol_kind::S_96_func_content: // func-content
       case symbol_kind::S_term: // term
         value.move< std::shared_ptr<ZfxASTNode> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_arrcontents: // arrcontents
-      case symbol_kind::S_83_foreach_step: // foreach-step
+      case symbol_kind::S_85_foreach_step: // foreach-step
       case symbol_kind::S_funcargs: // funcargs
         value.move< std::vector<std::shared_ptr<ZfxASTNode>> > (YY_MOVE (s.value));
         break;
@@ -2863,7 +2881,7 @@ switch (yykind)
 
 #line 10 "zfxparser.y"
 } //  zeno 
-#line 2867 "zfxparser.hpp"
+#line 2885 "zfxparser.hpp"
 
 
 

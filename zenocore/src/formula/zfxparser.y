@@ -121,6 +121,7 @@
 %left SUB "-"
 %left MUL "*"
 %left DIV "/"
+%left MOD "%"
 
 %nonassoc NEG // 负号具有最高优先级但没有结合性
 
@@ -355,6 +356,10 @@ factor: term            { $$ = $1; }
     | factor DIV term {
             std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
             $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children);
+        }
+    | factor MOD term {
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, MOD, children); 
         }
     ;
 

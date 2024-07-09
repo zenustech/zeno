@@ -93,6 +93,8 @@ namespace zeno {
             return "mul";
         case DIV:
             return "div";
+        case MOD:
+            return "mod";
         case OR:
             return "or";
         case AND:
@@ -168,6 +170,9 @@ namespace zeno {
             break;
         case DIV:
             n->value = "/";
+            break;
+        case MOD:
+            n->value = "%";
             break;
         case AND:
             n->value = "&&";
@@ -290,6 +295,8 @@ namespace zeno {
                     return leftRes - rightRes;
                 case MUL:
                     return leftRes * rightRes;
+                case MOD:
+                    return (int)leftRes % (int)rightRes;
                 case DIV: {
                     if (rightRes == 0) {
                         return 0;

@@ -52,6 +52,7 @@ enum operatorVals {
     MINUS,
     MUL,
     DIV,
+    MOD,
     OR,
     AND,
 

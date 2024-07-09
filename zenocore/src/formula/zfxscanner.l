@@ -89,6 +89,7 @@ equalto \=
 "-"       { return zeno::ZfxParser::make_SUB(loc); }
 "*"       { return zeno::ZfxParser::make_MUL(loc); }
 "/"       { return zeno::ZfxParser::make_DIV(loc); }
+"%"       { return zeno::ZfxParser::make_MOD(loc); }
 "("       { return zeno::ZfxParser::make_LPAREN(yytext,loc); }
 ")"       { return zeno::ZfxParser::make_RPAREN(yytext,loc); }
 ","       { return zeno::ZfxParser::make_COMMA(loc); }

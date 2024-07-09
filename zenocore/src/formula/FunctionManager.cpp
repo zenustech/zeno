@@ -259,7 +259,23 @@ namespace zeno {
                 using T = std::decay_t<decltype(lval)>;
                 using E = std::decay_t<decltype(rval)>;
                 using Op = std::decay_t<decltype(method)>;
-                if constexpr (std::is_same_v<T, int>) {
+
+                if constexpr (std::is_same_v<Op, std::modulus<>>) {
+                    if constexpr (std::is_same_v<T, int> && std::is_same_v<E, int>) {
+                        return method((int)lval, (int)rval);
+                    }
+                    else if constexpr (std::is_same_v<T, int> && std::is_same_v<E, float>) {
+                        return method(lval, (int)rval);
+                    }
+                    else if constexpr (std::is_same_v<T, float> && std::is_same_v<E, int>) {
+                        return method((int)lval, rval);
+                    }
+                    else if constexpr (std::is_same_v<T, float> && std::is_same_v<E, float>) {
+                        return method((int)lval, (int)rval);
+                    }
+                    throw UnimplError("");
+                }
+                else if constexpr (std::is_same_v<T, int>) {
                     if constexpr (std::is_same_v<E, int>) {
                         return method(lval, rval);
                     }
@@ -1224,6 +1240,7 @@ namespace zeno {
                 case MINUS: return calc_exp(args[0], args[1], filter, std::minus());
                 case MUL:   return calc_exp(args[0], args[1], filter, std::multiplies());
                 case DIV:   return calc_exp(args[0], args[1], filter, std::divides());
+                case MOD:   return calc_exp(args[0], args[1], filter, std::modulus());
                 case AND:   return calc_exp(args[0], args[1], filter, std::logical_and());
                 case OR:    return calc_exp(args[0], args[1], filter, std::logical_or());
                 default:
