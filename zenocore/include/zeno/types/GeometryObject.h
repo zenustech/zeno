@@ -83,11 +83,10 @@ public:
     bool setFaceAttr(int face_id, const std::string& attr_name, const zfxvariant& val);
     zfxvariant getFaceAttr(int face_id, const std::string& attr_name) const;
     bool deleteFaceAttr(int face_id, const std::string& attr_name);
-    void faceAddVert(int face_id, int point_id);
 
-    void addpoint();
+    int addpoint(zfxvariant pos = zfxfloatarr({0,0,0}));
     void addprim();
-    void addvertex();
+    int addvertex(int face_id, int point_id);
 
     bool remove_point(int ptnum);
     bool remove_prim(int face_id);
@@ -95,6 +94,7 @@ public:
     int npoints() const;
     int nfaces() const;
     int nvertices() const;
+    int nvertices(int face_id) const;
 
     //vertexÏÈ²»¿¼ÂÇ
 

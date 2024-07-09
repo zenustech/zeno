@@ -490,20 +490,68 @@ namespace zeno
         return false;
     }
 
-    void GeometryObject::faceAddVert(int face_id, int point_id)
-    {
+    int GeometryObject::addpoint(zfxvariant var) {
+        vec3f pos = std::visit([](auto&& val)->vec3f {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<T, glm::vec3>) {
+                return vec3f({ val[0],val[1], val[2] });
+            }
+            else if constexpr (std::is_same_v<T, zfxfloatarr>) {
+                return vec3f({ val[0],val[1], val[2] });
+            }
+            else {
+                throw makeError<UnimplError>("type dismatch");
+            }
+        }, var);
 
+        auto spPoint = std::make_shared<Point>();
+        spPoint->pos = pos;
+        m_points.emplace_back(spPoint);
+        return m_points.size() - 1;
     }
 
-    void GeometryObject::addpoint() {
+    int GeometryObject::addvertex(int face_id, int point_id) {
+        if (face_id < 0 || face_id >= m_faces.size() ||
+            point_id < 0 || point_id >= m_points.size()) {
+            return -1;
+        }
+        auto& spPoint = m_points[point_id];
+        if (spPoint->edges.empty()) {
+            auto pFace = m_faces[face_id];
+            assert(pFace);
+            auto firstH = pFace->h;
+            auto& [prevPoint, prevEdge, pprevEdge] = getPrev(firstH);
+            auto newedge = std::make_shared<HEdge>();
+            newedge->point = prevEdge->point;
+            newedge->next = firstH;
+            newedge->face = face_id;
+            newedge->id = generateUUID();
+            prevEdge->next = newedge.get();
+            prevEdge->point = point_id;
+            m_hEdges.insert(std::make_pair(newedge->id, newedge));
+            m_bTriangle = false;    //有增加意味着不能当作三角形处理了
+            return nvertices(face_id);
+        }
+        else {
+            return -1;
+        }
+    }
 
+    int GeometryObject::nvertices(int face_id) const {
+        if (face_id < 0 || face_id >= m_faces.size()) {
+            return 0;
+        }
+        auto firstedge = m_faces[face_id]->h;
+        auto h = firstedge;
+        int ncount = 0;
+        do {
+            ncount++;
+            h = h->next;
+        } while (firstedge != h);
+        return ncount;
     }
 
     void GeometryObject::addprim() {
-
-    }
-
-    void GeometryObject::addvertex() {
 
     }
 

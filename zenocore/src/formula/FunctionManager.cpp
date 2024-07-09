@@ -1786,6 +1786,52 @@ namespace zeno {
                 res.value.push_back(rand());
                 return res;
             }
+            else if (funcname == "addpoint") {
+                if (args.size() == 1) {
+                    const auto& arg = args[0];
+                    if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
+                        //暂时只考虑一个点
+                        int ptnum = spGeo->addpoint(arg.value[0]);
+                        ZfxVariable res;
+                        res.value.push_back(ptnum);
+                        return res;
+                    }
+                    else {
+                        throw makeError<UnimplError>();
+                    }
+                }
+                else if (args.empty()) {
+                    if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
+                        //暂时只考虑一个点
+                        int ptnum = spGeo->addpoint();
+                        ZfxVariable res;
+                        res.value.push_back(ptnum);
+                        return res;
+                    }
+                    else {
+                        throw makeError<UnimplError>();
+                    }
+                }
+                else {
+                    throw makeError<UnimplError>();
+                }
+            }
+            else if (funcname == "addvertex") {
+                if (args.size() != 2) {
+                    throw makeError<UnimplError>();
+                }
+                if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
+                    int faceid = get_zfxvar<int>(args[0].value[0]);
+                    int pointid = get_zfxvar<int>(args[1].value[0]);
+                    int vertid = spGeo->addvertex(faceid, pointid);
+                    ZfxVariable res;
+                    res.value.push_back(vertid);
+                    return res;
+                }
+                else {
+                    throw makeError<UnimplError>();
+                }
+            }
             else if (funcname == "removepoint") {
                 if (args.size() != 1)
                     throw makeError<UnimplError>();
