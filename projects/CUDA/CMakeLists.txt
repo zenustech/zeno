@@ -105,8 +105,8 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPCJIT_FILE} ${PY_LIBS_DIR}/zpcjit
       COMMENT "Copying zpcjit src file: ${ZPCJIT_FILE}")
   endforeach()
-  cmake_path(GET ZS_OVERWRITE_PYTHON_EXECUTABLE PARENT_PATH PYTHON_ENV_PATH)
   if (WIN32)
+    cmake_path(GET ZS_OVERWRITE_PYTHON_EXECUTABLE PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
     add_custom_command(
       TARGET copy_py
@@ -144,6 +144,8 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
       )
     endforeach()
   else()
+    cmake_path(GET ZS_OVERWRITE_PYTHON_EXECUTABLE PARENT_PATH PYTHON_ENV_PATH)
+    cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
     add_custom_command(
       TARGET copy_py
