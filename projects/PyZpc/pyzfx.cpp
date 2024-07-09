@@ -65,9 +65,21 @@ static callback_t zpc_init_callback = [] (auto _) {
         return;
     }
 #endif
-    if (PyRun_SimpleString(("import sys; sys.path.append('" + 
-        py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path + 
+    if (PyRun_SimpleString(("import sys; sys.path.append('" +
+        py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path +
         "'); zpy.zeno_lib_path = '" + zeno_lib_path + "'").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("import zpcjit; zpcjit.init_zpc_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_CAPIS + "');").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("zpcjit.init_zpc_nvrtc_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_NVRTC + "');").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("zpcjit.init_zpc_clang_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_CLANG + "');").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
         return;
     }

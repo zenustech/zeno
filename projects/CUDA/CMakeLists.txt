@@ -90,9 +90,9 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     "zpc" 
     "zpctool")  # "zspartio", "zswhereami"
 
-  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CAPIS="${RESOURCE_BASE_DIR}/${PREFIX}zpc_py_interop${SUFFIX}")
-  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_NVRTC="${RESOURCE_BASE_DIR}/${PREFIX}zpc_jit_nvrtc${SUFFIX}")
-  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CLANG="${RESOURCE_BASE_DIR}/${PREFIX}zpc_jit_clang${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CAPIS="${PREFIX}zpc_py_interop${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_NVRTC="${PREFIX}zpc_jit_nvrtc${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CLANG="${PREFIX}zpc_jit_clang${SUFFIX}")
   add_custom_command(
     TARGET copy_py
     POST_BUILD
