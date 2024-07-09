@@ -401,7 +401,7 @@ namespace zeno
                 hedge->point--;
             }
             for (auto remFaceId : _remFaces) {
-                if (hedge->face > remFaceId)
+                if (hedge->face >= remFaceId)
                     hedge->face--;
                 else
                     break;
