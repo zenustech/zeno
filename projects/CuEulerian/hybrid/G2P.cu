@@ -110,7 +110,7 @@ struct ZSSparseGridToPrimitive : INode {
         auto tag = src_tag(zsSPG, attrTag);
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
                                   wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;

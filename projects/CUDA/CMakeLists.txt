@@ -76,20 +76,6 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     message(FATAL_ERROR "unknown system to determine shared library suffix")
   endif()
 
-  set(ZPC_BINARIES "clang" 
-    "cudart" 
-    "cuda" 
-    "nvrtc" 
-    "omp" 
-    "zpccore" 
-    "zpccuda" 
-    "zpc_jit_clang" 
-    "zpc_jit_nvrtc" 
-    "zpcomp" 
-    "zpc_py_interop" 
-    "zpc" 
-    "zpctool")  # "zspartio", "zswhereami"
-
   target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CAPIS="${PREFIX}zpc_py_interop${SUFFIX}")
   target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_NVRTC="${PREFIX}zpc_jit_nvrtc${SUFFIX}")
   target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CLANG="${PREFIX}zpc_jit_clang${SUFFIX}")
@@ -168,16 +154,7 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include/zensim
     COMMENT "Copying zpc source files: ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim")
   # prepare zpc libs for pyzpc
-  foreach(ZPC_BIN_FILE IN LISTS ZPC_BINARIES)
-  if(EXISTS ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX})
-    add_custom_command(
-      TARGET copy_py POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX} ${PY_LIBS_DIR}/zpcjit/zpc_jit/lib
-      COMMENT "Copying zpc binary file: ${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX}")
-  else()
-    message(STATUS "${RESOURCE_BASE_DIR}/${PREFIX}${ZPC_BIN_FILE}${SUFFIX} not found.")
-  endif()
-  endforeach(ZPC_BIN_FILE IN LISTS ZPC_BINARIES)
+  
 endif(ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
 add_library(zshelper INTERFACE)
