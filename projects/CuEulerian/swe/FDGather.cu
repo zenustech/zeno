@@ -13,7 +13,7 @@ template <int nchn>
 void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    auto pol = cuda_exec().device(0);
+    auto pol = cuda_exec();
     const SmallString lTag = std::string("l") + channel;
     const SmallString rTag = std::string("r") + channel;
     const SmallString tTag = std::string("t") + channel;
@@ -128,7 +128,7 @@ void edgeLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, cons
                  const std::string &addChannel) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    auto pol = cuda_exec().device(0);
+    auto pol = cuda_exec();
     const SmallString lTag = std::string("l") + channel;
     const SmallString rTag = std::string("r") + channel;
     const SmallString tTag = std::string("t") + channel;
@@ -154,7 +154,7 @@ template <int nchn>
 void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const std::string &channel) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    auto pol = cuda_exec().device(0);
+    auto pol = cuda_exec();
     const SmallString ltTag = std::string("lt") + channel;
     const SmallString rtTag = std::string("rt") + channel;
     const SmallString lbTag = std::string("lb") + channel;
@@ -183,7 +183,7 @@ void cornerLoopSum(typename ZenoParticles::particles_t &prim, int nx, int ny, co
                    const std::string &addChannel) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    auto pol = cuda_exec().device(0);
+    auto pol = cuda_exec();
     const SmallString ltTag = std::string("lt") + channel;
     const SmallString rtTag = std::string("rt") + channel;
     const SmallString lbTag = std::string("lb") + channel;
@@ -377,7 +377,7 @@ struct ZSMomentumTransfer2DFiniteDifference : zeno::INode {
         auto addChannel = get_input2<std::string>("add_channel");
 
         auto &verts = grid->getParticles();
-        auto pol = zs::cuda_exec().device(0);
+        auto pol = zs::cuda_exec();
         if (attrT == "float") {
             verts.append_channels(pol, {{addChannel, 1}});
         }
@@ -421,7 +421,7 @@ ZENDEFNODE(ZSMomentumTransfer2DFiniteDifference, {
                                                      {"zenofx"},
                                                  });
 
-template <class T> static constexpr T lerp(T a, T b, float c) {
+template <class T> static constexpr auto lerp(T a, T b, float c) {
     return (1 - c) * a + c * b;
 }
 template <auto nchn>
@@ -430,7 +430,7 @@ void sample2D(typename ZenoParticles::particles_t &prim, const zs::SmallString &
     using vec3f = zs::vec<float, 3>;
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    auto pol = cuda_exec().device(0);
+    auto pol = cuda_exec();
     using T = conditional_t<nchn == 1, zs::vec<float, 1>, vec3f>;
 
     Vector<T> temp(prim.get_allocator(), prim.size());
@@ -490,6 +490,119 @@ ZENDEFNODE(ZSGrid2DSample, {
                                 {"string", "channel", "pos"},
                                 {"string", "sampleBy", "pos"},
                                 {"enum vec3 float", "attrT", "float"}},
+                               {{"ZenoParticles", "prim"}},
+                               {},
+                               {"zenofx"},
+                           });
+
+template <typename CoordsT, typename FieldT, typename PrimAttrT>
+void sample2D(CoordsT coord, FieldT field, PrimAttrT primAttr, int nx, int ny, float h, zs::vec<float, 3> bmin, bool isPeriodic) {
+    using vec3f = zs::vec<float, 3>;
+    using namespace zs;
+    constexpr auto space = execspace_e::cuda;
+    auto pol = cuda_exec();
+    using T = RM_CVREF_T(*field);
+    static_assert(is_same_v<T, RM_CVREF_T(*primAttr)>, "???");
+
+    auto allocator = get_temporary_memory_source(pol);
+    Vector<T> temp(allocator, range_size(coord));
+
+    pol(range(range_size(coord)), [temp = temp.begin(), coord = coord.begin(), field, primAttr, bmin, nx, ny,
+                             h, isPeriodic] ZS_LAMBDA(auto tidx) mutable {
+        auto uv = coord[tidx];
+        zs::vec<float, 3> uv2;
+        if (isPeriodic) {
+            auto Lx = (nx - 1) * h;
+            auto Ly = (ny - 1) * h;
+            int gid_x = zs::floor((uv[0] - bmin[0]) / Lx);
+            int gid_y = zs::floor((uv[2] - bmin[2]) / Ly);
+            uv2 = (uv - (bmin + zs::vec<float, 3>{gid_x * Lx, 0, gid_y * Ly})) / h;
+            uv2[1] = 0;
+            uv2[0] = zs::min(zs::max(uv2[0], 0.0f), nx - 1.01f);
+            uv2[2] = zs::min(zs::max(uv2[2], 0.0f), ny - 1.01f);
+        } else {
+            uv2 = (uv - bmin) / h;
+            uv2[1] = 0;
+            uv2[0] = zs::min(zs::max(uv2[0], 0.01f), nx - 1.01f);
+            uv2[2] = zs::min(zs::max(uv2[2], 0.01f), ny - 1.01f);
+        }
+        // uv2 = zeno::min(zeno::max(uv2, vec3f{0.01, 0.0, 0.01}), vec3f{nx - 1.01, 0.0, ny - 1.01});
+        int i = uv2[0];
+        int j = uv2[2];
+        float cx = uv2[0] - i, cy = uv2[2] - j;
+        size_t idx00 = j * nx + i, idx01 = j * nx + i + 1, idx10 = (j + 1) * nx + i, idx11 = (j + 1) * nx + i + 1;
+        T f00 = field[idx00];
+        T f01 = field[idx01];
+        T f10 = field[idx10];
+        T f11 = field[idx11];
+        temp[tidx] = lerp(lerp(f00, f01, cx), lerp(f10, f11, cx), cy);
+    });
+
+    pol(range(range_size(coord)), [temp = temp.begin(), primAttr] ZS_LAMBDA(
+                                auto tidx) mutable { primAttr[tidx] = temp[tidx]; });
+}
+struct ZSGrid2DSample2 : zeno::INode {
+    virtual void apply() override {
+        using vec3f = zs::vec<float, 3>;
+        auto nx = get_input2<int>("nx");
+        auto ny = get_input2<int>("ny");
+        auto bmin = get_input2<zeno::vec3f>("bmin");
+        auto prim = get_input<ZenoParticles>("prim");
+        auto grid = get_input<ZenoParticles>("sampleGrid");
+        auto channelList = get_input2<std::string>("channel");
+        auto sampleby = get_input2<std::string>("sampleBy");
+        auto isPeriodic = get_input2<std::string>("sampleType") == "Periodic";
+        auto h = get_input2<float>("h");
+
+        std::vector<zs::PropertyTag> channels;
+        std::istringstream iss(channelList);
+        std::string word;
+        while (iss >> word) {
+            if (word == "*") {
+                channels = grid->getParticles().getPropertyTags();
+                break;
+            }
+            channels.push_back(zs::PropertyTag{word.c_str(), grid->getParticles().getPropertySize(word)});
+        }
+        for (auto &ch : channels) 
+            if (ch.name == "pos")
+                ch.name = "x";
+
+        if (sampleby == "pos") sampleby = "x";
+
+        auto &pars = prim->getParticles();
+        auto &gridVerts = grid->getParticles();
+        pars.append_channels(zs::cuda_exec(), channels);
+
+        if (pars.hasProperty(sampleby)) {
+            if (!(sampleby == "pos" || pars.getPropertySize(sampleby) == 3))
+                throw std::runtime_error("[sampleBy] has to be a vec3f attribute!");
+
+            for (const auto &ch : channels) {
+                if (ch.name != "x") {
+                    if (ch.numChannels == 1)
+                        sample2D(zs::range(pars, sampleby, zs::dim_c<3>), gridVerts.begin(ch.name, zs::dim_c<1>), pars.begin(ch.name, zs::dim_c<1>), nx, ny,
+                                        h, vec3f{bmin[0], bmin[1], bmin[2]}, isPeriodic);
+                    else if (ch.numChannels == 3)
+                        sample2D(zs::range(pars, sampleby, zs::dim_c<3>), gridVerts.begin(ch.name, zs::dim_c<3>), pars.begin(ch.name, zs::dim_c<3>), nx, ny,
+                                        h, vec3f{bmin[0], bmin[1], bmin[2]}, isPeriodic);
+                }
+            }
+        }
+
+        set_output("prim", std::move(grid));
+    }
+};
+ZENDEFNODE(ZSGrid2DSample2, {
+                               {{"ZenoParticles", "prim"},
+                                {"ZenoParticles", "sampleGrid"},
+                                {"int", "nx", "1"},
+                                {"int", "ny", "1"},
+                                {"float", "h", "1"},
+                                {"vec3f", "bmin", "0,0,0"},
+                                {"string", "channel", "*"},
+                                {"string", "sampleBy", "pos"},
+                                {"enum Clamp Periodic", "sampleType", "Clamp"}},
                                {{"ZenoParticles", "prim"}},
                                {},
                                {"zenofx"},

@@ -61,7 +61,7 @@ struct ZSParticleToZSLevelSet : INode {
         auto &field = zslevelset->getBasicLevelSet()._ls;
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();
@@ -160,7 +160,7 @@ struct PrimitiveToZSLevelSet : INode {
         const auto dx = get_input2<float>("dx");
         Vector<TV> xs{pos.size(), memsrc_e::device}, elePos{numEles, memsrc_e::device};
         copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(), sizeof(zeno::vec3f) * pos.size());
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         {
             if (quads.size()) {
                 Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device};

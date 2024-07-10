@@ -772,6 +772,12 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
         updatePerspective();
         return true;
     }
+    if ((uKey & 0xff) == Qt::Key_G && uKey & Qt::AltModifier) {
+        auto *scene = m_zenovis->getSession()->get_scene();
+        scene->camera->reset();
+        updatePerspective();
+        return true;
+    }
     if (!middle_button_pressed) {
         return false;
     }
