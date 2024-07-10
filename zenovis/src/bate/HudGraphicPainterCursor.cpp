@@ -15,10 +15,12 @@ using zeno::vec3f;
 static const char *vert_code = R"(
     #version 120
     uniform mat4 mTrans;
+    uniform float mBrushSize;
 
     attribute vec3 vPosition;
 
     void main() {
+        gl_PointSize = mBrushSize;
         gl_Position = mTrans * vec4(vPosition, 1.0);
     }
 )";
@@ -64,6 +66,7 @@ struct GraphicPainterCursor final : IGraphicDraw {
             mTrans = glm::translate(mTrans, glm::vec3(x_trans, y_trans, 0));
 
             prog->set_uniform("mTrans", mTrans);
+            prog->set_uniform("mBrushSize", 10.0f);
 
             glDisable(GL_DEPTH_TEST);
             CHECK_GL(glDrawArrays(GL_POINTS, 0, vertex_count));
