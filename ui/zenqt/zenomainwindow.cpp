@@ -20,7 +20,6 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/core/Session.h>
-#include <zeno/core/GlobalVariable.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/io/zsg2reader.h>
 #include <zeno/io/zenwriter.h>
@@ -61,7 +60,7 @@
 #include "DockManager.h"
 #include <zeno/io/zdareader.h>
 #include <QFileSystemWatcher> 
-#include "reflect/reflection.generated.hpp"
+
 
 const QString g_latest_layout = "LatestLayout";
 

@@ -56,9 +56,9 @@ public:
     void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName = "");
     void mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
     //nodepath的节点不在依赖某个全局变量
-    void removeDependGlobalVaraible(ObjPath nodepath, std::string name);
+    void removeDependGlobalVaraible(const ObjPath& nodepath, std::string name);
     //标记nodepath的节点依赖某个全局变量
-    void addDependGlobalVaraible(ObjPath nodepath, std::string name, zeno::reflect::RTTITypeInfo type);
+    void addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type);
 
     bool updateVariable(const GVariable& newvar);
     bool overrideVariable(const GVariable& var);

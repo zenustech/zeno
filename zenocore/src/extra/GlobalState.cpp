@@ -1,6 +1,5 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/core/GlobalVariable.h>
 #include <zeno/utils/logger.h>
 #include "reflect/reflection.generated.hpp"
 

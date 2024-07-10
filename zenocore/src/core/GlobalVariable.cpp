@@ -260,7 +260,7 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::removeDependGlobalVaraible(ObjPath nodepath, std::string name)
+    void GlobalVariableManager::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it != globalVariablesNameTypeMap.end())
@@ -269,7 +269,7 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::addDependGlobalVaraible(ObjPath nodepath, std::string name, zeno::reflect::RTTITypeInfo type)
+    void GlobalVariableManager::addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it == globalVariablesNameTypeMap.end())

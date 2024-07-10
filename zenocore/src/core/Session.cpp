@@ -22,6 +22,7 @@
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
 
+
 namespace zeno {
 
 namespace {
@@ -182,6 +183,14 @@ ZENO_API bool Session::overrideGlobalVariable(std::string name, zeno::reflect::A
 ZENO_API bool Session::updateGlobalVariable(std::string name, zeno::reflect::Any var)
 {
     return globalVariableManager->updateVariable(GVariable(name, zeno::reflect::move(var)));
+}
+
+ZENO_API void Session::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name) {
+    globalVariableManager->removeDependGlobalVaraible(nodepath, "$F");
+}
+
+ZENO_API void Session::addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type) {
+    globalVariableManager->addDependGlobalVaraible(nodepath, "$F", zeno::reflect::type_info<int>());
 }
 
 ZENO_API int Session::registerObjId(const std::string& objprefix)

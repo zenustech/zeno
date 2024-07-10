@@ -16,7 +16,6 @@
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
-#include <zeno/core/GlobalVariable.h>
 #include <functional>
 
 namespace zeno {
