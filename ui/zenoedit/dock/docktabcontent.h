@@ -145,6 +145,7 @@ protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget *initWidget() override;
     void initConnections() override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     DisplayWidget* m_pDisplay;

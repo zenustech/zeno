@@ -698,6 +698,18 @@ DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     , m_background(nullptr)
 {
 }
+void DockContent_View::keyPressEvent(QKeyEvent *event) {
+    DockToolbarWidget::keyPressEvent(event);
+    int uKey = event->key();
+    if (uKey == Qt::Key_C) {
+        auto state = m_depth->checkState();
+        m_depth->setCheckState(state == Qt::Checked? Qt::Unchecked : Qt::Checked);
+    }
+    else if (uKey == Qt::Key_N) {
+        auto state = m_FPN->checkState();
+        m_FPN->setCheckState(state == Qt::Checked? Qt::Unchecked : Qt::Checked);
+    }
+}
 
 void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 {
@@ -906,11 +918,11 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     {
         pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
-        m_depth = new QCheckBox(tr("Depth"));
+        m_depth = new QCheckBox(tr("Depth[C]"));
         m_depth->setStyleSheet("color: white;");
         m_depth->setCheckState(Qt::Checked);
         pToolLayout->addWidget(m_depth);
-        m_FPN = new QCheckBox(tr("FPN"));
+        m_FPN = new QCheckBox(tr("FPN[N]"));
         m_FPN->setStyleSheet("color: white;");
         pToolLayout->addWidget(m_FPN);
         m_Reset = new QPushButton(tr("Reset"));
