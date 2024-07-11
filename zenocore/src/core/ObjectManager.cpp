@@ -230,6 +230,31 @@ namespace zeno {
             if (it != m_objects.end())
                 info.remObjs.insert(std::make_pair(objkey, it->second.obj));
         }
+
+        //µ¼³ölightObjs
+        export_light_objs(info);
+    }
+
+    ZENO_API void ObjectManager::export_light_objs(RenderObjsInfo& info)
+    {
+        std::function<void(std::shared_ptr<zeno::IObject>)> exportLightObjs = [&exportLightObjs, &info](std::shared_ptr<zeno::IObject>const& objToBeConvert) {
+            if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+                for (int i = 0; i < lst->size(); i++)
+                    exportLightObjs(lst->get(i));
+                return;
+            }
+            if (!objToBeConvert)
+                return;
+            else {
+                if (objToBeConvert->userData().get2<int>("isL", 0))
+                    info.lightObjs.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+            }
+        };
+        for (auto& key : m_viewObjs) {
+            auto& it = m_objects.find(key);
+            if (it != m_objects.end())
+                exportLightObjs(it->second.obj);
+        }
     }
 
     ZENO_API void ObjectManager::export_all_view_objs(RenderObjsInfo& info)

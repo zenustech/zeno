@@ -965,6 +965,39 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
 
+    std::map<std::string, int> objsType;
+    void setUpdateLightCameraMaterialOnly(std::map<std::string, std::shared_ptr<zeno::IObject>>& addObjs, std::vector<std::string>& removeList) {
+        if (!addObjs.empty() || !removeList.empty()) {
+            int lightCameraCount = 0, materialCount = 0, normalCount = 0;
+            for (auto& key : removeList) {
+                int type = objsType[key];
+                type == 0 ? lightCameraCount++ : type == 1 ? materialCount++ : normalCount++;
+            }
+            for (auto [key, spObj] : addObjs) {
+                if (spObj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<zeno::CameraObject>(spObj)) {
+                    objsType[key] = 0;
+                    lightCameraCount++;
+                }
+                else if (std::dynamic_pointer_cast<zeno::MaterialObject>(spObj)) {
+                    objsType[key] = 1;
+                    materialCount++;
+                }
+                else {
+                    objsType[key] = 2;
+                    normalCount++;
+                }
+            }
+            for (auto& key : removeList) {
+                objsType.erase(key);
+            }
+            lightNeedUpdate = lightCameraCount > 0 || normalCount > 0;
+            scene->drawOptions->needRefresh = lightCameraCount > 0 || normalCount > 0;
+            matNeedUpdate = materialCount > 0 || normalCount > 0;
+            meshNeedUpdate = normalCount > 0;
+            scene->drawOptions->updateMatlOnly = !lightNeedUpdate && !meshNeedUpdate;
+        }
+    }
+
     auto setupState() {
         return std::tuple{
             opengl::scopeGLEnable(GL_BLEND, false),
@@ -992,12 +1025,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void load_objects(const zeno::RenderObjsInfo& objs) override {
 
         //light update condition
-        bool bUpdateLight = !objs.empty();
-        if (bUpdateLight) {
-            graphicsMan->load_light_objects(objs.lightObjs);
-            lightNeedUpdate = true;
-            scene->drawOptions->needRefresh = true;
-        }
+        graphicsMan->load_light_objects(objs.lightObjs);
 
         //增删对象无法沿用viewport逻辑，否则always模式移动数值滑块会有拖影
         graphicsMan->objOrder.clear();
@@ -1024,11 +1052,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         for (auto& key : removeList)
             graphicsMan->remove_object(key);
 
-        bool bUpdateMesh = !objs.empty();
-        if (bUpdateMesh) {
-            meshNeedUpdate = matNeedUpdate = true;
-        }
-
+        //设置仅更新灯光相机材质
+        setUpdateLightCameraMaterialOnly(addObjs, removeList);
 
         if (!objs.allObjects.empty()) {
             std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> vecObjs;
