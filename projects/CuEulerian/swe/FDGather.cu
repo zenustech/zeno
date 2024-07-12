@@ -593,7 +593,7 @@ void assignToField2D(CoordsT coord, FieldT field, PrimAttrT primAttr, int nx, in
     // 0.0, ny - 1.01});
     int i = uv2[0];
     int j = uv2[2];
-    field[j * nx + i] = temp[tidx];
+    field[j * nx + i] = primAttr[tidx];
   });
 }
 
