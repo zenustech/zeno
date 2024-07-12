@@ -49,18 +49,14 @@ public:
     void add(const std::string& prim_name);
     std::string just_pick_prim(int x, int y);
     const std::unordered_set<std::string>& get_picked_prims();
-    const std::unordered_map<std::string, std::unordered_set<int>>& get_picked_elems();
     void sync_to_scene();
     void load_from_str(const std::string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode);
-    std::string save_to_str(zenovis::PICK_MODE mode);
-    void save_context();
-    void load_context();
     void focus(const std::string& prim_name);
     void clear();
     void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
-    bool is_draw_mode();
-    void switch_draw_mode();
+    bool get_draw_special_buffer_mode() const;
+    void set_draw_special_buffer_mode(bool enable);
 
 private:
     zenovis::Scene* scene() const;
@@ -75,12 +71,7 @@ private:
     std::unordered_set<std::string> selected_prims;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements;
 
-    zenovis::PICK_MODE select_mode_context;
-    std::unordered_set<std::string> selected_prims_context;
-    std::unordered_map<std::string, std::unordered_set<int>> selected_elements_context;
-
-    std::string focused_prim;
-    bool draw_mode;
+    bool draw_special_buffer_mode;
 };
 
 }

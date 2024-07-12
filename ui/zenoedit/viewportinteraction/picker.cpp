@@ -80,10 +80,9 @@ namespace zeno {
 //    onPrimitiveSelected();
 //}
 
-Picker::Picker(ViewportWidget *pViewport) 
-    : select_mode_context(zenovis::PICK_MODE::PICK_NONE)
-    , m_pViewport(pViewport)
-    , draw_mode(false)
+Picker::Picker(ViewportWidget *pViewport)
+    : m_pViewport(pViewport)
+    , draw_special_buffer_mode(false)
 {
 }
 
@@ -233,44 +232,7 @@ void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode, SELECTION
     }
 }
 
-string Picker::save_to_str(zenovis::PICK_MODE mode) {
-    string res;
-    if (mode == zenovis::PICK_MODE::PICK_OBJECT) {
-        for (const auto& p : selected_prims)
-            res += p + " ";
-    }
-    else {
-        for (const auto& [p, es] : selected_elements) {
-            for (const auto& e : es)
-                res += p + ":" + std::to_string(e) + " ";
-        }
-    }
-    return res;
-}
-
-void Picker::save_context() {
-    auto scene = this->scene();
-    ZASSERT_EXIT(scene);
-
-    select_mode_context = scene->get_select_mode();
-    selected_prims_context = std::move(selected_prims);
-    selected_elements_context = std::move(selected_elements);
-}
-
-void Picker::load_context() {
-    if (select_mode_context == zenovis::PICK_MODE::PICK_NONE) return;
-
-    auto scene = this->scene();
-    ZASSERT_EXIT(scene);
-
-    scene->set_select_mode(select_mode_context);
-    selected_prims = std::move(selected_prims_context);
-    selected_elements = std::move(selected_elements_context);
-    select_mode_context = zenovis::PICK_MODE::PICK_NONE;
-}
-
 void Picker::focus(const string& prim_name) {
-    focused_prim = prim_name;
     picker->focus(prim_name);
 }
 
@@ -287,19 +249,16 @@ void Picker::set_picked_elems_callback(function<void(unordered_map<string, unord
     picked_elems_callback = std::move(callback);
 }
 
-bool Picker::is_draw_mode() {
-    return draw_mode;
+bool Picker::get_draw_special_buffer_mode() const {
+    return draw_special_buffer_mode;
 }
-void Picker::switch_draw_mode() {
-    draw_mode = !draw_mode;
+
+void Picker::set_draw_special_buffer_mode(bool enable) {
+    draw_special_buffer_mode = enable;
 }
 
 const unordered_set<string>& Picker::get_picked_prims() {
     return selected_prims;
-}
-
-const unordered_map<string, unordered_set<int>>& Picker::get_picked_elems() {
-    return selected_elements;
 }
 
 std::optional<float> ray_box_intersect(

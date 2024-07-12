@@ -667,7 +667,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
             QPoint releasePos = event->pos();
             if (m_boundRectStartPos == releasePos) {
-                if (m_picker->is_draw_mode()) {
+                if (m_picker->get_draw_special_buffer_mode()) {
                     // zeno::log_info("res_w: {}, res_h: {}", res()[0], res()[1]);
                     m_picker->pick_depth(releasePos.x(), releasePos.y());
                 } else {

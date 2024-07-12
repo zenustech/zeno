@@ -1320,19 +1320,15 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 return;
 
             zeno::NodeLocation node_location(nodes[0], subgIdx);
-            // set callback to picker
-            auto callback = [node_location,
-                             prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
-                std::string picked_elems_str;
-                auto &picked_prim_elems = picked_elems[prim_name];
-                for (auto elem : picked_prim_elems)
-                    picked_elems_str += std::to_string(elem) + ",";
-                zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
-            };
             if (picker) {
-                picker->set_picked_elems_callback(callback);
-                // ----- enter node context
-                picker->save_context();
+                // set callback to picker
+                picker->set_picked_elems_callback([node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
+                    std::string picked_elems_str;
+                    for (auto elem : picked_elems[prim_name]) {
+                        picked_elems_str += std::to_string(elem) + ",";
+                    }
+                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                });
             }
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
@@ -1361,7 +1357,6 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             }
         } else {
             if (picker) {
-                picker->load_context();
                 picker->sync_to_scene();
                 picker->focus("");
                 picker->set_picked_elems_callback({});
@@ -1376,10 +1371,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
     if (node_id == "MakePrimitive") {
         auto picker = m_glView->picker();
         ZASSERT_EXIT(picker);
+        picker->set_draw_special_buffer_mode(select);
         if (select) {
-            picker->switch_draw_mode();
             zeno::NodeLocation node_location(nodes[0], subgIdx);
-            auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
+            picker->set_picked_depth_callback([nodes, node_location, this](float depth, int x, int y) {
                 Zenovis *pZenovis = m_glView->getZenoVis();
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
@@ -1407,10 +1402,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 zeno::log_info("fetch {}", wc);
                 points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
                 zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
-            };
-            picker->set_picked_depth_callback(pick_callback);
-        } else {
-            picker->switch_draw_mode();
+            });
         }
     }
 }
