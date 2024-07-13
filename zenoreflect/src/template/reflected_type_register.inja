@@ -227,6 +227,12 @@ namespace {
             return nullptr;
         }
 
+        virtual void* get_field_ptr_directly(void* this_object) const override {
+            if (!this_object) return nullptr;
+            auto pThis = static_cast<{{- type_info.qualified_name -}}*>(this_object);
+            return &pThis->{{ field.name }};
+        }
+
         virtual TypeHandle get_field_type() const override {
             return get_type<{{ field.type }}>();
         }

@@ -213,8 +213,17 @@ namespace reflect
             return static_cast<T*>(get_field_ptr(clazz_object));
         }
 
+        template <typename T>
+        T* get_field_ptr_typed2(void* thisobject) {
+            if (get_field_type() != get_type<T>()) {
+                return nullptr;
+            }
+            return static_cast<T*>(get_field_ptr_directly(thisobject));
+        }
+
         virtual ~IMemberField();
         virtual void* get_field_ptr(const Any& clazz_object) const = 0;
+        virtual void* get_field_ptr_directly(void* this_object) const = 0;
         virtual TypeHandle get_field_type() const = 0;
 
     protected:

@@ -2,6 +2,12 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
+#include "reflect/metadata.hpp"
+#include "reflect/registry.hpp"
+#include "reflect/container/object_proxy"
+#include "reflect/container/arraylist"
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -328,3 +334,18 @@ namespace zeno {
     }
 
 }
+
+//全局变量类型
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(int)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(float)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(double)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::string)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec2i)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec2f)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec2s)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec3i)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec3f)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec3s)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4i)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4f)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4s)

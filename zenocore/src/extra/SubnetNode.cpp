@@ -81,11 +81,11 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                     remove_params.insert(newname);
                 }
 
-                std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
-                sparam->name = newname;
-                sparam->type = param.type;
-                sparam->socketType = param.socketType;
-                sparam->m_wpNode = shared_from_this();
+                ObjectParam sparam;
+                sparam.name = newname;
+                sparam.type = param.type;
+                sparam.socketType = param.socketType;
+                sparam.m_wpNode = shared_from_this();
                 in_outputs[newname] = std::move(sparam);
 
                 new_params.insert(newname);
@@ -108,11 +108,11 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                     obj_outputs_old.erase(oldname);
 
                 auto& spParam = in_outputs[newname];
-                spParam->type = param.type;
-                spParam->name = newname;
+                spParam.type = param.type;
+                spParam.name = newname;
                 if (param.bInput)
                 {
-                    update_param_socket_type(spParam->name, param.socketType);
+                    update_param_socket_type(spParam.name, param.socketType);
                 }
             }
             else {
@@ -143,14 +143,14 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                     remove_params.insert(newname);
                 }
 
-                std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
-                sparam->defl = param.defl;
-                sparam->name = newname;
-                sparam->type = param.type;
-                sparam->control = param.control;
-                sparam->optCtrlprops = param.ctrlProps;
-                sparam->socketType = param.socketType;
-                sparam->m_wpNode = shared_from_this();
+                PrimitiveParam sparam;
+                sparam.defl = param.defl;
+                sparam.name = newname;
+                sparam.type = param.type;
+                sparam.control = param.control;
+                sparam.optCtrlprops = param.ctrlProps;
+                sparam.socketType = param.socketType;
+                sparam.m_wpNode = shared_from_this();
                 in_outputs[newname] = std::move(sparam);
 
                 new_params.insert(newname);
@@ -173,20 +173,20 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                     outputs_old.erase(oldname);
 
                 auto& spParam = in_outputs[newname];
-                spParam->defl = param.defl;
-                spParam->name = newname;
-                spParam->socketType = param.socketType;
+                spParam.defl = param.defl;
+                spParam.name = newname;
+                spParam.socketType = param.socketType;
                 if (param.bInput)
                 {
-                    if (param.type != spParam->type)
+                    if (param.type != spParam.type)
                     {
                         paramTypeChanges.insert({ newname, param.type});
-                        //update_param_type(spParam->name, param.type);
+                        //update_param_type(spParam.name, param.type);
                         //if (auto spNode = subgraph->getNode(oldname))
                         //    spNode->update_param_type("port", param.type);
                     }
-                    update_param_control(spParam->name, param.control);
-                    update_param_control_prop(spParam->name, param.ctrlProps.value());
+                    update_param_control(spParam.name, param.control);
+                    update_param_control_prop(spParam.name, param.ctrlProps.value());
                 }
             }
             else {
@@ -293,7 +293,7 @@ ZENO_API void SubnetNode::apply() {
         auto iter = m_inputObjs.find(subinput_node);
         if (iter != m_inputObjs.end()) {
             //object type.
-            bool ret = subinput->set_output("port", iter->second->spObject);
+            bool ret = subinput->set_output("port", iter->second.spObject);
             assert(ret);
             ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
             assert(ret);
@@ -302,7 +302,7 @@ ZENO_API void SubnetNode::apply() {
             //primitive type
             auto iter2 = m_inputPrims.find(subinput_node);
             if (iter2 != m_inputPrims.end()) {
-                bool ret = subinput->set_primitive_output("port", iter2->second->result);
+                bool ret = subinput->set_primitive_output("port", iter2->second.result);
                 assert(ret);
                 ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
                 assert(ret);

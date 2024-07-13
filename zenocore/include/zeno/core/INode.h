@@ -43,6 +43,7 @@ public:
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
+    ZENO_API zeno::reflect::TypeHandle getReflectType();
 
     ZENO_API void doComplete();
     ZENO_API void doApply();
@@ -135,7 +136,7 @@ protected:
     ZENO_API virtual void complete();
     //preApply是先解决所有输入参数（依赖）的求值问题
     ZENO_API virtual void preApply();
-    ZENO_API virtual void apply() = 0;
+    ZENO_API virtual void apply();
     ZENO_API virtual void registerObjToManager();
     ZENO_API virtual void initParams(const NodeData& dat);
     ZENO_API bool set_primitive_input(std::string const& id, const zvariant& val);
@@ -220,10 +221,10 @@ private:
     std::string m_uuid;
     std::pair<float, float> m_pos;
 
-    std::map<std::string, std::unique_ptr<ObjectParam>> m_inputObjs;
-    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_inputPrims;
-    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_outputPrims;
-    std::map<std::string, std::unique_ptr<ObjectParam>> m_outputObjs;
+    std::map<std::string, ObjectParam> m_inputObjs;
+    std::map<std::string, PrimitiveParam> m_inputPrims;
+    std::map<std::string, PrimitiveParam> m_outputPrims;
+    std::map<std::string, ObjectParam> m_outputObjs;
 
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;
