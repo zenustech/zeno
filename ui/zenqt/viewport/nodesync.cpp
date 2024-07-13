@@ -65,7 +65,7 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 
     for (auto nodepath : nodeNameSet)
     {
-        auto spNode = zeno::getSession().mainGraph->getNode(nodepath);
+        auto spNode = AnyToINodePtr(zeno::getSession().mainGraph->getNode(nodepath));
         if (spNode->is_view()) {
             auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
             return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);

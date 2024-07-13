@@ -12,6 +12,26 @@
 
 namespace zeno {
 
+    struct GlobalVariableOverride {
+        GVariable gvar;
+        bool overrideSuccess = false;
+
+        GlobalVariableOverride(INode* pNode, std::string gvarName, zeno::reflect::Any var) {
+            gvar = GVariable(gvarName, var);
+            overrideSuccess = zeno::getSession().globalVariableManager->overrideVariable(gvar);
+            if (overrideSuccess) {
+                zeno::getSession().globalVariableManager->propagateDirty(pNode, gvar);
+            }
+        }
+
+        ~GlobalVariableOverride() {
+            if (overrideSuccess) {
+                GVariable oldvar;
+                zeno::getSession().globalVariableManager->cancelOverride(gvar.name, oldvar);
+            }
+        }
+    };
+
 struct IBeginFor : zeno::INode {
     virtual bool isContinue() const = 0;
     virtual void updateIndex() = 0;
@@ -116,7 +136,8 @@ struct EndFor : INode {
 
         spGraph->applyNode(forbegin);
 
-        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(spGraph->getNode(forbegin));
+        auto pNode = AnyToINodePtr(spGraph->getNode(forbegin));
+        auto spBegin = dynamic_cast<IBeginFor*>(pNode);
         if (!spBegin) {
             throw makeError<KeyError>("No matched For Begin", "");
         }
@@ -149,7 +170,8 @@ struct BreakFor : zeno::INode {
 
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<IBeginFor *>(spGraph->m_nodes.at(link.outNode).get());
+        auto pOutNode = AnyToINodePtr(spGraph->getNode(link.outNode));
+        auto fore = dynamic_cast<IBeginFor*>(pOutNode);
         if (!fore) {
             throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
         }
@@ -181,7 +203,8 @@ struct EndForEach : INode {
         std::string forbegin = get_input<zeno::StringObject>("For Begin")->get();
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        std::shared_ptr<IBeginFor> spBegin = std::dynamic_pointer_cast<IBeginFor>(spGraph->getNode(forbegin));
+        auto spBeginNode = AnyToINodePtr(spGraph->getNode(forbegin));
+        auto spBegin = dynamic_cast<IBeginFor*>(spBeginNode);
         if (!spBegin) {
             throw makeError<KeyError>("No matched For Begin", "");
         }
@@ -291,7 +314,8 @@ struct SubstepDt : zeno::INode {
 
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
-        auto fore = dynamic_cast<BeginSubstep *>(spGraph->m_nodes.at(link.outNode).get());
+        auto pOutNode = AnyToINodePtr(spGraph->getNode(link.outNode));
+        auto fore = dynamic_cast<BeginSubstep*>(pOutNode);
         if (!fore) {
             throw Exception("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
         }
@@ -373,7 +397,7 @@ struct TimeShift : zeno::INode {
         //∏≤∏«$F
         zeno::reflect::Any frame = getSession().getGlobalVarialbe("$F");
         int currFrame = (frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<int>(currFrame));
+        auto globalOverride = GlobalVariableOverride(this, "$F", zeno::reflect::make_any<int>(currFrame));
         //º∆À„…œ”Œ
         INode::preApply();
     }

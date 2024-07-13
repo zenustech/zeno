@@ -29,20 +29,22 @@ namespace reflect
                 return nullptr;
             }
 
-            size_t len = CStringUtil::strlen(cstr) + 1;
-            ValueType* copied = new ValueType[len];
+            size_t len = CStringUtil::strlen(cstr);
+            ValueType* copied = new ValueType[len + 1];
             for (size_t i = 0; i < len; ++i) {
                 copied[i] = cstr[i];
             }
+            copied[len] = '\0';
+
             return copied;
         }
 
         REFLECT_CONSTEXPR static int strcmp(const ValueType* lhs, const ValueType* rhs) {
-            while (*lhs && (*lhs == *rhs)) {
+            while (*lhs && *rhs && (*lhs == *rhs)) {
                 ++lhs;
                 ++rhs;
             }
-            return *lhs - *rhs;
+            return static_cast<unsigned char>(*lhs) - static_cast<unsigned char>(*rhs);
         }
     };
 

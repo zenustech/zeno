@@ -343,30 +343,33 @@ ZENO_API void AssetsMgr::updateAssets(const std::string name, ParamsUpdateInfo i
     assets.m_customui = customui;
 }
 
-std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph, std::shared_ptr<SubnetNode> subNode)
+std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGraph, SubnetNode* subNode)
 {
     std::shared_ptr<Graph> newGraph = std::make_shared<Graph>(assetGraph->getName(), true);
-    newGraph->optParentSubgNode = subNode.get();
-    for (const auto& [uuid, spNode] : assetGraph->getNodes())
+    newGraph->m_parentSubnetNode = subNode;
+    for (const auto& [uuid, spNodeAny] : assetGraph->getNodes())
     {
+        auto spNode = AnyToINodePtr(spNodeAny);
         zeno::NodeData nodeDat;
         const std::string& name = spNode->get_name();
         const std::string& cls = spNode->get_nodecls();
 
-        if (auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
+        if (auto spSubnetNode = dynamic_cast<SubnetNode*>(spNode))
         {
             if (m_assets.find(cls) != m_assets.end()) {
                 //asset node
                 auto spNewSubnetNode = newGraph->createNode(cls, name, true, spNode->get_pos());
             }
             else {
-                std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
+                auto spNewNodeAny = newGraph->createNode(cls, name);
+                auto spNewNode = AnyToINodePtr(spNewNodeAny);
                 nodeDat = spSubnetNode->exportInfo();
                 spNewNode->init(nodeDat);   //should clone graph.
             }
         }
         else {
-            std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
+            auto spNewNodeAny = newGraph->createNode(cls, name);
+            auto spNewNode = AnyToINodePtr(spNewNodeAny);
             nodeDat = spNode->exportInfo();
             spNewNode->init(nodeDat);
         }
@@ -403,7 +406,7 @@ ZENO_API bool AssetsMgr::generateAssetName(std::string& name)
     return true;
 }
 
-ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
+ZENO_API std::shared_ptr<INodeAny> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
     if (m_assets.find(assetName) == m_assets.end()) {
         return nullptr;
     }
@@ -414,7 +417,8 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     }
     assert(assets.sharedGraph);
 
-    std::shared_ptr<SubnetNode> spNode = std::make_shared<SubnetNode>();
+    auto newInst = std::make_shared<INodeAny>(zeno::reflect::make_any<SubnetNode>());
+    auto spNode = dynamic_cast<SubnetNode*>(AnyToINodePtr(newInst));
     spNode->initUuid(pGraph, assetName);
     std::shared_ptr<Graph> assetGraph;
     if (!createInAsset) {
@@ -453,11 +457,12 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
         spNode->m_obj_output_names.push_back(param.name);
     }
 
-    return std::dynamic_pointer_cast<INode>(spNode);
+    return newInst;
 }
 
-ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName, std::shared_ptr<SubnetNode>& spNode)
+ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName, std::shared_ptr<INodeAny>& spNode)
 {
+    SubnetNode* subnetNode = dynamic_cast<SubnetNode*>(AnyToINodePtr(spNode));
     if(m_assets.find(assetName) == m_assets.end()) {
         return;
     }
@@ -467,32 +472,32 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
         getAssetGraph(assetName, true);
     }
     assert(assets.sharedGraph);
-    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph, spNode);
+    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph, subnetNode);
 
-    spNode->subgraph = assetGraph;
+    subnetNode->subgraph = assetGraph;
 
     for (const ParamPrimitive& param : assets.primitive_inputs)
     {
-        spNode->add_input_prim_param(param);
-        spNode->m_input_names.push_back(param.name);
+        subnetNode->add_input_prim_param(param);
+        subnetNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamPrimitive& param : assets.primitive_outputs)
     {
-        spNode->add_output_prim_param(param);
-        spNode->m_output_names.push_back(param.name);
+        subnetNode->add_output_prim_param(param);
+        subnetNode->m_output_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_inputs)
     {
-        spNode->add_input_obj_param(param);
-        spNode->m_obj_input_names.push_back(param.name);
+        subnetNode->add_input_obj_param(param);
+        subnetNode->m_obj_input_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_outputs)
     {
-        spNode->add_output_obj_param(param);
-        spNode->m_obj_output_names.push_back(param.name);
+        subnetNode->add_output_obj_param(param);
+        subnetNode->m_obj_output_names.push_back(param.name);
     }
 }
 

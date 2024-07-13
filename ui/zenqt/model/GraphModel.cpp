@@ -25,8 +25,9 @@ NodeItem::~NodeItem()
 
 void NodeItem::unregister()
 {
-    if (std::shared_ptr<zeno::INode> spNode = m_wpNode.lock())
+    if (std::shared_ptr<zeno::INodeAny> spAny = m_wpNode.lock())
     {
+        auto spNode = AnyToINodePtr(spAny);
         bool ret = spNode->unregister_set_pos(m_cbSetPos);
         ZASSERT_EXIT(ret);
         ret = spNode->unregister_set_view(m_cbSetView);
@@ -36,9 +37,10 @@ void NodeItem::unregister()
     m_cbSetView = "";
 }
 
-void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
+void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INodeAny> spNodeAny)
 {
-    this->m_wpNode = spNode;
+    this->m_wpNode = spNodeAny;
+    auto spNode = AnyToINodePtr(spNodeAny);
 
     m_cbSetPos = spNode->register_set_pos([=](std::pair<float, float> pos) {
         this->pos = { pos.first, pos.second };  //update the cache
@@ -52,7 +54,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
         emit pGraphM->dataChanged(idx, idx, QVector<int>{ ROLE_NODE_ISVIEW });
     });
 
-    this->params = new ParamsModel(spNode, this);
+    this->params = new ParamsModel(spNodeAny, this);
     this->name = QString::fromStdString(spNode->get_name());
     this->cls = QString::fromStdString(spNode->get_nodecls());
     this->dispName = QString::fromStdString(spNode->get_show_name());
@@ -63,7 +65,7 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
     auto pair = spNode->get_pos();
     this->pos = QPointF(pair.first, pair.second);
     this->uuidPath = spNode->get_uuid_path();
-    if (std::shared_ptr<zeno::SubnetNode> subnetnode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+    if (auto subnetnode = dynamic_cast<zeno::SubnetNode*>(spNode))
     {
         GraphModel* parentM = qobject_cast<GraphModel*>(this->parent());
         auto pModel = new GraphModel(subnetnode->subgraph, parentM->treeModel(), this);
@@ -110,7 +112,7 @@ void GraphModel::registerCoreNotify()
     std::shared_ptr<zeno::Graph> coreGraph = m_wpCoreGraph.lock();
     ZASSERT_EXIT(coreGraph);
 
-    m_cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INode> spNode) {
+    m_cbCreateNode = coreGraph->register_createNode([&](const std::string& name, std::weak_ptr<zeno::INodeAny> spNode) {
         auto coreNode = spNode.lock();
         _appendNode(coreNode);
     });
@@ -227,7 +229,8 @@ QString GraphModel::owner() const
 {
     if (auto pItem = qobject_cast<NodeItem*>(parent()))
     {
-        auto spNode = pItem->m_wpNode.lock();
+        auto spNodeAny = pItem->m_wpNode.lock();
+        auto spNode = AnyToINodePtr(spNodeAny);
         return spNode ? QString::fromStdString(spNode->get_name()) : "";
     }
     else {
@@ -295,7 +298,8 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         case ROLE_NODEDATA:
         {
             zeno::NodeData data;
-            auto spNode = item->m_wpNode.lock();
+            auto spNodeAny = item->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
             ZASSERT_EXIT(spNode, QVariant());
             return QVariant::fromValue(spNode->exportInfo());
         }
@@ -321,8 +325,9 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODETYPE:
         {
-            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
-            auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
+            auto spNodeAny = item->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
+            auto spSubnetNode = dynamic_cast<zeno::SubnetNode*>(spNode);
             if (spSubnetNode) {
                 bool bAssets = spSubnetNode->subgraph->isAssets();
                 if (bAssets) {
@@ -339,7 +344,8 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_NODE_CATEGORY:
         {
-            std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock();
+            auto spNodeAny = item->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
             if (spNode->nodeClass)
             {
                 return QString::fromStdString(spNode->nodeClass->m_customui.category);
@@ -390,7 +396,8 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
         }
         case ROLE_OBJPOS:
         {
-            auto spNode = item->m_wpNode.lock();
+            auto spNodeAny = item->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
             if (value.type() == QVariant::PointF) {
                 QPointF pos = value.toPoint();
                 spNode->set_pos({ pos.x(), pos.y() });
@@ -669,7 +676,8 @@ void GraphModel::_initLink()
 {
     for (auto item : m_nodes)
     {
-        auto spNode = item->m_wpNode.lock();
+        auto spNodeAny = item->m_wpNode.lock();
+        auto spNode = AnyToINodePtr(spNodeAny);
         ZASSERT_EXIT(spNode);
         zeno::NodeData nodedata = spNode->exportInfo();
         //objects links init
@@ -854,16 +862,18 @@ zeno::NodeData GraphModel::createNode(const QString& nodeCls, const QString& cat
     return _createNodeImpl(cate, nodedata, true);
 }
 
-void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
+void GraphModel::_appendNode(std::shared_ptr<zeno::INodeAny> spNodeAny)
 {
-    ZASSERT_EXIT(spNode);
+    ZASSERT_EXIT(spNodeAny);
 
     int nRows = m_nodes.size();
 
     beginInsertRows(QModelIndex(), nRows, nRows);
 
     NodeItem* pItem = new NodeItem(this);
-    pItem->init(this, spNode);
+    pItem->init(this, spNodeAny);
+
+    auto spNode = AnyToINodePtr(spNodeAny);
 
     const QString& name = QString::fromStdString(spNode->get_name());
     const QString& uuid = QString::fromStdString(spNode->get_uuid());
@@ -901,7 +911,8 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
         return zeno::NodeData();
     }
     else {
-        auto updateInputs = [](zeno::NodeData& nodedata, std::shared_ptr<zeno::INode> spNode) {
+        auto updateInputs = [](zeno::NodeData& nodedata, zeno::INode* spNode) {
+            ZASSERT_EXIT(spNode);
             for (auto& tab : nodedata.customUi.inputPrims.tabs)
             {
                 for (auto& group : tab.groups)
@@ -918,7 +929,8 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
         if (!spGraph)
             return zeno::NodeData();
 
-        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(nodedata.cls, nodedata.name, cate == "assets", nodedata.uipos);
+        auto spNodeAny = spGraph->createNode(nodedata.cls, nodedata.name, cate == "assets", nodedata.uipos);
+        auto spNode = AnyToINodePtr(spNodeAny);
         if (!spNode)
             return zeno::NodeData();
 
@@ -930,7 +942,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
             ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), zeno::NodeData());
             auto paramsM = m_nodes[uuid]->params;
 
-            if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {
+            if (auto subnetNode = dynamic_cast<zeno::SubnetNode*>(spNode)) {
                 //create input/output in subnet
                 if (cate == "assets")
                 {
@@ -954,19 +966,18 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                                 model->_createNodeImpl(cate, nodedata, false);
                         }
                         else if (nodedata.cls == "SubInput" || nodedata.cls == "SubOutput") {   //dont create, just update subinput/output pos
-                            auto ioNode = subnetNode->subgraph->getNode(name);
-                            if (ioNode)
-                                ioNode->set_pos(nodedata.uipos);
+                            auto ioNode = AnyToINodePtr(subnetNode->subgraph->getNode(name));
+                            ioNode->set_pos(nodedata.uipos);
                         }
                         else if (nodedata.asset.has_value()) {  //if is asset
-                            std::shared_ptr<zeno::INode> spNode = subnetNode->subgraph->createNode(nodedata.cls, name, true, {nodedata.uipos.first, nodedata.uipos.second});
-                            if (spNode)
-                                updateInputs(nodedata, spNode);
+                            auto pNode = AnyToINodePtr(subnetNode->subgraph->createNode(nodedata.cls, name, 
+                                true, {nodedata.uipos.first, nodedata.uipos.second}));
+                            updateInputs(nodedata, pNode);
                         }
                         else {
-                            std::shared_ptr<zeno::INode> spNode = subnetNode->subgraph->createNode(nodedata.cls, name, false, {nodedata.uipos.first, nodedata.uipos.second});
-                            if (spNode)
-                                updateInputs(nodedata, spNode);
+                            auto pNode = AnyToINodePtr(subnetNode->subgraph->createNode(nodedata.cls, name, false, 
+                                {nodedata.uipos.first, nodedata.uipos.second}));
+                            updateInputs(nodedata, pNode);
                         }
                     }
                     for (zeno::EdgeInfo oldLink : nodedata.subgraph.value().links) {
@@ -996,7 +1007,8 @@ bool GraphModel::_removeNodeImpl(const QString& name, bool endTransaction)
     {
         if (m_name2uuid.find(name) != m_name2uuid.end() && m_nodes.find(m_name2uuid[name]) != m_nodes.end())
         {
-            auto spNode = m_nodes[m_name2uuid[name]]->m_wpNode.lock();
+            auto spNodeAny = m_nodes[m_name2uuid[name]]->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
             if (spNode)
             {
                 auto nodedata = spNode->exportInfo();
@@ -1118,20 +1130,9 @@ void GraphModel::_setViewImpl(const QModelIndex& idx, bool bOn, bool endTransact
         ZASSERT_EXIT(spCoreGraph);
         NodeItem* item = m_nodes[m_row2uuid[idx.row()]];
         auto spCoreNode = item->m_wpNode.lock();
-        ZASSERT_EXIT(spCoreNode);
-        spCoreNode->set_view(bOn);
-    }
-}
-
-std::weak_ptr<zeno::INode> GraphModel::getWpNode(QString& nodename)
-{
-    auto it = m_name2uuid.find(nodename);
-    if (it != m_name2uuid.end() && m_nodes.find(it.value()) != m_nodes.end())
-    {
-        if (NodeItem* item = m_nodes[it.value()])
-        {
-            return item->m_wpNode;
-        }
+        auto pNode = AnyToINodePtr(spCoreNode);
+        ZASSERT_EXIT(pNode);
+        pNode->set_view(bOn);
     }
 }
 
@@ -1298,11 +1299,12 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
                 const QString& nodeName = pSubgM->index(0, 0).data(ROLE_NODE_NAME).toString();
                 pSubgM->removeNode(nodeName);
             }
-            std::shared_ptr<zeno::INode> spNode = m_nodes[uuid]->m_wpNode.lock();
-            auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
+            auto spNodeAny = m_nodes[uuid]->m_wpNode.lock();
+            auto spNode = AnyToINodePtr(spNodeAny);
+            auto spSubnetNode = dynamic_cast<zeno::SubnetNode*>(spNode);
             if (spSubnetNode) {
                 auto& assetsMgr = zeno::getSession().assets;
-                assetsMgr->updateAssetInstance(assetsName.toStdString(), spSubnetNode);
+                assetsMgr->updateAssetInstance(assetsName.toStdString(), spNodeAny);
                 pSubgM->updateAssetInstance(spSubnetNode->subgraph);
                 spNode->mark_dirty(true);
             }
@@ -1379,13 +1381,14 @@ void GraphModel::importNodes(const zeno::NodesData& nodes, const zeno::LinksData
     unRegisterCoreNotify();
     for (auto [name, node] : nodes) {
         bool bAsset = node.asset.has_value();
-        std::shared_ptr<zeno::INode> spNode = spGraph->createNode(node.cls, "", bAsset);
+        auto spNodeAny = spGraph->createNode(node.cls, "", bAsset);
+        auto spNode = AnyToINodePtr(spNodeAny);
         node.name = spNode->get_name();
         spNode->init(node);
         auto pos = spNode->get_pos();
         spNode->set_pos({ pos.first + offset.x(), pos.second + offset.y()});
         old2new[name] = node.name;
-        _appendNode(spNode);
+        _appendNode(spNodeAny);
     }
     registerCoreNotify();
     //import edges

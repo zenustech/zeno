@@ -21,7 +21,7 @@ namespace zeno {
     {
     }
 
-    ZENO_API void ObjectManager::collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INode> attachNode, bool bView)
+    ZENO_API void ObjectManager::collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INodeAny> anynode, bool bView)
     {
         std::lock_guard lck(m_mtx);
 
@@ -31,6 +31,7 @@ namespace zeno {
 
         //zeno::getSession().globalState->setCalcObjStatus(zeno::Collecting);
         auto it = m_objects.find(objId);
+        auto attachNode = AnyToINodePtr(anynode);
         auto path = attachNode->get_uuid_path();
         bool bExist = it != m_objects.end();
         if (!bExist) {
@@ -165,7 +166,7 @@ namespace zeno {
         for (auto obj_key : m_removing_objs) {
             auto nodes = getAttachNodes(obj_key);
             for (auto node_path : nodes) {
-                auto spNode = zeno::getSession().mainGraph->getNodeByUuidPath(node_path);
+                auto spNode = AnyToINodePtr(zeno::getSession().mainGraph->getNodeByUuidPath(node_path));
                 if (spNode)
                     spNode->mark_dirty(true);
             }
@@ -205,11 +206,6 @@ namespace zeno {
     {
         std::lock_guard lck(m_mtx);
         modifyInteractiveObjs = m_modify;
-    }
-
-    ZENO_API void ObjectManager::syncObjNodeInfo(zany spObj, std::shared_ptr<INode> spNode)
-    {
-        std::lock_guard lck(m_mtx);
     }
 
     ZENO_API void ObjectManager::export_loading_objs(RenderObjsInfo& info)
@@ -272,10 +268,11 @@ namespace zeno {
         info.transformingObj = iter->second.obj;
         auto& mainG = getSession().mainGraph;
         for (auto nodepath : iter->second.attach_nodes) {
-            auto spNode = mainG->getNodeByUuidPath(nodepath);
+            auto spAnyNode = mainG->getNodeByUuidPath(nodepath);
+            auto spNode = AnyToINodePtr(spAnyNode);
             if (spNode->is_view())
             {
-                info.spViewNode = spNode;
+                info.spViewNode = spAnyNode;
                 break;
             }
         }

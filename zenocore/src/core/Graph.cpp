@@ -26,13 +26,6 @@
 
 namespace zeno {
 
-ZENO_API Context::Context() = default;
-ZENO_API Context::~Context() = default;
-
-ZENO_API Context::Context(Context const &other)
-    : visited(other.visited)
-{}
-
 ZENO_API Graph::Graph(const std::string& name, bool bAssets) : m_name(name), m_bAssets(bAssets) {
     
 }
@@ -43,8 +36,9 @@ ZENO_API Graph::~Graph() {
 
 ZENO_API zany Graph::getNodeInput(std::string const& sn, std::string const& ss) const {
     //todo: deprecated
-    auto node = safe_at(m_nodes, sn, "node name").get();
-    return node->get_input(ss);
+    auto node = safe_at(m_nodes, sn, "node name");
+    INode* pNode = AnyToINodePtr(node);
+    return pNode->get_input(ss);
 }
 
 ZENO_API void Graph::clearNodes() {
@@ -67,18 +61,18 @@ ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
 
 ZENO_API Graph *Graph::getSubnetGraph(std::string const & node_name) const {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
-    auto node = static_cast<SubnetNode *>(safe_at(m_nodes, uuid, "node name").get());
+    auto node = static_cast<SubnetNode *>(_getNodeByUUid(uuid));
     return node->subgraph.get();
 }
 
 ZENO_API void Graph::completeNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
-    safe_at(m_nodes, uuid, "node name")->doComplete();
+    _getNodeByUUid(uuid)->doComplete();
 }
 
 ZENO_API bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
-    auto node = safe_at(m_nodes, uuid, "node name").get();
+    auto node = _getNodeByUUid(uuid);
     GraphException::translated([&] {
         node->doApply();
     }, node);
@@ -86,12 +80,6 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &nodes) {
-    ctx = std::make_unique<Context>();
-
-    scope_exit _{[&] {
-        ctx = nullptr;
-    }};
-
     for (auto const& node_name: nodes) {
         applyNode(node_name);
     }
@@ -105,7 +93,7 @@ ZENO_API void Graph::runGraph() {
 void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value) {
     assert(spParam);
     if (Param_String == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
+        auto spNode = spParam->m_wpNode;
         assert(spNode);
 
         const std::string& nodecls = spNode->get_nodecls();
@@ -127,7 +115,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         }
     }
     else if (Param_Vec2f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
+        auto spNode = spParam->m_wpNode;
         assert(spNode);
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
@@ -144,7 +132,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         }
     }
     else if (Param_Vec3f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
+        auto spNode = spParam->m_wpNode;
         assert(spNode);
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
@@ -161,7 +149,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         }
     }
     else if (Param_Vec4f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
+        auto spNode = spParam->m_wpNode;
         assert(spNode);
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
@@ -259,12 +247,6 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
     }, val);
 }
 
-ZENO_API DirtyChecker &Graph::getDirtyChecker() {
-    if (!dirtyChecker) 
-        dirtyChecker = std::make_unique<DirtyChecker>();
-    return *dirtyChecker;
-}
-
 ZENO_API void Graph::init(const GraphData& graph) {
     auto& sess = getSession();
     sess.setApiLevelEnable(false);
@@ -276,7 +258,8 @@ ZENO_API void Graph::init(const GraphData& graph) {
     //import nodes first.
     for (const auto& [name, node] : graph.nodes) {
         bool bAssets = node.asset.has_value();
-        std::shared_ptr<INode> spNode = createNode(node.cls, name, bAssets);
+        std::shared_ptr<INodeAny> spAnyNode = createNode(node.cls, name, bAssets);
+        INode* spNode = AnyToINodePtr(spAnyNode);
         spNode->init(node);
         if (node.cls == "SubInput") {
             //TODO
@@ -321,7 +304,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
         }
         else if (node.cls == "Subnet")
         {
-            if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
+            if (zeno::SubnetNode* sbn = dynamic_cast<zeno::SubnetNode*>(spNode))
                 sbn->setCustomUi(node.customUi);
         }
     }
@@ -329,8 +312,9 @@ ZENO_API void Graph::init(const GraphData& graph) {
     for (const auto& link : graph.links) {
         if (!isLinkVaild(link))
             continue;
-        std::shared_ptr<INode> outNode = getNode(link.outNode);
-        std::shared_ptr<INode> inNode = getNode(link.inNode);
+        auto outNode = _getNode(link.outNode);
+        auto inNode = _getNode(link.inNode);
+        assert(outNode && inNode);
 
         bool bExist = false;
         bool bOutputPrim = outNode->isPrimitiveType(false, link.outParam, bExist);
@@ -354,12 +338,14 @@ ZENO_API void Graph::init(const GraphData& graph) {
 void Graph::markDirtyWhenFrameChanged()
 {
     for (const std::string& uuid : frame_nodes) {
-        m_nodes[uuid]->mark_dirty(true);
+        auto pNode = AnyToINodePtr(m_nodes[uuid]);
+        pNode->mark_dirty(true);
     }
     std::set<std::string> nodes = subnet_nodes;
     nodes.insert(asset_nodes.begin(), asset_nodes.end());
     for (const std::string& uuid : nodes) {
-        auto spSubnetNode = std::dynamic_pointer_cast<SubnetNode>(m_nodes[uuid]);
+        auto pNode = AnyToINodePtr(m_nodes[uuid]);
+        auto spSubnetNode = dynamic_cast<SubnetNode*>(pNode);
         spSubnetNode->subgraph->markDirtyWhenFrameChanged();
     }
 }
@@ -367,7 +353,8 @@ void Graph::markDirtyWhenFrameChanged()
 void Graph::markDirtyAll()
 {
     for (const auto& [uuid, node] : m_nodes) {
-        node->mark_dirty(true);
+        auto pNode = AnyToINodePtr(node);
+        pNode->mark_dirty(true);
     }
 }
 
@@ -441,7 +428,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
         return "";
     }
 
-    auto spNode = m_nodes[uuid];
+    auto spNode = AnyToINodePtr(m_nodes[uuid]);
     std::string oldPath = zeno::objPathToStr(spNode->get_path());
     std::string name = newName;
     if (m_name2uuid.find(name) != m_name2uuid.end()) {
@@ -472,7 +459,6 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 ZENO_API void Graph::clear()
 {
     m_nodes.clear();
-    nodesToExec.clear();
     portalIns.clear();
     portals.clear();
 
@@ -487,21 +473,21 @@ ZENO_API void Graph::clear()
     suboutput_nodes.clear();
     m_viewnodes.clear();
 
-    optParentSubgNode = std::nullopt;
-    ctx.reset();
-    dirtyChecker.reset();
+    m_parentSubnetNode = nullptr;
 
     CALLBACK_NOTIFY(clear)
 }
 
-ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const std::string& orgin_name, bool bAssets, std::pair<float, float> pos)
+ZENO_API std::shared_ptr<INodeAny> Graph::createNode(std::string const& cls, const std::string& orgin_name, bool bAssets, std::pair<float, float> pos)
 {
     CORE_API_BATCH
 
     const std::string& name = generateNewName(cls, orgin_name, bAssets);
 
     std::string uuid;
-    std::shared_ptr<INode> node;
+    std::shared_ptr<INodeAny> spNodeAny;
+    INode* node = nullptr;
+    //auto node = AnyToINodePtr(spNodeAny);
     if (!bAssets) {
         auto& nodeClass = getSession().nodeClasses;
         std::string nodecls = cls;
@@ -511,13 +497,17 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
         }
 
         auto cl = safe_at(getSession().nodeClasses, nodecls, "node class name").get();
-        node = cl->new_instance(shared_from_this(), name);
+        spNodeAny = cl->new_instance(shared_from_this(), name);
+        node = AnyToINodePtr(spNodeAny);
+        assert(node);
         node->nodeClass = cl;
         uuid = node->get_uuid();
     }
     else {
         bool isCurrentGraphAsset = getSession().assets->isAssetGraph(shared_from_this());
-        node = getSession().assets->newInstance(shared_from_this(), cls, name, isCurrentGraphAsset);
+        spNodeAny = getSession().assets->newInstance(shared_from_this(), cls, name, isCurrentGraphAsset);
+        node = AnyToINodePtr(spNodeAny);
+        assert(node);
         uuid = node->get_uuid();
         asset_nodes.insert(uuid);
     }
@@ -538,15 +528,19 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
     node->set_pos(pos);
     node->mark_dirty(true);
     m_name2uuid[name] = uuid;
-    m_nodes[uuid] = node;
+    m_nodes[uuid] = spNodeAny;
 
-    CALLBACK_NOTIFY(createNode, name, node)
-    return node;
+    CALLBACK_NOTIFY(createNode, name, spNodeAny)
+    return spNodeAny;
 }
 
 ZENO_API Graph* Graph::addSubnetNode(std::string const& id) {
     //deprecated:
     return nullptr;
+}
+
+SubnetNode* Graph::getParentSubnetNode() const {
+    return m_parentSubnetNode;
 }
 
 std::set<std::string> Graph::getSubInputs()
@@ -571,7 +565,15 @@ std::set<std::string> Graph::getSubOutputs()
     return outputs;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
+INode* Graph::_getNode(std::string const& name) {
+    if (m_name2uuid.find(name) == m_name2uuid.end()) {
+        return nullptr;
+    }
+    const std::string& uuid = m_name2uuid[name];
+    return _getNodeByUUid(uuid);
+}
+
+ZENO_API std::shared_ptr<INodeAny> Graph::getNode(std::string const& name) {
     if (m_name2uuid.find(name) == m_name2uuid.end()) {
         return nullptr;
     }
@@ -579,7 +581,7 @@ ZENO_API std::shared_ptr<INode> Graph::getNode(std::string const& name) {
     return safe_at(m_nodes, uuid, "");
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
+ZENO_API std::shared_ptr<INodeAny> Graph::getNodeByUuidPath(ObjPath path) {
     if (path.empty())
         return nullptr;
 
@@ -593,7 +595,8 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
     {
         path = path.substr(idx + 1, path.size() - idx);
         //subnet
-        if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
+        auto pNode = AnyToINodePtr(it->second);
+        if (auto subnetNode = dynamic_cast<SubnetNode*>(pNode))
         {
             auto spGraph = subnetNode->subgraph;
             if (spGraph)
@@ -605,7 +608,7 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
     return it->second;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path)
+ZENO_API std::shared_ptr<INodeAny> Graph::getNodeByPath(std::string path)
 {
     if (path.empty())
         return nullptr;
@@ -631,7 +634,9 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path)
     {
         path = path.substr(sPos + 1, path.size() - sPos);
         //subnet
-        if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
+        auto spAny = it->second;
+        auto spNode = AnyToINodePtr(spAny);
+        if (auto subnetNode = dynamic_cast<SubnetNode*>(spNode))
         {
             auto spGraph = subnetNode->subgraph;
             if (spGraph)
@@ -643,7 +648,7 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path)
     return it->second;
 }
 
-ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
+ZENO_API std::map<std::string, std::shared_ptr<INodeAny>> Graph::getNodes() const {
     return m_nodes;
 }
 
@@ -658,7 +663,8 @@ ZENO_API GraphData Graph::exportGraph() const {
         graph.links = exportLinks();
     }
 
-    for (auto& [uuid, node] : m_nodes) {
+    for (auto& [uuid, pAny] : m_nodes) {
+        auto node = AnyToINodePtr(pAny);
         zeno::NodeData nodeinfo = node->exportInfo();
         graph.nodes.insert(std::make_pair(node->get_name(), nodeinfo));
     }
@@ -668,7 +674,8 @@ ZENO_API GraphData Graph::exportGraph() const {
 ZENO_API LinksData Graph::exportLinks() const
 {
     LinksData links;
-    for (auto& [uuid, node] : m_nodes) {
+    for (auto& [uuid, pAny] : m_nodes) {
+        auto node = AnyToINodePtr(pAny);
         zeno::NodeData nodeinfo = node->exportInfo();
         const PrimitiveParams& params = customUiToParams(nodeinfo.customUi.inputPrims);
         for (ParamPrimitive param : params) {
@@ -682,9 +689,8 @@ ZENO_API LinksData Graph::exportLinks() const
 }
 
 ZENO_API std::string Graph::getName() const {
-    if (optParentSubgNode.has_value()) {
-        SubnetNode* pSubnetNode = optParentSubgNode.value();
-        return pSubnetNode->get_name();
+    if (m_parentSubnetNode) {
+        return m_parentSubnetNode->get_name();
     }
     return m_name;
 }
@@ -696,7 +702,7 @@ ZENO_API void Graph::setName(const std::string& na) {
 ZENO_API bool Graph::removeNode(std::string const& name) {
     auto it = m_name2uuid.find(name);
     std::string uuid = safe_at(m_name2uuid, name, "get uuid when calling removeNode");
-    auto spNode = safe_at(m_nodes, uuid, "");
+    auto spNode = _getNodeByUUid(uuid);
 
     //remove links first
     std::vector<EdgeInfo> remLinks = spNode->getLinks();
@@ -727,10 +733,10 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
 
 bool zeno::Graph::isLinkVaild(const EdgeInfo& edge)
 {
-    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    auto outNode = _getNode(edge.outNode);
     if (!outNode)
         return false;
-    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    auto inNode = _getNode(edge.inNode);
     if (!inNode)
         return false;
 
@@ -820,8 +826,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     if (!isLinkVaild(edge))
         return false;
 
-    std::shared_ptr<INode> outNode = getNode(edge.outNode);
-    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    auto outNode = _getNode(edge.outNode);
+    auto inNode = _getNode(edge.inNode);
 
     bool bExist = false;
     bool bOutputPrim = outNode->isPrimitiveType(false, edge.outParam, bExist);
@@ -903,11 +909,11 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
 ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     CORE_API_BATCH
 
-    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    auto outNode = _getNode(edge.outNode);
     if (!outNode)
         return false;
 
-    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    auto inNode = _getNode(edge.inNode);
     if (!inNode)
         return false;
 
@@ -932,7 +938,7 @@ ZENO_API bool Graph::removeLinks(const std::string nodename, bool bInput, const 
 {
     CORE_API_BATCH
 
-    std::shared_ptr<INode> spNode = getNode(nodename);
+    auto spNode = _getNode(nodename);
     std::vector<EdgeInfo> links = spNode->getLinksByParam(bInput, paramname);
     for (auto link : links)
         removeLink(link);
@@ -945,10 +951,10 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
 {
     CORE_API_BATCH
 
-    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    auto outNode = _getNode(edge.outNode);
     if (!outNode)
         return false;
-    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    auto inNode = _getNode(edge.inNode);
     if (!inNode)
         return false;
 
@@ -967,10 +973,10 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
 ZENO_API bool Graph::moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName)
 {
     CORE_API_BATCH
-    std::shared_ptr<INode> outNode = getNode(edge.outNode);
+    auto outNode = _getNode(edge.outNode);
     if (!outNode)
         return false;
-    std::shared_ptr<INode> inNode = getNode(edge.inNode);
+    auto inNode = _getNode(edge.inNode);
     if (!inNode)
         return false;
     return moveUpLinkKey(edge, bInput, keyName);

@@ -16,6 +16,7 @@
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
+#include "reflect/container/any"
 #include <functional>
 
 namespace zeno {
@@ -32,9 +33,12 @@ struct PrimitiveParam;
 struct ObjectLink;
 struct PrimitiveLink;
 struct SubnetNode;
+class INode;
+
+#define AnyToINodePtr(spAny) zeno::reflect::any_cast_rawptr<zeno::INode>(spAny.get())
 
 
-class INode : public std::enable_shared_from_this<INode>
+class INode
 {
 public:
     INodeClass *nodeClass = nullptr;
@@ -85,20 +89,20 @@ public:
     ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
 
-   ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
+    ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
-   ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
-   CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
+    ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
+    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
 
-   ZENO_API bool update_param_control(const std::string& name, ParamControl control);
-   CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
+    ZENO_API bool update_param_control(const std::string& name, ParamControl control);
+    CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
 
-   ZENO_API bool update_param_control_prop(const std::string& name, ControlProperty props);
-   CALLBACK_REGIST(update_param_control_prop, void, const std::string&, ControlProperty)
+    ZENO_API bool update_param_control_prop(const std::string& name, ControlProperty props);
+    CALLBACK_REGIST(update_param_control_prop, void, const std::string&, ControlProperty)
 
-   ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
-   CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
+    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
+    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
@@ -135,7 +139,7 @@ protected:
     ZENO_API virtual void complete();
     //preApply是先解决所有输入参数（依赖）的求值问题
     ZENO_API virtual void preApply();
-    ZENO_API virtual void apply() = 0;
+    ZENO_API virtual void apply();
     ZENO_API virtual void registerObjToManager();
     ZENO_API virtual void initParams(const NodeData& dat);
     ZENO_API bool set_primitive_input(std::string const& id, const zvariant& val);
@@ -220,16 +224,18 @@ private:
     std::string m_uuid;
     std::pair<float, float> m_pos;
 
-    std::map<std::string, std::unique_ptr<ObjectParam>> m_inputObjs;
-    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_inputPrims;
-    std::map<std::string, std::unique_ptr<PrimitiveParam>> m_outputPrims;
-    std::map<std::string, std::unique_ptr<ObjectParam>> m_outputObjs;
+    std::map<std::string, ObjectParam> m_inputObjs;
+    std::map<std::string, PrimitiveParam> m_inputPrims;
+    std::map<std::string, PrimitiveParam> m_outputPrims;
+    std::map<std::string, ObjectParam> m_outputObjs;
 
     ObjPath m_uuidPath;
     NodeRunStatus m_status = Node_DirtyReadyToRun;
     std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
+
+    zeno::reflect::Any* _self = nullptr;     //用于指向Graph储存时采用的Any，便于内部访问实例的反射信息，不可随意调整
 
     friend class SubnetNode;
 };

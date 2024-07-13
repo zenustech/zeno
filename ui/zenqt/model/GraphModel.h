@@ -31,7 +31,7 @@ public:
     std::string m_cbSetPos;
     std::string m_cbSetView;
 
-    std::weak_ptr<zeno::INode> m_wpNode;
+    std::weak_ptr<zeno::INodeAny> m_wpNode;
     ParamsModel* params = nullptr;
     bool bView = false;
     bool bCollasped = false;
@@ -42,7 +42,7 @@ public:
 
     NodeItem(QObject* parent);
     ~NodeItem();
-    void init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode);
+    void init(GraphModel* pGraphM, std::shared_ptr<zeno::INodeAny> spNode);
     QString getName() {
         return name;
     }
@@ -130,7 +130,6 @@ public:
     void _removeLinkImpl(const zeno::EdgeInfo& link, bool endTransaction = false);
     bool setModelData(const QModelIndex& index, const QVariant& newValue, int role);
     void _setViewImpl(const QModelIndex& idx, bool bOn, bool endTransaction = false);
-    std::weak_ptr<zeno::INode> getWpNode(QString& nodename);
 
 signals:
     void reloaded();
@@ -144,7 +143,7 @@ private:
 
     void registerCoreNotify();
     void unRegisterCoreNotify();
-    void _appendNode(std::shared_ptr<zeno::INode> spNode);
+    void _appendNode(std::shared_ptr<zeno::INodeAny> spNode);
     void _initLink();
     void _addLink(const zeno::EdgeInfo link);
     bool _removeLink(const zeno::EdgeInfo& edge);

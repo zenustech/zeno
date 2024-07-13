@@ -93,23 +93,20 @@ namespace reflect
 }
 }
 
-#ifndef _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146
-#define _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146 1
-namespace zeno
-{
-namespace reflect
-{
+#ifndef _REFLECT_RTTI_GUARD_zeno_reflect_Any_15554020952442124146
+#define _REFLECT_RTTI_GUARD_zeno_reflect_Any_15554020952442124146 1
+namespace zeno {
+namespace reflect {
     class Any;
 }
 }
-
 
 namespace zeno
 {
 namespace reflect
 {
     template <>
-    REFLECT_STATIC_CONSTEXPR const RTTITypeInfo& type_info<class zeno::reflect::Any>() {
+    REFLECT_STATIC_CONSTEXPR const RTTITypeInfo& type_info<zeno::reflect::Any>() {
         static REFLECT_STATIC_CONSTEXPR RTTITypeInfo s = {
             "class zeno::reflect::Any",
             15554020952442124146ULL,
@@ -120,4 +117,6 @@ namespace reflect
     }
 }
 }
-#endif // _REFLECT_RTTI_GUARD_class_zeno_reflect_Any_15554020952442124146
+#endif // _REFLECT_RTTI_GUARD_zeno_reflect_Any_15554020952442124146
+/// End RTTI of "zeno::reflect::Any"
+///////////////////////////

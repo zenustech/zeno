@@ -662,7 +662,8 @@ void FakeTransformer::addObject(const std::string& name) {
         return;
     }
 
-    const std::string& nodecls = m_objnodeinfo.spViewNode->get_nodecls();
+    auto viewnode = AnyToINodePtr(m_objnodeinfo.spViewNode.lock());
+    const std::string& nodecls = viewnode->get_nodecls();
 
     std::shared_ptr<PrimitiveObject> object;
     if (nodecls != "PrimitiveTransform" && nodecls != "TransformPrimitive") {
@@ -765,12 +766,14 @@ void FakeTransformer::doTransform() {
     });
     zeno::getSession().setDisableRunning(true);
 
-    std::shared_ptr<INode> transNode = m_objnodeinfo.spViewNode;
-    if (!transNode) {
-        std::shared_ptr<INode> spOriNode = m_objnodeinfo.spViewNode;
+    std::shared_ptr<INodeAny> anyTransNode = m_objnodeinfo.spViewNode.lock();
+    INode* transNode = nullptr;
+    if (!anyTransNode) {
+        INode* spOriNode = AnyToINodePtr(anyTransNode);
         std::shared_ptr<Graph> spGraph = spOriNode->getThisGraph();
         ZASSERT_EXIT(spGraph);
-        transNode = spGraph->createNode("PrimitiveTransform");
+        anyTransNode = spGraph->createNode("PrimitiveTransform");
+        transNode = AnyToINodePtr(anyTransNode);
         ZASSERT_EXIT(transNode);
 
         spObj->update_key(transNode->get_uuid());
@@ -820,7 +823,7 @@ void FakeTransformer::doTransform() {
 
         //2.登记新的obj到
         auto& objectsMan = zeno::getSession().objsMan;
-        objectsMan->collectingObject(spObj, transNode, true);
+        objectsMan->collectingObject(spObj, anyTransNode, true);
 
         //3.渲染端更新加载
         auto mainWin = zenoApp->getMainWindow();

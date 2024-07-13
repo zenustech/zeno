@@ -82,7 +82,8 @@ float Formula::callRef(const std::string& ref) {
     //remove " 
     std::string path = ref.substr(1, sPos - 1);
     //apply the referenced node
-    auto pNode = zeno::getSession().mainGraph->getNodeByPath(path);
+    auto pAny = zeno::getSession().mainGraph->getNodeByPath(path);
+    auto pNode = AnyToINodePtr(pAny);
     if (!pNode) {
         zeno::log_error("reference {} error", path);
         return NAN;

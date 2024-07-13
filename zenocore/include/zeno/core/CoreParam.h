@@ -32,7 +32,7 @@ struct PrimitiveLink {
 
 struct CoreParam {
     std::string name;
-    std::weak_ptr<INode> m_wpNode;
+    INode* m_wpNode;
     
     ParamType type = Param_Null;
     SocketType socketType = NoSocket;
@@ -43,7 +43,7 @@ struct CoreParam {
 
 struct ObjectParam : CoreParam {
     std::list<std::shared_ptr<ObjectLink>> links;
-    zany spObject;
+    zany spObject;      //有了反射以后，开发者应该不会通过setOutput把对象设到这里
 
     ParamObject exportParam() const;
 };

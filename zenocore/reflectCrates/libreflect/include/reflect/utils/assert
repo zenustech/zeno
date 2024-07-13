@@ -3,7 +3,6 @@
 #include <csignal>
 #include <cstdlib>
 #include <cstdio>
-#include "reflect/signal/exit.hpp"
 
 #if defined(_MSC_VER)
     // MSVC
@@ -40,7 +39,7 @@
             fprintf(stderr, "[Assert] CHECK failed: %s @ %s:%d\n", #EXPR, __FILE__, __LINE__);\
             fflush(stderr); \
             TRIGGER_BREAKPOINT(); \
-            zeno::reflect::IExitManager::get().graceful_exit(99); \
+            exit(99); \
         }\
     } while (false);
 
@@ -50,7 +49,7 @@
             fprintf(stderr, "[Assert] CHECK failed: %s @ %s:%d\nMsg: %s\n", #EXPR, __FILE__, __LINE__, MSG);\
             fflush(stderr); \
             TRIGGER_BREAKPOINT(); \
-            zeno::reflect::IExitManager::get().graceful_exit(99); \
+            exit(99); \
         }\
     } while (false);
 

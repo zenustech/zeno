@@ -28,16 +28,17 @@ namespace zeno {
 namespace {
 
 struct ImplNodeClass : INodeClass {
-    std::shared_ptr<INode>(*ctor)();
+    std::shared_ptr<INodeAny>(*ctor)();
 
-    ImplNodeClass(std::shared_ptr<INode>(*ctor)(), CustomUI const& customui, std::string const& name)
+    ImplNodeClass(std::shared_ptr<INodeAny>(*ctor)(), CustomUI const& customui, std::string const& name)
         : INodeClass(customui, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &name) const override {
-        std::shared_ptr<INode> spNode = ctor();
+    virtual std::shared_ptr<INodeAny> new_instance(std::shared_ptr<Graph> pGraph, std::string const &name) const override {
+        std::shared_ptr<INodeAny> spNodeAny = ctor();
+        INode* spNode = zeno::reflect::any_cast_rawptr<INode>(spNodeAny.get());
         spNode->initUuid(pGraph, classname);
 
-        std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
+        auto spSubnet = dynamic_cast<SubnetNode*>(spNode);
 
         spNode->set_name(name);
 
@@ -58,7 +59,7 @@ struct ImplNodeClass : INodeClass {
         {
             spNode->add_output_obj_param(param);
         }
-        return spNode;
+        return spNodeAny;
     }
 };
 
@@ -81,7 +82,7 @@ ZENO_API Session::Session()
 
 ZENO_API Session::~Session() = default;
 
-ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
+ZENO_API void Session::defNodeClass(std::shared_ptr<INodeAny>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
@@ -90,7 +91,7 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
-ZENO_API void Session::defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::string const& nodecls, CustomUI const& customui) {
+ZENO_API void Session::defNodeClass2(std::shared_ptr<INodeAny>(*ctor)(), std::string const& nodecls, CustomUI const& customui) {
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", nodecls);
     }

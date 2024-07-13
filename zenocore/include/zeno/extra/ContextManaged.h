@@ -9,10 +9,11 @@
 namespace zeno {
 
 struct ContextManagedNode : INode {
-    std::unique_ptr<Context> m_ctx = nullptr;
+    //std::unique_ptr<Context> m_ctx = nullptr;
     bool bNewContext = false;
 
     void push_context() {
+        /*
         assert(!m_ctx);
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
@@ -26,9 +27,12 @@ struct ContextManagedNode : INode {
             spGraph->ctx = std::make_unique<Context>();
             bNewContext = true;
         }
+        */
     }
 
-    std::unique_ptr<Context> pop_context() {
+    /*std::unique_ptr<Context>*/
+    void pop_context() {
+        /*
         std::shared_ptr<Graph> spGraph = getThisGraph();
         assert(spGraph);
         if (bNewContext) {
@@ -40,6 +44,7 @@ struct ContextManagedNode : INode {
         auto old_ctx = std::move(spGraph->ctx);
         spGraph->ctx = std::move(m_ctx);
         return old_ctx;
+        */
     }
 };
 

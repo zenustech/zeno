@@ -122,6 +122,7 @@ struct CacheLastFrameEnd : zeno::INode {
 
     virtual void apply() override {
         {
+            /*
             zeno::ParamObject paramobj = get_input_obj_param("linkTo");
             if (paramobj.links.empty())
                 throw makeError("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
@@ -138,6 +139,7 @@ struct CacheLastFrameEnd : zeno::INode {
             auto updatedCache = (*get_input("updateCache")).clone();
             m_CacheLastFrameBegin->m_lastFrameCache = updatedCache;
             set_output("output", std::move(updatedCache));
+            */
             return;
         }
         throw zeno::Exception("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");

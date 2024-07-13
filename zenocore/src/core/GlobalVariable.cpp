@@ -68,11 +68,11 @@ namespace zeno {
         return zeno::reflect::Any();
     }
 
-    void GlobalVariableManager::propagateDirty(std::weak_ptr<INode> wpCurrNode, GVariable globalvar)
+    void GlobalVariableManager::propagateDirty(INode* spCurrNode, GVariable globalvar)
     {
         std::set<ObjPath> depNodes;
         std::set<ObjPath> upstreams;
-        if (auto spCurrNode = wpCurrNode.lock()) {
+        {
             getUpstreamNodes(spCurrNode, depNodes, upstreams);
             for (auto& objPath : depNodes) {
                 auto it = globalVariablesNameTypeMap.find(objPath);
@@ -81,7 +81,8 @@ namespace zeno {
                     for (auto& [name, type] : it->second) {
                         if (name == globalvar.name && type.equal_fast(globalvar.gvar.type())) {
                             if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
-                                mark_dirty_by_dependNodes(node, true, upstreams);
+                                auto pNode = AnyToINodePtr(node);
+                                mark_dirty_by_dependNodes(pNode, true, upstreams);
                             }
                         }
                     }
@@ -90,7 +91,7 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName)
+    void GlobalVariableManager::getUpstreamNodes(INode* spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName)
     {
         auto it = globalVariablesNameTypeMap.find(spCurrNode->get_uuid_path());
         if (it != globalVariablesNameTypeMap.end() && !it->second.empty()) {
@@ -100,10 +101,11 @@ namespace zeno {
         if (upstreams.find(spCurrNode->get_uuid_path()) != upstreams.end()) {
             return;
         }
-        if (std::shared_ptr<SubnetNode> pSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spCurrNode))
+        if (SubnetNode* pSubnetNode = dynamic_cast<SubnetNode*>(spCurrNode))
         {
             auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &upstreams, this](std::string paramName) {
-                if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
+                if (auto _suboutput = pSubnetNode->subgraph->getNode(paramName)) {
+                    auto suboutput = AnyToINodePtr(_suboutput);
                     getUpstreamNodes(suboutput, depNodes, upstreams);
                     upstreams.insert(suboutput->get_uuid_path());
                 }
@@ -128,7 +130,7 @@ namespace zeno {
                     if (spGraph)
                     {
                         auto outParam = link.outParam;
-                        std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
+                        auto outNode = AnyToINodePtr(spGraph->getNode(link.outNode));
                         assert(outNode);
                         getUpstreamNodes(outNode, depNodes, upstreams, outParam);
                         upstreams.insert(outNode->get_uuid_path());
@@ -140,7 +142,7 @@ namespace zeno {
                     if (spGraph)
                     {
                         auto outParam = link.outParam;
-                        std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
+                        auto outNode = AnyToINodePtr(spGraph->getNode(link.outNode));
                         assert(outNode);
                         getUpstreamNodes(outNode, depNodes, upstreams, outParam);
                         upstreams.insert(outNode->get_uuid_path());
@@ -151,12 +153,12 @@ namespace zeno {
         }
         std::shared_ptr<Graph> spGraph = spCurrNode->getGraph().lock();
         assert(spGraph);
-        if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubInput")
+        auto parentSubgNode = spGraph->getParentSubnetNode();
+        if (parentSubgNode && spCurrNode->get_nodecls() == "SubInput")
         {
-            upstreams.insert(spGraph->optParentSubgNode.value()->get_uuid_path());
-            auto parentSubgNode = spGraph->optParentSubgNode.value();
+            upstreams.insert(parentSubgNode->get_uuid_path());
             auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &parentSubgNode, this](std::string outParam) {
-                std::shared_ptr<INode> outNode = parentSubgNode->get_graph()->getNode(outParam);
+                auto outNode = AnyToINodePtr(parentSubgNode->get_graph()->getNode(outParam));
                 assert(outNode);
                 getUpstreamNodes(outNode, depNodes, upstreams, outParam);
                 upstreams.insert(outNode->get_uuid_path());
@@ -178,7 +180,7 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName)
+    void GlobalVariableManager::mark_dirty_by_dependNodes(INode* spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName)
     {
         if (!nodesRange.empty()) {
             if (nodesRange.find(spCurrNode->get_uuid_path()) == nodesRange.end()) {
@@ -196,7 +198,7 @@ namespace zeno {
                 for (auto link : param.links) {
                     if (spGraph) {
                         auto inParam = link.inParam;
-                        std::shared_ptr<INode> inNode = spGraph->getNode(link.inNode);
+                        auto inNode = AnyToINodePtr(spGraph->getNode(link.inNode));
                         assert(inNode);
                         mark_dirty_by_dependNodes(inNode, bOn, nodesRange, inParam);
                     }
@@ -206,7 +208,7 @@ namespace zeno {
                 for (auto link : param.links) {
                     if (spGraph) {
                         auto inParam = link.inParam;
-                        std::shared_ptr<INode> inNode = spGraph->getNode(link.inNode);
+                        auto inNode = AnyToINodePtr(spGraph->getNode(link.inNode));
                         assert(inNode);
                         mark_dirty_by_dependNodes(inNode, bOn, nodesRange, inParam);
                     }
@@ -214,11 +216,14 @@ namespace zeno {
             }
         }
 
-        if (std::shared_ptr<SubnetNode> pSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spCurrNode))
+        if (auto pSubnetNode = dynamic_cast<SubnetNode*>(spCurrNode))
         {
             auto subinputMarkDirty = [&pSubnetNode, &nodesRange, this](bool dirty, std::string paramName) {
                 if (auto subinput = pSubnetNode->subgraph->getNode(paramName))
-                    mark_dirty_by_dependNodes(subinput, dirty, nodesRange);
+                {
+                    auto pNode = AnyToINodePtr(subinput);
+                    mark_dirty_by_dependNodes(pNode, dirty, nodesRange);
+                }
             };
             if (inParamName != "") {
                 subinputMarkDirty(bOn, inParamName);
@@ -233,13 +238,11 @@ namespace zeno {
 
         std::shared_ptr<Graph> spGraph = spCurrNode->getGraph().lock();
         assert(spGraph);
-        if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubOutput")
+        auto parentSubgNode = spGraph->getParentSubnetNode();
+        if (parentSubgNode && spCurrNode->get_nodecls() == "SubOutput")
         {
-            auto parentSubgNode = spGraph->optParentSubgNode.value();
             auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode, this](std::string inParam) {
-
-                std::shared_ptr<INode> inNode = parentSubgNode->get_graph()->getNode(inParam);
-                assert(inNode);
+                auto inNode = AnyToINodePtr(parentSubgNode->get_graph()->getNode(inParam));
                 mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
             };
             bool find = false;
@@ -256,7 +259,7 @@ namespace zeno {
                     parentSubgNodeMarkDirty(link.inParam);
                 }
             }
-            spGraph->optParentSubgNode.value()->mark_dirty(true, true, false);
+            parentSubgNode->mark_dirty(true, true, false);
         }
     }
 
@@ -299,32 +302,6 @@ namespace zeno {
     zeno::reflect::Any GlobalVariableManager::getVariable(std::string varname)
     {
         return globalVariableStack.getVariable(varname);
-    }
-
-    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> wknode, std::string gvarName, zeno::reflect::Any var): currNode(wknode)
-    {
-        gvar = GVariable(gvarName, var);
-        overrideSuccess = zeno::getSession().globalVariableManager->overrideVariable(gvar);
-        if (overrideSuccess) {
-            zeno::getSession().globalVariableManager->propagateDirty(currNode, gvar);
-        }
-    }
-
-    ZENO_API GlobalVariableOverride::~GlobalVariableOverride()
-    {
-        if (overrideSuccess) {
-            GVariable oldvar;
-            zeno::getSession().globalVariableManager->cancelOverride(gvar.name, oldvar);
-        }
-    }
-
-    ZENO_API bool GlobalVariableOverride::updateGlobalVariable(GVariable globalVariable)
-    {
-        if (zeno::getSession().globalVariableManager->updateVariable(globalVariable)) {
-            zeno::getSession().globalVariableManager->propagateDirty(currNode, globalVariable);
-            return true;
-        }
-        return false;
     }
 
 }

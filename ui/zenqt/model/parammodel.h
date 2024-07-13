@@ -35,7 +35,7 @@ class ParamsModel : public QAbstractListModel
     QML_ELEMENT
 
 public:
-    ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent = nullptr);
+    ParamsModel(std::shared_ptr<zeno::INodeAny> spNode, QObject* parent = nullptr);
 
     Q_INVOKABLE int indexFromName(const QString& name, bool bInput) const;
     Q_INVOKABLE QVariant getIndexList(bool bInput) const;
@@ -87,7 +87,7 @@ private:
 
     QStandardItemModel* m_customParamsM;
 
-    std::weak_ptr<zeno::INode> m_wpNode;
+    std::weak_ptr<zeno::INodeAny> m_wpNode;
     std::string cbUpdateParam;
     mutable bool m_bReentry = false;
 };

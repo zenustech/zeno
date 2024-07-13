@@ -39,7 +39,8 @@ ZENO_CAPI Zeno_Error Zeno_GraphIncReference(Zeno_Graph graph_) ZENO_CAPI_NOEXCEP
 
 ZENO_CAPI Zeno_Error Zeno_GraphGetSubGraph(Zeno_Graph graph_, Zeno_Graph *retGraph_, const char *subName_) ZENO_CAPI_NOEXCEPT {
     return PyZeno::lastError.catched([=] {
-        *retGraph_ = PyZeno::lutGraph.create(PyZeno::lutGraph.access(graph_)->getSubnetGraph(subName_)->shared_from_this());
+        //TOFIX
+        //*retGraph_ = PyZeno::lutGraph.create(PyZeno::lutGraph.access(graph_)->getSubnetGraph(subName_)->shared_from_this());
     });
 }
 

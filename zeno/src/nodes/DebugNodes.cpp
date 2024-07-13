@@ -256,6 +256,16 @@ ZENDEFNODE(Group, {
     {"layout"},
     });
 
+struct ReflectExample : zeno::INode {
+    virtual void apply() override {
+
+    }
+    
+    int memberA;
+    std::string memeberB;
+};
+
+
 struct CustomNode : zeno::INode {
     virtual void apply() override {
 

@@ -1,5 +1,6 @@
 #include "command.h"
 #include "variantptr.h"
+#include "zassert.h"
 
 
 AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath)
@@ -59,10 +60,10 @@ void AddNodeCommand::undo()
 {
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
-        if (auto spnode = m_model->getWpNode(nodename).lock())
-        {
-            m_pos = spnode->get_pos();
-        }
+        QModelIndex idx = m_model->indexFromName(nodename);
+        ZASSERT_EXIT(idx.isValid());
+        QPointF pos = idx.data(ROLE_OBJPOS).toPointF();
+        m_pos = { pos.x(), pos.y() };
         m_model->_removeNodeImpl(nodename);
     }
 }
@@ -106,9 +107,12 @@ void RemoveNodeCommand::redo()
 {
     if (m_model) {
         auto nodename = QString::fromStdString(m_nodeData.name);
-        auto spNode = m_model->getWpNode(nodename).lock();
-        if (std::shared_ptr<zeno::SubnetNode> subnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {   //if is subnet/assets£¬record cate
-            m_cate = subnetNode->isAssetsNode() ? "assets" : "";
+        ;
+        QModelIndex idx = m_model->indexFromName(nodename);
+        ZASSERT_EXIT(idx.isValid());
+        zeno::NodeType type = static_cast<zeno::NodeType>(idx.data(ROLE_NODETYPE).toInt());
+        if (type == zeno::Node_AssetInstance) {
+            m_cate = "assets";
         }
         m_model->_removeNodeImpl(QString::fromStdString(m_nodeData.name));
     }

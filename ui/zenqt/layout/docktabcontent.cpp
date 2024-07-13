@@ -535,9 +535,10 @@ void DockContent_Editor::initConnections()
     });
     if (pTestApi) {
         connect(pTestApi, &ZToolBarButton::clicked, this, [=]() {
+            /*
             auto& sess = zeno::getSession();
             zeno::EdgeInfo edge;
-            std::shared_ptr<zeno::INode> spNode;
+            INode* spNode = nullptr;
 
             if (0) {
                 spNode = sess.mainGraph->getNode("NumericInt1");
@@ -571,6 +572,7 @@ void DockContent_Editor::initConnections()
                 //info.name = "ccc";
                 //sess.assets->createAsset(info);
             }
+            */
         });
     }
 

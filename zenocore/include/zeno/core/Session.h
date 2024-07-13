@@ -15,7 +15,7 @@
 #include "reflect/container/object_proxy"
 #include "reflect/container/any"
 #include "reflect/container/arraylist"
-//#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -30,7 +30,7 @@ struct INodeClass {
 
     ZENO_API INodeClass(CustomUI const &customui, std::string const& classname);
     ZENO_API virtual ~INodeClass();
-    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &classname) const = 0;
+    virtual std::shared_ptr<INodeAny> new_instance(std::shared_ptr<Graph> pGraph, std::string const &classname) const = 0;
 };
 
 struct IObject;
@@ -78,8 +78,8 @@ struct Session {
     ZENO_API void set_Rerun();
     ZENO_API std::string dumpDescriptorsJSON() const;
     ZENO_API zeno::NodeCates dumpCoreCates();
-    ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
-    ZENO_API void defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::string const& nodecls, CustomUI const& customui);
+    ZENO_API void defNodeClass(std::shared_ptr<INodeAny>(*ctor)(), std::string const &id, Descriptor const &desc = {});
+    ZENO_API void defNodeClass2(std::shared_ptr<INodeAny>(*ctor)(), std::string const& nodecls, CustomUI const& customui);
     ZENO_API void setApiLevelEnable(bool bEnable);
     ZENO_API void beginApiCall();
     ZENO_API void endApiCall();

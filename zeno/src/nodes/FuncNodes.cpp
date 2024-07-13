@@ -47,7 +47,8 @@ struct FuncEnd : zeno::ContextManagedNode {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
 
             auto link = paramobj.links[0];
-            fore = dynamic_cast<FuncBegin *>(spGraph->m_nodes.at(link.outNode).get());
+            auto pOutNode = AnyToINodePtr(spGraph->getNode(link.outNode));
+            fore = dynamic_cast<FuncBegin*>(pOutNode);
             if (!fore) {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
             }
@@ -123,7 +124,8 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
                 throw makeError("FuncEnd::FUNC must be conn to FuncBegin::FUNC!");
 
             auto link = paramobj.links[0];
-            fore = dynamic_cast<FuncSimpleBegin *>(spGraph->m_nodes.at(link.outNode).get());
+            auto pOutNode = AnyToINodePtr(spGraph->getNode(link.outNode));
+            fore = dynamic_cast<FuncSimpleBegin*>(pOutNode);
             if (!fore) {
                 throw makeError("FuncSimpleEnd::FUNC must be conn to FuncSimpleBegin::FUNC!");
             }

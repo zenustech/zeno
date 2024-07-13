@@ -2,6 +2,7 @@
 #include "reflect/registry.hpp"
 #include "reflect/utils/assert"
 #include "type.hpp"
+#include "reflection_traits.hpp"
 
 using namespace zeno::reflect;
 

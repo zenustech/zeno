@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <optional>
 #include <zeno/utils/api.h>
+#include "reflect/container/any"
+
 
 namespace zeno {
 
@@ -18,6 +20,8 @@ namespace zeno {
         std::optional<std::vector<std::string>> items;  //for combobox
         std::optional<std::array<float, 3>> ranges;       //min, max, step
     };
+
+    using INodeAny = zeno::reflect::Any;
 
     struct EdgeInfo {
         std::string outNode;

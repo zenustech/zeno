@@ -182,8 +182,8 @@ namespace zeno {
         if (!spOutParam || !spInParam)
             return edge;
 
-        auto spOutNode = spOutParam->m_wpNode.lock();
-        auto spInNode = spInParam->m_wpNode.lock();
+        auto spOutNode = spOutParam->m_wpNode;
+        auto spInNode = spInParam->m_wpNode;
         if (!spOutNode || !spInNode)
             return edge;
 
@@ -202,8 +202,8 @@ namespace zeno {
         if (!spOutParam || !spInParam)
             return edge;
 
-        auto spOutNode = spOutParam->m_wpNode.lock();
-        auto spInNode = spInParam->m_wpNode.lock();
+        auto spOutNode = spOutParam->m_wpNode;
+        auto spInNode = spInParam->m_wpNode;
         if (!spOutNode || !spInNode)
             return edge;
 

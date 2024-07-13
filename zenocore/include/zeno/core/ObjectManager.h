@@ -32,7 +32,7 @@ namespace zeno {
     struct ObjectNodeInfo {
         std::optional<zany> rootObj;        //list/dict case.
         zany transformingObj;
-        std::shared_ptr<INode> spViewNode;
+        std::weak_ptr<INodeAny> spViewNode;
     };
 
 
@@ -67,7 +67,7 @@ public:
     ZENO_API void clearLastUnregisterObjs();
     ZENO_API void clear();
 
-    ZENO_API void collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INode> view_node, bool bView);
+    ZENO_API void collectingObject(std::shared_ptr<IObject> obj, std::shared_ptr<INodeAny> view_node, bool bView);
     CALLBACK_REGIST(collectingObject, void, std::shared_ptr<IObject>, bool)
 
     ZENO_API void removeObject(const std::string& id);
@@ -102,7 +102,6 @@ public:
     ZENO_API void collect_modify_objs(const std::set<std::string>& newobjKeys, bool isView);
     ZENO_API void remove_modify_objs(const std::set<std::string>& removeobjKeys);
     ZENO_API void getModifyObjsInfo(std::set<std::string>& modifyInteractiveObjs);  //interactive objs
-    ZENO_API void syncObjNodeInfo(zany spObj, std::shared_ptr<INode> spNode);
 
 private:
     std::map<std::string, int> m_objRegister;

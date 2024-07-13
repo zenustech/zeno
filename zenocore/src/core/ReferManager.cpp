@@ -18,9 +18,10 @@ namespace zeno {
 
     void ReferManager::init(const std::shared_ptr<Graph>& pGraph)
     {
-        for (auto& [key, spNode] : pGraph->m_nodes)
+        for (auto& [key, spAny] : pGraph->getNodes())
         {
-            if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
+            auto spNode = AnyToINodePtr(spAny);
+            if (SubnetNode* subnetNode = dynamic_cast<SubnetNode*>(spNode))
             {
                 init(subnetNode->subgraph);
             }
@@ -44,7 +45,7 @@ namespace zeno {
 
     void zeno::ReferManager::checkReference(const ObjPath& objPath, const std::string& param)
     {
-        auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+        auto spNode = AnyToINodePtr(getSession().mainGraph->getNodeByUuidPath(objPath));
         if (!spNode)
             return;
 
@@ -106,7 +107,7 @@ namespace zeno {
             auto path_str = uuid_param.substr(0, idx);
             auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
             auto objPath = zeno::strToObjPath(path_str);
-            auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+            auto spNode = AnyToINodePtr(getSession().mainGraph->getNodeByUuidPath(objPath));
             if (!spNode)
                 continue;
 
@@ -230,7 +231,7 @@ namespace zeno {
             auto uuid_path = uuid_param.substr(0, idx);
             auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
             auto objPath = zeno::strToObjPath(uuid_path);
-            auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+            auto spNode = AnyToINodePtr(getSession().mainGraph->getNodeByUuidPath(objPath));
             if (!spNode)
             {
                 continue;
@@ -322,7 +323,7 @@ namespace zeno {
                     auto nodePath = path.substr(0, idx);
                     auto param = path.substr(idx + 1, path.size() - idx);
                     auto objPath = zeno::strToObjPath(nodePath);
-                    auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+                    auto spNode = AnyToINodePtr(getSession().mainGraph->getNodeByUuidPath(objPath));
                     if (!spNode)
                         continue;
                     if (!spNode->is_dirty())
@@ -344,7 +345,7 @@ namespace zeno {
             int idx = absolutePath.find_last_of("/");
             std::string path = absolutePath.substr(0, idx);
             std::string param = absolutePath.substr(idx + 1, val.size() - idx);
-            if (auto spNode = getSession().mainGraph->getNodeByPath(path))
+            if (auto spNode = AnyToINodePtr(getSession().mainGraph->getNodeByPath(path)))
             {
                 path = zeno::objPathToStr(spNode->get_uuid_path());
                 res.emplace(std::make_pair(path, param));

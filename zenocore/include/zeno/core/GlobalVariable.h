@@ -18,9 +18,10 @@
 #include "reflect/container/arraylist"
 #include "reflect/reflection.generated.hpp"
 
+
 namespace zeno {
 
-struct INode;
+    class INode;
 
 struct GVariable {
     std::string name;
@@ -52,9 +53,9 @@ struct GlobalVariableManager
 {
 public:
     //查询上游dependType类型节点并传播dirty
-    void propagateDirty(std::weak_ptr<INode> wpCurrNode, GVariable globalvar);
-    void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName = "");
-    void mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
+    void propagateDirty(INode* wpCurrNode, GVariable globalvar);
+    void getUpstreamNodes(INode* spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreams, std::string outParamName = "");
+    void mark_dirty_by_dependNodes(INode* spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
     //nodepath的节点不在依赖某个全局变量
     void removeDependGlobalVaraible(const ObjPath& nodepath, std::string name);
     //标记nodepath的节点依赖某个全局变量
@@ -68,16 +69,6 @@ public:
     GlobalVariableStack globalVariableStack;
 
     std::map<ObjPath, std::map<std::string, zeno::reflect::RTTITypeInfo>> globalVariablesNameTypeMap;  //存储节点依赖哪些全局变量<节点path<变量名称，变量类型>>
-};
-
-struct GlobalVariableOverride {
-    std::weak_ptr<INode> currNode;
-    GVariable gvar;
-    bool overrideSuccess;
-
-    ZENO_API GlobalVariableOverride(std::weak_ptr<INode> currNode, std::string gvarName, zeno::reflect::Any gvar);;
-    ZENO_API ~GlobalVariableOverride();;
-    ZENO_API bool updateGlobalVariable(GVariable globalVariable);
 };
 
 }

@@ -68,67 +68,7 @@ static T generic_get(Value const &x) {
 }
 
 ZENO_API void Graph::loadGraph(const char *json) {
-    Document d;
-    d.Parse(json);
-
-    if (!d.IsArray()) {
-        throw GraphException{ {}, "", nullptr };
-    }
-
-    Graph *g = this;
-    std::stack<Graph *> gStack;
-
-    for (int i = 0; i < d.Size(); i++) {
-        Value const &di = d[i];
-        std::string cmd = di[0].GetString();
-        const char *maybeNodeName = cmd == "addNode" ? di[2].GetString() : (
-            di.Size() >= 1 && di[1].IsString() ? di[1].GetString() : "(not a node)");
-        //ZENO_P(cmd);
-        //ZENO_P(maybeNodeName);
-        GraphException::translated([&] {
-            if (0) {
-            } else if (cmd == "addNode") {
-                g->addNode(di[1].GetString(), di[2].GetString());
-            } else if (cmd == "setNodeInput") {
-                g->setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
-            } else if (cmd == "setKeyFrame") {
-                g->setKeyFrame(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
-            } else if (cmd == "setFormula") {
-                g->setFormula(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
-            } else if (cmd == "setNodeParam") {
-                g->setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string, zany>, false>(di[3]));
-            } else if (cmd == "bindNodeInput") {
-                g->bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
-            } else if (cmd == "completeNode") {
-                g->completeNode(di[1].GetString());
-            } else if (cmd == "addSubnetNode") {
-                auto newG = g->addSubnetNode(/*di[1].GetString(), */di[2].GetString());
-            } else if (cmd == "addNodeOutput") {
-                g->addNodeOutput(di[1].GetString(), di[2].GetString());
-            } else if (cmd == "pushSubnetScope") {
-                gStack.push(g);
-                g = g->getSubnetGraph(di[1].GetString());
-            } else if (cmd == "popSubnetScope") {
-                g = gStack.top();
-                gStack.pop();
-            } else if (cmd == "setBeginFrameNumber") {
-                this->beginFrameNumber = di[1].GetInt();
-            } else if (cmd == "setEndFrameNumber") {
-                this->endFrameNumber = di[1].GetInt();
-            } else if (cmd == "setNodeOption") {
-                // skip this for compatibility
-            } else if (cmd == "markNodeChanged") {
-                auto name = di[1].GetString();
-                auto &dc = g->getDirtyChecker();
-                dc.taintThisNode(name);
-                //todo: mark node data change.
-            } else if (cmd == "cacheToDisk") {
-                //g->setTempCache(di[1].GetString());
-            } else {
-                log_warn("got unexpected command: {}", cmd);
-            }
-        }, nullptr);
-    }
+    //DEPRECATED
 }
 
 }

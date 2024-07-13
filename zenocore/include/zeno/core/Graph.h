@@ -15,41 +15,20 @@
 #include <map>
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
+#include "reflect/container/any"
+
 
 namespace zeno {
 
 struct Session;
-struct SubgraphNode;
 struct SubnetNode;
-struct DirtyChecker;
 struct INode;
 
-struct Context {
-    std::set<std::string> visited;
-
-    inline void mergeVisited(Context const &other) {
-        visited.insert(other.visited.begin(), other.visited.end());
-    }
-
-    ZENO_API Context();
-    ZENO_API Context(Context const &other);
-    ZENO_API ~Context();
-};
-
-struct Graph : std::enable_shared_from_this<Graph> {
-    Session* session = nullptr;
-
-    std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.
-    std::set<std::string> nodesToExec;
-    int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
-
+class Graph : std::enable_shared_from_this<Graph>
+{
+public:
     std::map<std::string, std::string> portalIns;   //todo: deprecated, but need to keep compatible with old zsg.
     std::map<std::string, zany> portals;
-
-    std::unique_ptr<Context> ctx;
-    std::unique_ptr<DirtyChecker> dirtyChecker;
-
-    std::optional<SubnetNode*> optParentSubgNode;
 
     ZENO_API Graph(const std::string& name, bool bAssets = false);
     ZENO_API ~Graph();
@@ -62,8 +41,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     //BEGIN NEW STANDARD API
     ZENO_API void init(const GraphData& graph);
 
-    ZENO_API std::shared_ptr<INode> createNode(std::string const& cls, const std::string& orgin_name = "", bool bAssets = false, std::pair<float, float> pos = {});
-    CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INode>)
+    ZENO_API std::shared_ptr<INodeAny> createNode(std::string const& cls, const std::string& orgin_name = "", bool bAssets = false, std::pair<float, float> pos = {});
+    CALLBACK_REGIST(createNode, void, const std::string&, std::weak_ptr<zeno::INodeAny>)
 
     ZENO_API bool removeNode(std::string const& name);
     CALLBACK_REGIST(removeNode, void, const std::string&)
@@ -80,10 +59,10 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API bool updateLink(const EdgeInfo& edge, bool bInput, const std::string oldkey, const std::string newkey);
     ZENO_API bool moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName);
 
-    ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
-    ZENO_API std::shared_ptr<INode> getNodeByUuidPath(ObjPath path);
-    ZENO_API std::shared_ptr<INode> getNodeByPath(std::string path);
-    ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
+    ZENO_API std::shared_ptr<INodeAny> getNode(std::string const& name);
+    ZENO_API std::shared_ptr<INodeAny> getNodeByUuidPath(ObjPath path);
+    ZENO_API std::shared_ptr<INodeAny> getNodeByPath(std::string path);
+    ZENO_API std::map<std::string, std::shared_ptr<INodeAny>> getNodes() const;
 
     ZENO_API GraphData exportGraph() const;
 
@@ -102,8 +81,6 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::set<std::string> searchByClass(const std::string& name) const;
 
     //END
-
-    ZENO_API DirtyChecker &getDirtyChecker();
     ZENO_API void clearNodes();
     ZENO_API void runGraph();
     ZENO_API void applyNodes(std::set<std::string> const &ids);
@@ -117,7 +94,6 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     //容易有歧义：这个input是defl value，还是实质的对象？按原来zeno的语义，是指defl value
     ZENO_API void setNodeInput(std::string const &id, std::string const &par, zany const &val);
-
     ZENO_API void setKeyFrame(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void addNodeOutput(std::string const &id, std::string const &par);
@@ -130,6 +106,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API std::map<std::string, zany> callTempNode(std::string const &id,
             std::map<std::string, zany> inputs);
 
+    SubnetNode* getParentSubnetNode() const;
     std::set<std::string> getSubInputs();
     std::set<std::string> getSubOutputs();
     void viewNodeUpdated(const std::string node, bool bView);
@@ -138,8 +115,22 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value);
 
 private:
+    friend struct SubnetNode;
+    friend class AssetsMgr;
+
+    INode* _getNode(std::string const& name);
+    INode* _getNodeByUUid(const std::string& uuid) const {
+        return AnyToINodePtr(safe_at(m_nodes, uuid, "node name"));
+    }
+
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
     bool isLinkVaild(const EdgeInfo& edge);
+
+    std::map<std::string, std::shared_ptr<INodeAny>> m_nodes;  //based on uuid.
+
+
+
+    SubnetNode* m_parentSubnetNode = nullptr;
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
