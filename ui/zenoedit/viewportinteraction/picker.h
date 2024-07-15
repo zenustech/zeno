@@ -43,8 +43,8 @@ class Picker
 public:
     Picker(ViewportWidget* pViewport);
     void initialize();
-    void pick(int x, int y);
-    void pick(int x0, int y0, int x1, int y1, SELECTION_MODE mode = SELECTION_MODE::NORMAL);
+    void pick_pixel(int x, int y);
+    void pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode = SELECTION_MODE::NORMAL);
     void pick_depth(int x, int y);
     std::string just_pick_prim(int x, int y);
     const std::unordered_set<std::string>& get_picked_prims();

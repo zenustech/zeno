@@ -671,7 +671,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     // zeno::log_info("res_w: {}, res_h: {}", res()[0], res()[1]);
                     m_picker->pick_depth(releasePos.x(), releasePos.y());
                 } else {
-                    m_picker->pick(releasePos.x(), releasePos.y());
+                    m_picker->pick_pixel(releasePos.x(), releasePos.y());
                     m_picker->sync_to_scene();
                     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
@@ -706,7 +706,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     mode = zeno::SELECTION_MODE::REMOVE;
                 }
 
-                m_picker->pick(x0, y0, x1, y1, mode);
+                m_picker->pick_rect(x0, y0, x1, y1, mode);
                 m_picker->sync_to_scene();
                 if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();

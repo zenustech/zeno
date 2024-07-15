@@ -100,7 +100,7 @@ zenovis::Scene* Picker::get_scene() const
     return sess->get_scene();
 }
 
-void Picker::pick(int x, int y) {
+void Picker::pick_pixel(int x, int y) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     // qDebug() << scene->select_mode;
@@ -144,7 +144,7 @@ void Picker::pick(int x, int y) {
     // onPrimitiveSelected();
 }
 
-void Picker::pick(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
+void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
