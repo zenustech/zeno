@@ -75,6 +75,13 @@ MetadataContainer parse_metadata_dsl(const std::string &in_dsl)
     } else if (in_dsl.starts_with("#trait")) {
         metadata = in_dsl.substr(8);
         container.type = MetadataType::Trait;
+    } else if (in_dsl.starts_with("#method")) {
+        metadata = in_dsl.substr(9);
+        container.type = MetadataType::Function;
+    }
+    else if (in_dsl.starts_with("#property")) {
+        metadata = in_dsl.substr(11);
+        container.type = MetadataType::StructField;
     }
 
     Parser parser(metadata);
