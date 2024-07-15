@@ -10,9 +10,12 @@
 #include "reflect/traits/type_traits"
 #include "reflect/container/arraylist"
 #include "reflect/metadata.hpp"
+#include <memory>
 
 namespace zeno
 {
+    class INode;
+
 namespace reflect 
 {
     class TypeBase;
@@ -188,6 +191,11 @@ namespace reflect
         virtual void* new_instance(const ArrayList<Any>& params = {}) const = 0;
 
         virtual Any create_instance(const ArrayList<Any>& params = {}) const = 0;
+
+        virtual std::shared_ptr<zeno::INode> create_node_instance(const ArrayList<Any>& params = {}) const {
+            return nullptr;
+        }
+
     protected:
         explicit ITypeConstructor(TypeHandle in_type);
     };

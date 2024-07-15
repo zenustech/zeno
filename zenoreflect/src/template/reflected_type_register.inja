@@ -9,6 +9,7 @@ R"INJA(
 #include "reflect/container/unique_ptr"
 #include "reflect/metadata.hpp"
 #include "reflect/reflection.generated.hpp"
+#include <zeno/core/INode.h>
 
 using namespace zeno::reflect;
 
@@ -87,6 +88,14 @@ namespace {
                 );
             }
             return val;
+        }
+
+        virtual std::shared_ptr<zeno::INode> create_node_instance(const ArrayList<Any>& params) const override {
+            if (is_suitable_to_invoke(params)) {
+                // Just praying for NRVO is working
+                return std::make_shared<{{ type_info.canonical_typename }}>();
+            }
+            return nullptr;
         }
     };
 ## endfor
