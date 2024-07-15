@@ -168,10 +168,6 @@ void Picker::pick_depth(int x, int y) {
     qDebug() << "picker: " << depth;
 }
 
-void Picker::add(const string& prim_name) {
-    selected_prims.insert(prim_name);
-}
-
 string Picker::just_pick_prim(int x, int y) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene, "");

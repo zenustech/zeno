@@ -1082,37 +1082,6 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
     }
 }
 
-void ZenoSubGraphScene::selectObjViaNodes() {
-    // FIXME temp function for merge
-    // for selecting objects in viewport via selected nodes
-    ZenoMainWindow* pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
-    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
-    for (auto pDisplay : views) {
-        ZASSERT_EXIT(pDisplay);
-        auto pZenovis = pDisplay->getZenoVis();
-        ZASSERT_EXIT(pZenovis);
-        auto scene = pZenovis->getSession()->get_scene();
-        ZASSERT_EXIT(scene);
-
-        QList<QGraphicsItem*> selItems = this->selectedItems();
-        auto picker = pDisplay->picker();
-        ZASSERT_EXIT(picker);
-        picker->clear();
-        for (auto item : selItems) {
-            if (auto *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
-                auto node_id = pNode->index().data(ROLE_OBJID).toString().toStdString();
-                for (const auto &[prim_name, _] : scene->objectsMan->pairsShared()) {
-                    if (prim_name.find(node_id) != std::string::npos)
-                        picker->add(prim_name);
-                }
-            }
-        }
-        picker->sync_to_scene();
-        zenoApp->getMainWindow()->updateViewport();
-    }
-}
-
 void ZenoSubGraphScene::updateKeyFrame() 
 {
     QVector<int> keys;
@@ -1202,10 +1171,6 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 pGraphsModel->removeLegacyLink(linkIdx);
             }
         }
-    }
-    else if (!event->isAccepted() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_G) {
-        // FIXME temp function for merge
-        selectObjViaNodes();
     }
     int uKey = event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();

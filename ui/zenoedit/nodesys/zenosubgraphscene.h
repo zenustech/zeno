@@ -37,8 +37,6 @@ public:
     QGraphicsItem* getNode(const QString& id);
     void collectNodeSelChanged(const QString& ident, bool bSelected);
 
-    // FIXME temp function for merge
-    void selectObjViaNodes();
     void updateKeyFrame();
 
 protected:
