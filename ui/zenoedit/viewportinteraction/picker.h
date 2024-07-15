@@ -59,7 +59,7 @@ public:
     void set_draw_special_buffer_mode(bool enable);
 
 private:
-    zenovis::Scene* scene() const;
+    zenovis::Scene* get_scene() const;
 
     std::unique_ptr<zenovis::IPicker> picker;
     

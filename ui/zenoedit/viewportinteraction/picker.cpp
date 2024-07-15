@@ -88,12 +88,12 @@ Picker::Picker(ViewportWidget *pViewport)
 
 void Picker::initialize()
 {
-    auto scene = this->scene();
+    auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     picker = zenovis::makeFrameBufferPicker(scene);
 }
 
-zenovis::Scene* Picker::scene() const
+zenovis::Scene* Picker::get_scene() const
 {
     auto sess = m_pViewport->getSession();
     ZASSERT_EXIT(sess, nullptr);
@@ -101,7 +101,7 @@ zenovis::Scene* Picker::scene() const
 }
 
 void Picker::pick(int x, int y) {
-    auto scene = this->scene();
+    auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     // qDebug() << scene->select_mode;
     // scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
@@ -145,7 +145,7 @@ void Picker::pick(int x, int y) {
 }
 
 void Picker::pick(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
-    auto scene = this->scene();
+    auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "pick: " << selected.c_str();
@@ -173,7 +173,7 @@ void Picker::add(const string& prim_name) {
 }
 
 string Picker::just_pick_prim(int x, int y) {
-    auto scene = this->scene();
+    auto scene = this->get_scene();
     ZASSERT_EXIT(scene, "");
 
     auto store_mode = scene->get_select_mode();
@@ -184,7 +184,7 @@ string Picker::just_pick_prim(int x, int y) {
 }
 
 void Picker::sync_to_scene() {
-    auto scene = this->scene();
+    auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
 
     scene->selected.clear();
