@@ -1036,16 +1036,25 @@ ZENO_API NodeData INode::exportInfo() const
     {
         node.customUi.inputObjs.push_back(paramObj->exportParam());
     }
-    for (auto &tab : node.customUi.inputPrims.tabs)
-    {
-        for (auto &group : tab.groups)
+    if (m_nodecls == "SubOutput") {     //SubOutput节点tabs-groups-params为空，需单独导出primitiveInputs
+        if (!node.customUi.inputPrims.tabs.empty() && !node.customUi.inputPrims.tabs[0].groups.empty()) {
+            for (auto& [name, paramPrimitive] : m_inputPrims) {
+                node.customUi.inputPrims.tabs[0].groups[0].params.push_back(paramPrimitive->exportParam());
+            }
+        }
+    }
+    else {
+        for (auto &tab : node.customUi.inputPrims.tabs)
         {
-            for (auto& param : group.params)
+            for (auto &group : tab.groups)
             {
-                auto iter = m_inputPrims.find(param.name);
-                if (iter != m_inputPrims.end())
+                for (auto& param : group.params)
                 {
-                    param = iter->second->exportParam();
+                    auto iter = m_inputPrims.find(param.name);
+                    if (iter != m_inputPrims.end())
+                    {
+                        param = iter->second->exportParam();
+                    }
                 }
             }
         }
@@ -1516,18 +1525,22 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
         {
             if (spParam->wildCardGroup == wildCardGroup)
             {
-                if (!spParam->links.empty())
-                    return std::vector<std::string>();
-                params.push_back(name);
+                if (!wildCardGroup.empty() || param_name == name) {
+                    if (!spParam->links.empty())
+                        return std::vector<std::string>();
+                    params.push_back(name);
+                }
             }
         }
         for (const auto& [name, spParam] : m_outputPrims)
         {
             if (spParam->wildCardGroup == wildCardGroup)
             {
-                if (!spParam->links.empty())
-                    return std::vector<std::string>();
-                params.push_back(name);
+                if (!wildCardGroup.empty() || param_name == name) {
+                    if (!spParam->links.empty())
+                        return std::vector<std::string>();
+                    params.push_back(name);
+                }
             }
         }
     } 
@@ -1546,18 +1559,22 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
         {
             if (spParam->wildCardGroup == wildCardGroup)
             {
-                if (!spParam->links.empty())
-                    return std::vector<std::string>();
-                params.push_back(name);
+                if (!wildCardGroup.empty() || param_name == name) {
+                    if (!spParam->links.empty())
+                        return std::vector<std::string>();
+                    params.push_back(name);
+                }
             }
         }
         for (const auto& [name, spParam] : m_outputObjs)
         {
             if (spParam->wildCardGroup == wildCardGroup)
             {
-                if (!spParam->links.empty())
-                    return std::vector<std::string>();
-                params.push_back(name);
+                if (!wildCardGroup.empty() || param_name == name) {
+                    if (!spParam->links.empty())
+                        return std::vector<std::string>();
+                    params.push_back(name);
+                }
             }
         }
     }

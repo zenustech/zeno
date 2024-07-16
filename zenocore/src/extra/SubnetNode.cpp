@@ -6,6 +6,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/Assets.h>
+#include <zeno/utils/helper.h>
 
 namespace zeno {
 
@@ -25,6 +26,24 @@ ZENO_API void SubnetNode::initParams(const NodeData& dat)
     //需要检查SubInput/SubOutput是否对的上？
     if (dat.subgraph && subgraph->getNodes().empty())
         subgraph->init(*dat.subgraph);
+
+    //初始化subnet时需初始化m_input_names,m_obj_input_names...等
+    ParamsUpdateInfo updateInfo;
+    parseUpdateInfo(dat.customUi, updateInfo);
+    for (const auto& [param, _] : updateInfo) {
+        if (auto paramPrim = std::get_if<ParamPrimitive>(&param)) {
+            if (paramPrim->bInput)
+                m_input_names.push_back(paramPrim->name);
+            else
+                m_output_names.push_back(paramPrim->name);
+        }
+        else if (auto paramPrim = std::get_if<ParamObject>(&param)) {
+            if (paramPrim->bInput)
+                m_obj_input_names.push_back(paramPrim->name);
+            else
+                m_obj_output_names.push_back(paramPrim->name);
+        }
+    }
 }
 
 ZENO_API std::shared_ptr<Graph> SubnetNode::get_graph() const
@@ -195,23 +214,33 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         }
     }
 
+    std::shared_ptr<Graph> spGraph = graph.lock();
+
     //the left names are the names of params which will be removed.
     for (auto rem_name : inputs_old) {
+        if (spGraph)
+            spGraph->removeLinks(get_name(), true, rem_name);
         m_inputPrims.erase(rem_name);
         changes.remove_inputs.insert(rem_name);
     }
 
     for (auto rem_name : outputs_old) {
+        if (spGraph)
+            spGraph->removeLinks(get_name(), false, rem_name);
         m_outputPrims.erase(rem_name);
         changes.remove_outputs.insert(rem_name);
     }
     
     for (auto rem_name : obj_inputs_old) {
+        if (spGraph)
+            spGraph->removeLinks(get_name(), true, rem_name);
         m_inputObjs.erase(rem_name);
         changes.remove_inputs.insert(rem_name);
     }
 
     for (auto rem_name : obj_outputs_old) {
+        if (spGraph)
+            spGraph->removeLinks(get_name(), false, rem_name);
         m_outputObjs.erase(rem_name);
         changes.remove_outputs.insert(rem_name);
     }
@@ -253,7 +282,15 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
     //update subnetnode.
     if (!subgraph->isAssets()) {
         for (auto name : changes.new_inputs) {
-            subgraph->createNode("SubInput", name);
+            std::shared_ptr<INode> newNode = subgraph->createNode("SubInput", name);    //创建Subinput时,更新Subinput的port接口类型
+            for (const auto& [param, _] : params) {
+                if (auto paramPrim = std::get_if<ParamPrimitive>(&param)) {
+                    if (name == paramPrim->name) {
+                        newNode->update_param_type("port", true, paramPrim->type);
+                        break;
+                    }
+                }
+            }
         }
         for (const auto& [old_name, new_name] : changes.rename_inputs) {
             subgraph->updateNodeName(old_name, new_name);
