@@ -1342,7 +1342,9 @@ ZENO_API zany INode::get_input(std::string const &id) const {
                 }
                 break;
             }
-            return nullptr;
+            default: {
+                return nullptr;
+            }
         }
     }
     else {
