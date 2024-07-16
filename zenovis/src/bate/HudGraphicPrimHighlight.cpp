@@ -51,7 +51,7 @@ static const char * frag_shader = R"(
 
     void main()
     {
-        gl_FragDepth = gl_FragCoord.z + 0.0001f;
+        gl_FragDepth = gl_FragCoord.z * 1.02;
         FragColor = vec4(0.89, 0.57, 0.15, 1.0);
     }
 )";
