@@ -21,6 +21,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -62,6 +63,92 @@ struct ImplNodeClass : INodeClass {
     }
 };
 
+struct ReflectNodeClass : INodeClass {
+    std::function<std::shared_ptr<INode>()> ctor;
+    zeno::reflect::TypeBase* typebase;
+
+    ReflectNodeClass(std::function<std::shared_ptr<INode>()> ctor, zeno::reflect::TypeBase* pTypeBase)
+        : INodeClass(CustomUI(), "")
+        , ctor(ctor)
+        , typebase(pTypeBase)
+    {
+        typebase->get_info();
+    }
+
+    std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) const override {
+        std::shared_ptr<INode> spNode = ctor();
+
+        for (zeno::reflect::IMemberField* field : typebase->get_member_fields()) {
+            // 找到我们要的
+            std::string field_name(field->get_name().c_str());
+            std::string param_name;
+            if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
+
+                //name:
+                if (const zeno::reflect::IMetadataValue* value = metadata->get_value("DisplayName")) {
+                    param_name = value->as_string();
+                }
+                else {
+                    param_name = field_name;
+                }
+
+                //根据类型判断一下是object还是primitive
+                zeno::reflect::TypeHandle fieldType = field->get_field_type();
+
+                ParamType type = reflectTypeInfoToType(fieldType);
+
+                //role:
+                bool bInput = true;
+                if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
+                    std::string role = value->as_string();
+                    if (role == "input") {
+                        bInput = true;
+                    }
+                    else if (role == "output") {
+                        bInput = false;
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+
+                if (false) {
+                    //control:
+                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Control")) {
+                        std::string ctrlName = value->as_string();
+                        int j;
+                        j = 0;
+                    }
+
+                    //comobox items:
+                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("ComboBoxItems")) {
+                        assert(value->is_list());
+                        std::vector<std::string> items;
+                        for (int i = 0; i < value->list_length(); i++) {
+                            items.push_back(value->list_get_item(i)->as_string());
+                        }
+                        int j;
+                        j = 0;
+                    }
+                }
+            }
+            // 判断它的名字
+            //if (field->get_name() == "a1") {
+            //    // 作为普通类型, 我们需要知道它的类型才能正确转换指针
+            //    if (field->get_field_type() == get_type<int>()) {
+            //        // 获取字段数据指针
+            //        int* a1_ptr = field->get_field_ptr_typed<int>(instance);
+
+            //        // 修改一下它的值
+            //        *a1_ptr = 123;
+            //    }
+            //}
+        }
+
+        return spNode;
+    }
+};
+
 }
 
 ZENO_API Session::Session()
@@ -76,7 +163,8 @@ ZENO_API Session::Session()
     , referManager(std::make_unique<ReferManager>())
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
 {
-    initNodeCates();
+    initReflectNodes();
+    //initNodeCates();  //should init after all static initialization finished.
 }
 
 ZENO_API Session::~Session() = default;
@@ -100,6 +188,25 @@ ZENO_API void Session::defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::strin
     nodeClasses.emplace(nodecls, std::move(cls));
 }
 
+ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>()> ctor, zeno::reflect::TypeBase* pTypeBase)
+{
+    assert(pTypeBase);
+    const zeno::reflect::ReflectedTypeInfo& info = pTypeBase->get_info();
+    auto& nodecls = std::string(info.qualified_name.c_str());
+    //有些name反射出来可能带有命名空间比如zeno::XXX
+    int idx = nodecls.find_last_of(':');
+    if (idx != std::string::npos) {
+        nodecls = nodecls.substr(idx + 1);
+    }
+
+    if (nodeClasses.find(nodecls) != nodeClasses.end()) {
+        log_error("node class redefined: `{}`\n", nodecls);
+    }
+    auto cls = std::make_unique<ReflectNodeClass>(ctor, pTypeBase);
+    //TODO: From metadata
+    cls->m_customui.category = "reflect";
+    nodeClasses.emplace(nodecls, std::move(cls));
+}
 
 ZENO_API INodeClass::INodeClass(CustomUI const &customui, std::string const& classname)
     : m_customui(customui)
@@ -265,6 +372,19 @@ void Session::initNodeCates() {
         if (m_cates.find(cate) == m_cates.end())
             m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
         m_cates[cate].push_back(key);
+    }
+}
+
+void Session::initReflectNodes() {
+    auto& registry = zeno::reflect::ReflectionRegistry::get();
+    for (zeno::reflect::TypeBase* type : registry->all()) {
+        //TODO: 判断type的基类是不是基于INode
+        const zeno::reflect::ReflectedTypeInfo& info = type->get_info();
+        zeno::reflect::ITypeConstructor& ctor = type->get_constructor_checked({});
+
+        defNodeReflectClass([&]()->std::shared_ptr<INode> {
+            return ctor.create_node_instance();
+        }, type);
     }
 }
 

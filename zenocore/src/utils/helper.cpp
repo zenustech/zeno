@@ -2,6 +2,7 @@
 #include <regex>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -27,6 +28,53 @@ namespace zeno {
         else if (type == "curve") { return Param_Curve; }
         else if (starts_with(type, "enum ")) { return Param_String; }
         else return Param_Null;
+    }
+
+    ZENO_API ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType)
+    {
+        if (fieldType == zeno::reflect::get_type<int>()) {
+            return Param_Int;
+        }
+        else if (fieldType == zeno::reflect::get_type<float>()) {
+            return Param_Float;
+        }
+        else if (fieldType == zeno::reflect::get_type<double>()) {
+            return Param_Float;
+        }
+        else if (fieldType == zeno::reflect::get_type<std::string>()) {
+            return Param_String;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2i>()) {
+            return Param_Vec2i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2f>()) {
+            return Param_Vec2f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2s>()) {
+            return Param_Null;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3i>()) {
+            return Param_Vec3i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3f>()) {
+            return Param_Vec3f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3s>()) {
+            return Param_Null;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4i>()) {
+            return Param_Vec4i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4f>()) {
+            return Param_Vec4f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4s>()) {
+            return Param_Null;
+        }
+        else {
+            //TODO: curveobject
+            return Param_Custom;
+        }
     }
 
     ZENO_API std::string paramTypeToString(ParamType type)

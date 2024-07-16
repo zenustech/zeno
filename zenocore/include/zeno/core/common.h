@@ -47,6 +47,7 @@ namespace zeno {
         Param_Curve,
         Param_Heatmap,
         Param_SrcDst,
+        Param_Custom,
     };
 
     enum NodeStatus : unsigned int

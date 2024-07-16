@@ -17,6 +17,7 @@
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
 #include <functional>
+#include "reflect/type.hpp"
 
 namespace zeno {
 

@@ -80,6 +80,7 @@ struct Session {
     ZENO_API zeno::NodeCates dumpCoreCates();
     ZENO_API void defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &id, Descriptor const &desc = {});
     ZENO_API void defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::string const& nodecls, CustomUI const& customui);
+    ZENO_API void defNodeReflectClass(std::function<std::shared_ptr<INode>()> ctor, zeno::reflect::TypeBase* pTypeBase);
     ZENO_API void setApiLevelEnable(bool bEnable);
     ZENO_API void beginApiCall();
     ZENO_API void endApiCall();
@@ -98,6 +99,7 @@ struct Session {
 
 private:
     void initNodeCates();
+    void initReflectNodes();
 
     zeno::NodeCates m_cates;
     int m_apiLevel = 0;

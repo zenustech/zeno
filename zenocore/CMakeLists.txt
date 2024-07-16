@@ -99,9 +99,10 @@ target_include_directories(zenocore PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/reflectCrates/libgenerated/include
 )
 include(${CMAKE_SOURCE_DIR}/zenoreflect/cmake/ReflectionUtils.cmake)
-set(headersFile 
-	include/zeno/core/GlobalVariable.h
+set(headersFile
+    ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
     ../zeno/src/nodes/reflect/reflectnodes.cpp
+    ../zeno/src/nodes/reflect/reflectnodesexample.cpp
 )
 make_absolute_paths(REFLECTION_HEADERS 
     ${headersFile}

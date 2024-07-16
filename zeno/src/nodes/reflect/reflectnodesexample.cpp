@@ -8,35 +8,32 @@
 
 namespace zeno
 {
-    struct ZRECORD() TestReflectNode : public zeno::INode
+    struct ZRECORD() TestReflectExample : public zeno::INode
     {
-        TestReflectNode() = default;
+        TestReflectExample() = default;
 
-        ZMETHOD(Name = "做些事")
+        ZMETHOD(Name = "做些事223")
         int apply(std::string wtf, char c) {
-            param_b = wtf;
+            param_bb = wtf;
             param_c = c;
             return 233;
         }
 
         virtual zeno::reflect::TypeHandle gettype() {
-            return zeno::reflect::get_type<TestReflectNode>();
+            return zeno::reflect::get_type<TestReflectExample>();
         }
 
         //ZPROPERTY(Role = "input", DisplayName = "Input Object")
         //zSharedObject m_prim;
 
         ZPROPERTY(Role = "input", DisplayName = "Param A")
-        int param_a = 3;
+        int param_aa = 3;
 
-        ZPROPERTY(Role = "input", DisplayName="Param B", Control = "Multiline")
-        std::string param_b = "default";
+        ZPROPERTY(Role = "input", DisplayName = "Param B", Control = "Multiline")
+        std::string param_bb = "default";
 
         ZPROPERTY(Role = "input", DisplayName = "Param Options", Control = "ComboBox"/*, ComboBoxItems = ("option A", "option B")*/)
         std::string param_options = "option A";
-
-        ZPROPERTY(Role = "input", DisplayName = "Position")
-        zeno::vec3f pos;
 
         char param_c = 'c';
     };

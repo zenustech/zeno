@@ -13,6 +13,7 @@
 namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type);
+    ZENO_API ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType);
     ZENO_API std::string paramTypeToString(ParamType type);
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type);
     ZENO_API zvariant initDeflValue(ParamType const& type);
