@@ -525,14 +525,66 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
     if (cls == "GetFrameNum") {
         frame_nodes.insert(uuid);
     }
+    if (cls == "CameraNode") {   //相机相关节点和帧相关
+        frame_nodes.insert(uuid);
+    }
     if (cls == "Subnet") {
         subnet_nodes.insert(uuid);
     }
     if (cls == "SubInput") {
         subinput_nodes.insert(uuid);
+        if (optParentSubgNode.has_value()) {    //subnet通过自定义参数面板创建SubInput节点时，根据实际情况添加primitive/obj类型的port端口
+            if (SubnetNode* subnet = optParentSubgNode.value()) {
+                if (!subnet->m_input_names.empty() || !subnet->m_obj_input_names.empty()) {
+                    bool isprim = false;
+                    for (auto& key : subnet->m_input_names) {
+                        if (key == name) {
+                            zeno::ParamPrimitive primitive;
+                            primitive.bInput = false;
+                            primitive.name = "port";
+                            node->add_output_prim_param(primitive);
+                            isprim = true;
+                            break;
+                        }
+                    }
+                    if (!isprim) {
+                        zeno::ParamObject paramObj;
+                        paramObj.bInput = false;
+                        paramObj.name = "port";
+                        paramObj.socketType = zeno::Socket_ReadOnly;
+                        node->add_output_obj_param(paramObj);
+                    }
+                }
+            }
+        }
     }
     if (cls == "SubOutput") {
         suboutput_nodes.insert(uuid);
+        if (optParentSubgNode.has_value()) {
+            if (SubnetNode* subnet = optParentSubgNode.value()) {
+                if (!subnet->m_output_names.empty() || !subnet->m_obj_output_names.empty()) {
+                    bool isprim = false;
+                    for (auto& key : subnet->m_output_names) {
+                        if (key == name) {
+                            zeno::ParamPrimitive primitive;
+                            primitive.bInput = true;
+                            primitive.name = "port";
+                            primitive.socketType = Socket_WildCard;
+                            node->add_input_prim_param(primitive);
+                            isprim = true;
+                            break;
+                        }
+                    }
+                    if (!isprim) {
+                        zeno::ParamObject paramObj;
+                        paramObj.bInput = true;
+                        paramObj.name = "port";
+                        paramObj.socketType = zeno::Socket_ReadOnly;
+                        node->add_input_obj_param(paramObj);
+                    }
+                }
+            }
+        }
     }
 
     node->set_pos(pos);
@@ -799,6 +851,15 @@ bool zeno::Graph::isLinkVaild(const EdgeInfo& edge)
             inNode->update_param_type(param, bInputPrim, outParamType);
             if (param == edge.inParam)
                 inParamType = outParamType;
+        }
+        if (inNode->get_nodecls() == "SubOutput" && bInputPrim) { //当一个节点连接到SubOutput时，更新parentSubnet对应param的类型
+            if (std::shared_ptr<Graph> graph = inNode->getGraph().lock()) {
+                if (graph->optParentSubgNode.has_value()) {
+                    if (SubnetNode* parentSubgNode = optParentSubgNode.value()) {
+                        parentSubgNode->update_param_type(inNode->get_name(), true, outParamType);
+                    }
+                }
+            }
         }
     }
     if (inParamType != outParamType)

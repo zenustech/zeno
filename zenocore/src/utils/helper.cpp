@@ -238,6 +238,63 @@ namespace zeno {
         return params;
     }
 
+    ZENO_API void parseUpdateInfo(const CustomUI& customui, ParamsUpdateInfo& infos)
+    {
+        for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
+        {
+            for (const zeno::ParamGroup& group : tab.groups)
+            {
+                for (const zeno::ParamPrimitive& param : group.params)
+                {
+                    zeno::ParamPrimitive info;
+                    info.bInput = true;
+                    info.control = param.control;
+                    info.type = param.type;
+                    info.defl = param.defl;
+                    info.name = param.name;
+                    info.tooltip = param.tooltip;
+                    info.socketType = param.socketType;
+                    info.ctrlProps = param.ctrlProps;
+                    infos.push_back({ info, "" });
+                }
+            }
+        }
+        for (const zeno::ParamPrimitive& param : customui.outputPrims)
+        {
+            zeno::ParamPrimitive info;
+            info.bInput = false;
+            info.control = param.control;
+            info.type = param.type;
+            info.defl = param.defl;
+            info.name = param.name;
+            info.tooltip = param.tooltip;
+            info.socketType = param.socketType;
+            info.ctrlProps = param.ctrlProps;
+            infos.push_back({ info, "" });
+        }
+        for (const zeno::ParamObject& param : customui.inputObjs)
+        {
+            zeno::ParamObject info;
+            info.bInput = true;
+            info.type = param.type;
+            info.name = param.name;
+            info.tooltip = param.tooltip;
+            info.socketType = param.socketType;
+            infos.push_back({ info, "" });
+        }
+        for (const zeno::ParamObject& param : customui.outputObjs)
+        {
+            zeno::ParamObject info;
+            info.bInput = false;
+            info.type = param.type;
+            info.name = param.name;
+            info.tooltip = param.tooltip;
+            info.socketType = param.socketType;
+            infos.push_back({ info, "" });
+        }
+    }
+
+
     CustomUI descToCustomui(const Descriptor& desc) {
         //兼容以前写的各种ZENDEFINE
         CustomUI ui;

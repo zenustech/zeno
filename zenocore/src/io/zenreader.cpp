@@ -85,7 +85,7 @@ namespace zenoio
 
         //要先parse customui以获得整个参数树结构。
         if (objValue.HasMember("subnet-customUi")) {
-            retNode.customUi = _parseCustomUI(objValue["subnet-customUi"]);
+            retNode.customUi = _parseCustomUI(nodeid, objValue["subnet-customUi"], links);
         }
         if (objValue.HasMember(iotags::params::node_inputs_objs)) {
             _parseInputs(true, nodeid, cls, objValue[iotags::params::node_inputs_objs], retNode, links);
@@ -433,9 +433,9 @@ namespace zenoio
         }
     }
 
-    zeno::CustomUI ZenReader::_parseCustomUI(const rapidjson::Value& customuiObj)
+    zeno::CustomUI ZenReader::_parseCustomUI(const std::string& id, const rapidjson::Value& customuiObj, zeno::LinksData& links)
     {
-        auto readCustomUiParam = [](zeno::ParamPrimitive& paramInfo, const rapidjson::Value& param) {
+        auto readCustomUiParam = [&links, &id](zeno::ParamPrimitive& paramInfo, const rapidjson::Value& param, const std::string& sockName) {
             if (param.IsObject()) {
                 auto paramValue = param.GetObject();
                 if (paramValue.HasMember("type") && paramValue["type"].IsString())
@@ -457,6 +457,28 @@ namespace zenoio
                 }
                 if (paramValue.HasMember("tooltip"))
                     paramInfo.tooltip = paramValue["tooltip"].GetString();
+                //link:
+                if (paramValue.HasMember("links") && paramValue["links"].IsArray())
+                {
+                    auto& arr = paramValue["links"].GetArray();
+                    for (int i = 0; i < arr.Size(); i++) {
+                        auto& linkObj = arr[i];
+                        const std::string& outnode = linkObj["out-node"].GetString();
+                        const std::string& outsock = linkObj["out-socket"].GetString();
+                        const std::string& outkey = linkObj["out-key"].GetString();
+                        const std::string& innode = id;
+                        const std::string& insock = sockName;
+                        const std::string& inkey = linkObj["in-key"].GetString();
+                        std::string property = "copy";
+                        if (linkObj.HasMember("property")) {
+                            property = linkObj["property"].GetString();
+                        }
+
+                        zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
+                        zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
+                        links.push_back(link);
+                    }
+                }
             }
         };
 
@@ -485,7 +507,7 @@ namespace zenoio
                                 {
                                     zeno::ParamPrimitive paramInfo;
                                     paramInfo.name = param.name.GetString();
-                                    readCustomUiParam(paramInfo, param.value);
+                                    readCustomUiParam(paramInfo, param.value, paramInfo.name);
                                     paramGroup.params.push_back(paramInfo);
                                 }
                             }
@@ -503,4 +525,10 @@ namespace zenoio
         }
         return ui;
     }
+
+    zeno::CustomUI ZenReader::_parseCustomUI(const rapidjson::Value& customuiObj)
+    {
+        return _parseCustomUI(std::string(), customuiObj, zeno::LinksData());
+    }
+
 }

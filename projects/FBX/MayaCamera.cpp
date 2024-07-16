@@ -100,7 +100,7 @@ struct CameraNode: zeno::INode{
         camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
         camera->userData().set2("frame", get_input2<float>("frame"));
 
-        auto other_props = get_input2<std::string>("other");
+        std::string other_props = get_input2<StringObject>("other")->get();
         std::regex reg(",");
         std::sregex_token_iterator p(other_props.begin(), other_props.end(), reg, -1);
         std::sregex_token_iterator end;
