@@ -672,13 +672,12 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     m_picker->pick_depth(releasePos.x(), releasePos.y());
                 } else {
                     m_picker->pick_pixel(releasePos.x(), releasePos.y());
-                    m_picker->sync_to_scene();
                     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
                     m_transformer->clear();
-                    m_transformer->addObject(m_picker->get_picked_prims());
+                    m_transformer->addObject(scene->selected);
                 }
-                for(auto prim:m_picker->get_picked_prims())
+                for(const auto& prim: scene->selected)
                 {
                     if (!prim.empty()) {
                         auto primList = scene->objectsMan->pairs();
@@ -707,24 +706,15 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 }
 
                 m_picker->pick_rect(x0, y0, x1, y1, mode);
-                m_picker->sync_to_scene();
                 if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();
                 m_transformer->clear();
-                m_transformer->addObject(m_picker->get_picked_prims());
-                std::cout<<"selected items:"<<m_picker->get_picked_prims().size()<<"\n";
+                m_transformer->addObject(scene->selected);
                 std::vector<QString> nodes;
                 QString sgname;
-                for(auto prim:m_picker->get_picked_prims())
+                for(auto prim:scene->selected)
                 {
                     if (!prim.empty()) {
-                        auto primList = scene->objectsMan->pairs();
-                        for (auto const &[key, ptr]: primList) {
-                            if (prim == key) {
-                                auto &ud = ptr->userData();
-                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
-                            }
-                        }
                         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
                         if (!obj_node_location)
                         {

@@ -1352,16 +1352,17 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                     picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
             }
             if (picker) {
-                picker->sync_to_scene();
                 picker->focus(prim_name);
             }
         } else {
             if (picker) {
-                picker->sync_to_scene();
                 picker->focus("");
                 picker->set_picked_elems_callback({});
                 {
-                    picker->clear();
+                    {
+                        scene->selected = {};
+                        scene->selected_elements = {};
+                    }
                     scene->set_select_mode(zenovis::PICK_MODE::PICK_OBJECT);
                 }
             }

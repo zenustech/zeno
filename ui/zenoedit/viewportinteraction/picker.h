@@ -47,11 +47,8 @@ public:
     void pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode = SELECTION_MODE::NORMAL);
     void pick_depth(int x, int y);
     std::string just_pick_prim(int x, int y);
-    const std::unordered_set<std::string>& get_picked_prims();
-    void sync_to_scene();
     void load_from_str(const std::string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode);
     void focus(const std::string& prim_name);
-    void clear();
     void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
     bool get_draw_special_buffer_mode() const;
@@ -66,9 +63,6 @@ private:
 
     std::function<void(float, int, int)> picked_depth_callback;
     std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;
-
-    std::unordered_set<std::string> selected_prims;
-    std::unordered_map<std::string, std::unordered_set<int>> selected_elements;
 
     bool draw_special_buffer_mode;
 };

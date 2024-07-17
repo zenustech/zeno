@@ -103,6 +103,8 @@ zenovis::Scene* Picker::get_scene() const
 void Picker::pick_pixel(int x, int y) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
+    auto &selected_prims = scene->selected;
+    auto &selected_elements = scene->selected_elements;
     // qDebug() << scene->select_mode;
     // scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
     auto selected = picker->getPicked(x, y);
@@ -147,6 +149,8 @@ void Picker::pick_pixel(int x, int y) {
 void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
+    auto &selected_prims = scene->selected;
+    auto &selected_elements = scene->selected_elements;
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "pick: " << selected.c_str();
     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT) {
@@ -179,21 +183,12 @@ string Picker::just_pick_prim(int x, int y) {
     return res;
 }
 
-void Picker::sync_to_scene() {
-    auto scene = this->get_scene();
-    ZASSERT_EXIT(scene);
-
-    scene->selected.clear();
-    for (const auto& s : selected_prims)
-        scene->selected.insert(s);
-    scene->selected_elements.clear();
-    for (const auto& p : selected_elements)
-        scene->selected_elements.insert(p);
-
-}
-
 void Picker::load_from_str(const string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode) {
     if (str.empty()) return;
+    auto scene = this->get_scene();
+    ZASSERT_EXIT(scene);
+    auto &selected_prims = scene->selected;
+    auto &selected_elements = scene->selected_elements;
     // parse selected string
     std::regex reg(" ");
     std::sregex_token_iterator p(str.begin(), str.end(), reg, -1);
@@ -232,11 +227,6 @@ void Picker::focus(const string& prim_name) {
     picker->focus(prim_name);
 }
 
-void Picker::clear() {
-    selected_prims.clear();
-    selected_elements.clear();
-}
-
 void Picker::set_picked_depth_callback(std::function<void(float, int, int)> callback) {
     picked_depth_callback = std::move(callback);
 }
@@ -251,10 +241,6 @@ bool Picker::get_draw_special_buffer_mode() const {
 
 void Picker::set_draw_special_buffer_mode(bool enable) {
     draw_special_buffer_mode = enable;
-}
-
-const unordered_set<string>& Picker::get_picked_prims() {
-    return selected_prims;
 }
 
 std::optional<float> ray_box_intersect(
