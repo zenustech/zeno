@@ -1,5 +1,6 @@
 #include "args.hpp"
 #include "utils.hpp"
+#include "codegen.hpp"
 #include "parser.hpp"
 
 int main(int argc, char* argv[]) {

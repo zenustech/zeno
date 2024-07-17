@@ -2,14 +2,23 @@
 
 #include <string>
 #include <unordered_map>
+#include <memory>
 #include <set>
 #include "metadata.hpp"
-#include "codegen.hpp"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Tooling/Tooling.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
+
+namespace zeno
+{
+namespace reflect
+{
+    struct CodeCompilerState;
+    class TemplateHeaderGenerator;
+}
+}
 
 enum class TranslationUnitType {
     Header,
@@ -99,7 +108,7 @@ public:
 
     void add_type_mapping(const std::string& alias_name, clang::QualType real_name);
 
-    zeno::reflect::TemplateHeaderGenerator template_header_generator;
+    std::unique_ptr<zeno::reflect::TemplateHeaderGenerator> template_header_generator;
 
     clang::ASTContext* scoped_context = nullptr;
 private:

@@ -3,6 +3,8 @@ R"INJA(
 #pragma once
 
 #include "reflect/type"
+#include "reflect/polyfill.hpp"
+#include <type_traits>
 
 ////////////////////////////////////////////////
 /// Begin generated RTTI for types

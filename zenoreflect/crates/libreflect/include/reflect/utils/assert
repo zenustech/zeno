@@ -1,0 +1,62 @@
+#pragma once
+
+#include <csignal>
+#include <cstdlib>
+#include <cstdio>
+
+#if defined(_MSC_VER)
+    // MSVC
+    #define TRIGGER_BREAKPOINT() __debugbreak()
+#elif defined(__clang__) || defined(__GNUC__)
+    // Clang Or GCC
+    #if defined(__APPLE__)
+        // MacOS
+        #include <TargetConditionals.h>
+        #if TARGET_OS_MAC
+            #define TRIGGER_BREAKPOINT() __builtin_trap()
+        #endif
+    #elif defined(__linux__)
+        // Linux
+        #define TRIGGER_BREAKPOINT() raise(SIGTRAP)
+    #elif defined(_WIN32)
+        // Windows
+        #define TRIGGER_BREAKPOINT() __builtin_trap()
+    #endif
+#else
+#if __cplusplus >= 202302L
+    #warning "Unsupported compiler, reflection assert library might not work as except"
+#endif
+#if __x86_64__
+    #define TRIGGER_BREAKPOINT() asm("int $3")
+#else
+    #define TRIGGER_BREAKPOINT() ((void)0)
+#endif
+#endif
+
+#define ZENO_CHECK(EXPR) \
+    do {\
+        if (!(EXPR)) {\
+            fprintf(stderr, "[Assert] CHECK failed: %s @ %s:%d\n", #EXPR, __FILE__, __LINE__);\
+            fflush(stderr); \
+            TRIGGER_BREAKPOINT(); \
+            exit(99); \
+        }\
+    } while (false);
+
+#define ZENO_CHECK_MSG(EXPR, MSG) \
+    do {\
+        if (!(EXPR)) {\
+            fprintf(stderr, "[Assert] CHECK failed: %s @ %s:%d\nMsg: %s\n", #EXPR, __FILE__, __LINE__, MSG);\
+            fflush(stderr); \
+            TRIGGER_BREAKPOINT(); \
+            exit(99); \
+        }\
+    } while (false);
+
+
+namespace zeno
+{
+namespace reflect
+{
+}
+}

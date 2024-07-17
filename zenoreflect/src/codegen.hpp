@@ -12,6 +12,7 @@
 #include "template/template_literal"
 #include "utils.hpp"
 #include "args.hpp"
+#include "parser.hpp"
 
 class ReflectionASTConsumer;
 
@@ -111,7 +112,7 @@ namespace zeno::reflect
 
         template <ICodeCompiler T = RTTITypeGenerator<>>
         void add_rtti_type(clang::QualType type) {
-            if (type.getAsString() == "void" || type.getAsString() == "void*" || type.getAsString() == "std::nullptr_t") {
+            if (type.getAsString() == "void" || type.getAsString() == "void *" || type.getAsString() == "void &" || type.getAsString() == "const void &" || type.getAsString() == "void &&" || type.getAsString() == "std::nullptr_t") {
                 return;
             }
             m_rtti_block << RTTITypeGenerator(type).compile(m_compiler_state);

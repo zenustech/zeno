@@ -12,6 +12,20 @@ using namespace clang;
 using namespace clang::tooling;
 using namespace clang::ast_matchers;
 
+template <class T>
+inline void add_type_to_generator(T* m_context, clang::QualType type) {
+    m_context->template_header_generator->add_rtti_type(type);
+    auto ut1 = type.getNonReferenceType();
+    ut1.removeLocalConst();
+    auto ut = ut1->getCanonicalTypeUnqualified();
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getConstType(ut));
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getLValueReferenceType(ut));
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getRValueReferenceType(ut));
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getLValueReferenceType(m_context->scoped_context->getConstType(ut)));
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getPointerType(m_context->scoped_context->getConstType(ut)));
+    m_context->template_header_generator->add_rtti_type(m_context->scoped_context->getPointerType(ut));
+}
+
 class ReflectionGeneratorAction : public ASTFrontendAction {
 public:
     ReflectionGeneratorAction(zeno::reflect::CodeCompilerState& compielr_state, std::string header_path): m_compiler_state(compielr_state), m_header_path(std::move(header_path)) {}
@@ -84,7 +98,7 @@ void TemplateSpecializationMatchCallback::run(const MatchFinder::MatchResult &re
         if (spec_decl->getSpecializedTemplate() && spec_decl->getSpecializedTemplate()->getNameAsString() == "_manual_register_rtti_type_internal") {
             if (spec_decl->getTemplateArgs().size() == 1 && m_context) {
                 QualType type = spec_decl->getTemplateArgs().get(0).getAsType();
-                m_context->template_header_generator.add_rtti_type(type);
+                add_type_to_generator(m_context, type);
             }
         }
     }
@@ -108,13 +122,7 @@ void RecordTypeMatchCallback::run(const MatchFinder::MatchResult &result)
         // Generate rtti information
         const clang::Type* record_type = record_decl->getTypeForDecl();
         QualType record_qual_type(record_type, 0);
-        m_context->template_header_generator.add_rtti_type(record_qual_type);
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getConstType(record_qual_type));
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getLValueReferenceType(record_qual_type));
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getRValueReferenceType(record_qual_type));
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getLValueReferenceType(m_context->scoped_context->getConstType(record_qual_type)));
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getPointerType(m_context->scoped_context->getConstType(record_qual_type)));
-        m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getPointerType(record_qual_type));
+        add_type_to_generator(m_context, record_qual_type);
         if (GLOBAL_CONTROL_FLAGS->verbose) {
             m_context->scoped_context->DumpRecordLayout(record_decl, llvm::outs());
         }
@@ -153,13 +161,11 @@ void RecordTypeMatchCallback::run(const MatchFinder::MatchResult &result)
                                 const ParmVarDecl* param_decl = method_decl->getParamDecl(i);
                                 if (param_decl) {
                                     QualType type = param_decl->getType();
-                                    m_context->template_header_generator.add_rtti_type(type);
-                                    m_context->template_header_generator.add_rtti_type(type.getUnqualifiedType());
+                                    add_type_to_generator(m_context, type);
                                 }
                             }
                             QualType type = method_decl->getReturnType().getCanonicalType();
-                            m_context->template_header_generator.add_rtti_type(type);
-                            m_context->template_header_generator.add_rtti_type(type.getUnqualifiedType());
+                            add_type_to_generator(m_context, type);
                         }
 
                         // If is aggregate type then add list initialization as a constructor
@@ -218,8 +224,8 @@ void RecordTypeMatchCallback::run(const MatchFinder::MatchResult &result)
                     for (auto it = record_decl->field_begin(); it != record_decl->field_end(); ++it) {
                         if (const FieldDecl* field_decl = dyn_cast<FieldDecl>(*it); field_decl && field_decl->getAccess() == clang::AS_public) {
                             QualType type = field_decl->getType();
-                            m_context->template_header_generator.add_rtti_type(type);
-                            m_context->template_header_generator.add_rtti_type(type.getUnqualifiedType());
+                            m_context->template_header_generator->add_rtti_type(type);
+                            m_context->template_header_generator->add_rtti_type(type.getUnqualifiedType());
 
                             inja::json field_data;
                             field_data["name"] = field_decl->getNameAsString();
@@ -243,13 +249,7 @@ void RecordTypeMatchCallback::run(const MatchFinder::MatchResult &result)
                             QualType type = base_decl->getType().getCanonicalType();
                             base_data["type"] = zeno::reflect::clang_type_name_no_tag(type);
 
-                            m_context->template_header_generator.add_rtti_type(type);
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getConstType(type));
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getLValueReferenceType(type));
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getRValueReferenceType(type));
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getLValueReferenceType(m_context->scoped_context->getConstType(type)));
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getPointerType(m_context->scoped_context->getConstType(type)));
-                            m_context->template_header_generator.add_rtti_type(m_context->scoped_context->getPointerType(type));
+                            add_type_to_generator(m_context, type);
 
                             type_data["base_classes"].push_back(base_data);
                         }
@@ -270,7 +270,7 @@ void RecordTypeMatchCallback::run(const MatchFinder::MatchResult &result)
 ReflectionASTConsumer::ReflectionASTConsumer(zeno::reflect::CodeCompilerState &state, std::string header_path)
     : m_compiler_state(state)
     , m_header_path(header_path)
-    , template_header_generator(zeno::reflect::TemplateHeaderGenerator{state})
+    , template_header_generator(std::make_unique<zeno::reflect::TemplateHeaderGenerator>(state))
 {
     state.m_consumer = this;
 }
@@ -293,7 +293,7 @@ void ReflectionASTConsumer::HandleTranslationUnit(ASTContext &context)
     record_finder.matchAST(context);
 
     // generate header
-    const std::string generated_templates = template_header_generator.compile();
+    const std::string generated_templates = template_header_generator->compile();
     
     std::ofstream generated_templates_stream(gen_template_header_path, std::ios::out | std::ios::trunc);
     generated_templates_stream << generated_templates;

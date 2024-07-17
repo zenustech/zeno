@@ -28,3 +28,6 @@ add_executable(ZenoReflect::generator ALIAS ${RELCTION_GENERATOR_TARGET})
 target_link_libraries(${RELCTION_GENERATOR_TARGET} PRIVATE ${LLVM_LIBRARY} ${LIBCLANG_LIBRARY})
 target_include_directories(${RELCTION_GENERATOR_TARGET} PUBLIC ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 target_include_directories(${RELCTION_GENERATOR_TARGET} PRIVATE ${REFLECTION_ARGPARSE_INCLUDE_DIR} ${REFLECTION_INJA_INCLUDE_DIR})
+
+add_subdirectory(crates)
+add_subdirectory(example)

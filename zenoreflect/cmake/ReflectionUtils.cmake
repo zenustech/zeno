@@ -1,8 +1,7 @@
+option(REFLECTION_USE_PREBUILT_BINARY "" OFF)
 
 set(RELFECTION_GENERATION_ROOT_TARGET _Reflection_ROOT CACHE INTERNAL "Reflection generator dependencies for all targets")
-if(NOT TARGET _Reflection_ROOT)
-    add_custom_target(${RELFECTION_GENERATION_ROOT_TARGET})
-endif()
+add_custom_target(${RELFECTION_GENERATION_ROOT_TARGET})
 
 macro(make_absolute_paths out_var)
     set(result_list)
@@ -44,9 +43,39 @@ function (get_target_include_dirs_recursive target result)
     set(${result} ${${result}} PARENT_SCOPE)
 endfunction(get_target_include_dirs_recursive)
 
-set(INTERMEDIATE_FILE_BASE_DIR "${CMAKE_BINARY_DIR}/intermediate")
+function(get_prebuilt_generator generator_path)
+    set(GENERATOR_PATH "${CMAKE_BINARY_DIR}/ReflectGenerator-Prebuilt.exe")
+
+    if (NOT EXISTS ${GENERATOR_PATH})
+        file(DOWNLOAD "https://pb.darc.icu/api/public/dl/dZnyo8sT/ZenoReflect/ReflectGenerator.exe" ${GENERATOR_PATH}
+                STATUS download_status
+                SHOW_PROGRESS
+        )
+    endif ()
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/zlib1.dll")
+        file(DOWNLOAD "https://pb.darc.icu/api/public/dl/Uo_CWQ31/ZenoReflect/zlib1.dll" "${CMAKE_BINARY_DIR}/zlib1.dll"
+                STATUS download_status
+                SHOW_PROGRESS
+        )
+    endif ()
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/zstd.dll")
+        file(DOWNLOAD "https://pb.darc.icu/api/public/dl/lXHBPQuT/ZenoReflect/zstd.dll" "${CMAKE_BINARY_DIR}/zstd.dll"
+                STATUS download_status
+                SHOW_PROGRESS
+        )
+    endif ()
+    set(generator_path ${GENERATOR_PATH})
+    RETURN(PROPAGATE generator_path)
+endfunction()
 
 function(zeno_declare_reflection_support target reflection_headers)
+    set(generator_path)
+    if (REFLECTION_USE_PREBUILT_BINARY AND WIN32)
+        get_prebuilt_generator(generator_path)
+    endif()
+
+    set(INTERMEDIATE_FILE_BASE_DIR "${CMAKE_BINARY_DIR}/intermediate")
+
     # Call this function after all target source has been added
     set(splitor ",")
 
@@ -72,16 +101,31 @@ function(zeno_declare_reflection_support target reflection_headers)
 
     set(REFLECTION_GENERATION_TARGET _internal_${target}_reflect_generation)
 
-    add_custom_target(${REFLECTION_GENERATION_TARGET}
-        WORKING_DIRECTORY
-            ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND 
-            $<TARGET_FILE:ZenoReflect::generator> --include_dirs=\"$<JOIN:${INCLUDE_DIRS},${splitor}>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}\" --pre_include_header="${LIBREFLECT_PCH_PATH}" --input_source=\"${source_paths_string}\" --header_output="${ZENO_REFLECTION_GENERATED_HEADERS_DIR}" --stdc++=${CMAKE_CXX_STANDARD} $<IF:$<CONFIG:Debug>,-v,> --generated_source_path="${INTERMEDIATE_ALL_IN_ONE_FILE}" --target_name="${target}"
-        SOURCES 
-            ${reflection_headers} 
-        COMMENT 
-            "Generating reflection information for ${target}..."
-    )
+    if (REFLECTION_USE_PREBUILT_BINARY AND WIN32)
+        add_custom_target(${REFLECTION_GENERATION_TARGET}
+            WORKING_DIRECTORY
+                ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND
+                ${generator_path} --include_dirs=\"$<JOIN:${INCLUDE_DIRS},${splitor}>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}\" --pre_include_header="${LIBREFLECT_PCH_PATH}" --input_source=\"${source_paths_string}\" --header_output="${ZENO_REFLECTION_GENERATED_HEADERS_DIR}" --stdc++=${CMAKE_CXX_STANDARD} $<IF:$<CONFIG:Debug>,-v,> --generated_source_path="${INTERMEDIATE_ALL_IN_ONE_FILE}" --target_name="${target}"
+            SOURCES
+                ${reflection_headers}
+            COMMENT
+                "Generating reflection information for ${target}..."
+        )
+    else ()
+        add_custom_target(${REFLECTION_GENERATION_TARGET}
+            WORKING_DIRECTORY
+                ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND
+                $<TARGET_FILE:ZenoReflect::generator> --include_dirs=\"$<JOIN:${INCLUDE_DIRS},${splitor}>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}\" --pre_include_header="${LIBREFLECT_PCH_PATH}" --input_source=\"${source_paths_string}\" --header_output="${ZENO_REFLECTION_GENERATED_HEADERS_DIR}" --stdc++=${CMAKE_CXX_STANDARD} $<IF:$<CONFIG:Debug>,-v,> --generated_source_path="${INTERMEDIATE_ALL_IN_ONE_FILE}" --target_name="${target}"
+            SOURCES
+                ${reflection_headers}
+            COMMENT
+                "Generating reflection information for ${target}..."
+        )
+    endif ()
     add_dependencies(${RELFECTION_GENERATION_ROOT_TARGET} ${REFLECTION_GENERATION_TARGET})
     add_dependencies(${target} ${RELFECTION_GENERATION_ROOT_TARGET})
+
+    target_link_libraries(${target} PUBLIC ZenoReflect::libreflect ZenoReflect::libgenerated)
 endfunction()
