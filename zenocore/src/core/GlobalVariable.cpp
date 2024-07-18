@@ -155,24 +155,26 @@ namespace zeno {
         {
             upstreams.insert(spGraph->optParentSubgNode.value()->get_uuid_path());
             auto parentSubgNode = spGraph->optParentSubgNode.value();
-            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &parentSubgNode, this](std::string outParam) {
-                std::shared_ptr<INode> outNode = parentSubgNode->get_graph()->getNode(outParam);
-                assert(outNode);
-                getUpstreamNodes(outNode, depNodes, upstreams, outParam);
-                upstreams.insert(outNode->get_uuid_path());
+            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &parentSubgNode, this](std::string outNode, std::string outParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> node = graph->getNode(outNode);
+                    assert(node);
+                    getUpstreamNodes(node, depNodes, upstreams, outParam);
+                    upstreams.insert(node->get_uuid_path());
+                }
             };
             bool find = false;
             const auto& parentSubgNodePrimsInput = parentSubgNode->get_input_prim_param(spCurrNode->get_name(), &find);
             if (find) {
                 for (auto link : parentSubgNodePrimsInput.links) {
-                    parentSubgNodeGetUpstreamFunc(link.outParam);
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
                 }
             }
             bool find2 = false;
             const auto& parentSubgNodeObjsInput = parentSubgNode->get_input_obj_param(spCurrNode->get_name(), &find2);
-            if (find) {
+            if (find2) {
                 for (auto link : parentSubgNodeObjsInput.links) {
-                    parentSubgNodeGetUpstreamFunc(link.outParam);
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
                 }
             }
         }
@@ -236,24 +238,25 @@ namespace zeno {
         if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubOutput")
         {
             auto parentSubgNode = spGraph->optParentSubgNode.value();
-            auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode, this](std::string inParam) {
-
-                std::shared_ptr<INode> inNode = parentSubgNode->get_graph()->getNode(inParam);
-                assert(inNode);
-                mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
+            auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode, this](std::string innode, std::string inParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> inNode = graph->getNode(innode);
+                    assert(inNode);
+                    mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
+                }
             };
             bool find = false;
             const auto& parentSubgNodeOutputPrim = parentSubgNode->get_output_prim_param(spCurrNode->get_name(), &find);
             if (find) {
                 for (auto link : parentSubgNodeOutputPrim.links) {
-                    parentSubgNodeMarkDirty(link.inParam);
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
                 }
             }
             bool find2 = false;
-            const auto& parentSubgNodeOutputObjs = parentSubgNode->get_output_obj_param(spCurrNode->get_name(), &find);
+            const auto& parentSubgNodeOutputObjs = parentSubgNode->get_output_obj_param(spCurrNode->get_name(), &find2);
             if (find2) {
                 for (auto link : parentSubgNodeOutputObjs.links) {
-                    parentSubgNodeMarkDirty(link.inParam);
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
                 }
             }
             spGraph->optParentSubgNode.value()->mark_dirty(true, true, false);
