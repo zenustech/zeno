@@ -4,6 +4,7 @@
 #include <zenovis/ShaderManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
+#include <zenovis/DrawOptions.h>
 
 namespace zenovis {
 namespace {
@@ -29,6 +30,11 @@ static const char *frag_code = R"(
     #version 120
 
     void main() {
+        vec2 coor = gl_PointCoord * 2 - 1;
+        float len2 = dot(coor, coor);
+        if (len2 > 1) {
+            discard;
+        }
         gl_FragColor = vec4(1, 0, 0, 1);
     }
 )";
@@ -66,7 +72,7 @@ struct GraphicPainterCursor final : IGraphicDraw {
             mTrans = glm::translate(mTrans, glm::vec3(x_trans, y_trans, 0));
 
             prog->set_uniform("mTrans", mTrans);
-            prog->set_uniform("mBrushSize", 10.0f);
+            prog->set_uniform("mBrushSize", scene->drawOptions->brush_size);
 
             glDisable(GL_DEPTH_TEST);
             CHECK_GL(glDrawArrays(GL_POINTS, 0, vertex_count));

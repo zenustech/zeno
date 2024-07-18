@@ -1,7 +1,7 @@
 #include <zenovis/RenderEngine.h>
 #include "cameracontrol.h"
 #include "zenovis.h"
-//#include <zenovis/Camera.h>
+#include <zenovis/DrawOptions.h>
 #include <zenovis/ObjectsManager.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
@@ -388,11 +388,15 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
-    int dy = 0;
-    if (event->modifiers() & Qt::AltModifier)
-        dy = event->angleDelta().x();
-    else
-        dy = event->angleDelta().y();
+    if (event->modifiers() & Qt::AltModifier) {
+        int dy = event->angleDelta().x();
+        float scale = (dy <= 0) ? 0.89 : 1 / 0.89;
+        auto scene = m_zenovis->getSession()->get_scene();
+        scene->drawOptions->brush_size *= scale;
+        zeno::log_info("brush_size: {}", scene->drawOptions->brush_size);
+        return;
+    }
+    int dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);

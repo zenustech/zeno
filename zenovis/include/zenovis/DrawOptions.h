@@ -9,6 +9,7 @@
 namespace zenovis {
 
 struct DrawOptions {
+    float brush_size = 10.0f;
     bool show_grid = true;
     bool render_wireframe = false;
 
