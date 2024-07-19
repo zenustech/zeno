@@ -184,7 +184,7 @@ endfunction()
 ## --- end cihou asset dir
 
 if (ZENO_WITH_REFLECTOR)
-    add_subdirectory(ZenoReflect)
+    add_subdirectory(reflect)
 endif()
 add_subdirectory(zenocore)
 add_subdirectory(zeno)

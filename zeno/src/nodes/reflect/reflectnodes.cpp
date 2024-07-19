@@ -23,8 +23,8 @@ namespace zeno
             return zeno::reflect::get_type<TestReflectNode>();
         }
 
-        //ZPROPERTY(Role = "input", DisplayName = "Input Object")
-        //zSharedObject m_prim;
+        ZPROPERTY(Role = "input", DisplayName = "Input Object")
+        std::shared_ptr<IObject> m_prim;
 
         ZPROPERTY(Role = "input", DisplayName = "Param A")
         int param_a = 3;

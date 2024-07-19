@@ -10,11 +10,9 @@
 #include "reflect/container/object_proxy"
 #include "reflect/container/any"
 #include "reflect/container/arraylist"
+#include <memory>
 #include "reflect/reflection.generated.hpp"
 
-
-using zSharedObject = std::shared_ptr<zeno::IObject>;
-using zUniqueObject = std::unique_ptr<zeno::IObject>;
 
 
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(int)
@@ -30,3 +28,5 @@ REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec3s)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4i)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4f)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4s)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::IObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::unique_ptr<zeno::IObject>)

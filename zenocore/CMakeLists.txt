@@ -97,10 +97,10 @@ if (ZENO_WITH_REFLECTOR)
     target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR)
 
     target_include_directories(zenocore PUBLIC
-        ${CMAKE_SOURCE_DIR}/ZenoReflect/crates/libreflect/include
+        ${CMAKE_SOURCE_DIR}/reflect/crates/libreflect/include
         ${CMAKE_BINARY_DIR}/intermediate/zenocore
     )
-    include(${CMAKE_SOURCE_DIR}/ZenoReflect/cmake/ReflectionUtils.cmake)
+    include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
     set(headersFile
         ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
         ../zeno/src/nodes/reflect/reflectnodes.cpp
