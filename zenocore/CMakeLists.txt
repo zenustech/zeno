@@ -92,23 +92,27 @@ if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()
 
-#生成反射信息
-add_subdirectory(reflectCrates)
-target_include_directories(zenocore PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/reflectCrates/libreflect/include
-	${CMAKE_CURRENT_SOURCE_DIR}/reflectCrates/libgenerated/include
-)
-include(${CMAKE_SOURCE_DIR}/zenoreflect/cmake/ReflectionUtils.cmake)
-set(headersFile
-    ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
-    ../zeno/src/nodes/reflect/reflectnodes.cpp
-    ../zeno/src/nodes/reflect/reflectnodesexample.cpp
-)
-make_absolute_paths(REFLECTION_HEADERS 
-    ${headersFile}
-) 
-zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}" "${LIBREFLECT_PCH_PATH}" "${ZENO_REFLECTION_GENERATED_HEADERS_DIR}")
-target_link_libraries(zenocore PUBLIC zenocoreLibreflect zenocoreLibgenerated)
+if (ZENO_WITH_REFLECTOR)
+    #生成反射信息
+    target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR)
+
+    target_include_directories(zenocore PUBLIC
+        ${CMAKE_SOURCE_DIR}/ZenoReflect/crates/libreflect/include
+        ${CMAKE_BINARY_DIR}/intermediate/zenocore
+    )
+    include(${CMAKE_SOURCE_DIR}/ZenoReflect/cmake/ReflectionUtils.cmake)
+    set(headersFile
+        ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
+        ../zeno/src/nodes/reflect/reflectnodes.cpp
+        ../zeno/src/nodes/reflect/reflectnodesexample.cpp
+    )
+    make_absolute_paths(REFLECTION_HEADERS 
+        ${headersFile}
+    )
+
+    zeno_generate_reflection_on_builddir(zenocore "${REFLECTION_HEADERS}")
+    target_link_libraries(zenocore PUBLIC libreflect)
+endif()
 
 #if (ZENO_NO_WARNING)
     #if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")

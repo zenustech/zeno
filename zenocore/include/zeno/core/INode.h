@@ -17,7 +17,7 @@
 #include <zeno/utils/uuid.h>
 #include <zeno/core/CoreParam.h>
 #include <functional>
-#include "reflect/type.hpp"
+
 
 namespace zeno {
 
@@ -34,6 +34,10 @@ struct ObjectLink;
 struct PrimitiveLink;
 struct SubnetNode;
 
+namespace reflect {
+    class TypeHandle;
+}
+
 
 class INode : public std::enable_shared_from_this<INode>
 {
@@ -44,7 +48,7 @@ public:
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
-    ZENO_API zeno::reflect::TypeHandle getReflectType();
+    ZENO_API zeno::reflect::TypeHandle* getReflectType();
 
     ZENO_API void doComplete();
     ZENO_API void doApply();

@@ -21,10 +21,66 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+
+#include <reflect/core.hpp>
+#include <reflect/type.hpp>
+#include <reflect/metadata.hpp>
+#include <reflect/registry.hpp>
+#include <reflect/container/object_proxy>
+#include <reflect/container/any>
+#include <reflect/container/arraylist>
+
 #include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
+
+    ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType)
+    {
+        if (fieldType == zeno::reflect::get_type<int>()) {
+            return Param_Int;
+        }
+        else if (fieldType == zeno::reflect::get_type<float>()) {
+            return Param_Float;
+        }
+        else if (fieldType == zeno::reflect::get_type<double>()) {
+            return Param_Float;
+        }
+        else if (fieldType == zeno::reflect::get_type<std::string>()) {
+            return Param_String;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2i>()) {
+            return Param_Vec2i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2f>()) {
+            return Param_Vec2f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec2s>()) {
+            return Param_Null;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3i>()) {
+            return Param_Vec3i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3f>()) {
+            return Param_Vec3f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec3s>()) {
+            return Param_Null;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4i>()) {
+            return Param_Vec4i;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4f>()) {
+            return Param_Vec4f;
+        }
+        else if (fieldType == zeno::reflect::get_type<zeno::vec4s>()) {
+            return Param_Null;
+        }
+        else {
+            //TODO: curveobject
+            return Param_Custom;
+        }
+    }
 
 namespace {
 
@@ -277,29 +333,6 @@ void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus s
     }
 }
 
-ZENO_API zeno::reflect::Any Session::getGlobalVarialbe(std::string name)
-{
-    return globalVariableManager->getVariable(name);
-}
-
-ZENO_API bool Session::overrideGlobalVariable(std::string name, zeno::reflect::Any var)
-{
-    return globalVariableManager->overrideVariable(zeno::GVariable(name, zeno::reflect::move(var)));
-}
-
-ZENO_API bool Session::updateGlobalVariable(std::string name, zeno::reflect::Any var)
-{
-    return globalVariableManager->updateVariable(GVariable(name, zeno::reflect::move(var)));
-}
-
-ZENO_API void Session::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name) {
-    globalVariableManager->removeDependGlobalVaraible(nodepath, "$F");
-}
-
-ZENO_API void Session::addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type) {
-    globalVariableManager->addDependGlobalVaraible(nodepath, "$F", zeno::reflect::type_info<int>());
-}
-
 ZENO_API int Session::registerObjId(const std::string& objprefix)
 {
     int objid = objsMan->registerObjId(objprefix);
@@ -383,7 +416,9 @@ void Session::initReflectNodes() {
         zeno::reflect::ITypeConstructor& ctor = type->get_constructor_checked({});
 
         defNodeReflectClass([&]()->std::shared_ptr<INode> {
-            return ctor.create_node_instance();
+            INode* pNewNode = static_cast<INode*>(ctor.new_instance());
+            std::shared_ptr<INode> spNode(pNewNode);
+            return spNode;
         }, type);
     }
 }

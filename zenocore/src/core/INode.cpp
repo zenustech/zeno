@@ -29,6 +29,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/formula/formula.h>
 #include <zeno/core/ReferManager.h>
+#include "reflect/type.hpp"
 
 
 namespace zeno {
@@ -61,8 +62,8 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
 
 ZENO_API INode::~INode() = default;
 
-zeno::reflect::TypeHandle INode::getReflectType() {
-    return zeno::reflect::TypeHandle::nulltype();
+zeno::reflect::TypeHandle* INode::getReflectType() {
+    return &zeno::reflect::TypeHandle::nulltype();
 }
 
 ZENO_API std::shared_ptr<Graph> INode::getThisGraph() const {
@@ -610,7 +611,7 @@ ZENO_API void INode::doApply() {
 #endif
         reportStatus(true, Node_Running);
         auto hdl = getReflectType();
-        if (hdl == zeno::reflect::TypeHandle::nulltype()) {
+        if (*hdl == zeno::reflect::TypeHandle::nulltype()) {
             apply();
         }
         else {

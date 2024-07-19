@@ -60,6 +60,7 @@
 #include "DockManager.h"
 #include <zeno/io/zdareader.h>
 #include <QFileSystemWatcher> 
+#include <zeno/core/GlobalVariable.h>
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -1695,9 +1696,8 @@ bool ZenoMainWindow::openFile(QString filePath)
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
 
-
     //init $F globalVariable
-    zeno::getSession().overrideGlobalVariable("$F", zeno::reflect::make_any<int>(pGraphs->timeInfo().currFrame));
+    zeno::getSession().globalVariableManager->overrideVariable(zeno::GVariable("$F", zeno::reflect::make_any<int>(pGraphs->timeInfo().currFrame)));
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });

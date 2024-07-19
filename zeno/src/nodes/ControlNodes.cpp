@@ -371,7 +371,7 @@ struct TimeShift : zeno::INode {
         ParamPrimitive param = get_input_prim_param("offset");
         int offset = std::get<int>(param.defl);
         //∏≤∏«$F
-        zeno::reflect::Any frame = getSession().getGlobalVarialbe("$F");
+        zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
         int currFrame = (frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0) + offset;
         auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<int>(currFrame));
         //º∆À„…œ”Œ

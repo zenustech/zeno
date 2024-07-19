@@ -265,7 +265,7 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name)
+    ZENO_API void GlobalVariableManager::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it != globalVariablesNameTypeMap.end())
@@ -286,12 +286,12 @@ namespace zeno {
         }
     }
 
-    bool GlobalVariableManager::updateVariable(const GVariable& newvar)
+    ZENO_API bool GlobalVariableManager::updateVariable(const GVariable& newvar)
     {
         return globalVariableStack.updateVariable(newvar);
     }
 
-    bool GlobalVariableManager::overrideVariable(const GVariable& var)
+    ZENO_API bool GlobalVariableManager::overrideVariable(const GVariable& var)
     {
         return globalVariableStack.overrideVariable(var);
     }
@@ -301,7 +301,7 @@ namespace zeno {
         globalVariableStack.cancelOverride(varname, cancelVar);
     }
 
-    zeno::reflect::Any GlobalVariableManager::getVariable(std::string varname)
+    ZENO_API zeno::reflect::Any GlobalVariableManager::getVariable(std::string varname)
     {
         return globalVariableStack.getVariable(varname);
     }

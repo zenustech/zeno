@@ -8,16 +8,12 @@
 #include <map>
 #include <zeno/core/common.h>
 
-#include "reflect/core.hpp"
-#include "reflect/type.hpp"
-#include "reflect/metadata.hpp"
-#include "reflect/registry.hpp"
-#include "reflect/container/object_proxy"
-#include "reflect/container/any"
-#include "reflect/container/arraylist"
-//#include "reflect/reflection.generated.hpp"
 
 namespace zeno {
+
+    namespace reflect {
+        class TypeBase;
+    }
 
 struct Graph;
 struct Session;
@@ -90,12 +86,6 @@ struct Session {
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
     void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
-    //globalVariable
-    ZENO_API zeno::reflect::Any getGlobalVarialbe(std::string name);;
-    ZENO_API bool overrideGlobalVariable(std::string name, zeno::reflect::Any var);
-    ZENO_API bool updateGlobalVariable(std::string name, zeno::reflect::Any var);
-    ZENO_API void removeDependGlobalVaraible(const ObjPath& nodepath, std::string name);
-    ZENO_API void addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type);
 
 private:
     void initNodeCates();
