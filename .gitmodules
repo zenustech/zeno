@@ -37,6 +37,3 @@
 [submodule "ui/3rdparty/Qt-Advanced-Docking-System"]
 	path = ui/3rdparty/Qt-Advanced-Docking-System
 	url = https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System.git
-[submodule "ZenoReflect"]
-	path = ZenoReflect
-	url = https://github.com/DarcJC/ZenoReflect.git
