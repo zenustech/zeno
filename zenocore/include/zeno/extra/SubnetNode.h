@@ -10,11 +10,6 @@ namespace zeno {
 struct SubnetNode : INode {
     std::shared_ptr<Graph> subgraph;
 
-    std::vector<std::string> m_input_names;
-    std::vector<std::string> m_output_names;
-    std::vector<std::string> m_obj_input_names;
-    std::vector<std::string> m_obj_output_names;
-
     CustomUI m_customUi;
 
     ZENO_API SubnetNode();

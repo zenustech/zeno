@@ -16,6 +16,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     , m_customParamsM(nullptr)
 {
     initParamItems();
+    initCustomUI(spNode->get_customui());
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
     cbUpdateParam = spNode->register_update_param(
@@ -71,6 +72,11 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     spNode->register_update_param_visible(
         [this](const std::string& name, bool bVisible) {
         updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
+    });
+
+    spNode->register_update_layout(
+        [this](zeno::params_change_info& changes) {
+        updateUiLinksSockets(changes);
     });
 }
 
@@ -133,7 +139,7 @@ void ParamsModel::initParamItems()
     }
 
     //init custom param model.
-    initCustomUI(spNode->get_customui());
+    //initCustomUI(spNode->get_customui());
 }
 
 void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
@@ -493,6 +499,13 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
     zeno::params_change_info changes = spNode->update_editparams(params);
+    updateUiLinksSockets(changes);
+}
+
+void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
+{
+    auto spNode = m_wpNode.lock();
+    ZASSERT_EXIT(spNode);
 
     //assuming that the param layout has changed, and we muse reconstruct all params and index.
     emit layoutAboutToBeChanged();
@@ -535,6 +548,7 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     m_items.clear();
     //reconstruct params.
     initParamItems();
+    initCustomUI(spNode->export_customui());
 
     //reconstruct links.
     for (int r = 0; r < m_items.size(); r++) {
@@ -606,6 +620,7 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
     }
     //resetCustomParamModel();
     emit layoutChanged();
+
 }
 
 void ParamsModel::test_customparamsmodel() const

@@ -432,25 +432,21 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     for (const ParamPrimitive& param : assets.primitive_inputs)
     {
         spNode->add_input_prim_param(param);
-        spNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamPrimitive& param : assets.primitive_outputs)
     {
         spNode->add_output_prim_param(param);
-        spNode->m_output_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_inputs)
     {
         spNode->add_input_obj_param(param);
-        spNode->m_obj_input_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_outputs)
     {
         spNode->add_output_obj_param(param);
-        spNode->m_obj_output_names.push_back(param.name);
     }
 
     return std::dynamic_pointer_cast<INode>(spNode);
@@ -474,25 +470,21 @@ ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName,
     for (const ParamPrimitive& param : assets.primitive_inputs)
     {
         spNode->add_input_prim_param(param);
-        spNode->m_input_names.push_back(param.name);
     }
 
     for (const ParamPrimitive& param : assets.primitive_outputs)
     {
         spNode->add_output_prim_param(param);
-        spNode->m_output_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_inputs)
     {
         spNode->add_input_obj_param(param);
-        spNode->m_obj_input_names.push_back(param.name);
     }
 
     for (const auto& param : assets.object_outputs)
     {
         spNode->add_output_obj_param(param);
-        spNode->m_obj_output_names.push_back(param.name);
     }
 }
 
