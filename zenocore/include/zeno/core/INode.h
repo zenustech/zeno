@@ -106,6 +106,9 @@ public:
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
+   //由param这个参数值的变化触发节点params重置
+   ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
+
     ZENO_API void set_name(const std::string& name);
     ZENO_API std::string get_name() const;
 

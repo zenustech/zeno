@@ -839,7 +839,7 @@ bool INode::add_output_obj_param(ParamObject param) {
         return false;
     }
     std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
-    sparam->bInput = true;
+    sparam->bInput = false;
     sparam->name = param.name;
     sparam->type = param.type;
     sparam->socketType = param.socketType;
@@ -1435,6 +1435,12 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
         update_param_type(name, true, type);
     }
     return changes;
+}
+
+ZENO_API void INode::trigger_update_params(const std::string& param, bool changed, params_change_info changes)
+{
+    if (changed)
+        update_layout(changes);
 }
 
 ZENO_API void INode::init(const NodeData& dat)

@@ -47,6 +47,10 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                     pItem->setData(newValue, ROLE_PARAM_VALUE);
                 }
             }
+            //根据需要更新节点布局
+            auto spNode = m_wpNode.lock();
+            ZASSERT_EXIT(spNode);
+            spNode->trigger_update_params(name, false, zeno::params_change_info());
     });
 
     spNode->register_update_param_socket_type(
