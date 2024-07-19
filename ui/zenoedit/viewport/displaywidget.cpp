@@ -1292,7 +1292,7 @@ void DisplayWidget::onKill() {
     killProgram();
 }
 
-void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
+void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool node_selected) {
     // tmp code for Primitive Filter Node interaction
     if (nodes.isEmpty() || nodes.size() > 1 || !m_bGLView)
         return;
@@ -1304,7 +1304,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
         ZASSERT_EXIT(scene);
         auto picker = m_glView->picker();
         ZASSERT_EXIT(picker);
-        if (select) {
+        if (node_selected) {
             // check input nodes
             auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
             if (input_nodes.size() != 1)
@@ -1339,9 +1339,72 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             else
                 scene->set_select_mode(zenovis::PICK_MODE::PICK_VERTEX);
             // read selected elements
-            string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
             if (!node_selected_str.empty()) {
+                string node_context;
+                auto node_selected_qstr = QString(node_selected_str.c_str());
+                auto elements = node_selected_qstr.split(',');
+                for (auto &e : elements)
+                    if (e.size() > 0)
+                        node_context += prim_name + ":" + e.toStdString() + " ";
+
+                if (picker)
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
+            }
+            if (picker) {
+                picker->focus(prim_name);
+            }
+        } else {
+            if (picker) {
+                picker->focus("");
+                picker->set_picked_elems_callback({});
+                {
+                    {
+                        scene->selected = {};
+                        scene->selected_elements = {};
+                    }
+                    scene->set_select_mode(zenovis::PICK_MODE::PICK_OBJECT);
+                }
+            }
+        }
+        zenoApp->getMainWindow()->updateViewport();
+    }
+    if (node_id == "PrimitiveAttrPainter") {
+        auto scene = m_glView->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+        auto picker = m_glView->picker();
+        ZASSERT_EXIT(picker);
+        if (node_selected) {
+            // check input nodes
+            auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
+            if (input_nodes.size() != 1)
+                return;
+            // find prim in object manager
+            auto input_node_id = input_nodes[0].get_node_id();
+            string prim_name;
+            for (const auto &[k, v] : scene->objectsMan->pairsShared()) {
+                if (k.find(input_node_id.toStdString()) != string::npos)
+                    prim_name = k;
+            }
+            if (prim_name.empty())
+                return;
+
+            zeno::NodeLocation node_location(nodes[0], subgIdx);
+            if (picker) {
+                // set callback to picker
+                picker->set_picked_elems_callback([node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
+                    std::string picked_elems_str;
+                    for (auto elem : picked_elems[prim_name]) {
+                        picked_elems_str += std::to_string(elem) + ",";
+                    }
+                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                });
+            }
+            scene->set_select_mode(zenovis::PICK_MODE::PAINT);
+            // read selected elements
+            auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+            if (!node_selected_str.empty()) {
+                string node_context;
                 auto node_selected_qstr = QString(node_selected_str.c_str());
                 auto elements = node_selected_qstr.split(',');
                 for (auto &e : elements)
@@ -1372,8 +1435,8 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
     if (node_id == "MakePrimitive") {
         auto picker = m_glView->picker();
         ZASSERT_EXIT(picker);
-        picker->set_draw_special_buffer_mode(select);
-        if (select) {
+        picker->set_draw_special_buffer_mode(node_selected);
+        if (node_selected) {
             zeno::NodeLocation node_location(nodes[0], subgIdx);
             picker->set_picked_depth_callback([nodes, node_location, this](float depth, int x, int y) {
                 Zenovis *pZenovis = m_glView->getZenoVis();

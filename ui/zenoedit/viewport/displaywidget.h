@@ -76,7 +76,7 @@ public slots:
     void onSliderValueChanged(int);
     void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
-    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool node_selected);
     void onMouseHoverMoved();
     void onDockViewAction(bool triggered);
     void onSetCamera(zenovis::ZOptixCameraSettingInfo value);

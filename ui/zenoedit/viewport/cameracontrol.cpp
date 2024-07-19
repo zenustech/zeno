@@ -131,6 +131,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     if (!bTransform && (event->buttons() & button)) {
         m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
+        left_button_pressed = true;
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
         if (bTransform)
@@ -237,7 +238,12 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
-    scene->painter_cursor = zeno::vec4f(xpos, ypos, m_res.x(), m_res.y());
+    if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
+        scene->painter_cursor = zeno::vec4f(xpos, ypos, m_res.x(), m_res.y());
+    }
+    else {
+        scene->painter_cursor = {};
+    }
 
     int moveButton = Qt::NoButton;
     int rotateButton = Qt::NoButton;
@@ -367,11 +373,14 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
                 m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
+            } else if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
+                // TODO: add vertex
+
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+                float min_x = float(std::min(m_boundRectStartPos.x(), event->x())) / m_res.x();
+                float max_x = float(std::max(m_boundRectStartPos.x(), event->x())) / m_res.x();
+                float min_y = float(std::min(m_boundRectStartPos.y(), event->y())) / m_res.y();
+                float max_y = float(std::max(m_boundRectStartPos.y(), event->y())) / m_res.y();
                 scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
             }
         }
@@ -598,6 +607,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         middle_button_pressed = false;
     }
     if (event->button() == Qt::LeftButton) {
+        left_button_pressed = false;
         auto m_transformer = this->m_transformer.lock();
         auto m_picker = this->m_picker.lock();
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
@@ -637,8 +647,6 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             }
             m_transformer->endTransform(moved);
         } else {
-            auto cam_pos = realPos();
-
             scene->select_box = std::nullopt;
             bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
             bool shift_pressed = event->modifiers() & Qt::ShiftModifier;

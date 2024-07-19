@@ -79,6 +79,7 @@ private:
     std::weak_ptr<zeno::FakeTransformer> m_transformer;
     Zenovis* m_zenovis;
 
+    bool left_button_pressed = false;
     bool middle_button_pressed = false;
 };
 

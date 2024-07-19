@@ -24,7 +24,8 @@ enum class PICK_MODE {
     PICK_OBJECT,
     PICK_VERTEX,
     PICK_LINE,
-    PICK_MESH
+    PICK_MESH,
+    PAINT,
 };
 
 struct Scene : zeno::disable_copy {
