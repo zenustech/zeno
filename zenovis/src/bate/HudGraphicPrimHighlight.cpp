@@ -143,13 +143,10 @@ struct PrimitiveHighlight : IGraphicDraw {
             vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
             // ----- draw selected vertices -----
-            if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX) {
+            if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX || scene->get_select_mode() == PICK_MODE::PAINT) {
                 // prepare indices
                 CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-                vector<int> ind(selected_count);
-                int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = idx;
+                vector<int> ind(elements.begin(), elements.end());
                 // draw points
                 shader->use();
                 scene->camera->set_program_uniforms(shader);

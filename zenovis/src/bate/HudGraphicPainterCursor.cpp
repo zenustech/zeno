@@ -74,9 +74,11 @@ struct GraphicPainterCursor final : IGraphicDraw {
             prog->set_uniform("mTrans", mTrans);
             prog->set_uniform("mBrushSize", scene->drawOptions->brush_size);
 
+            CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
             glDisable(GL_DEPTH_TEST);
             CHECK_GL(glDrawArrays(GL_POINTS, 0, vertex_count));
             glEnable(GL_DEPTH_TEST);
+            CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));
 
             vbo->disable_attribute(0);
             vbo->unbind();

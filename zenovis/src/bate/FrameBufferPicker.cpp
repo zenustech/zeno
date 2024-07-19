@@ -343,7 +343,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX || pick_particle) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX || pick_particle || scene->get_select_mode() == PICK_MODE::PAINT) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));

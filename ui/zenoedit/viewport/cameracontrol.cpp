@@ -374,8 +374,12 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
-                // TODO: add vertex
-
+                float brush_size = scene->drawOptions->brush_size / 2.0f;
+                int x0 = std::max(int(xpos - brush_size), 0);
+                int y0 = std::max(int(ypos - brush_size), 0);
+                int x1 = std::min(int(xpos + brush_size), int(m_res.x()) - 1);
+                int y1 = std::min(int(ypos + brush_size), int(m_res.y()) - 1);
+                m_picker.lock()->pick_rect(x0, y0, x1, y1, zeno::SELECTION_MODE::APPEND);
             } else {
                 float min_x = float(std::min(m_boundRectStartPos.x(), event->x())) / m_res.x();
                 float max_x = float(std::max(m_boundRectStartPos.x(), event->x())) / m_res.x();
@@ -608,6 +612,10 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
     }
     if (event->button() == Qt::LeftButton) {
         left_button_pressed = false;
+        auto scene = m_zenovis->getSession()->get_scene();
+        if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
+            return;
+        }
         auto m_transformer = this->m_transformer.lock();
         auto m_picker = this->m_picker.lock();
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
@@ -635,7 +643,6 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         //Zenovis::GetInstance().m_bAddPoint = false;
         //}
 
-        auto scene = m_zenovis->getSession()->get_scene();
         if (!m_picker || !m_transformer)
             return;
 

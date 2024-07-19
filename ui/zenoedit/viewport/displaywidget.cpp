@@ -1394,6 +1394,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 // set callback to picker
                 picker->set_picked_elems_callback([node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
                     std::string picked_elems_str;
+                    zeno::log_info("size(): {}", picked_elems[prim_name].size());
                     for (auto elem : picked_elems[prim_name]) {
                         picked_elems_str += std::to_string(elem) + ",";
                     }

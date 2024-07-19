@@ -147,11 +147,13 @@ void Picker::pick_pixel(int x, int y) {
 }
 
 void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
+//    zeno::log_info("rect: {}, {}, {}, {}", x0, y0, x1, y1);
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     auto &selected_prims = scene->selected;
     auto &selected_elements = scene->selected_elements;
     auto selected = picker->getPicked(x0, y0, x1, y1);
+//    zeno::log_info("selected: {}", selected.size());
     // qDebug() << "pick: " << selected.c_str();
     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT) {
         if (selected.empty()) {
