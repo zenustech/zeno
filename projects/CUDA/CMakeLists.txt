@@ -127,6 +127,22 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
       COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
     )
+    if (EXISTS ${PYTHON_ENV_PATH}/library)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${PYTHON_ENV_PATH}/library" ${RESOURCE_BASE_DIR}/library
+        COMMENT "copying python library directory at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+      )
+    endif()
+    if (EXISTS ${PYTHON_ENV_PATH}/zlib.dll)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${PYTHON_ENV_PATH}/zlib.dll" ${RESOURCE_BASE_DIR}
+        COMMENT "copying python zlib.dll ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+      )
+    endif()
     foreach(lib ${ZS_PYTHON_LIBS})
       add_custom_command(
         TARGET copy_py
