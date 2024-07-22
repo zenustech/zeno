@@ -10,6 +10,7 @@
 #include <zeno/core/Assets.h>
 #include <zeno/core/data.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 
@@ -938,7 +939,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                     nodedata.customUi = asset.m_customui;
                 }
                 zeno::ParamsUpdateInfo updateInfo;
-                UiHelper::parseUpdateInfo(nodedata.customUi, updateInfo);
+                zeno::parseUpdateInfo(nodedata.customUi, updateInfo);
                 paramsM->resetCustomUi(nodedata.customUi);
                 paramsM->batchModifyParams(updateInfo);
 

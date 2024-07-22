@@ -70,18 +70,19 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
-        if (prim) {
-            prim->verts.clear();
-            prim->verts.clear_attrs();
-            prim->tris.clear();
-            prim->tris.clear_attrs();
-            prim->polys.clear();
-            prim->loops.clear();
-        }
-        else {
-            prim = std::make_shared<zeno::PrimitiveObject>();
-        }
+        //auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim")); //多次修改并运行后，share_ptr引用计数会减为0导致Obj被释放并崩溃，只能make新的PrimitiveObject
+        //if (prim) {
+        //    prim->verts.clear();
+        //    prim->verts.clear_attrs();
+        //    prim->tris.clear();
+        //    prim->tris.clear_attrs();
+        //    prim->polys.clear();
+        //    prim->loops.clear();
+        //}
+        //else {
+        //    prim = std::make_shared<zeno::PrimitiveObject>();
+        //}
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
 
         auto size = get_input2<float>("size");
         auto div_w = get_input2<int>("div_w");
@@ -483,7 +484,7 @@ ZENDEFNODE(CreateCube, {
         {"float", "size", "1", Socket_Primitve, Lineedit},
         {"bool", "quads", "0", Socket_Primitve, Lineedit},
     },
-    {{"prim", "prim"}},
+    {"prim"},
     {},
     {"create"},
     {"Cube"},

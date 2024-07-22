@@ -623,11 +623,12 @@ void DockContent_Editor::initConnections()
 
         m_btnRun->setVisible(false);
         m_btnKill->setVisible(true);
-        if (m_btnRun->text() == tr("ReRun"))
+        if (m_btnRun->text() == tr("ReRun")) {
             zeno::getSession().set_Rerun();
+            for (auto view : zenoApp->getMainWindow()->viewports())
+                view->cleanUpScene();
+        }
 
-        for (auto view : zenoApp->getMainWindow()->viewports())
-            view->cleanUpScene();
 
         zenoApp->calculationMgr()->run();
     });

@@ -15,30 +15,32 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamTab tab;
         zeno::ParamGroup default;
 
-        zeno::ParamsUpdateInfo updateInfo;
         zeno::ParamUpdateInfo info;
         zeno::ParamPrimitive param;
         param.bInput = true;
-        param.name = "input1";
-        param.socketType = zeno::Socket_Primitve;
+        param.name = "int1";
+        param.type = zeno::Param_Int;
         info.param = param;
-        updateInfo.push_back(info);
-        default.params.push_back(param);
-        param.bInput = true;
-        param.name = "input2";
-        param.socketType = zeno::Socket_Primitve;
-        info.param = param;
-        updateInfo.push_back(info);
         default.params.push_back(param);
         param.bInput = false;
         param.name = "output1";
+        param.type = zeno::Param_Null;
         param.socketType = zeno::Socket_Output;
         info.param = param;
-        updateInfo.push_back(info);
+        zeno::ParamObject objInput;
+        objInput.bInput = true;
+        objInput.name = "objInput1";
+        objInput.socketType = zeno::Socket_ReadOnly;
+        zeno::ParamObject objOutput;
+        objOutput.bInput = false;
+        objOutput.name = "objOutput1";
+        objOutput.socketType = zeno::Socket_ReadOnly;
 
         tab.groups.emplace_back(std::move(default));
         m_nodeData.customUi.inputPrims.tabs.emplace_back(std::move(tab));
+        m_nodeData.customUi.inputObjs.push_back(objInput);
         m_nodeData.customUi.outputPrims.push_back(param);
+        m_nodeData.customUi.outputObjs.push_back(objOutput);
     }
 }
 

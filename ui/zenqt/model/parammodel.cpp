@@ -558,6 +558,22 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
                 continue;
             links = paramObj.links;
         }
+        else if (group == zeno::Group_OutputPrimitive)
+        {
+            bool bExist = false;
+            auto paramPrim = spNode->get_output_prim_param(m_items[r].name.toStdString(), &bExist);
+            if (!bExist)
+                continue;
+            links = paramPrim.links;
+        }
+        else if (group == zeno::Group_OutputObject)
+        {
+            bool bExist = false;
+            auto paramPrim = spNode->get_output_obj_param(m_items[r].name.toStdString(), &bExist);
+            if (!bExist)
+                continue;
+            links = paramPrim.links;
+        }
         for (const auto& linkInfo : links) {
 
             const QString fromNode = QString::fromStdString(linkInfo.outNode);

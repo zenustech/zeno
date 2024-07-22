@@ -63,15 +63,12 @@ void Scene::cleanupView()
 void Scene::cleanUpScene()
 {
         zeno::getSession().globalComm->clear_objects([this](){
-            if (objectsMan)
-                objectsMan->clear_objects();
-
             if (!renderMan)
                 return;
 
             RenderEngine* pEngine = renderMan->getEngine();
             if (pEngine) {
-                pEngine->update();
+                pEngine->cleanupScene();
                 pEngine->cleanupAssets();
             }
         });

@@ -22,6 +22,12 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    //启动光追时加载obj
+    zeno::RenderObjsInfo objs;
+    zeno::getSession().objsMan->export_all_view_objs(objs.newObjs);
+    zeno::getSession().objsMan->export_light_objs(objs);
+    m_zenoVis->load_objects(objs);
 }
 
 OptixWorker::~OptixWorker()
