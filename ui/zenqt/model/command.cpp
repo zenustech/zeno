@@ -25,7 +25,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         param.bInput = false;
         param.name = "output1";
         param.type = zeno::Param_Null;
-        param.socketType = zeno::Socket_Output;
+        param.socketType = zeno::Socket_Primitve;
         info.param = param;
         zeno::ParamObject objInput;
         objInput.bInput = true;
@@ -34,7 +34,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamObject objOutput;
         objOutput.bInput = false;
         objOutput.name = "objOutput1";
-        objOutput.socketType = zeno::Socket_ReadOnly;
+        objOutput.socketType = zeno::Socket_Output;
 
         tab.groups.emplace_back(std::move(default));
         m_nodeData.customUi.inputPrims.tabs.emplace_back(std::move(tab));

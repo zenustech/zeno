@@ -54,7 +54,8 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
-    ZENO_API virtual CustomUI get_customui() const;
+    ZENO_API virtual CustomUI get_customui() const;     //由节点默认定义导出的customUi
+    ZENO_API CustomUI export_customui() const;          //由此刻实际存在的节点输入输出导出的customUi
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
@@ -100,7 +101,13 @@ public:
    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
 
+   ZENO_API void update_layout(params_change_info& changes);
+   CALLBACK_REGIST(update_layout, void, params_change_info& changes)
+
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
+
+   //由param这个参数值的变化触发节点params重置
+   ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
 
     ZENO_API void set_name(const std::string& name);
     ZENO_API std::string get_name() const;
