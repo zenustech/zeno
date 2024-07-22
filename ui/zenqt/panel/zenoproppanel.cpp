@@ -241,17 +241,24 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
 {
+    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
+    ZASSERT_EXIT(paramsModel);
+
+    QStandardItem* root = paramsModel->invisibleRootItem();
+    ZASSERT_EXIT(root);
+
+    QStandardItem* pInputs = root->child(0);
+
+    int nodeType = m_idx.data(ROLE_NODETYPE).toInt();
+    if (nodeType != zeno::Node_SubgraphNode && nodeType != zeno::Node_AssetInstance && pInputs->rowCount() == 1 && pInputs->child(0)->rowCount() == 1)
+        return;
+
     ZASSERT_EXIT(m_tabWidget);
     if (!m_idx.isValid())
         return;
 
-    QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-    ZASSERT_EXIT(paramsModel);
-
     if (!parent.isValid())
     {
-        QStandardItem* root = paramsModel->invisibleRootItem();
-        ZASSERT_EXIT(root);
         if (root->rowCount() == 2)  //临时修复，paramsModel中 m_customParamsM->appendRow(pOutputs) 时会触发重复添加tab，第二次收到信号时返回
             return;
         QStandardItem* pRoot = root->child(0);
