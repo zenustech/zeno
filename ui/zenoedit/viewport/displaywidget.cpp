@@ -1411,11 +1411,29 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 }
                 // set callback to picker
                 picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
-                    std::string picked_elems_str;
-                    for (auto elem : scene->selected_elements[prim_name]) {
-                        picked_elems_str += std::to_string(elem) + ",";
+                    {
+                        auto prims_shared = scene->objectsMan->pairsShared<zeno::PrimitiveObject>();
+                        for (const auto& [k, v] : prims_shared) {
+                            if (prim_name == k) {
+                                scene->painter_data[prim_name].resize(v->verts.size());
+                                auto &data = scene->painter_data[prim_name];
+                                for (auto elem : scene->selected_elements[prim_name]) {
+                                    data[elem] = {1, 0, 0};
+                                }
+                            }
+                        }
                     }
-                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                    // 3.update node(TODO: finally not do it here)
+                    {
+                        std::string picked_elems_str;
+                        auto &data = scene->painter_data[prim_name];
+                        for (auto i = 0; i < data.size(); i++) {
+                            if (data[i][0] != 0) {
+                                picked_elems_str += std::to_string(i) + ",";
+                            }
+                        }
+                        zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                    }
                 });
                 picker->focus(prim_name);
             }
