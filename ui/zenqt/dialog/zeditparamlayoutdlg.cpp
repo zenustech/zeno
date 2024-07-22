@@ -1119,7 +1119,7 @@ void ZEditParamLayoutDlg::onApply()
         param.bInput = false;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
         param.type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toInt();
-        param.defl = UiHelper::qvarToZVar(pItem->data(ROLE_PARAM_VALUE), param.type);
+        param.defl = pItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
@@ -1148,7 +1148,7 @@ void ZEditParamLayoutDlg::onApply()
                 auto paramItem = groupItem->child(k);
                 zeno::ParamPrimitive paramInfo;
                 paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
-                paramInfo.defl = UiHelper::qvarToZVar(paramItem->data(ROLE_PARAM_VALUE), paramInfo.type);
+                paramInfo.defl = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
                 paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
                 paramInfo.type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
                 paramInfo.socketType = (zeno::SocketType)paramItem->data(ROLE_SOCKET_TYPE).toInt();

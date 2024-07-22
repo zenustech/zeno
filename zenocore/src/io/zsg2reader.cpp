@@ -273,7 +273,7 @@ void Zsg2Reader::_parseSocket(
 
     zeno::SocketType socketType = zeno::NoSocket;
     zeno::ParamType paramType = zeno::Param_Null;
-    zeno::zvariant defl;
+    zeno::reflect::Any defl;
     std::string tooltip;
 
     if (m_bDiskReading &&
@@ -290,7 +290,7 @@ void Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
         paramType = zeno::convertToType(sockObj["type"].GetString());
-        defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
+        defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType);
     }
     if (!bInput && paramType == zeno::Param_Null)
     {
@@ -487,7 +487,7 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
             }
 
             //它不知道会不会和SubInput的type参数冲突，这个很讨厌，这里直接解析算了，放弃历史包袱
-            param.defl = zenoio::jsonValueToZVar(valueObj[iotags::params::params_valueKey], param.type);
+            param.defl = zenoio::jsonValueToAny(valueObj[iotags::params::params_valueKey], param.type);
             param.socketType = zeno::NoSocket; //以前的定义是不包含这个的。
 
             if (valueObj.HasMember("control"))

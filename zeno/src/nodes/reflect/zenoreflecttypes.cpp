@@ -2,7 +2,7 @@
 
 #include <zeno/core/common.h>
 #include <zeno/core/IObject.h>
-
+#include <zeno/core/INode.h>
 #include "reflect/core.hpp"
 #include "reflect/type.hpp"
 #include "reflect/metadata.hpp"
@@ -15,6 +15,7 @@
 
 
 
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(bool)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(int)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(float)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(double)
@@ -28,5 +29,6 @@ REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec3s)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4i)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4f)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::vec4s)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::INode)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::IObject>)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::unique_ptr<zeno::IObject>)

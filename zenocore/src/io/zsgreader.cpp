@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
+#include "reflect/reflection.generated.hpp"
 
 
 using namespace zeno::iotags;

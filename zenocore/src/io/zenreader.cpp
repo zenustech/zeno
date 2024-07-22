@@ -292,7 +292,7 @@ namespace zenoio
         zeno::ParamControl ctrl = zeno::NullControl;
         zeno::ParamType paramType = zeno::Param_Null;
         zeno::SocketType socketType = zeno::NoSocket;
-        zeno::zvariant defl;
+        zeno::reflect::Any defl;
         zeno::LinksData paramLinks;
         std::optional<zeno::ControlProperty> ctrlProps;
         std::string tooltip;
@@ -325,7 +325,7 @@ namespace zenoio
         bool bPrimitiveType = !bObjectParam;
 
         if (sockObj.HasMember("default-value")) {
-            defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
+            defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType);
         }
 
         if (sockObj.HasMember("socket-type") && sockObj["socket-type"].IsString()) {
@@ -443,7 +443,7 @@ namespace zenoio
                 if (paramValue.HasMember("socket-type") && paramValue["socket-type"].IsString())
                     paramInfo.socketType = getSocketTypeByDesc(paramValue["socket-type"].GetString());
 
-                paramInfo.defl = zenoio::jsonValueToZVar(paramValue["default-value"], paramInfo.type);
+                paramInfo.defl = zenoio::jsonValueToAny(paramValue["default-value"], paramInfo.type);
                 if (paramValue.HasMember("control") && paramValue["control"].IsObject())
                 {
                     zeno::ControlProperty props;

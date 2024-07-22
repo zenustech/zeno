@@ -103,7 +103,7 @@ ZENO_API void Graph::runGraph() {
     applyNodes(m_viewnodes);
 }
 
-void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value) {
+void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value) {
     assert(spParam);
     if (Param_String == spParam->type) {
         auto spNode = spParam->m_wpNode.lock();
@@ -112,11 +112,7 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         const std::string& nodecls = spNode->get_nodecls();
         const std::string& uuid = spNode->get_uuid();
 
-        std::string oldstr, newstr;
-        if (std::holds_alternative<std::string>(old_value))
-            oldstr = std::get<std::string>(old_value);
-        if (std::holds_alternative<std::string>(new_value))
-            newstr = std::get<std::string>(new_value);
+        std::string newstr = zeno_get<std::string>(old_value);
 
         frame_nodes.erase(uuid);
         getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
@@ -133,13 +129,15 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
         getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        if (std::holds_alternative<vec2s>(new_value)) {
-            auto vec = std::get<vec2s>(new_value);
-            std::regex pattern("\\$F");
-            for (auto val : vec) {
-                if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+        {
+            vec2s vec;
+            if (zeno_get_if(new_value, vec)) {
+                std::regex pattern("\\$F");
+                for (auto val : vec) {
+                    if (std::regex_search(val, pattern)) {
+                        frame_nodes.insert(uuid);
+                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    }
                 }
             }
         }
@@ -150,13 +148,15 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
         getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        if (std::holds_alternative<vec3s>(new_value)) {
-            auto vec = std::get<vec3s>(new_value);
-            std::regex pattern("\\$F");
-            for (auto val : vec) {
-                if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+        {
+            vec3s vec;
+            if (zeno_get_if(new_value, vec)) {
+                std::regex pattern("\\$F");
+                for (auto val : vec) {
+                    if (std::regex_search(val, pattern)) {
+                        frame_nodes.insert(uuid);
+                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    }
                 }
             }
         }
@@ -167,13 +167,15 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvar
         const std::string& uuid = spNode->get_uuid();
         frame_nodes.erase(uuid);
         getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        if (std::holds_alternative<vec4s>(new_value)) {
-            auto vec = std::get<vec4s>(new_value);
-            std::regex pattern("\\$F");
-            for (auto val : vec) {
-                if (std::regex_search(val, pattern)) {
-                    frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+        {
+            vec4s vec;
+            if (zeno_get_if(new_value, vec)) {
+                std::regex pattern("\\$F");
+                for (auto val : vec) {
+                    if (std::regex_search(val, pattern)) {
+                        frame_nodes.insert(uuid);
+                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    }
                 }
             }
         }
@@ -302,13 +304,13 @@ ZENO_API void Graph::init(const GraphData& graph) {
             const PrimitiveParams& primparams = customUiToParams(node.customUi.inputPrims);
             for (const auto& input : primparams)
             {
-                if (input.name == "_RAMPS" && std::holds_alternative<std::string>(input.defl))
+                if (input.name == "_RAMPS")
                 {
-                    color = std::get<std::string>(input.defl);
+                    color = zeno_get<std::string>(input.defl);
                 }
-                else if (input.name == "nres" && std::holds_alternative<int>(input.defl))
+                else if (input.name == "nres")
                 {
-                    nres = std::get<int>(input.defl);
+                    nres = zeno_get<int>(input.defl);
                 }
             }
             if (!color.empty() && nres > 0)

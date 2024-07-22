@@ -2,6 +2,7 @@
 #include <regex>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -29,6 +30,75 @@ namespace zeno {
         else return Param_Null;
     }
 
+    ZENO_API bool isAnyEqual(const zeno::reflect::Any& lhs, const zeno::reflect::Any& rhs)
+    {
+        lhs.type();
+        rhs.type();
+        if (lhs.type() != rhs.type() || lhs.has_value() != rhs.has_value())
+            return false;       //对于int和float的同等值，可能会漏
+
+        if (!lhs.has_value())
+            return true;    //null
+
+        if (zeno::reflect::get_type<int>() == lhs.type()) {
+            return zeno::reflect::any_cast<int>(lhs) == zeno::reflect::any_cast<int>(rhs);
+        }
+        else if (zeno::reflect::get_type<float>() == lhs.type()) {
+            return zeno::reflect::any_cast<float>(lhs) == zeno::reflect::any_cast<float>(rhs);
+        }
+        else if (zeno::reflect::get_type<std::string>() == lhs.type()) {
+            return zeno::reflect::any_cast<std::string>(lhs) == zeno::reflect::any_cast<std::string>(rhs);
+        }
+        else if (zeno::reflect::get_type<zeno::vec2f>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec2f>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec2f>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1];
+        }
+        else if (zeno::reflect::get_type<zeno::vec2i>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec2i>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec2i>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1];
+        }
+        else if (zeno::reflect::get_type<zeno::vec2s>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec2s>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec2s>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1];
+        }
+        else if (zeno::reflect::get_type<zeno::vec3f>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec3f>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec3f>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
+        }
+        else if (zeno::reflect::get_type<zeno::vec3i>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec3i>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec3i>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
+        }
+        else if (zeno::reflect::get_type<zeno::vec3s>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec3s>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec3s>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
+        }
+        else if (zeno::reflect::get_type<zeno::vec4i>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec4i>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec4i>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
+        }
+        else if (zeno::reflect::get_type<zeno::vec4f>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec4f>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec4f>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
+        }
+        else if (zeno::reflect::get_type<zeno::vec4s>() == lhs.type()) {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec4s>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec4s>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
+        }
+        else {
+            return false;
+        }
+    }
+
     ZENO_API std::string paramTypeToString(ParamType type)
     {
         switch (type)
@@ -52,6 +122,74 @@ namespace zeno {
         case Param_SrcDst:  return "";
         default:
             return "";
+        }
+    }
+
+    ZENO_API zeno::reflect::Any str2any(std::string const& defl, ParamType const& type) {
+        if (defl.empty())
+            return initAnyDeflValue(type);
+        switch (type) {
+        case Param_String: {
+            return defl;
+        }
+        case Param_Bool: {
+            if (defl == "0" || defl == "false")    return 0;
+            if (defl == "1" || defl == "true")     return 1;
+            return zeno::reflect::Any();
+        }
+        case Param_Int: {
+            return std::stoi(defl);
+        }
+        case Param_Float: {
+            return std::stof(defl);
+        }
+        case Param_Vec2i:
+        case Param_Vec3i:
+        case Param_Vec4i:
+        {
+            std::vector<int> vec;
+            for (auto v : split_str(defl, ',')) {
+                vec.push_back(std::stoi(v));
+            }
+            if (Param_Vec2i == type) {
+                return vec2i(vec[0], vec[1]);
+            }
+            else if (Param_Vec3i == type) {
+                return vec3i(vec[0], vec[1], vec[2]);
+            }
+            else {
+                return vec4i(vec[0], vec[1], vec[2], vec[3]);
+            }
+            return zeno::reflect::Any();
+        }
+        case Param_Vec2f:
+        case Param_Vec3f:
+        case Param_Vec4f:
+        {
+            std::vector<float> vec;
+            for (auto v : split_str(defl, ',')) {
+                vec.push_back(std::stof(v));
+            }
+
+            if (Param_Vec2f == type) {
+                if (vec.size() != 2)
+                    return vec2f();
+                return vec2f(vec[0], vec[1]);
+            }
+            else if (Param_Vec3f == type) {
+                if (vec.size() != 3)
+                    return vec3f();
+                return vec3f(vec[0], vec[1], vec[2]);
+            }
+            else {
+                if (vec.size() != 4)
+                    return vec4f();
+                return vec4f(vec[0], vec[1], vec[2], vec[3]);
+            }
+            return zeno::reflect::Any();
+        }
+        default:
+            return defl;
         }
     }
 
@@ -121,6 +259,94 @@ namespace zeno {
         default:
             return defl;
         }
+    }
+
+    ZENO_API zvariant AnyToZVariant(zeno::reflect::Any const& var) {
+        if (zeno::reflect::get_type<int>() == var.type()) {
+            return zeno::reflect::any_cast<int>(var);
+        }
+        else if (zeno::reflect::get_type<float>() == var.type()) {
+            return zeno::reflect::any_cast<float>(var);
+        }
+        else if (zeno::reflect::get_type<std::string>() == var.type()) {
+            return zeno::reflect::any_cast<std::string>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec2i>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec2i>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec3i>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec3i>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec4i>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec4i>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec2f>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec2f>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec3f>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec3f>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec4f>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec4f>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec2s>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec2s>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec3s>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec3s>(var);
+        }
+        else if (zeno::reflect::get_type<zeno::vec4s>() == var.type()) {
+            return zeno::reflect::any_cast<zeno::vec4s>(var);
+        }
+        return zvariant();
+    }
+
+    zeno::reflect::Any initAnyDeflValue(ParamType const& type)
+    {
+        if (type == zeno::Param_String) {
+            return "";
+        }
+        else if (type == zeno::Param_Float)
+        {
+            return (float)0.;
+        }
+        else if (type == zeno::Param_Int)
+        {
+            return (int)0;
+        }
+        else if (type == zeno::Param_Bool)
+        {
+            return (int)0;
+        }
+        else if (type == zeno::Param_Vec2i)
+        {
+            return vec2i();
+        }
+        else if (type == zeno::Param_Vec2f)
+        {
+            return vec2f();
+        }
+        else if (type == zeno::Param_Vec3i)
+        {
+            return vec3i();
+        }
+        else if (type == zeno::Param_Vec3f)
+        {
+            return vec3f();
+        }
+        else if (type == zeno::Param_Vec4i)
+        {
+            return vec4i();
+        }
+        else if (type == zeno::Param_Vec4f)
+        {
+            return vec4f();
+        }
+        else if (type == zeno::Param_Curve)
+        {
+            return "{}";
+        }
+        return zeno::reflect::Any();
     }
 
     zvariant zeno::initDeflValue(ParamType const& type)
@@ -256,7 +482,7 @@ namespace zeno {
                 ParamPrimitive param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.defl = zeno::str2var(param_desc.defl, param.type);
+                param.defl = zeno::str2any(param_desc.defl, param.type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 if (param_desc.control != NullControl)
@@ -297,7 +523,7 @@ namespace zeno {
             ParamPrimitive param;
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
-            param.defl = zeno::str2var(param_desc.defl, param.type);
+            param.defl = zeno::str2any(param_desc.defl, param.type);
             param.socketType = NoSocket;
             //其他控件估计是根据类型推断的。
             if (starts_with(param_desc.type, "enum ")) {
@@ -324,7 +550,7 @@ namespace zeno {
                 ParamPrimitive param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.defl = zeno::str2var(param_desc.defl, param.type);
+                param.defl = zeno::str2any(param_desc.defl, param.type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.control = NullControl;

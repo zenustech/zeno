@@ -539,6 +539,7 @@ void DockContent_Editor::initConnections()
             zeno::EdgeInfo edge;
             std::shared_ptr<zeno::INode> spNode;
 
+#if 0
             if (0) {
                 spNode = sess.mainGraph->getNode("NumericInt1");
                 if (spNode)
@@ -571,6 +572,7 @@ void DockContent_Editor::initConnections()
                 //info.name = "ccc";
                 //sess.assets->createAsset(info);
             }
+#endif
         });
     }
 

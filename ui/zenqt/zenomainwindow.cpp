@@ -61,6 +61,7 @@
 #include <zeno/io/zdareader.h>
 #include <QFileSystemWatcher> 
 #include <zeno/core/GlobalVariable.h>
+#include "reflect/reflection.generated.hpp"
 
 
 const QString g_latest_layout = "LatestLayout";

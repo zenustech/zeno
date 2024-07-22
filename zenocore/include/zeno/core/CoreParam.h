@@ -49,8 +49,8 @@ struct ObjectParam : CoreParam {
 };
 
 struct PrimitiveParam : CoreParam {
-    zvariant defl;
-    zvariant result;
+    zeno::reflect::Any defl;
+    zeno::reflect::Any result;
     std::list<std::shared_ptr<PrimitiveLink>> links;
     ParamControl control = NullControl;
     std::optional<ControlProperty> optCtrlprops;

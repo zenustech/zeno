@@ -283,7 +283,7 @@ namespace zenoio
         if (param.bInput)
         {
             writer.Key("default-value");
-            writeZVariant(param.defl, param.type, writer);
+            writeAny(param.defl, param.type, writer);
 
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);

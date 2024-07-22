@@ -93,6 +93,7 @@ void ZenoApplication::initMetaTypes()
     qRegisterMetaType<NodeState>();
     qRegisterMetaType<zeno::ObjPath>();
     qRegisterMetaType<zeno::CustomUI>();
+    qRegisterMetaType<zeno::reflect::Any>();
 }
 
 void ZenoApplication::initStyleSheets()

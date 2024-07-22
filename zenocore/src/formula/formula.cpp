@@ -7,6 +7,7 @@
 #include "parser.hpp"
 #include <regex>
 #include <zeno/core/ReferManager.h>
+#include "reflect/reflection.generated.hpp"
 
 using namespace zeno;
 
@@ -102,7 +103,7 @@ float Formula::callRef(const std::string& ref) {
         zeno::ParamPrimitive primparam = pNode->get_input_prim_param(param, &bExist);
         if (!bExist)
             return NAN;
-        return std::get<float>(primparam.result);
+        return zeno_get<float>(primparam.result);
     }
     else
     {
@@ -126,7 +127,7 @@ float Formula::callRef(const std::string& ref) {
                 case Param_Vec2f:
                 case Param_Vec2i:
                 {
-                    auto vec = std::get<zeno::vec2f>(primparam.result);
+                    auto vec = zeno_get<zeno::vec2f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
@@ -134,7 +135,7 @@ float Formula::callRef(const std::string& ref) {
                 case Param_Vec3f:
                 case Param_Vec3i:
                 {
-                    auto vec = std::get<zeno::vec3f>(primparam.result);
+                    auto vec = zeno_get<zeno::vec3f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
@@ -142,7 +143,7 @@ float Formula::callRef(const std::string& ref) {
                 case Param_Vec4f:
                 case Param_Vec4i:
                 {
-                    auto vec = std::get<zeno::vec4f>(primparam.result);
+                    auto vec = zeno_get<zeno::vec4f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;

@@ -13,6 +13,7 @@
 #include "zenovis/Camera.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
+#include "reflect/reflection.generated.hpp"
 
 
 CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)

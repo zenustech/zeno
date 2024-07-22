@@ -6,6 +6,7 @@
 #include "zassert.h"
 #include <zeno/core/ObjectManager.h>
 #include <zeno/core/Session.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -65,8 +66,8 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 
     for (auto nodepath : nodeNameSet)
     {
-        auto spNode = zeno::getSession().mainGraph->getNode(nodepath);
-        if (spNode->is_view()) {
+        auto spNode = zeno::getSession().mainGraph->getNodeByUuidPath(nodepath);
+        if (spNode && spNode->is_view()) {
             auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
             return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);
         }
@@ -158,13 +159,12 @@ std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
 {
     auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
     const QString& paramName = QString::fromStdString(input_name);
+    std::string ret;
     if (inputs.find(paramName) != inputs.end()) {
         auto& param = inputs[paramName];
-        if (std::holds_alternative<std::string>(param.defl)) {
-            return std::get<std::string>(param.defl);
-        }
+        zeno::zeno_get_if(param.defl, ret);
     }
-    return "";
+    return ret;
 }
 
 std::string NodeSyncMgr::getParamValString(const QModelIndex& node,

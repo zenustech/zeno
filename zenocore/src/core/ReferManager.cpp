@@ -32,7 +32,8 @@ namespace zeno {
             PrimitiveParams params = spNode->get_input_primitive_params();
             for (ParamPrimitive& param : params)
             {
-                auto paths = referPaths(currPath, param.defl);
+                zvariant var = AnyToZVariant(param.defl);
+                auto paths = referPaths(currPath, var);
                 if (!paths.empty())
                 {
                     auto uuid_param = uuid_path + "/" + param.name;
@@ -57,7 +58,8 @@ namespace zeno {
         namePath.pop_back();
         auto currPath = zeno::objPathToStr(namePath);
         auto uuid_path = zeno::objPathToStr(objPath);
-        auto paths = referPaths(currPath, paramprim.defl);
+        auto zvar = AnyToZVariant(paramprim.defl);
+        auto paths = referPaths(currPath, zvar);
         updateReferedInfo(uuid_path, param, paths);
         //被引用的参数数据更新时，引用该参数的节点需要标脏
         updateDirty(uuid_path, param);
@@ -117,10 +119,10 @@ namespace zeno {
 
             std::string currPath = zeno::objPathToStr(spNode->get_path());
             currPath = currPath.substr(0, currPath.find_last_of("/"));
-            auto val = paramprim.defl;
+            auto val = AnyToZVariant(paramprim.defl);
             if (updateParamValue(path, "0", currPath, val))
             {
-                spNode->update_param(param, val);
+                spNode->update_param(param, paramprim.defl);
                 zeno::log_warn("the value of {} has been reseted", uuid_param);
             }
         }
@@ -240,14 +242,14 @@ namespace zeno {
             if (!bExist) {
                 continue;
             }
-            auto val = primparam.defl;
+            auto val = AnyToZVariant(primparam.defl);
             std::string currentPath = zeno::objPathToStr(spNode->get_path());
             currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
             bool bUpate = updateParamValue(oldPath, newPath, currentPath, val);
             if (bUpate)
             {
                 //update param value
-                spNode->update_param(primparam.name, val);
+                spNode->update_param(primparam.name, primparam.defl);
             }
         }
     }

@@ -107,8 +107,7 @@ class NodeSyncMgr {
 
         auto node_id = node_location.node.data(ROLE_NODE_NAME).toString();
         auto inputs = node_location.node.data(ROLE_INPUTS).value<PARAMS_INFO>();
-        //TODO: zvariant to qvariant.
-        QVariant old_value = UiHelper::zvarToQVar(inputs[input_name.c_str()].defl);
+        QVariant old_value = QVariant::fromValue(inputs[input_name.c_str()].defl);
         QVariant value;
         if (!getNewValue<T>(old_value, new_value, value))
             return;

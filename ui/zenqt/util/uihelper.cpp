@@ -17,6 +17,7 @@
 #include "model/graphsmanager.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
+#include "reflect/reflection.generated.hpp"
 
 
 const char* g_setKey = "setKey";
@@ -65,6 +66,93 @@ QVariant UiHelper::parseTextValue(const zeno::ParamType& type, const QString& te
 {
     //TODO
     return QVariant();
+}
+
+zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamType type)
+{
+    if (var.type() == QVariant::String)
+    {
+        return var.toString().toStdString();
+    }
+    else if (var.type() == QVariant::Double || var.type() == QMetaType::Float)
+    {
+        return var.toFloat();
+    }
+    else if (var.type() == QVariant::Int)
+    {
+        return var.toInt();
+    }
+    else if (var.type() == QVariant::Bool)
+    {
+        return var.toBool() ? 1 : 0;
+    }
+    else if (var.type() == QVariant::Invalid)
+    {
+        return zeno::reflect::Any();
+    }
+    else if (var.type() == QVariant::UserType)
+    {
+        if (var.userType() == QMetaTypeId<zeno::reflect::Any>::qt_metatype_id())
+        {
+            return var.value<zeno::reflect::Any>();
+        }
+        else if (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            UI_VECTYPE vec = var.value<UI_VECTYPE>();
+            if (vec.isEmpty()) {
+                zeno::log_warn("unexpected qt variant {}", var.typeName());
+                return zeno::reflect::Any();
+            }
+            else {
+                if (vec.size() == 2) {
+                    if (type == zeno::Param_Vec2i) {
+                        return zeno::vec2i((int)vec[0], (int)vec[1]);
+                    }
+                    else {
+                        return zeno::vec2f(vec[0], vec[1]);
+                    }
+                }
+                if (vec.size() == 3) {
+                    if (type == zeno::Param_Vec3i) {
+                        return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
+                    }
+                    else {
+                        return zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f(vec[0], vec[1], vec[2]));
+                    }
+                }
+                if (vec.size() == 4) {
+                    if (type == zeno::Param_Vec4i) {
+                        return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                    }
+                    else {
+                        return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
+                    }
+                }
+            }
+        }
+        else if (var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
+            UI_VECSTRING vec = var.value<UI_VECSTRING>();
+            if (vec.size() == 2) {
+                return zeno::vec2s(vec[0].toStdString(), vec[1].toStdString());
+            }
+            else if (vec.size() == 3) {
+                return zeno::vec3s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString());
+            }
+            else if (vec.size() == 4) {
+                return zeno::vec4s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString(), vec[3].toStdString());
+            }
+            else {
+                return zeno::reflect::Any();
+            }
+        }
+    }
+    else
+    {
+        zeno::log_warn("bad qt variant {}", var.typeName());
+    }
+    return zeno::reflect::Any();
 }
 
 zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType type)
@@ -859,6 +947,23 @@ QString UiHelper::variantToString(const QVariant& var)
                     res.append(",");
             }
             return res;
+        }
+        else if (var.userType() == QMetaTypeId<zeno::reflect::Any>::qt_metatype_id())
+        {
+            const auto& anyVal = var.value<zeno::reflect::Any>();
+            if (zeno::reflect::get_type<int>() == anyVal.type()) {
+                value = QString::number(zeno::reflect::any_cast<int>(anyVal));
+            }
+            else if (zeno::reflect::get_type<float>() == anyVal.type()) {
+                value = QString::number(zeno::reflect::any_cast<float>(anyVal));
+            }
+            else if (zeno::reflect::get_type<std::string>() == anyVal.type()) {
+                value = QString::fromStdString(zeno::reflect::any_cast<std::string>(anyVal));
+            }
+            else if (zeno::reflect::get_type<bool>() == anyVal.type()) {
+                bool bVal = zeno::reflect::any_cast<float>(anyVal);
+                value = bVal ? "true" : "false";
+            }
         }
     }
 	else
@@ -1791,7 +1896,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamPrimit
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(info.defl), ROLE_PARAM_VALUE);
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(true, ROLE_ISINPUT);
@@ -1806,7 +1911,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamPrimit
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(info.defl), ROLE_PARAM_VALUE);
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(false, ROLE_ISINPUT);
@@ -1860,7 +1965,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
@@ -1884,7 +1989,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
         paramItem->setData(param.control, ROLE_PARAM_CONTROL);
         paramItem->setData(param.type, ROLE_PARAM_TYPE);
         paramItem->setData(false, ROLE_ISINPUT);

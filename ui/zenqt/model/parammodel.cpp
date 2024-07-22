@@ -19,8 +19,8 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
     cbUpdateParam = spNode->register_update_param(
-        [this](const std::string& name, zeno::zvariant old_value, zeno::zvariant new_value) {
-            QVariant newValue = UiHelper::zvarToQVar(new_value);
+        [this](const std::string& name, zeno::reflect::Any old_value, zeno::reflect::Any new_value) {
+            QVariant newValue = QVariant::fromValue(new_value);
             for (int i = 0; i < m_items.size(); i++) {
                 if (m_items[i].name.toStdString() == name) {
                     m_items[i].value = newValue; //update cache
@@ -89,7 +89,7 @@ void ParamsModel::initParamItems()
         item.optCtrlprops = spParam.ctrlProps;
         item.name = QString::fromStdString(spParam.name);
         item.type = spParam.type;
-        item.value = UiHelper::zvarToQVar(spParam.defl);
+        item.value = QVariant::fromValue(spParam.defl);
         item.connectProp = spParam.socketType;
         item.bVisible = spParam.bVisible;
         item.group = zeno::Group_InputPrimitive;
@@ -182,7 +182,7 @@ void ParamsModel::onCustomModelDataChanged(const QModelIndex& topLeft, const QMo
         
         auto spNode = m_wpNode.lock();
         if (spNode) {
-            zeno::zvariant defl = UiHelper::qvarToZVar(newValue, type);
+            const auto& defl = newValue.value<zeno::reflect::Any>();
             bool bOldEntry = m_bReentry;
             zeno::scope_exit scope([&]() { m_bReentry = bOldEntry; });
             m_bReentry = true;
@@ -207,7 +207,8 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     {
         auto spNode = m_wpNode.lock();
         if (spNode) {
-            zeno::zvariant defl = UiHelper::qvarToZVar(value, param.type);
+            const auto& defl = UiHelper::qvarToAny(value);
+            assert(defl.has_value());
             spNode->update_param(param.name.toStdString(), defl);
             GraphsManager::instance().currentModel()->markDirty(true);
             return true;        //the dataChanged signal will be emitted by registered callback function.
@@ -279,7 +280,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         info.type = param.type;
         info.control = param.control;
         info.ctrlProps = param.optCtrlprops;
-        info.defl = UiHelper::qvarToZVar(param.value, info.type);
+        info.defl = param.value.value<zeno::reflect::Any>();
         info.socketType = param.connectProp;
         for (auto linkidx : param.links) {
             info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
@@ -345,7 +346,7 @@ PARAMS_INFO ParamsModel::getInputs()
             info.type = item.type;
             info.control = item.control;
             info.ctrlProps = item.optCtrlprops;
-            info.defl = UiHelper::qvarToZVar(item.value, info.type);
+            info.defl = item.value.value<zeno::reflect::Any>();
             info.socketType = item.connectProp;
             for (auto linkidx : item.links) {
                 info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());
@@ -370,7 +371,7 @@ PARAMS_INFO ParamsModel::getOutputs()
             info.type = item.type;
             info.control = item.control;
             info.ctrlProps = item.optCtrlprops;
-            info.defl = UiHelper::qvarToZVar(item.value, info.type);
+            info.defl = item.value.value<zeno::reflect::Any>();
             info.socketType = item.connectProp;
             for (auto linkidx : item.links) {
                 info.links.push_back(linkidx.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>());

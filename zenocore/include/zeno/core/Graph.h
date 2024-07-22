@@ -135,7 +135,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void viewNodeUpdated(const std::string node, bool bView);
     void markDirtyWhenFrameChanged();
     void markDirtyAll();
-    void onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value);
+    void onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value);
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);

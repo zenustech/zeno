@@ -88,8 +88,8 @@ public:
     ZENO_API virtual NodeData exportInfo() const;
     ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
 
-    ZENO_API bool update_param(const std::string& name, const zvariant& new_value);
-    CALLBACK_REGIST(update_param, void, const std::string&, zvariant, zvariant)
+    ZENO_API bool update_param(const std::string& name, const zeno::reflect::Any& new_value);
+    CALLBACK_REGIST(update_param, void, const std::string&, zeno::reflect::Any, zeno::reflect::Any)
 
    ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
@@ -133,7 +133,6 @@ public:
     bool updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey);
     bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
     bool removeLink(bool bInput, const EdgeInfo& edge);
-    zvariant resolveInput(std::string const& id);
     void mark_dirty_objs();
     std::vector<std::string> getWildCardParams(const std::string& name, bool bPrim);
 
@@ -144,18 +143,18 @@ protected:
     ZENO_API virtual void apply();
     ZENO_API virtual void registerObjToManager();
     ZENO_API virtual void initParams(const NodeData& dat);
-    ZENO_API bool set_primitive_input(std::string const& id, const zvariant& val);
-    ZENO_API bool set_primitive_output(std::string const& id, const zvariant& val);
+    ZENO_API bool set_primitive_input(std::string const& id, const zeno::reflect::Any& val);
+    ZENO_API bool set_primitive_output(std::string const& id, const zeno::reflect::Any& val);
 
 private:
-    zvariant processPrimitive(PrimitiveParam* in_param);
+    zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
     std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
     std::shared_ptr<ListObject> processList(ObjectParam* in_param);
     bool receiveOutputObj(ObjectParam* in_param, zany outputObj);
     void reportStatus(bool bDirty, NodeRunStatus status);
 
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
-    template<class T, class E> T resolveVec(const zvariant& defl, const ParamType type);
+    template<class T, class E> T resolveVec(const zeno::reflect::Any& defl, const ParamType type);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。

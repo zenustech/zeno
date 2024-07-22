@@ -363,7 +363,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
-                QVariant value = UiHelper::zvarToQVar(info.defl);
+                const QVariant& value = QVariant::fromValue(info.defl);
                 auto curves = JsonHelper::parseCurves(value);
                 for (CURVE_DATA& curve : curves)
                 {
@@ -431,7 +431,7 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
             for (auto&[key, param] : paramsInfo)
             {
                 QModelIndex idx = item->params->paramIdx(key, true);
-                item->params->setData(idx, UiHelper::zvarToQVar(param.defl) , ROLE_PARAM_VALUE);
+                item->params->setData(idx, QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
             }
             return true;
         }

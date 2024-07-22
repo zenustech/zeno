@@ -30,6 +30,7 @@
 #include <zeno/formula/formula.h>
 #include <zeno/core/ReferManager.h>
 #include "reflect/type.hpp"
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -413,7 +414,7 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
     return spList;
 }
 
-zvariant INode::processPrimitive(PrimitiveParam* in_param)
+zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
 {
     if (!in_param) {
         return nullptr;
@@ -423,8 +424,8 @@ zvariant INode::processPrimitive(PrimitiveParam* in_param)
     //zany result;
 
     const ParamType type = in_param->type;
-    const zvariant defl = in_param->defl;
-    zvariant result;
+    const auto& defl = in_param->defl;
+    zeno::reflect::Any result = defl;
 
     switch (type) {
     case Param_Int:
@@ -432,36 +433,19 @@ zvariant INode::processPrimitive(PrimitiveParam* in_param)
     case Param_Bool:
     {
         //先不考虑int float的划分,直接按variant的值来。
-        zvariant resolve_value;
-        if (std::holds_alternative<std::string>(defl))
-        {
-            std::string str = std::get<std::string>(defl);
+        std::string str;
+        if (zeno_get_if(defl, str)) {
             float fVal = resolve(str, type);
             result = fVal;
         }
-        else if (std::holds_alternative<int>(defl))
-        {
-            result = defl;
-        }
-        else if (std::holds_alternative<float>(defl))
-        {
-            result = defl;
-        }
-        else
-        {
-            //error, throw expection.
+        else {
+            result = std::move(defl);
         }
         break;
     }
     case Param_String:
     {
-        if (std::holds_alternative<std::string>(defl))
-        {
-            result = defl;
-        }
-        else {
-            //error, throw expection.
-        }
+        //TODO: format string as formula
         break;
     }
     case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
@@ -472,7 +456,7 @@ zvariant INode::processPrimitive(PrimitiveParam* in_param)
     case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
     case Param_Heatmap:
     {
-        //TODO: heatmap的结构体要整合到zvariant.
+        //TODO: heatmap的结构体定义.
         //if (std::holds_alternative<std::string>(defl))
         //    result = zeno::parseHeatmapObj(std::get<std::string>(defl));
         break;
@@ -1081,12 +1065,12 @@ ZENO_API NodeData INode::exportInfo() const
     return node;
 }
 
-ZENO_API bool INode::update_param(const std::string& param, const zvariant& new_value) {
+ZENO_API bool INode::update_param(const std::string& param, const zeno::reflect::Any& new_value) {
     CORE_API_BATCH
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
-    if (!zeno::isEqual(spParam.defl, new_value, spParam.type))
+    if (!isAnyEqual(spParam.defl, new_value))
     {
-        zvariant old_value = spParam.defl;
+        auto old_value = spParam.defl;
         spParam.defl = new_value;
 
         std::shared_ptr<Graph> spGraph = graph.lock();
@@ -1298,38 +1282,33 @@ ZENO_API zany INode::get_input(std::string const &id) const {
             {
                 //依然有很多节点用了NumericObject，为了兼容，需要套一层NumericObject出去。
                 std::shared_ptr<NumericObject> spNum = std::make_shared<NumericObject>();
-                zvariant value;
-                if (std::holds_alternative<int>(val))
-                {
-                    spNum->set<int>(std::get<int>(val));
+                const auto& anyType = val.type();
+                if (anyType == zeno::reflect::type_info<int>()) {
+                    spNum->set<int>(zeno::reflect::any_cast<int>(val));
                 }
-                else if (std::holds_alternative<float>(val))
-                {
-                    spNum->set<float>(std::get<float>(val));
+                else if (anyType == zeno::reflect::type_info<bool>()) {
+                    spNum->set<int>(zeno::reflect::any_cast<bool>(val));
                 }
-                else if (std::holds_alternative<vec2i>(val))
-                {
-                    spNum->set<vec2i>(std::get<vec2i>(val));
+                else if (anyType == zeno::reflect::type_info<float>()) {
+                    spNum->set<float>(zeno::reflect::any_cast<float>(val));
                 }
-                else if (std::holds_alternative<vec2f>(val))
-                {
-                    spNum->set<vec2f>(std::get<vec2f>(val));
+                else if (anyType == zeno::reflect::type_info<vec2i>()) {
+                    spNum->set<vec2i>(zeno::reflect::any_cast<vec2i>(val));
                 }
-                else if (std::holds_alternative<vec3i>(val))
-                {
-                    spNum->set<vec3i>(std::get<vec3i>(val));
+                else if (anyType == zeno::reflect::type_info<vec3i>()) {
+                    spNum->set<vec3i>(zeno::reflect::any_cast<vec3i>(val));
                 }
-                else if (std::holds_alternative<vec3f>(val))
-                {
-                    spNum->set<vec3f>(std::get<vec3f>(val));
+                else if (anyType == zeno::reflect::type_info<vec4i>()) {
+                    spNum->set<vec4i>(zeno::reflect::any_cast<vec4i>(val));
                 }
-                else if (std::holds_alternative<vec4i>(val))
-                {
-                    spNum->set<vec4i>(std::get<vec4i>(val));
+                else if (anyType == zeno::reflect::type_info<vec2f>()) {
+                    spNum->set<vec2f>(zeno::reflect::any_cast<vec2f>(val));
                 }
-                else if (std::holds_alternative<vec4f>(val))
-                {
-                    spNum->set<vec4f>(std::get<vec4f>(val));
+                else if (anyType == zeno::reflect::type_info<vec3f>()) {
+                    spNum->set<vec3f>(zeno::reflect::any_cast<vec3f>(val));
+                }
+                else if (anyType == zeno::reflect::type_info<vec4f>()) {
+                    spNum->set<vec4f>(zeno::reflect::any_cast<vec4f>(val));
                 }
                 else
                 {
@@ -1340,15 +1319,8 @@ ZENO_API zany INode::get_input(std::string const &id) const {
             }
             case Param_String:
             {
-                if (std::holds_alternative<std::string>(val))
-                {
-                    std::shared_ptr<StringObject> stringobj = std::make_shared<StringObject>();
-                    return stringobj;
-                }
-                else {
-                    //error, throw expection.
-                }
-                break;
+                const std::string& str = zeno::reflect::any_cast<std::string>(val);
+                return std::make_shared<StringObject>(str);
             }
             return nullptr;
         }
@@ -1361,16 +1333,6 @@ ZENO_API zany INode::get_input(std::string const &id) const {
         else {
             return nullptr;
         }
-    }
-}
-
-zvariant INode::resolveInput(std::string const& id) {
-    if (requireInput(id)) {
-        auto iter = m_inputPrims.find(id);
-        return iter->second.result;
-    }
-    else {
-        return nullptr;
     }
 }
 
@@ -1389,14 +1351,14 @@ ZENO_API bool INode::in_asset_file() const {
     return getSession().assets->isAssetGraph(spGraph);
 }
 
-bool INode::set_primitive_input(std::string const& id, const zvariant& val) {
+bool INode::set_primitive_input(std::string const& id, const zeno::reflect::Any& val) {
     auto iter = m_inputPrims.find(id);
     if (iter == m_inputPrims.end())
         return false;
     iter->second.result = val;
 }
 
-bool INode::set_primitive_output(std::string const& id, const zvariant& val) {
+bool INode::set_primitive_output(std::string const& id, const zeno::reflect::Any& val) {
     auto iter = m_outputPrims.find(id);
     if (iter == m_outputPrims.end())
         return false;
@@ -1581,13 +1543,10 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
     return params;
 }
 
-template<class T, class E> T INode::resolveVec(const zvariant& defl, const ParamType type)
+template<class T, class E> T INode::resolveVec(const zeno::reflect::Any& defl, const ParamType type)
 {
-    if (std::holds_alternative<T>(defl)) {
-        return std::get<T>(defl);
-    }
-    else if (std::holds_alternative<E>(defl)) {
-        E vec = std::get<E>(defl);
+    if (zeno::reflect::get_type<E>() == defl.type()) {
+        E vec = zeno::reflect::any_cast<E>(defl);
         T vecnum;
         for (int i = 0; i < vec.size(); i++) {
             float fVal = resolve(vec[i], type);
@@ -1595,10 +1554,11 @@ template<class T, class E> T INode::resolveVec(const zvariant& defl, const Param
         }
         return vecnum;
     }
+    else if (zeno::reflect::get_type<T>() == defl.type()) {
+        return zeno::reflect::any_cast<T>(defl);
+    }
     else {
-        //error, throw expection.
-        return T();
-        //throw makeError<TypeError>(typeid(T));
+        throw;
     }
 }
 

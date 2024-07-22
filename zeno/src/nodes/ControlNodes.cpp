@@ -369,7 +369,7 @@ ZENDEFNODE(IfElse, {
 struct TimeShift : zeno::INode {
     virtual void preApply() override {
         ParamPrimitive param = get_input_prim_param("offset");
-        int offset = std::get<int>(param.defl);
+        int offset = zeno_get<int>(param.defl);
         //¸²¸Ç$F
         zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
         int currFrame = (frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0) + offset;
