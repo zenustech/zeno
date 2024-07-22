@@ -624,7 +624,7 @@ namespace zeno {
                 param.type = type;
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
-                param.bInput = true;
+                param.bInput = false;
                 param.prop = Socket_Normal;
                 param.wildCardGroup = param_desc.wildCard;
                 ui.outputObjs.emplace_back(std::move(param));

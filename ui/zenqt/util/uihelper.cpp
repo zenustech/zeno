@@ -2040,6 +2040,133 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
     customParamsM->appendRow(pObjOutputs);
 }
 
+void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, const zeno::params_change_info& changes, const zeno::CustomUI& customui)
+{
+    QStandardItem* pInputsRoot = customParamsM->item(0);
+    QStandardItem* pOutputsRoot = customParamsM->item(1);
+    QStandardItem* pObjInputsRoot = customParamsM->item(2);
+    QStandardItem* pObjOutputsRoot = customParamsM->item(3);
+    if (!pInputsRoot || !pOutputsRoot || !pObjInputsRoot || !pObjOutputsRoot)
+        return;
+    if (!pInputsRoot->hasChildren() || !pInputsRoot->child(0)->hasChildren())
+        return;
+    if (customui.inputPrims.tabs.empty() || customui.inputPrims.tabs[0].groups.empty())
+        return;
+    auto const& removeRenameItem = [&changes](int idx, QStandardItem* root, bool bInput) {
+        auto const& changeRemove = bInput ? changes.remove_inputs : changes.remove_outputs;
+        auto const& changeRename = bInput ? changes.rename_inputs : changes.rename_outputs;
+        while (changeRemove.find(root->child(idx)->data(ROLE_PARAM_NAME).toString().toStdString()) != changeRemove.end()) {
+            root->removeRow(idx);
+        }
+        for (auto& pair : changeRename) {
+            if (pair.first == root->child(idx)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                root->child(idx)->setData(QString::fromStdString(pair.second), Qt::DisplayRole);
+                root->child(idx)->setData(QString::fromStdString(pair.second), ROLE_PARAM_NAME);
+                root->child(idx)->setData(QString::fromStdString(pair.second), ROLE_MAP_TO_PARAMNAME);
+                break;
+            }
+        }
+    };
+    QStandardItem* pItemGroup = pInputsRoot->child(0)->child(0);
+    zeno::PrimitiveParams const& inputPrims = customui.inputPrims.tabs[0].groups[0].params;
+    for (int i = 0; i < inputPrims.size(); i++) {
+        if (i >= pItemGroup->rowCount())
+            break;
+        auto const& param = inputPrims[i];
+        if (param.name != pItemGroup->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (changes.new_inputs.find(param.name) != changes.new_inputs.end()) {
+                QStandardItem* paramItem = new QStandardItem(QString::fromStdString(param.name));
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                const QString& paramName = QString::fromStdString(param.name);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(true, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                paramItem->setData(param.bVisible, ROLE_PARAM_VISIBLE);
+                if (param.ctrlProps.has_value())
+                    paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+                pItemGroup->insertRow(i, paramItem);
+                continue;
+            }
+            removeRenameItem(i, pItemGroup, true);
+        }
+    }
+    for (int i = 0; i < customui.inputObjs.size(); i++) {
+        if (i >= pObjInputsRoot->rowCount())
+            break;
+        auto const& param = customui.inputObjs[i];
+        if (param.name != pObjInputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (changes.new_inputs.find(param.name) != changes.new_inputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(true, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setEditable(true);
+                pObjInputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            removeRenameItem(i, pObjInputsRoot, true);
+        }
+    }
+    for (int i = 0; i < customui.outputPrims.size(); i++) {
+        if (i >= pOutputsRoot->rowCount())
+            break;
+        auto const& param = customui.outputPrims[i];
+        if (param.name != pOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (changes.new_outputs.find(param.name) != changes.new_outputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(false, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                if (param.ctrlProps.has_value())
+                    paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setEditable(true);
+                pOutputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            removeRenameItem(i, pOutputsRoot, false);
+        }
+    }
+    for (int i = 0; i < customui.outputObjs.size(); i++) {
+        if (i >= pObjOutputsRoot->rowCount())
+            break;
+        auto const& param = customui.outputObjs[i];
+        if (param.name != pObjOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (changes.new_outputs.find(param.name) != changes.new_outputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(false, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setEditable(true);
+                pObjOutputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            removeRenameItem(i, pObjOutputsRoot, false);
+        }
+    }
+}
+
 static std::string getZenoVersion()
 {
     const char *date = __DATE__;

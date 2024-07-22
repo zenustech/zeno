@@ -392,6 +392,56 @@ ZENDEFNODE(TimeShift, {
     {"control"},
     });
 
+struct Duplicate : INode {
+    virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changinfo) {
+        if (param == "duplicate") {
+            ParamsUpdateInfo params;
+            auto const& duplicatePrimitiveParam = get_input_prim_param("duplicate");
+            params.push_back({ duplicatePrimitiveParam , "duplicate" });
+            auto const& inputObjParam = get_input_obj_param("input");
+            params.push_back({ inputObjParam , "input" });
+            auto const& outputObjParam = get_output_obj_param("owning");
+            params.push_back({ outputObjParam , "owning" });
+
+            if (std::get<int>(duplicatePrimitiveParam.defl)) {
+                zeno::ParamObject objOutput;
+                objOutput.bInput = false;
+                objOutput.name = "duplicateObj";
+                objOutput.socketType = zeno::Socket_Output;
+                params.push_back({ objOutput , "" });
+            }
+            params_change_info changes = update_editparams(params);
+            INode::trigger_update_params(param, true, changes);
+        }
+    }
+    virtual void apply() override {
+        auto inputObj = get_input2<zeno::IObject>("input");
+
+        bool hasDuplicateOutput;
+        get_output_obj_param("duplicateObj", &hasDuplicateOutput);
+        if (hasDuplicateOutput) {
+            auto objClone = inputObj->clone();
+            objClone->update_key(get_uuid() + "_clone");
+            set_output("duplicateObj", objClone);
+        }
+        set_output("owning", inputObj->move_clone());
+    }
+};
+ZENDEFNODE(Duplicate,
+    {
+        {
+            {"", "input", "", Socket_Owning},
+        },
+        {
+            {"", "owning", "", Socket_Output},
+        },
+        {
+            {"bool", "duplicate", "0"},
+        },
+        {"control"}
+    }
+)
+
 /*** Start Of - ZHXX Control Flow ***
 
 struct IF : zeno::INode {

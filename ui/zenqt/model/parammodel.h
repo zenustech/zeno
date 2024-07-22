@@ -62,6 +62,7 @@ public:
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
+    void updateUiLinksSockets(zeno::params_change_info& changes);
     void resetCustomUi(const zeno::CustomUI& customui);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
@@ -78,6 +79,7 @@ private slots:
 private:
     void initParamItems();
     void initCustomUI(const zeno::CustomUI& customui);
+    void updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui); //增量更新m_customParamsM，防止zenoproppanl接收不到数据
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
     void updateParamData(const QString& name, const QVariant& val, int role);
