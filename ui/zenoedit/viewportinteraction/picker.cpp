@@ -151,7 +151,6 @@ void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     auto &selected_prims = scene->selected;
-    auto &selected_elements = scene->selected_elements;
     auto selected = picker->getPicked(x0, y0, x1, y1);
 //    zeno::log_info("selected: {}", selected.size());
     // qDebug() << "pick: " << selected.c_str();
@@ -164,7 +163,7 @@ void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
     }
     else {
         load_from_str(selected, scene->get_select_mode(), mode);
-        if (picked_elems_callback) picked_elems_callback(selected_elements);
+        if (picked_elems_callback) picked_elems_callback();
     }
 }
 
@@ -233,7 +232,7 @@ void Picker::set_picked_depth_callback(std::function<void(float, int, int)> call
     picked_depth_callback = std::move(callback);
 }
 
-void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
+void Picker::set_picked_elems_callback(function<void()> callback) {
     picked_elems_callback = std::move(callback);
 }
 

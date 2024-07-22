@@ -7,7 +7,7 @@
 
 #include <cfloat>
 #include <optional>
-#include <unordered_set>
+#include <set>
 
 #define CMP(x, y) \
 	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
@@ -50,7 +50,7 @@ public:
     void load_from_str(const std::string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode);
     void focus(const std::string& prim_name);
     void set_picked_depth_callback(std::function<void(float, int, int)>);
-    void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
+    void set_picked_elems_callback(std::function<void()>);
     bool get_draw_special_buffer_mode() const;
     void set_draw_special_buffer_mode(bool enable);
 
@@ -62,7 +62,7 @@ private:
     ViewportWidget* m_pViewport;
 
     std::function<void(float, int, int)> picked_depth_callback;
-    std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;
+    std::function<void()> picked_elems_callback;
 
     bool draw_special_buffer_mode;
 };

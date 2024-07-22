@@ -1321,14 +1321,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
 
             zeno::NodeLocation node_location(nodes[0], subgIdx);
             if (picker) {
-                // set callback to picker
-                picker->set_picked_elems_callback([node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
-                    std::string picked_elems_str;
-                    for (auto elem : picked_elems[prim_name]) {
-                        picked_elems_str += std::to_string(elem) + ",";
-                    }
-                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
-                });
+
             }
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
@@ -1339,19 +1332,28 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             else
                 scene->set_select_mode(zenovis::PICK_MODE::PICK_VERTEX);
             // read selected elements
-            auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
-            if (!node_selected_str.empty()) {
-                string node_context;
-                auto node_selected_qstr = QString(node_selected_str.c_str());
-                auto elements = node_selected_qstr.split(',');
-                for (auto &e : elements)
-                    if (e.size() > 0)
-                        node_context += prim_name + ":" + e.toStdString() + " ";
-
-                if (picker)
-                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
-            }
             if (picker) {
+                auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+                if (!node_selected_str.empty()) {
+                    string node_context;
+                    auto node_selected_qstr = QString(node_selected_str.c_str());
+                    auto elements = node_selected_qstr.split(',');
+                    for (auto &e : elements) {
+                        if (e.size() == 0) {
+                            continue;
+                        }
+                        node_context += prim_name + ":" + e.toStdString() + " ";
+                    }
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
+                }
+                // set callback to picker
+                picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
+                    std::string picked_elems_str;
+                    for (auto elem : scene->selected_elements[prim_name]) {
+                        picked_elems_str += std::to_string(elem) + ",";
+                    }
+                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                });
                 picker->focus(prim_name);
             }
         } else {
@@ -1390,32 +1392,31 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 return;
 
             zeno::NodeLocation node_location(nodes[0], subgIdx);
+            scene->set_select_mode(zenovis::PICK_MODE::PAINT);
+            // read selected elements
             if (picker) {
+                auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+                if (!node_selected_str.empty()) {
+                    string node_context;
+                    auto node_selected_qstr = QString(node_selected_str.c_str());
+                    auto elements = node_selected_qstr.split(',');
+                    for (auto &e : elements) {
+                        if (e.size() == 0) {
+                            continue;
+                        }
+                        node_context += prim_name + ":" + e.toStdString() + " ";
+                    }
+
+                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
+                }
                 // set callback to picker
-                picker->set_picked_elems_callback([node_location, prim_name](unordered_map<string, unordered_set<int>> &picked_elems) -> void {
+                picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
                     std::string picked_elems_str;
-                    zeno::log_info("size(): {}", picked_elems[prim_name].size());
-                    for (auto elem : picked_elems[prim_name]) {
+                    for (auto elem : scene->selected_elements[prim_name]) {
                         picked_elems_str += std::to_string(elem) + ",";
                     }
                     zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
                 });
-            }
-            scene->set_select_mode(zenovis::PICK_MODE::PAINT);
-            // read selected elements
-            auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
-            if (!node_selected_str.empty()) {
-                string node_context;
-                auto node_selected_qstr = QString(node_selected_str.c_str());
-                auto elements = node_selected_qstr.split(',');
-                for (auto &e : elements)
-                    if (e.size() > 0)
-                        node_context += prim_name + ":" + e.toStdString() + " ";
-
-                if (picker)
-                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
-            }
-            if (picker) {
                 picker->focus(prim_name);
             }
         } else {
