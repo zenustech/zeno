@@ -21,7 +21,7 @@ static const char *vert_code = R"(
     attribute vec3 vPosition;
 
     void main() {
-        gl_PointSize = mBrushSize;
+        gl_PointSize = mBrushSize * 2.0;
         gl_Position = mTrans * vec4(vPosition, 1.0);
     }
 )";
