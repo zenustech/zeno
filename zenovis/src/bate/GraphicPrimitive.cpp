@@ -707,6 +707,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             triObj.prog->set_uniform("mSmoothShading", scene->drawOptions->smooth_shading);
             triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
             triObj.prog->set_uniform("mUvMode", scene->drawOptions->uv_mode);
+            triObj.prog->set_uniform("mPaintMode", scene->get_select_mode() == PICK_MODE::PAINT);
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
             triObj.prog->set_uniformi("mCustomColor", custom_color);

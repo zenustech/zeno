@@ -11,6 +11,7 @@ uniform bool mNormalCheck;
 uniform bool mRenderWireframe;
 uniform bool mCustomColor;
 uniform bool mUvMode;
+uniform bool mPaintMode;
 
 in vec3 position;
 in vec3 iColor;
@@ -109,6 +110,9 @@ void main() {
    pixarONB(normal, tangent, unusedbitan);
   }
 
+  if (mPaintMode) {
+    albedo = vec3(0.2, 0.2, 0.8);
+  }
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
   fColor = vec4(color, 1);

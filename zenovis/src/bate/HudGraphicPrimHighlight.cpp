@@ -72,6 +72,9 @@ struct PrimitiveHighlight : IGraphicDraw {
     }
 
     virtual void draw() override {
+        if (scene->get_select_mode() == PICK_MODE::PAINT) {
+            return;
+        }
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
         CHECK_GL(glClearDepth(0.0));
@@ -143,7 +146,7 @@ struct PrimitiveHighlight : IGraphicDraw {
             vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
             // ----- draw selected vertices -----
-            if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX || scene->get_select_mode() == PICK_MODE::PAINT) {
+            if (scene->get_select_mode() == PICK_MODE::PICK_VERTEX) {
                 // prepare indices
                 CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
                 vector<int> ind(elements.begin(), elements.end());
