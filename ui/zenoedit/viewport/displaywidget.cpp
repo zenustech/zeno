@@ -1400,14 +1400,19 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                     string node_context;
                     auto node_selected_qstr = QString(node_selected_str.c_str());
                     auto elements = node_selected_qstr.split(',');
-                    for (auto &e : elements) {
+                    std::map<int, float> attr;
+                    for (auto e : elements) {
+                        e = e.trimmed();
                         if (e.size() == 0) {
                             continue;
                         }
-                        node_context += prim_name + ":" + e.toStdString() + " ";
+                        auto key_value = e.split(":");
+                        auto key = std::stoi(key_value[0].trimmed().toStdString());
+                        auto value = std::stof(key_value[1].trimmed().toStdString());
+                        attr[key] = value;
                     }
 
-                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
+                    picker->load_painter_attr(prim_name, std::move(attr));
                 }
                 // set callback to picker
                 picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
@@ -1429,7 +1434,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         auto &data = scene->painter_data[prim_name];
                         for (auto i = 0; i < data.size(); i++) {
                             if (data[i][0] != 0) {
-                                picked_elems_str += std::to_string(i) + ",";
+                                picked_elems_str += zeno::format("{}:{},", i, data[i][0]);
                             }
                         }
                         zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);

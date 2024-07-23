@@ -48,6 +48,7 @@ public:
     void pick_depth(int x, int y);
     std::string just_pick_prim(int x, int y);
     void load_from_str(const std::string& str, zenovis::PICK_MODE mode, SELECTION_MODE sel_mode);
+    void load_painter_attr(const std::string& prim_name, std::map<int, float> attr);
     void focus(const std::string& prim_name);
     void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void()>);

@@ -244,6 +244,20 @@ void Picker::set_draw_special_buffer_mode(bool enable) {
     draw_special_buffer_mode = enable;
 }
 
+void Picker::load_painter_attr(const std::string& prim_name, std::map<int, float> attr) {
+    auto scene = get_scene();
+    auto prims_shared = scene->objectsMan->pairsShared<zeno::PrimitiveObject>();
+    for (const auto& [k, v] : prims_shared) {
+        if (prim_name == k) {
+            scene->painter_data[prim_name].resize(v->verts.size());
+            auto &data = scene->painter_data[prim_name];
+            for (auto [k, v] : attr) {
+                data[k] = {v, 0, 0};
+            }
+        }
+    }
+}
+
 std::optional<float> ray_box_intersect(
     zeno::vec3f const &bmin,
     zeno::vec3f const &bmax,
