@@ -111,7 +111,7 @@ void main() {
   }
 
   if (mPaintMode) {
-    albedo = vec3(0.2, 0.2, 0.8);
+    albedo = iColor;
   }
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   

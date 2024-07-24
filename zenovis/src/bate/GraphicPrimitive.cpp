@@ -30,14 +30,23 @@ struct VBOS {
     std::unique_ptr<Buffer> vbo_nrm;
     std::unique_ptr<Buffer> vbo_uv;
     std::unique_ptr<Buffer> vbo_tang;
+    std::unique_ptr<Buffer> vbo_paint;
+    bool paint_mode = false;
     bool is_not_empty() {
         return bool(vbo_pos);
     }
-    void bind() {
+    void bind(bool _paint_mode) {
+        paint_mode = _paint_mode;
         vbo_pos ->bind();
         vbo_pos ->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
-        vbo_clr ->bind();
-        vbo_clr ->attribute(1, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+        if (paint_mode) {
+            vbo_paint ->bind();
+            vbo_paint ->attribute(1, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+        }
+        else {
+            vbo_clr ->bind();
+            vbo_clr ->attribute(1, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+        }
         vbo_nrm ->bind();
         vbo_nrm ->attribute(2, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
         vbo_uv  ->bind();
@@ -48,8 +57,14 @@ struct VBOS {
     void unbind() {
         vbo_pos ->disable_attribute(0);
         vbo_pos ->unbind();
-        vbo_clr ->disable_attribute(1);
-        vbo_clr ->unbind();
+        if (paint_mode) {
+            vbo_paint ->disable_attribute(1);
+            vbo_paint ->unbind();
+        }
+        else {
+            vbo_clr ->disable_attribute(1);
+            vbo_clr ->unbind();
+        }
         vbo_nrm ->disable_attribute(2);
         vbo_nrm ->unbind();
         vbo_uv  ->disable_attribute(3);
@@ -657,12 +672,19 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         if (scene->drawOptions->show_grid == false && invisible) {
             return;
         }
+        bool is_paint_mode = scene->get_select_mode() == PICK_MODE::PAINT && scene->painter_data.count(nameid);
+        if (is_paint_mode && scene->painter_data[nameid].size() == prim->verts.size()) {
+            vbos.vbo_paint = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+            auto &paint = scene->painter_data[nameid];
+            vbos.vbo_paint->bind_data(paint.data(), paint.size() * sizeof(paint[0]));
+        }
+
         for (int id = 0; id < textures.size(); id++) {
             textures[id]->bind_to(id);
         }
 
         if (draw_all_points || points_count)
-            vbos.bind();
+            vbos.bind(is_paint_mode);
 
         if (draw_all_points) {
             pointObj.prog->use();
@@ -688,9 +710,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
         if (lines_count) {
             if (lineObj.vbos.is_not_empty()) {
-                lineObj.vbos.bind();
+                lineObj.vbos.bind(is_paint_mode);
             } else {
-                vbos.bind();
+                vbos.bind(is_paint_mode);
             }
             lineObj.prog->use();
             scene->camera->set_program_uniforms(lineObj.prog);
@@ -707,9 +729,9 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
         if (tris_count) {
             if (triObj.vbos.is_not_empty()) {
-                triObj.vbos.bind();
+                triObj.vbos.bind(is_paint_mode);
             } else {
-                vbos.bind();
+                vbos.bind(is_paint_mode);
             }
 
             triObj.prog->use();
