@@ -686,7 +686,7 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
         param.name = name;
         param.type = spParamObj.type;
         param.control = spParamObj.control;
-        param.ctrlProps = spParamObj.optCtrlprops;
+        param.ctrlProps = spParamObj.ctrlProps;
         param.defl = spParamObj.defl;
         param.bVisible = spParamObj.bVisible;
         for (auto spLink : spParamObj.links) {
@@ -707,7 +707,6 @@ ZENO_API PrimitiveParams INode::get_output_primitive_params() const {
         param.name = name;
         param.type = spParamObj.type;
         param.control = NullControl;
-        param.ctrlProps = std::nullopt;
         param.defl = spParamObj.defl;
         for (auto spLink : spParamObj.links) {
             param.links.push_back(getEdgeInfo(spLink));
@@ -795,7 +794,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.name = param.name;
     sparam.socketType = param.socketType;
     sparam.type = param.type;
-    sparam.optCtrlprops = param.ctrlProps;
+    sparam.ctrlProps = param.ctrlProps;
     sparam.bVisible = param.bVisible;
     sparam.wildCardGroup = param.wildCardGroup;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
@@ -829,7 +828,7 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam.name = param.name;
     sparam.socketType = param.socketType;
     sparam.type = param.type;
-    sparam.optCtrlprops = param.ctrlProps;
+    sparam.ctrlProps = param.ctrlProps;
     sparam.wildCardGroup = param.wildCardGroup;
     m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
@@ -1191,18 +1190,13 @@ ZENO_API bool zeno::INode::update_param_control(const std::string& param, ParamC
     return false;
 }
 
-ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, ControlProperty props)
+ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, zeno::reflect::Any props)
 {
     CORE_API_BATCH
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
-
-    if (props.items.has_value() || props.items.has_value())
-    {
-        spParam.optCtrlprops = props;
-        CALLBACK_NOTIFY(update_param_control_prop, param, props)
-        return true;
-    }
-    return false;
+    spParam.ctrlProps = props;
+    CALLBACK_NOTIFY(update_param_control_prop, param, props)
+    return true;
 }
 
 ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible)
@@ -1336,7 +1330,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
                 sparam.name = newname;
                 sparam.type = param.type;
                 sparam.control = param.control;
-                sparam.optCtrlprops = param.ctrlProps;
+                sparam.ctrlProps = param.ctrlProps;
                 sparam.socketType = param.socketType;
                 sparam.m_wpNode = shared_from_this();
                 in_outputs[newname] = std::move(sparam);
@@ -1374,7 +1368,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
                         //    spNode->update_param_type("port", param.type);
                     }
                     update_param_control(spParam.name, param.control);
-                    update_param_control_prop(spParam.name, param.ctrlProps.has_value() ? param.ctrlProps.value() : ControlProperty());
+                    update_param_control_prop(spParam.name, param.ctrlProps);
                 }
             }
             else {
@@ -1491,7 +1485,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 auto& sparam = iter->second;
                 sparam.defl = param.defl;
                 sparam.control = param.control;
-                sparam.optCtrlprops = param.ctrlProps;
+                sparam.ctrlProps = param.ctrlProps;
                 sparam.bVisible = param.bVisible;
             }
         }

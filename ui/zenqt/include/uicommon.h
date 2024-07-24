@@ -11,6 +11,7 @@
 #include <rapidjson/prettywriter.h>
 #include <memory>
 #include <zeno/core/data.h>
+#include <zeno/core/IObject.h>
 #include "qkeylist.h"
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
@@ -270,8 +271,6 @@ Q_DECLARE_METATYPE(zeno::EdgeInfo)
 Q_DECLARE_METATYPE(zeno::zvariant)
 
 Q_DECLARE_METATYPE(zeno::reflect::Any)
-
-Q_DECLARE_METATYPE(zeno::ControlProperty)
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)

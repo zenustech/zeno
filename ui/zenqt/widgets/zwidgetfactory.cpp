@@ -22,6 +22,8 @@
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 #include "widgets/zcodeeditor.h"
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zenoui
 {
@@ -30,7 +32,7 @@ namespace zenoui
         zeno::ParamControl ctrl,
         const zeno::ParamType type,
         CallbackCollection cbSet,
-        const zeno::ControlProperty& controlProps
+        const zeno::reflect::Any& controlProps
     )
     {
         switch (ctrl)
@@ -180,9 +182,10 @@ namespace zenoui
             case zeno::Combobox:
             {
                 QStringList items;
-                if (controlProps.items.has_value())
+                if (controlProps.has_value())
                 {
-                    for (auto item : controlProps.items.value())
+                    auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(controlProps);
+                    for (auto item : vec)
                         items.push_back(QString::fromStdString(item));
                 }
 
@@ -248,11 +251,12 @@ namespace zenoui
 
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
@@ -287,11 +291,12 @@ namespace zenoui
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -307,11 +312,12 @@ namespace zenoui
                 pSpinBox->setValue(value.toDouble());
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -324,11 +330,12 @@ namespace zenoui
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);

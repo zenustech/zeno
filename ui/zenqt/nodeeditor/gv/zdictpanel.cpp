@@ -68,7 +68,7 @@ public:
         CallbackCollection cbSet;
         cbSet.cbEditFinished = cbEditFinished;
 
-        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, zeno::ControlProperty());
+        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, zeno::reflect::Any());
         m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 

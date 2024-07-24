@@ -294,7 +294,7 @@ namespace zenoio
         zeno::SocketType socketType = zeno::NoSocket;
         zeno::reflect::Any defl;
         zeno::LinksData paramLinks;
-        std::optional<zeno::ControlProperty> ctrlProps;
+        zeno::reflect::Any ctrlProps;
         std::string tooltip;
 
         zeno::SocketProperty prop = zeno::SocketProperty::Socket_Normal;
@@ -364,14 +364,7 @@ namespace zenoio
 
         if (sockObj.HasMember("control"))
         {
-            zeno::ControlProperty props;
-            bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
-            if (bret) {
-                if (ctrl == zeno::NullControl)
-                    ctrl = zeno::getDefaultControl(paramType);
-                if (props.items || props.ranges)
-                    ctrlProps = props;
-            }
+            bool bret = zenoio::importControl(sockObj["control"], ctrl, ctrlProps);
         }
 
         if (sockObj.HasMember("tooltip"))
@@ -446,13 +439,11 @@ namespace zenoio
                 paramInfo.defl = zenoio::jsonValueToAny(paramValue["default-value"], paramInfo.type);
                 if (paramValue.HasMember("control") && paramValue["control"].IsObject())
                 {
-                    zeno::ControlProperty props;
-                    bool bret = zenoio::importControl(paramValue["control"], paramInfo.control, props);
+                    zeno::reflect::Any props;
+                    bool bret = zenoio::importControl(paramValue["control"], paramInfo.control, paramInfo.ctrlProps);
                     if (bret) {
                         if (paramInfo.control == zeno::NullControl)
                             paramInfo.control = zeno::getDefaultControl(paramInfo.type);
-                        if (props.items || props.ranges)
-                            paramInfo.ctrlProps = props;
                     }
                 }
                 if (paramValue.HasMember("tooltip"))

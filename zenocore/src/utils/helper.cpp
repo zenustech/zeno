@@ -551,9 +551,7 @@ namespace zeno {
                     std::vector<std::string> items = split_str(param_desc.type, ' ');
                     if (!items.empty()) {
                         items.erase(items.begin());
-                        ControlProperty props = ControlProperty();
-                        props.items = items;
-                        param.ctrlProps = props;
+                        param.ctrlProps = items;
                     }
                 }
                 if (param.type != Param_Null && param.control == NullControl)
@@ -590,9 +588,7 @@ namespace zeno {
                 std::vector<std::string> items = split_str(param_desc.type, ' ');
                 if (!items.empty()) {
                     items.erase(items.begin());
-                    ControlProperty props = ControlProperty();
-                    props.items = items;
-                    param.ctrlProps = props;
+                    param.ctrlProps = items;
                 }
             }
             if (param.type != Param_Null && param.control == NullControl)

@@ -53,7 +53,7 @@ struct PrimitiveParam : CoreParam {
     zeno::reflect::Any result;
     std::list<std::shared_ptr<PrimitiveLink>> links;
     ParamControl control = NullControl;
-    std::optional<ControlProperty> optCtrlprops;
+    zeno::reflect::Any ctrlProps;
     bool bVisible = true;
 
     ParamPrimitive exportParam() const;

@@ -8,6 +8,7 @@
 #include "variantptr.h"
 #include "model/graphsmanager.h"
 #include "model/graphstreemodel.h"
+#include <zeno/utils/helper.h>
 
 
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
@@ -69,7 +70,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     });
 
     spNode->register_update_param_control_prop(
-        [this](const std::string& name, zeno::ControlProperty controlProps) {
+        [this](const std::string& name, zeno::reflect::Any controlProps) {
         updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
     });
 
@@ -95,14 +96,14 @@ void ParamsModel::initParamItems()
         item.bInput = true;
         item.control = spParam.control;
         if (item.control == zeno::NullControl)
-            item.control = UiHelper::getDefaultControl(spParam.type);
+            item.control = zeno::getDefaultControl(spParam.type);
         item.optCtrlprops = spParam.ctrlProps;
         item.name = QString::fromStdString(spParam.name);
         item.type = spParam.type;
         item.value = QVariant::fromValue(spParam.defl);
         item.connectProp = spParam.socketType;
         item.bVisible = spParam.bVisible;
-        item.group = zeno::Group_InputPrimitive;
+        item.group = zeno::Role_InputPrimitive;
         m_items.append(item);
     }
     //object inputs
@@ -113,7 +114,7 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(spParam.name);
         item.type = spParam.type;
         item.connectProp = spParam.socketType;
-        item.group = zeno::Group_InputObject;
+        item.group = zeno::Role_InputObject;
         m_items.append(item);
     }
 
@@ -126,7 +127,7 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(param.name);
         item.type = param.type;
         item.connectProp = param.socketType;
-        item.group = zeno::Group_OutputPrimitive;
+        item.group = zeno::Role_OutputPrimitive;
         m_items.append(item);
     }
 
@@ -138,7 +139,7 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(param.name);
         item.type = param.type;
         item.connectProp = param.socketType;
-        item.group = zeno::Group_OutputObject;
+        item.group = zeno::Role_OutputObject;
         m_items.append(item);
     }
 
@@ -168,7 +169,8 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
             for (int k = 0; k < groupItem->rowCount(); k++)
             {
                 auto paramItem = groupItem->child(k);
-                int row = indexFromName(paramItem->data(ROLE_PARAM_NAME).toString(), true);
+                auto& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
+                int row = indexFromName(paramName, true);
                 if (row != -1)
                 {
                     paramItem->setData(m_items[row].value, ROLE_PARAM_VALUE);
@@ -262,7 +264,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         param.control = (zeno::ParamControl)value.toInt();
         break;
     case ROLE_PARAM_CTRL_PROPERTIES:
-        param.optCtrlprops = value.value<zeno::ControlProperty>();
+        param.optCtrlprops = value.value<zeno::reflect::Any>();
         break;
     case ROLE_SOCKET_TYPE:
     {
@@ -312,7 +314,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_PARAM_CTRL_PROPERTIES: {
         if (param.optCtrlprops.has_value())
-            return QVariant::fromValue(param.optCtrlprops.value());
+            return QVariant::fromValue(param.optCtrlprops);
         else
             return QVariant();
     }
@@ -596,7 +598,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
     for (int r = 0; r < m_items.size(); r++) {
         auto group = m_items[r].group;
         std::vector<zeno::EdgeInfo> links;
-        if (group == zeno::Group_InputPrimitive)
+        if (group == zeno::Role_InputPrimitive)
         {
             bool bExist = false;
             auto paramPrim = spNode->get_input_prim_param(m_items[r].name.toStdString(), &bExist);
@@ -605,7 +607,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
             links = paramPrim.links;
             
         }
-        else if (group == zeno::Group_InputObject)
+        else if (group == zeno::Role_InputObject)
         {
             bool bExist = false;
             auto paramObj = spNode->get_input_obj_param(m_items[r].name.toStdString(), &bExist);
@@ -613,7 +615,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
                 continue;
             links = paramObj.links;
         }
-        else if (group == zeno::Group_OutputPrimitive)
+        else if (group == zeno::Role_OutputPrimitive)
         {
             bool bExist = false;
             auto paramPrim = spNode->get_output_prim_param(m_items[r].name.toStdString(), &bExist);
@@ -621,7 +623,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
                 continue;
             links = paramPrim.links;
         }
-        else if (group == zeno::Group_OutputObject)
+        else if (group == zeno::Role_OutputObject)
         {
             bool bExist = false;
             auto paramPrim = spNode->get_output_obj_param(m_items[r].name.toStdString(), &bExist);
@@ -696,7 +698,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
             else if (role == ROLE_SOCKET_TYPE)
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
-                m_items[i].optCtrlprops = val.value<zeno::ControlProperty>();
+                m_items[i].optCtrlprops = val.value<zeno::reflect::Any>();
             else if (role == ROLE_PARAM_VISIBLE)
                 m_items[i].bVisible = val.toBool();
             else if (role == ROLE_PARAM_GROUP)

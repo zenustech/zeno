@@ -101,8 +101,8 @@ public:
    ZENO_API bool update_param_control(const std::string& name, ParamControl control);
    CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
 
-   ZENO_API bool update_param_control_prop(const std::string& name, ControlProperty props);
-   CALLBACK_REGIST(update_param_control_prop, void, const std::string&, ControlProperty)
+   ZENO_API bool update_param_control_prop(const std::string& name, zeno::reflect::Any props);
+   CALLBACK_REGIST(update_param_control_prop, void, const std::string&, zeno::reflect::Any)
 
    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)

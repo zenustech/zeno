@@ -26,7 +26,7 @@ namespace zeno {
         param.defl = defl;
         param.result = result;
         param.control = control;
-        param.ctrlProps = optCtrlprops;
+        param.ctrlProps = ctrlProps;
         param.bVisible = bVisible;
         param.wildCardGroup = wildCardGroup;
         for (auto spLink : links) {

@@ -352,16 +352,11 @@ void Zsg2Reader::_parseSocket(
         _parseDictPanel(bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
     }
 
-    std::optional<zeno::ControlProperty> ctrlProps;
+    zeno::reflect::Any ctrlProps;
 
     if (sockObj.HasMember("control"))
-	{
-        zeno::ControlProperty props;
-        bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
-        if (bret) {
-            if (props.items || props.ranges)
-                ctrlProps = props;
-        }
+    {
+        zenoio::importControl(sockObj["control"], ctrl, ctrlProps);
     }
 
     if (sockObj.HasMember("tooltip")) 
@@ -493,13 +488,7 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
             if (valueObj.HasMember("control"))
             {
                 zeno::ParamControl ctrl;
-                zeno::ControlProperty props;
-                bool bret = zenoio::importControl(valueObj["control"], ctrl, props);
-                if (bret) {
-                    param.control = ctrl;
-                    if (props.items || props.ranges)
-                        param.ctrlProps = props;
-                }
+                zenoio::importControl(valueObj["control"], ctrl, param.ctrlProps);
             }
 
             if (valueObj.HasMember("tooltip"))

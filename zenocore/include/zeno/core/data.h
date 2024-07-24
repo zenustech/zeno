@@ -15,12 +15,6 @@
 
 namespace zeno {
 
-    struct ControlProperty
-    {
-        std::optional<std::vector<std::string>> items;  //for combobox
-        std::optional<std::array<float, 3>> ranges;       //min, max, step
-    };
-
     struct EdgeInfo {
         std::string outNode;
         std::string outParam;
@@ -82,7 +76,7 @@ namespace zeno {
         zeno::reflect::Any defl;
         zeno::reflect::Any result;    //run result.
         ParamControl control = NullControl;
-        std::optional<ControlProperty> ctrlProps;
+        zeno::reflect::Any ctrlProps;
 
         std::vector<EdgeInfo> links;
         SocketProperty prop = Socket_Normal;

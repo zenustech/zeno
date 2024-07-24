@@ -47,6 +47,7 @@ namespace zeno {
         Param_Curve,
         Param_Heatmap,
         Param_SrcDst,
+        Param_Object,
         Param_Custom,
     };
 
@@ -113,10 +114,10 @@ namespace zeno {
 
     enum NodeDataGroup
     {
-        Group_InputObject,
-        Group_InputPrimitive,
-        Group_OutputObject,
-        Group_OutputPrimitive
+        Role_InputObject,
+        Role_InputPrimitive,
+        Role_OutputObject,
+        Role_OutputPrimitive
     };
 
     //ui issues:

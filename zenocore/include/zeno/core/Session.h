@@ -26,7 +26,7 @@ struct INodeClass {
 
     ZENO_API INodeClass(CustomUI const &customui, std::string const& classname);
     ZENO_API virtual ~INodeClass();
-    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &classname) const = 0;
+    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &classname) = 0;
 };
 
 struct IObject;

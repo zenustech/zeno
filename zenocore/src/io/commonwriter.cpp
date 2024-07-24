@@ -288,6 +288,7 @@ namespace zenoio
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);
 
+#if 0
             writer.Key("controlProps");
             {
                 if (param.ctrlProps.has_value()) {
@@ -321,6 +322,7 @@ namespace zenoio
                     writer.Null();
                 }
             }
+#endif
 
             writer.Key("socket-type");
             switch (param.socketType)

@@ -24,7 +24,7 @@ struct ParamItem
     zeno::ParamControl control = zeno::NullControl;
     zeno::SocketType connectProp = zeno::NoSocket;
     zeno::NodeDataGroup group;
-    std::optional<zeno::ControlProperty> optCtrlprops;
+    zeno::reflect::Any optCtrlprops;
     QList<QPersistentModelIndex> links;
     bool bVisible = true;
 };

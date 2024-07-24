@@ -34,6 +34,9 @@
 #include "layout/zdockwidget.h"
 #include "calculation/calculationmgr.h"
 #include "model/GraphModel.h"
+#include "reflect/reflection.generated.hpp"
+
+
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
     : ZToolButton(ZToolButton::Opt_HasIcon, icon, iconOn)
@@ -385,7 +388,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
     pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
 
-    zeno::ControlProperty props;
+    zeno::reflect::Any props;
     std::vector<std::string> items;
     QVector<qreal> factors = UiHelper::scaleFactors();
     for (qreal factor : factors) {
@@ -393,7 +396,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         QString sPer = QString("%1%").arg(per);
         items.push_back(sPer.toStdString());
     }
-    props.items = items;
+    props = items;
 
     Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
         const QString& percent = newValue.toString();
@@ -851,8 +854,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         "1920x1080",
         tr("Customize Size").toStdString()
     };
-    zeno::ControlProperty props;
-    props.items = items;
+    zeno::reflect::Any props = items;
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {

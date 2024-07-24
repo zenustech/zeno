@@ -32,6 +32,7 @@
 
 #include "reflect/reflection.generated.hpp"
 
+using namespace zeno::reflect;
 
 namespace zeno {
 
@@ -50,7 +51,7 @@ namespace zeno {
             return Param_String;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec2i>()) {
-            return Param_Vec2i;
+            return Param_Vec2f;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec2f>()) {
             return Param_Vec2f;
@@ -65,7 +66,7 @@ namespace zeno {
             return Param_Vec3f;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec3s>()) {
-            return Param_Null;
+            return Param_Vec3f;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec4i>()) {
             return Param_Vec4i;
@@ -74,6 +75,12 @@ namespace zeno {
             return Param_Vec4f;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec4s>()) {
+            return Param_Vec4f;
+        }
+        else if (fieldType == zeno::reflect::get_type<std::shared_ptr<zeno::IObject>>()) {
+            return Param_Object;
+        }
+        else if (fieldType == TypeHandle::nulltype()) {
             return Param_Null;
         }
         else {
@@ -90,12 +97,9 @@ struct ImplNodeClass : INodeClass {
     ImplNodeClass(std::shared_ptr<INode>(*ctor)(), CustomUI const& customui, std::string const& name)
         : INodeClass(customui, name), ctor(ctor) {}
 
-    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &name) const override {
+    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &name) override {
         std::shared_ptr<INode> spNode = ctor();
         spNode->initUuid(pGraph, classname);
-
-        std::shared_ptr<SubnetNode> spSubnet = std::dynamic_pointer_cast<SubnetNode>(spNode);
-
         spNode->set_name(name);
 
         //init all params, and set defl value
@@ -123,18 +127,33 @@ struct ReflectNodeClass : INodeClass {
     std::function<std::shared_ptr<INode>()> ctor;
     zeno::reflect::TypeBase* typebase;
 
-    ReflectNodeClass(std::function<std::shared_ptr<INode>()> ctor, zeno::reflect::TypeBase* pTypeBase)
-        : INodeClass(CustomUI(), "")
+    ReflectNodeClass(std::function<std::shared_ptr<INode>()> ctor, std::string const& nodecls, zeno::reflect::TypeBase* pTypeBase)
+        : INodeClass(CustomUI(), nodecls)
         , ctor(ctor)
         , typebase(pTypeBase)
     {
-        typebase->get_info();
     }
 
-    std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) const override {
-        std::shared_ptr<INode> spNode = ctor();
+    std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) override {
 
-        for (zeno::reflect::IMemberField* field : typebase->get_member_fields()) {
+        std::shared_ptr<INode> spNode = ctor();
+        spNode->initUuid(pGraph, classname);
+        spNode->set_name(name);
+
+        if (m_customui.inputPrims.tabs.empty())
+        {
+            zeno::ParamTab tab;
+            tab.name = "Tab1";
+            zeno::ParamGroup group;
+            group.name = "Group1";
+            tab.groups.emplace_back(group);
+            m_customui.inputPrims.tabs.emplace_back(tab);
+        }
+
+        std::set<std::string> reg_inputobjs, reg_inputprims, reg_outputobjs, reg_outputprims;
+
+        //先遍历所有成员，收集所有参数，目前假定所有成员变量都作为节点的参数存在，后续看情况可以指定
+        for (IMemberField* field : typebase->get_member_fields()) {
             // 找到我们要的
             std::string field_name(field->get_name().c_str());
             std::string param_name;
@@ -147,6 +166,7 @@ struct ReflectNodeClass : INodeClass {
                 else {
                     param_name = field_name;
                 }
+                //TODO: 名称合法性判断
 
                 //根据类型判断一下是object还是primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
@@ -154,53 +174,287 @@ struct ReflectNodeClass : INodeClass {
                 ParamType type = reflectTypeInfoToType(fieldType);
 
                 //role:
-                bool bInput = true;
+                NodeDataGroup role = Role_InputObject;
                 if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
-                    std::string role = value->as_string();
-                    if (role == "input") {
-                        bInput = true;
+                    int _role = value->as_int();
+                    if (_role < Role_InputObject || _role > Role_OutputPrimitive) {
+                        throw makeError<UnimplError>("parsing error when parsing reflected node.");
                     }
-                    else if (role == "output") {
-                        bInput = false;
-                    }
-                    else {
-                        assert(false);
-                    }
+                    role = static_cast<NodeDataGroup>(_role);
+                }
+                else {
+                    //没有指定role，一律都是按input处理，是否为obj根据类型做判断
+                    role = (type == Param_Object) ? Role_InputObject : Role_InputPrimitive;
                 }
 
-                if (false) {
-                    //control:
-                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Control")) {
-                        std::string ctrlName = value->as_string();
-                        int j;
-                        j = 0;
+                if (role == Role_InputObject)
+                {
+                    if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
+                        //因为是定义在PROPERTY上，所以理论上可以重复写
+                        throw makeError<UnimplError>("repeated name on input objs");
                     }
 
-                    //comobox items:
-                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("ComboBoxItems")) {
-                        assert(value->is_list());
-                        std::vector<std::string> items;
-                        for (int i = 0; i < value->list_length(); i++) {
-                            items.push_back(value->list_get_item(i)->as_string());
+                    //观察有无定义socket属性
+                    SocketType socketProp = Socket_Owning;
+                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Socket")) {
+                        int _role = value->as_int();
+                        if (_role < NoSocket || _role > Socket_WildCard) {
+                            throw makeError<UnimplError>("parsing error when parsing reflected node.");
                         }
-                        int j;
-                        j = 0;
+                        socketProp = (SocketType)_role;
+                    }
+
+                    //TODO: wilecard
+
+                    ParamObject inputObj;
+                    inputObj.name = param_name;
+                    inputObj.type = type;
+                    inputObj.socketType = socketProp;
+                    m_customui.inputObjs.emplace_back(inputObj);
+                    reg_inputobjs.insert(param_name);
+                }
+                else if (role == Role_OutputObject)
+                {
+                    if (reg_outputobjs.find(param_name) != reg_outputobjs.end()) {
+                        //因为是定义在PROPERTY上，所以理论上可以重复写
+                        throw makeError<UnimplError>("repeated name on input objs");
+                    }
+                    ParamObject outputObj;
+                    outputObj.name = param_name;
+                    outputObj.type = type;
+                    outputObj.socketType = Socket_Output;
+                    m_customui.outputObjs.emplace_back(outputObj);
+                    reg_outputobjs.insert(param_name);
+                }
+                else if (role == Role_InputPrimitive)
+                {
+                    //defl value
+                    zeno::reflect::Any defl = field->get_field_value(spNode.get());
+                    zeno::reflect::Any controlProps;
+                    ParamPrimitive prim;
+
+                    ParamControl ctrl = getDefaultControl(type);
+                    //control:
+                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Control")) {
+                        ctrl = (ParamControl)value->as_int();
+                        if (ctrl == Slider || ctrl == SpinBox || ctrl == SpinBoxSlider || ctrl == DoubleSpinBox)
+                        {
+                            if (const zeno::reflect::IMetadataValue* value = metadata->get_value("range")) {
+                                if (value->is_list() && value->list_length() > 0)
+                                {
+                                    if (value->list_get_item(0)->is_int()) {
+                                        std::vector<int> vec;
+                                        for (int i = 0; i < value->list_length(); i++) {
+                                            auto pItem = value->list_get_item(i);
+                                            assert(pItem->is_int());
+                                            vec.push_back(pItem->as_int());
+                                        }
+                                        if (vec.size() == 2) {
+                                            controlProps = vec;
+                                        }
+                                    }
+                                    else if (value->list_get_item(0)->is_float()) {
+                                        std::vector<float> vec;
+                                        for (int i = 0; i < value->list_length(); i++) {
+                                            auto pItem = value->list_get_item(i);
+                                            assert(pItem->is_float());
+                                            vec.push_back(pItem->as_float());
+                                        }
+                                        if (vec.size() == 2) {
+                                            controlProps = vec;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else if (ctrl == Combobox)
+                        {
+                            //comobox items:
+                            if (const zeno::reflect::IMetadataValue* value = metadata->get_value("ComboBoxItems")) {
+                                assert(value->is_list());
+                                std::vector<std::string> items;
+                                for (int i = 0; i < value->list_length(); i++) {
+                                    items.push_back(value->list_get_item(i)->as_string());
+                                }
+                                controlProps = items;
+                            }
+                        }
+                    }
+                    prim.name = param_name;
+                    prim.type = type;
+                    prim.bInput = true;
+                    prim.bVisible = true;
+                    prim.control = ctrl;
+                    prim.ctrlProps = controlProps;
+                    prim.defl = defl;
+                    prim.socketType = Socket_Primitve;
+                    prim.tooltip;
+                    prim.wildCardGroup;
+
+                    //现在还没有支持层级概念，只能放在默认的层级
+                    m_customui.inputPrims.tabs[0].groups[0].params.emplace_back(prim);
+                }
+                else if (role == Role_OutputPrimitive)
+                {
+                    if (reg_outputprims.find(param_name) != reg_outputprims.end()) {
+                        //因为是定义在PROPERTY上，所以理论上可以重复写
+                        throw makeError<UnimplError>("repeated name on output prims");
+                    }
+
+                    ParamPrimitive prim;
+                    prim.name = param_name;
+                    prim.bInput = false;
+                    prim.bVisible = true;
+                    prim.control = NullControl;
+                    prim.socketType = Socket_Primitve;
+                    prim.tooltip;
+                    prim.wildCardGroup;
+                    m_customui.outputPrims.emplace_back(prim);
+                    reg_outputprims.insert(param_name);
+                }
+            }
+        }
+
+        //通过寻找apply函数上的参数和返回值，为节点添加参数，不过ZenoReflect还没支持参数名称的反射，只有类型信息
+#if 0
+        for (IMemberFunction* func : typebase->get_member_functions())
+        {
+            const auto& funcname = func->get_name();
+            if (funcname == "apply") {
+                continue;
+            }
+            const TypeHandle& ret_type = func->get_return_type();
+            ParamType type = reflectTypeInfoToType(ret_type);
+            if (type != Param_Null)
+            {
+                //存在返回类型，说明有输出，需要分配一个输出参数
+                int idx = 1;
+                std::string param_name = "result";
+                if (type == Param_Object) {
+                    while (reg_outputobjs.find(param_name) != reg_outputobjs.end()) {
+                        param_name = "result" + std::to_string(idx++);
+                    }
+                    ParamObject outputObj;
+                    outputObj.name = param_name;
+                    outputObj.bInput = false;
+                    outputObj.socketType = Socket_Output;
+                    outputObj.type = type;
+                    m_customui.outputObjs.emplace_back(outputObj);
+                    reg_outputobjs.insert(param_name);
+                }
+                else {
+                    while (reg_outputprims.find(param_name) != reg_outputprims.end()) {
+                        param_name = "result" + std::to_string(idx++);
+                    }
+                    ParamPrimitive outPrim;
+                    outPrim.name = param_name;
+                    outPrim.bInput = false;
+                    outPrim.socketType = Socket_Primitve;
+                    outPrim.type = type;
+                    outPrim.wildCardGroup;
+                    m_customui.outputPrims.emplace_back(outPrim);
+                    reg_outputprims.insert(param_name);
+                }
+            }
+
+            const ArrayList<RTTITypeInfo>& params = func->get_params();
+            for (const RTTITypeInfo& param_type : params)
+            {
+                size_t param_code = param_type.hash_code();
+                std::string const& param_name = param_type.name();
+                if (param_name.empty()) {
+                    //空白参数不考虑
+                    continue;
+                }
+                if (!param_type.has_flags(TF_IsConst) && param_type.has_flags(TF_IsLValueRef)) {
+                    //引用返回当作是输出处理
+                    if (param_code == get_type<std::shared_ptr<zeno::IObject>>().type_hash() ||
+                        param_code == get_type<std::unique_ptr<zeno::IObject>>().type_hash())
+                    {
+                        type = Param_Object;
+                        if (reg_outputobjs.find(param_name) == reg_outputobjs.end()) {
+                            ParamObject outputObj;
+                            outputObj.name = param_name;
+                            outputObj.bInput = false;
+                            outputObj.socketType = Socket_Output;
+                            outputObj.type = type;
+                            m_customui.outputObjs.emplace_back(outputObj);
+                            reg_outputobjs.insert(param_name);
+                        }
+                    }
+                    else {
+                        type = reflectTypeInfoToType(TypeHandle(param_type));
+                        if (reg_outputprims.find(param_name) == reg_outputprims.end()) {
+                            ParamPrimitive prim;
+                            prim.name = param_name;
+                            prim.bInput = false;
+                            prim.bVisible = true;
+                            prim.control = NullControl;
+                            prim.socketType = Socket_Primitve;
+                            prim.defl = initAnyDeflValue(type);
+                            prim.tooltip;
+                            prim.wildCardGroup;
+                            m_customui.outputPrims.emplace_back(prim);
+                            reg_outputprims.insert(param_name);
+                        }
+                    }
+                }
+                else {
+                    //观察是否为shared_ptr<IObject>
+                    if (param_code == get_type<std::shared_ptr<zeno::IObject>>().type_hash() ||
+                        param_code == get_type<std::unique_ptr<zeno::IObject>>().type_hash())
+                    {
+                        type = Param_Object;
+                        if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
+                            //同名情况，说明成员变量定义了一个相同名字的参数，很罕见，但可以直接跳过
+                        }
+                        else {
+                            ParamObject inObj;
+                            inObj.name = param_name;
+                            inObj.bInput = true;
+                            inObj.socketType = Socket_Owning;   //TODO: 也许会根据引用类型或者const决定是否owning.
+                            inObj.type = type;
+                            m_customui.inputObjs.emplace_back(inObj);
+                            reg_inputobjs.insert(param_name);
+                        }
+                    }
+                    else {
+                        type = reflectTypeInfoToType(TypeHandle(param_type));
+                        if (reg_inputprims.find(param_name) == reg_inputprims.end()) {
+                            ParamPrimitive inPrim;
+                            inPrim.name = param_name;
+                            inPrim.bInput = true;
+                            inPrim.socketType = Socket_Primitve;
+                            inPrim.type = type;
+                            inPrim.defl = initAnyDeflValue(type);
+                            inPrim.control = getDefaultControl(type);
+                            inPrim.wildCardGroup;
+                            m_customui.inputPrims.tabs[0].groups[0].params.emplace_back(inPrim);
+                            reg_inputprims.insert(param_name);
+                        }
                     }
                 }
             }
-            // 判断它的名字
-            //if (field->get_name() == "a1") {
-            //    // 作为普通类型, 我们需要知道它的类型才能正确转换指针
-            //    if (field->get_field_type() == get_type<int>()) {
-            //        // 获取字段数据指针
-            //        int* a1_ptr = field->get_field_ptr_typed<int>(instance);
-
-            //        // 修改一下它的值
-            //        *a1_ptr = 123;
-            //    }
-            //}
         }
+#endif
 
+        //init all params, and set defl value
+        for (const ParamObject& param : m_customui.inputObjs)
+        {
+            spNode->add_input_obj_param(param);
+        }
+        for (const ParamPrimitive& param : customUiToParams(m_customui.inputPrims))
+        {
+            spNode->add_input_prim_param(param);
+        }
+        for (const ParamPrimitive& param : m_customui.outputPrims)
+        {
+            spNode->add_output_prim_param(param);
+        }
+        for (const ParamObject& param : m_customui.outputObjs)
+        {
+            spNode->add_output_obj_param(param);
+        }
         return spNode;
     }
 };
@@ -258,7 +512,7 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", nodecls);
     }
-    auto cls = std::make_unique<ReflectNodeClass>(ctor, pTypeBase);
+    auto cls = std::make_unique<ReflectNodeClass>(ctor, nodecls, pTypeBase);
     //TODO: From metadata
     cls->m_customui.category = "reflect";
     nodeClasses.emplace(nodecls, std::move(cls));

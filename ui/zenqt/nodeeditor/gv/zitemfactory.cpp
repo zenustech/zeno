@@ -14,6 +14,7 @@
 #include "util/uihelper.h"
 #include "util/ztfutil.h"
 #include "util/jsonhelper.h"
+#include "reflect/reflection.generated.hpp"
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -71,7 +72,7 @@ namespace zenoui
         zeno::ParamType type,
         CallbackCollection cbSet,
         QGraphicsScene* scene,
-        const zeno::ControlProperty& controlProps
+        const zeno::reflect::Any& controlProps
     )
     {
         ZtfUtil& inst = ZtfUtil::GetInstance();
@@ -276,9 +277,10 @@ namespace zenoui
             {
                 //todo: legacy case compatible
                 QStringList items;
-                if (controlProps.items.has_value())
+                if (controlProps.has_value())
                 {
-                    for (auto item : controlProps.items.value())
+                    auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(controlProps);
+                    for (auto item : vec)
                         items.push_back(QString::fromStdString(item));
                 }
 
@@ -327,11 +329,12 @@ namespace zenoui
             {
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, pItemWidget);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
 
                 ZenoParamSlider *pSlider = new ZenoParamSlider(Qt::Horizontal, value.toInt(), sliderInfo);
@@ -346,11 +349,12 @@ namespace zenoui
             case zeno::SpinBox: 
             {
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, pItemWidget);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
 
                 ZenoParamSpinBox *pSpinBox = new ZenoParamSpinBox(sliderInfo);
@@ -367,11 +371,12 @@ namespace zenoui
             {
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, pItemWidget);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
 
                 ZenoParamSpinBoxSlider *pSlider = new ZenoParamSpinBoxSlider(Qt::Horizontal, value.toInt(), sliderInfo);
@@ -387,11 +392,12 @@ namespace zenoui
             case zeno::DoubleSpinBox:
             {
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, pItemWidget);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 ZenoParamDoubleSpinBox* pSpinBox = new ZenoParamDoubleSpinBox(sliderInfo);
                 pSpinBox->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));

@@ -886,7 +886,7 @@ namespace zenoio
         }
     }
 
-    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::ControlProperty& props)
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::reflect::Any& props)
     {
         if (!controlObj.IsObject())
             return false;
@@ -906,11 +906,12 @@ namespace zenoio
         {
             if (controlObj["min"].IsNumber() && controlObj["max"].IsNumber() && controlObj["step"].IsNumber())
             {
-                props.ranges = {
+                std::vector<float> ranges = {
                     controlObj["min"].GetFloat(),
                     controlObj["max"].GetFloat(),
                     controlObj["step"].GetFloat()
                 };
+                props = ranges;
             }
         }
         if (controlObj.HasMember("items"))
@@ -918,17 +919,18 @@ namespace zenoio
             if (controlObj["items"].IsArray())
             {
                 auto& arr = controlObj["items"].GetArray();
-                props.items = std::vector<std::string>();
+                std::vector<std::string> items;
                 for (int i = 0; i < arr.Size(); i++)
                 {
-                    props.items->push_back(arr[i].GetString());
+                    items.push_back(arr[i].GetString());
                 }
+                props = items;
             }
         }
         return true;
     }
 
-    void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, std::optional<zeno::ControlProperty> ctrlProps, RAPIDJSON_WRITER& writer)
+    void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, const zeno::reflect::Any& ctrlProps, RAPIDJSON_WRITER& writer)
     {
         writer.StartObject();
 
@@ -938,6 +940,8 @@ namespace zenoio
 
         if (ctrlProps.has_value())
         {
+            //TODO
+#if 0
             zeno::ControlProperty props = ctrlProps.value();
             if (props.items.has_value()) {
                 writer.Key("items");
@@ -954,6 +958,7 @@ namespace zenoio
                 writer.Key("step");
                 writer.Double(props.ranges.value()[2]);
             }
+#endif
         }
 
         writer.EndObject();

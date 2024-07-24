@@ -12,7 +12,7 @@ namespace zenoui
         zeno::ParamControl ctrl,
         const zeno::ParamType type,
         CallbackCollection cbSet,
-        const zeno::ControlProperty& properties = zeno::ControlProperty()
+        const zeno::reflect::Any& properties = zeno::reflect::Any()
     );
 
     bool isMatchControl(zeno::ParamControl ctrl, QWidget* pControl);

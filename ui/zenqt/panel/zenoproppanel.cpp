@@ -367,7 +367,7 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
         zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
         const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
-        const zeno::ControlProperty& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+        const zeno::reflect::Any& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
         QPersistentModelIndex perIdx(paramItem->index());
         CallbackCollection cbSet;
@@ -481,7 +481,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
     const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
-    const zeno::ControlProperty &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+    const zeno::reflect::Any &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
@@ -741,7 +741,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
         return;
 
-    if (topLeft.data(ROLE_PARAM_GROUP) != zeno::Group_InputPrimitive)
+    if (topLeft.data(ROLE_PARAM_GROUP) != zeno::Role_InputPrimitive)
         return;
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
