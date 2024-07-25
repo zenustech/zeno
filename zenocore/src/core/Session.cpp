@@ -316,11 +316,10 @@ struct ReflectNodeClass : INodeClass {
         }
 
         //通过寻找apply函数上的参数和返回值，为节点添加参数，不过ZenoReflect还没支持参数名称的反射，只有类型信息
-#if 0
         for (IMemberFunction* func : typebase->get_member_functions())
         {
             const auto& funcname = func->get_name();
-            if (funcname == "apply") {
+            if (funcname != "apply") {
                 continue;
             }
             const TypeHandle& ret_type = func->get_return_type();
@@ -358,10 +357,14 @@ struct ReflectNodeClass : INodeClass {
             }
 
             const ArrayList<RTTITypeInfo>& params = func->get_params();
-            for (const RTTITypeInfo& param_type : params)
+            const auto& param_names = func->get_params_name();
+            assert(params.size() == param_names.size());
+            for (int i = 0; i < params.size(); i++)
             {
+                const RTTITypeInfo& param_type = params[i];
+
                 size_t param_code = param_type.hash_code();
-                std::string const& param_name = param_type.name();
+                std::string const& param_name(param_names[i].c_str());
                 if (param_name.empty()) {
                     //空白参数不考虑
                     continue;
@@ -436,7 +439,6 @@ struct ReflectNodeClass : INodeClass {
                 }
             }
         }
-#endif
 
         //init all params, and set defl value
         for (const ParamObject& param : m_customui.inputObjs)

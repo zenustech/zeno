@@ -304,7 +304,7 @@ namespace zeno {
     zeno::reflect::Any initAnyDeflValue(ParamType const& type)
     {
         if (type == zeno::Param_String) {
-            return "";
+            return std::string("");     //要注意和char*常量区分，any::get_type的时候是不一样的
         }
         else if (type == zeno::Param_Float)
         {
