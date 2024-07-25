@@ -363,7 +363,8 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
     {
         auto paramItem = pGroupItem->child(row);
         const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
-        QVariant val = paramItem->data(ROLE_PARAM_VALUE);
+        QVariant val = UiHelper::anyToQvar(paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>());
+
         zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
         const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();

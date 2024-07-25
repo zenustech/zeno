@@ -142,7 +142,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
         if (i >= 0)
         {
             auto index = paramsM->index(i, 0);
-            QString items = index.data(ROLE_PARAM_VALUE).toString();
+            QString items = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
             QStringList itemList;
             if (!items.isEmpty())
                 itemList = items.split(",");
@@ -155,7 +155,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
             else {
                 return;
             }
-            UiHelper::qIndexSetData(index, itemList.join(","), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(itemList.join(","), zeno::Param_String)), ROLE_PARAM_VALUE);
         }
     }
 }
@@ -278,13 +278,13 @@ void GroupNode::initLayout() {
         auto index = paramsM->index(paramsM->indexFromName("title", true), 0);
         if (index.isValid())
         {
-            QString title = index.data(ROLE_PARAM_VALUE).toString();
+            QString title = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
             m_pTextItem->setText(title);
         }
         index = paramsM->index(paramsM->indexFromName("background", true), 0);
         if (index.isValid())
         {
-            UI_VECTYPE background = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            UI_VECTYPE background = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).value<UI_VECTYPE>();
             if (background.size() == 3)
             {
                 QPalette palette = m_pTextItem->palette();
@@ -297,7 +297,7 @@ void GroupNode::initLayout() {
         index = paramsM->index(paramsM->indexFromName("size", true), 0);
         if (index.isValid())
         {
-            UI_VECTYPE sizeVec = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            UI_VECTYPE sizeVec = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).value<UI_VECTYPE>();
             if (sizeVec.size() == 2)
             {
                 QSizeF size(sizeVec[0], sizeVec[1]);
@@ -462,16 +462,17 @@ void GroupNode::updateBlackboard() {
     if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(index().data(ROLE_PARAMS)))
     {
         auto index = paramsM->index(paramsM->indexFromName("title", true), 0);
-        if (index.isValid() && index.data(ROLE_PARAM_VALUE).toString() != m_pTextItem->text())
+        auto strVal = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
+        if (index.isValid() && strVal != m_pTextItem->text())
         {
-            UiHelper::qIndexSetData(index, m_pTextItem->text(), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(m_pTextItem->text(), zeno::Param_String)), ROLE_PARAM_VALUE);
         }
         index = paramsM->index(paramsM->indexFromName("size", true), 0);
         if (index.isValid())
         {
             UI_VECTYPE val;
             val << this->size().width() << this->size().height();
-            UiHelper::qIndexSetData(index, QVariant::fromValue(val), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(QVariant::fromValue(val), zeno::Param_Vec3f)), ROLE_PARAM_VALUE);
         }
     }
 }
@@ -486,7 +487,7 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         auto index = paramsM->index(paramsM->indexFromName("background", true), 0);
         if (index.isValid())
         {
-            UI_VECTYPE val = index.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+            UI_VECTYPE val = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).value<UI_VECTYPE>();
             if (val.size() == 3)
                 background = QColor::fromRgbF(val[0], val[1], val[2]);
         }
@@ -536,12 +537,12 @@ void GroupNode::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bot
 {
     if (topLeft.data(ROLE_PARAM_NAME) == "title")
     {
-        QString title = topLeft.data(ROLE_PARAM_VALUE).toString();
+        QString title = UiHelper::anyToQvar(topLeft.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
         m_pTextItem->setText(title);
     }
     else if (topLeft.data(ROLE_PARAM_NAME) == "background")
     {
-        UI_VECTYPE background = topLeft.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+        UI_VECTYPE background = UiHelper::anyToQvar(topLeft.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).value<UI_VECTYPE>();
         if (background.size() == 3)
         {
             QPalette palette = m_pTextItem->palette();
@@ -553,7 +554,7 @@ void GroupNode::onDataChanged(const QModelIndex& topLeft, const QModelIndex& bot
     }
     else if (topLeft.data(ROLE_PARAM_NAME) == "size")
     {
-        auto sizeVec = topLeft.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+        UI_VECTYPE sizeVec = UiHelper::anyToQvar(topLeft.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).value<UI_VECTYPE>();
         QSizeF size(sizeVec[0], sizeVec[1]);
         if (size != this->size()) {
             resize(size);
