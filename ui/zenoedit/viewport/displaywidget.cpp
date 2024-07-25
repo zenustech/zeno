@@ -1396,11 +1396,10 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected elements
             if (picker) {
                 auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+                std::map<int, float> attr;
                 if (!node_selected_str.empty()) {
-                    string node_context;
                     auto node_selected_qstr = QString(node_selected_str.c_str());
                     auto elements = node_selected_qstr.split(',');
-                    std::map<int, float> attr;
                     for (auto e : elements) {
                         e = e.trimmed();
                         if (e.size() == 0) {
@@ -1411,9 +1410,8 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         auto value = std::stof(key_value[1].trimmed().toStdString());
                         attr[key] = value;
                     }
-
-                    picker->load_painter_attr(prim_name, std::move(attr));
                 }
+                picker->load_painter_attr(prim_name, std::move(attr));
                 // set callback to picker
                 picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
                     {

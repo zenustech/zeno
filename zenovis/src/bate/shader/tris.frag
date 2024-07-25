@@ -82,6 +82,23 @@ vec3 calcRayDir(vec3 pos)
   return normalize(vpos.xyz);
 }
 
+float jet_normalize(float value, float min, float max) {
+    return clamp((value - min) / (max - min), 0, 1);
+}
+
+vec3 jetColorMap(float value) {
+    float fourValue = 4.0 * value;
+
+    float r = min(fourValue - 1.5, -fourValue + 4.5);
+    float g = min(fourValue - 0.5, -fourValue + 3.5);
+    float b = min(fourValue + 0.5, -fourValue + 2.5);
+
+    r = jet_normalize(r, 0.0, 1.0);
+    g = jet_normalize(g, 0.0, 1.0);
+    b = jet_normalize(b, 0.0, 1.0);
+    return vec3(r, g, b);
+}
+
 void main() {
   if (mRenderWireframe) {
     fColor = vec4(0.89, 0.57, 0.15, 1.0);
@@ -111,7 +128,7 @@ void main() {
   }
 
   if (mPaintMode) {
-    albedo = iColor;
+    albedo = jetColorMap(iColor.r);
   }
   vec3 color = studioShading(albedo, viewdir, normal, tangent);
   
