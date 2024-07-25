@@ -328,7 +328,7 @@ namespace zenoio
         case zeno::Param_String:
         {
             if (val.IsString())
-                defl = val.GetString();
+                defl = (std::string)val.GetString();
             break;
         }
         case zeno::Param_Vec2i:

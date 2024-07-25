@@ -142,7 +142,7 @@ void ZenoSubGraphScene::initModel(GraphModel* pGraphM)
                 auto index = paramsM->index(paramsM->indexFromName("items", true), 0);
                 if (index.isValid())
                 {
-                    QString val = index.data(ROLE_PARAM_VALUE).toString();
+                    QString val = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
                     if (!val.isEmpty())
                     {
                         auto items = val.split(",");

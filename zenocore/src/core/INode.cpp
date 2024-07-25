@@ -1487,6 +1487,9 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 sparam.control = param.control;
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.bVisible = param.bVisible;
+                //graph记录$F相关节点
+                if (std::shared_ptr<Graph> spGraph = graph.lock())
+                    spGraph->parseNodeParamDependency(&sparam, param.defl);
             }
         }
     }

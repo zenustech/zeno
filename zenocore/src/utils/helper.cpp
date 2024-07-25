@@ -262,6 +262,8 @@ namespace zeno {
     }
 
     ZENO_API zvariant AnyToZVariant(zeno::reflect::Any const& var) {
+        if (!var.has_value())
+            return zvariant();
         if (zeno::reflect::get_type<int>() == var.type()) {
             return zeno::reflect::any_cast<int>(var);
         }
@@ -301,7 +303,7 @@ namespace zeno {
         return zvariant();
     }
 
-    zeno::reflect::Any initAnyDeflValue(ParamType const& type)
+    ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type)
     {
         if (type == zeno::Param_String) {
             return std::string("");     //要注意和char*常量区分，any::get_type的时候是不一样的

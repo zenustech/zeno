@@ -18,7 +18,7 @@ namespace zeno {
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type);
     ZENO_API zeno::reflect::Any str2any(std::string const& defl, ParamType const& type);
     ZENO_API zvariant initDeflValue(ParamType const& type);
-    zeno::reflect::Any initAnyDeflValue(ParamType const& type);
+    ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type);
     ZENO_API zvariant AnyToZVariant(zeno::reflect::Any const& var);
     ZENO_API std::string getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type);
     ZENO_API zeno::ParamControl getDefaultControl(const zeno::ParamType type);

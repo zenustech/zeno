@@ -155,6 +155,94 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
     return zeno::reflect::Any();
 }
 
+QVariant UiHelper::anyToQvar(zeno::reflect::Any var)
+{
+    if (!var.has_value())
+        return QVariant();
+    if (zeno::reflect::get_type<int>() == var.type()) {
+        return zeno::reflect::any_cast<int>(var);
+    }
+    else if (zeno::reflect::get_type<float>() == var.type()) {
+        return zeno::reflect::any_cast<float>(var);
+    }
+    else if (zeno::reflect::get_type<std::string>() == var.type()) {
+        return QString::fromStdString(zeno::reflect::any_cast<std::string>(var));
+    }
+    else if (zeno::reflect::get_type<zeno::vec2i>() == var.type()) {
+        zeno::vec2i vec2i = zeno::reflect::any_cast<zeno::vec2i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec2i[0]);
+        vec.push_back(vec2i[1]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3i>() == var.type()) {
+        zeno::vec3i vec3i = zeno::reflect::any_cast<zeno::vec3i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec3i[0]);
+        vec.push_back(vec3i[1]);
+        vec.push_back(vec3i[2]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4i>() == var.type()) {
+        zeno::vec4i vec4i = zeno::reflect::any_cast<zeno::vec4i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec4i[0]);
+        vec.push_back(vec4i[1]);
+        vec.push_back(vec4i[2]);
+        vec.push_back(vec4i[3]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec2f>() == var.type()) {
+        zeno::vec2f vec2f = zeno::reflect::any_cast<zeno::vec2f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec2f[0]);
+        vec.push_back(vec2f[1]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3f>() == var.type()) {
+        zeno::vec3f vec3f = zeno::reflect::any_cast<zeno::vec3f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec3f[0]);
+        vec.push_back(vec3f[1]);
+        vec.push_back(vec3f[2]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4f>() == var.type()) {
+        zeno::vec4f vec4f = zeno::reflect::any_cast<zeno::vec4f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec4f[0]);
+        vec.push_back(vec4f[1]);
+        vec.push_back(vec4f[2]);
+        vec.push_back(vec4f[3]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec2s>() == var.type()) {
+        zeno::vec2s vec2s = zeno::reflect::any_cast<zeno::vec2s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec2s[0]));
+        vec.push_back(QString::fromStdString(vec2s[1]));
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3s>() == var.type()) {
+        zeno::vec3s vec3s = zeno::reflect::any_cast<zeno::vec3s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec3s[0]));
+        vec.push_back(QString::fromStdString(vec3s[1]));
+        vec.push_back(QString::fromStdString(vec3s[2]));
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4s>() == var.type()) {
+        zeno::vec4s vec4s = zeno::reflect::any_cast<zeno::vec4s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec4s[0]));
+        vec.push_back(QString::fromStdString(vec4s[1]));
+        vec.push_back(QString::fromStdString(vec4s[2]));
+        vec.push_back(QString::fromStdString(vec4s[3]));
+        return QVariant::fromValue(vec);
+    }
+    return QVariant();
+}
+
 zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType type)
 {
     if (var.type() == QVariant::String)
@@ -2054,7 +2142,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
@@ -2101,7 +2189,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(false, ROLE_ISINPUT);

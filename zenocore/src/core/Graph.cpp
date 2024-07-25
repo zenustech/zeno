@@ -104,19 +104,23 @@ ZENO_API void Graph::runGraph() {
 }
 
 void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value) {
-    assert(spParam);
-    if (Param_String == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
-        assert(spNode);
-
-        const std::string& nodecls = spNode->get_nodecls();
-        const std::string& uuid = spNode->get_uuid();
-
-        std::string newstr = zeno_get<std::string>(old_value);
-
-        frame_nodes.erase(uuid);
+    auto spNode = spParam->m_wpNode.lock();
+    assert(spNode);
+    {   //检测param依赖全局变量,先remove再parse
         getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
+        assert(spParam);
+        parseNodeParamDependency(spParam, new_value);
+    }
+}
 
+void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any& new_value)
+{
+    auto spNode = spParam->m_wpNode.lock();
+    assert(spNode);
+    const std::string& uuid = spNode->get_uuid();
+    frame_nodes.erase(uuid);
+    if (Param_String == spParam->type) {
+        std::string newstr = zeno_get<std::string>(new_value);
         std::regex pattern("\\$F");
         if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
             frame_nodes.insert(uuid);
@@ -124,58 +128,37 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_v
         }
     }
     else if (Param_Vec2f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
-        assert(spNode);
-        const std::string& uuid = spNode->get_uuid();
-        frame_nodes.erase(uuid);
-        getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        {
-            vec2s vec;
-            if (zeno_get_if(new_value, vec)) {
-                std::regex pattern("\\$F");
-                for (auto val : vec) {
-                    if (std::regex_search(val, pattern)) {
-                        frame_nodes.insert(uuid);
-                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
-                    }
+        vec2s vec;
+        if (zeno_get_if(new_value, vec)) {
+            std::regex pattern("\\$F");
+            for (auto val : vec) {
+                if (std::regex_search(val, pattern)) {
+                    frame_nodes.insert(uuid);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }
     }
     else if (Param_Vec3f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
-        assert(spNode);
-        const std::string& uuid = spNode->get_uuid();
-        frame_nodes.erase(uuid);
-        getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        {
-            vec3s vec;
-            if (zeno_get_if(new_value, vec)) {
-                std::regex pattern("\\$F");
-                for (auto val : vec) {
-                    if (std::regex_search(val, pattern)) {
-                        frame_nodes.insert(uuid);
-                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
-                    }
+        vec3s vec;
+        if (zeno_get_if(new_value, vec)) {
+            std::regex pattern("\\$F");
+            for (auto val : vec) {
+                if (std::regex_search(val, pattern)) {
+                    frame_nodes.insert(uuid);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }
     }
     else if (Param_Vec4f == spParam->type) {
-        auto spNode = spParam->m_wpNode.lock();
-        assert(spNode);
-        const std::string& uuid = spNode->get_uuid();
-        frame_nodes.erase(uuid);
-        getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
-        {
-            vec4s vec;
-            if (zeno_get_if(new_value, vec)) {
-                std::regex pattern("\\$F");
-                for (auto val : vec) {
-                    if (std::regex_search(val, pattern)) {
-                        frame_nodes.insert(uuid);
-                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
-                    }
+        vec4s vec;
+        if (zeno_get_if(new_value, vec)) {
+            std::regex pattern("\\$F");
+            for (auto val : vec) {
+                if (std::regex_search(val, pattern)) {
+                    frame_nodes.insert(uuid);
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
                 }
             }
         }
@@ -330,7 +313,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
     }
     //import edges
     for (const auto& link : graph.links) {
-        if (!isLinkVaild(link))
+        if (!isLinkValid(link))
             continue;
         std::shared_ptr<INode> outNode = getNode(link.outNode);
         std::shared_ptr<INode> inNode = getNode(link.inNode);
@@ -731,7 +714,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     return true;
 }
 
-bool zeno::Graph::isLinkVaild(const EdgeInfo& edge)
+bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
 {
     std::shared_ptr<INode> outNode = getNode(edge.outNode);
     if (!outNode)
@@ -806,15 +789,25 @@ bool zeno::Graph::isLinkVaild(const EdgeInfo& edge)
             if (param == edge.inParam)
                 inParamType = outParamType;
         }
-        if (inNode->get_nodecls() == "SubOutput" && bInputPrim) { //当一个节点连接到SubOutput时，更新parentSubnet对应param的类型
-            if (std::shared_ptr<Graph> graph = inNode->getGraph().lock()) {
-                if (graph->optParentSubgNode.has_value()) {
-                    if (SubnetNode* parentSubgNode = optParentSubgNode.value()) {
-                        parentSubgNode->update_param_type(inNode->get_name(), true, outParamType);
+        //当一个节点连接到SubOutput时，更新parentSubnet对应param的类型
+        std::function<void(std::shared_ptr<INode>)> updateOutputTypeRecursive = [&outParamType, &updateOutputTypeRecursive](std::shared_ptr<INode> inNode) {
+            if (inNode->get_nodecls() == "SubOutput") {
+                if (std::shared_ptr<Graph> graph = inNode->getGraph().lock()) {
+                    if (graph->optParentSubgNode.has_value()) {
+                        if (SubnetNode* parentSubgNode = graph->optParentSubgNode.value()) {
+                            parentSubgNode->update_param_type(inNode->get_name(), true, outParamType);
+                            for (auto& link : parentSubgNode->getLinksByParam(false, inNode->get_name())) {
+                                if (std::shared_ptr<Graph> parentGraph = parentSubgNode->getGraph().lock()) {
+                                    updateOutputTypeRecursive(parentGraph->getNode(link.inNode));
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
+        };
+        if (bInputPrim)
+            updateOutputTypeRecursive(inNode);
     }
     if (inParamType != outParamType)
     {
@@ -832,7 +825,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     //3.如果连进来的是非dictlist，并且没有指定key，则认为是连入输入端dictlist并作为输入端的内部子成员。
     CORE_API_BATCH
 
-    if (!isLinkVaild(edge))
+    if (!isLinkValid(edge))
         return false;
 
     std::shared_ptr<INode> outNode = getNode(edge.outNode);

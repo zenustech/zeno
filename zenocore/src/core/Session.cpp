@@ -538,6 +538,8 @@ ZENO_API void Session::resetMainGraph() {
     mainGraph = std::make_shared<Graph>("main");
     referManager.reset();
     referManager = std::make_unique<ReferManager>();
+    globalVariableManager.reset();
+    globalVariableManager = std::make_unique<GlobalVariableManager>();
 }
 
 ZENO_API void Session::setApiLevelEnable(bool bEnable)

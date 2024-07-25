@@ -1,5 +1,6 @@
 #include "command.h"
 #include "variantptr.h"
+#include "reflect/reflection.generated.hpp"
 
 
 AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath)
@@ -19,6 +20,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamPrimitive param;
         param.bInput = true;
         param.name = "int1";
+        param.defl = zeno::reflect::make_any<int>(0);
         param.type = zeno::Param_Int;
         info.param = param;
         default.params.push_back(param);

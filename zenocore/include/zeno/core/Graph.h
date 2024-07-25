@@ -136,10 +136,11 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void markDirtyWhenFrameChanged();
     void markDirtyAll();
     void onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value);
+    void parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any& new_value);
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
-    bool isLinkVaild(const EdgeInfo& edge);
+    bool isLinkValid(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;

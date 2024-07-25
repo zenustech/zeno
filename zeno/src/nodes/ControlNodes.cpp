@@ -404,7 +404,8 @@ struct Duplicate : INode {
             params.push_back({ outputObjParam , "owning" });
 
             int val = 0;
-            if (zeno_get_if(duplicatePrimitiveParam.defl, val)) {
+            zeno_get_if(duplicatePrimitiveParam.defl, val);
+            if (val) {
                 zeno::ParamObject objOutput;
                 objOutput.bInput = false;
                 objOutput.name = "duplicateObj";
