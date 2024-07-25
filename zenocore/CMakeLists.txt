@@ -110,7 +110,8 @@ if (ZENO_WITH_REFLECTOR)
         ${headersFile}
     )
 
-    zeno_generate_reflection_on_builddir(zenocore "${REFLECTION_HEADERS}")
+    set(GENERATE_ON_BUILD_DIR ON)
+    zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}")
     target_link_libraries(zenocore PUBLIC libreflect)
 endif()
 
