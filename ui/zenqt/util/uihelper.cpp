@@ -2054,7 +2054,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
@@ -2101,7 +2101,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(false, ROLE_ISINPUT);

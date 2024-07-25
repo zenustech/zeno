@@ -243,7 +243,7 @@ namespace zeno {
                 }
             }, container);
         }
-        else if constexpr (std::is_same_v<E, zeno::reflect::Any>) {
+        else if constexpr (std::is_same_v<T, zeno::reflect::Any>) {
             if (zeno::reflect::get_type<E>() == container.type()) {
                 ret = zeno::reflect::any_cast<E>(container);
                 return true;

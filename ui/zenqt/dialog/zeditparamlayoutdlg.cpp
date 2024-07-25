@@ -723,7 +723,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
         pNewItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
         pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-        pNewItem->setData(UiHelper::initDefaultValue(ctrl.type), ROLE_PARAM_VALUE);
+        pNewItem->setData(QVariant::fromValue(zeno::initAnyDeflValue(ctrl.type)), ROLE_PARAM_VALUE);
 
         //init properties.
         switch (ctrl.ctrl)
