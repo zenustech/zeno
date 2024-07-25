@@ -46,4 +46,13 @@ namespace zeno
         ZPROPERTY(Role = zeno::Role_OutputPrimitive)
         zeno::vec3f outvec;
     };
+
+    struct ZRECORD() SimpleReflect : public zeno::INode
+    {
+        SimpleReflect() = default;
+
+        std::shared_ptr<IObject> apply(std::shared_ptr<zeno::IObject> input_obj, std::string wtf, zeno::vec3f c, int& ret) {
+            return nullptr;
+        }
+    };
 }
