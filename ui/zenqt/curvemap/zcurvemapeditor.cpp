@@ -133,7 +133,7 @@ void ZCurveMapEditor::init()
 {
     m_ui->gridview->init(m_ui->cbIsTimeline->isChecked());
 
-    CURVE_RANGE range = m_ui->gridview->range();
+    auto range = m_ui->gridview->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXFrom->setValidator(new QDoubleValidator);
     m_ui->editXTo->setText(QString::number(range.xTo));
@@ -167,12 +167,11 @@ void ZCurveMapEditor::initSignals()
     connect(m_ui->btnDelCurve, SIGNAL(clicked()), this, SLOT(onDelCurveBtnClicked()));
 }
 
-void ZCurveMapEditor::addCurves(const CURVES_DATA& curves)
+void ZCurveMapEditor::addCurves(const zeno::CurvesData& curves)
 {
-    for (QString key : curves.keys())
+    for (auto& [key, curve] : curves.keys)
     {
-        CURVE_DATA curve = curves[key];
-        CurveModel* model = new CurveModel(key, curve.rg, this);
+        CurveModel* model = new CurveModel(QString::fromStdString(key), curve.rg, this);
         model->initItems(curve);
         model->setVisible(curve.visible);
         model->setTimeline(curve.timeline);
@@ -191,7 +190,7 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
 
     m_ui->cbIsTimeline->setChecked(model->isTimeline());
 
-    CURVE_RANGE range = m_ui->gridview->range();
+    auto range = m_ui->gridview->range();
     m_ui->editXFrom->setText(QString::number(range.xFrom));
     m_ui->editXTo->setText(QString::number(range.xTo));
     m_ui->editYFrom->setText(QString::number(range.yFrom));
@@ -241,9 +240,9 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
 
 void ZCurveMapEditor::onRangeEdited()
 {
-    CURVE_RANGE newRg = {m_ui->editXFrom->text().toDouble(), m_ui->editXTo->text().toDouble(),
+    zeno::CurveData::Range newRg = {m_ui->editXFrom->text().toDouble(), m_ui->editXTo->text().toDouble(),
                          m_ui->editYFrom->text().toDouble(), m_ui->editYTo->text().toDouble()};
-    CURVE_RANGE rg = m_ui->gridview->range();
+    auto rg = m_ui->gridview->range();
     if (rg.xFrom != newRg.xFrom || rg.xTo != newRg.xTo || rg.yFrom != newRg.yFrom || rg.yTo != newRg.yTo)
     {
         m_ui->gridview->resetRange(newRg);
@@ -319,15 +318,15 @@ CURVES_MODEL ZCurveMapEditor::getModel() const {
     return m_models;
 }
 
-CURVES_DATA ZCurveMapEditor::curves() const
+zeno::CurvesData ZCurveMapEditor::curves() const
 {
-    CURVES_DATA curves;
+    zeno::CurvesData curves;
     for (QString key : m_models.keys())
     {
-        CURVE_DATA data = m_models[key]->getItems();
+        zeno::CurveData data = m_models[key]->getItems();
         data.visible = m_models[key]->getVisible();
         data.timeline = m_models[key]->isTimeline();
-        curves.insert(key, data);
+        curves.keys.insert(std::make_pair(key.toStdString(), data));
     }
     return curves;
 }

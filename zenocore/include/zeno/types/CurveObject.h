@@ -68,11 +68,20 @@ struct CurveData : private _CurveDataDetails {
         kMirror,
     };
 
+    enum HANDLE_TYPE
+    {
+        HDL_FREE,
+        HDL_ALIGNED,
+        HDL_VECTOR,
+        HDL_ASYM
+    };
+
     struct ControlPoint {
         float v{0};
         PointType cp_type{PointType::kConstant};
         vec2f left_handler{0, 0};
         vec2f right_handler{0, 0};
+        HANDLE_TYPE controlType = HDL_VECTOR;
     };
 
     struct Range {
@@ -86,6 +95,8 @@ struct CurveData : private _CurveDataDetails {
     std::vector<ControlPoint> cpoints;
     Range rg;
     CycleType cycleType{CycleType::kClamp};
+    bool visible = false;
+    bool timeline = true;
 
     void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler) {
         cpbases.push_back(f);
@@ -177,10 +188,27 @@ struct CurveData : private _CurveDataDetails {
 struct CurvesData {
     std::map<std::string, CurveData> keys;
 
+    bool empty() const {
+        return keys.empty();
+    }
+
+    size_t size() const {
+        return keys.size();
+    }
+
+    bool contains(const std::string& key) const {
+        return keys.find(key) != keys.end();
+    }
+
     auto getEvaluator(std::string const& key) const {
         return [&data = keys.at(key)](float x) {
             return data.eval(x);
         };
+    }
+
+    CurveData operator[](std::string const& key) {
+        if (!contains(key)) return CurveData();
+        return keys[key];
     }
 
     template <class ...Ts>

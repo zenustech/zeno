@@ -51,27 +51,10 @@ class CurveModel;
 namespace JsonHelper
 {
     void AddStringList(const QStringList& list, RAPIDJSON_WRITER& writer);
-    void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer);
-    void AddParams(const QString& op,
-        const QString& ident,
-        const QString& name,
-        const QVariant& defl,
-        const QString& descType,
-        RAPIDJSON_WRITER& writer
-        );
-    bool AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer);
-    void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
     void WriteVariant(const QVariant& var, RAPIDJSON_WRITER& writer);
     void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, const QVariant& props, RAPIDJSON_WRITER& writer);
     bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, QVariant& props);
     CurveModel* _parseCurveModel(QString channel, const rapidjson::Value& jsonCurve, QObject* parentRef);
-    CURVE_DATA parseCurve(QString channel, const rapidjson::Value& jsonCurve);
-    CURVES_DATA parseCurves(const QString& jsonStr);
-    CURVES_DATA parseCurves(const QVariant& val);
-    void dumpCurveModel(const CurveModel *pModel, RAPIDJSON_WRITER &writer);
-    void dumpCurve(const CURVE_DATA& curve, RAPIDJSON_WRITER& writer);
-    QString dumpCurves(const CURVES_DATA& curves);
-    void dumpCurves(const CURVES_DATA& curves, QVariant& val);
     bool parseHeatmap(const QString& json, int &nres, QString &grad);
     QString dumpHeatmap(int nres, const QString& grad);
 }

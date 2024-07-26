@@ -3,6 +3,7 @@
 
 #include "uicommon.h"
 #include <QGraphicsItem>
+#include <zeno/core/data.h>
 
 class CurveModel;
 
@@ -46,8 +47,13 @@ namespace curve_util
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
 	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 	CurveModel* deflModel(QObject* parent);
-	CURVES_DATA deflCurves();
-    void updateRange(CURVES_DATA& curves);
+	zeno::CurvesData deflCurves();
+	CURVE_DATA toLegacyCurve(zeno::CurveData curve);
+	CURVES_DATA toLegacyCurves(zeno::CurvesData curves);
+	zeno::CurveData fromLegacyCurve(const CURVE_DATA& _curve);
+	zeno::CurvesData fromLegacyCurves(const CURVES_DATA& _curves);
+
+    void updateRange(zeno::CurvesData& curves);
     QString getCurveKey(int index);
     bool updateCurve(const QPointF& point, CURVE_DATA &curve);
 }

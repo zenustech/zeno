@@ -74,10 +74,8 @@ public:
     static QVector<qreal> getSlideStep(const QString& name, zeno::ParamType type);
     static QString nthSerialNumName(QString name);
 
-    static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
     static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
     static QVariant parseStringByType(const QString& defaultValue, zeno::ParamType type);
-    static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val, QObject *parentRef);
     static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 
     static QString gradient2colorString(const QLinearGradient& grad);
@@ -91,6 +89,8 @@ public:
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
     static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
+    static zeno::CurvesData getCurvesFromQVar(const QVariant& qvar, bool* bValid = nullptr);
+    static QVariant getQVarFromCurves(const zeno::CurvesData& curves);
 
     static zeno::NodesData dumpNodes(const QModelIndexList& nodeIndice);
     static void reAllocIdents(const QString& targetSubgraph,

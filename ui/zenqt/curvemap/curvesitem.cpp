@@ -344,7 +344,7 @@ void CurvesItem::onPathClicked(const QPointF& pos)
     ZASSERT_EXIT(pItem);
     int i = m_vecCurves.indexOf(pItem);
 
-    CURVE_RANGE rg = m_model->range();
+    zeno::CurveData::Range rg = m_model->range();
     qreal xscale = (rg.xTo - rg.xFrom) / 10.;
 
     QPointF logicPos = m_grid->sceneToLogic(pos);

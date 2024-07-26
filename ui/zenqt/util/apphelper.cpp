@@ -12,6 +12,9 @@
 #include "util/curveutil.h"
 #include "layout/docktabcontent.h"
 #include "layout/zdockwidget.h"
+#include "util/uihelper.h"
+#include "reflect/reflection.generated.hpp"
+
 
 QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
 {
@@ -65,16 +68,13 @@ VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
 QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 {
     QVector<QString> ret;
-    CURVES_DATA curves = JsonHelper::parseCurves(val);
-    if (val.canConvert<UI_VECSTRING>())
-    {
-        auto strVec = val.value<UI_VECSTRING>();
-        ret.resize(strVec.size());
-    }
-    else if (val.type() == QVariant::String)
-    {
-        ret.resize(1);
-    }
+    bool bValid = false;
+    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(val, &bValid);
+    if (curves.empty() || !bValid)
+        return ret;
+
+    ret.resize(curves.size());
+
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin, ret);
     ZTimeline* timeline = mainWin->timeline();
@@ -83,10 +83,10 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
     {
         QString property = "null";
         const QString& key = curve_util::getCurveKey(i);
-        if (curves.contains(key))
+        const std::string& skey = key.toStdString();
+        if (curves.contains(skey))
         {
-            CURVE_DATA data = curves[key];
-
+            CURVE_DATA data = curve_util::toLegacyCurve(curves[skey]);
             if (data.visible)
             {
                 property = "false";
@@ -99,7 +99,7 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
                     }
                 }
             }
-
+            curves[skey] = curve_util::fromLegacyCurve(data);
         }
         ret[i] = property;
     }
@@ -111,9 +111,11 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 
 bool AppHelper::getCurveValue(QVariant& val)
 {
-    CURVES_DATA curves = JsonHelper::parseCurves(val);
-    if (curves.isEmpty())
+    bool bValid = false;
+    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(val, &bValid);
+    if (curves.empty() || !bValid)
         return false;
+
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin, false);
     ZTimeline* timeline = mainWin->timeline();
@@ -126,7 +128,7 @@ bool AppHelper::getCurveValue(QVariant& val)
         newVal.resize(strVec.size());
         for (int i = 0; i < newVal.size(); i++)
         {
-            QString key = curve_util::getCurveKey(i);
+            const auto& key = curve_util::getCurveKey(i).toStdString();
             if (curves.contains(key))
             {
                 newVal[i] = curves[key].eval(nFrame);
@@ -149,9 +151,11 @@ bool AppHelper::getCurveValue(QVariant& val)
 
 bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
 {
-    CURVES_DATA curves = JsonHelper::parseCurves(oldVal);
-    if (curves.isEmpty())
+    bool bValid = false;
+    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(oldVal, &bValid);
+    if (curves.empty() || !bValid)
         return true;
+
     bool bUpdate = false;
     UI_VECTYPE datas;
     //vec
@@ -175,13 +179,15 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
     ZASSERT_EXIT(timeline, false);
     int nFrame = timeline->value();
     for (int i = 0; i < datas.size(); i++) {
-        QString key = curve_util::getCurveKey(i);
+        auto key = curve_util::getCurveKey(i).toStdString();
         if (curves.contains(key))
         {
-            CURVE_DATA& curve = curves[key];
             QPointF pos(nFrame, datas.at(i));
-            if (curve_util::updateCurve(pos, curve))
+            CURVE_DATA _curve = curve_util::toLegacyCurve(curves[key]);
+            if (curve_util::updateCurve(pos, _curve)) {
+                curves[key] = curve_util::fromLegacyCurve(_curve);
                 bUpdate = true;
+            }
         }
         else if (oldVec.size() > i && oldVec[i].toFloat() != datas[i])
         {
@@ -192,8 +198,8 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
     }
     if (bUpdate)
     {
-        JsonHelper::dumpCurves(curves, oldVal);
-        newValue = oldVal;
+        const auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(curves);
+        newValue = QVariant::fromValue(anyVal);
     }
     return bUpdate;
 }

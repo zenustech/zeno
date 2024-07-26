@@ -210,15 +210,21 @@ namespace zenoui
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        QString newVal = JsonHelper::dumpCurves(pEditor->curves());
-                        cbSet.cbEditFinished(newVal);
+                        zeno::CurvesData& newVal = pEditor->curves();
+                        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
+                        cbSet.cbEditFinished(QVariant::fromValue(anyVal));
                     });
 
-                    CURVES_DATA curves;
+                    zeno::CurvesData curves;
                     if (cbSet.cbGetIndexData)
                     {
-                        const QString &str = cbSet.cbGetIndexData().toString();
-                        curves = JsonHelper::parseCurves(str);
+                        auto& qvar = cbSet.cbGetIndexData();
+                        if (qvar.canConvert<zeno::reflect::Any>()) {
+                            const auto& anyVal = qvar.value<zeno::reflect::Any>();
+                            if (zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+                                curves = zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+                            }
+                        }
                     }
                     pEditor->addCurves(curves);
                     pEditor->exec();

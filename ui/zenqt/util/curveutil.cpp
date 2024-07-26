@@ -65,24 +65,83 @@ namespace curve_util
 
     CurveModel* deflModel(QObject* parent)
     {
-        CURVE_DATA curve;
-        curve.key = "x";
-        curve.cycleType = 0;
-        CURVE_RANGE rg;
+        zeno::CurveData curve;
+        zeno::CurveData::Range rg;
         rg.xFrom = 0;
         rg.yFrom = 0;
         rg.xTo = 1;
         rg.yTo = 1;
         curve.rg = rg;
-        curve.points.append({QPointF(rg.xFrom, rg.yFrom), QPointF(0, 0), QPointF(0, 0), 0});
-        curve.points.append({QPointF(rg.xTo, rg.yTo), QPointF(0, 0), QPointF(0, 0), 0});
 
-        CurveModel *pModel = new CurveModel(curve.key, curve.rg, parent);
+        curve.addPoint(rg.xFrom, rg.yFrom, zeno::CurveData::kBezier, { 0,0 }, { 0,0 });
+        curve.addPoint(rg.xTo, rg.yTo, zeno::CurveData::kBezier, { 0,0 }, { 0,0 });
+
+        CurveModel *pModel = new CurveModel("x", curve.rg, parent);
         pModel->initItems(curve);
         return pModel;
     }
 
-    CURVES_DATA deflCurves() {
+    CURVE_DATA toLegacyCurve(zeno::CurveData curve) {
+        CURVE_DATA _curve;
+        _curve.cycleType = curve.cycleType;
+        _curve.rg.xFrom = curve.rg.xFrom;
+        _curve.rg.xTo = curve.rg.xTo;
+        _curve.rg.yFrom = curve.rg.yFrom;
+        _curve.rg.yTo = curve.rg.yTo;
+        _curve.visible = curve.visible;
+        _curve.timeline = curve.timeline;
+        for (int i = 0; i < curve.cpbases.size(); i++) {
+            auto& cp = curve.cpoints[i];
+            QPointF pt(curve.cpbases[i], cp.v);
+            CURVE_POINT curvept;
+            curvept.point = pt;
+            curvept.controlType = cp.controlType;
+            curvept.leftHandler = { cp.left_handler[0], cp.left_handler[1] };
+            curvept.rightHandler = { cp.right_handler[0], cp.right_handler[1] };
+            _curve.points.append(curvept);
+        }
+        return _curve;
+    }
+
+    CURVES_DATA toLegacyCurves(zeno::CurvesData curves) {
+        CURVES_DATA _curves;
+        for (auto& [key, curve] : curves.keys) {
+            CURVE_DATA _curve = toLegacyCurve(curve);
+            _curve.key = QString::fromStdString(key);
+            _curves[QString::fromStdString(key)] = _curve;
+        }
+        return _curves;
+    }
+
+    zeno::CurveData fromLegacyCurve(const CURVE_DATA& _curve) {
+        zeno::CurveData curve;
+        curve.cycleType = (zeno::CurveData::CycleType)_curve.cycleType;
+        curve.rg.xFrom = _curve.rg.xFrom;
+        curve.rg.xTo = _curve.rg.xTo;
+        curve.rg.yFrom = _curve.rg.yFrom;
+        curve.rg.yTo = _curve.rg.yTo;
+
+        for (const CURVE_POINT& cp : _curve.points)
+        {
+            curve.addPoint(cp.point.x(), cp.point.y(), zeno::CurveData::kBezier,
+                { (float)cp.leftHandler.x(), (float)cp.leftHandler.y() },
+                { (float)cp.rightHandler.x(), (float)cp.rightHandler.y() });
+        }
+        return curve;
+    }
+
+    zeno::CurvesData fromLegacyCurves(const CURVES_DATA& _curves) {
+        zeno::CurvesData curves;
+        for (QString key : _curves.keys()) {
+            std::string sKey = key.toStdString();
+            CURVE_DATA _curve = _curves[key];
+            zeno::CurveData curve = fromLegacyCurve(_curve);
+            curves.keys.insert(std::make_pair(sKey, curve));
+        }
+        return curves;
+    }
+
+    zeno::CurvesData deflCurves() {
         CURVE_DATA curve;
         curve.key = "x";
         curve.cycleType = 0;
@@ -98,16 +157,16 @@ namespace curve_util
 
         CURVES_DATA curves;
         curves[curve.key] = curve;
-        return curves;
+        return fromLegacyCurves(curves);
     }
 
-    void updateRange(CURVES_DATA& curves)
+    void updateRange(zeno::CurvesData& curves)
     {
         qreal xFrom = 0;
         qreal xTo = 0;
         qreal yFrom = 0;
         qreal yTo = 0;
-        for (auto curve : curves) {
+        for (auto& [key, curve] : curves.keys) {
             xFrom = curve.rg.xFrom > xFrom ? xFrom : curve.rg.xFrom;
             xTo = curve.rg.xTo > xTo ? curve.rg.xTo : xTo;
             yFrom = curve.rg.yFrom > yFrom ? yFrom : curve.rg.yFrom;
@@ -117,7 +176,7 @@ namespace curve_util
             xTo = xFrom + 1;
         if (fabs(yFrom - yTo) < 0.00000001)
             yTo = yFrom + 1;
-        for (auto& curve : curves) {
+        for (auto& [key, curve] : curves.keys) {
             curve.rg.xFrom = xFrom;
             curve.rg.xTo = xTo;
             curve.rg.yFrom = yFrom;

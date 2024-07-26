@@ -365,10 +365,19 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
                 const QVariant& value = QVariant::fromValue(info.defl);
-                auto curves = JsonHelper::parseCurves(value);
-                for (CURVE_DATA& curve : curves)
-                {
-                    keys << curve.pointBases();
+
+                bool bValid = false;
+                zeno::CurvesData curves = UiHelper::getCurvesFromQVar(value, &bValid);
+                if (curves.empty() || !bValid) {
+                    return QVariant();
+                }
+
+                for (auto& [_, curve] : curves.keys) {
+                    QVector<int> cpbases;
+                    for (auto xval : curve.cpbases) {
+                        cpbases << xval;
+                    }
+                    keys << cpbases;
                 }
             }
             keys.erase(std::unique(keys.begin(), keys.end()), keys.end());

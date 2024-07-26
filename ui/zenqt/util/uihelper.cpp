@@ -426,7 +426,9 @@ QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
     }
     else if (type == zeno::Param_Curve)
     {
-        return JsonHelper::dumpCurves(curve_util::deflCurves());
+        zeno::CurvesData curves = curve_util::deflCurves();
+        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(curves);
+        return QVariant::fromValue(anyVal);
     }
     else if (type == zeno::Param_Heatmap)
     {
@@ -1450,241 +1452,6 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     return var;
 }
 
-QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val, QObject* parentRef)
-{
-    QVariant res;
-    auto jsonType = val.GetType();
-    if (descType == "int")
-    {
-        bool bSucc = false;
-        int iVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc) {
-            if (val.IsString()) {
-                return val.GetString();
-            } else {
-                return QVariant(); //will not be serialized when return null variant.
-            }
-        }
-        res = iVal;
-    }
-    else if (descType == "float" ||
-             descType == "NumericObject")
-    {
-        bool bSucc = false;
-        float fVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc) {
-           if (val.IsString()) {
-                return val.GetString();
-           } else {
-                return QVariant();
-           }
-        }
-        res = fVal;
-    }
-    else if (descType == "string" ||
-             descType == "writepath"||
-             descType == "readpath" ||
-             descType == "multiline_string" ||
-             descType.startsWith("enum "))
-    {
-        if (val.IsString())
-            res = val.GetString();
-        else
-            return QVariant();
-    }
-    else if (descType == "bool")
-    {
-        if (val.IsBool())
-            res = val.GetBool();
-        else if (val.IsInt())
-            res = val.GetInt() != 0;
-        else if (val.IsFloat())
-            res = val.GetFloat() != 0;
-        else
-            return QVariant();
-    }
-    else if (descType.startsWith("vec"))
-    {
-        int dim = 0;
-        bool bFloat = false;
-        if (UiHelper::parseVecType(descType, dim, bFloat))
-        {
-            res = QVariant::fromValue(UI_VECTYPE(dim, 0));
-            UI_VECTYPE vec;
-            UI_VECSTRING strVec;
-            if (val.IsArray())
-            {
-                auto values = val.GetArray();
-                for (int i = 0; i < values.Size(); i++)
-                {
-                    if (values[i].IsFloat())
-                    {
-                        vec.append(values[i].GetFloat());
-                    }
-                    else if (values[i].IsDouble())
-                    {
-                        vec.append(values[i].GetDouble());
-                    }
-                    else if (values[i].IsInt())
-                    {
-                        vec.append(values[i].GetInt());
-                    }
-                    else if (values[i].IsString())
-                    {
-                        strVec.append(values[i].GetString());
-                    }
-                }
-            }
-            else if (val.IsString())
-            {
-                const QString& vecStr = val.GetString();
-                QStringList lst = vecStr.split(",");
-                for (int i = 0; i < lst.size(); i++)
-                {
-                    bool bSucc = false;
-                    if (lst[i].isEmpty()) {
-                        vec.append(0);
-                    }
-                    else {
-                        float fVal = lst[i].toFloat(&bSucc);
-                        if (!bSucc)
-                            return QVariant();
-                        vec.append(fVal);
-                    }
-                }
-            }
-            if (!vec.isEmpty())
-                res = QVariant::fromValue(vec);
-            else
-                res = QVariant::fromValue(strVec);
-        }
-        else
-        {
-            return QVariant();
-        }
-    } else if (descType == "curve") {
-        ZASSERT_EXIT(val.HasMember(zenoio::iotags::key_objectType), QVariant());
-        QString type = val[zenoio::iotags::key_objectType].GetString();
-        if (type != "curve") {
-            return QVariant();
-        }
-        CURVES_DATA curves;
-        if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-            CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
-            curves.insert("x", xCurve);
-        } else {
-            bool timeLine = false;
-            if (val.HasMember(key_timeline))
-            {
-                timeLine = val[key_timeline].GetBool();
-            }
-            for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
-                if (i->value.IsObject()) {
-                    CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
-                    curve.timeline = timeLine;
-                    curves.insert(i->name.GetString(), curve);
-                }
-            }
-        }
-        res = QVariant::fromValue(curves);
-    }
-    else if (descType == "color" && val.IsString()) 
-    {
-        if (QColor(val.GetString()).isValid())
-            res = QVariant::fromValue(QColor(val.GetString()));
-    }
-    else
-    {
-        // omitted or legacy type, need to parse by json value.
-        if (val.IsString() && val.GetStringLength() == 0)
-        {
-            // the default value of many types, for example primitive, are empty string,
-            // skip it and return a invalid variant.
-            return QVariant();
-        }
-        // unregisted or new type, convert by json value.
-        return parseJsonByValue(descType, val, parentRef);
-    }
-    return res;
-}
-
-QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
-{
-    if (val.GetType() == rapidjson::kStringType)
-    {
-        bool bSucc = false;
-        float fVal = parseJsonNumeric(val, true, bSucc);
-        if (bSucc)
-            return fVal;
-
-        if (type == "color")
-            return QVariant::fromValue(QColor(val.GetString()));
-
-        return val.GetString();
-    }
-    else if (val.GetType() == rapidjson::kNumberType)
-    {
-        if (val.IsDouble())
-            return val.GetDouble();
-        else if (val.IsInt())
-            return val.GetInt();
-        else {
-            zeno::log_warn("bad rapidjson number type {}", val.GetType());
-            return QVariant();
-        }
-    }
-    else if (val.GetType() == rapidjson::kTrueType)
-    {
-        return val.GetBool();
-    }
-    else if (val.GetType() == rapidjson::kFalseType)
-    {
-        return val.GetBool();
-    }
-    else if (val.GetType() == rapidjson::kNullType)
-    {
-        return QVariant();
-    }
-    else if (val.GetType() == rapidjson::kArrayType)
-    {
-        UI_VECTYPE vec;
-        auto values = val.GetArray();
-        for (int i = 0; i < values.Size(); i++)
-        {
-            vec.append(values[i].GetFloat());
-        }
-        return QVariant::fromValue(vec);
-    }
-    else if (val.GetType() == rapidjson::kObjectType)
-    {
-        if (type == "curve")
-        {
-            ZASSERT_EXIT(val.HasMember(zenoio::iotags::key_objectType), QVariant());
-            QString type = val[zenoio::iotags::key_objectType].GetString();
-            if (type != "curve") {
-                return QVariant();
-            }
-            CURVES_DATA curves;
-            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(zenoio::iotags::curve::key_range)) { //compatible old version zsg file
-                CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
-                curves.insert("x", xCurve);
-            } else {
-                for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
-                    if (i->value.IsObject()) {
-                        CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
-                        //pModel->setTimeline(val[key_timeline].GetBool()); //todo: timeline
-                        curves.insert(i->name.GetString(), curve);
-                    }
-                }
-            }
-            return QVariant::fromValue(curves);
-        }
-    }
-
-    zeno::log_warn("bad rapidjson value type {}", val.GetType());
-    return QVariant();
-}
-
 QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
 {
     if (val.GetType() == rapidjson::kStringType)
@@ -1842,6 +1609,23 @@ QVector<qreal> UiHelper::scaleFactors()
 {
     static QVector<qreal> lst({0.01, 0.025, 0.05, .1, .15, .2, .25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
     return lst;
+}
+
+zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid) {
+    zeno::CurvesData curves;
+    if (qvar.canConvert<zeno::reflect::Any>()) {
+        const auto& anyVal = qvar.value<zeno::reflect::Any>();
+        if (zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+            if (bValid) *bValid = true;
+            return zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+        }
+    }
+    if (bValid) *bValid = false;
+    return curves;
+}
+
+QVariant UiHelper::getQVarFromCurves(const zeno::CurvesData& curves) {
+    return QVariant::fromValue(zeno::reflect::make_any<zeno::CurvesData>(curves));
 }
 
 QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)

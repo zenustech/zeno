@@ -20,7 +20,7 @@ CurveGrid::CurveGrid(CurveMapView* pView, const QRectF& rc, QGraphicsItem* paren
     resetTransform(m_initRc, m_view->range(), true);
 }
 
-void CurveGrid::resetTransform(QRectF rc, CURVE_RANGE rg, bool bInit)
+void CurveGrid::resetTransform(QRectF rc, zeno::CurveData::Range rg, bool bInit)
 {
     QMargins margins = m_view->margins();
     m_initRc = rc;

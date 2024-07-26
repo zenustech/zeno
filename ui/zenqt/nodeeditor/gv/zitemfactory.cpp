@@ -311,14 +311,19 @@ namespace zenoui
                     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        QString newVal = JsonHelper::dumpCurves(pEditor->curves());
-                        cbSet.cbEditFinished(newVal);
+                        zeno::CurvesData& newVal = pEditor->curves();
+                        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
+                        cbSet.cbEditFinished(QVariant::fromValue(anyVal));
                     });
 
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
-                    const QString& str = cbSet.cbGetIndexData().toString();
-                    CURVES_DATA curves = JsonHelper::parseCurves(str);
+                    bool bValid = false;
+                    const auto& qvar = cbSet.cbGetIndexData();
+                    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(qvar, &bValid);
+                    if (curves.empty() || !bValid) {
+                        return;
+                    }
                     pEditor->addCurves(curves);
                     pEditor->exec();
                 });

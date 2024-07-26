@@ -59,16 +59,16 @@ private:
     bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
     bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
-    void getDelfCurveData(CURVE_DATA &curve, float val, bool visible, const QString& key);
-    void updateHandler(CURVE_DATA &curve);
-    int getKeyFrameSize(const CURVES_DATA &curves);
+    void getDelfCurveData(zeno::CurveData &curve, float val, bool visible, const QString& key);
+    void updateHandler(zeno::CurveData& curve);
+    int getKeyFrameSize(const zeno::CurvesData& curves);
     QStringList getKeys(const QObject *obj, const _PANEL_CONTROL &ctrl);
     void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
     void delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
     void editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
     void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    CURVES_DATA getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
-    void updateTimelineKeys(const CURVES_DATA &curves);
+    zeno::CurvesData getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
+    void updateTimelineKeys(const zeno::CurvesData& curves);
     void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
     QWidget* initWidget(QStandardItem* pItem);
 

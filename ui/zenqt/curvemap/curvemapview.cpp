@@ -17,7 +17,7 @@ CurveMapView::CurveMapView(QWidget* parent)
 	, m_pVScalar(nullptr)
 	, m_grid(nullptr)
 	, m_bSmoothCurve(true)
-	, m_range({0,1,0,1})
+	, m_range({0.f,1.f,0.f,1.f})
 {
 	setRenderHint(QPainter::Antialiasing);
 	setViewportUpdateMode(QGraphicsView::FullViewportUpdate);//it's easy but not efficient
@@ -78,12 +78,12 @@ void CurveMapView::addCurve(CurveModel* model)
     m_pVScalar->update();
 }
 
-CURVE_RANGE CurveMapView::range() const
+zeno::CurveData::Range CurveMapView::range() const
 {
     return m_range;
 }
 
-void CurveMapView::resetRange(const CURVE_RANGE& rg)
+void CurveMapView::resetRange(const zeno::CurveData::Range& rg)
 {
 	//support only one range for all curves, but maybe we don't need to lock start/end point at the boundary.
     m_range = rg;
