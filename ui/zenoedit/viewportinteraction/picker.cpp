@@ -150,18 +150,21 @@ void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
 //    zeno::log_info("rect: {}, {}, {}, {}", x0, y0, x1, y1);
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
-    auto &selected_prims = scene->selected;
-    auto selected = picker->getPicked(x0, y0, x1, y1);
-//    zeno::log_info("selected: {}", selected.size());
-    // qDebug() << "pick: " << selected.c_str();
-    if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT) {
+    if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
+        auto selected = picker->getPicked(x0, y0, x1, y1);
+        load_from_str(selected, scene->get_select_mode(), mode);
+        if (picked_elems_callback) picked_elems_callback();
+    }
+    else if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT) {
+        auto selected = picker->getPicked(x0, y0, x1, y1);
         if (selected.empty()) {
-            selected_prims.clear();
+            scene->selected.clear();
             return;
         }
         load_from_str(selected, zenovis::PICK_MODE::PICK_OBJECT, SELECTION_MODE::NORMAL);
     }
     else {
+        auto selected = picker->getPicked(x0, y0, x1, y1);
         load_from_str(selected, scene->get_select_mode(), mode);
         if (picked_elems_callback) picked_elems_callback();
     }
