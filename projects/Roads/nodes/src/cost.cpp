@@ -217,13 +217,13 @@ namespace {
         zeno::vec2f Goal;
         ZENO_DECLARE_INPUT_FIELD(Goal, "Goal Point");
 
-        std::shared_ptr<zeno::CurveObject> HeightCurve = nullptr;
+        zeno::CurvesData HeightCurve;
         ZENO_DECLARE_INPUT_FIELD(HeightCurve, "Height Cost Control", true);
 
-        std::shared_ptr<zeno::CurveObject> GradientCurve = nullptr;
+        zeno::CurvesData GradientCurve;
         ZENO_DECLARE_INPUT_FIELD(GradientCurve, "Gradient Cost Control", true);
 
-        std::shared_ptr<zeno::CurveObject> CurvatureCurve = nullptr;
+        zeno::CurvesData CurvatureCurve;
         ZENO_DECLARE_INPUT_FIELD(CurvatureCurve, "Curvature Cost Control", true);
 
         bool bRemoveTriangles;
@@ -257,23 +257,13 @@ namespace {
 
             size_t Nx = AutoParameter->Nx, Ny = AutoParameter->Ny;
 
-            auto MapFuncGen = [](const std::shared_ptr<zeno::CurveObject> &Curve, float Threshold) -> std::function<float(float)> {
-                if (Curve) {
-                    return [Curve, Threshold](float In) -> float {
-                        if (Threshold > 0 && In > Threshold) {
-                            return 9e06f;
-                        }
-                        return Curve->eval(float(In));
-                    };
-                } else {
-                    zeno::log_warn("[Roads] Invalid Curve !");
-                    return [Threshold](float In) -> float {
-                        if (Threshold > 0 && In > Threshold) {
-                            return 9e06f;
-                        }
-                        return In;
-                    };
-                }
+            auto MapFuncGen = [](const zeno::CurvesData &Curve, float Threshold) -> std::function<float(float)> {
+                return [Curve, Threshold](float In) -> float {
+                    if (Threshold > 0 && In > Threshold) {
+                        return 9e06f;
+                    }
+                    return Curve.eval(float(In));
+                };
             };
 
             auto HeightCostFunc = MapFuncGen(AutoParameter->HeightCurve, -1.0f);

@@ -9,7 +9,6 @@
 #include <string>
 #include <set>
 #include <map>
-#include <zeno/types/CurveObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -92,28 +91,28 @@ public:
     ZENO_API bool update_param(const std::string& name, const zeno::reflect::Any& new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zeno::reflect::Any, zeno::reflect::Any)
 
-   ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
+    ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
-   ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
-   CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
+    ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
+    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
 
-   ZENO_API bool update_param_control(const std::string& name, ParamControl control);
-   CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
+    ZENO_API bool update_param_control(const std::string& name, ParamControl control);
+    CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
 
-   ZENO_API bool update_param_control_prop(const std::string& name, zeno::reflect::Any props);
-   CALLBACK_REGIST(update_param_control_prop, void, const std::string&, zeno::reflect::Any)
+    ZENO_API bool update_param_control_prop(const std::string& name, zeno::reflect::Any props);
+    CALLBACK_REGIST(update_param_control_prop, void, const std::string&, zeno::reflect::Any)
 
-   ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
-   CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
+    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
+    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
 
-   ZENO_API void update_layout(params_change_info& changes);
-   CALLBACK_REGIST(update_layout, void, params_change_info& changes)
+    ZENO_API void update_layout(params_change_info& changes);
+    CALLBACK_REGIST(update_layout, void, params_change_info& changes)
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
    //由param这个参数值的变化触发节点params重置
-   ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
+    ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
 
     ZENO_API void set_name(const std::string& name);
     ZENO_API std::string get_name() const;
@@ -152,6 +151,14 @@ protected:
     ZENO_API virtual void initParams(const NodeData& dat);
     ZENO_API bool set_primitive_input(std::string const& id, const zeno::reflect::Any& val);
     ZENO_API bool set_primitive_output(std::string const& id, const zeno::reflect::Any& val);
+
+    template <class T>
+    const T* get_input_prim(std::string const& name) const {
+        auto iter = m_inputPrims.find(name);
+        if (iter == m_inputPrims.end())
+            return nullptr;
+        return zeno::reflect::any_cast<T>(&iter->second.defl);
+    }
 
 private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);

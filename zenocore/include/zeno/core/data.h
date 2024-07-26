@@ -12,6 +12,8 @@
 #include <zeno/utils/api.h>
 #include <reflect/container/any>
 #include <reflect/type.hpp>
+#include <zeno/types/CurveObject.h>
+
 
 namespace zeno {
 
@@ -226,6 +228,16 @@ namespace zeno {
         }
         else {
             throw;
+        }
+    }
+
+    template<typename T>
+    const T* any_get_if(const zeno::reflect::Any& val) {
+        if (zeno::reflect::get_type<T>() == val.type()) {
+            return zeno::reflect::any_cast<T>(&val);
+        }
+        else {
+            return nullptr;
         }
     }
 

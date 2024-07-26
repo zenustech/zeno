@@ -6,9 +6,10 @@
 #include "uihelper.h"
 #include "zassert.h"
 #include "util/curveutil.h"
+#include <zeno/io/iocommon.h>
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
+
+using namespace zenoio::iotags::curve;
 
 namespace JsonHelper
 {
@@ -209,7 +210,7 @@ namespace JsonHelper
                 {
                     CURVES_DATA curves = value.value<CURVES_DATA>();
                     writer.StartObject();
-                    writer.Key(key_objectType);
+                    writer.Key(zenoio::iotags::key_objectType);
                     writer.String("curve");
                     writer.Key(key_timeline);
                     if (curves.size() == 0)

@@ -5,7 +5,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/utils/parallel_reduce.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
@@ -13,6 +12,8 @@
 #include <vector>
 
 #include <glm/gtx/quaternion.hpp>
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno
 {
@@ -2364,17 +2365,17 @@ struct HF_maskByFeature : INode {
         auto useSlope = get_input2<bool>("use_slope");
         auto minSlope = get_input2<float>("min_slopeangle");
         auto maxSlope = get_input2<float>("max_slopeangle");
-        auto curve_slope = get_input<CurveObject>("slope_ramp");
+        auto curve_slope = get_input_prim<CurvesData>("slope_ramp");
 
         auto useDir = get_input2<bool>("use_direction");
         auto goalAngle = get_input2<float>("goal_angle");
         auto angleSpread = get_input2<float>("angle_spread");
-        auto curve_dir = get_input<CurveObject>("dir_ramp");
+        auto curve_dir = get_input_prim<CurvesData>("dir_ramp");
 
         auto useHeight = get_input2<bool>("use_height");
         auto minHeight = get_input2<float>("min_height");
         auto maxHeight = get_input2<float>("max_height");
-        auto curve_height = get_input<CurveObject>("height_ramp");
+        auto curve_height = get_input_prim<CurvesData>("height_ramp");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -2584,7 +2585,7 @@ struct HF_remap : INode {
         auto inMax = get_input2<float>("input max");
         auto outMin = get_input2<float>("output min");
         auto outMax = get_input2<float>("output max");
-        auto curve = get_input<CurveObject>("remap ramp");
+        auto curve = get_input_prim<CurvesData>("remap ramp");
         auto clampMin = get_input2<bool>("clamp min");
         auto clampMax = get_input2<bool>("clamp max");
 

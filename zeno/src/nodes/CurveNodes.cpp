@@ -1,18 +1,26 @@
 #include <zeno/zeno.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/utils/arrayindex.h>
+#include <reflect/container/any>
+#include <reflect/type.hpp>
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
 struct MakeCurve : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
-        set_output("curve", curve);
+        bool bExist = false;
+        const auto& param = get_input_prim_param("curve", &bExist);
+        auto pCurve = get_input_prim<CurvesData>("curve");
+        if (!pCurve) {
+            throw;
+        }
+        set_primitive_output("curve", *pCurve);
     }
 };
 
@@ -31,7 +39,11 @@ ZENO_DEFNODE(MakeCurve)({
 
 struct EvalCurve : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = get_input_prim<CurvesData>("curve");
+        if (!curve) {
+            throw;
+        }
+
         auto input = get_input2<NumericValue>("value");
         auto output = std::visit([&] (auto const &src) -> NumericValue {
             return curve->eval(src);
@@ -55,7 +67,11 @@ ZENO_DEFNODE(EvalCurve)({
 struct EvalCurveOnPrimAttr : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = get_input_prim<CurvesData>("curve");
+        if (!curve || !prim) {
+            throw;
+        }
+
         auto attrName = get_input2<std::string>("attrName");
         auto dstName = get_input2<std::string>("dstName");
         prim->attr_visit(attrName, [&](auto &arr) {
@@ -93,7 +109,7 @@ ZENO_DEFNODE(EvalCurveOnPrimAttr)({
 
 struct GetCurveControlPoint : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = get_input<CurvesData>("curve");
         auto key = get_input2<std::string>("key");
         int i = get_input2<int>("index");
 
@@ -125,7 +141,7 @@ ZENO_DEFNODE(GetCurveControlPoint)({
 
 struct UpdateCurveControlPoint : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = const_cast<CurvesData*>(get_input_prim<CurvesData>("curve"));
         auto key = get_input2<std::string>("key");
         int i = get_input2<int>("index");
 
@@ -141,7 +157,7 @@ struct UpdateCurveControlPoint : zeno::INode {
         if (has_input("right_handler"))
             data.cpoints[i].right_handler = get_input2<vec2f>("right_handler");
 
-        set_output("curve", std::move(curve));
+        set_primitive_output("curve", *curve);
     }
 };
 
@@ -164,7 +180,7 @@ ZENO_DEFNODE(UpdateCurveControlPoint)({
 
 struct UpdateCurveCycleType : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = const_cast<CurvesData*>(get_input_prim<CurvesData>("curve"));
         auto key = get_input2<std::string>("key");
         auto type = get_input2<std::string>("type");
         auto typeIndex = array_index_safe({"CLAMP", "CYCLE", "MIRROR"}, type, "CycleType");
@@ -175,7 +191,7 @@ struct UpdateCurveCycleType : zeno::INode {
         } else {
             curve->keys.at(key).cycleType = static_cast<CurveData::CycleType>(typeIndex); 
         }
-        set_output("curve", std::move(curve));
+        set_primitive_output("curve", *curve);
     }
 };
 
@@ -194,7 +210,7 @@ ZENO_DEFNODE(UpdateCurveCycleType)({
 
 struct UpdateCurveXYRange : zeno::INode {
     virtual void apply() override {
-        auto curve = get_input<CurveObject>("curve");
+        auto curve = const_cast<CurvesData*>(get_input_prim<CurvesData>("curve"));
         auto key = get_input2<std::string>("key");
         auto &data = curve->keys.at(key);
         auto rg = data.rg;
@@ -208,7 +224,7 @@ struct UpdateCurveXYRange : zeno::INode {
             rg.yTo = get_input2<float>("y_to");
         data.updateRange(rg);
 
-        set_output("curve", std::move(curve));
+        set_primitive_output("curve", *curve);
     }
 };
 

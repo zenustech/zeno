@@ -3,13 +3,14 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/core/INode.h>
 #include <zeno/zeno.h>
 #include <limits>
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 namespace {
@@ -54,7 +55,7 @@ struct PrimForceTrail : INode {
                 return x;
             };
         }, [&] {
-            auto curve = get_input<CurveObject>("attractUDFCurve");
+            auto curve = get_input_prim<CurvesData>("attractUDFCurve");
             return [=] (float x) -> float {
                 return curve->eval(x);
             };
@@ -64,7 +65,7 @@ struct PrimForceTrail : INode {
                 return 1.f;
             };
         }, [&] {
-            auto curve = get_input<CurveObject>("driftCoordCurve");
+            auto curve = get_input_prim<CurvesData>("driftCoordCurve");
             return [=] (float x) -> float {
                 return curve->eval(x);
             };

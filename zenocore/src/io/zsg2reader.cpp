@@ -8,9 +8,6 @@
 #include <zeno/utils/helper.h>
 
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
-
 namespace zenoio {
 
 ZENO_API Zsg2Reader::Zsg2Reader() {}

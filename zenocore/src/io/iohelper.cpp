@@ -11,6 +11,38 @@
 
 namespace zenoio
 {
+    class JsonObjBatch
+    {
+    public:
+        JsonObjBatch(RAPIDJSON_WRITER& writer)
+            : m_writer(writer)
+        {
+            m_writer.StartObject();
+        }
+        ~JsonObjBatch()
+        {
+            m_writer.EndObject();
+        }
+    private:
+        RAPIDJSON_WRITER& m_writer;
+    };
+
+    class JsonArrayBatch
+    {
+    public:
+        JsonArrayBatch(RAPIDJSON_WRITER& writer)
+            : m_writer(writer)
+        {
+            m_writer.StartArray();
+        }
+        ~JsonArrayBatch()
+        {
+            m_writer.EndArray();
+        }
+    private:
+        RAPIDJSON_WRITER& m_writer;
+    };
+
     static zeno::ParamControl getControlByName(const std::string& descName)
     {
         if (descName == "Integer")
@@ -113,6 +145,125 @@ namespace zenoio
         {
             return zeno::NullControl;
         }
+    }
+
+    static zeno::CurveData parseCurve(rapidjson::Value const& jsonCurve, bool& bSucceed)
+    {
+        using namespace iotags::curve;
+        zeno::CurveData dat;
+        if (!jsonCurve.HasMember(key_range))
+        {
+            bSucceed = false;
+            return dat;
+        }
+
+        const rapidjson::Value& rgObj = jsonCurve[key_range];
+        if (!rgObj.HasMember(key_xFrom) || !rgObj.HasMember(key_xTo) ||
+            !rgObj.HasMember(key_yFrom) || !rgObj.HasMember(key_yTo))
+        {
+            bSucceed = false;
+            return dat;
+        }
+
+        if (!rgObj[key_xFrom].IsDouble() || !rgObj[key_xTo].IsDouble() ||
+            !rgObj[key_yFrom].IsDouble() || !rgObj[key_yTo].IsDouble())
+        {
+            bSucceed = false;
+            return dat;
+        }
+
+        //CURVE_RANGE rg;
+        dat.rg.xFrom = rgObj[key_xFrom].GetDouble();
+        dat.rg.xTo = rgObj[key_xTo].GetDouble();
+        dat.rg.yFrom = rgObj[key_yFrom].GetDouble();
+        dat.rg.yTo = rgObj[key_yTo].GetDouble();
+
+        //todo: id
+
+        if (!jsonCurve.HasMember("nodes")) {
+            bSucceed = false;
+            return dat;
+        }
+
+        for (const rapidjson::Value& nodeObj : jsonCurve["nodes"].GetArray())
+        {
+            if (!nodeObj.HasMember("x") || !nodeObj["x"].IsDouble() ||
+                !nodeObj.HasMember("y") || !nodeObj["y"].IsDouble() ||
+                !nodeObj.HasMember(key_left_handle) || !nodeObj[key_left_handle].IsObject() ||
+                !nodeObj.HasMember(key_right_handle) || !nodeObj[key_right_handle].IsObject())
+            {
+                bSucceed = false;
+                return dat;
+            }
+
+            float x = nodeObj["x"].GetDouble();
+            float y = nodeObj["y"].GetDouble();
+
+            auto leftHdlObj = nodeObj[key_left_handle].GetObject();
+            if (!leftHdlObj.HasMember("x") || !leftHdlObj.HasMember("y"))
+            {
+                bSucceed = false;
+                return dat;
+            }
+            float leftX = leftHdlObj["x"].GetDouble();
+            float leftY = leftHdlObj["y"].GetDouble();
+
+            auto rightHdlObj = nodeObj[key_right_handle].GetObject();
+            if (!rightHdlObj.HasMember("x") || !rightHdlObj.HasMember("y"))
+            {
+                bSucceed = false;
+                return dat;
+            }
+            float rightX = rightHdlObj["x"].GetDouble();
+            float rightY = rightHdlObj["y"].GetDouble();
+
+            zeno::CurveData::PointType type = zeno::CurveData::kBezier;
+            if (nodeObj.HasMember("type") && nodeObj["type"].IsString())
+            {
+                std::string type = nodeObj["type"].GetString();
+                if (type == "aligned") {
+                    type = zeno::CurveData::kBezier;
+                }
+                else if (type == "asym") {
+                    type = zeno::CurveData::kBezier;
+                }
+                else if (type == "free") {
+                    type = zeno::CurveData::kBezier;
+                }
+                else if (type == "vector") {
+                    type = zeno::CurveData::kLinear;
+                }
+            }
+
+            //todo
+            bool bLockX = (nodeObj.HasMember("lockX") && nodeObj["lockX"].IsBool());
+            bool bLockY = (nodeObj.HasMember("lockY") && nodeObj["lockY"].IsBool());
+
+            dat.addPoint(x, y, type, { leftX, leftY }, { rightX, rightY });
+        }
+
+        bSucceed = true;
+        return dat;
+    }
+
+    static zeno::CurvesData parseObjectFromJson(rapidjson::Value const& x, bool& bSucceed)
+    {
+        bSucceed = true;
+        zeno::CurvesData curves;
+        for (auto i = x.MemberBegin(); i != x.MemberEnd(); i++) {
+            if (i->value.IsObject())
+            {
+                zeno::CurveData dat = parseCurve(i->value, bSucceed);
+                if (!bSucceed) {
+                    bSucceed = false;
+                    break;
+                }
+                else {
+                    curves.keys.insert({ i->name.GetString(), dat });
+                }
+            }
+        }
+        return curves;
     }
 
     ZENO_API zeno::ZSG_VERSION getVersion(const std::string& fn)
@@ -447,23 +598,23 @@ namespace zenoio
         {
             //todo: wrap the json object as string, and parse it when calculate,
             //by the method of parseCurve on ParseObjectFromUi.cpp
-            if (val.IsString())
-                defl = val.GetString();
             if (val.IsObject())
             {
-                rapidjson::StringBuffer sbBuf;
-                RAPIDJSON_WRITER jWriter(sbBuf);
-                val.Accept(jWriter);
-                defl = std::string(sbBuf.GetString());
+                bool bSucceed = false;
+                zeno::CurvesData curves;
+                parseObjectFromJson(val, bSucceed);
+                assert(bSucceed);
+                defl = curves;
             }
             break;
         }
         case zeno::Param_Heatmap:
+        case zeno::Param_Custom:
         {
-            if (val.IsString())
-            {
-                defl = val.GetString();
-            }
+        //    if (val.IsString())
+        //    {
+        //        defl = val.GetString();
+        //    }
             break;
         }
         case zeno::Param_Null:
@@ -712,10 +863,104 @@ namespace zenoio
         return defl;
     }
 
+    void dumpCurve(const zeno::CurveData& curve, RAPIDJSON_WRITER& writer)
+    {
+        auto rg = curve.rg;
+
+        JsonObjBatch scope(writer);
+        writer.Key(iotags::curve::key_range);
+        {
+            JsonObjBatch scope2(writer);
+            writer.Key(iotags::curve::key_xFrom);
+            writer.Double(rg.xFrom);
+            writer.Key(iotags::curve::key_xTo);
+            writer.Double(rg.xTo);
+            writer.Key(iotags::curve::key_yFrom);
+            writer.Double(rg.yFrom);
+            writer.Key(iotags::curve::key_yTo);
+            writer.Double(rg.yTo);
+        }
+
+        writer.Key(iotags::curve::key_nodes);
+        {
+            JsonArrayBatch arrBatch(writer);
+            assert(curve.cpoints.size() == curve.cpbases.size());
+            for (int i = 0; i < curve.cpoints.size(); i++) {
+                auto& pt = curve.cpoints[i];
+                std::pair<float, float> pos = { curve.cpbases[i], curve.cpoints[i].v };
+                const auto& leftPos = pt.left_handler;
+                const auto& rightPos = pt.right_handler;
+                bool bLockX = false;    //todo: lock io
+                bool bLockY = false;
+
+                JsonObjBatch scope2(writer);
+                writer.Key("x");
+                writer.Double(pos.first);
+                writer.Key("y");
+                writer.Double(pos.second);
+
+                writer.Key(iotags::curve::key_left_handle);
+                {
+                    JsonObjBatch scope3(writer);
+                    writer.Key("x");
+                    writer.Double(leftPos[0]);
+                    writer.Key("y");
+                    writer.Double(leftPos[1]);
+                }
+                writer.Key(iotags::curve::key_right_handle);
+                {
+                    JsonObjBatch scope3(writer);
+                    writer.Key("x");
+                    writer.Double(rightPos[0]);
+                    writer.Key("y");
+                    writer.Double(rightPos[1]);
+                }
+
+                /*
+                writer.Key(iotags::curve::key_type);
+                switch (pt.cp_type) {
+                case HDL_ALIGNED: writer.String("aligned"); break;
+                case HDL_ASYM: writer.String("asym"); break;
+                case HDL_FREE: writer.String("free"); break;
+                case HDL_VECTOR: writer.String("vector"); break;
+                default:
+                    assert(false);
+                    writer.String("unknown");
+                    break;
+                }
+                */
+
+                writer.Key(iotags::curve::key_lockX);
+                writer.Bool(bLockX);
+                writer.Key(iotags::curve::key_lockY);
+                writer.Bool(bLockY);
+            }
+        }
+        writer.Key(iotags::curve::key_visible);
+    }
+
+    void dumpCurves(const zeno::CurvesData* curves, RAPIDJSON_WRITER& writer)
+    {
+        writer.StartObject();
+        writer.Key(iotags::key_objectType);
+        writer.String("curve");
+        for (auto& [key, curve] : curves->keys) {
+            writer.Key(key.c_str());
+            dumpCurve(curve, writer);
+        }
+        writer.EndObject();
+    }
+
     void writeAny(const zeno::reflect::Any& any, zeno::ParamType type, RAPIDJSON_WRITER& writer)
     {
-        auto zvar = zeno::AnyToZVariant(any);
-        writeZVariant(zvar, type, writer);
+        if (auto pCurves = zeno::reflect::any_cast<zeno::CurvesData>(&any)) {
+            //后续会采用序列化进行读写，现在先转为json字符串储存，以便复用以前的代码
+            dumpCurves(pCurves, writer);
+        }
+        else {
+            auto zvar = zeno::AnyToZVariant(any);
+            writeZVariant(zvar, type, writer);
+        }
     }
 
     void writeZVariant(zeno::zvariant defl, zeno::ParamType type, RAPIDJSON_WRITER& writer)

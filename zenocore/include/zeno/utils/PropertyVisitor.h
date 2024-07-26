@@ -140,7 +140,7 @@ namespace zeno {
         };
 
         template<>
-        struct ValueTypeToString<std::shared_ptr<zeno::CurveObject>> {
+        struct ValueTypeToString<zeno::CurvesData> {
             inline static std::string TypeName = "curve";
         };
 

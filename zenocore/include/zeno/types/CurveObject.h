@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
 #include <algorithm>
 #include <cassert>
@@ -175,21 +174,21 @@ struct CurveData : private _CurveDataDetails {
     }
 };
 
-struct CurveObject : IObjectClone<CurveObject> {
+struct CurvesData {
     std::map<std::string, CurveData> keys;
 
-    auto getEvaluator(std::string const &key) const {
-        return [&data = keys.at(key)] (float x) {
+    auto getEvaluator(std::string const& key) const {
+        return [&data = keys.at(key)](float x) {
             return data.eval(x);
         };
     }
 
     template <class ...Ts>
-    void addPoint(std::string const &key, Ts ...ts) {
+    void addPoint(std::string const& key, Ts ...ts) {
         return keys[key].addPoint(ts...);
     }
 
-    float eval(std::string const &key, float x) const {
+    float eval(std::string const& key, float x) const {
         return keys.at(key).eval(x);
     }
 
@@ -198,22 +197,22 @@ struct CurveObject : IObjectClone<CurveObject> {
     }
 
     vec2f eval(vec2f v) const {
-        auto &[x, y] = v;
-        return {eval("x", x), eval("y", y)};
+        auto& [x, y] = v;
+        return { eval("x", x), eval("y", y) };
     }
 
     vec3f eval(vec3f v) const {
-        auto &[x, y, z] = v;
-        return {eval("x", x), eval("y", y), eval("z", z)};
+        auto& [x, y, z] = v;
+        return { eval("x", x), eval("y", y), eval("z", z) };
     }
 
     vec4f eval(vec4f v) const {
-        auto &[x, y, z, w] = v;
-        return {eval("x", x), eval("y", y), eval("z", z), eval("w", w)};
+        auto& [x, y, z, w] = v;
+        return { eval("x", x), eval("y", y), eval("z", z), eval("w", w) };
     }
 };
 
-struct BCurveObject : zeno::IObjectClone<BCurveObject> {
+struct BCurveObject {
     std::vector<zeno::vec3f> points;
     float precision = 0.0;
     std::vector<zeno::vec3f> bPoints;

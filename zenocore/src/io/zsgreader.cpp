@@ -9,10 +9,9 @@
 #include "reflect/reflection.generated.hpp"
 
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
-
 namespace zenoio {
+
+    using namespace zenoio::iotags;
 
     ZsgReader::ZsgReader() : m_bDiskReading(true), m_ioVer(zeno::VER_3) {}
 

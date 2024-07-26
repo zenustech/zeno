@@ -5,8 +5,6 @@
 #include <zeno/io/iohelper.h>
 #include <zeno/io/iotags.h>
 
-using namespace zeno::iotags;
-
 
 namespace zenoio
 {
@@ -353,15 +351,15 @@ namespace zenoio
         writer.Key("timeline");
         {
             JsonObjScope _batch(writer);
-            writer.Key(timeline::start_frame);
+            writer.Key(iotags::timeline::start_frame);
             writer.Int(info.beginFrame);
-            writer.Key(timeline::end_frame);
+            writer.Key(iotags::timeline::end_frame);
             writer.Int(info.endFrame);
-            writer.Key(timeline::curr_frame);
+            writer.Key(iotags::timeline::curr_frame);
             writer.Int(info.currFrame);
-            writer.Key(timeline::always);
+            writer.Key(iotags::timeline::always);
             writer.Bool(info.bAlways);
-            writer.Key(timeline::timeline_fps);
+            writer.Key(iotags::timeline::timeline_fps);
             writer.Int(info.timelinefps);
         }
     }

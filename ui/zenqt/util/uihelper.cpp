@@ -22,8 +22,7 @@
 
 const char* g_setKey = "setKey";
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
+using namespace zenoio::iotags::curve;
 
 VarToggleScope::VarToggleScope(bool* pbVar)
     : m_pbVar(pbVar)
@@ -1564,8 +1563,8 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();
         }
     } else if (descType == "curve") {
-        ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
-        QString type = val[key_objectType].GetString();
+        ZASSERT_EXIT(val.HasMember(zenoio::iotags::key_objectType), QVariant());
+        QString type = val[zenoio::iotags::key_objectType].GetString();
         if (type != "curve") {
             return QVariant();
         }
@@ -1660,13 +1659,13 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
     {
         if (type == "curve")
         {
-            ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
-            QString type = val[key_objectType].GetString();
+            ZASSERT_EXIT(val.HasMember(zenoio::iotags::key_objectType), QVariant());
+            QString type = val[zenoio::iotags::key_objectType].GetString();
             if (type != "curve") {
                 return QVariant();
             }
             CURVES_DATA curves;
-            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
+            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(zenoio::iotags::curve::key_range)) { //compatible old version zsg file
                 CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
                 curves.insert("x", xCurve);
             } else {

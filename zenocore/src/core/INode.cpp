@@ -465,6 +465,17 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
             float fVal = resolve(str, type);
             result = fVal;
         }
+        else if (auto pCurves = any_get_if<CurvesData>(defl))
+        {
+            assert(pCurves->keys.size() == 1);
+            float fVal = pCurves->keys.begin()->second.eval(frame);
+            if (type == Param_Int || type == Param_Bool) {
+                return static_cast<int>(fVal);
+            }
+            else {
+                return fVal;
+            }
+        }
         else {
             result = std::move(defl);
         }
@@ -1711,12 +1722,6 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
         int ret = fmla.parse();
         float res = fmla.getResult();
         return res;
-    }
-    else if (zany curve = zeno::parseCurveObj(formulaOrKFrame)) {
-        std::shared_ptr<zeno::CurveObject> curves = std::dynamic_pointer_cast<zeno::CurveObject>(curve);
-        assert(curves && curves->keys.size() == 1);
-        float fVal = curves->keys.begin()->second.eval(frame);
-        return fVal;
     }
     else {
         if (Param_Float == type)

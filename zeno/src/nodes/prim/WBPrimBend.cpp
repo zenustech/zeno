@@ -6,7 +6,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/types/ListObject.h>
 
 #include <zeno/utils/orthonormal.h>
