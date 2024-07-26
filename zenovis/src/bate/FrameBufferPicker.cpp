@@ -547,7 +547,7 @@ struct FrameBufferPicker : IPicker {
         }
         else {
             if (!pixel.has_object() || !pixel.has_element() || !id_table.count(pixel.obj_id)) return "";
-            result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
+            result = zeno::format("{}:{}", id_table[pixel.obj_id], pixel.elem_id - 1);
         }
 
         destroy_buffers();
@@ -570,8 +570,8 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
         // convert coordinates
-        int start_x = x0 < x1 ? x0 : x1;
-        int start_y = y0 > y1 ? y0 : y1;
+        int start_x = std::min(x0, x1);
+        int start_y = std::max(y0, y1);
         start_y = h - start_y - 1;
         int rect_w = abs(x0 - x1);
         int rect_h = abs(y0 - y1);
@@ -598,29 +598,29 @@ struct FrameBufferPicker : IPicker {
             unordered_set<unsigned int> selected_obj;
             // fetch selected objects' ids
             for (int i = 0; i < pixel_count; i++) {
-                if (pixels[i].has_object())
+                if (pixels[i].has_object() && id_table.count(pixels[i].obj_id)) {
                     selected_obj.insert(pixels[i].obj_id);
+                }
             }
             // generate select result
             for (auto id: selected_obj) {
-                if (id_table.find(id) != id_table.end())
-                    result += id_table[id] + " ";
+                result += id_table[id] + " ";
             }
         }
         else {
             unordered_map<unsigned int, unordered_set<unsigned int>> selected_elem;
             for (int i = 0; i < pixel_count; i++) {
-                if (pixels[i].has_object() && pixels[i].has_element()) {
-                    if (selected_elem.find(pixels[i].obj_id) != selected_elem.end())
-                        selected_elem[pixels[i].obj_id].insert(pixels[i].elem_id);
-                    else selected_elem[pixels[i].obj_id] = {pixels[i].elem_id};
+                if (pixels[i].has_object() && pixels[i].has_element() && id_table.count(pixels[i].obj_id)) {
+                    if (selected_elem.count(pixels[i].obj_id)) {
+                        selected_elem[pixels[i].obj_id] = {};
+                    }
+                    selected_elem[pixels[i].obj_id].insert(pixels[i].elem_id);
                 }
             }
             // generate select result
             for (auto &[obj_id, elem_ids] : selected_elem) {
-                if (id_table.find(obj_id) != id_table.end()) {
-                    for (auto &elem_id : elem_ids)
-                        result += id_table[obj_id] + ":" + std::to_string(elem_id - 1) + " ";
+                for (auto &elem_id : elem_ids) {
+                    result += zeno::format("{}:{} ", id_table[obj_id], elem_id - 1);
                 }
             }
         }
