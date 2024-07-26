@@ -628,6 +628,59 @@ struct FrameBufferPicker : IPicker {
 
         return result;
     }
+    unordered_map<std::string , unordered_map<uint32_t, zeno::vec2i>> getPaintPicked(int x0, int y0, int x1, int y1) override {
+        // re-generate buffers for possible window resize
+        generate_buffers();
+
+        // draw framebuffer
+        draw();
+
+        // check fbo
+        if (!fbo->complete()) return {};
+
+        // prepare fbo
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
+        CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+
+        // convert coordinates
+        int start_x = std::min(x0, x1);
+        int start_y = std::max(y0, y1);
+        start_y = h - start_y - 1;
+        int rect_w = abs(x0 - x1);
+        int rect_h = abs(y0 - y1);
+
+        // read pixels
+        int pixel_count = rect_w * rect_h;
+        std::vector<PixelInfo> pixels(pixel_count);
+        CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels.data()));
+
+        // unbind fbo
+        CHECK_GL(glReadBuffer(GL_NONE));
+        fbo->unbind();
+
+        unordered_map<std::string , unordered_map<uint32_t, zeno::vec2i>> result;
+        {
+            unordered_map<uint32_t , unordered_map<uint32_t, zeno::vec2i>> selected_elem;
+            for (auto j = 0; j < rect_h; j++) {
+                for (auto i = 0; i < rect_w; i++) {
+                    auto index = i + j * rect_w;
+                    auto pixel = pixels[index];
+                    if (pixel.has_object() && pixel.has_element() && id_table.count(pixel.obj_id)) {
+                        if (selected_elem.count(pixel.obj_id) == 0) {
+                            selected_elem[pixel.obj_id] = {};
+                        }
+                        selected_elem[pixel.obj_id][pixel.elem_id] = {i, j};
+                    }
+                }
+            }
+            for (auto &[obj_id, elem_ids] : selected_elem) {
+                result[id_table[obj_id]] = std::move(elem_ids);
+            }
+        }
+        destroy_buffers();
+
+        return result;
+    }
 
     virtual float getDepth(int x, int y) override {
         generate_buffers();

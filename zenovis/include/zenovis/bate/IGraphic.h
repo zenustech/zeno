@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <unordered_map>
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
@@ -65,6 +66,7 @@ struct IGraphicHandler : IGraphicDraw {
 struct IPicker : IGraphicDraw {
     virtual std::string getPicked(int x, int y) = 0;
     virtual std::string getPicked(int x0, int y0, int x1, int y1) = 0;
+    virtual std::unordered_map<std::string , std::unordered_map<uint32_t, zeno::vec2i>> getPaintPicked(int x0, int y0, int x1, int y1) = 0;
     virtual float getDepth(int x, int y) = 0;
     virtual void focus(const std::string& prim_name) = 0;
 };
