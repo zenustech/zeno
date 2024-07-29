@@ -669,7 +669,7 @@ struct FrameBufferPicker : IPicker {
                         if (selected_elem.count(pixel.obj_id) == 0) {
                             selected_elem[pixel.obj_id] = {};
                         }
-                        selected_elem[pixel.obj_id][pixel.elem_id - 1] = zeno::vec2f(i, j);
+                        selected_elem[pixel.obj_id][pixel.elem_id - 1] = zeno::vec2f(i + x0, j + y0);
                     }
                 }
             }
