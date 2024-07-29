@@ -27,6 +27,7 @@ namespace zeno {
         else if (type == "color") { return Param_Heatmap; }
         else if (type == "curve") { return Param_Curve; }
         else if (starts_with(type, "enum ")) { return Param_String; }
+        else if (type == "object") { return Param_Object; }
         else return Param_Null;
     }
 
@@ -347,6 +348,10 @@ namespace zeno {
         else if (type == zeno::Param_Curve)
         {
             return "{}";
+        }
+        else if (type == zeno::Param_Object)
+        {
+            return std::shared_ptr<IObject>();
         }
         return zeno::reflect::Any();
     }
