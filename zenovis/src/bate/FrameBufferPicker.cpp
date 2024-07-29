@@ -628,7 +628,7 @@ struct FrameBufferPicker : IPicker {
 
         return result;
     }
-    unordered_map<std::string , unordered_map<uint32_t, zeno::vec2i>> getPaintPicked(int x0, int y0, int x1, int y1) override {
+    unordered_map<std::string , unordered_map<uint32_t, zeno::vec2f>> getPaintPicked(int x0, int y0, int x1, int y1) override {
         // re-generate buffers for possible window resize
         generate_buffers();
 
@@ -658,9 +658,9 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glReadBuffer(GL_NONE));
         fbo->unbind();
 
-        unordered_map<std::string , unordered_map<uint32_t, zeno::vec2i>> result;
+        unordered_map<std::string , unordered_map<uint32_t, zeno::vec2f>> result;
         {
-            unordered_map<uint32_t , unordered_map<uint32_t, zeno::vec2i>> selected_elem;
+            unordered_map<uint32_t , unordered_map<uint32_t, zeno::vec2f>> selected_elem;
             for (auto j = 0; j < rect_h; j++) {
                 for (auto i = 0; i < rect_w; i++) {
                     auto index = i + j * rect_w;
@@ -669,7 +669,7 @@ struct FrameBufferPicker : IPicker {
                         if (selected_elem.count(pixel.obj_id) == 0) {
                             selected_elem[pixel.obj_id] = {};
                         }
-                        selected_elem[pixel.obj_id][pixel.elem_id] = {i, j};
+                        selected_elem[pixel.obj_id][pixel.elem_id - 1] = zeno::vec2f(i, j);
                     }
                 }
             }

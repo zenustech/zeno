@@ -1413,15 +1413,15 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 }
                 picker->load_painter_attr(prim_name, std::move(attr));
                 // set callback to picker
-                picker->set_picked_elems_callback([scene, node_location, prim_name]() -> void {
+                picker->set_paint_elems_callback([scene, node_location, prim_name](std::unordered_map<std::string, std::unordered_map<uint32_t, zeno::vec2f>> selected_elements, zeno::vec4f rect_pos) -> void {
                     {
                         auto prims_shared = scene->objectsMan->pairsShared<zeno::PrimitiveObject>();
                         for (const auto& [k, v] : prims_shared) {
                             if (prim_name == k) {
                                 scene->painter_data[prim_name].resize(v->verts.size());
                                 auto &data = scene->painter_data[prim_name];
-                                for (auto elem : scene->selected_elements[prim_name]) {
-                                    data[elem] = {1, 0, 0};
+                                for (auto [index, p_pos] : selected_elements[prim_name]) {
+                                    data[index] = {1, 0, 0};
                                 }
                             }
                         }
