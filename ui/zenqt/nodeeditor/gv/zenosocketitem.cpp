@@ -34,11 +34,13 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
-    
-    if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
-        setBrush(QColor("#4B9EF4"), QColor("#5FD2FF"));
-    else
-        setBrush(QColor("#CCA44E"), QColor("#FFF000"));
+
+    QColor sockClr = m_paramIdx.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
+    setBrush(sockClr, sockClr);
+    //if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
+    //    setBrush(QColor("#4B9EF4"), QColor("#5FD2FF"));
+    //else
+    //    setBrush(QColor("#CCA44E"), QColor("#FFF000"));
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }

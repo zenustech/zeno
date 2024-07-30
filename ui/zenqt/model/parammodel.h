@@ -25,7 +25,9 @@ struct ParamItem
     zeno::SocketType connectProp = zeno::NoSocket;
     zeno::NodeDataGroup group;
     zeno::reflect::Any optCtrlprops;
+    zeno::reflect::RTTITypeInfo rtti = { "<default_type>", 0, 0 };
     QList<QPersistentModelIndex> links;
+    QColor m_socketClr;
     bool bVisible = true;
 };
 

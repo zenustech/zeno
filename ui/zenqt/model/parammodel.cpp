@@ -101,6 +101,11 @@ void ParamsModel::initParamItems()
         item.name = QString::fromStdString(spParam.name);
         item.type = spParam.type;
         item.value = QVariant::fromValue(spParam.defl);
+        item.rtti = spParam.rtti;
+
+        const std::string& sClr = zeno::getSession().getColorByRtti(spParam.rtti);
+        item.m_socketClr = QColor(sClr.c_str());
+
         item.connectProp = spParam.socketType;
         item.bVisible = spParam.bVisible;
         item.group = zeno::Role_InputPrimitive;
@@ -112,6 +117,7 @@ void ParamsModel::initParamItems()
         ParamItem item;
         item.bInput = true;
         item.name = QString::fromStdString(spParam.name);
+        item.rtti = spParam.rtti;
         item.type = spParam.type;
         item.connectProp = spParam.socketType;
         item.group = zeno::Role_InputObject;
@@ -128,6 +134,10 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
+        item.rtti = param.rtti;
+        const std::string& sClr = zeno::getSession().getColorByRtti(param.rtti);
+        item.m_socketClr = QColor(sClr.c_str());
+
         m_items.append(item);
     }
 
@@ -138,6 +148,7 @@ void ParamsModel::initParamItems()
         item.bInput = false;
         item.name = QString::fromStdString(param.name);
         item.type = param.type;
+        item.rtti = param.rtti;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputObject;
         m_items.append(item);
@@ -302,6 +313,11 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     {
     case ROLE_PARAM_NAME:       return param.name;
     case ROLE_PARAM_TYPE:       return param.type;
+    case ROLE_PARAM_RTTICODE:
+    {
+        auto code = param.rtti.get_decayed_hash();
+        return (code == 0) ? param.rtti.hash_code() : code;
+    }
     case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
     case ROLE_SOCKET_TYPE:      return param.connectProp;
@@ -317,6 +333,9 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
             return QVariant::fromValue(param.optCtrlprops);
         else
             return QVariant();
+    }
+    case ROLE_PARAM_SOCKET_CLR: {
+        return param.m_socketClr;
     }
     case ROLE_PARAM_INFO: {
         zeno::ParamPrimitive info;

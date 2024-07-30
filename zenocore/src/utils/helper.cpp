@@ -9,7 +9,8 @@ namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type) {
         //TODO: deprecated literal representation.
-        if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory") { return Param_String; }
+        if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory" || type == "multiline_string")
+        { return Param_String; }
         else if (type == "bool") { return Param_Bool; }
         else if (type == "int") { return Param_Int; }
         else if (type == "float") { return Param_Float; }
@@ -547,6 +548,9 @@ namespace zeno {
                 param.name = param_desc.name;
                 param.type = type;
                 param.defl = zeno::str2any(param_desc.defl, param.type);
+                if (param_desc.type != "color") {   //要重新定义Heatmap
+                    param.rtti = param.defl.type();
+                }
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 if (param_desc.control != NullControl)
@@ -586,6 +590,7 @@ namespace zeno {
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type);
             param.defl = zeno::str2any(param_desc.defl, param.type);
+            param.rtti = param.defl.type();
             param.socketType = NoSocket;
             //其他控件估计是根据类型推断的。
             if (starts_with(param_desc.type, "enum ")) {

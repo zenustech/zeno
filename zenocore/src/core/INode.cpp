@@ -796,6 +796,7 @@ ZENO_API ObjectParams INode::get_input_object_params() const
         obj.bInput = true;
         obj.socketType = spObjParam.socketType;
         obj.wildCardGroup = spObjParam.wildCardGroup;
+        obj.rtti = spObjParam.rtti;
         //obj.prop = ?
         params.push_back(obj);
     }
@@ -816,6 +817,7 @@ ZENO_API ObjectParams INode::get_output_object_params() const
         obj.bInput = false;
         obj.socketType = spObjParam.socketType;
         obj.wildCardGroup = spObjParam.wildCardGroup;
+        obj.rtti = spObjParam.rtti;
         //obj.prop = ?
         params.push_back(obj);
     }
@@ -830,6 +832,7 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
         param.bInput = true;
         param.name = name;
         param.type = spParamObj.type;
+        param.rtti = spParamObj.rtti;
         param.control = spParamObj.control;
         param.ctrlProps = spParamObj.ctrlProps;
         param.defl = spParamObj.defl;
@@ -851,6 +854,7 @@ ZENO_API PrimitiveParams INode::get_output_primitive_params() const {
         param.bInput = false;
         param.name = name;
         param.type = spParamObj.type;
+        param.rtti = spParamObj.rtti;
         param.control = NullControl;
         param.defl = spParamObj.defl;
         for (auto spLink : spParamObj.links) {
@@ -942,6 +946,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.ctrlProps = param.ctrlProps;
     sparam.bVisible = param.bVisible;
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.rtti = param.rtti;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -957,6 +962,7 @@ bool INode::add_input_obj_param(ParamObject param) {
     sparam.socketType = param.socketType;
     sparam.m_wpNode = shared_from_this();
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.rtti = param.rtti;
     m_inputObjs.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -975,6 +981,7 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam.type = param.type;
     sparam.ctrlProps = param.ctrlProps;
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.rtti = param.rtti;
     m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -990,6 +997,7 @@ bool INode::add_output_obj_param(ParamObject param) {
     sparam.socketType = param.socketType;
     sparam.m_wpNode = shared_from_this();
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.rtti = param.rtti;
     m_outputObjs.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }

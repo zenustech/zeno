@@ -34,7 +34,54 @@
 
 using namespace zeno::reflect;
 
+extern std::map<size_t, std::string> g_clrMapping;
+
+
 namespace zeno {
+
+    ParamType RttiInfoToType(const zeno::reflect::RTTITypeInfo& rtti)
+    {
+        size_t typeHash = rtti.get_decayed_hash();
+        if (typeHash == 0)
+            typeHash = rtti.hash_code();
+        if (typeHash == zeno::reflect::type_info<int>().hash_code()) {
+            return Param_Int;
+        }
+        else if (typeHash == zeno::reflect::type_info<std::string>().hash_code()) {
+            return Param_String;
+        }
+        else if (typeHash == zeno::reflect::type_info<float>().hash_code()) {
+            return Param_Float;
+        }
+        else if (typeHash == zeno::reflect::type_info<double>().hash_code()) {
+            return Param_Float;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
+            return Param_Vec2f;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
+            return Param_Vec2i;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec3i>().hash_code()) {
+            return Param_Vec3i;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec3f>().hash_code()) {
+            return Param_Vec3f;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec4i>().hash_code()) {
+            return Param_Vec4i;
+        }
+        else if (typeHash == zeno::reflect::type_info<zeno::vec4f>().hash_code()) {
+            return Param_Vec4f;
+        }
+        else if (typeHash == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
+            return Param_Object;
+        }
+        else {
+            //TODO: curveobject
+            return Param_Custom;
+        }
+    }
 
     ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType)
     {
@@ -51,7 +98,7 @@ namespace zeno {
             return Param_String;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec2i>()) {
-            return Param_Vec2f;
+            return Param_Vec2i;
         }
         else if (fieldType == zeno::reflect::get_type<zeno::vec2f>()) {
             return Param_Vec2f;
@@ -224,6 +271,12 @@ struct ReflectNodeClass : INodeClass {
                 //根据类型判断一下是object还是primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
 
+                auto iter2 = g_clrMapping.find(zeno::reflect::get_type<int>().type_hash());
+                if (iter2 != g_clrMapping.end()) {
+                    int j;
+                    j = 0;
+                }
+
                 ParamType type = reflectTypeInfoToType(fieldType);
 
                 //role:
@@ -335,6 +388,7 @@ struct ReflectNodeClass : INodeClass {
                     }
                     prim.name = param_name;
                     prim.type = type;
+                    prim.rtti = fieldType->get_rtti_info();
                     prim.bInput = true;
                     prim.bVisible = true;
                     prim.control = ctrl;
@@ -358,6 +412,7 @@ struct ReflectNodeClass : INodeClass {
                     prim.name = param_name;
                     prim.bInput = false;
                     prim.bVisible = true;
+                    prim.rtti = fieldType->get_rtti_info();
                     prim.control = NullControl;
                     prim.socketType = Socket_Primitve;
                     prim.tooltip;
@@ -403,6 +458,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bInput = false;
                     outPrim.socketType = Socket_Primitve;
                     outPrim.type = type;
+                    outPrim.rtti = ret_type->get_rtti_info();
                     outPrim.wildCardGroup;
                     m_customui.outputPrims.emplace_back(outPrim);
                     reg_outputprims.insert(param_name);
@@ -434,6 +490,7 @@ struct ReflectNodeClass : INodeClass {
                             outputObj.bInput = false;
                             outputObj.socketType = Socket_Output;
                             outputObj.type = type;
+                            outputObj.rtti = param_type;
                             m_customui.outputObjs.emplace_back(outputObj);
                             reg_outputobjs.insert(param_name);
                         }
@@ -449,6 +506,7 @@ struct ReflectNodeClass : INodeClass {
                             prim.socketType = Socket_Primitve;
                             prim.type = type;
                             prim.defl = initAnyDeflValue(type);
+                            prim.rtti = param_type;
                             prim.tooltip;
                             prim.wildCardGroup;
                             m_customui.outputPrims.emplace_back(prim);
@@ -471,18 +529,20 @@ struct ReflectNodeClass : INodeClass {
                             inObj.bInput = true;
                             inObj.socketType = Socket_Owning;   //TODO: 也许会根据引用类型或者const决定是否owning.
                             inObj.type = type;
+                            inObj.rtti = param_type;
                             m_customui.inputObjs.emplace_back(inObj);
                             reg_inputobjs.insert(param_name);
                         }
                     }
                     else {
-                        type = reflectTypeInfoToType(TypeHandle(param_type));
+                        type = RttiInfoToType(param_type);
                         if (reg_inputprims.find(param_name) == reg_inputprims.end()) {
                             ParamPrimitive inPrim;
                             inPrim.name = param_name;
                             inPrim.bInput = true;
                             inPrim.socketType = Socket_Primitve;
                             inPrim.type = type;
+                            inPrim.rtti = param_type;
                             inPrim.defl = initAnyDeflValue(type);
                             inPrim.control = getDefaultControl(type);
                             inPrim.wildCardGroup;
@@ -636,6 +696,14 @@ ZENO_API void Session::registerRunTrigger(std::function<void()> func)
 ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
 {
     m_funcNodeStatus = func;
+}
+
+ZENO_API std::string Session::getColorByRtti(const zeno::reflect::RTTITypeInfo& rtti)
+{
+    size_t decayHash = rtti.get_decayed_hash();
+    auto iter = g_clrMapping.find(decayHash == 0 ? rtti.hash_code() : decayHash);
+    if (iter == g_clrMapping.end()) return "#FFFFFF";
+    return iter->second;
 }
 
 void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status)
