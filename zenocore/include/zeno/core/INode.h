@@ -147,6 +147,7 @@ protected:
     //preApply是先解决所有输入参数（依赖）的求值问题
     ZENO_API virtual void preApply();
     ZENO_API virtual void apply();
+    ZENO_API void reflecNode_apply();
     ZENO_API virtual void registerObjToManager();
     ZENO_API virtual void initParams(const NodeData& dat);
     ZENO_API bool set_primitive_input(std::string const& id, const zeno::reflect::Any& val);

@@ -28,7 +28,7 @@ namespace zeno {
         else if (type == "color") { return Param_Heatmap; }
         else if (type == "curve") { return Param_Curve; }
         else if (starts_with(type, "enum ")) { return Param_String; }
-        else if (type == "object") { return Param_Object; }
+        else if (type == "object" || type == "") { return Param_Object; }
         else return Param_Null;
     }
 

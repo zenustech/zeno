@@ -250,6 +250,13 @@ struct ReflectNodeClass : INodeClass {
             m_customui.inputPrims.tabs.emplace_back(tab);
         }
 
+        if (!m_customui.inputPrims.tabs.empty() && !m_customui.inputPrims.tabs[0].groups.empty()) {
+            m_customui.inputPrims.tabs[0].groups[0].params.clear();
+        }
+        m_customui.inputObjs.clear();
+        m_customui.outputPrims.clear();
+        m_customui.outputObjs.clear();
+
         std::set<std::string> reg_inputobjs, reg_inputprims, reg_outputobjs, reg_outputprims;
 
         //先遍历所有成员，收集所有参数，目前假定所有成员变量都作为节点的参数存在，后续看情况可以指定

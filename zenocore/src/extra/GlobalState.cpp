@@ -54,15 +54,15 @@ ZENO_API void GlobalState::clearState() {
     log_debug("entering session id={}", sessionid);
 }
 
-ZENO_API int GlobalState::getFrameId() const {
+ZENO_API float GlobalState::getFrameId() const {
     zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
-    return frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0;
+    return frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0;
     //return frameid;
 }
 
-ZENO_API void GlobalState::updateFrameId(int frame) {
+ZENO_API void GlobalState::updateFrameId(float frame) {
     //todo: mutex
-    getSession().globalVariableManager->updateVariable(GVariable("$F", zeno::reflect::make_any<int>(frame)));
+    getSession().globalVariableManager->updateVariable(GVariable("$F", zeno::reflect::make_any<float>(frame)));
     //frameid = frame;
 }
 

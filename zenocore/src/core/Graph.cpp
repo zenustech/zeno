@@ -107,7 +107,9 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_v
     auto spNode = spParam->m_wpNode.lock();
     assert(spNode);
     {   //检测param依赖全局变量,先remove再parse
-        getSession().globalVariableManager->removeDependGlobalVaraible(spNode->get_uuid_path(), "$F");
+        const std::string& uuid = spNode->get_uuid();
+        getSession().globalVariableManager->removeDependGlobalVaraible(uuid, "$F");
+        frame_nodes.erase(uuid);
         assert(spParam);
         parseNodeParamDependency(spParam, new_value);
     }
@@ -118,13 +120,12 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
     auto spNode = spParam->m_wpNode.lock();
     assert(spNode);
     const std::string& uuid = spNode->get_uuid();
-    frame_nodes.erase(uuid);
     if (Param_String == spParam->type) {
         std::string newstr = zeno_get<std::string>(new_value);
         std::regex pattern("\\$F");
         if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
             frame_nodes.insert(uuid);
-            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
         }
     }
     else if (Param_Vec2f == spParam->type) {
@@ -134,7 +135,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
                 }
             }
         }
@@ -146,7 +147,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
                 }
             }
         }
@@ -158,7 +159,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             for (auto val : vec) {
                 if (std::regex_search(val, pattern)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<int>());
+                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
                 }
             }
         }

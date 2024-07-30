@@ -58,7 +58,7 @@ namespace zeno
         }
 
         virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
-            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<TestReflectNode>());
+            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<SimpleReflect>());
             return m_handle;
         };
     };
