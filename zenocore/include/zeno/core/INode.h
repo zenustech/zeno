@@ -47,7 +47,7 @@ public:
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
-    ZENO_API zeno::reflect::TypeHandle* getReflectType();
+    ZENO_API virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType();
 
     ZENO_API void doComplete();
     ZENO_API void doApply();

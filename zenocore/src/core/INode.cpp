@@ -63,8 +63,8 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
 
 ZENO_API INode::~INode() = default;
 
-zeno::reflect::TypeHandle* INode::getReflectType() {
-    return &zeno::reflect::TypeHandle::nulltype();
+std::shared_ptr<zeno::reflect::TypeHandle> INode::getReflectType() {
+    return std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::TypeHandle::nulltype()) ;
 }
 
 ZENO_API std::shared_ptr<Graph> INode::getThisGraph() const {
@@ -633,13 +633,147 @@ ZENO_API void INode::doApply() {
 #endif
         reportStatus(true, Node_Running);
         auto hdl = getReflectType();
-        if (*hdl == zeno::reflect::TypeHandle::nulltype()) {
+        if (hdl && *(hdl.get()) == zeno::reflect::TypeHandle::nulltype()) {
             apply();
         }
         else {
-            //手动调用反射类的apply函数
-            int j;
-            j = 0;
+            if (zeno::reflect::TypeBase* typebase = hdl->get_reflected_type_or_null()) {
+                for (zeno::reflect::IMemberFunction* func : typebase->get_member_functions()) {
+                    const auto& funcname = func->get_name();
+                    if (funcname == "apply") {
+                        //从apply参数获取输入
+                        zeno::reflect::ArrayList<zeno::reflect::Any> paramValues;
+                        std::vector<std::tuple<std::string, zeno::ParamType>> outputsName;
+
+                        const zeno::reflect::ArrayList<zeno::reflect::RTTITypeInfo>& params = func->get_params();
+                        const auto& param_names = func->get_params_name();
+                        for (int i = 0; i < params.size(); i++) {
+                            const zeno::reflect::RTTITypeInfo& param_type = params[i];
+                            if (!param_type.has_flags(zeno::reflect::TF_IsConst) && param_type.has_flags(zeno::reflect::TF_IsLValueRef)) {
+                                outputsName.push_back({ param_names[i].c_str(), reflectReferenceTypeInfoToType(param_type) });
+                            }
+                            else{
+                                zeno::reflect::Any inputAny;
+                                auto iter = m_inputPrims.find(param_names[i].c_str());
+                                if (iter != m_inputPrims.end()) {
+                                    auto& val = iter->second.result;
+                                    if (val.has_value()) {
+                                        inputAny = zeno::reflect::move(val);
+                                    }
+                                    else {
+                                        inputAny = zeno::reflect::move(iter->second.defl);
+                                    }
+                                }
+                                else {
+                                    auto iter2 = m_inputObjs.find(param_names[i].c_str());
+                                    if (iter2 != m_inputObjs.end())
+                                        inputAny = zeno::reflect::move(iter2->second.spObject);
+                                }
+                                paramValues.add_item(inputAny);
+                            }
+                        }
+                        for (auto& paramInfo: outputsName) {
+                            paramValues.add_item(zeno::reflect::move(zeno::initAnyDeflValue(std::get<1>(paramInfo))));
+                        }
+                        //从输入到成员变量
+                        for (zeno::reflect::IMemberField* field : typebase->get_member_fields()) {
+                            std::string field_name(field->get_name().c_str());
+                            std::string param_name;
+                            if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
+                                if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
+                                    int _role = value->as_int();
+                                    if (_role == Role_InputPrimitive || _role == Role_InputObject) {
+                                        if (const zeno::reflect::IMetadataValue* value = metadata->get_value("DisplayName"))
+                                            param_name = value->as_string();
+                                        else {
+                                            param_name = field_name;
+                                        }
+                                        zeno::reflect::Any inputAny;
+                                        auto iter = m_inputPrims.find(param_name);
+                                        if (iter != m_inputPrims.end()) {
+                                            auto& val = iter->second.result;
+                                            if (val.has_value()) {
+                                                inputAny = zeno::reflect::move(val);
+                                            }
+                                            else {
+                                                inputAny = zeno::reflect::move(iter->second.defl);
+                                            }
+                                        }
+                                        else {
+                                            auto iter2 = m_inputObjs.find(param_name);
+                                            if (iter2 != m_inputObjs.end())
+                                                inputAny = zeno::reflect::move(iter2->second.spObject);
+                                        }
+                                        if (inputAny.has_value())
+                                            field->set_field_value(this, inputAny);
+                                    }
+                                }
+                            }
+                        }
+                        //调用apply
+                        zeno::reflect::Any res = func->invoke_unsafe(this, paramValues);
+                        //从apply参数/返回值获取输出
+                        for (int i = paramValues.size() - 1; i > paramValues.size() - outputsName.size() - 1; i--) {
+                            auto iter = m_outputObjs.find(param_names[i].c_str());
+                            if (iter != m_outputObjs.end()) {
+                                if (params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
+                                    iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
+                                }else if (params[i].get_decayed_hash() == zeno::reflect::type_info<std::unique_ptr<zeno::IObject>>().hash_code()) {
+                                    //iter->second.spObject = zeno::reflect::any_cast<std::unique_ptr<zeno::IObject>>(std::move(paramValues[i]));
+                                }
+                            }
+                            else {
+                                auto iter2 = m_outputPrims.find(param_names[i].c_str());
+                                if (iter2 != m_outputPrims.end()) {
+                                    iter2->second.result = zeno::reflect::move(paramValues[i]);
+                                }
+                            }
+                        }
+                        const zeno::reflect::TypeHandle& ret_type = func->get_return_type();
+                        if (reflectTypeInfoToType(ret_type) == Param_Object) {
+                            auto iter = m_outputObjs.find("result");
+                            if (iter != m_outputObjs.end())
+                                iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);
+                        }
+                        else {
+                            auto iter2 = m_outputPrims.find("result");
+                            if (iter2 != m_outputPrims.end()) {
+                                iter2->second.result = zeno::reflect::move(res);
+                            }
+                        }
+                        //从成员变量到输入
+                        for (zeno::reflect::IMemberField* field : typebase->get_member_fields()) {
+                            if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
+                                if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
+                                    int _role = value->as_int();
+                                    if (_role == Role_OutputPrimitive || _role == Role_OutputObject) {
+                                        std::string field_name(field->get_name().c_str());
+                                        std::string param_name;
+                                        if (const zeno::reflect::IMetadataValue* value = metadata->get_value("DisplayName"))
+                                            param_name = value->as_string();
+                                        else {
+                                            param_name = field_name;
+                                        }
+                                        zeno::reflect::Any outputAny = field->get_field_value(this);
+                                        if (outputAny.has_value()) {
+                                            auto iter = m_outputPrims.find(param_name);
+                                            if (iter != m_outputPrims.end()) {
+                                                iter->second.result = zeno::reflect::move(outputAny);
+                                            }
+                                            else {
+                                                auto iter2 = m_outputObjs.find(param_name);
+                                                if (iter2 != m_outputObjs.end())
+                                                    iter2->second.spObject = zeno::reflect::any_cast<std::shared_ptr<IObject>>(outputAny);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
     log_debug("==> leave {}", m_name);

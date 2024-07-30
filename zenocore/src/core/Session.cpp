@@ -89,6 +89,59 @@ namespace zeno {
         }
     }
 
+    ParamType reflectReferenceTypeInfoToType(const zeno::reflect::RTTITypeInfo& fieldType)
+    {
+        if (fieldType.get_decayed_hash() == zeno::reflect::type_info<int>().hash_code()) {
+            return Param_Int;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<float>().hash_code()) {
+            return Param_Float;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<double>().hash_code()) {
+            return Param_Float;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<std::string>().hash_code()) {
+            return Param_String;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
+            return Param_Vec2f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2f>().hash_code()) {
+            return Param_Vec2f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2s>().hash_code()) {
+            return Param_Null;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3i>().hash_code()) {
+            return Param_Vec3i;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3f>().hash_code()) {
+            return Param_Vec3f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3s>().hash_code()) {
+            return Param_Vec3f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4i>().hash_code()) {
+            return Param_Vec4i;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4f>().hash_code()) {
+            return Param_Vec4f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4s>().hash_code()) {
+            return Param_Vec4f;
+        }
+        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
+            return Param_Object;
+        }
+        else if (fieldType.get_decayed_hash() == TypeHandle::nulltype().type_hash()) {
+            return Param_Null;
+        }
+        else {
+            //TODO: curveobject
+            return Param_Custom;
+        }
+    }
+
 namespace {
 
 struct ImplNodeClass : INodeClass {
@@ -371,8 +424,8 @@ struct ReflectNodeClass : INodeClass {
                 }
                 if (!param_type.has_flags(TF_IsConst) && param_type.has_flags(TF_IsLValueRef)) {
                     //引用返回当作是输出处理
-                    if (param_code == get_type<std::shared_ptr<zeno::IObject>>().type_hash() ||
-                        param_code == get_type<std::unique_ptr<zeno::IObject>>().type_hash())
+                    if (param_type.get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code() ||
+                        param_type.get_decayed_hash() == zeno::reflect::type_info<std::unique_ptr<zeno::IObject>>().hash_code())
                     {
                         type = Param_Object;
                         if (reg_outputobjs.find(param_name) == reg_outputobjs.end()) {
@@ -386,7 +439,7 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     else {
-                        type = reflectTypeInfoToType(TypeHandle(param_type));
+                        type = reflectReferenceTypeInfoToType(param_type);
                         if (reg_outputprims.find(param_name) == reg_outputprims.end()) {
                             ParamPrimitive prim;
                             prim.name = param_name;
@@ -394,6 +447,7 @@ struct ReflectNodeClass : INodeClass {
                             prim.bVisible = true;
                             prim.control = NullControl;
                             prim.socketType = Socket_Primitve;
+                            prim.type = type;
                             prim.defl = initAnyDeflValue(type);
                             prim.tooltip;
                             prim.wildCardGroup;

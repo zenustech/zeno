@@ -14,6 +14,8 @@ namespace zeno {
     namespace reflect {
         class TypeBase;
     }
+    ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType);
+    ParamType reflectReferenceTypeInfoToType(const zeno::reflect::RTTITypeInfo& fieldType);
 
 struct Graph;
 struct Session;

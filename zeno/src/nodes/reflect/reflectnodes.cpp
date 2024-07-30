@@ -18,8 +18,9 @@ namespace zeno
             return 233;
         }
 
-        virtual zeno::reflect::TypeHandle gettype() {
-            return zeno::reflect::get_type<TestReflectNode>();
+        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
+            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<TestReflectNode>());
+            return m_handle;
         }
 
         ZPROPERTY(Role = zeno::Role_InputObject, DisplayName = "Input Object", Socket = zeno::Socket_Owning)
@@ -51,8 +52,14 @@ namespace zeno
     {
         SimpleReflect() = default;
 
-        std::shared_ptr<IObject> apply(std::shared_ptr<zeno::IObject> input_obj, std::string wtf, zeno::vec3f c, int& ret) {
-            return nullptr;
+        std::string apply(std::shared_ptr<zeno::IObject> input_obj, std::string wtf, zeno::vec3f c, float& ret1, std::shared_ptr<zeno::IObject>& output_obj) {
+            ret1 = 8;
+            return "";
         }
+
+        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
+            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<TestReflectNode>());
+            return m_handle;
+        };
     };
 }
