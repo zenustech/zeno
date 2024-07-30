@@ -122,9 +122,12 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
-        if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
-            m_transformer->clickedAnyHandler(getPos(), dir, front))
-        {
+        if (
+            event->buttons() & Qt::LeftButton
+            && !scene->selected.empty()
+            && m_transformer->isTransformMode()
+            && m_transformer->clickedAnyHandler(getPos(), dir, front)
+        ) {
             bTransform = true;
         }
     }
@@ -133,20 +136,20 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     } else if (event->buttons() & Qt::LeftButton) {
         left_button_pressed = true;
         m_boundRectStartPos = event->pos();
+        if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
+            float brush_size = scene->drawOptions->brush_size;
+            float xpos = event->x(), ypos = event->y();
+            int x0 = std::max(int(xpos - brush_size / 2.0f), 0);
+            int y0 = std::max(int(ypos - brush_size / 2.0f), 0);
+            int x1 = std::min(int(xpos + brush_size / 2.0f), int(m_res.x()) - 1);
+            int y1 = std::min(int(ypos + brush_size / 2.0f), int(m_res.y()) - 1);
+            m_picker->pick_rect(x0, y0, x1, y1, zeno::SELECTION_MODE::APPEND);
+        }
         // check if clicked a selected object
-        if (bTransform)
+        else if (bTransform)
         {
             m_transformer->startTransform();
         }
-    }
-    if (scene->get_select_mode() == zenovis::PICK_MODE::PAINT) {
-        float brush_size = scene->drawOptions->brush_size;
-        float xpos = event->x(), ypos = event->y();
-        int x0 = std::max(int(xpos - brush_size / 2.0f), 0);
-        int y0 = std::max(int(ypos - brush_size / 2.0f), 0);
-        int x1 = std::min(int(xpos + brush_size / 2.0f), int(m_res.x()) - 1);
-        int y1 = std::min(int(ypos + brush_size / 2.0f), int(m_res.y()) - 1);
-        m_picker->pick_rect(x0, y0, x1, y1, zeno::SELECTION_MODE::APPEND);
     }
 }
 
