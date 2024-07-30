@@ -133,7 +133,7 @@ ZENO_DEFNODE(CameraNode)({
         {"int", "frame", "0"},
     },
     {
-        {"CameraObject", "camera"},
+        {"", "camera"},
     },
     {
     },
@@ -238,7 +238,7 @@ ZENO_DEFNODE(CameraEval)({
         {"nodelist"}
     },
     {
-        {"CameraObject", "camera"},
+        {"", "camera"},
     },
     {
     },

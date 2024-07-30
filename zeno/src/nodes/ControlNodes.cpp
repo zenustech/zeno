@@ -372,8 +372,8 @@ struct TimeShift : zeno::INode {
         int offset = zeno_get<int>(param.defl);
         //∏≤∏«$F
         zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
-        int currFrame = (frame.has_value() ? zeno::reflect::any_cast<int>(frame) : 0) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<int>(currFrame));
+        float currFrame = (frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<float>(currFrame));
         //º∆À„…œ”Œ
         INode::preApply();
     }
