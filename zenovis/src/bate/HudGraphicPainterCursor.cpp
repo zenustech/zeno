@@ -32,12 +32,14 @@ static const char *frag_code = R"(
 
     void main() {
         vec2 coor = gl_PointCoord * 2 - 1;
-        float len2 = dot(coor, coor);
-        if (len2 > 1) {
+        float len = sqrt(dot(coor, coor));
+        if (len > 1) {
             discard;
         }
-        if (len2 < 1.0 - 5.0 / max(mBrushSize, 10) ) {
-            discard;
+        if (len < 1.0 - 5.0 / max(mBrushSize, 10)) {
+            if (len < 0.5 - 5.0 / max(mBrushSize, 10) || len > 0.5) {
+                discard;
+            }
         }
         gl_FragColor = vec4(1, 0, 0, 1);
     }
