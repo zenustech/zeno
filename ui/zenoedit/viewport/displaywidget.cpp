@@ -1429,8 +1429,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                                     if (len > 1) {
                                         continue;
                                     }
-//                                    zeno::log_info("{} -: {}", index, len);
-                                    data[index] = {1, 0, 0};
+                                    data[index] = zeno::mix(data[index], zeno::vec3f(1, 0, 0), zeno::clamp((1.0f - len) / 0.5f, 0.0f, 1.0f));
                                 }
                             }
                         }
