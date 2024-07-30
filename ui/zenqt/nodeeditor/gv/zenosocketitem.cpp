@@ -5,6 +5,7 @@
 #include "uicommon.h"
 #include "zassert.h"
 #include "widgets/ztooltip.h"
+#include "util/uihelper.h"
 
 #define BASED_ON_SPEHERE
 
@@ -125,7 +126,8 @@ void ZenoSocketItem::setHovered(bool bHovered)
     if (m_bHovered && m_paramIdx.isValid())
     {
         QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name);
+        QString type = UiHelper::getTypeDesc((zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt());
+        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name + " ( " + (type.isEmpty() ? "null" : type) + " )");
     }
     else
     {
