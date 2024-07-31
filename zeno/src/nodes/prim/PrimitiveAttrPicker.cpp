@@ -129,11 +129,18 @@ ZENDEFNODE(PrimitiveAttrPainter, {
     },
     // outputs
     {
-    {"PrimitiveObject", "outPrim"},
-    {"list"}
+        {"PrimitiveObject", "outPrim"},
+        {"list"}
     },
     // params
-    {{"string", "selected", ""}},
+    {
+        {"string", "selected", ""},
+        {"float", "FG Color", "1"},
+        {"float", "BG Color", "0"},
+        {"float", "Soft Edge", "0.5"},
+        {"float", "Opacity", "1"},
+        {"bool", "Visible Only", "1"},
+    },
     // category
     {"primitive"}
 });

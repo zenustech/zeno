@@ -176,7 +176,6 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
 void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
                                         const std::string& param_name,
                                         const std::string& new_value) {
-    zeno::log_info("{}: {}", param_name, new_value);
     auto graph_model = zenoApp->graphsManagment()->currentModel();
     if (!graph_model) {
         return;
