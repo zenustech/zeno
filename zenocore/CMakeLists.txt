@@ -111,6 +111,7 @@ if (ZENO_WITH_REFLECTOR)
     )
 
     set(GENERATE_ON_BUILD_DIR ON)
+    set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
     zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}")
     target_link_libraries(zenocore PUBLIC libreflect)
 endif()

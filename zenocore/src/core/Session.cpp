@@ -437,8 +437,8 @@ struct ReflectNodeClass : INodeClass {
             if (funcname != "apply") {
                 continue;
             }
-            const TypeHandle& ret_type = func->get_return_type();
-            ParamType type = reflectTypeInfoToType(ret_type);
+            const RTTITypeInfo& ret_type = func->get_return_rtti();
+            ParamType type = reflectReferenceTypeInfoToType(ret_type);
             if (type != Param_Null)
             {
                 //存在返回类型，说明有输出，需要分配一个输出参数
@@ -465,7 +465,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bInput = false;
                     outPrim.socketType = Socket_Primitve;
                     outPrim.type = type;
-                    outPrim.rtti = ret_type->get_rtti_info();
+                    outPrim.rtti = ret_type;
                     outPrim.wildCardGroup;
                     m_customui.outputPrims.emplace_back(outPrim);
                     reg_outputprims.insert(param_name);
