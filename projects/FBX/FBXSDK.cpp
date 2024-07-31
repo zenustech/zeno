@@ -13,6 +13,7 @@
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/utils/scope_exit.h"
+#include "zeno/funcs/PrimitiveUtils.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -520,6 +521,130 @@ bool GetMesh(FbxNode* pNode, std::shared_ptr<PrimitiveObject> prim, std::string 
     return true;
 }
 
+std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
+    FbxMesh* pMesh = pNode->GetMesh();
+    if (!pMesh) return nullptr;
+    std::string nodeName = pNode->GetName();
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->userData().set2("RootName", nodeName);
+
+    FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
+    auto s = bindMatrix.GetS();
+    auto t = bindMatrix.GetT();
+//    zeno::log_info("s {} {} {}", s[0], s[1], s[2]);
+//    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
+
+    int numVertices = pMesh->GetControlPointsCount();
+    FbxVector4* vertices = pMesh->GetControlPoints();
+    prim->verts.resize(numVertices);
+
+    for (int i = 0; i < numVertices; ++i) {
+        auto pos = bindMatrix.MultT( FbxVector4(vertices[i][0], vertices[i][1], vertices[i][2], 1.0));
+        prim->verts[i] = vec3f(pos[0], pos[1], pos[2]);
+    }
+    int numPolygons = pMesh->GetPolygonCount();
+    prim->polys.resize(numPolygons);
+    std::vector<int> loops;
+    loops.reserve(numPolygons * 4);
+    int count = 0;
+    for (int i = 0; i < numPolygons; ++i) {
+        int numVertices = pMesh->GetPolygonSize(i);
+        for (int j = 0; j < numVertices; ++j) {
+            int vertexIndex = pMesh->GetPolygonVertex(i, j);
+            loops.push_back(vertexIndex);
+        }
+        prim->polys[i] = {count, numVertices};
+        count += numVertices;
+    }
+    loops.shrink_to_fit();
+    prim->loops.values = loops;
+//    zeno::log_info("pMesh->GetDeformerCount(FbxDeformer::eSkin) {}", pMesh->GetDeformerCount(FbxDeformer::eSkin));
+    auto &ud = prim->userData();
+    if (pMesh->GetDeformerCount(FbxDeformer::eSkin)) {
+        auto &bi = prim->verts.add_attr<vec4i>("boneName");
+        std::fill(bi.begin(), bi.end(), vec4i(-1, -1, -1, -1));
+        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
+        std::fill(bw.begin(), bw.end(), vec4f(-1.0, -1.0, -1.0, -1.0));
+
+        FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
+        std::vector<std::string> bone_names;
+
+        // Iterate over each cluster (bone)
+        for (int j = 0; j < pSkin->GetClusterCount(); ++j) {
+            FbxCluster* pCluster = pSkin->GetCluster(j);
+
+            // Get the link node (bone)
+            FbxNode* pBoneNode = pCluster->GetLink();
+            if (!pBoneNode) continue;
+
+            // Get the bone weights
+            int numIndices = pCluster->GetControlPointIndicesCount();
+            int* indices = pCluster->GetControlPointIndices();
+            double* weights = pCluster->GetControlPointWeights();
+
+            bone_names.emplace_back(pBoneNode->GetName());
+            for (int k = 0; k < numIndices; ++k) {
+                for (auto l = 0; l < 4; l++) {
+                    if (bi[indices[k]][l] == -1) {
+                        bi[indices[k]][l] = j;
+                        bw[indices[k]][l] = weights[k];
+                        break;
+                    }
+                }
+            }
+        }
+        ud.set2("boneName_count", int(bone_names.size()));
+        for (auto i = 0; i < bone_names.size(); i++) {
+            ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
+        }
+    }
+    if (pMesh->GetElementUVCount() > 0) {
+        auto* arr = pMesh->GetElementUV(0);
+        std::string name = "uv";
+        if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+            zeno::log_info("{}, eByControlPoint", name);
+            auto &attr = prim->verts.add_attr<vec3f>(name);
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                int pIndex = i;
+                if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                    pIndex = arr->GetIndexArray().GetAt(i);
+                }
+                auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+                auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+                attr[i] = vec3f(x, y, 0);
+            }
+        }
+        else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+            zeno::log_info("{}, eByPolygonVertex", name);
+            if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                std::iota(uvs.begin(), uvs.end(), 0);
+                prim->uvs.resize(prim->loops.size());
+            }
+            else if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                auto &uvs = prim->loops.add_attr<int>("uvs");
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    uvs[i] = arr->GetIndexArray().GetAt(i);
+                }
+                int count = arr->GetDirectArray().GetCount();
+                prim->uvs.resize(count);
+            }
+            for (auto i = 0; i < prim->uvs.size(); i++) {
+                auto x = arr->GetDirectArray().GetAt(i)[0];
+                auto y = arr->GetDirectArray().GetAt(i)[1];
+                prim->uvs[i] = vec2f(x, y);
+            }
+        }
+    }
+    if (pMesh->GetElementNormalCount() > 0) {
+        getAttr(pMesh->GetElementNormal(0), "nrm", prim);
+    }
+    if (pMesh->GetElementTangentCount() > 0) {
+        getAttr(pMesh->GetElementTangent(0), "tang", prim);
+    }
+    return prim;
+}
+
 struct NewFBXImportSkin : INode {
     virtual void apply() override {
         // Change the following filename to a suitable filename value.
@@ -557,8 +682,6 @@ struct NewFBXImportSkin : INode {
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
-        auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
         if(lRootNode) {
@@ -570,23 +693,73 @@ struct NewFBXImportSkin : INode {
                     availableRootNames.emplace_back(meshName);
                 }
             }
-            ud.set2("AvailableRootName_count", int(availableRootNames.size()));
-            for (int i = 0; i < availableRootNames.size(); i++) {
-                ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
-            }
         }
         auto rootName = get_input2<std::string>("rootName");
         if(lRootNode) {
-            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                auto pNode = lRootNode->GetChild(i);
-                if (GetMesh(pNode, prim, rootName)) {
-                    break;
+            if (rootName.empty()) {
+                std::vector<std::shared_ptr<PrimitiveObject>> prims;
+                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
+                    auto pNode = lRootNode->GetChild(i);
+                    auto sub_prim = GetMesh(pNode);
+                    if (sub_prim) {
+                        prims.push_back(sub_prim);
+                    }
+                }
+
+                std::map<std::string, int> nameMappingGlobal;
+
+                std::vector<zeno::PrimitiveObject *> prims_ptr;
+                for (auto prim: prims) {
+                    prims_ptr.push_back(prim.get());
+                    std::vector<int> nameMapping;
+                    auto boneName_count = prim->userData().get2<int>("boneName_count");
+                    for (auto i = 0; i < boneName_count; i++) {
+                        auto boneName = prim->userData().get2<std::string>(zeno::format("boneName_{}", i));
+                        if (nameMappingGlobal.count(boneName) == 0) {
+                            auto index = nameMappingGlobal.size();
+                            nameMappingGlobal[boneName] = index;
+                        }
+                        nameMapping.push_back(nameMappingGlobal[boneName]);
+                    }
+                    prim->userData().del("boneName_count");
+                    for (auto i = 0; i < boneName_count; i++) {
+                        prim->userData().del(zeno::format("boneName_{}", i));
+                    }
+                    auto &bis = prim->verts.add_attr<vec4i>("boneName");
+                    for (auto &bi: bis) {
+                        for (auto i = 0; i < 4; i++) {
+                            if (bi[i] != -1) {
+                                bi[i] = nameMapping[bi[i]];
+                            }
+                        }
+                    }
+                }
+                prim = primMerge(prims_ptr);
+                prim->userData().set2("boneName_count", int(nameMappingGlobal.size()));
+                for (auto [key, value]: nameMappingGlobal) {
+                    prim->userData().set2(zeno::format("boneName_{}", value), key);
+                }
+            }
+            else {
+                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
+                    auto pNode = lRootNode->GetChild(i);
+                    if (GetMesh(pNode, prim, rootName)) {
+                        break;
+                    }
                 }
             }
         }
         if (get_input2<bool>("ConvertUnits")) {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
+            }
+        }
+        {
+            auto &ud = prim->userData();
+            ud.set2("version", vec3i(major, minor, revision));
+            ud.set2("AvailableRootName_count", int(availableRootNames.size()));
+            for (int i = 0; i < availableRootNames.size(); i++) {
+                ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
             }
         }
         set_output("prim", prim);
