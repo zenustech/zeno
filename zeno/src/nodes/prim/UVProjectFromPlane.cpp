@@ -547,10 +547,10 @@ struct ImageFlipVertical : INode {
 };
 ZENDEFNODE(ImageFlipVertical, {
     {
-        {"", "image", "", zeno::Socket_ReadOnly},
+        {"prim", "image", "", zeno::Socket_ReadOnly},
     },
     {
-        {"image"},
+        {"prim", "image"},
     },
     {},
     {"deprecated"},
@@ -678,14 +678,14 @@ struct WriteImageFile : INode {
 };
 ZENDEFNODE(WriteImageFile, {
     {
-        {"", "image", "", zeno::Socket_ReadOnly},
+        {"prim", "image", "", zeno::Socket_ReadOnly},
         {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
-        {"mask"},
+        {"prim", "mask"},
         {"bool", "gamma", "1"},
     },
     {
-        {"image"},
+        {"prim", "image"},
     },
     {},
     {"deprecated"},
@@ -766,14 +766,14 @@ struct WriteImageFile_v2 : INode {
 };
 ZENDEFNODE(WriteImageFile_v2, {
     {
-        {"", "image", "", zeno::Socket_ReadOnly},
+        {"prim", "image", "", zeno::Socket_ReadOnly},
         {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
-        {"mask"},
+        {"prim", "mask"},
         {"bool", "linear_to_srgb_when_save", "0"},
     },
     {
-        {"image"},
+        {"prim", "image"},
     },
     {},
     {"comp"},
@@ -847,10 +847,10 @@ struct ImageFloatGaussianBlur : INode {
 
 ZENDEFNODE(ImageFloatGaussianBlur, {
     {
-        {"", "image", "", zeno::Socket_ReadOnly},
+        {"prim", "image", "", zeno::Socket_ReadOnly},
     },
     {
-        {"image"},
+        {"prim", "image"},
     },
     {},
     {"deprecated"},
@@ -929,7 +929,7 @@ ZENDEFNODE(PrimLoadExrToChannel, {
         {"string", "channel", "clr"},
     },
     {
-        {"output"},
+        {"prim", "output"},
     },
     {},
     {"comp"},

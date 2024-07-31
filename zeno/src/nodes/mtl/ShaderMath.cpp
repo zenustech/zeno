@@ -220,7 +220,7 @@ ZENDEFNODE(ShaderHsvAdjust, {
         {"vec3f", "amount", "0,1,1"},
     },
     {
-        {"out"},
+        {"object", "out"},
     },
     {},
     {"shader"},

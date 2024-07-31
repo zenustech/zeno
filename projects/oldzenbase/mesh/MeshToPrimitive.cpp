@@ -44,7 +44,7 @@ struct MeshToPrimitive : zeno::INode{
 
 static int defMeshToPrimitive = zeno::defNodeClass<MeshToPrimitive>("MeshToPrimitive",
     { /* inputs: */ {
-        "mesh",
+        {"object", "mesh"},
     }, /* outputs: */ {
         "prim",
     }, /* params: */ { 
@@ -88,7 +88,7 @@ static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveTo
     { /* inputs: */ {
         "prim",
     }, /* outputs: */ {
-        "mesh",
+        {"object","mesh"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",
@@ -118,7 +118,7 @@ struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_MeshObject, typeid(PrimitiveObject).name(), typeid(MeshObject).name())({
-        {"prim", "mesh"},
+        {"prim", {"object","mesh"}},
         {},
         {},
         {"deprecated"},

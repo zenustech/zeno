@@ -155,7 +155,7 @@ static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     { /* inputs: */ {
             {"string", "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
-    "mesh",
+        {"object", "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
@@ -181,11 +181,11 @@ struct MeshMix : zeno::INode {
 
 static int defMeshMix = zeno::defNodeClass<MeshMix>("MeshMix",
     { /* inputs: */ {
-      "meshA",
-      "meshB",
-      "coef",
+        {"object", "meshA"},
+        {"object", "meshB"},
+        {"float", "coef"},
     }, /* outputs: */ {
-    "mesh",
+        {"float", "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
@@ -201,9 +201,9 @@ struct ImportObjMesh : zeno::INode {
 
 static int defImportObjMesh = zeno::defNodeClass<ImportObjMesh>("ImportObjMesh",
     { /* inputs: */ {
-    "path",
+        {"float", "path"},
     }, /* outputs: */ {
-    "mesh",
+        {"object", "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",

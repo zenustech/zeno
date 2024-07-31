@@ -329,7 +329,7 @@ struct PrimitiveFlipPoly : zeno::INode {
 
 ZENDEFNODE(PrimitiveFlipPoly,{
     {{"prim"}},
-    {"primOut"},
+    {{"prim", "primOut"}},
     {},
     {"deprecated"},
 });

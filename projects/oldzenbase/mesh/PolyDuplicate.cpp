@@ -42,9 +42,9 @@ struct PolyDuplicate : zeno::INode{
 
 static int defPolyDuplicate = zeno::defNodeClass<PolyDuplicate>("PolyDuplicate",
     { /* inputs: */ {
-        "Mesh", "Particles", 
+        {"object", "Mesh"}, {"object", "Particles"},
     }, /* outputs: */ {
-        "Meshes",
+        {"object", "Meshes"},
     }, /* params: */ {
     
     }, /* category: */ {
@@ -70,8 +70,8 @@ struct MeshCopy : zeno::INode {
 static int defMeshCopy =
     zeno::defNodeClass<MeshCopy>("MeshCopy", {/* inputs: */
                                              {
-                                                 "copyFrom",
-                                                 "copyTo",
+                                                 {"object", "copyFrom"},
+                                                 {"object", "copyTo"},
                                              },
                                              /* outputs: */
                                              {},

@@ -46,8 +46,8 @@ struct WriteObjMesh : zeno::INode {
 
 static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     { /* inputs: */ {
-    "mesh",
-    {"string", "path", "", NoSocket, WritePathEdit}
+        {"object", "mesh"},
+        {"string", "path", "", NoSocket, WritePathEdit}
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -65,8 +65,8 @@ struct ExportObjMesh : zeno::INode {
 
 static int defExportObjMesh = zeno::defNodeClass<ExportObjMesh>("ExportObjMesh",
     { /* inputs: */ {
-    "mesh",
-    "path",
+        {"object", "mesh"},
+        {"float", "path"},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

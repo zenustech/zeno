@@ -64,9 +64,9 @@ struct ParticleAsVoxels : INode{
 ZENDEFNODE(ParticleAsVoxels, {
                             {{"VDBGrid", "vdbGrid"}, 
                              {"string", "Attr"},
-                             {"particles"},
+                             {"prim", "particles"},
                             },
-                            {"oGrid"},
+                            {{"VDBGrid", "oGrid"}},
                             
                             {
                              
@@ -419,9 +419,9 @@ struct VDBVoxelAsParticles : INode {
 };
 
 ZENDEFNODE(VDBVoxelAsParticles, {
-                            {{"", "vdbGrid", "", zeno::Socket_ReadOnly},
+                            {{"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
                              {"string", "valToAttr", "sdf"}},
-                            {"primPars"},
+                            {{"prim", "primPars"}},
                             {
                              {"bool", "hasInactive", "0"},
                              {"bool", "asStaggers", "1"},
@@ -479,8 +479,8 @@ struct VDBLeafAsParticles : INode {
 };
 
 ZENDEFNODE(VDBLeafAsParticles, {
-                            {{"", "vdbGrid", "", zeno::Socket_ReadOnly}},
-                            {"primPars"},
+                            {{"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly}},
+                            {{"prim", "primPars"}},
                             {},
                             {"visualize"},
                         });

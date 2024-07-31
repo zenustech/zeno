@@ -12,6 +12,7 @@
 namespace zeno {
 namespace {
 
+#ifdef ENABLE_LEGACY_ZENO_NODE
 using DefaultValue = std::variant<
         int,
         vec2i,
@@ -267,6 +268,7 @@ ZENDEFNODE(ParamFileParser, {
     {},
     {"string"},
 });
+#endif
 
 }
 }

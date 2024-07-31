@@ -73,7 +73,7 @@ ZENDEFNODE(ShaderCustomFunc, {
         {"string", "code", "return arg1 + arg2;"},
     },
     {
-        {"ShaderCustomFuncObject", "func"},
+        {"object", "func"},
     },
     {},
     {"shader"},
@@ -125,7 +125,7 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
 
 ZENDEFNODE(ShaderInvokeFunc, {
     {
-        {"ShaderCustomFuncObject", "func", "", zeno::Socket_ReadOnly},
+        {"object", "func", "", zeno::Socket_ReadOnly},
         {"list", "args", "", zeno::Socket_ReadOnly},
     },
     {

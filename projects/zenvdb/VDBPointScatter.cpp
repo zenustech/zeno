@@ -45,7 +45,7 @@ struct VDBPointScatter : INode{
 };
 ZENO_DEFNODE(VDBPointScatter)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
      {"int", "count", "4"},
      {"float", "spread", "1"},
      {"int", "seed", "-1"},
@@ -53,7 +53,7 @@ ZENO_DEFNODE(VDBPointScatter)(
      {"enum PerVoxel Total", "counttype", "PerVoxel"},
      {"enum Uniform NonUniform", "method", "Uniform"},
      }, /* outputs: */ {
-     "points",
+         {"VDBGrid", "points"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

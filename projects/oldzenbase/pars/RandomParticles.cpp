@@ -32,7 +32,7 @@ struct RandomParticles : zeno::INode {
 static int defRandomParticles = zeno::defNodeClass<RandomParticles>("RandomParticles",
     { /* inputs: */ {
     }, /* outputs: */ {
-    "pars",
+        {"object", "pars"},
     }, /* params: */ {
     {"int", "count", "1 0"},
     {"float", "Prange", "1 0"},

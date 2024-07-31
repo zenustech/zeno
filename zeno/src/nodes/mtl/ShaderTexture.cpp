@@ -125,10 +125,10 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
     }
 };
 
-ZENDEFNODE(ShaderTexture2D, {
+    ZENDEFNODE(ShaderTexture2D, {
     {
         {"int", "texId", "0"},
-        {"coord"},
+        {"vec2f", "coord"},
         {"vec2f", "uvtiling", "1,1"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
@@ -347,7 +347,7 @@ ZENDEFNODE(SmartTexture2D, {
         {(std::string) "enum " + SmartTexture2D::texWrapping, "wrapT", "REPEAT"},
         {(std::string) "enum " + SmartTexture2D::texFiltering, "minFilter", "LINEAR"},
         {(std::string) "enum " + SmartTexture2D::texFiltering, "magFilter", "LINEAR"},
-        {"coord"},
+        {"vec2f", "coord"},
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},

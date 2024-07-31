@@ -233,7 +233,7 @@ ZENO_DEFNODE(PrimScatter)({
         {"int", "seed", "-1"},
     },
     {
-        {"parsPrim"},
+        {"prim", "parsPrim"},
     },
     {},
     {"primitive"},

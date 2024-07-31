@@ -56,4 +56,9 @@ namespace zeno {
         float remapMin,
         float remapMax
     );
+
+    struct HeatmapData {
+        //TODO
+        std::vector<zeno::vec3f> colors;
+    };
 }

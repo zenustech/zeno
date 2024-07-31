@@ -288,7 +288,7 @@ ZENDEFNODE(str2num, {
     },
     /* outputs: */
     {
-        "num",
+        {"object", "num"},
     },
     /* params: */
     {
@@ -407,7 +407,7 @@ ZENO_DEFNODE(VisPrimAttrValue_Modify)( {
          {"bool", "dotDecoration", "0"},
      },
      {
-         {"outPrim"},
+         {"prim", "outPrim"},
      },
      {},
      {"WBTest"},

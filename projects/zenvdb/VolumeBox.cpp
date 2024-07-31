@@ -117,7 +117,7 @@ ZENDEFNODE(CreateVolumeBox, {
         {"vec3f", "pos", "0, 0, 0"},
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
-        {"vdbGrid" },
+        {"VDBGrid", "vdbGrid" },
     },
     {"prim"},
     {

@@ -63,7 +63,7 @@ struct SetFrameTime : zeno::INode {
 };
 
 ZENDEFNODE(SetFrameTime, {
-    {{"", "time", "", zeno::Socket_ReadOnly}},
+    {{"float", "time", "", zeno::Socket_ReadOnly}},
     {},
     {},
     {"frame"},
@@ -168,7 +168,7 @@ struct IntegrateFrameTime : zeno::INode {
 };
 
 ZENDEFNODE(IntegrateFrameTime, {
-    {{"", "desired_dt", "", zeno::Socket_ReadOnly}},
+    {{"float", "desired_dt", "", zeno::Socket_ReadOnly}},
     {{"float","actual_dt"}},
     {{"float", "min_scale", "0.0001"}},
     {"frame"},

@@ -62,10 +62,10 @@ struct PrimitiveUnaryOp : INode {
 
 ZENDEFNODE(PrimitiveUnaryOp,
     { /* inputs: */ {
-    {"", "primA", "", zeno::Socket_ReadOnly},
-    {"", "primOut", "", zeno::Socket_ReadOnly},
+    {"prim", "primA", "", zeno::Socket_ReadOnly},
+    {"prim", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "primOut",
+        {"prim", "primOut"},
     }, /* params: */ {
     {"string", "attrA", "pos"},
     {"string", "attrOut", "pos"},
@@ -148,11 +148,11 @@ struct PrimitiveBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveBinaryOp,
     { /* inputs: */ {
-        {"", "primB", "", zeno::Socket_ReadOnly},
-        {"", "primA", "", zeno::Socket_ReadOnly},
-        {"", "primOut", "", zeno::Socket_ReadOnly},
+        {"prim", "primB", "", zeno::Socket_ReadOnly},
+        {"prim", "primA", "", zeno::Socket_ReadOnly},
+        {"prim", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "primOut",
+        {"prim", "primOut"},
     }, /* params: */ {
     {"string", "attrA", "pos"},
     {"string", "attrB", "pos"},
@@ -199,12 +199,12 @@ struct PrimitiveMix : INode {
 };
 ZENDEFNODE(PrimitiveMix,
     { /* inputs: */ {
-        {"", "coef", "", zeno::Socket_ReadOnly},
-        {"", "primB", "", zeno::Socket_ReadOnly},
-        {"", "primA", "", zeno::Socket_ReadOnly},
-        {"", "primOut", "", zeno::Socket_ReadOnly},
+        {"float", "coef", "", zeno::Socket_ReadOnly},
+        {"prim", "primB", "", zeno::Socket_ReadOnly},
+        {"prim", "primA", "", zeno::Socket_ReadOnly},
+        {"prim", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "primOut",
+        {"prim", "primOut"},
     }, /* params: */ {
     {"string", "attrA", "pos"},
     {"string", "attrB", "pos"},
@@ -287,11 +287,11 @@ struct PrimitiveHalfBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveHalfBinaryOp,
     { /* inputs: */ {
-        {"", "valueB", "", zeno::Socket_ReadOnly},
-        {"", "primA", "", zeno::Socket_ReadOnly},
-        {"", "primOut", "", zeno::Socket_ReadOnly},
+        {"object", "valueB", "", zeno::Socket_ReadOnly},
+        {"prim", "primA", "", zeno::Socket_ReadOnly},
+        {"prim", "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "primOut",
+        {"prim", "primOut"},
     }, /* params: */ {
     {"string", "attrA", "pos"},
     {"string", "attrOut", "pos"},

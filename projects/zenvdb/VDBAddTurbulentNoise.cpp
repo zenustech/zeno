@@ -143,13 +143,13 @@ struct VDBAddPerlinNoise : INode {
 
 ZENO_DEFNODE(VDBAddPerlinNoise)(
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "inoutSDF", "", zeno::Socket_ReadOnly},
      {"float", "strength", "1.0"},
      {"float", "scale", "8.0"},
      {"vec3f", "scaling", "1,1,1"},
      {"vec3f", "translation", "0,0,0"},
      }, /* outputs: */ {
-       "inoutSDF",
+         {"VDBGrid","inoutSDF"},
      }, /* params: */ {
      }, /* category: */ {
      "deprecated",
@@ -282,13 +282,13 @@ struct VDBAddTurbulentNoise : INode {
 
 ZENO_DEFNODE(VDBAddTurbulentNoise)(
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "inoutSDF", "", zeno::Socket_ReadOnly},
      {"float", "strength", "3.0"},
      {"float", "scale", "16.0"},
      {"vec3f", "scaling", "1,1,1"},
      {"vec3f", "translation", "0,0,0"},
      }, /* outputs: */ {
-       "inoutSDF",
+         {"VDBGrid", "inoutSDF"},
      }, /* params: */ {
 //{"float","Power","5.059"},
 //{"float","MaxLength","0.9904"},

@@ -89,10 +89,10 @@ struct SetVDBGridName : zeno::INode {
 };
 
 static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridName", {/* inputs: */ {
-                                                                                         "grid",
+                                                                                         {"VDBGrid","grid"},
                                                                                      }, /* outputs: */
                                                                                      {
-                                                                                         "grid",
+                                                                                         {"VDBGrid","grid"},
                                                                                      },
                                                                                      /* params: */
                                                                                      {
@@ -115,10 +115,10 @@ struct SetVDBGridClass : zeno::INode {
 };
 
 ZENDEFNODE(SetVDBGridClass,
-           {/* inputs: */ {"grid", {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
+           {/* inputs: */ {{"VDBGrid","grid"}, {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
             /* outputs: */
             {
-                "grid",
+                {"VDBGrid","grid"},
             },
             /* params: */
             {},

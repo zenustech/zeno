@@ -36,9 +36,9 @@ struct GeoVertexVel : zeno::INode{
 
 static int defGeoVertexVel = zeno::defNodeClass<GeoVertexVel>("GeoVertexVel",
     { /* inputs: */ {
-        "dt", "TargetMesh", "OriginMesh", 
+        {"float", "dt"}, {"object", "TargetMesh"}, {"object", "OriginMesh"},
     }, /* outputs: */ {
-        "MeshVel",
+        {"object", "MeshVel"},
     }, /* params: */ {
     
     }, /* category: */ {

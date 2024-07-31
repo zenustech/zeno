@@ -64,8 +64,8 @@ struct Route : zeno::INode {
 };
 
 ZENDEFNODE(Route, {
-    {{"", "input", "", zeno::Socket_ReadOnly}},
-    {"output"},
+    {{"object", "input", "", zeno::Socket_ReadOnly}},
+    {{"object", "output"}},
     {},
     {"layout"},
 });
@@ -87,8 +87,8 @@ struct Clone : zeno::INode {
 ZENDEFNODE(Clone, {
     {{"", "object", "", zeno::Socket_ReadOnly}},
     {
-        "newObject",
-        "origin",
+        {"object", "newObject"},
+        {"object", "origin"},
     },
     {},
     {"lifecycle"},
@@ -109,8 +109,8 @@ struct Assign : zeno::INode {
 };
 
 ZENDEFNODE(Assign, {
-    {"dst", "src"},
-    {"dst"},
+    {{"object", "dst"}, {"object", "src"} },
+    {{"object", "dst"}},
     {},
     {"lifecycle"},
 });
@@ -130,7 +130,7 @@ struct MoveClone : zeno::INode {
 
 ZENDEFNODE(MoveClone, {
     {{"", "object", "", zeno::Socket_ReadOnly}},
-    {"newObject"},
+    {{"object", "newObject"}},
     {},
     {"lifecycle"},
 });
@@ -170,8 +170,8 @@ struct MoveAssign : zeno::INode {
 };
 
 ZENDEFNODE(MoveAssign, {
-    {"dst", "src"},
-    {"dst"},
+    {{"object", "dst"}, {"object", "src"} },
+    {{"object", "dst"}},
     {},
     {"lifecycle"},
 });
@@ -189,7 +189,7 @@ struct SetUserData : zeno::INode {
 ZENDEFNODE(SetUserData, {
     {
         {"", "object", "", zeno::Socket_ReadOnly},
-        {"", "data", "", zeno::Socket_ReadOnly},
+        {"object", "data", "", zeno::Socket_ReadOnly},
     },
     {"object"},
     {{"string", "key", ""}},
@@ -292,10 +292,10 @@ struct CopyAllUserData : zeno::INode {
 
 ZENDEFNODE(CopyAllUserData, {
     {
-        {"", "dst", "", zeno::Socket_ReadOnly},
-        {"", "src", "", zeno::Socket_ReadOnly},
+        {"object", "dst", "", zeno::Socket_ReadOnly},
+        {"object", "src", "", zeno::Socket_ReadOnly},
     },
-    {"dst"},
+    {{"object", "dst"}},
     {},
     {"lifecycle"},
 });

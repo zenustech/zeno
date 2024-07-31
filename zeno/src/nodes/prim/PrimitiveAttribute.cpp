@@ -39,8 +39,8 @@ struct PrimitiveAddAttr : zeno::INode {
 ZENDEFNODE(PrimitiveAddAttr, 
     { 
         {
-            {"", "fillValue", "", zeno::Socket_ReadOnly},
-            {"", "prim", "", zeno::Socket_ReadOnly},
+            {"vec3f", "fillValue", "", zeno::Socket_ReadOnly},
+            {"prim", "prim", "", zeno::Socket_ReadOnly},
         }, 
     {"prim"},
     {

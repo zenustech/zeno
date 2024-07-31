@@ -76,7 +76,7 @@ ZENDEFNODE(PrimSuperFormula, {{
 
                               {
                                   /* outputs: */
-                                  "output",
+                                  {"prim", "output"},
                               },
 
                               {

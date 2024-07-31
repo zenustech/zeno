@@ -59,7 +59,7 @@ struct PrimitiveResize : zeno::INode {
 ZENDEFNODE(PrimitiveResize,
     { /* inputs: */ {
     "prim",
-    "size",
+    {"int","size"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
@@ -81,7 +81,7 @@ ZENDEFNODE(PrimitiveGetSize,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
-    "size",
+    {"int","size"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",

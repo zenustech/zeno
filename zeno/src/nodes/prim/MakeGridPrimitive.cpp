@@ -20,9 +20,9 @@ struct MakePointPrimitive :INode{
 };
 ZENDEFNODE(MakePointPrimitive,
     { /* inputs: */ {
-    "vec3",
+        {"vec3f", "vec3"},
     }, /* outputs: */ {
-    "prim",
+        "prim",
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
@@ -401,8 +401,12 @@ struct MakeCubePrimitive : INode {
 };
 
 ZENDEFNODE(MakeCubePrimitive,
-        { /* inputs: */ {
-        "spacing", "nx", "ny", "nz", "origin",
+        { /* inputs: */
+        {
+            {"float","spacing"},
+            {"int","nx"},
+            {"int","ny"},
+            {"vec3f","origin"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {

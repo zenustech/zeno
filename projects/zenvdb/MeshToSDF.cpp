@@ -54,10 +54,10 @@ struct MeshToSDF : zeno::INode{
 
 static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        {"", "mesh", "", zeno::Socket_ReadOnly},
+        {"object", "mesh", "", zeno::Socket_ReadOnly},
         {"float","Dx"},
     }, /* outputs: */ {
-        "sdf",
+        {"object", "sdf"},
     }, /* params: */ {
     {"float", "voxel_size", "0.08 0"},
     {"enum vertex cell", "type", "vertex"},
@@ -116,10 +116,10 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        {"", "PrimitiveMesh", "", zeno::Socket_ReadOnly},
+        {"object", "PrimitiveMesh", "", zeno::Socket_ReadOnly},
         {"float","Dx","0.08"},
     }, /* outputs: */ {
-        "sdf",
+        {"object", "sdf"},
     }, /* params: */ {
         //{"float", "voxel_size", "0.08 0"},
         {"enum vertex cell", "type", "vertex"},
@@ -141,10 +141,10 @@ struct SDFToFog : INode
 };
 static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
     { /* inputs: */ {
-        {"", "SDF", "", zeno::Socket_ReadOnly},
+        {"VDBGrid", "SDF", "", zeno::Socket_ReadOnly},
         {"bool", "inplace", "0"},
     }, /* outputs: */ {
-        "oSDF",
+        {"object", "oSDF"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",

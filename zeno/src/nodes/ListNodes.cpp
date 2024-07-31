@@ -170,7 +170,14 @@ struct MakeSmallList : zeno::INode {
 };
 
 ZENDEFNODE(MakeSmallList, {
-    {"obj0", "obj1", "obj2", "obj3", "obj4", "obj5"},
+    {
+        {"object", "obj0"},
+        {"object", "obj1"},
+        {"object", "obj2"},
+        {"object", "obj3"},
+        {"object", "obj4"},
+        {"object", "obj5"}
+    },
     {"list"},
     {{"bool", "doConcat", "1"}},
     {"list"},

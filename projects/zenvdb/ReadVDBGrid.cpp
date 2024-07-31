@@ -88,10 +88,10 @@ struct CacheVDBGrid : zeno::INode {
 
 ZENDEFNODE(CacheVDBGrid,
     { /* inputs: */ {
-    {"", "inGrid", "", zeno::Socket_ReadOnly},
-    "frameNum",
+    {"VDBGrid", "inGrid", "", zeno::Socket_ReadOnly},
+    {"int", "frameNum"},
     }, /* outputs: */ {
-    "outGrid",
+    {"VDBGrid", "outGrid"},
     }, /* params: */ {
     {"string", "dir", "/tmp/cache"},
     {"string", "prefix", ""},
@@ -144,7 +144,7 @@ static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
                         {"string", "type", "", NoSocket},
                         {"string", "path", "", NoSocket, ReadPathEdit},}, /* outputs: */
                     {
-                        "data",
+                        {"VDBGrid", "data"},
                     },
                     /* params: */
                     {
@@ -165,9 +165,9 @@ struct ImportVDBGrid : zeno::INode {
 
 static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     { /* inputs: */ {
-    "path",
+    {"string", "path", "", NoSocket, ReadPathEdit},
     }, /* outputs: */ {
-    "data",
+    {"VDBGrid", "data"},
     }, /* params: */ {
     {"string", "type", ""},
     }, /* category: */ {
@@ -180,7 +180,7 @@ static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     { /* inputs: */ {
     {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     }, /* outputs: */ {
-    "data",
+    {"VDBGrid", "data"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",

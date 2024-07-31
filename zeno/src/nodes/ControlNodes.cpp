@@ -432,10 +432,10 @@ struct Duplicate : INode {
 ZENDEFNODE(Duplicate,
     {
         {
-            {"", "input", "", Socket_Owning},
+            {"object", "input", "", Socket_Owning},
         },
         {
-            {"", "owning", "", Socket_Output},
+            {"object", "owning", "", Socket_Output},
         },
         {
             {"bool", "duplicate", "0"},

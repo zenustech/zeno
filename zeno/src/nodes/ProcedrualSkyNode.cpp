@@ -40,7 +40,7 @@ ZENDEFNODE(ProceduralSky, {
                 {"float", "timeSpeed", "0.1"},
         },
         {
-                {"ProceduralSky"},
+                {"prim", "ProceduralSky"},
         },
         {
         },
@@ -77,7 +77,7 @@ ZENDEFNODE(HDRSky, {
         {"float", "strength", "1"},
     },
     {
-        {"HDRSky"},
+        {"prim", "HDRSky"},
     },
     {
     },
@@ -130,7 +130,7 @@ ZENDEFNODE(DistantLight, {
         {"float", "intensity", "1"}
     },
     {
-        {"out"},
+        {"object", "out"},
     },
     {
     },
@@ -218,7 +218,7 @@ ZENDEFNODE(PortalLight, {
         {"int", "size", "180"}
     },
     {
-        {"out"},
+        {"prim", "out"},
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
@@ -306,7 +306,7 @@ ZENDEFNODE(SkyComposer, {
         {"list", "portals"}
     },
     {
-        {"out"},
+        {"prim", "out"},
     },
     {
         {"enum SphereUnbounded", "proxy", "SphereUnbounded"},

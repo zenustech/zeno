@@ -2,12 +2,13 @@
 #include <regex>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
+#include <zeno/types/ObjectDef.h>
 #include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
 
-    ZENO_API ParamType convertToType(std::string const& type) {
+    ZENO_API ParamType convertToType(std::string const& type, const std::string_view& param_name) {
         //TODO: deprecated literal representation.
         if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory" || type == "multiline_string")
         { return Param_String; }
@@ -21,15 +22,73 @@ namespace zeno {
         else if (type == "vec2f") { return Param_Vec2f; }
         else if (type == "vec3f") { return Param_Vec3f; }
         else if (type == "vec4f") { return Param_Vec4f; }
-        else if (type == "prim") { return Param_Prim; }
-        else if (type == "list") { return Param_List; }
+        else if (type == "prim" || type == "PrimitiveObject" || type == "primitive") { return Param_Prim; }
+        else if (type == "list" || type == "ListObject") { return Param_List; }
         else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return Param_Dict; }
         else if (type == "colorvec3f") { return Param_Vec3f; }
         else if (type == "color") { return Param_Heatmap; }
         else if (type == "curve") { return Param_Curve; }
         else if (starts_with(type, "enum ")) { return Param_String; }
-        else if (type == "object" || type == "") { return Param_Object; }
-        else return Param_Null;
+        else if (type == "AxisObject") { return Param_Object; }
+        else if (type == "CameraObject") { return Param_Object; }
+        else if (type == "LightObject") { return Param_Light; }
+        else if (type == "FunctionObject") { return Param_Object; }
+        else if (type == "object" ||
+                type == "IObject" || 
+                type == "zany" || 
+                type == "material" ||
+                type == "texture" ||
+                type == "instancing" ||
+                type == "shader" ||
+                type == "MaterialObject" ||
+                type == "LBvh") {
+            return Param_Object; 
+    }
+        else if (type == "VDBGrid") {
+            return Param_VdbGrid;
+        }
+        else if (type == ""){
+            //类型名字为空时，只能根据参数名字去猜测
+            if (param_name == "prim") {
+                return Param_Prim;
+            }
+            else if (param_name == "object") {
+                return Param_Object;
+            }
+            else if (param_name == "list" || param_name == "droppedList") { return Param_List; }
+            else if (param_name == "dict") { return Param_Dict; }
+            else if (param_name == "camera" || param_name == "cam") {
+                return Param_Camera;
+            }
+            else if (param_name == "light") {
+                return Param_Light;
+            }
+            else if (param_name == "FOR" || param_name == "FUNC" || param_name == "function") {
+                return Param_Object;    //只能给Object了，不然就要再分配一个枚举值
+            }
+            else if (param_name == "true" ||
+                    param_name == "false" ||
+                    param_name == "result" ||
+                    param_name == "SRC" ||
+                    param_name == "DST" ||
+                    param_name == "json" ||
+                    param_name == "port" ||
+                    param_name == "data" ||
+                    param_name == "mtl") {
+                return Param_Object;
+            }
+            else if (param_name == "VDBGrid" || param_name == "grid") {
+                return Param_VdbGrid;
+            }
+            else if (param_name == "heatmap") {
+                return Param_Heatmap;
+            }
+            else {
+                return Param_Null;
+            }
+        }
+        else
+            return Param_Object;    //zeno各个模块定义的类型不规范程度很大，而且积累了很多，很难一下子改好，所以不明类型都转成obj
     }
 
     ZENO_API bool isAnyEqual(const zeno::reflect::Any& lhs, const zeno::reflect::Any& rhs)
@@ -528,6 +587,37 @@ namespace zeno {
         }
     }
 
+    static zeno::reflect::RTTITypeInfo getRttiInfo(ParamType type)
+    {
+        switch (type)
+        {
+        case Param_Bool:    return zeno::reflect::type_info<bool>();
+        case Param_Int:     return zeno::reflect::type_info<int>();
+        case Param_String:  return zeno::reflect::type_info<std::string>();
+        case Param_Float:   return zeno::reflect::type_info<float>();
+        case Param_Vec2i:   return zeno::reflect::type_info<zeno::vec2i>();
+        case Param_Vec3i:   return zeno::reflect::type_info<zeno::vec3i>();
+        case Param_Vec4i:   return zeno::reflect::type_info<zeno::vec4i>();
+        case Param_Vec2f:   return zeno::reflect::type_info<zeno::vec2f>();
+        case Param_Vec3f:   return zeno::reflect::type_info<zeno::vec3f>();
+        case Param_Vec4f:   return zeno::reflect::type_info<zeno::vec4f>();
+        case Param_VdbGrid://TODO: vdbgrid: VDBFloatGrid or VDBFloat3Grid VDBPointsGrid?
+        case Param_Object:  return zeno::reflect::type_info<std::shared_ptr<IObject>>();
+        case Param_Prim:    return zeno::reflect::type_info<std::shared_ptr<zeno::PrimitiveObject>>();
+        case Param_Camera:  return zeno::reflect::type_info<std::shared_ptr<zeno::CameraObject>>();
+        case Param_Light:   return zeno::reflect::type_info<std::shared_ptr<zeno::LightObject>>();
+        case Param_Dict:    return zeno::reflect::type_info<std::shared_ptr<zeno::DictObject>>();
+        case Param_List:    return zeno::reflect::type_info<std::shared_ptr<zeno::ListObject>>();
+        case Param_Curve:   return zeno::reflect::type_info<zeno::CurvesData>();
+        case Param_Heatmap: return zeno::reflect::type_info<zeno::HeatmapData>();
+        case Param_SrcDst:
+        case Param_Custom:
+        default:
+            //no supporting right now.
+            //assert(false);
+            return { "<default_type>", 0, 0 };
+        }
+    }
 
     CustomUI descToCustomui(const Descriptor& desc) {
         //兼容以前写的各种ZENDEFINE
@@ -541,16 +631,14 @@ namespace zeno {
 
         ParamGroup default;
         for (const SocketDescriptor& param_desc : desc.inputs) {
-            ParamType type = zeno::convertToType(param_desc.type);
+            ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
             if (isPrimitiveType(type)) {
                 //如果是数值类型，就添加到组里
                 ParamPrimitive param;
                 param.name = param_desc.name;
                 param.type = type;
                 param.defl = zeno::str2any(param_desc.defl, param.type);
-                if (param_desc.type != "color") {   //要重新定义Heatmap
-                    param.rtti = param.defl.type();
-                }
+                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 if (param_desc.control != NullControl)
@@ -578,6 +666,7 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
+                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = true;
@@ -588,9 +677,9 @@ namespace zeno {
         for (const ParamDescriptor& param_desc : desc.params) {
             ParamPrimitive param;
             param.name = param_desc.name;
-            param.type = zeno::convertToType(param_desc.type);
+            param.type = zeno::convertToType(param_desc.type, param.name);
             param.defl = zeno::str2any(param_desc.defl, param.type);
-            param.rtti = param.defl.type();
+            param.rtti = getRttiInfo(param.type);
             param.socketType = NoSocket;
             //其他控件估计是根据类型推断的。
             if (starts_with(param_desc.type, "enum ")) {
@@ -609,12 +698,13 @@ namespace zeno {
             default.params.emplace_back(std::move(param));
         }
         for (const SocketDescriptor& param_desc : desc.outputs) {
-            ParamType type = zeno::convertToType(param_desc.type);
+            ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
             if (isPrimitiveType(type)) {
                 //如果是数值类型，就添加到组里
                 ParamPrimitive param;
                 param.name = param_desc.name;
                 param.type = type;
+                param.rtti = getRttiInfo(type);
                 param.defl = zeno::str2any(param_desc.defl, param.type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
@@ -630,6 +720,7 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
+                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = false;
@@ -760,6 +851,7 @@ namespace zeno {
     }
 
     bool isPrimitiveType(const zeno::ParamType type) {
+        //这个是给旧式定义节点使用的，新的反射定义方式不再使用，其初始化过程也不会走到这里判断。
         return type == Param_String || type == Param_Int || type == Param_Float || type == Param_Vec2i ||
             type == Param_Vec3i || type == Param_Vec4i || type == Param_Vec2f || type == Param_Vec3f ||
             type == Param_Vec4f || type == Param_Bool || type == Param_Heatmap || type == Param_Curve;//TODO: heatmap type.

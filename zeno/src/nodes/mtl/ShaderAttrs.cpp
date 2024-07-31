@@ -72,7 +72,7 @@ struct MakeShaderUniform : zeno::INode {
 ZENDEFNODE(MakeShaderUniform, {
     {
         {"int", "size", "512"},
-        {"uniformDict"},
+        {"dict", "uniformDict"},
     },
     {
         {"prim"},

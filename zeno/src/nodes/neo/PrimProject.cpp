@@ -495,10 +495,10 @@ struct TestRayBox : INode {
 
 ZENDEFNODE(TestRayBox, {
                            {
-                               {"ray_origin"},
-                               {"ray_dir"},
-                               {"box_min"},
-                               {"box_max"},
+                               {"vec3f", "ray_origin"},
+                               {"vec3f", "ray_dir"},
+                               {"vec3f", "box_min"},
+                               {"vec3f", "box_max"},
                            },
                            {
                                {"int","predicate"},

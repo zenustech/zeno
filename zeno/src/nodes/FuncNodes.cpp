@@ -28,8 +28,8 @@ struct FuncBegin : zeno::INode {
 };
 
 ZENDEFNODE(FuncBegin, {
-    {"extraArgs"},
-    {"args", "FUNC"},
+    {{"DictObject", "extraArgs"}},
+    {{"DictObject", "args"}, "FUNC"},
     {},
     {"control"},
 });
@@ -78,7 +78,7 @@ struct FuncEnd : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncEnd, {
     {
-        {"", "rets", "", zeno::Socket_ReadOnly},
+        {"DictObject", "rets", "", zeno::Socket_ReadOnly},
         {"", "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},
@@ -105,7 +105,7 @@ struct FuncSimpleBegin : zeno::INode {
 
 ZENDEFNODE(FuncSimpleBegin, {
     {},
-    {"arg", "FUNC"},
+    {{"object", "arg"}, "FUNC"},
     {},
     {"control"},
 });
@@ -151,7 +151,7 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleEnd, {
     {
-        {"", "ret", "", zeno::Socket_ReadOnly},
+        {"object", "ret", "", zeno::Socket_ReadOnly},
         {"", "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},

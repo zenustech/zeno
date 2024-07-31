@@ -299,7 +299,7 @@ struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already aut
 };
 ZENDEFNODE(SubLine,
     { /* inputs: */ {
-    {"", "line", "", zeno::Socket_ReadOnly},
+    {"prim", "line", "", zeno::Socket_ReadOnly},
     {"NumericObject", "value", "0"},
     }, /* outputs: */ {
     "prim",

@@ -29,8 +29,8 @@ struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
 };
 ZENDEFNODE(SetMatrix, {
     {
-    {"dst" },
-    {"src" },
+    {"object", "dst" },
+    {"object", "src" },
     },
     {},
     {},
@@ -62,7 +62,7 @@ ZENDEFNODE(MakeLocalSys, {
     {"vec3f", "up", "0,1,0"},
     {"vec3f", "right", "0,0,1"},
     },
-    {{"LocalSys"}},
+    {{"object", "LocalSys"}},
     {},
     {"math"},
 });
@@ -184,9 +184,9 @@ ZENDEFNODE(TransformPrimitive, {
     {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
     {"vec3f", "shear", "0,0,0"},
-    {"Matrix"},
-    {"preTransform"},
-    {"local"},
+    {"object", "Matrix"},
+    {"object", "preTransform"},
+    {"object", "local"},
     },
     {
     {"PrimitiveObject", "outPrim"}
@@ -444,9 +444,9 @@ ZENDEFNODE(PrimitiveTransform, {
         {"vec3f", "pivotPos", "0,0,0"},
         {"vec3f", "localX", "1,0,0"},
         {"vec3f", "localY", "0,1,0"},
-        {"Matrix"},
-        {"preTransform"},
-        {"local"},
+        {"object", "Matrix"},
+        {"object", "preTransform"},
+        {"object", "local"},
     },
     {
         {"PrimitiveObject", "outPrim"}

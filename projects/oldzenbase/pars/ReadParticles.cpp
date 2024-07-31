@@ -55,7 +55,7 @@ static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
     { /* inputs: */ {
         {"string", "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
-    "pars",
+        {"object", "pars"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
@@ -73,9 +73,9 @@ struct ImportParticles : zeno::INode {
 
 static int defImportParticles = zeno::defNodeClass<ImportParticles>("ImportParticles",
     { /* inputs: */ {
-    "path",
+        {"string", "path", "", NoSocket, ReadPathEdit},
     }, /* outputs: */ {
-    "pars",
+        {"object", "pars"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",

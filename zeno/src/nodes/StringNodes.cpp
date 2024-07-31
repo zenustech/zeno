@@ -193,7 +193,7 @@ struct StringFormatNumber : zeno::INode {
 ZENDEFNODE(StringFormatNumber, {
     {
         {"string", "str", "{}"},
-        {"number"},
+        {"float", "number"},
     },
     {{"string", "str"}},
     {},
@@ -223,7 +223,7 @@ struct StringFormatNumStr : zeno::INode {
 ZENDEFNODE(StringFormatNumStr, {
     {
         {"string", "str", "{}"},
-        {"num_str"},
+        {"object", "num_str"},
     },
     {{"string", "str"}},
     {},
@@ -315,7 +315,7 @@ ZENDEFNODE(StringRegexSearch, {
     },
     {
         {"int", "search_success"},
-        {"res"}
+        {"list", "res"}
     },
     {},
     {"string"},
@@ -674,7 +674,7 @@ struct NumbertoString : zeno::INode {
 
 ZENDEFNODE(NumbertoString, {
     {
-        {"number"},
+        {"float", "number"},
     },
     {{"string", "string"},
     },

@@ -51,7 +51,7 @@ struct GetVDBBound : INode {
 
 ZENDEFNODE(GetVDBBound, {
                             {
-                                {"", "vdbGrid", "", zeno::Socket_ReadOnly},
+                                {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
                             },
                             {{"vec3f", "bmin"}, {"vec3f", "bmax"}},
                             {},
@@ -79,7 +79,7 @@ struct GetVDBVoxelSize : INode {
 
 ZENDEFNODE(GetVDBVoxelSize, {
                             {
-                                {"", "vdbGrid", "", zeno::Socket_ReadOnly},
+                                {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
                             },
                             {{"float","dx"}, {"float","dy"}, {"float","dz"}, {"vec3f","dxyz"}},
                             {},

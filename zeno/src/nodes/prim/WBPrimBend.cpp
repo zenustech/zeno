@@ -321,7 +321,7 @@ ZENDEFNODE(LineResample,
     {  /* inputs: */ {
             {"", "prim", "", zeno::Socket_ReadOnly},
             {"int", "segments", "3"},
-            "PrimSampler",
+            {"prim", "PrimSampler"},
             {"string", "SampleBy", "t"},
         }, /* outputs: */ {
             "prim",
@@ -544,7 +544,7 @@ ZENDEFNODE(VisVec3Attribute,
                    {"float", "lengthScale", "1.0"},
                    {"vec3f", "color", "1,1,0"},
                }, /* outputs: */ {
-                   "primVis",
+                   {"prim", "primVis"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -602,11 +602,11 @@ struct TracePositionOneStep : INode {
 };
 ZENDEFNODE(TracePositionOneStep,
            {  /* inputs: */ {
-                   {"", "primData", "", zeno::Socket_ReadOnly},
-                   {"", "primStart", "", zeno::Socket_ReadOnly},
+                   {"prim", "primData", "", zeno::Socket_ReadOnly},
+                   {"prim", "primStart", "", zeno::Socket_ReadOnly},
                    {"string", "lineTag", "lineID"},
                }, /* outputs: */ {
-                   "primVis",
+                   {"prim", "primVis"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -675,7 +675,7 @@ struct PrimCopyAttr : INode {
 };
 ZENDEFNODE(PrimCopyAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
+                   {"prim", "prim", "", zeno::Socket_ReadOnly},
                    {"string", "sourceName", "s"},
                    {"string", "targetName", "t"},
                    {"enum vert tri loop poly line", "scope", "vert"},
@@ -715,7 +715,7 @@ struct BVHNearestPos : INode {
 ZENDEFNODE(BVHNearestPos,
            { /* inputs: */ {
                    {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"", "primNei", "", zeno::Socket_ReadOnly},
+                   {"prim", "primNei", "", zeno::Socket_ReadOnly},
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhPosTag", "bvh_pos"},
@@ -782,7 +782,7 @@ struct BVHNearestAttr : INode {
 ZENDEFNODE(BVHNearestAttr,
            { /* inputs: */ {
                    {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"", "primNei", "", zeno::Socket_ReadOnly},
+                   {"prim", "primNei", "", zeno::Socket_ReadOnly},
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhAttrTag", "bvh_attr"},
@@ -1236,9 +1236,9 @@ struct MatTranspose : INode {
 };
 ZENDEFNODE(MatTranspose,
            { /* inputs: */ {
-                   {"", "mat", "", zeno::Socket_ReadOnly},
+                   {"object", "mat", "", zeno::Socket_ReadOnly},
                }, /* outputs: */ {
-                   "transposeMat",
+                   {"object", "transposeMat"},
                }, /* params: */ {
                }, /* category: */ {
                    "math",
@@ -1271,10 +1271,10 @@ struct PrimCurveDir : INode {
 };
 ZENDEFNODE(PrimCurveDir,
            {  /* inputs: */ {
-                   {"", "prim_curve", "", zeno::Socket_ReadOnly},
+                   {"prim", "prim_curve", "", zeno::Socket_ReadOnly},
                    {"string", "dirName", "nrm"},
                }, /* outputs: */ {
-                   "prim_curve",
+                   {"prim", "prim_curve"},
                }, /* params: */ {
                }, /* category: */ {
                    "primCurve",
@@ -1693,9 +1693,9 @@ struct PrimCurveFromVerts : INode {
 };
 ZENDEFNODE(PrimCurveFromVerts,
            { /* inputs: */ {
-                   {"", "primVerts", "", zeno::Socket_ReadOnly}
+                   {"prim", "primVerts", "", zeno::Socket_ReadOnly}
                }, /* outputs: */ {
-                   "primCurve",
+                   {"prim", "primCurve"},
                }, /* params: */ {
                }, /* category: */ {
                    "primCurve",

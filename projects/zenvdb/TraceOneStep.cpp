@@ -53,7 +53,13 @@ struct TraceOneStep : INode {
 };
 
 ZENDEFNODE(TraceOneStep, {
-                                     {"prim", "dt", "size", "steps", "maxlength", "vecField"},
+                                     {"prim",
+                                            {"float", "dt"},
+                                            {"int", "size"},
+                                            {"int", "steps"},
+                                            {"float", "maxlength"},
+                                            {"VDBGrid", "vecField"}
+                                     },
                                      {"prim"},
                                      {},
                                      {"openvdb"},

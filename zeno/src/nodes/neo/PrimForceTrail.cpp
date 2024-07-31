@@ -116,8 +116,8 @@ ZENDEFNODE(PrimForceTrail, {
     {"string", "forceAttr", "force"},
     {"float", "attractForce", "0.5"},
     {"float", "driftForce", "1"},
-    {"", "attractUDFCurve", ""},
-    {"", "driftCoordCurve", ""},
+    {"curve", "attractUDFCurve", ""},
+    {"curve", "driftCoordCurve", ""},
     },
     {
     {"PrimitiveObject", "prim"},

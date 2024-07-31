@@ -2,6 +2,8 @@
 // Created by zh on 2023/11/14.
 //
 
+#ifdef ENABLE_LEGACY_ZENO_NODE
+
 #include "zeno/types/DictObject.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/utils/fileio.h"
@@ -122,7 +124,7 @@ struct FormJson : zeno::INode {
 };
 ZENDEFNODE(FormJson, {
      {
-         "iObject",
+         {"object", "iObject"},
      },
      {
          "json",
@@ -668,3 +670,5 @@ ZENDEFNODE(JsonGetData, {
 });
 
 }
+
+#endif

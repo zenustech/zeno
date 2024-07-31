@@ -28,7 +28,7 @@ struct LineAddVert : zeno::INode {//make zhxx happy
 };
 ZENDEFNODE(LineAddVert,
     { /* inputs: */ {
-    "prim", "vert",
+    "prim", {"prim", "vert"},
     }, /* outputs: */ {
     //"prim",
     }, /* params: */ {
@@ -61,10 +61,10 @@ struct SyncPrimitiveAttributes : zeno::INode {
 
 ZENDEFNODE(SyncPrimitiveAttributes, {
     {
-        {"", "prim1", "", zeno::Socket_ReadOnly},
-        {"", "prim2", "", zeno::Socket_ReadOnly},
+        {"prim", "prim1", "", zeno::Socket_ReadOnly},
+        {"prim", "prim2", "", zeno::Socket_ReadOnly},
     },
-    {"prim1", "prim2"},
+    {{"prim", "prim1"}, {"prim", "prim2"}},
     {},
     {"primitive"},
 });

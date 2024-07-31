@@ -107,6 +107,7 @@ ZENO_DEFNODE(EvalCurveOnPrimAttr)({
 });
 
 
+#ifdef ENABLE_LEGACY_ZENO_NODE
 struct GetCurveControlPoint : zeno::INode {
     virtual void apply() override {
         auto curve = get_input<CurvesData>("curve");
@@ -243,5 +244,7 @@ ZENO_DEFNODE(UpdateCurveXYRange)({
     {},
     {"curve"},
 });
+
+#endif
 
 }

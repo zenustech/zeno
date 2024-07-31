@@ -40,9 +40,9 @@ namespace zeno {
 
 static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBRenormalizeSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "inoutSDF"},
      }, /* outputs: */ {
-     "inoutSDF",
+     {"VDBGrid", "inoutSDF"}
      }, /* params: */ {
          {"enum 1oUpwind", "method", "1oUpwind"},
          {"int", "iterations", "4"},
@@ -93,13 +93,13 @@ struct VDBSmooth : zeno::INode {
 
 ZENO_DEFNODE(VDBSmooth)(
     { /* inputs: */ {
-    {"", "inoutVDB", "", zeno::Socket_ReadOnly},
-    {"", "MaskGrid", "", zeno::Socket_ReadOnly},
+    {"VDBGrid", "inoutVDB", "", zeno::Socket_ReadOnly},
+    {"VDBGrid", "MaskGrid", "", zeno::Socket_ReadOnly},
     {"enum Mean Gaussian Median", "type", "Gaussian"},
     {"int", "width", "1"},
     {"int", "iterations", "1"},
     }, /* outputs: */ {
-    "inoutVDB",
+        {"VDBGrid", "inoutVDB"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",
@@ -121,9 +121,9 @@ struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
 
 static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "inoutSDF"},
      }, /* outputs: */ {
-     "inoutSDF",
+     {"VDBGrid", "inoutSDF"},
      }, /* params: */ {
          {"int", "width", "1"},
          {"int", "iterations", "1"},
@@ -145,10 +145,10 @@ struct  VDBDilateTopo : zeno::INode {
 
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
-     {"", "inField", "", zeno::Socket_ReadOnly},
+     {"VDBGrid", "inField", "", zeno::Socket_ReadOnly},
      {"int", "layers",}
      }, /* outputs: */ {
-       "oField"
+         {"VDBGrid", "oField"}
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -174,9 +174,9 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly}, {"float", "depth"},
+     {"VDBGrid", "inoutSDF"}, {"float", "depth"},
      }, /* outputs: */ {
-       "inoutSDF",
+       {"VDBGrid", "inoutSDF"}
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

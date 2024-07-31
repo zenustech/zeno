@@ -41,6 +41,10 @@ namespace zeno {
         Param_Vec3f,
         Param_Vec4f,
         Param_Prim,
+        Param_Camera,
+        Param_Light,
+        Param_Material,
+        Param_VdbGrid,
         Param_Dict,
         Param_List,
         //Param_Color,  //need this?

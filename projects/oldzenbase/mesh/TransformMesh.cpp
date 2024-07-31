@@ -62,12 +62,12 @@ struct TransformMesh : zeno::INode {
 
 static int defTransformMesh = zeno::defNodeClass<TransformMesh>("TransformMesh",
     { /* inputs: */ {
-    "mesh",
-    "translate",
-    "rotate",
-    "scaling",
+        {"object", "mesh"},
+        {"vec3f", "translate"},
+        {"vec3f", "rotate"},
+        {"vec3f", "scaling"},
     }, /* outputs: */ {
-    "mesh",
+        {"object", "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",

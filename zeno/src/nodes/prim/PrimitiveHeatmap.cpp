@@ -84,7 +84,7 @@ struct HeatmapFromImage : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage,
 { /* inputs: */ {
-    {"", "image", "", zeno::Socket_ReadOnly},
+    {"prim", "image", "", zeno::Socket_ReadOnly},
     {"int", "startPos", "0"},
     {"int", "endPos", "-1"},
 }, /* outputs: */ {
@@ -131,12 +131,12 @@ struct HeatmapFromImage2 : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage2,
            { /* inputs: */ {
-                   {"", "image", "", zeno::Socket_ReadOnly},
+                   {"prim", "image", "", zeno::Socket_ReadOnly},
                    {"float", "startPos", "0"},
                    {"float", "endPos", "1"},
                    {"int", "resample", "0"},
                }, /* outputs: */ {
-                   {"color", "heatmap"},
+                   {"heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -222,7 +222,7 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
             {"", "prim", "", zeno::Socket_ReadOnly},
-            "attrName2",
+            {"string","attrName2"},
             {"color", "heatmap", "", zeno::Socket_Primitve, zeno::Heatmap},
             {"float", "min", "0"},
             {"float", "max", "1"},

@@ -89,7 +89,7 @@ ZENDEFNODE(ShaderVecConvert, {
     {
         { "float", "in", "0"},
     },
-    {"out"},
+    {{"object", "out"}},
     {
         {"enum vec2 vec3 vec4", "type", "vec3"},
     },
@@ -131,9 +131,9 @@ struct ShaderVecExtract : ShaderNodeClone<ShaderVecExtract> {
 
 ZENDEFNODE(ShaderVecExtract, {
     {
-        {"in"},
+        {"object", "in"},
     },
-    {"out"},
+    {{"object", "out"}},
     {
         {"enum x y z w xyz 1-w xyz(srgb)", "type", "xyz"},
     },
@@ -215,7 +215,7 @@ ZENDEFNODE(SetPrimInvisible, {
         { "bool", "invisible", "1" },
     },
     {
-        { "out" },
+        {"prim", "out" },
     },
     {},
     { "shader" },

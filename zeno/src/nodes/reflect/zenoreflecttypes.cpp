@@ -3,6 +3,7 @@
 #include <zeno/core/common.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/INode.h>
+#include <zeno/types/ObjectDef.h>
 #include "reflect/core.hpp"
 #include "reflect/type.hpp"
 #include "reflect/metadata.hpp"
@@ -54,5 +55,11 @@ REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::vector<int>)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::vector<float>)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::CurvesData)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::BCurveObject)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(zeno::HeatmapData)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::PrimitiveObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::CameraObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::LightObject>)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::IObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::ListObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<zeno::DictObject>)
 REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::unique_ptr<zeno::IObject>)
