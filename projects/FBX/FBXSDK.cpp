@@ -13,6 +13,7 @@
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/utils/scope_exit.h"
+#include "zeno/utils/string.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -1306,4 +1307,43 @@ ZENDEFNODE(BoneTransformView, {
     {},
     {"debug"},
 });
+
+struct PrimAttrFlat : INode {
+    virtual void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto params = get_input2<std::string>("params");
+        std::vector<std::string> params_ = zeno::split_str(params, ',');
+        std::vector<float> values;
+        for (auto i = 0; i < prim->size(); i++) {
+            for (const auto& param: params_) {
+                auto value = prim->attr<vec3f>(param);
+                values.push_back(value[i][0]);
+                values.push_back(value[i][1]);
+                values.push_back(value[i][2]);
+            }
+        }
+
+        auto output = std::make_shared<zeno::PrimitiveObject>();
+        output->resize(values.size());
+        auto &value = output->add_attr<float>("value");
+        for (auto i = 0; i < values.size(); i++) {
+            value[i] = values[i];
+        }
+
+        set_output("output", output);
+    }
+};
+
+ZENDEFNODE(PrimAttrFlat, {
+    {
+        "prim",
+        {"string", "params", "transform_r0,transform_r1,transform_r2"},
+    },
+    {
+        "output",
+    },
+    {},
+    {"debug"},
+});
+
 }
