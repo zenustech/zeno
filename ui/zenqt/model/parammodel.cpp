@@ -90,30 +90,32 @@ void ParamsModel::initParamItems()
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
     //primitive inputs
-    auto inputs = spNode->get_input_primitive_params();
-    for (const auto& spParam : inputs) {
-        ParamItem item;
-        item.bInput = true;
-        item.control = spParam.control;
-        if (item.control == zeno::NullControl)
-            item.control = zeno::getDefaultControl(spParam.type);
-        item.optCtrlprops = spParam.ctrlProps;
-        item.name = QString::fromStdString(spParam.name);
-        item.type = spParam.type;
-        item.value = QVariant::fromValue(spParam.defl);
-        item.rtti = spParam.rtti;
+    const zeno::CustomUI& customui = spNode->export_customui();
+    if (!customui.inputPrims.tabs.empty() && !customui.inputPrims.tabs[0].groups.empty()) {
+        auto inputs = customui.inputPrims.tabs[0].groups[0].params;
+        for (const auto& spParam : inputs) {
+            ParamItem item;
+            item.bInput = true;
+            item.control = spParam.control;
+            if (item.control == zeno::NullControl)
+                item.control = zeno::getDefaultControl(spParam.type);
+            item.optCtrlprops = spParam.ctrlProps;
+            item.name = QString::fromStdString(spParam.name);
+            item.type = spParam.type;
+            item.value = QVariant::fromValue(spParam.defl);
+            item.rtti = spParam.rtti;
 
-        const std::string& sClr = zeno::getSession().getColorByRtti(spParam.rtti);
-        item.m_socketClr = QColor(sClr.c_str());
+            const std::string& sClr = zeno::getSession().getColorByRtti(spParam.rtti);
+            item.m_socketClr = QColor(sClr.c_str());
 
-        item.connectProp = spParam.socketType;
-        item.bVisible = spParam.bVisible;
-        item.group = zeno::Role_InputPrimitive;
-        m_items.append(item);
+            item.connectProp = spParam.socketType;
+            item.bVisible = spParam.bVisible;
+            item.group = zeno::Role_InputPrimitive;
+            m_items.append(item);
+        }
     }
     //object inputs
-    auto objInputs = spNode->get_input_object_params();
-    for (const auto& spParam : objInputs) {
+    for (const auto& spParam : customui.inputObjs) {
         ParamItem item;
         item.bInput = true;
         item.name = QString::fromStdString(spParam.name);
@@ -125,8 +127,7 @@ void ParamsModel::initParamItems()
     }
 
     //primitive outputs
-    auto outputs = spNode->get_output_primitive_params();
-    for (const auto& param : outputs) {
+    for (const auto& param : customui.outputPrims) {
         ParamItem item;
         item.bInput = false;
         item.control = zeno::NullControl;
@@ -142,8 +143,7 @@ void ParamsModel::initParamItems()
     }
 
     //object outputs
-    auto objOutputs = spNode->get_output_object_params();
-    for (const auto& param : objOutputs) {
+    for (const auto& param : customui.outputObjs) {
         ParamItem item;
         item.bInput = false;
         item.name = QString::fromStdString(param.name);

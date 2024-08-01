@@ -123,29 +123,74 @@ ZENO_API CustomUI INode::get_customui() const {
 
 ZENO_API CustomUI INode::export_customui() const
 {
-    zeno::CustomUI old = nodeClass->m_customui;
-    zeno::CustomUI ui;
-    ui.nickname = old.nickname;
-    ui.iconResPath = old.iconResPath;
-    ui.doc = old.doc;
-    if (!old.category.empty())
-        ui.category = old.category;
+    std::set<std::string> intputPrims, outputPrims, inputObjs, outputObjs;
+    zeno::CustomUI origin = nodeClass->m_customui;
+    zeno::CustomUI exportui;
+    exportui.nickname = origin.nickname;
+    exportui.iconResPath = origin.iconResPath;
+    exportui.doc = origin.doc;
+    if (!origin.category.empty())
+        exportui.category = origin.category;
 
-    zeno::ParamGroup group;
-    zeno::ParamTab tab;
-    group.params = get_input_primitive_params();
-    if (!old.inputPrims.tabs.empty()) {
-        tab.name = old.inputPrims.tabs[0].name;
-        if (!old.inputPrims.tabs[0].groups.empty()) {
-            group.name = old.inputPrims.tabs[0].name;
+    zeno::ParamGroup exportgroup;
+    zeno::ParamTab exporttab;
+    if (!origin.inputPrims.tabs.empty()) {
+        exporttab.name = origin.inputPrims.tabs[0].name;
+        if (!origin.inputPrims.tabs[0].groups.empty()) {
+            exportgroup.name = origin.inputPrims.tabs[0].name;
         }
     }
-    tab.groups.emplace_back(std::move(group));
-    ui.inputPrims.tabs.emplace_back(std::move(tab));
-    ui.inputObjs = get_input_object_params();
-    ui.outputPrims = get_output_primitive_params();
-    ui.outputObjs = get_output_object_params();
-    return ui;
+    for (const zeno::ParamTab& tab : origin.inputPrims.tabs) {
+        for (const zeno::ParamGroup& group : tab.groups) {
+            for (const zeno::ParamPrimitive& param : group.params) {
+                auto iter = m_inputPrims.find(param.name);
+                if (iter != m_inputPrims.end()) {
+                    exportgroup.params.push_back(iter->second.exportParam());
+                    intputPrims.insert(param.name);
+                }
+            }
+        }
+    }
+    for (const zeno::ParamPrimitive& param : origin.outputPrims) {
+        auto iter = m_outputPrims.find(param.name);
+        if (iter != m_outputPrims.end()) {
+            exportui.outputPrims.push_back(iter->second.exportParam());
+            outputPrims.insert(param.name);
+        }
+    }
+    for (const auto& param : origin.inputObjs) {
+        auto iter = m_inputObjs.find(param.name);
+        if (iter != m_inputObjs.end()) {
+            exportui.inputObjs.push_back(iter->second.exportParam());
+            inputObjs.insert(param.name);
+        }
+    }
+    for (const auto& param : origin.outputObjs) {
+        auto iter = m_outputObjs.find(param.name);
+        if (iter != m_outputObjs.end()) {
+            exportui.outputObjs.push_back(iter->second.exportParam());
+            outputObjs.insert(param.name);
+        }
+    }
+    exporttab.groups.emplace_back(std::move(exportgroup));
+    exportui.inputPrims.tabs.emplace_back(std::move(exporttab));
+    for (auto& [key, param] : m_inputPrims) {
+        if (intputPrims.find(key) == intputPrims.end())
+            exportui.inputPrims.tabs[0].groups[0].params.push_back(param.exportParam());
+    }
+    for (auto& [key, param] : m_outputPrims) {
+        if (outputPrims.find(key) == outputPrims.end())
+            exportui.outputPrims.push_back(param.exportParam());
+    }
+    for (auto& [key, param] : m_inputObjs) {
+        if (inputObjs.find(key) == inputObjs.end())
+            exportui.inputObjs.push_back(param.exportParam());
+    }
+    for (auto& [key, param] : m_outputObjs) {
+        if (outputObjs.find(key) == outputObjs.end())
+            exportui.outputObjs.push_back(param.exportParam());
+    }
+    return exportui;
 }
 
 ZENO_API ObjPath INode::get_path() const {
