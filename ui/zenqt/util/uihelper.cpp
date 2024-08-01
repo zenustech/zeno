@@ -750,37 +750,6 @@ QStringList UiHelper::getAllControls()
         "Integer Vector 2", "Color", "Curve", "SpinBox", "DoubleSpinBox", "Slider", "SpinBoxSlider" };
 }
 
-QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
-{
-    QList<zeno::ParamControl> ctrls;
-    switch (type)
-    {
-    case zeno::Param_Int:
-        return { zeno::Lineedit, zeno::SpinBox, zeno::SpinBoxSlider, zeno::DoubleSpinBox };
-    case zeno::Param_Bool:
-        return { zeno::Checkbox };
-    case zeno::Param_Float:
-        return { zeno::Lineedit, zeno::DoubleSpinBox };
-    case zeno::Param_String:
-        return { zeno::Lineedit, zeno::Multiline, zeno::Combobox };
-    case zeno::Param_Vec2i:
-    case zeno::Param_Vec2f:
-        return { zeno::Vec2edit };
-    case zeno::Param_Vec3i:
-    case zeno::Param_Vec3f:
-        return { zeno::Vec3edit };
-    case zeno::Param_Vec4f:
-    case zeno::Param_Vec4i:
-        return { zeno::Vec4edit };
-    case zeno::Param_Curve:
-        return { zeno::CurveEditor };
-    case zeno::Param_Heatmap:
-        return { zeno::Heatmap };
-    default:
-        return {};
-    }
-}
-
 QString UiHelper::getTypeDesc(zeno::ParamType type)
 {
     switch (type)
@@ -1616,7 +1585,7 @@ zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid)
     zeno::CurvesData curves;
     if (qvar.canConvert<zeno::reflect::Any>()) {
         const auto& anyVal = qvar.value<zeno::reflect::Any>();
-        if (zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+        if (anyVal.has_value() && zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
             if (bValid) *bValid = true;
             return zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
         }

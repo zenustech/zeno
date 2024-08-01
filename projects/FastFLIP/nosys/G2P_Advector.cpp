@@ -48,7 +48,7 @@ struct G2P_Advector : zeno::INode {
 
 static int defG2P_Advector = zeno::defNodeClass<G2P_Advector>(
     "G2P_Advector", {/* inputs: */ {
-                         "dt","Dx",
+                         {"float", "dt"},{"float", "Dx"},
                          "Particles",
                          "Velocity",
                          "PostAdvVelocity",

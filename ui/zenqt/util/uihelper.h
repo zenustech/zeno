@@ -48,7 +48,6 @@ public:
     static zeno::ParamControl getControlByType(const QString& type);
     static CONTROL_INFO getControlByType(const QString &nodeCls, bool bInput, const QString &socketName,const QString &socketType);    
     static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramPath);
-    static QList<zeno::ParamControl> getControlLists(const zeno::ParamType& type);
     static QStringList getAllControls();
     //there is no description on control, for example,  lineedit may be a integer, string or float.
     static zeno::ParamControl getControlByDesc(const QString& descName);

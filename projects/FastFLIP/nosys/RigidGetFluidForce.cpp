@@ -261,7 +261,7 @@ struct RigidGetPressureForce : zeno::INode {
 };
 static int defRigidGetPressureForce = zeno::defNodeClass<RigidGetPressureForce>(
     "RigidGetPressureForce", {/* inputs: */ {
-                                  "dt",
+                                  {"float", "dt"},
                                   "MassCenter",
                                   "Rigid",
                                   "Pressure",

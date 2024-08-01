@@ -66,7 +66,7 @@ struct AssembleSolvePPE : zeno::INode {
 
 static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>(
     "AssembleSolvePPE", {/* inputs: */ {
-                             "dt","Dx",
+                             {"float", "dt"},{"float", "Dx"},
                              {"float", "Density", "1000.0"},
                              {"float", "SurfaceTension", "0.0"},
                              "LiquidSDF",

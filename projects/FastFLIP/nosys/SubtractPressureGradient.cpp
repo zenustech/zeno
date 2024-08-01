@@ -69,7 +69,7 @@ struct SubtractPressureGradient : zeno::INode {
 static int defSubtractPressureGradient =
     zeno::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
                                                  {/* inputs: */ {
-                                                      "dt","Dx",
+                                                      {"float", "dt"},{"float", "Dx"},
                                                       {"float", "Density", "1000.0"},
                                                       {"float", "SurfaceTension", "0.0"},
                                                       "LiquidSDF",

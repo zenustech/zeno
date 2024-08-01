@@ -55,7 +55,7 @@ struct G2PAdvectorSheet : zeno::INode {
 
 static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
     "G2PAdvectorSheetty", {/* inputs: */ {
-                               "dt","Dx",
+                               {"float", "dt"},{"float", "Dx"},
                                {"float", "pic_min", "0.03"},
                                {"float", "pic_max", "0.05"},
                                "Particles",

@@ -178,14 +178,14 @@ struct WhitewaterSource : INode {
     }
 };
 
-ZENDEFNODE(WhitewaterSource, {/* inputs: */
-                              {"Primitive",
+ZENDEFNODE(WhitewaterSource, {{/* inputs: */
+                               {"prim", "Primitive"},
                                {"float", "dt", "0.04"},
                                {"float", "Lifespan", "0.8"},
-                               "LiquidSDF",
-                               "SolidSDF",
-                               "Velocity",
-                               "PreVelocity",
+                               {"VDBGrid", "LiquidSDF"},
+                               {"VDBGrid", "SolidSDF"},
+                               {"VDBGrid", "Velocity"},
+                               {"VDBGrid", "PreVelocity"},
                                {"vec2f", "LimitDepth", "-1, 0.5"},
                                {"vec2f", "SpeedRange", "0, 1"},
                                {"float", "EmitFromCurvature", "0"},
@@ -196,7 +196,7 @@ ZENDEFNODE(WhitewaterSource, {/* inputs: */
                                {"float", "EmitFromVorticity", "0"},
                                {"vec2f", "VorticityRange", "0, 1"}},
                               /* outputs: */
-                              {"Primitive"},
+                              {{"prim", "Primitive"}},
                               /* params: */
                               {},
                               /* category: */
@@ -287,10 +287,10 @@ struct WhitewaterSolver : INode {
 };
 
 ZENDEFNODE(WhitewaterSolver, {/* inputs: */
-                              {"Primitive",
+                              {{"prim", "Primitive"},
                                {"float", "dt", "0.04"},
-                               "LiquidSDF",
-                               "SolidSDF",
+                               {"VDBGrid", "LiquidSDF"},
+                               {"VDBGrid", "SolidSDF"},
                                {"string", "TargetVelAttr", "tv"},
                                {"vec3f", "Gravity", "0, -9.8, 0"},
                                {"enum linear square", "DragModel", "linear"},
@@ -299,7 +299,7 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                {"float", "BubbleDrag", "0.1"},
                                {"float", "Buoyancy", "5"}},
                               /* outputs: */
-                              {"Primitive"},
+                              {{"prim", "Primitive"}},
                               /* params: */
                               {},
                               /* category: */

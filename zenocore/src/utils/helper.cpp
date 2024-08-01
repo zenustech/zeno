@@ -84,7 +84,7 @@ namespace zeno {
                 return Param_Heatmap;
             }
             else {
-                return Param_Null;
+                return Param_Object;
             }
         }
         else

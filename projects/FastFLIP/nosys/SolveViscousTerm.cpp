@@ -60,8 +60,8 @@ struct SolveViscousTerm : zeno::INode {
 
 ZENDEFNODE(SolveViscousTerm, {
                                  /* inputs: */
-                                 {"dt",
-                                  "Dx",
+                                 {{"float", "dt"},
+                                  {"float", "Dx"},
                                   {"float", "Density", "1000.0"},
                                   {"float", "Viscosity", "0.0"},
                                   "Velocity",
@@ -111,8 +111,8 @@ struct SolveVariationalViscosity : zeno::INode {
 
 ZENDEFNODE(SolveVariationalViscosity, {
                                           /* inputs: */
-                                          {"dt",
-                                           "Dx",
+                                          {{"float", "dt"},
+                                           {"float", "Dx"},
                                            {"float", "Density", "1000.0"},
                                            "ViscosityGrid",
                                            "Velocity",

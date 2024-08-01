@@ -43,7 +43,7 @@ struct FLIP_P2G : zeno::INode {
 
 static int defFLIP_P2G =
     zeno::defNodeClass<FLIP_P2G>("FLIP_P2G", {/* inputs: */ {
-                                                  "Dx",
+                                                  {"float", "Dx"},
                                                   "Particles",
                                                   "Velocity",
                                                   "PostP2GVelocity",
