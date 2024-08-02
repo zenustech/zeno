@@ -9,6 +9,7 @@ class ZToolTip : public QLabel
 public:
     static ZToolTip* getInstance();
     static void showText(QPoint pos, const QString& text);
+    static void showIconText(QString icon, QPoint pos, const QString& text);
     static void hideText();
 protected:
     void paintEvent(QPaintEvent* evt) override;

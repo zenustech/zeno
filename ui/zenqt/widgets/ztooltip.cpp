@@ -8,6 +8,7 @@ ZToolTip* ZToolTip::getInstance()
 void ZToolTip::showText(QPoint pos, const QString& text)
 {
     ZToolTip* pToolTip = getInstance();
+    pToolTip->setProperty("hasIcon", false);
     pToolTip->setText(text);
     QFontMetrics fm(QApplication::font());
     auto width = fm.width(text);
@@ -16,6 +17,21 @@ void ZToolTip::showText(QPoint pos, const QString& text)
     pToolTip->move(pos);
     pToolTip->show();
 }
+
+void ZToolTip::showIconText(QString icon, QPoint pos, const QString& text)
+{
+    ZToolTip* pToolTip = getInstance();
+    pToolTip->setProperty("hasIcon", true);
+    pToolTip->setProperty("iconPath", icon);
+    pToolTip->setText(text);
+    QFontMetrics fm(QApplication::font());
+    auto width = fm.width(text);
+    auto height = fm.height();
+    pToolTip->resize(width + 40, height + 20);
+    pToolTip->move(pos);
+    pToolTip->show();
+}
+
 void ZToolTip::hideText()
 {
     ZToolTip* pToolTip = getInstance();
@@ -48,9 +64,17 @@ void ZToolTip::paintEvent(QPaintEvent* evt)
     }
     rc.adjust(6, 6, -6, -6);
     painter.fillRect(rc, QColor(31, 31, 31));
+    //draw icon
+    bool hasIcon =  this->property("hasIcon").isValid() ? this->property("hasIcon").toBool() : false;
+    if (hasIcon) {
+        QPixmap icon = QPixmap(this->property("iconPath").toString()).scaled(15, 15, Qt::KeepAspectRatio);
+        if (!icon.isNull()) {
+            painter.drawPixmap(QPoint(rc.left() + 4, rc.top() + 4), icon);
+        }
+    }
     //draw text
     pen.setWidth(2);
     pen.setColor(Qt::white);
     painter.setPen(pen);
-    painter.drawText(QPoint(rc.left() + 4, rc.center().y() + 6), this->text());
+    painter.drawText(QPoint(rc.left() + 8 + (hasIcon ? 15 : 0), rc.center().y() + 6), this->text());
 }

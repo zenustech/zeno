@@ -771,8 +771,10 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
             QString nodeid2 = pSocket->nodeIdent();
             if (bInput != bFixedInput && nodeid2 != nodeId)
             {
-                if (!isLinkValid(m_tempLink->getFixedSocket(), pSocket, bFixedInput))
+                if (!isLinkValid(m_tempLink->getFixedSocket(), pSocket, bFixedInput)) {
+                    m_tempLink->setFloatingPos(mousePos);
                     return;
+                }
                 pos = pSocket->center();
                 m_tempLink->setAdsortedSocket(pSocket);
                 m_tempLink->setFloatingPos(pos);
@@ -807,8 +809,10 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
         ZenoSocketItem *pSocket = pTarget->getNearestSocket(pos, !bFixedInput);
         if (pSocket)
         {
-            if (!isLinkValid(m_tempLink->getFixedSocket(), pSocket, bFixedInput))
+            if (!isLinkValid(m_tempLink->getFixedSocket(), pSocket, bFixedInput)) {
+                m_tempLink->setFloatingPos(mousePos);
                 return;
+            }
             pos = pSocket->center();
             m_tempLink->setAdsortedSocket(pSocket);
             m_tempLink->setFloatingPos(pos);
@@ -841,12 +845,12 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
     }
     int inParamType = inSockIdx.data(ROLE_PARAM_TYPE).toInt();
     int outParamType = outSockIdx.data(ROLE_PARAM_TYPE).toInt();
-    //To do: object type is not define
-    //if (inParamType != outParamType)
-    //{
-    //    ZToolTip::showText(QCursor::pos(), tr("Cannot connect different type!"));
-    //    return false;
-    //}
+
+    if (inParamType != outParamType)
+    {
+        ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
+        return false;
+    }
     auto links = outSockIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
     for (auto& link : links)
     {
