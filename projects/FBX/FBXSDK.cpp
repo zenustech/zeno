@@ -443,9 +443,8 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
 
         FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
         std::vector<std::string> bone_names;
-
         // Iterate over each cluster (bone)
-        // TODO: pick 4 max weight
+        std::vector<std::vector<std::pair<int, float>>> bone_weight(numVertices);
         for (int j = 0; j < pSkin->GetClusterCount(); ++j) {
             FbxCluster* pCluster = pSkin->GetCluster(j);
 
@@ -460,13 +459,22 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
 
             bone_names.emplace_back(pBoneNode->GetName());
             for (int k = 0; k < numIndices; ++k) {
-                for (auto l = 0; l < 4; l++) {
-                    if (bi[indices[k]][l] == -1) {
-                        bi[indices[k]][l] = j;
-                        bw[indices[k]][l] = weights[k];
-                        break;
-                    }
-                }
+                bone_weight[indices[k]].emplace_back(j, weights[k]);
+            }
+        }
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            if (bone_weight[i].size() > 4) {
+                std::sort(bone_weight[i].begin(), bone_weight[i].end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b) {
+                    return a.second > b.second;
+                });
+                bone_weight[i].resize(4);
+            }
+            for (auto j = 0; j < bone_weight[i].size(); j++) {
+                bi[i][j] = bone_weight[i][j].first;
+                bw[i][j] = bone_weight[i][j].second;
+            }
+            if (bone_weight[i].size() == 4) {
+                bw[i] = zeno::normalize(bw[i]);
             }
         }
         ud.set2("boneName_count", int(bone_names.size()));
