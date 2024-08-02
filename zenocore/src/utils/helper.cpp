@@ -639,7 +639,6 @@ namespace zeno {
                 param.name = param_desc.name;
                 param.type = type;
                 param.defl = zeno::str2any(param_desc.defl, param.type);
-                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 if (param_desc.control != NullControl)
@@ -667,7 +666,6 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = true;
@@ -680,7 +678,6 @@ namespace zeno {
             param.name = param_desc.name;
             param.type = zeno::convertToType(param_desc.type, param.name);
             param.defl = zeno::str2any(param_desc.defl, param.type);
-            param.rtti = getRttiInfo(param.type);
             param.socketType = NoSocket;
             //其他控件估计是根据类型推断的。
             if (starts_with(param_desc.type, "enum ")) {
@@ -705,7 +702,6 @@ namespace zeno {
                 ParamPrimitive param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.rtti = getRttiInfo(type);
                 param.defl = zeno::str2any(param_desc.defl, param.type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
@@ -721,7 +717,6 @@ namespace zeno {
                 ParamObject param;
                 param.name = param_desc.name;
                 param.type = type;
-                param.rtti = getRttiInfo(type);
                 if (param_desc.socketType != zeno::NoSocket)
                     param.socketType = param_desc.socketType;
                 param.bInput = false;

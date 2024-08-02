@@ -103,9 +103,8 @@ void ParamsModel::initParamItems()
             item.name = QString::fromStdString(spParam.name);
             item.type = spParam.type;
             item.value = QVariant::fromValue(spParam.defl);
-            item.rtti = spParam.rtti;
 
-            const std::string& sClr = zeno::getSession().getColorByRtti(spParam.rtti);
+            const std::string& sClr = zeno::getSession().getColorByRtti(item.type);
             item.m_socketClr = QColor(sClr.c_str());
 
             item.connectProp = spParam.socketType;
@@ -119,7 +118,6 @@ void ParamsModel::initParamItems()
         ParamItem item;
         item.bInput = true;
         item.name = QString::fromStdString(spParam.name);
-        item.rtti = spParam.rtti;
         item.type = spParam.type;
         item.connectProp = spParam.socketType;
         item.group = zeno::Role_InputObject;
@@ -135,8 +133,7 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
-        item.rtti = param.rtti;
-        const std::string& sClr = zeno::getSession().getColorByRtti(param.rtti);
+        const std::string& sClr = zeno::getSession().getColorByRtti(item.type);
         item.m_socketClr = QColor(sClr.c_str());
 
         m_items.append(item);
@@ -148,7 +145,6 @@ void ParamsModel::initParamItems()
         item.bInput = false;
         item.name = QString::fromStdString(param.name);
         item.type = param.type;
-        item.rtti = param.rtti;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputObject;
         m_items.append(item);

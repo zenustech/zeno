@@ -68,7 +68,6 @@ namespace zeno {
         std::string tooltip;
         bool bInput = true;
         std::string wildCardGroup;
-        zeno::reflect::RTTITypeInfo rtti = { "<default_type>", 0, 0 };
     };
 
     //primitive
@@ -88,7 +87,6 @@ namespace zeno {
         bool bInput = true;
         bool bVisible = true;
         std::string wildCardGroup;
-        zeno::reflect::RTTITypeInfo rtti = { "<default_type>", 0, 0 };
     };
 
     using ObjectParams = std::vector<ParamObject>;

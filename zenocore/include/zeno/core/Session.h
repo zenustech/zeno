@@ -85,7 +85,7 @@ struct Session {
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
-    ZENO_API std::string getColorByRtti(const zeno::reflect::RTTITypeInfo& rtti);
+    ZENO_API std::string getColorByRtti(const ParamType type);
     void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
 
 private:

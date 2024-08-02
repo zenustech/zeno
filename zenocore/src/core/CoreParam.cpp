@@ -14,7 +14,6 @@ namespace zeno {
             objparam.links.push_back(getEdgeInfo(spLink));
         }
         objparam.wildCardGroup = wildCardGroup;
-        objparam.rtti = rtti;
         return objparam;
     }
 
@@ -30,7 +29,6 @@ namespace zeno {
         param.ctrlProps = ctrlProps;
         param.bVisible = bVisible;
         param.wildCardGroup = wildCardGroup;
-        param.rtti = rtti;
         for (auto spLink : links) {
             param.links.push_back(getEdgeInfo(spLink));
         }

@@ -134,9 +134,7 @@ struct ReflectNodeClass : INodeClass {
                     j = 0;
                 }
 
-                const RTTITypeInfo& fieldRtti(fieldType->get_rtti_info());
-
-                ParamType type = fieldRtti.get_decayed_hash() == 0 ? fieldRtti.hash_code() : fieldRtti.get_decayed_hash();
+                ParamType type = fieldType.type_hash();
                 //role:
                 NodeDataGroup role = Role_InputObject;
                 if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
@@ -246,7 +244,6 @@ struct ReflectNodeClass : INodeClass {
                     }
                     prim.name = param_name;
                     prim.type = type;
-                    prim.rtti = fieldType->get_rtti_info();
                     prim.bInput = true;
                     prim.bVisible = true;
                     prim.control = ctrl;
@@ -270,7 +267,6 @@ struct ReflectNodeClass : INodeClass {
                     prim.name = param_name;
                     prim.bInput = false;
                     prim.bVisible = true;
-                    prim.rtti = fieldType->get_rtti_info();
                     prim.control = NullControl;
                     prim.socketType = Socket_Primitve;
                     prim.tooltip;
@@ -316,7 +312,6 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bInput = false;
                     outPrim.socketType = Socket_Primitve;
                     outPrim.type = type;
-                    outPrim.rtti = ret_type;
                     outPrim.wildCardGroup;
                     m_customui.outputPrims.emplace_back(outPrim);
                     reg_outputprims.insert(param_name);
@@ -348,7 +343,6 @@ struct ReflectNodeClass : INodeClass {
                             outputObj.bInput = false;
                             outputObj.socketType = Socket_Output;
                             outputObj.type = type;
-                            outputObj.rtti = param_type;
                             m_customui.outputObjs.emplace_back(outputObj);
                             reg_outputobjs.insert(param_name);
                         }
@@ -364,7 +358,6 @@ struct ReflectNodeClass : INodeClass {
                             prim.socketType = Socket_Primitve;
                             prim.type = type;
                             prim.defl = initAnyDeflValue(type);
-                            prim.rtti = param_type;
                             prim.tooltip;
                             prim.wildCardGroup;
                             m_customui.outputPrims.emplace_back(prim);
@@ -387,7 +380,6 @@ struct ReflectNodeClass : INodeClass {
                             inObj.bInput = true;
                             inObj.socketType = Socket_Owning;   //TODO: 也许会根据引用类型或者const决定是否owning.
                             inObj.type = type;
-                            inObj.rtti = param_type;
                             m_customui.inputObjs.emplace_back(inObj);
                             reg_inputobjs.insert(param_name);
                         }
@@ -400,7 +392,6 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.bInput = true;
                             inPrim.socketType = Socket_Primitve;
                             inPrim.type = type;
-                            inPrim.rtti = param_type;
                             inPrim.defl = initAnyDeflValue(type);
                             inPrim.control = getDefaultControl(type);
                             inPrim.wildCardGroup;
@@ -556,10 +547,9 @@ ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
     m_funcNodeStatus = func;
 }
 
-ZENO_API std::string Session::getColorByRtti(const zeno::reflect::RTTITypeInfo& rtti)
+ZENO_API std::string Session::getColorByRtti(const ParamType type)
 {
-    size_t decayHash = rtti.get_decayed_hash();
-    auto iter = g_clrMapping.find(decayHash == 0 ? rtti.hash_code() : decayHash);
+    auto iter = g_clrMapping.find(type);
     if (iter == g_clrMapping.end()) return "#FFFFFF";
     return iter->second;
 }
