@@ -854,9 +854,9 @@ struct NewFBXImportSkeleton : INode {
             auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
             auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
             for (auto i = 0; i < prim->verts.size(); i++) {
-                transform_r0[i][0] *= 0.01;
-                transform_r1[i][1] *= 0.01;
-                transform_r2[i][2] *= 0.01;
+                transform_r0[i] *= 0.01;
+                transform_r1[i] *= 0.01;
+                transform_r2[i] *= 0.01;
             }
         }
         {
@@ -1048,9 +1048,9 @@ struct NewFBXImportAnimation : INode {
             auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
             auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
             for (auto i = 0; i < prim->verts.size(); i++) {
-                transform_r0[i][0] *= 0.01;
-                transform_r1[i][1] *= 0.01;
-                transform_r2[i][2] *= 0.01;
+                transform_r0[i] *= 0.01;
+                transform_r1[i] *= 0.01;
+                transform_r2[i] *= 0.01;
             }
         }
         set_output("prim", prim);
