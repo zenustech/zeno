@@ -445,6 +445,7 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
         std::vector<std::string> bone_names;
 
         // Iterate over each cluster (bone)
+        // TODO: pick 4 max weight
         for (int j = 0; j < pSkin->GetClusterCount(); ++j) {
             FbxCluster* pCluster = pSkin->GetCluster(j);
 
@@ -837,7 +838,6 @@ struct NewFBXImportSkeleton : INode {
                 transform_r0[i][0] *= 0.01;
                 transform_r1[i][1] *= 0.01;
                 transform_r2[i][2] *= 0.01;
-
             }
         }
         {
@@ -933,7 +933,8 @@ struct NewFBXImportAnimation : INode {
 
         int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
         if (stack_index == clip_names.size()) {
-            zeno::log_error("FBX: Can not find clip name");
+            zeno::log_info("FBX: Can not find default clip name, use first");
+            stack_index = 0;
         }
 //        zeno::log_info("stack_index: {}", stack_index);
 
@@ -1024,7 +1025,14 @@ struct NewFBXImportAnimation : INode {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
-            // todo: on matrix
+            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                transform_r0[i][0] *= 0.01;
+                transform_r1[i][1] *= 0.01;
+                transform_r2[i][2] *= 0.01;
+            }
         }
         set_output("prim", prim);
     }
