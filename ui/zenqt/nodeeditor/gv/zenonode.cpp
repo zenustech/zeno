@@ -783,10 +783,10 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
             {
                 const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
                 ZenoGvHelper::setValue(pControl, paramType, deflValue, pScene);
-                if (Param_Vec4f == paramType ||
-                    Param_Vec3f == paramType ||
-                    Param_Vec2f == paramType ||
-                    Param_Float == paramType)
+                if (zeno::types::gParamType_Vec4f == paramType ||
+                    zeno::types::gParamType_Vec3f == paramType ||
+                    zeno::types::gParamType_Vec2f == paramType ||
+                    zeno::types::gParamType_Float == paramType)
                 {
                     if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl))
                     {
@@ -965,7 +965,7 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput)
 
     SocketBackgroud* pBackground = nullptr;
     ZSocketLayout* pMiniLayout = nullptr;
-    if ((type == Param_Dict || type == Param_List) && 
+    if ((type == zeno::types::gParamType_Dict || type == zeno::types::gParamType_List) && 
         ctrl != zeno::NoMultiSockPanel) {
         pBackground = new SocketBackgroud(bInput, true);
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);

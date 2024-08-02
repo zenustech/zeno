@@ -120,7 +120,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
     auto spNode = spParam->m_wpNode.lock();
     assert(spNode);
     const std::string& uuid = spNode->get_uuid();
-    if (Param_String == spParam->type) {
+    if (zeno::types::gParamType_String == spParam->type) {
         std::string newstr = zeno_get<std::string>(new_value);
         std::regex pattern("\\$F");
         if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
@@ -128,7 +128,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
         }
     }
-    else if (Param_Vec2f == spParam->type) {
+    else if (zeno::types::gParamType_Vec2f == spParam->type) {
         vec2s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");
@@ -140,7 +140,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             }
         }
     }
-    else if (Param_Vec3f == spParam->type) {
+    else if (zeno::types::gParamType_Vec3f == spParam->type) {
         vec3s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");
@@ -152,7 +152,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             }
         }
     }
-    else if (Param_Vec4f == spParam->type) {
+    else if (zeno::types::gParamType_Vec4f == spParam->type) {
         vec4s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");
@@ -845,7 +845,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     {
         ParamObject inParam = inNode->get_input_obj_param(edge.inParam);
         ParamObject outParam = outNode->get_output_obj_param(edge.outParam);
-        if (inParam.type == Param_Dict || inParam.type == Param_List) {
+        if (inParam.type == zeno::types::gParamType_Dict || inParam.type == zeno::types::gParamType_List) {
             bool bSameType = inParam.type == outParam.type;
             if (bSameType) {
                 //直接连接，并去掉输入端原来的参数.

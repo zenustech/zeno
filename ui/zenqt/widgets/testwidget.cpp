@@ -24,10 +24,10 @@ TestNormalWidget::TestNormalWidget()
     std::vector<float> sliderInfo = { 1.0, 100.0, 1.0 };
     properties = sliderInfo;
 
-    QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, Param_Int, cbSet, properties);
+    QWidget* pSlider = zenoui::createWidget(10, zeno::Slider, zeno::types::gParamType_Int, cbSet, properties);
     pLayout->addWidget(pSlider);
 
-    QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, Param_Int, cbSet, properties);
+    QWidget* pSpinBox = zenoui::createWidget(10, zeno::SpinBoxSlider, zeno::types::gParamType_Int, cbSet, properties);
     pLayout->addWidget(pSpinBox);
 
     setLayout(pLayout);

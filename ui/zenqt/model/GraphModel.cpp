@@ -365,7 +365,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
-                if (info.type != Param_Curve) {
+                if (info.type != zeno::types::gParamType_Curve) {
                     continue;
                 }
                 const QVariant& value = QVariant::fromValue(info.defl);

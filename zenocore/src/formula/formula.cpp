@@ -124,24 +124,24 @@ float Formula::callRef(const std::string& ref) {
 
             switch (primparam.type)
             {
-                case Param_Vec2f:
-                case Param_Vec2i:
+                case zeno::types::gParamType_Vec2f:
+                case zeno::types::gParamType_Vec2i:
                 {
                     auto vec = zeno_get<zeno::vec2f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
                 }
-                case Param_Vec3f:
-                case Param_Vec3i:
+                case zeno::types::gParamType_Vec3f:
+                case zeno::types::gParamType_Vec3i:
                 {
                     auto vec = zeno_get<zeno::vec3f>(primparam.result);
                     if (idx < vec.size())
                         return vec[idx];
                     break;
                 }
-                case Param_Vec4f:
-                case Param_Vec4i:
+                case zeno::types::gParamType_Vec4f:
+                case zeno::types::gParamType_Vec4i:
                 {
                     auto vec = zeno_get<zeno::vec4f>(primparam.result);
                     if (idx < vec.size())

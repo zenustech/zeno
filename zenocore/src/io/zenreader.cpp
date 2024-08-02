@@ -312,7 +312,7 @@ namespace zenoio
         {
             if (prop == zeno::SocketProperty::Socket_Editable) {
                 //like extract dict.
-                paramType = Param_String;
+                paramType = zeno::types::gParamType_String;
             }
             else {
                 paramType = Param_Null;

@@ -155,20 +155,20 @@ namespace zenoui
             {
                 int dim = -1;
                 bool bFloat = false;
-                if (type == Param_Vec2i || type == Param_Vec2f)
+                if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f)
                 {
                     dim = 2;
-                    bFloat = type == Param_Vec2f;
+                    bFloat = type == zeno::types::gParamType_Vec2f;
                 }
-                else if (type == Param_Vec3i || type == Param_Vec3f)
+                else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f)
                 {
                     dim = 3;
-                    bFloat = type == Param_Vec3f;
+                    bFloat = type == zeno::types::gParamType_Vec3f;
                 }
-                else if (type == Param_Vec4i || type == Param_Vec4f)
+                else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f)
                 {
                     dim = 4;
-                    bFloat = type == Param_Vec4f;
+                    bFloat = type == zeno::types::gParamType_Vec4f;
                 }
 
                 ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");

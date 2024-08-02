@@ -386,7 +386,8 @@ ZENO_API void INode::reflecNode_apply()
                     for (int i = 0; i < params.size(); i++) {
                         const zeno::reflect::RTTITypeInfo& param_type = params[i];
                         if (!param_type.has_flags(zeno::reflect::TF_IsConst) && param_type.has_flags(zeno::reflect::TF_IsLValueRef)) {
-                            outputsName.push_back({ param_names[i].c_str(), reflectReferenceTypeInfoToType(param_type) });
+                            ParamType _type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
+                            outputsName.push_back({ param_names[i].c_str(), _type });
                         }
                         else {
                             zeno::reflect::Any inputAny;
@@ -467,7 +468,10 @@ ZENO_API void INode::reflecNode_apply()
                         }
                     }
                     const zeno::reflect::TypeHandle& ret_type = func->get_return_type();
-                    if (reflectTypeInfoToType(ret_type) == Param_Object) {
+                    const zeno::reflect::RTTITypeInfo& rtti = ret_type->get_rtti_info();
+                    ParamType _type = rtti.get_decayed_hash() == 0 ? rtti.hash_code() : rtti.get_decayed_hash();
+
+                    if (_type == Param_Object) {
                         auto iter = m_outputObjs.find("result");
                         if (iter != m_outputObjs.end())
                             iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);
@@ -645,9 +649,9 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
     zeno::reflect::Any result = defl;
 
     switch (type) {
-    case Param_Int:
-    case Param_Float:
-    case Param_Bool:
+    case zeno::types::gParamType_Int:
+    case zeno::types::gParamType_Float:
+    case zeno::types::gParamType_Bool:
     {
         //先不考虑int float的划分,直接按variant的值来。
         std::string str;
@@ -659,7 +663,7 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         {
             assert(pCurves->keys.size() == 1);
             float fVal = pCurves->keys.begin()->second.eval(frame);
-            if (type == Param_Int || type == Param_Bool) {
+            if (type == zeno::types::gParamType_Int || type == zeno::types::gParamType_Bool) {
                 return static_cast<int>(fVal);
             }
             else {
@@ -671,18 +675,18 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         }
         break;
     }
-    case Param_String:
+    case zeno::types::gParamType_String:
     {
         //TODO: format string as formula
         break;
     }
-    case Param_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
-    case Param_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
-    case Param_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
-    case Param_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
-    case Param_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
-    case Param_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
-    case Param_Heatmap:
+    case zeno::types::gParamType_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
+    case zeno::types::gParamType_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
+    case zeno::types::gParamType_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
+    case zeno::types::gParamType_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
+    case zeno::types::gParamType_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
+    case zeno::types::gParamType_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
+    case zeno::types::gParamType_Heatmap:
     {
         //TODO: heatmap的结构体定义.
         //if (std::holds_alternative<std::string>(defl))
@@ -690,12 +694,12 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         break;
     }
     //这里指的是基础类型的List/Dict.
-    case Param_List:
+    case zeno::types::gParamType_List:
     {
         //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
         break;
     }
-    case Param_Dict:
+    case zeno::types::gParamType_Dict:
     {
         break;
     }
@@ -731,19 +735,19 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
         else {
             switch (in_param->type)
             {
-                case Param_Dict:
+                case zeno::types::gParamType_Dict:
                 {
                     std::shared_ptr<DictObject> outDict = processDict(in_param);
                     receiveOutputObj(in_param, outDict);
                     break;
                 }
-                case Param_List:
+                case zeno::types::gParamType_List:
                 {
                     std::shared_ptr<ListObject> outList = processList(in_param);
                     receiveOutputObj(in_param, outList);
                     break;
                 }
-                case Param_Curve:
+                case zeno::types::gParamType_Curve:
                 {
                     //Curve要视作Object，因为整合到variant太麻烦，只要对于最原始的MakeCurve节点，以字符串（储存json）作为特殊类型即可。
                 }
@@ -1729,15 +1733,15 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     if (iter != m_inputPrims.end()) {
         auto& val = iter->second.result;
         switch (iter->second.type) {
-            case Param_Int:
-            case Param_Float:
-            case Param_Bool:
-            case Param_Vec2f:
-            case Param_Vec2i:
-            case Param_Vec3f:
-            case Param_Vec3i:
-            case Param_Vec4f:
-            case Param_Vec4i:
+            case zeno::types::gParamType_Int:
+            case zeno::types::gParamType_Float:
+            case zeno::types::gParamType_Bool:
+            case zeno::types::gParamType_Vec2f:
+            case zeno::types::gParamType_Vec2i:
+            case zeno::types::gParamType_Vec3f:
+            case zeno::types::gParamType_Vec3i:
+            case zeno::types::gParamType_Vec4f:
+            case zeno::types::gParamType_Vec4i:
             {
                 //依然有很多节点用了NumericObject，为了兼容，需要套一层NumericObject出去。
                 std::shared_ptr<NumericObject> spNum = std::make_shared<NumericObject>();
@@ -1776,7 +1780,7 @@ ZENO_API zany INode::get_input(std::string const &id) const {
                 }
                 return spNum;
             }
-            case Param_String:
+            case zeno::types::gParamType_String:
             {
                 const std::string& str = zeno::reflect::any_cast<std::string>(val);
                 return std::make_shared<StringObject>(str);
@@ -1920,7 +1924,7 @@ float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
         return res;
     }
     else {
-        if (Param_Float == type)
+        if (zeno::types::gParamType_Float == type)
         {
             float fVal = std::stof(formulaOrKFrame);
             return fVal;

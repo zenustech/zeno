@@ -104,7 +104,7 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
             }
             else {
                 if (vec.size() == 2) {
-                    if (type == Param_Vec2i) {
+                    if (type == zeno::types::gParamType_Vec2i) {
                         return zeno::vec2i((int)vec[0], (int)vec[1]);
                     }
                     else {
@@ -112,7 +112,7 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
                     }
                 }
                 if (vec.size() == 3) {
-                    if (type == Param_Vec3i) {
+                    if (type == zeno::types::gParamType_Vec3i) {
                         return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
                     }
                     else {
@@ -120,7 +120,7 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
                     }
                 }
                 if (vec.size() == 4) {
-                    if (type == Param_Vec4i) {
+                    if (type == zeno::types::gParamType_Vec4i) {
                         return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                     else {
@@ -275,26 +275,26 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
             }
             else {
                 if (vec.size() == 2) {
-                    if (type == Param_Vec2f) {
+                    if (type == zeno::types::gParamType_Vec2f) {
                         return zeno::vec2f(vec[0], vec[1]);
                     }
-                    else if (type == Param_Vec2i) {
+                    else if (type == zeno::types::gParamType_Vec2i) {
                         return zeno::vec2i((int)vec[0], (int)vec[1]);
                     }
                 }
                 if (vec.size() == 3) {
-                    if (type == Param_Vec3f) {
+                    if (type == zeno::types::gParamType_Vec3f) {
                         return zeno::vec3f(vec[0], vec[1], vec[2]);
                     }
-                    else if (type == Param_Vec3i) {
+                    else if (type == zeno::types::gParamType_Vec3i) {
                         return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
                     }
                 }
                 if (vec.size() == 4) {
-                    if (type == Param_Vec4f) {
+                    if (type == zeno::types::gParamType_Vec4f) {
                         return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
                     }
-                    else if (type == Param_Vec4i) {
+                    else if (type == zeno::types::gParamType_Vec4i) {
                         return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                 }
@@ -394,43 +394,43 @@ QVariant UiHelper::zvarToQVar(const zeno::zvariant& var)
 
 QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
 {
-    if (type == Param_String) {
+    if (type == zeno::types::gParamType_String) {
         return "";
     }
-    else if (type == Param_Float)
+    else if (type == zeno::types::gParamType_Float)
     {
         return QVariant((float)0.);
     }
-    else if (type == Param_Int)
+    else if (type == zeno::types::gParamType_Int)
     {
         return QVariant((int)0);
     }
-    else if (type == Param_Bool)
+    else if (type == zeno::types::gParamType_Bool)
     {
         return QVariant(false);
     }
-    else if (type == Param_Vec2i || type == Param_Vec2f)
+    else if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f)
     {
         UI_VECTYPE vec(2);
         return QVariant::fromValue(vec);
     }
-    else if (type == Param_Vec3i || type == Param_Vec3f)
+    else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f)
     {
         UI_VECTYPE vec(3);
         return QVariant::fromValue(vec);
     }
-    else if (type == Param_Vec4i || type == Param_Vec4f)
+    else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f)
     {
         UI_VECTYPE vec(4);
         return QVariant::fromValue(vec);
     }
-    else if (type == Param_Curve)
+    else if (type == zeno::types::gParamType_Curve)
     {
         zeno::CurvesData curves = curve_util::deflCurves();
         auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(curves);
         return QVariant::fromValue(anyVal);
     }
-    else if (type == Param_Heatmap)
+    else if (type == zeno::types::gParamType_Heatmap)
     {
         return JsonHelper::dumpHeatmap(1024, "");
     }
@@ -551,9 +551,9 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
     case zeno::Lineedit:
     {
         switch (type) {
-        case Param_Float:   return "Float";
-        case Param_Int:     return "Integer";
-        case Param_String:  return "String";
+        case zeno::types::gParamType_Float:   return "Float";
+        case zeno::types::gParamType_Int:     return "Integer";
+        case zeno::types::gParamType_String:  return "String";
         }
         return "";
     }
@@ -568,15 +568,15 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
     case zeno::Combobox:            return "Enum";
     case zeno::Vec4edit:
     {
-        return type == Param_Int ? "Integer Vector 4" : "Float Vector 4";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 4" : "Float Vector 4";
     }
     case zeno::Vec3edit:
     {
-        return type == Param_Int ? "Integer Vector 3" : "Float Vector 3";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 3" : "Float Vector 3";
     }
     case zeno::Vec2edit:
     {
-        return type == Param_Int ? "Integer Vector 2" : "Float Vector 2";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 2" : "Float Vector 2";
     }
     case zeno::Heatmap:             return "Color";
     case zeno::ColorVec:            return "Color Vec3f";
@@ -708,7 +708,7 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
 
 bool UiHelper::isFloatType(zeno::ParamType type)
 {
-    return type == Param_Float || type == Param_Vec2f || type == Param_Vec3f || type == Param_Vec4f;
+    return type == zeno::types::gParamType_Float || type == zeno::types::gParamType_Vec2f || type == zeno::types::gParamType_Vec3f || type == zeno::types::gParamType_Vec4f;
 }
 
 bool UiHelper::qIndexSetData(const QModelIndex& index, const QVariant& value, int role)
@@ -754,20 +754,20 @@ QString UiHelper::getTypeDesc(zeno::ParamType type)
 {
     switch (type)
     {
-    case Param_String:    return "string";
-    case Param_Bool:      return "bool";
-    case Param_Int:       return "int";
-    case Param_Float:     return "float";
-    case Param_Vec2i:     return "vec2i";
-    case Param_Vec3i:     return "vec3i";
-    case Param_Vec4i:     return "vec4i";
-    case Param_Vec2f:     return "vec2f";
-    case Param_Vec3f:     return "vec3f";
-    case Param_Vec4f:     return "vec4f";
-    case Param_Prim:      return "prim";
-    case Param_List:      return "list";
-    case Param_Dict:      return "dict";
-    case Param_Heatmap: return "color";
+    case zeno::types::gParamType_String:    return "string";
+    case zeno::types::gParamType_Bool:      return "bool";
+    case zeno::types::gParamType_Int:       return "int";
+    case zeno::types::gParamType_Float:     return "float";
+    case zeno::types::gParamType_Vec2i:     return "vec2i";
+    case zeno::types::gParamType_Vec3i:     return "vec3i";
+    case zeno::types::gParamType_Vec4i:     return "vec4i";
+    case zeno::types::gParamType_Vec2f:     return "vec2f";
+    case zeno::types::gParamType_Vec3f:     return "vec3f";
+    case zeno::types::gParamType_Vec4f:     return "vec4f";
+    case zeno::types::gParamType_Primitive:      return "prim";
+    case zeno::types::gParamType_List:      return "list";
+    case zeno::types::gParamType_Dict:      return "dict";
+    case zeno::types::gParamType_Heatmap: return "color";
     case Param_Object: return "object";
     case Param_Null:
     default:
@@ -1193,11 +1193,11 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
 QVector<qreal> UiHelper::getSlideStep(const QString& name, zeno::ParamType type)
 {
     QVector<qreal> steps;
-    if (type == Param_Int)
+    if (type == zeno::types::gParamType_Int)
     {
         steps = { 1, 10, 100 };
     }
-    else if (type == Param_Float)
+    else if (type == zeno::types::gParamType_Float)
     {
         steps = { .0001, .001, .01, .1, 1, 10, 100 };
     }
@@ -1228,8 +1228,8 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
 {
     switch (type) {
     case Param_Null:  return QVariant();
-    case Param_Bool:  return (bool)defaultValue.toInt();
-    case Param_Int:
+    case zeno::types::gParamType_Bool:  return (bool)defaultValue.toInt();
+    case zeno::types::gParamType_Int:
     {
         bool bOk = false;
         int val = defaultValue.toInt(&bOk);
@@ -1248,8 +1248,8 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
             return defaultValue;
         }
     }
-    case Param_String:    return defaultValue;
-    case Param_Float:
+    case zeno::types::gParamType_String:    return defaultValue;
+    case zeno::types::gParamType_Float:
     {
         bool bOk = false;
         float fVal = defaultValue.toFloat(&bOk);
@@ -1258,12 +1258,12 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
         else
             return defaultValue;
     }
-    case Param_Vec2i:
-    case Param_Vec3i:
-    case Param_Vec4i:
-    case Param_Vec2f:
-    case Param_Vec3f:
-    case Param_Vec4f:
+    case zeno::types::gParamType_Vec2i:
+    case zeno::types::gParamType_Vec3i:
+    case zeno::types::gParamType_Vec4i:
+    case zeno::types::gParamType_Vec2f:
+    case zeno::types::gParamType_Vec3f:
+    case zeno::types::gParamType_Vec4f:
     {
         UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
@@ -1283,14 +1283,14 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
         }
         return QVariant::fromValue(vec);
     }
-    case Param_Curve:
+    case zeno::types::gParamType_Curve:
     {
         //TODO
         break;
     }
-    case Param_Prim:
-    case Param_Dict:
-    case Param_List:
+    case zeno::types::gParamType_Primitive:
+    case zeno::types::gParamType_Dict:
+    case zeno::types::gParamType_List:
             //Param_Color,  //need this?
     
     case Param_SrcDst:

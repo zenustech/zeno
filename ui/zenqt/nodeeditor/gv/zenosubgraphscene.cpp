@@ -1006,7 +1006,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             if (!fixedInput)
             {
-                if (Param_Dict == outSockIdx.data(ROLE_PARAM_TYPE))
+                if (zeno::types::gParamType_Dict == outSockIdx.data(ROLE_PARAM_TYPE))
                 {
                     ZenoSocketItem* pOutSocket = m_tempLink->getFixedSocket();
                     const QString& outKey = pOutSocket->innerKey();

@@ -21,7 +21,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         param.bInput = true;
         param.name = "int1";
         param.defl = zeno::reflect::make_any<int>(0);
-        param.type = Param_Int;
+        param.type = zeno::types::gParamType_Int;
         info.param = param;
         default.params.push_back(param);
         param.bInput = false;

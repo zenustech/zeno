@@ -814,7 +814,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toInt();
                 zeno::ParamControl paramCtrl = (zeno::ParamControl)param->data(ROLE_PARAM_CONTROL).toInt();
                 QString literalNum;
-                if (type == Param_Float) {
+                if (type == zeno::types::gParamType_Float) {
                     QVariant newVal = value;
                     bool bKeyFrame = AppHelper::getCurveValue(newVal);
                     literalNum = UiHelper::variantToString(newVal);

@@ -98,7 +98,7 @@ bool sceneMenuEvent(
             QMenu* socketMenu = new QMenu;
 
             //check whether it's a vector param.
-            if (type == Param_Vec2i || type == Param_Vec2f) {
+            if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -121,7 +121,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_y);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type == Param_Vec3i || type == Param_Vec3f) {
+            else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -153,7 +153,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_z);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type == Param_Vec4i || type == Param_Vec4f) {
+            else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -196,9 +196,9 @@ bool sceneMenuEvent(
             }
 
             //paste action for editable param
-            if (type == Param_Float || 
-                type == Param_Int || 
-                type == Param_String)
+            if (type == zeno::types::gParamType_Float || 
+                type == zeno::types::gParamType_Int || 
+                type == zeno::types::gParamType_String)
             {
                 const QMimeData* pMimeData_ = QApplication::clipboard()->mimeData();
                 if (pMimeData_ && pMimeData_->text().startsWith("ref("))

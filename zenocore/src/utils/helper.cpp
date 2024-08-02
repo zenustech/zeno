@@ -6,32 +6,35 @@
 #include "reflect/reflection.generated.hpp"
 
 
+using namespace zeno::types;
+using namespace zeno::reflect;
+
 namespace zeno {
 
     ZENO_API ParamType convertToType(std::string const& type, const std::string_view& param_name) {
         //TODO: deprecated literal representation.
         if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory" || type == "multiline_string")
-        { return Param_String; }
-        else if (type == "bool") { return Param_Bool; }
-        else if (type == "int") { return Param_Int; }
-        else if (type == "float") { return Param_Float; }
-        else if (type == "NumericObject") { return Param_Float; }
-        else if (type == "vec2i") { return Param_Vec2i; }
-        else if (type == "vec3i") { return Param_Vec3i; }
-        else if (type == "vec4i") { return Param_Vec4i; }
-        else if (type == "vec2f") { return Param_Vec2f; }
-        else if (type == "vec3f") { return Param_Vec3f; }
-        else if (type == "vec4f") { return Param_Vec4f; }
-        else if (type == "prim" || type == "PrimitiveObject" || type == "primitive") { return Param_Prim; }
-        else if (type == "list" || type == "ListObject") { return Param_List; }
-        else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return Param_Dict; }
-        else if (type == "colorvec3f") { return Param_Vec3f; }
-        else if (type == "color") { return Param_Heatmap; }
-        else if (type == "curve") { return Param_Curve; }
-        else if (starts_with(type, "enum ")) { return Param_String; }
+        { return gParamType_String; }
+        else if (type == "bool") { return gParamType_Bool; }
+        else if (type == "int") { return gParamType_Int; }
+        else if (type == "float") { return gParamType_Float; }
+        else if (type == "NumericObject") { return gParamType_Float; }
+        else if (type == "vec2i") { return gParamType_Vec2i; }
+        else if (type == "vec3i") { return gParamType_Vec3i; }
+        else if (type == "vec4i") { return gParamType_Vec4i; }
+        else if (type == "vec2f") { return gParamType_Vec2f; }
+        else if (type == "vec3f") { return gParamType_Vec3f; }
+        else if (type == "vec4f") { return gParamType_Vec4f; }
+        else if (type == "prim" || type == "PrimitiveObject" || type == "primitive") { return gParamType_Primitive; }
+        else if (type == "list" || type == "ListObject") { return gParamType_List; }
+        else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return gParamType_Dict; }
+        else if (type == "colorvec3f") { return gParamType_Vec3f; }
+        else if (type == "color") { return gParamType_Heatmap; }
+        else if (type == "curve") { return gParamType_Curve; }
+        else if (starts_with(type, "enum ")) { return gParamType_String; }
         else if (type == "AxisObject") { return Param_Object; }
         else if (type == "CameraObject") { return Param_Object; }
-        else if (type == "LightObject") { return Param_Light; }
+        else if (type == "LightObject") { return gParamType_Light; }
         else if (type == "FunctionObject") { return Param_Object; }
         else if (type == "object" ||
                 type == "IObject" || 
@@ -45,23 +48,23 @@ namespace zeno {
             return Param_Object; 
     }
         else if (type == "VDBGrid") {
-            return Param_VdbGrid;
+            return gParamType_sharedIObject;
         }
         else if (type == ""){
             //类型名字为空时，只能根据参数名字去猜测
             if (param_name == "prim") {
-                return Param_Prim;
+                return gParamType_Primitive;
             }
             else if (param_name == "object") {
                 return Param_Object;
             }
-            else if (param_name == "list" || param_name == "droppedList") { return Param_List; }
-            else if (param_name == "dict") { return Param_Dict; }
+            else if (param_name == "list" || param_name == "droppedList") { return gParamType_List; }
+            else if (param_name == "dict") { return gParamType_Dict; }
             else if (param_name == "camera" || param_name == "cam") {
-                return Param_Camera;
+                return gParamType_Camera;
             }
             else if (param_name == "light") {
-                return Param_Light;
+                return gParamType_Light;
             }
             else if (param_name == "FOR" || param_name == "FUNC" || param_name == "function") {
                 return Param_Object;    //只能给Object了，不然就要再分配一个枚举值
@@ -78,10 +81,10 @@ namespace zeno {
                 return Param_Object;
             }
             else if (param_name == "VDBGrid" || param_name == "grid") {
-                return Param_VdbGrid;
+                return gParamType_sharedIObject;
             }
             else if (param_name == "heatmap") {
-                return Param_Heatmap;
+                return gParamType_Heatmap;
             }
             else {
                 return Param_Object;
@@ -93,69 +96,67 @@ namespace zeno {
 
     ZENO_API bool isAnyEqual(const zeno::reflect::Any& lhs, const zeno::reflect::Any& rhs)
     {
-        lhs.type();
-        rhs.type();
         if (lhs.type() != rhs.type() || lhs.has_value() != rhs.has_value())
             return false;       //对于int和float的同等值，可能会漏
 
         if (!lhs.has_value())
             return true;    //null
 
-        if (zeno::reflect::get_type<int>() == lhs.type()) {
-            return zeno::reflect::any_cast<int>(lhs) == zeno::reflect::any_cast<int>(rhs);
-        }
-        else if (zeno::reflect::get_type<float>() == lhs.type()) {
-            return zeno::reflect::any_cast<float>(lhs) == zeno::reflect::any_cast<float>(rhs);
-        }
-        else if (zeno::reflect::get_type<std::string>() == lhs.type()) {
-            return zeno::reflect::any_cast<std::string>(lhs) == zeno::reflect::any_cast<std::string>(rhs);
-        }
-        else if (zeno::reflect::get_type<zeno::vec2f>() == lhs.type()) {
+        size_t lhsType = lhs.type().get_decayed_hash();
+        if (lhsType == 0)
+            lhsType = lhs.type().hash_code();
+
+        switch (lhsType)
+        {
+        case gParamType_Int:    return any_cast<int>(lhs) == any_cast<int>(rhs);
+        case gParamType_Float:  return zeno::reflect::any_cast<float>(lhs) == zeno::reflect::any_cast<float>(rhs);
+        case gParamType_String: return zeno::reflect::any_cast<std::string>(lhs) == zeno::reflect::any_cast<std::string>(rhs);
+        case gParamType_Vec2f: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec2f>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec2f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
-        else if (zeno::reflect::get_type<zeno::vec2i>() == lhs.type()) {
+        case gParamType_Vec2i: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec2i>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec2i>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
-        else if (zeno::reflect::get_type<zeno::vec2s>() == lhs.type()) {
+        case gParamType_Vec2s: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec2s>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec2s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
-        else if (zeno::reflect::get_type<zeno::vec3f>() == lhs.type()) {
+        case gParamType_Vec3f: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec3f>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec3f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
-        else if (zeno::reflect::get_type<zeno::vec3i>() == lhs.type()) {
+        case gParamType_Vec3i: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec3i>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec3i>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
-        else if (zeno::reflect::get_type<zeno::vec3s>() == lhs.type()) {
+        case gParamType_Vec3s: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec3s>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec3s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
-        else if (zeno::reflect::get_type<zeno::vec4i>() == lhs.type()) {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec4i>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec4i>(rhs);
-            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
-        }
-        else if (zeno::reflect::get_type<zeno::vec4f>() == lhs.type()) {
+        case gParamType_Vec4f: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec4f>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec4f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
-        else if (zeno::reflect::get_type<zeno::vec4s>() == lhs.type()) {
+        case gParamType_Vec4i: {
+            auto& vec1 = zeno::reflect::any_cast<zeno::vec4i>(lhs);
+            auto& vec2 = zeno::reflect::any_cast<zeno::vec4i>(rhs);
+            return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
+        }
+        case gParamType_Vec4s: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec4s>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec4s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
-        else {
+        default:
             return false;
         }
     }
@@ -165,21 +166,21 @@ namespace zeno {
         switch (type)
         {
         case Param_Null:    return "";
-        case Param_Bool:    return "bool";
-        case Param_Int:     return "int";
-        case Param_String:  return "string";
-        case Param_Float:   return "float";
-        case Param_Vec2i:   return "vec2i";
-        case Param_Vec3i:   return "vec3i";
-        case Param_Vec4i:   return "vec4i";
-        case Param_Vec2f:   return "vec2f";
-        case Param_Vec3f:   return "vec3f";
-        case Param_Vec4f:   return "vec4f";
-        case Param_Prim:    return "prim";
-        case Param_Dict:    return "dict";
-        case Param_List:    return "list";
-        case Param_Curve:   return "curve";
-        case Param_Heatmap: return "color";
+        case gParamType_Bool:    return "bool";
+        case gParamType_Int:     return "int";
+        case gParamType_String:  return "string";
+        case gParamType_Float:   return "float";
+        case gParamType_Vec2i:   return "vec2i";
+        case gParamType_Vec3i:   return "vec3i";
+        case gParamType_Vec4i:   return "vec4i";
+        case gParamType_Vec2f:   return "vec2f";
+        case gParamType_Vec3f:   return "vec3f";
+        case gParamType_Vec4f:   return "vec4f";
+        case gParamType_Primitive:    return "prim";
+        case gParamType_Dict:    return "dict";
+        case gParamType_List:    return "list";
+        case gParamType_Curve:   return "curve";
+        case gParamType_Heatmap: return "color";
         case Param_SrcDst:  return "";
         default:
             return "";
@@ -190,32 +191,32 @@ namespace zeno {
         if (defl.empty())
             return initAnyDeflValue(type);
         switch (type) {
-        case Param_String: {
+        case gParamType_String: {
             return defl;
         }
-        case Param_Bool: {
+        case gParamType_Bool: {
             if (defl == "0" || defl == "false")    return 0;
             if (defl == "1" || defl == "true")     return 1;
             return zeno::reflect::Any();
         }
-        case Param_Int: {
+        case gParamType_Int: {
             return std::stoi(defl);
         }
-        case Param_Float: {
+        case gParamType_Float: {
             return std::stof(defl);
         }
-        case Param_Vec2i:
-        case Param_Vec3i:
-        case Param_Vec4i:
+        case gParamType_Vec2i:
+        case gParamType_Vec3i:
+        case gParamType_Vec4i:
         {
             std::vector<int> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stoi(v));
             }
-            if (Param_Vec2i == type) {
+            if (gParamType_Vec2i == type) {
                 return vec2i(vec[0], vec[1]);
             }
-            else if (Param_Vec3i == type) {
+            else if (gParamType_Vec3i == type) {
                 return vec3i(vec[0], vec[1], vec[2]);
             }
             else {
@@ -223,21 +224,21 @@ namespace zeno {
             }
             return zeno::reflect::Any();
         }
-        case Param_Vec2f:
-        case Param_Vec3f:
-        case Param_Vec4f:
+        case gParamType_Vec2f:
+        case gParamType_Vec3f:
+        case gParamType_Vec4f:
         {
             std::vector<float> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stof(v));
             }
 
-            if (Param_Vec2f == type) {
+            if (gParamType_Vec2f == type) {
                 if (vec.size() != 2)
                     return vec2f();
                 return vec2f(vec[0], vec[1]);
             }
-            else if (Param_Vec3f == type) {
+            else if (gParamType_Vec3f == type) {
                 if (vec.size() != 3)
                     return vec3f();
                 return vec3f(vec[0], vec[1], vec[2]);
@@ -258,32 +259,32 @@ namespace zeno {
         if (defl.empty())
             return initDeflValue(type);
         switch (type) {
-        case Param_String: {
+        case gParamType_String: {
             return defl;
         }
-        case Param_Bool: {
+        case gParamType_Bool: {
             if (defl == "0" || defl == "false")    return 0;
             if (defl == "1" || defl == "true")     return 1;
             return zvariant();
         }
-        case Param_Int: {
+        case gParamType_Int: {
             return std::stoi(defl);
         }
-        case Param_Float: {
+        case gParamType_Float: {
             return std::stof(defl);
         }
-        case Param_Vec2i:
-        case Param_Vec3i:
-        case Param_Vec4i:
+        case gParamType_Vec2i:
+        case gParamType_Vec3i:
+        case gParamType_Vec4i:
         {
             std::vector<int> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stoi(v));
             }
-            if (Param_Vec2i == type) {
+            if (gParamType_Vec2i == type) {
                 return vec2i(vec[0], vec[1]);
             }
-            else if (Param_Vec3i == type) {
+            else if (gParamType_Vec3i == type) {
                 return vec3i(vec[0], vec[1], vec[2]);
             }
             else {
@@ -291,21 +292,21 @@ namespace zeno {
             }
             return zvariant();
         }
-        case Param_Vec2f:
-        case Param_Vec3f:
-        case Param_Vec4f:
+        case gParamType_Vec2f:
+        case gParamType_Vec3f:
+        case gParamType_Vec4f:
         {
             std::vector<float> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stof(v));
             }
 
-            if (Param_Vec2f == type) {
+            if (gParamType_Vec2f == type) {
                 if (vec.size() != 2)
                     return vec2f();
                 return vec2f(vec[0], vec[1]);
             }
-            else if (Param_Vec3f == type) {
+            else if (gParamType_Vec3f == type) {
                 if (vec.size() != 3)
                     return vec3f();
                 return vec3f(vec[0], vec[1], vec[2]);
@@ -366,46 +367,46 @@ namespace zeno {
 
     ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type)
     {
-        if (type == Param_String) {
+        if (type == gParamType_String) {
             return std::string("");     //要注意和char*常量区分，any::get_type的时候是不一样的
         }
-        else if (type == Param_Float)
+        else if (type == gParamType_Float)
         {
             return (float)0.;
         }
-        else if (type == Param_Int)
+        else if (type == gParamType_Int)
         {
             return (int)0;
         }
-        else if (type == Param_Bool)
+        else if (type == gParamType_Bool)
         {
             return (int)0;
         }
-        else if (type == Param_Vec2i)
+        else if (type == gParamType_Vec2i)
         {
             return vec2i();
         }
-        else if (type == Param_Vec2f)
+        else if (type == gParamType_Vec2f)
         {
             return vec2f();
         }
-        else if (type == Param_Vec3i)
+        else if (type == gParamType_Vec3i)
         {
             return vec3i();
         }
-        else if (type == Param_Vec3f)
+        else if (type == gParamType_Vec3f)
         {
             return vec3f();
         }
-        else if (type == Param_Vec4i)
+        else if (type == gParamType_Vec4i)
         {
             return vec4i();
         }
-        else if (type == Param_Vec4f)
+        else if (type == gParamType_Vec4f)
         {
             return vec4f();
         }
-        else if (type == Param_Curve)
+        else if (type == gParamType_Curve)
         {
             return "{}";
         }
@@ -418,50 +419,50 @@ namespace zeno {
 
     zvariant zeno::initDeflValue(ParamType const& type)
     {
-        if (type == Param_String) {
+        if (type == gParamType_String) {
             return "";
         }
-        else if (type == Param_Float)
+        else if (type == gParamType_Float)
         {
             return (float)0.;
         }
-        else if (type == Param_Int)
+        else if (type == gParamType_Int)
         {
             return (int)0;
         }
-        else if (type == Param_Bool)
+        else if (type == gParamType_Bool)
         {
             return false;
         }
-        else if (type == Param_Vec2i)
+        else if (type == gParamType_Vec2i)
         {
             return vec2i();
         }
-        else if (type == Param_Vec2f)
+        else if (type == gParamType_Vec2f)
         {
             return vec2f();
         }
-        else if (type == Param_Vec3i)
+        else if (type == gParamType_Vec3i)
         {
             return vec3i();
         }
-        else if (type == Param_Vec3f)
+        else if (type == gParamType_Vec3f)
         {
             return vec3f();
         }
-        else if (type == Param_Vec4i)
+        else if (type == gParamType_Vec4i)
         {
             return vec4i();
         }
-        else if (type == Param_Vec4f)
+        else if (type == gParamType_Vec4f)
         {
             return vec4f();
         }
-        else if (type == Param_Curve)
+        else if (type == gParamType_Curve)
         {
             return "{}";
         }
-        else if (type == Param_Heatmap)
+        else if (type == gParamType_Heatmap)
         {
             return "{\"nres\":1024, \"color\":\"\"}";
         }
@@ -591,25 +592,25 @@ namespace zeno {
     {
         switch (type)
         {
-        case Param_Bool:    return zeno::reflect::type_info<bool>();
-        case Param_Int:     return zeno::reflect::type_info<int>();
-        case Param_String:  return zeno::reflect::type_info<std::string>();
-        case Param_Float:   return zeno::reflect::type_info<float>();
-        case Param_Vec2i:   return zeno::reflect::type_info<zeno::vec2i>();
-        case Param_Vec3i:   return zeno::reflect::type_info<zeno::vec3i>();
-        case Param_Vec4i:   return zeno::reflect::type_info<zeno::vec4i>();
-        case Param_Vec2f:   return zeno::reflect::type_info<zeno::vec2f>();
-        case Param_Vec3f:   return zeno::reflect::type_info<zeno::vec3f>();
-        case Param_Vec4f:   return zeno::reflect::type_info<zeno::vec4f>();
-        case Param_VdbGrid://TODO: vdbgrid: VDBFloatGrid or VDBFloat3Grid VDBPointsGrid?
+        case gParamType_Bool:    return zeno::reflect::type_info<bool>();
+        case gParamType_Int:     return zeno::reflect::type_info<int>();
+        case gParamType_String:  return zeno::reflect::type_info<std::string>();
+        case gParamType_Float:   return zeno::reflect::type_info<float>();
+        case gParamType_Vec2i:   return zeno::reflect::type_info<zeno::vec2i>();
+        case gParamType_Vec3i:   return zeno::reflect::type_info<zeno::vec3i>();
+        case gParamType_Vec4i:   return zeno::reflect::type_info<zeno::vec4i>();
+        case gParamType_Vec2f:   return zeno::reflect::type_info<zeno::vec2f>();
+        case gParamType_Vec3f:   return zeno::reflect::type_info<zeno::vec3f>();
+        case gParamType_Vec4f:   return zeno::reflect::type_info<zeno::vec4f>();
+        case gParamType_sharedIObject://TODO: vdbgrid: VDBFloatGrid or VDBFloat3Grid VDBPointsGrid?
         case Param_Object:  return zeno::reflect::type_info<std::shared_ptr<IObject>>();
-        case Param_Prim:    return zeno::reflect::type_info<std::shared_ptr<zeno::PrimitiveObject>>();
-        case Param_Camera:  return zeno::reflect::type_info<std::shared_ptr<zeno::CameraObject>>();
-        case Param_Light:   return zeno::reflect::type_info<std::shared_ptr<zeno::LightObject>>();
-        case Param_Dict:    return zeno::reflect::type_info<std::shared_ptr<zeno::DictObject>>();
-        case Param_List:    return zeno::reflect::type_info<std::shared_ptr<zeno::ListObject>>();
-        case Param_Curve:   return zeno::reflect::type_info<zeno::CurvesData>();
-        case Param_Heatmap: return zeno::reflect::type_info<zeno::HeatmapData>();
+        case gParamType_Primitive:    return zeno::reflect::type_info<std::shared_ptr<zeno::PrimitiveObject>>();
+        case gParamType_Camera:  return zeno::reflect::type_info<std::shared_ptr<zeno::CameraObject>>();
+        case gParamType_Light:   return zeno::reflect::type_info<std::shared_ptr<zeno::LightObject>>();
+        case gParamType_Dict:    return zeno::reflect::type_info<std::shared_ptr<zeno::DictObject>>();
+        case gParamType_List:    return zeno::reflect::type_info<std::shared_ptr<zeno::ListObject>>();
+        case gParamType_Curve:   return zeno::reflect::type_info<zeno::CurvesData>();
+        case gParamType_Heatmap: return zeno::reflect::type_info<zeno::HeatmapData>();
         case Param_SrcDst:
         case Param_Custom:
         default:
@@ -645,7 +646,7 @@ namespace zeno {
                     param.control = param_desc.control;
                 if (starts_with(param_desc.type, "enum ")) {
                     //compatible with old case of combobox items.
-                    param.type = Param_String;
+                    param.type = gParamType_String;
                     param.control = Combobox;
                     std::vector<std::string> items = split_str(param_desc.type, ' ');
                     if (!items.empty()) {
@@ -684,7 +685,7 @@ namespace zeno {
             //其他控件估计是根据类型推断的。
             if (starts_with(param_desc.type, "enum ")) {
                 //compatible with old case of combobox items.
-                param.type = Param_String;
+                param.type = gParamType_String;
                 param.control = Combobox;
                 std::vector<std::string> items = split_str(param_desc.type, ' ');
                 if (!items.empty()) {
@@ -852,55 +853,55 @@ namespace zeno {
 
     bool isPrimitiveType(const ParamType type) {
         //这个是给旧式定义节点使用的，新的反射定义方式不再使用，其初始化过程也不会走到这里判断。
-        return type == Param_String || type == Param_Int || type == Param_Float || type == Param_Vec2i ||
-            type == Param_Vec3i || type == Param_Vec4i || type == Param_Vec2f || type == Param_Vec3f ||
-            type == Param_Vec4f || type == Param_Bool || type == Param_Heatmap || type == Param_Curve;//TODO: heatmap type.
+        return type == gParamType_String || type == gParamType_Int || type == gParamType_Float || type == gParamType_Vec2i ||
+            type == gParamType_Vec3i || type == gParamType_Vec4i || type == gParamType_Vec2f || type == gParamType_Vec3f ||
+            type == gParamType_Vec4f || type == gParamType_Bool || type == gParamType_Heatmap || type == gParamType_Curve;//TODO: heatmap type.
     }
 
     zany strToZAny(std::string const& defl, ParamType const& type) {
         switch (type) {
-        case Param_String: {
+        case gParamType_String: {
             zany res = std::make_shared<zeno::StringObject>(defl);
             return res;
         }
-        case Param_Int: {
+        case gParamType_Int: {
             return std::make_shared<NumericObject>(std::stoi(defl));
         }
-        case Param_Float: {
+        case gParamType_Float: {
             return std::make_shared<NumericObject>(std::stof(defl));
         }
-        case Param_Vec2i:
-        case Param_Vec3i:
-        case Param_Vec4i:
+        case gParamType_Vec2i:
+        case gParamType_Vec3i:
+        case gParamType_Vec4i:
         {
             std::vector<int> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stoi(v));
             }
 
-            if (Param_Vec2i == type) {
+            if (gParamType_Vec2i == type) {
                 return std::make_shared<NumericObject>(vec2i(vec[0], vec[1]));
             }
-            else if (Param_Vec3i == type) {
+            else if (gParamType_Vec3i == type) {
                 return std::make_shared<NumericObject>(vec3i(vec[0], vec[1], vec[2]));
             }
             else {
                 return std::make_shared<NumericObject>(vec4i(vec[0], vec[1], vec[2], vec[3]));
             }
         }
-        case Param_Vec2f:
-        case Param_Vec3f:
-        case Param_Vec4f:
+        case gParamType_Vec2f:
+        case gParamType_Vec3f:
+        case gParamType_Vec4f:
         {
             std::vector<float> vec;
             for (auto v : split_str(defl, ',')) {
                 vec.push_back(std::stof(v));
             }
 
-            if (Param_Vec2f == type) {
+            if (gParamType_Vec2f == type) {
                 return std::make_shared<NumericObject>(vec2f(vec[0], vec[1]));
             }
-            else if (Param_Vec3f == type) {
+            else if (gParamType_Vec3f == type) {
                 return std::make_shared<NumericObject>(vec3f(vec[0], vec[1], vec[2]));
             }
             else {
@@ -964,22 +965,22 @@ namespace zeno {
         switch (type)
         {
         case Param_Null:      return zeno::NullControl;
-        case Param_Bool:      return zeno::Checkbox;
-        case Param_Int:       return zeno::Lineedit;
-        case Param_String:    return zeno::Lineedit;
-        case Param_Float:     return zeno::Lineedit;
-        case Param_Vec2i:     return zeno::Vec2edit;
-        case Param_Vec3i:     return zeno::Vec3edit;
-        case Param_Vec4i:     return zeno::Vec4edit;
-        case Param_Vec2f:     return zeno::Vec2edit;
-        case Param_Vec3f:     return zeno::Vec3edit;
-        case Param_Vec4f:     return zeno::Vec4edit;
-        case Param_Prim:
-        case Param_Dict:
-        case Param_List:      return zeno::NullControl;
+        case gParamType_Bool:      return zeno::Checkbox;
+        case gParamType_Int:       return zeno::Lineedit;
+        case gParamType_String:    return zeno::Lineedit;
+        case gParamType_Float:     return zeno::Lineedit;
+        case gParamType_Vec2i:     return zeno::Vec2edit;
+        case gParamType_Vec3i:     return zeno::Vec3edit;
+        case gParamType_Vec4i:     return zeno::Vec4edit;
+        case gParamType_Vec2f:     return zeno::Vec2edit;
+        case gParamType_Vec3f:     return zeno::Vec3edit;
+        case gParamType_Vec4f:     return zeno::Vec4edit;
+        case gParamType_Primitive:
+        case gParamType_Dict:
+        case gParamType_List:      return zeno::NullControl;
             //Param_Color:  //need this?
-        case Param_Curve:     return zeno::CurveEditor;
-        case Param_Heatmap: return zeno::Heatmap;
+        case gParamType_Curve:     return zeno::CurveEditor;
+        case gParamType_Heatmap: return zeno::Heatmap;
         case Param_SrcDst:
         default:
             return zeno::NullControl;
@@ -993,9 +994,9 @@ namespace zeno {
         case zeno::Lineedit:
         {
             switch (type) {
-            case Param_Float:     return "Float";
-            case Param_Int:       return "Integer";
-            case Param_String:    return "String";
+            case gParamType_Float:     return "Float";
+            case gParamType_Int:       return "Integer";
+            case gParamType_String:    return "String";
             }
             return "";
         }
@@ -1010,15 +1011,15 @@ namespace zeno {
         case zeno::Combobox:            return "Enum";
         case zeno::Vec4edit:
         {
-            return type == Param_Int ? "Integer Vector 4" : "Float Vector 4";
+            return type == gParamType_Int ? "Integer Vector 4" : "Float Vector 4";
         }
         case zeno::Vec3edit:
         {
-            return type == Param_Int ? "Integer Vector 3" : "Float Vector 3";
+            return type == gParamType_Int ? "Integer Vector 3" : "Float Vector 3";
         }
         case zeno::Vec2edit:
         {
-            return type == Param_Int ? "Integer Vector 2" : "Float Vector 2";
+            return type == gParamType_Int ? "Integer Vector 2" : "Float Vector 2";
         }
         case zeno::Heatmap:             return "Color";
         case zeno::ColorVec:            return "Color Vec3f";

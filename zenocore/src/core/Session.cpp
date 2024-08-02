@@ -39,156 +39,6 @@ extern std::map<size_t, std::string> g_clrMapping;
 
 namespace zeno {
 
-    ParamType RttiInfoToType(const zeno::reflect::RTTITypeInfo& rtti)
-    {
-        size_t typeHash = rtti.get_decayed_hash();
-        if (typeHash == 0)
-            typeHash = rtti.hash_code();
-        if (typeHash == zeno::reflect::type_info<int>().hash_code()) {
-            return Param_Int;
-        }
-        else if (typeHash == zeno::reflect::type_info<std::string>().hash_code()) {
-            return Param_String;
-        }
-        else if (typeHash == zeno::reflect::type_info<float>().hash_code()) {
-            return Param_Float;
-        }
-        else if (typeHash == zeno::reflect::type_info<double>().hash_code()) {
-            return Param_Float;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
-            return Param_Vec2f;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
-            return Param_Vec2i;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec3i>().hash_code()) {
-            return Param_Vec3i;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec3f>().hash_code()) {
-            return Param_Vec3f;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec4i>().hash_code()) {
-            return Param_Vec4i;
-        }
-        else if (typeHash == zeno::reflect::type_info<zeno::vec4f>().hash_code()) {
-            return Param_Vec4f;
-        }
-        else if (typeHash == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
-            return Param_Object;
-        }
-        else {
-            //TODO: curveobject
-            return Param_Custom;
-        }
-    }
-
-    ParamType reflectTypeInfoToType(const zeno::reflect::TypeHandle& fieldType)
-    {
-        if (fieldType == zeno::reflect::get_type<int>()) {
-            return Param_Int;
-        }
-        else if (fieldType == zeno::reflect::get_type<float>()) {
-            return Param_Float;
-        }
-        else if (fieldType == zeno::reflect::get_type<double>()) {
-            return Param_Float;
-        }
-        else if (fieldType == zeno::reflect::get_type<std::string>()) {
-            return Param_String;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec2i>()) {
-            return Param_Vec2i;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec2f>()) {
-            return Param_Vec2f;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec2s>()) {
-            return Param_Null;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec3i>()) {
-            return Param_Vec3i;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec3f>()) {
-            return Param_Vec3f;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec3s>()) {
-            return Param_Vec3f;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec4i>()) {
-            return Param_Vec4i;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec4f>()) {
-            return Param_Vec4f;
-        }
-        else if (fieldType == zeno::reflect::get_type<zeno::vec4s>()) {
-            return Param_Vec4f;
-        }
-        else if (fieldType == zeno::reflect::get_type<std::shared_ptr<zeno::IObject>>()) {
-            return Param_Object;
-        }
-        else if (fieldType == TypeHandle::nulltype()) {
-            return Param_Null;
-        }
-        else {
-            //TODO: curveobject
-            return Param_Custom;
-        }
-    }
-
-    ParamType reflectReferenceTypeInfoToType(const zeno::reflect::RTTITypeInfo& fieldType)
-    {
-        if (fieldType.get_decayed_hash() == zeno::reflect::type_info<int>().hash_code()) {
-            return Param_Int;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<float>().hash_code()) {
-            return Param_Float;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<double>().hash_code()) {
-            return Param_Float;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<std::string>().hash_code()) {
-            return Param_String;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2i>().hash_code()) {
-            return Param_Vec2f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2f>().hash_code()) {
-            return Param_Vec2f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec2s>().hash_code()) {
-            return Param_Null;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3i>().hash_code()) {
-            return Param_Vec3i;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3f>().hash_code()) {
-            return Param_Vec3f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec3s>().hash_code()) {
-            return Param_Vec3f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4i>().hash_code()) {
-            return Param_Vec4i;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4f>().hash_code()) {
-            return Param_Vec4f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<zeno::vec4s>().hash_code()) {
-            return Param_Vec4f;
-        }
-        else if (fieldType.get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
-            return Param_Object;
-        }
-        else if (fieldType.get_decayed_hash() == TypeHandle::nulltype().type_hash()) {
-            return Param_Null;
-        }
-        else {
-            //TODO: curveobject
-            return Param_Custom;
-        }
-    }
-
 namespace {
 
 struct ImplNodeClass : INodeClass {
@@ -284,8 +134,9 @@ struct ReflectNodeClass : INodeClass {
                     j = 0;
                 }
 
-                ParamType type = reflectTypeInfoToType(fieldType);
+                const RTTITypeInfo& fieldRtti(fieldType->get_rtti_info());
 
+                ParamType type = fieldRtti.get_decayed_hash() == 0 ? fieldRtti.hash_code() : fieldRtti.get_decayed_hash();
                 //role:
                 NodeDataGroup role = Role_InputObject;
                 if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
@@ -438,7 +289,7 @@ struct ReflectNodeClass : INodeClass {
                 continue;
             }
             const RTTITypeInfo& ret_type = func->get_return_rtti();
-            ParamType type = reflectReferenceTypeInfoToType(ret_type);
+            ParamType type = ret_type.get_decayed_hash() == 0 ? ret_type.hash_code() : ret_type.get_decayed_hash();
             if (type != Param_Null)
             {
                 //存在返回类型，说明有输出，需要分配一个输出参数
@@ -503,7 +354,7 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     else {
-                        type = reflectReferenceTypeInfoToType(param_type);
+                        type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                         if (reg_outputprims.find(param_name) == reg_outputprims.end()) {
                             ParamPrimitive prim;
                             prim.name = param_name;
@@ -542,7 +393,7 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     else {
-                        type = RttiInfoToType(param_type);
+                        type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                         if (reg_inputprims.find(param_name) == reg_inputprims.end()) {
                             ParamPrimitive inPrim;
                             inPrim.name = param_name;
