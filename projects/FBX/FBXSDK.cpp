@@ -436,10 +436,6 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
 //    zeno::log_info("pMesh->GetDeformerCount(FbxDeformer::eSkin) {}", pMesh->GetDeformerCount(FbxDeformer::eSkin));
     auto &ud = prim->userData();
     if (pMesh->GetDeformerCount(FbxDeformer::eSkin)) {
-        auto &bi = prim->verts.add_attr<vec4i>("boneName");
-        std::fill(bi.begin(), bi.end(), vec4i(-1, -1, -1, -1));
-        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
-        std::fill(bw.begin(), bw.end(), vec4f(-1.0, -1.0, -1.0, -1.0));
 
         FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
         std::vector<std::string> bone_names;
@@ -462,21 +458,23 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 bone_weight[indices[k]].emplace_back(j, weights[k]);
             }
         }
+        int maxnum_boneWeight = 0;
         for (auto i = 0; i < prim->verts.size(); i++) {
-            if (bone_weight[i].size() > 4) {
-                std::sort(bone_weight[i].begin(), bone_weight[i].end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b) {
-                    return a.second > b.second;
-                });
-                bone_weight[i].resize(4);
-            }
+            maxnum_boneWeight = zeno::max(maxnum_boneWeight, bone_weight[i].size());
+        }
+        for (auto i = 0; i < maxnum_boneWeight; i++) {
+            auto &bi = prim->verts.add_attr<int>(zeno::format("boneName_{}", i));
+            std::fill(bi.begin(), bi.end(), -1);
+            auto &bw = prim->verts.add_attr<float>(zeno::format("boneWeight_{}", i));
+            std::fill(bw.begin(), bw.end(), -1.0);
+        }
+        for (auto i = 0; i < prim->verts.size(); i++) {
             for (auto j = 0; j < bone_weight[i].size(); j++) {
-                bi[i][j] = bone_weight[i][j].first;
-                bw[i][j] = bone_weight[i][j].second;
-            }
-            if (bone_weight[i].size() == 4) {
-                bw[i] = zeno::normalize(bw[i]);
+                prim->verts.attr<int>(format("boneName_{}", j))[i] = bone_weight[i][j].first;
+                prim->verts.attr<float>(format("boneWeight_{}", j))[i] = bone_weight[i][j].second;
             }
         }
+        ud.set2("maxnum_boneWeight", int(maxnum_boneWeight));
         ud.set2("boneName_count", int(bone_names.size()));
         for (auto i = 0; i < bone_names.size(); i++) {
             ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
@@ -628,6 +626,10 @@ struct NewFBXImportSkin : INode {
                 std::map<std::string, int> nameMappingGlobal;
 
                 std::vector<zeno::PrimitiveObject *> prims_ptr;
+                int maxnum_boneWeight = 0;
+                for (auto prim: prims) {
+                    maxnum_boneWeight = zeno::max(maxnum_boneWeight, prim->userData().get2<int>("maxnum_boneWeight"));
+                }
                 for (auto prim: prims) {
                     prims_ptr.push_back(prim.get());
                     std::vector<int> nameMapping;
@@ -644,17 +646,26 @@ struct NewFBXImportSkin : INode {
                     for (auto i = 0; i < boneName_count; i++) {
                         prim->userData().del(zeno::format("boneName_{}", i));
                     }
-                    auto &bis = prim->verts.add_attr<vec4i>("boneName");
-                    for (auto &bi: bis) {
-                        for (auto i = 0; i < 4; i++) {
-                            if (bi[i] != -1) {
-                                bi[i] = nameMapping[bi[i]];
+                    for (auto j = 0; j < maxnum_boneWeight; j++) {
+                        if (!prim->verts.attr_is<int>(format("boneName_{}", j))) {
+                            auto &bi = prim->verts.add_attr<int>(zeno::format("boneName_{}", j));
+                            std::fill(bi.begin(), bi.end(), -1);
+                            auto &bw = prim->verts.add_attr<float>(zeno::format("boneWeight_{}", j));
+                            std::fill(bw.begin(), bw.end(), -1.0);
+                        }
+                        else {
+                            auto &bi = prim->verts.attr<int>(zeno::format("boneName_{}", j));
+                            for (auto &_bi: bi) {
+                                if (_bi != -1) {
+                                    _bi = nameMapping[_bi];
+                                }
                             }
                         }
                     }
                 }
                 prim = primMerge(prims_ptr);
                 prim->userData().set2("boneName_count", int(nameMappingGlobal.size()));
+                prim->userData().set2("maxnum_boneWeight", maxnum_boneWeight);
                 for (auto [key, value]: nameMappingGlobal) {
                     prim->userData().set2(zeno::format("boneName_{}", value), key);
                 }
@@ -1324,40 +1335,28 @@ struct NewFBXBoneDeform : INode {
 
         auto prim = std::dynamic_pointer_cast<PrimitiveObject>(geometryToDeform->clone());
 
-        auto &bi = prim->verts.add_attr<vec4i>("boneName");
-        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
+        int maxnum_boneWeight = prim->userData().get2<int>("maxnum_boneWeight");
+        std::vector<std::vector<int>*> bi;
+        std::vector<std::vector<float>*> bw;
+        for (auto i = 0; i < maxnum_boneWeight; i++) {
+            bi.push_back(&prim->verts.add_attr<int>(format("boneName_{}", i)));
+            bw.push_back(&prim->verts.add_attr<float>(format("boneWeight_{}", i)));
+        }
         size_t vert_count = prim->verts.size();
 #pragma omp parallel for
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
             float w = 0;
-            for (auto j = 0; j < 4; j++) {
-                if (bi[i][j] < 0) {
+            for (auto j = 0; j < maxnum_boneWeight; j++) {
+                if (bi[j]->operator[](i) < 0) {
                     continue;
                 }
-                auto matrix = matrixs[bi[i][j]];
-                pos += transform_pos(matrix, opos) * bw[i][j];
-                w += bw[i][j];
+                auto matrix = matrixs[bi[j]->operator[](i)];
+                pos += transform_pos(matrix, opos) * bw[j]->operator[](i);
+                w += bw[j]->operator[](i);
             }
             prim->verts[i] = pos / w;
-        }
-        if (prim->verts.attr_is<vec3f>("nrm")) {
-            auto &nrms = prim->verts.attr<vec3f>("nrm");
-            for (auto i = 0; i < vert_count; i++) {
-                glm::mat4 matrix(0);
-                float w = 0;
-                for (auto j = 0; j < 4; j++) {
-                    if (bi[i][j] < 0) {
-                        continue;
-                    }
-                    matrix += matrixs[bi[i][j]] * bw[i][j];
-                    w += bw[i][j];
-                }
-                matrix = matrix / w;
-                auto nrm = transform_nrm(matrix, nrms[i]);
-                nrms[i] = zeno::normalize(nrm );
-            }
         }
         auto vectors_str = get_input2<std::string>("vectors");
         std::vector<std::string> vectors = zeno::split_str(vectors_str, ',');
@@ -1369,12 +1368,12 @@ struct NewFBXBoneDeform : INode {
                     for (auto i = 0; i < vert_count; i++) {
                         glm::mat4 matrix(0);
                         float w = 0;
-                        for (auto j = 0; j < 4; j++) {
-                            if (bi[i][j] < 0) {
+                        for (auto j = 0; j < maxnum_boneWeight; j++) {
+                            if (bi[j]->operator[](i) < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[i][j]] * bw[i][j];
-                            w += bw[i][j];
+                            matrix += matrixs[bi[j]->operator[](i)] * bw[j]->operator[](i);
+                            w += bw[j]->operator[](i);
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
@@ -1387,12 +1386,12 @@ struct NewFBXBoneDeform : INode {
                         auto vi = prim->loops[i];
                         glm::mat4 matrix(0);
                         float w = 0;
-                        for (auto j = 0; j < 4; j++) {
-                            if (bi[vi][j] < 0) {
+                        for (auto j = 0; j < maxnum_boneWeight; j++) {
+                            if (bi[j]->operator[](vi) < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[vi][j]] * bw[vi][j];
-                            w += bw[vi][j];
+                            matrix += matrixs[bi[j]->operator[](vi)] * bw[j]->operator[](vi);
+                            w += bw[j]->operator[](vi);
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
