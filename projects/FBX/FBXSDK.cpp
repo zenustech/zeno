@@ -753,64 +753,92 @@ struct NewFBXImportSkeleton : INode {
             lSdkManager->CreateMissingBindPoses(lScene);
         }
         pose_count = lScene->GetPoseCount();
+
+        std::vector<std::string> bone_names;
+        std::map<std::string, std::string> parent_mapping;
+        std::vector<vec3f> poss;
+        std::vector<vec3f> transform_r0;
+        std::vector<vec3f> transform_r1;
+        std::vector<vec3f> transform_r2;
         for (auto i = 0; i < pose_count; i++) {
             auto pose = lScene->GetPose(i);
             if (pose == nullptr || !pose->IsBindPose()) {
                 continue;
             }
-            std::string name = pose->GetName();
-            prim->verts.resize(pose->GetCount() - 1);
-            std::vector<std::string> bone_names;
-            auto &boneNames = prim->verts.add_attr<int>("boneName");
-            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
-            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
-            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
             for (int j = 1; j < pose->GetCount(); ++j) {
+                std::string bone_name = pose->GetNode(j)->GetName();
+                if (std::count(bone_names.begin(), bone_names.end(), bone_name)) {
+                    continue;
+                }
+
                 FbxMatrix transformMatrix = pose->GetMatrix(j);
                 auto t = transformMatrix.GetRow(3);
-                prim->verts[j - 1] = vec3f(t[0], t[1], t[2]);
+                poss.emplace_back(t[0], t[1], t[2]);
 
                 auto r0 = transformMatrix.GetRow(0);
                 auto r1 = transformMatrix.GetRow(1);
                 auto r2 = transformMatrix.GetRow(2);
-                transform_r0[j - 1] = vec3f(r0[0], r0[1], r0[2]);
-                transform_r1[j - 1] = vec3f(r1[0], r1[1], r1[2]);
-                transform_r2[j - 1] = vec3f(r2[0], r2[1], r2[2]);
+                transform_r0.emplace_back(r0[0], r0[1], r0[2]);
+                transform_r1.emplace_back(r1[0], r1[1], r1[2]);
+                transform_r2.emplace_back(r2[0], r2[1], r2[2]);
 
                 bone_names.emplace_back(pose->GetNode(j)->GetName());
-                boneNames[j - 1] = j - 1;
             }
-            std::vector<int> bone_connects;
             for (int j = 1; j < pose->GetCount(); ++j) {
+                auto self_name = pose->GetNode(j)->GetName();
                 auto parent = pose->GetNode(j)->GetParent();
                 if (parent) {
                     auto parent_name = parent->GetName();
-                    auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
-                    if (index < bone_names.size()) {
-                        bone_connects.push_back(index);
-                        bone_connects.push_back(j - 1);
+                    parent_mapping[self_name] = parent_name;
+                }
+            }
+        }
+        {
+            prim->verts.resize(bone_names.size());
+            prim->verts.values = poss;
+            prim->verts.add_attr<vec3f>("transform_r0") = transform_r0;
+            prim->verts.add_attr<vec3f>("transform_r1") = transform_r1;
+            prim->verts.add_attr<vec3f>("transform_r2") = transform_r2;
+            auto &boneNames = prim->verts.add_attr<int>("boneName");
+            std::iota(boneNames.begin(), boneNames.end(), 0);
+
+            std::vector<int> bone_connects;
+            for (auto bone_name: bone_names) {
+                if (parent_mapping.count(bone_name)) {
+                    auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
+                    auto parent_name = parent_mapping[bone_name];
+                    auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    if (self_index >= 0 && parent_index >= 0) {
+                        bone_connects.push_back(parent_index);
+                        bone_connects.push_back(self_index);
                     }
                 }
             }
-            {
-                prim->loops.values = bone_connects;
-                prim->polys.resize(bone_connects.size() / 2);
-                for (auto j = 0; j < bone_connects.size() / 2; j++) {
-                    prim->polys[j] = {j * 2, 2};
-                }
+            prim->loops.values = bone_connects;
+            prim->polys.resize(bone_connects.size() / 2);
+            for (auto j = 0; j < bone_connects.size() / 2; j++) {
+                prim->polys[j] = {j * 2, 2};
             }
+
             prim->userData().set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
                 prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
             }
-            break;
         }
 
         if (get_input2<bool>("ConvertUnits")) {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
-            // todo : on matrix
+            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                transform_r0[i][0] *= 0.01;
+                transform_r1[i][1] *= 0.01;
+                transform_r2[i][2] *= 0.01;
+
+            }
         }
         {
             auto &ud = prim->userData();
