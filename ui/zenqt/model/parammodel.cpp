@@ -79,6 +79,11 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
     });
 
+    spNode->register_update_param_color(
+        [this](const std::string& name, std::string& clr) {
+        updateParamData(QString::fromStdString(name), QString::fromStdString(clr), ROLE_PARAM_SOCKET_CLR);
+    });
+
     spNode->register_update_layout(
         [this](zeno::params_change_info& changes) {
         updateUiLinksSockets(changes);
@@ -309,11 +314,6 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     {
     case ROLE_PARAM_NAME:       return param.name;
     case ROLE_PARAM_TYPE:       return param.type;
-    case ROLE_PARAM_RTTICODE:
-    {
-        auto code = param.rtti.get_decayed_hash();
-        return (code == 0) ? param.rtti.hash_code() : code;
-    }
     case ROLE_PARAM_VALUE:      return param.value;
     case ROLE_PARAM_CONTROL:    return param.control;
     case ROLE_SOCKET_TYPE:      return param.connectProp;
@@ -709,7 +709,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
             if (role == ROLE_PARAM_CONTROL)
                 m_items[i].control = (zeno::ParamControl)val.toInt();
             else if (role == ROLE_PARAM_TYPE)
-                m_items[i].type = (zeno::ParamType)val.toInt();
+                m_items[i].type = val.value<zeno::ParamType>();
             else if (role == ROLE_SOCKET_TYPE)
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
@@ -718,6 +718,8 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].bVisible = val.toBool();
             else if (role == ROLE_PARAM_GROUP)
                 m_items[i].group = (zeno::NodeDataGroup)val.toInt();
+            else if (role == ROLE_PARAM_SOCKET_CLR)
+                m_items[i].m_socketClr = QColor(val.toString());
             QModelIndex idx = createIndex(i, 0);
             emit dataChanged(idx, idx, { role });
             break;

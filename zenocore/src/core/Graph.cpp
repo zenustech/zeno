@@ -790,16 +790,39 @@ bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
             if (param == edge.inParam)
                 inParamType = outParamType;
         }
-        //当一个节点连接到SubOutput时，更新parentSubnet对应param的类型
-        std::function<void(std::shared_ptr<INode>)> updateOutputTypeRecursive = [&outParamType, &updateOutputTypeRecursive](std::shared_ptr<INode> inNode) {
+    }
+
+    if (inParamType != outParamType)
+    {
+
+        if (isNumericType(outParamType) && isNumericVecType(inParamType)) {
+        }
+        else if (isSameDimensionNumericVecType(outParamType, inParamType)) {
+        }
+        else {
+            zeno::log_warn("param type no match.");
+            return false;
+        }
+    }
+
+    if (inSocketType == zeno::Socket_WildCard && bInputPrim) {
+        std::function<void(std::shared_ptr<INode>)> updateOutputTypeRecursive = [&edge, &outParamType, &updateOutputTypeRecursive](std::shared_ptr<INode> inNode) {
             if (inNode->get_nodecls() == "SubOutput") {
+                inNode->update_param_type(edge.inParam, true, outParamType);
                 if (std::shared_ptr<Graph> graph = inNode->getGraph().lock()) {
                     if (graph->optParentSubgNode.has_value()) {
                         if (SubnetNode* parentSubgNode = graph->optParentSubgNode.value()) {
                             parentSubgNode->update_param_type(inNode->get_name(), true, outParamType);
                             for (auto& link : parentSubgNode->getLinksByParam(false, inNode->get_name())) {
                                 if (std::shared_ptr<Graph> parentGraph = parentSubgNode->getGraph().lock()) {
-                                    updateOutputTypeRecursive(parentGraph->getNode(link.inNode));
+                                    auto const& inNode = parentGraph->getNode(link.inNode);
+                                    auto const& outNode = parentGraph->getNode(link.outNode);
+                                    if (inNode->get_input_prim_param(link.inParam).type != outNode->get_output_prim_param(link.outParam).type) {
+                                        if (inNode->get_nodecls() != "SubOutput")
+                                            parentGraph->removeLink(link);
+                                        else
+                                            updateOutputTypeRecursive(inNode);
+                                    }
                                 }
                             }
                         }
@@ -807,14 +830,10 @@ bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
                 }
             }
         };
-        if (bInputPrim)
-            updateOutputTypeRecursive(inNode);
+        //当一个节点连接到SubOutput时，更新parentSubnet对应param的类型
+        updateOutputTypeRecursive(inNode);
     }
-    if (inParamType != outParamType)
-    {
-        zeno::log_warn("param type no match.");
-        return false;
-    }
+
     return true;
 }
 

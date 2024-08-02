@@ -467,8 +467,7 @@ ZENO_API void INode::reflecNode_apply()
                             }
                         }
                     }
-                    const zeno::reflect::TypeHandle& ret_type = func->get_return_type();
-                    const zeno::reflect::RTTITypeInfo& rtti = ret_type->get_rtti_info();
+                    const zeno::reflect::RTTITypeInfo& rtti = func->get_return_rtti();
                     ParamType _type = rtti.get_decayed_hash() == 0 ? rtti.hash_code() : rtti.get_decayed_hash();
 
                     if (_type == Param_Object) {
@@ -1356,7 +1355,8 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
                 {
                     spParam.type = type;
-                    CALLBACK_NOTIFY(update_param_type, param, type) 
+                    CALLBACK_NOTIFY(update_param_type, param, type)
+                    update_param_color(param, zeno::getSession().getColorByRtti(type));
                         return true;
                 }
             }
@@ -1373,6 +1373,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 {
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
+                    update_param_color(param, zeno::getSession().getColorByRtti(type));
                         return true;
                 }
             }
@@ -1414,6 +1415,12 @@ ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool b
             return true;
     }
     return false;
+}
+
+ZENO_API void INode::update_param_color(const std::string& name, std::string& clr)
+{
+    CORE_API_BATCH
+    CALLBACK_NOTIFY(update_param_color, name, clr)
 }
 
 ZENO_API void INode::update_layout(params_change_info& changes)
@@ -1565,7 +1572,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
                 {
                     if (param.type != spParam.type)
                     {
-                        paramTypeChanges.insert({ newname, param.type });
+                        paramTypeChanges.insert({newname, param.type});
                         //update_param_type(spParam->name, param.type);
                         //if (auto spNode = subgraph->getNode(oldname))
                         //    spNode->update_param_type("port", param.type);
@@ -1947,7 +1954,7 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
             if (spParam.wildCardGroup == wildCardGroup)
             {
                 if (!wildCardGroup.empty() || param_name == name) {
-                    if (!spParam.links.empty())
+                    if (!spParam.links.empty() && m_nodecls != "SubOutput")
                         return std::vector<std::string>();
                     params.push_back(name);
                 }
@@ -1958,7 +1965,7 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
             if (spParam.wildCardGroup == wildCardGroup)
             {
                 if (!wildCardGroup.empty() || param_name == name) {
-                    if (!spParam.links.empty())
+                    if (!spParam.links.empty() && m_nodecls != "SubOutput")
                         return std::vector<std::string>();
                     params.push_back(name);
                 }
@@ -1981,7 +1988,7 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
             if (spParam.wildCardGroup == wildCardGroup)
             {
                 if (!wildCardGroup.empty() || param_name == name) {
-                    if (!spParam.links.empty())
+                    if (!spParam.links.empty() && m_nodecls != "SubOutput")
                         return std::vector<std::string>();
                     params.push_back(name);
                 }
@@ -1992,7 +1999,7 @@ std::vector<std::string> zeno::INode::getWildCardParams(const std::string& param
             if (spParam.wildCardGroup == wildCardGroup)
             {
                 if (!wildCardGroup.empty() || param_name == name) {
-                    if (!spParam.links.empty())
+                    if (!spParam.links.empty() && m_nodecls != "SubOutput")
                         return std::vector<std::string>();
                     params.push_back(name);
                 }

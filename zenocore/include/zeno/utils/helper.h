@@ -39,6 +39,9 @@ namespace zeno {
     std::string relativePath(std::string currentPath, const std::string& path);
     std::set<std::string> getReferPath(const std::string& path);
     std::set<std::string> getReferPaths(const zvariant& val);
+    bool  isNumericType(zeno::ParamType type);
+    bool  isNumericVecType(zeno::ParamType type);
+    bool  isSameDimensionNumericVecType(zeno::ParamType left, zeno::ParamType right);
 }
 
 
