@@ -878,6 +878,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
 
     NodeItem* pItem = new NodeItem(this);
     pItem->init(this, spNode);
+    pItem->params->setNodeIdx(createIndex(nRows, 0));
 
     const QString& name = QString::fromStdString(spNode->get_name());
     const QString& uuid = QString::fromStdString(spNode->get_uuid());
@@ -891,8 +892,6 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     m_name2uuid.insert(name, uuid);
 
     endInsertRows();
-
-    pItem->params->setNodeIdx(createIndex(nRows, 0));
 
     GraphsManager::instance().currentModel()->markDirty(true);
 }

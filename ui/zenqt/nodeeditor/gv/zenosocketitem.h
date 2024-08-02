@@ -44,6 +44,9 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     QString netLabel() const;
 
+public slots:
+    void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+
 signals:
     void clicked(bool);
     void netLabelClicked();

@@ -106,6 +106,9 @@ public:
     ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
     CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
 
+    ZENO_API void update_param_color(const std::string& name, std::string& clr);
+    CALLBACK_REGIST(update_param_color, void, const std::string&, std::string&)
+
     ZENO_API void update_layout(params_change_info& changes);
     CALLBACK_REGIST(update_layout, void, params_change_info& changes)
 

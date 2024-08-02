@@ -126,7 +126,7 @@ void ZenoSocketItem::setHovered(bool bHovered)
     if (m_bHovered && m_paramIdx.isValid())
     {
         QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        QString type = UiHelper::getTypeDesc((zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt());
+        QString type = UiHelper::getTypeDesc(m_paramIdx.data(ROLE_PARAM_TYPE).value<size_t>());
         ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name + " ( " + (type.isEmpty() ? "null" : type) + " )");
     }
     else
@@ -200,6 +200,17 @@ QVariant ZenoSocketItem::itemChange(GraphicsItemChange change, const QVariant& v
 QString ZenoSocketItem::netLabel() const
 {
     return "";
+}
+
+void ZenoSocketItem::onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (!roles.empty() && roles[0] == ROLE_PARAM_SOCKET_CLR) {
+        if (m_paramIdx.data(ROLE_PARAM_NAME).toString() == topLeft.data(ROLE_PARAM_NAME).toString()) {
+            m_brushOn = topLeft.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
+            m_brush = topLeft.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
+            update();
+        }
+    }
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
