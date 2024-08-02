@@ -180,12 +180,12 @@ namespace zenoio
 
         //todo: id
 
-        if (!jsonCurve.HasMember("nodes")) {
+        if (!jsonCurve.HasMember(key_nodes)) {
             bSucceed = false;
             return dat;
         }
 
-        for (const rapidjson::Value& nodeObj : jsonCurve["nodes"].GetArray())
+        for (const rapidjson::Value& nodeObj : jsonCurve[key_nodes].GetArray())
         {
             if (!nodeObj.HasMember("x") || !nodeObj["x"].IsDouble() ||
                 !nodeObj.HasMember("y") || !nodeObj["y"].IsDouble() ||
@@ -217,29 +217,62 @@ namespace zenoio
             float rightX = rightHdlObj["x"].GetDouble();
             float rightY = rightHdlObj["y"].GetDouble();
 
-            zeno::CurveData::PointType type = zeno::CurveData::kBezier;
-            if (nodeObj.HasMember("type") && nodeObj["type"].IsString())
+            zeno::CurveData::PointType pointType = zeno::CurveData::kBezier;
+            if (nodeObj.HasMember(key_type) && nodeObj[key_type].IsString())
             {
-                std::string type = nodeObj["type"].GetString();
-                if (type == "aligned") {
-                    type = zeno::CurveData::kBezier;
+                std::string type = nodeObj[key_type].GetString();
+                if (type == "bezier") {
+                    pointType = zeno::CurveData::kBezier;
                 }
-                else if (type == "asym") {
-                    type = zeno::CurveData::kBezier;
+                else if (type == "kConstant") {
+                    pointType = zeno::CurveData::kConstant;
                 }
-                else if (type == "free") {
-                    type = zeno::CurveData::kBezier;
+                else if (type == "linear") {
+                    pointType = zeno::CurveData::kLinear;
                 }
-                else if (type == "vector") {
-                    type = zeno::CurveData::kLinear;
-                }
+            }
+            zeno::CurveData::HANDLE_TYPE handleType = zeno::CurveData::HDL_FREE;
+            if (nodeObj.HasMember(key_handle_type) && nodeObj[key_handle_type].IsString())
+            {
+                std::string type = nodeObj[key_handle_type].GetString();
+                if (type == "aligned")
+                    handleType = zeno::CurveData::HDL_ALIGNED;
+                else if (type == "asym")
+                    handleType = zeno::CurveData::HDL_ASYM;
+                else if (type == "free")
+                    handleType = zeno::CurveData::HDL_FREE;
+                else if (type == "vector")
+                    handleType = zeno::CurveData::HDL_VECTOR;
             }
 
             //todo
             bool bLockX = (nodeObj.HasMember("lockX") && nodeObj["lockX"].IsBool());
             bool bLockY = (nodeObj.HasMember("lockY") && nodeObj["lockY"].IsBool());
 
-            dat.addPoint(x, y, type, { leftX, leftY }, { rightX, rightY });
+            dat.addPoint(x, y, pointType, { leftX, leftY }, { rightX, rightY }, handleType);
+        }
+
+        if (!jsonCurve.HasMember("nodes")) {
+            bSucceed = false;
+            return dat;
+        }
+
+        if (jsonCurve.HasMember(key_cycle_type) && jsonCurve[key_cycle_type].IsString()) {
+            zeno::CurveData::CycleType cycleType = zeno::CurveData::kClamp;
+            std::string type = jsonCurve[key_cycle_type].GetString();
+            if (type == "kClamp")
+                cycleType = zeno::CurveData::kClamp;
+            else if (type == "KCycle")
+                cycleType = zeno::CurveData::kCycle;
+            else if (type == "KMirror")
+                cycleType = zeno::CurveData::kMirror;
+            dat.cycleType = cycleType;
+        }
+        if (jsonCurve.HasMember(key_visible) && jsonCurve[key_visible].IsBool()) {
+            dat.visible = jsonCurve[key_visible].GetBool();
+        }
+        if (jsonCurve.HasMember(key_timeline) && jsonCurve[key_timeline].IsBool()) {
+            dat.timeline = jsonCurve[key_timeline].GetBool();
         }
 
         bSucceed = true;
@@ -601,8 +634,7 @@ namespace zenoio
             if (val.IsObject())
             {
                 bool bSucceed = false;
-                zeno::CurvesData curves;
-                parseObjectFromJson(val, bSucceed);
+                zeno::CurvesData curves = parseObjectFromJson(val, bSucceed);
                 assert(bSucceed);
                 defl = curves;
             }
@@ -916,19 +948,28 @@ namespace zenoio
                     writer.Double(rightPos[1]);
                 }
 
-                /*
                 writer.Key(iotags::curve::key_type);
                 switch (pt.cp_type) {
-                case HDL_ALIGNED: writer.String("aligned"); break;
-                case HDL_ASYM: writer.String("asym"); break;
-                case HDL_FREE: writer.String("free"); break;
-                case HDL_VECTOR: writer.String("vector"); break;
+                case zeno::CurveData::kBezier: writer.String("bezier"); break;
+                case zeno::CurveData::kLinear: writer.String("linear"); break;
+                case zeno::CurveData::kConstant: writer.String("constant"); break;
                 default:
                     assert(false);
                     writer.String("unknown");
                     break;
                 }
-                */
+
+                writer.Key(iotags::curve::key_handle_type);
+                switch (pt.controlType) {
+                case zeno::CurveData::HDL_ALIGNED: writer.String("aligned"); break;
+                case zeno::CurveData::HDL_ASYM: writer.String("asym"); break;
+                case zeno::CurveData::HDL_FREE: writer.String("free"); break;
+                case zeno::CurveData::HDL_VECTOR: writer.String("vector"); break;
+                default:
+                    assert(false);
+                    writer.String("unknown");
+                    break;
+                }
 
                 writer.Key(iotags::curve::key_lockX);
                 writer.Bool(bLockX);
@@ -936,7 +977,21 @@ namespace zenoio
                 writer.Bool(bLockY);
             }
         }
+        writer.Key(iotags::curve::key_cycle_type);
+        switch (curve.cycleType) {
+        case zeno::CurveData::CycleType::kClamp:
+            writer.String("kClamp"); break;
+        case zeno::CurveData::CycleType::kCycle:
+            writer.String("KCycle"); break;
+        case zeno::CurveData::CycleType::kMirror:
+            writer.String("KMirror"); break;
+        default:
+            writer.String("unknown"); break;
+        }
         writer.Key(iotags::curve::key_visible);
+        writer.Bool(curve.visible);
+        writer.Key(iotags::curve::key_timeline);
+        writer.Bool(curve.timeline);
     }
 
     void dumpCurves(const zeno::CurvesData* curves, RAPIDJSON_WRITER& writer)

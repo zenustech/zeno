@@ -40,9 +40,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                 {
                     if (newValue.type() == QVariant::UserType)
                     {
-                        QString newStr = UiHelper::variantToString(newValue);
-                        QString oldStr = UiHelper::variantToString(oldVal);
-                        if (oldStr == newStr)
+                        if (zeno::isAnyEqual(old_value, new_value))
                             continue;
                     }
                     pItem->setData(newValue, ROLE_PARAM_VALUE);

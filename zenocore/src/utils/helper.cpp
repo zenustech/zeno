@@ -156,6 +156,11 @@ namespace zeno {
             auto& vec2 = zeno::reflect::any_cast<zeno::vec4s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
+        case gParamType_Curve: {
+            auto& curve1 = zeno::reflect::any_cast<zeno::CurvesData>(lhs);
+            auto& curve2 = zeno::reflect::any_cast<zeno::CurvesData>(rhs);
+            return curve1 == curve2;
+        }
         default:
             return false;
         }
@@ -408,7 +413,7 @@ namespace zeno {
         }
         else if (type == gParamType_Curve)
         {
-            return "{}";
+            return zeno::reflect::make_any<CurvesData>();
         }
         else if (type == Param_Object)
         {
