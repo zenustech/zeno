@@ -520,6 +520,56 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     return prim;
 }
 
+void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &names) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = pNode->GetName();
+        names.emplace_back(name);
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetNames(pNode->GetChild(i), names);
+    }
+}
+
+void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = mesh->GetName();
+        if (target_name == name) {
+            auto sub_prim = GetMesh(pNode);
+            if (sub_prim) {
+                prim = sub_prim;
+            }
+            return;
+        }
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim);
+    }
+}
+void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = mesh->GetName();
+        auto sub_prim = GetMesh(pNode);
+        if (sub_prim) {
+            prims.push_back(sub_prim);
+        }
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetPrims(pNode->GetChild(i), prims);
+    }
+}
+
 struct NewFBXImportSkin : INode {
     virtual void apply() override {
         // Change the following filename to a suitable filename value.
@@ -560,26 +610,11 @@ struct NewFBXImportSkin : INode {
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
         if(lRootNode) {
-            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                auto pNode = lRootNode->GetChild(i);
-                FbxMesh* pMesh = pNode->GetMesh();
-                if (pMesh) {
-                    std::string meshName = pNode->GetName();
-                    availableRootNames.emplace_back(meshName);
-                }
-            }
-        }
-        auto rootName = get_input2<std::string>("rootName");
-        if(lRootNode) {
+            TraverseNodesToGetNames(lRootNode, availableRootNames);
+            auto rootName = get_input2<std::string>("rootName");
             if (rootName.empty()) {
                 std::vector<std::shared_ptr<PrimitiveObject>> prims;
-                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                    auto pNode = lRootNode->GetChild(i);
-                    auto sub_prim = GetMesh(pNode);
-                    if (sub_prim) {
-                        prims.push_back(sub_prim);
-                    }
-                }
+                TraverseNodesToGetPrims(lRootNode, prims);
 
                 std::map<std::string, int> nameMappingGlobal;
 
@@ -616,17 +651,7 @@ struct NewFBXImportSkin : INode {
                 }
             }
             else {
-                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                    auto pNode = lRootNode->GetChild(i);
-                    std::string nodeName = pNode->GetName();
-                    if (nodeName == rootName) {
-                        auto sub_prim = GetMesh(pNode);
-                        if (sub_prim) {
-                            prim = sub_prim;
-                        }
-                        break;
-                    }
-                }
+                TraverseNodesToGetPrim(lRootNode, rootName, prim);
             }
         }
         if (get_input2<bool>("ConvertUnits")) {
@@ -666,7 +691,7 @@ ZENDEFNODE(NewFBXImportSkin, {
     {
         {"readpath", "path"},
         {"string", "rootName", ""},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
         {"string", "vectors", "nrm,"},
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
     },
@@ -714,8 +739,6 @@ struct NewFBXImportSkeleton : INode {
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
-        auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
 
         auto pose_count = lScene->GetPoseCount();
         bool found_bind_pose = false;
@@ -759,11 +782,14 @@ struct NewFBXImportSkeleton : INode {
             }
             std::vector<int> bone_connects;
             for (int j = 1; j < pose->GetCount(); ++j) {
-                auto parent_name = pose->GetNode(j)->GetParent()->GetName();
-                auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
-                if (index < bone_names.size()) {
-                    bone_connects.push_back(index);
-                    bone_connects.push_back(j - 1);
+                auto parent = pose->GetNode(j)->GetParent();
+                if (parent) {
+                    auto parent_name = parent->GetName();
+                    auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    if (index < bone_names.size()) {
+                        bone_connects.push_back(index);
+                        bone_connects.push_back(j - 1);
+                    }
                 }
             }
             {
@@ -773,16 +799,22 @@ struct NewFBXImportSkeleton : INode {
                     prim->polys[j] = {j * 2, 2};
                 }
             }
-            ud.set2("boneName_count", int(bone_names.size()));
+            prim->userData().set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
-                ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
+                prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
             }
+            break;
         }
 
         if (get_input2<bool>("ConvertUnits")) {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
+            // todo : on matrix
+        }
+        {
+            auto &ud = prim->userData();
+            ud.set2("version", vec3i(major, minor, revision));
         }
         set_output("prim", prim);
         // Destroy the SDK manager and all the other objects it was handling.
@@ -793,7 +825,7 @@ struct NewFBXImportSkeleton : INode {
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
         {"readpath", "path"},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
     },
     {
         "prim",
@@ -964,6 +996,7 @@ struct NewFBXImportAnimation : INode {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
+            // todo: on matrix
         }
         set_output("prim", prim);
     }
@@ -975,7 +1008,7 @@ ZENDEFNODE(NewFBXImportAnimation, {
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
     },
     {
         "prim",
