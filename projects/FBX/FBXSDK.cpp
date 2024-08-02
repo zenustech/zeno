@@ -1249,7 +1249,7 @@ struct NewFBXBoneDeform : INode {
             auto index = std::find(_new.begin(), _new.end(), old[i]) - _new.begin();
             if (index == _new.size()) {
                 index = -1;
-                zeno::log_error("connot find bone: {}, {}", i, old[i]);
+                zeno::log_info("connot find bone: {}, {}", i, old[i]);
             }
             mapping.push_back(index);
         }
@@ -1304,8 +1304,12 @@ struct NewFBXBoneDeform : INode {
         std::vector<glm::mat4> matrixs;
         matrixs.reserve(geometryToDeformBoneNames.size());
         for (auto i = 0; i < geometryToDeformBoneNames.size(); i++) {
-            auto res_inv_matrix = restPointTransformsInv[restPointTransformsBoneMapping[i]];
-            auto deform_matrix = deformPointTransforms[deformPointTransformsBoneMapping[i]];
+            glm::mat4 res_inv_matrix = glm::mat4(1);
+            glm::mat4 deform_matrix = glm::mat4(1);
+            if (restPointTransformsBoneMapping[i] >= 0 && deformPointTransformsBoneMapping[i] >= 0) {
+                res_inv_matrix = restPointTransformsInv[restPointTransformsBoneMapping[i]];
+                deform_matrix = deformPointTransforms[deformPointTransformsBoneMapping[i]];
+            }
             auto matrix = deform_matrix * res_inv_matrix;
             matrixs.push_back(matrix);
         }
