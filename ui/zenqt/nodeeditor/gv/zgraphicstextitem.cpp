@@ -9,6 +9,7 @@
 #include "util/curveutil.h"
 #include "util/uihelper.h"
 #include "control/renderparam.h"
+#include "widgets/ztooltip.h"
 
 
 qreal editor_factor = 1.0;
@@ -366,6 +367,19 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
 QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
     return _base::itemChange(change, value);
+}
+
+void ZSocketPlainTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverEnterEvent(event);
+    QString type = UiHelper::getTypeDesc(m_viewSockIdx.data(ROLE_PARAM_TYPE).value<size_t>());
+    ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), type.isEmpty() ? "null" : type);
+}
+
+void ZSocketPlainTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    _base::hoverLeaveEvent(event);
+    ZToolTip::hideText();
 }
 
 void ZSocketPlainTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* pItem, QWidget* pWidget)

@@ -777,7 +777,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
                 m_tempLink->setAdsortedSocket(pSocket);
                 m_tempLink->setFloatingPos(pos);
                 QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
-                ZToolTip::showText(QCursor::pos() + QPoint(10, 20), paramName);
+                QString type = UiHelper::getTypeDesc(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<size_t>());
+                ZToolTip::showText(QCursor::pos() + QPoint(10, 20), paramName + " ( " + (type.isEmpty() ? "null" : type) + " )");
                 return;
             }
         }
@@ -812,7 +813,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
             m_tempLink->setAdsortedSocket(pSocket);
             m_tempLink->setFloatingPos(pos);
             QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
-            ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName);
+            QString type = UiHelper::getTypeDesc(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<size_t>());
+            ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName + " ( " + (type.isEmpty() ? "null" : type) + " )");
         }
     }
     else
