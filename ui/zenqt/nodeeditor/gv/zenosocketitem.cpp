@@ -126,7 +126,7 @@ void ZenoSocketItem::setHovered(bool bHovered)
     if (m_bHovered && m_paramIdx.isValid())
     {
         QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        QString type = UiHelper::getTypeDesc(m_paramIdx.data(ROLE_PARAM_TYPE).value<size_t>());
+        QString type = UiHelper::getTypeDesc(m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
         ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name + " ( " + (type.isEmpty() ? "null" : type) + " )");
     }
     else

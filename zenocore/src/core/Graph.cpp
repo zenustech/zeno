@@ -794,13 +794,10 @@ bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
 
     if (inParamType != outParamType)
     {
-        if ((outParamType == types::gParamType_Int || outParamType == types::gParamType_Float) &&
-            (inParamType == types::gParamType_Int || inParamType == types::gParamType_Float || inParamType == types::gParamType_Vec2f || inParamType == types::gParamType_Vec2i ||
-                inParamType == types::gParamType_Vec3f || inParamType == types::gParamType_Vec3i || inParamType == types::gParamType_Vec4f || inParamType == types::gParamType_Vec4i)) {
+
+        if (isNumericType(outParamType) && isNumericVecType(inParamType)) {
         }
-        else if (inParamType == types::gParamType_Vec2i && outParamType == types::gParamType_Vec2f || inParamType == types::gParamType_Vec2f && outParamType == types::gParamType_Vec2i ||
-            inParamType == types::gParamType_Vec3i && outParamType == types::gParamType_Vec3f || inParamType == types::gParamType_Vec3f && outParamType == types::gParamType_Vec3i ||
-            inParamType == types::gParamType_Vec4i && outParamType == types::gParamType_Vec4f || inParamType == types::gParamType_Vec4f && outParamType == types::gParamType_Vec4i) {
+        else if (isSameDimensionNumericVecType(outParamType, inParamType)) {
         }
         else {
             zeno::log_warn("param type no match.");

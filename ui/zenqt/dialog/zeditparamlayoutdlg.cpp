@@ -1121,7 +1121,7 @@ void ZEditParamLayoutDlg::onApply()
 
         param.bInput = false;
         param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<size_t>();
+        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
         param.defl = pItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
@@ -1153,7 +1153,7 @@ void ZEditParamLayoutDlg::onApply()
                 paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
                 paramInfo.defl = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
                 paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
-                paramInfo.type = paramItem->data(ROLE_PARAM_TYPE).value<size_t>();
+                paramInfo.type = paramItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
                 paramInfo.socketType = (zeno::SocketType)paramItem->data(ROLE_SOCKET_TYPE).toInt();
                 paramInfo.ctrlProps = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
                 paramInfo.tooltip = paramItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
@@ -1176,7 +1176,7 @@ void ZEditParamLayoutDlg::onApply()
         zeno::ParamObject param;
 
         param.bInput = true;
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<size_t>();
+        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
@@ -1194,7 +1194,7 @@ void ZEditParamLayoutDlg::onApply()
         zeno::ParamObject param;
 
         param.bInput = false;
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<size_t>();
+        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
         param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
         param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
         param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();

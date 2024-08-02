@@ -372,7 +372,7 @@ QVariant ZSocketPlainTextItem::itemChange(GraphicsItemChange change, const QVari
 void ZSocketPlainTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
     _base::hoverEnterEvent(event);
-    QString type = UiHelper::getTypeDesc(m_viewSockIdx.data(ROLE_PARAM_TYPE).value<size_t>());
+    QString type = UiHelper::getTypeDesc(m_viewSockIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
     ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), type.isEmpty() ? "null" : type);
 }
 

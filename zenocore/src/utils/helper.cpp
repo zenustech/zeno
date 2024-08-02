@@ -842,6 +842,33 @@ namespace zeno {
         return result;
     }
 
+    bool isNumericType(ParamType type)
+    {
+        if (type == types::gParamType_Int || type == types::gParamType_Float)
+            return true;
+        return false;
+    }
+
+    bool isNumericVecType(ParamType type)
+    {
+        if (isNumericType(type))
+            return true;
+        else if (type == types::gParamType_Vec2f || type == types::gParamType_Vec2i ||
+            type == types::gParamType_Vec3f || type == types::gParamType_Vec3i || 
+            type == types::gParamType_Vec4f || type == types::gParamType_Vec4i)
+            return true;
+        return false;
+    }
+
+    bool isSameDimensionNumericVecType(ParamType left, ParamType right)
+    {
+        if (left == types::gParamType_Vec2i && right == types::gParamType_Vec2f || left == types::gParamType_Vec2f && right == types::gParamType_Vec2i ||
+            left == types::gParamType_Vec3i && right == types::gParamType_Vec3f || left == types::gParamType_Vec3f && right == types::gParamType_Vec3i ||
+            left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
+            return true;
+        return false;
+    }
+
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
         return false;
     }

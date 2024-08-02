@@ -709,7 +709,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
             if (role == ROLE_PARAM_CONTROL)
                 m_items[i].control = (zeno::ParamControl)val.toInt();
             else if (role == ROLE_PARAM_TYPE)
-                m_items[i].type = val.value<size_t>();
+                m_items[i].type = val.value<zeno::ParamType>();
             else if (role == ROLE_SOCKET_TYPE)
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
