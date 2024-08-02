@@ -5,6 +5,7 @@
 #include "zassert.h"
 #include "util/uihelper.h"
 #include "zveceditoritem.h"
+#include "reflect/reflection.generated.hpp"
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
@@ -70,7 +71,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             BlockSignalScope scope(pItem);
             if (ZenoParamLineEdit* pLineEdit = qobject_cast<ZenoParamLineEdit*>(pItem))
             {
-                if (type == zeno::Param_Float)
+                if (type == Param_Float)
                     pLineEdit->setText(QString::number(value.toFloat()));
                 else
                     pLineEdit->setText(value.toString());
@@ -113,7 +114,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
                 //if (value.canConvert<UI_VECSTRING>()) {
                 //    return;
                 //}
-                bool bFloat = (zeno::Param_Vec2f == type || zeno::Param_Vec3f == type || zeno::Param_Vec4f == type);
+                bool bFloat = (Param_Vec2f == type || Param_Vec3f == type || Param_Vec4f == type);
                 pEditor->setVec(value, bFloat, pScene);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
@@ -141,7 +142,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
         case QGraphicsTextItem::Type:
         {
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
-            if (type == zeno::Param_Float)
+            if (type == Param_Float)
             {
                 if (value.canConvert<UI_VECSTRING>()) {
                     return;

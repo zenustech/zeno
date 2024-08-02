@@ -9,6 +9,8 @@
 #include "zenomainwindow.h"
 #include "util/uihelper.h"
 #include "variantptr.h"
+#include "reflect/reflection.generated.hpp"
+
 
 ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, QWidget *parent)
     : QWidget(parent), 
@@ -85,7 +87,7 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const zeno::ParamC
             UiHelper::qIndexSetData(index, newValue, ROLE_PARAM_VALUE);
         }
     };
-    zeno::ParamType type = desc == "title" ? zeno::Param_String : zeno::Param_Vec3f;
+    zeno::ParamType type = desc == "title" ? Param_String : Param_Vec3f;
     QWidget *pControl = zenoui::createWidget(value, ctrl, type, cbSet, zeno::reflect::Any());
     pControl->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
     if (desc == "title") {

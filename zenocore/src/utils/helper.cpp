@@ -366,50 +366,50 @@ namespace zeno {
 
     ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type)
     {
-        if (type == zeno::Param_String) {
+        if (type == Param_String) {
             return std::string("");     //要注意和char*常量区分，any::get_type的时候是不一样的
         }
-        else if (type == zeno::Param_Float)
+        else if (type == Param_Float)
         {
             return (float)0.;
         }
-        else if (type == zeno::Param_Int)
+        else if (type == Param_Int)
         {
             return (int)0;
         }
-        else if (type == zeno::Param_Bool)
+        else if (type == Param_Bool)
         {
             return (int)0;
         }
-        else if (type == zeno::Param_Vec2i)
+        else if (type == Param_Vec2i)
         {
             return vec2i();
         }
-        else if (type == zeno::Param_Vec2f)
+        else if (type == Param_Vec2f)
         {
             return vec2f();
         }
-        else if (type == zeno::Param_Vec3i)
+        else if (type == Param_Vec3i)
         {
             return vec3i();
         }
-        else if (type == zeno::Param_Vec3f)
+        else if (type == Param_Vec3f)
         {
             return vec3f();
         }
-        else if (type == zeno::Param_Vec4i)
+        else if (type == Param_Vec4i)
         {
             return vec4i();
         }
-        else if (type == zeno::Param_Vec4f)
+        else if (type == Param_Vec4f)
         {
             return vec4f();
         }
-        else if (type == zeno::Param_Curve)
+        else if (type == Param_Curve)
         {
             return "{}";
         }
-        else if (type == zeno::Param_Object)
+        else if (type == Param_Object)
         {
             return std::shared_ptr<IObject>();
         }
@@ -418,50 +418,50 @@ namespace zeno {
 
     zvariant zeno::initDeflValue(ParamType const& type)
     {
-        if (type == zeno::Param_String) {
+        if (type == Param_String) {
             return "";
         }
-        else if (type == zeno::Param_Float)
+        else if (type == Param_Float)
         {
             return (float)0.;
         }
-        else if (type == zeno::Param_Int)
+        else if (type == Param_Int)
         {
             return (int)0;
         }
-        else if (type == zeno::Param_Bool)
+        else if (type == Param_Bool)
         {
             return false;
         }
-        else if (type == zeno::Param_Vec2i)
+        else if (type == Param_Vec2i)
         {
             return vec2i();
         }
-        else if (type == zeno::Param_Vec2f)
+        else if (type == Param_Vec2f)
         {
             return vec2f();
         }
-        else if (type == zeno::Param_Vec3i)
+        else if (type == Param_Vec3i)
         {
             return vec3i();
         }
-        else if (type == zeno::Param_Vec3f)
+        else if (type == Param_Vec3f)
         {
             return vec3f();
         }
-        else if (type == zeno::Param_Vec4i)
+        else if (type == Param_Vec4i)
         {
             return vec4i();
         }
-        else if (type == zeno::Param_Vec4f)
+        else if (type == Param_Vec4f)
         {
             return vec4f();
         }
-        else if (type == zeno::Param_Curve)
+        else if (type == Param_Curve)
         {
             return "{}";
         }
-        else if (type == zeno::Param_Heatmap)
+        else if (type == Param_Heatmap)
         {
             return "{\"nres\":1024, \"color\":\"\"}";
         }
@@ -850,7 +850,7 @@ namespace zeno {
         return false;
     }
 
-    bool isPrimitiveType(const zeno::ParamType type) {
+    bool isPrimitiveType(const ParamType type) {
         //这个是给旧式定义节点使用的，新的反射定义方式不再使用，其初始化过程也不会走到这里判断。
         return type == Param_String || type == Param_Int || type == Param_Float || type == Param_Vec2i ||
             type == Param_Vec3i || type == Param_Vec4i || type == Param_Vec2f || type == Param_Vec3f ||
@@ -963,24 +963,24 @@ namespace zeno {
     {
         switch (type)
         {
-        case zeno::Param_Null:      return zeno::NullControl;
-        case zeno::Param_Bool:      return zeno::Checkbox;
-        case zeno::Param_Int:       return zeno::Lineedit;
-        case zeno::Param_String:    return zeno::Lineedit;
-        case zeno::Param_Float:     return zeno::Lineedit;
-        case zeno::Param_Vec2i:     return zeno::Vec2edit;
-        case zeno::Param_Vec3i:     return zeno::Vec3edit;
-        case zeno::Param_Vec4i:     return zeno::Vec4edit;
-        case zeno::Param_Vec2f:     return zeno::Vec2edit;
-        case zeno::Param_Vec3f:     return zeno::Vec3edit;
-        case zeno::Param_Vec4f:     return zeno::Vec4edit;
-        case zeno::Param_Prim:
-        case zeno::Param_Dict:
-        case zeno::Param_List:      return zeno::NullControl;
+        case Param_Null:      return zeno::NullControl;
+        case Param_Bool:      return zeno::Checkbox;
+        case Param_Int:       return zeno::Lineedit;
+        case Param_String:    return zeno::Lineedit;
+        case Param_Float:     return zeno::Lineedit;
+        case Param_Vec2i:     return zeno::Vec2edit;
+        case Param_Vec3i:     return zeno::Vec3edit;
+        case Param_Vec4i:     return zeno::Vec4edit;
+        case Param_Vec2f:     return zeno::Vec2edit;
+        case Param_Vec3f:     return zeno::Vec3edit;
+        case Param_Vec4f:     return zeno::Vec4edit;
+        case Param_Prim:
+        case Param_Dict:
+        case Param_List:      return zeno::NullControl;
             //Param_Color:  //need this?
-        case zeno::Param_Curve:     return zeno::CurveEditor;
-        case zeno::Param_Heatmap: return zeno::Heatmap;
-        case zeno::Param_SrcDst:
+        case Param_Curve:     return zeno::CurveEditor;
+        case Param_Heatmap: return zeno::Heatmap;
+        case Param_SrcDst:
         default:
             return zeno::NullControl;
         }
@@ -993,9 +993,9 @@ namespace zeno {
         case zeno::Lineedit:
         {
             switch (type) {
-            case zeno::Param_Float:     return "Float";
-            case zeno::Param_Int:       return "Integer";
-            case zeno::Param_String:    return "String";
+            case Param_Float:     return "Float";
+            case Param_Int:       return "Integer";
+            case Param_String:    return "String";
             }
             return "";
         }
@@ -1010,15 +1010,15 @@ namespace zeno {
         case zeno::Combobox:            return "Enum";
         case zeno::Vec4edit:
         {
-            return type == zeno::Param_Int ? "Integer Vector 4" : "Float Vector 4";
+            return type == Param_Int ? "Integer Vector 4" : "Float Vector 4";
         }
         case zeno::Vec3edit:
         {
-            return type == zeno::Param_Int ? "Integer Vector 3" : "Float Vector 3";
+            return type == Param_Int ? "Integer Vector 3" : "Float Vector 3";
         }
         case zeno::Vec2edit:
         {
-            return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
+            return type == Param_Int ? "Integer Vector 2" : "Float Vector 2";
         }
         case zeno::Heatmap:             return "Color";
         case zeno::ColorVec:            return "Color Vec3f";

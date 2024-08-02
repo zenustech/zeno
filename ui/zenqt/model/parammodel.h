@@ -15,7 +15,7 @@ struct ParamItem
 {
     //BEGIN: temp cache on ui model, the actual value has been stored in m_wpParam.
     QString name;
-    zeno::ParamType type = zeno::Param_Null;
+    zeno::ParamType type = Param_Null;
     QVariant value;
     //END
     //std::weak_ptr<zeno::CoreParam> m_wpParam;

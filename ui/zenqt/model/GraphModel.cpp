@@ -13,6 +13,7 @@
 #include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
+#include "reflect/reflection.generated.hpp"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -364,7 +365,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
-                if (info.type != zeno::Param_Curve) {
+                if (info.type != Param_Curve) {
                     continue;
                 }
                 const QVariant& value = QVariant::fromValue(info.defl);

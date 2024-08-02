@@ -11,6 +11,8 @@
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
 #include "variantptr.h"
+#include "reflect/reflection.generated.hpp"
+
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -155,7 +157,7 @@ void GroupNode::updateClidItem(bool isAdd, const QString nodeId)
             else {
                 return;
             }
-            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(itemList.join(","), zeno::Param_String)), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(itemList.join(","), Param_String)), ROLE_PARAM_VALUE);
         }
     }
 }
@@ -465,14 +467,14 @@ void GroupNode::updateBlackboard() {
         auto strVal = UiHelper::anyToQvar(index.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>()).toString();
         if (index.isValid() && strVal != m_pTextItem->text())
         {
-            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(m_pTextItem->text(), zeno::Param_String)), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(m_pTextItem->text(), Param_String)), ROLE_PARAM_VALUE);
         }
         index = paramsM->index(paramsM->indexFromName("size", true), 0);
         if (index.isValid())
         {
             UI_VECTYPE val;
             val << this->size().width() << this->size().height();
-            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(QVariant::fromValue(val), zeno::Param_Vec3f)), ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(UiHelper::qvarToAny(QVariant::fromValue(val), Param_Vec3f)), ROLE_PARAM_VALUE);
         }
     }
 }

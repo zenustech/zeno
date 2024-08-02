@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zenoio {
@@ -269,7 +270,7 @@ void Zsg2Reader::_parseSocket(
         prop = zeno::SocketProperty::Socket_Normal;    //deprecated
 
     zeno::SocketType socketType = zeno::NoSocket;
-    zeno::ParamType paramType = zeno::Param_Null;
+    zeno::ParamType paramType = Param_Null;
     zeno::reflect::Any defl;
     std::string tooltip;
 
@@ -279,9 +280,9 @@ void Zsg2Reader::_parseSocket(
     {
         if (prop == zeno::SocketProperty::Socket_Editable) {
             //like extract dict.
-            paramType = zeno::Param_String;
+            paramType = Param_String;
         } else {
-            paramType = zeno::Param_Null;
+            paramType = Param_Null;
         }
     }
 
@@ -289,7 +290,7 @@ void Zsg2Reader::_parseSocket(
         paramType = zeno::convertToType(sockObj["type"].GetString());
         defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType);
     }
-    if (!bInput && paramType == zeno::Param_Null)
+    if (!bInput && paramType == Param_Null)
     {
         auto& nodeClass = zeno::getSession().nodeClasses;
         auto it = nodeClass.find(nodeCls);
@@ -305,7 +306,7 @@ void Zsg2Reader::_parseSocket(
             }
         }
     }
-    bool bPrimType = isPrimitiveType(paramType);
+    bool bPrimType = zeno::isPrimitiveType(paramType);
     if (bPrimType) {
         socketType = zeno::Socket_Primitve;
     }

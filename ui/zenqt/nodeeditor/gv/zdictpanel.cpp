@@ -11,6 +11,7 @@
 #include <zeno/utils/scope_exit.h>
 #include "model/parammodel.h"
 #include "model/GraphModel.h"
+#include "reflect/reflection.generated.hpp"
 
 
 class ZDictPanel;
@@ -68,7 +69,7 @@ public:
         CallbackCollection cbSet;
         cbSet.cbEditFinished = cbEditFinished;
 
-        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, zeno::reflect::Any());
+        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, Param_String, cbSet, nullptr, zeno::reflect::Any());
         m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
@@ -106,7 +107,7 @@ public:
 
     void updateName(const QString& newKeyName)
     {
-        ZenoGvHelper::setValue(m_editText, zeno::Param_String, newKeyName, nullptr);
+        ZenoGvHelper::setValue(m_editText, Param_String, newKeyName, nullptr);
     }
 
     void setEnable(bool bEnable)
@@ -149,7 +150,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt();
 
     const QString& coreType = m_paramIdx.data(ROLE_PARAM_TYPE).toString();
-    m_bDict = type == zeno::Param_Dict;
+    m_bDict = type == Param_Dict;
 
     bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
 

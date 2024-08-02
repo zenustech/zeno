@@ -32,6 +32,7 @@
 #include <zeno/io/zenreader.h>
 #include "widgets/ztooltip.h"
 #include "zenonodenew.h"
+#include "reflect/reflection.generated.hpp"
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
@@ -1005,7 +1006,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
 
             if (!fixedInput)
             {
-                if (zeno::Param_Dict == outSockIdx.data(ROLE_PARAM_TYPE))
+                if (Param_Dict == outSockIdx.data(ROLE_PARAM_TYPE))
                 {
                     ZenoSocketItem* pOutSocket = m_tempLink->getFixedSocket();
                     const QString& outKey = pOutSocket->innerKey();

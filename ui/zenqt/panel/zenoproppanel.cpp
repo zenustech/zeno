@@ -28,6 +28,7 @@
 #include "util/apphelper.h"
 #include "zassert.h"
 #include "widgets/zcheckbox.h"
+#include "reflect/reflection.generated.hpp"
 
 
 class RetryScope
@@ -813,7 +814,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toInt();
                 zeno::ParamControl paramCtrl = (zeno::ParamControl)param->data(ROLE_PARAM_CONTROL).toInt();
                 QString literalNum;
-                if (type == zeno::Param_Float) {
+                if (type == Param_Float) {
                     QVariant newVal = value;
                     bool bKeyFrame = AppHelper::getCurveValue(newVal);
                     literalNum = UiHelper::variantToString(newVal);

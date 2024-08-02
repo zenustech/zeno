@@ -40,7 +40,7 @@ public:
     static uint generateUuidInt();
     static QVariant zvarToQVar(const zeno::zvariant& var);
     static zeno::zvariant qvarToZVar(const QVariant& var, const zeno::ParamType type);
-    static zeno::reflect::Any qvarToAny(const QVariant& var, const zeno::ParamType type = zeno::Param_Null);
+    static zeno::reflect::Any qvarToAny(const QVariant& var, const zeno::ParamType type = Param_Null);
     static QVariant anyToQvar(zeno::reflect::Any any);
     static QVariant initDefaultValue(const zeno::ParamType& type);
     static QVariant parseTextValue(const zeno::ParamType& type, const QString& textValue);

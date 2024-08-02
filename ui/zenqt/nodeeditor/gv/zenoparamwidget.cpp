@@ -11,6 +11,7 @@
 #include <zeno/extra/TempNode.h>
 #include <zeno/extra/assetDir.h>
 #include "widgets/zlineedit.h"
+#include "reflect/reflection.generated.hpp"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -445,7 +446,7 @@ void ZenoVecEditItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene*
     {
         const QString& numText = QString::number(vec[i]);
         ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, zeno::Lineedit, m_param);
-        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::Param_Float : zeno::Param_Int));
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? Param_Float : Param_Int));
         pLayout->addItem(pLineEdit);
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));

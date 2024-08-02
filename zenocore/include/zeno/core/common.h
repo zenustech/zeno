@@ -27,33 +27,33 @@ constexpr enum_class operator^(enum_class X, enum_class Y) {\
 
 namespace zeno {
 
-    enum ParamType
-    {
-        Param_Null,
-        Param_Bool,
-        Param_Int,
-        Param_String,
-        Param_Float,
-        Param_Vec2i,
-        Param_Vec3i,
-        Param_Vec4i,
-        Param_Vec2f,
-        Param_Vec3f,
-        Param_Vec4f,
-        Param_Prim,
-        Param_Camera,
-        Param_Light,
-        Param_Material,
-        Param_VdbGrid,
-        Param_Dict,
-        Param_List,
-        //Param_Color,  //need this?
-        Param_Curve,
-        Param_Heatmap,
-        Param_SrcDst,
-        Param_Object,
-        Param_Custom,
-    };
+    using ParamType = size_t;
+    //enum ParamType
+    //{
+    #define Param_Bool zeno::types::gParamType_Bool
+    #define Param_Int zeno::types::gParamType_Int
+    #define Param_String zeno::types::gParamType_String
+    #define Param_Float zeno::types::gParamType_Float
+    #define Param_Vec2i zeno::types::gParamType_Vec2i
+    #define Param_Vec3i zeno::types::gParamType_Vec3i
+    #define Param_Vec4i zeno::types::gParamType_Vec4i
+    #define Param_Vec2f zeno::types::gParamType_Vec2f
+    #define Param_Vec3f zeno::types::gParamType_Vec3f
+    #define Param_Vec4f zeno::types::gParamType_Vec4f
+    #define Param_Prim  zeno::types::gParamType_Primitive
+    #define Param_Camera zeno::types::gParamType_Camera
+    #define Param_Light zeno::types::gParamType_Light
+    #define Param_Material zeno::types::gParamType_sharedIObject
+    #define Param_VdbGrid zeno::types::gParamType_sharedIObject
+    #define Param_Dict zeno::types::gParamType_Dict
+    #define Param_List zeno::types::gParamType_List
+    #define Param_Curve zeno::types::gParamType_Curve
+    #define Param_Heatmap zeno::types::gParamType_Heatmap
+    #define Param_Null 0
+    #define Param_SrcDst 1
+    #define Param_Object 2
+    #define Param_Custom 3
+    //};
 
     enum NodeStatus : unsigned int
     {

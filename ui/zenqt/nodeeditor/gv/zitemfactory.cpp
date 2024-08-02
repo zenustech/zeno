@@ -231,7 +231,7 @@ namespace zenoui
             case zeno::Vec4edit:
             {
                 int dim = -1;
-                bool bFloat = type == zeno::Param_Vec2f || type == zeno::Param_Vec3f || type == zeno::Param_Vec4f;
+                bool bFloat = type == Param_Vec2f || type == Param_Vec3f || type == Param_Vec4f;
                 if (ctrl == zeno::Vec2edit)
                 {
                     dim = 2;

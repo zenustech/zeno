@@ -18,31 +18,31 @@
 
 
 static CONTROL_ITEM_INFO controlList[] = {
-    {"Tab",                 zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_tab.svg"},
-    {"Group",               zeno::NullControl,  zeno::Param_Null,   ":/icons/parameter_control_group.svg"},
-    {"object",              zeno::NullControl,  zeno::Param_Null,   ""},
-    {"Integer",             zeno::Lineedit,     zeno::Param_Int,    ":/icons/parameter_control_integer.svg"},
-    {"Float",               zeno::Lineedit,     zeno::Param_Float,  ":/icons/parameter_control_float.svg"},
-    {"String",              zeno::Lineedit,     zeno::Param_String, ":/icons/parameter_control_string.svg"},
-    {"Boolean",             zeno::Checkbox,     zeno::Param_Bool,   ":/icons/parameter_control_boolean.svg"},
-    {"Multiline String",    zeno::Multiline,    zeno::Param_String, ":/icons/parameter_control_string.svg"},
-    {"read path",           zeno::ReadPathEdit, zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"write path",          zeno::WritePathEdit,zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"directory",       zeno::DirectoryPathEdit,zeno::Param_String, ":/icons/parameter_control_fold.svg"},
-    {"Enum",                zeno::Combobox,     zeno::Param_String, ":/icons/parameter_control_enum.svg"},
-    {"Float Vector 4",      zeno::Vec4edit,     zeno::Param_Vec4f,  ":/icons/parameter_control_floatVector4.svg"},
-    {"Float Vector 3",      zeno::Vec3edit,     zeno::Param_Vec3f,  ":/icons/parameter_control_floatVector3.svg"},
-    {"Float Vector 2",      zeno::Vec2edit,     zeno::Param_Vec2f,  ":/icons/parameter_control_floatVector2.svg"},
-    {"Integer Vector 4",    zeno::Vec4edit,     zeno::Param_Vec4i,  ":/icons/parameter_control_integerVector4.svg"},
-    {"Integer Vector 3",    zeno::Vec3edit,     zeno::Param_Vec3i,  ":/icons/parameter_control_integerVector3.svg"},
-    {"Integer Vector 2",    zeno::Vec2edit,     zeno::Param_Vec2i,  ":/icons/parameter_control_integerVector2.svg"},
-    {"Color",               zeno::Heatmap,      zeno::Param_Heatmap,":/icons/parameter_control_color.svg"},
-    {"Color Vec3f",         zeno::ColorVec,     zeno::Param_Vec3f,  ":/icons/parameter_control_color.svg"},
-    {"Curve",               zeno::CurveEditor,  zeno::Param_Curve,  ":/icons/parameter_control_curve.svg"},
-    {"SpinBox",             zeno::SpinBox,      zeno::Param_Int,    ":/icons/parameter_control_spinbox.svg"},
-    {"DoubleSpinBox",       zeno::DoubleSpinBox,zeno::Param_Float,  ":/icons/parameter_control_spinbox.svg"},
-    {"Slider",              zeno::Slider,       zeno::Param_Int,    ":/icons/parameter_control_slider.svg"},
-    {"SpinBoxSlider",       zeno::SpinBoxSlider,zeno::Param_Int,    ":/icons/parameter_control_slider.svg"},
+    {"Tab",                 zeno::NullControl,  Param_Null,   ":/icons/parameter_control_tab.svg"},
+    {"Group",               zeno::NullControl,  Param_Null,   ":/icons/parameter_control_group.svg"},
+    {"object",              zeno::NullControl,  Param_Null,   ""},
+    {"Integer",             zeno::Lineedit,     Param_Int,    ":/icons/parameter_control_integer.svg"},
+    {"Float",               zeno::Lineedit,     Param_Float,  ":/icons/parameter_control_float.svg"},
+    {"String",              zeno::Lineedit,     Param_String, ":/icons/parameter_control_string.svg"},
+    {"Boolean",             zeno::Checkbox,     Param_Bool,   ":/icons/parameter_control_boolean.svg"},
+    {"Multiline String",    zeno::Multiline,    Param_String, ":/icons/parameter_control_string.svg"},
+    {"read path",           zeno::ReadPathEdit, Param_String, ":/icons/parameter_control_fold.svg"},
+    {"write path",          zeno::WritePathEdit,Param_String, ":/icons/parameter_control_fold.svg"},
+    {"directory",       zeno::DirectoryPathEdit,Param_String, ":/icons/parameter_control_fold.svg"},
+    {"Enum",                zeno::Combobox,     Param_String, ":/icons/parameter_control_enum.svg"},
+    {"Float Vector 4",      zeno::Vec4edit,     Param_Vec4f,  ":/icons/parameter_control_floatVector4.svg"},
+    {"Float Vector 3",      zeno::Vec3edit,     Param_Vec3f,  ":/icons/parameter_control_floatVector3.svg"},
+    {"Float Vector 2",      zeno::Vec2edit,     Param_Vec2f,  ":/icons/parameter_control_floatVector2.svg"},
+    {"Integer Vector 4",    zeno::Vec4edit,     Param_Vec4i,  ":/icons/parameter_control_integerVector4.svg"},
+    {"Integer Vector 3",    zeno::Vec3edit,     Param_Vec3i,  ":/icons/parameter_control_integerVector3.svg"},
+    {"Integer Vector 2",    zeno::Vec2edit,     Param_Vec2i,  ":/icons/parameter_control_integerVector2.svg"},
+    {"Color",               zeno::Heatmap,      Param_Heatmap,":/icons/parameter_control_color.svg"},
+    {"Color Vec3f",         zeno::ColorVec,     Param_Vec3f,  ":/icons/parameter_control_color.svg"},
+    {"Curve",               zeno::CurveEditor,  Param_Curve,  ":/icons/parameter_control_curve.svg"},
+    {"SpinBox",             zeno::SpinBox,      Param_Int,    ":/icons/parameter_control_spinbox.svg"},
+    {"DoubleSpinBox",       zeno::DoubleSpinBox,Param_Float,  ":/icons/parameter_control_spinbox.svg"},
+    {"Slider",              zeno::Slider,       Param_Int,    ":/icons/parameter_control_slider.svg"},
+    {"SpinBoxSlider",       zeno::SpinBoxSlider,Param_Int,    ":/icons/parameter_control_slider.svg"},
 };
 
 static CONTROL_ITEM_INFO getControl(zeno::ParamControl ctrl, zeno::ParamType type)
@@ -78,7 +78,7 @@ static zeno::ParamType getTypeByControlName(const QString& name)
             return controlList[i].type;
         }
     }
-    return zeno::Param_Null;
+    return Param_Null;
 }
 
 
@@ -753,7 +753,7 @@ void ZEditParamLayoutDlg::onBtnAddObjInputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
     pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
@@ -771,7 +771,7 @@ void ZEditParamLayoutDlg::onBtnAddObjOutputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
     pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
@@ -789,7 +789,7 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(zeno::Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
     pNewItem->setData(zeno::Socket_Output, ROLE_SOCKET_TYPE);

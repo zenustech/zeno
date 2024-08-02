@@ -2,6 +2,7 @@
 #include <zeno/io/iohelper.h>
 #include <zeno/utils/helper.h>
 #include <zeno/io/iotags.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zenoio
@@ -290,7 +291,7 @@ namespace zenoio
         }
 
         zeno::ParamControl ctrl = zeno::NullControl;
-        zeno::ParamType paramType = zeno::Param_Null;
+        zeno::ParamType paramType = Param_Null;
         zeno::SocketType socketType = zeno::NoSocket;
         zeno::reflect::Any defl;
         zeno::LinksData paramLinks;
@@ -311,10 +312,10 @@ namespace zenoio
         {
             if (prop == zeno::SocketProperty::Socket_Editable) {
                 //like extract dict.
-                paramType = zeno::Param_String;
+                paramType = Param_String;
             }
             else {
-                paramType = zeno::Param_Null;
+                paramType = Param_Null;
             }
         }
 
