@@ -456,6 +456,7 @@ ZENDEFNODE(PrimitiveTransform, {
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
     },
     {"primitive"},
+    {"Transform"},
     });
 
 }

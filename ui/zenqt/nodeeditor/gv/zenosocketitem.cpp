@@ -39,7 +39,7 @@ ZenoSocketItem::ZenoSocketItem(
     QColor sockClr = m_paramIdx.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
     setBrush(sockClr, sockClr);
     //if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
-    //    setBrush(QColor("#4B9EF4"), QColor("#5FD2FF"));
+    //    setBrush(QColor("#CC7C5A"), QColor("#5FD2FF"));
     //else
     //    setBrush(QColor("#CCA44E"), QColor("#FFF000"));
     setSockStatus(STATUS_NOCONN);
@@ -238,7 +238,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     }
     else
     {
-        bgClr = QColor("#4B9EF4");
+        bgClr = QColor("#CC7C5A");
     }
 
     QPen pen(bgClr, ZenoStyle::dpiScaled(4));
@@ -351,13 +351,13 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     {
         ZASSERT_EXIT(m_bInput);
 
-        QPen pen(QColor("#4B9EF4"), 4);
+        QPen pen(QColor("#CC7C5A"), 4);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
 
         bool bOwn = !links.isEmpty();
         if (bOwn) {
-            painter->setBrush(QColor("#4B9EF4"));
+            painter->setBrush(QColor("#CC7C5A"));
         }
 
         QPainterPath path;
@@ -385,7 +385,7 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     else if (type == zeno::Socket_ReadOnly)
     {
         ZASSERT_EXIT(m_bInput);
-        QPen pen(QColor("#4B9EF4"), 4);
+        QPen pen(QColor("#CC7C5A"), 4);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
 
@@ -405,8 +405,8 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     else if (type == zeno::Socket_Clone)
     {
         ZASSERT_EXIT(m_bInput);
-        QPen pen(QColor("#4B9EF4"), 4);
-        QBrush brush(QColor("#4B9EF4"));
+        QPen pen(QColor("#CC7C5A"), 4);
+        QBrush brush(QColor("#CC7C5A"));
         painter->setPen(pen);
         painter->setBrush(brush);
 
@@ -432,11 +432,11 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
                 pen = QPen(QColor("#777777"), 2);
             }
             else {
-                painter->fillRect(rc, QColor("#4B9EF4"));
+                painter->fillRect(rc, QColor("#CC7C5A"));
             }
         }
         else {
-            painter->fillRect(rc, QColor("#4B9EF4"));
+            painter->fillRect(rc, QColor("#CC7C5A"));
         }
 
         painter->setPen(pen);

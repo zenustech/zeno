@@ -419,6 +419,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
 
+#if 0
     m_statusMarker = new QGraphicsPolygonItem(headerWidget);
     QPolygonF points;
     points.append(QPointF(0, 0));
@@ -428,6 +429,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     m_statusMarker->setPen(Qt::NoPen);
     m_statusMarker->setPos(QPointF(0, 0));
     markNodeStatus(state.runstatus);
+#endif
 
     return headerWidget;
 }
@@ -1149,26 +1151,28 @@ void ZenoNode::markNodeStatus(zeno::NodeRunStatus status)
         if (m_errorTip)
             m_errorTip->hide();
 
-        switch (m_nodeStatus)
-        {
-        case zeno::Node_RunSucceed: {
-            m_statusMarker->setBrush(QBrush(QColor("#319E36")));
-            break;
+        if (m_statusMarker) {
+            switch (m_nodeStatus)
+            {
+            case zeno::Node_RunSucceed: {
+                m_statusMarker->setBrush(QBrush(QColor("#319E36")));
+                break;
+            }
+            case zeno::Node_Pending: {
+                m_statusMarker->setBrush(QBrush(QColor("#868686")));
+                break;
+            }
+            case zeno::Node_DirtyReadyToRun: {
+                m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
+                break;
+            }
+            case zeno::Node_Running: {
+                m_statusMarker->setBrush(QBrush(QColor("#02F8F8")));
+                break;
+            }
+            }
+            m_statusMarker->update();
         }
-        case zeno::Node_Pending: {
-            m_statusMarker->setBrush(QBrush(QColor("#868686")));
-            break;
-        }
-        case zeno::Node_DirtyReadyToRun: {
-            m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
-            break;
-        }
-        case zeno::Node_Running: {
-            m_statusMarker->setBrush(QBrush(QColor("#02F8F8")));
-            break;
-        }
-        }
-        m_statusMarker->update();
     }
     update();
 }
