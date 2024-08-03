@@ -436,15 +436,11 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
 //    zeno::log_info("pMesh->GetDeformerCount(FbxDeformer::eSkin) {}", pMesh->GetDeformerCount(FbxDeformer::eSkin));
     auto &ud = prim->userData();
     if (pMesh->GetDeformerCount(FbxDeformer::eSkin)) {
-        auto &bi = prim->verts.add_attr<vec4i>("boneName");
-        std::fill(bi.begin(), bi.end(), vec4i(-1, -1, -1, -1));
-        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
-        std::fill(bw.begin(), bw.end(), vec4f(-1.0, -1.0, -1.0, -1.0));
 
         FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
         std::vector<std::string> bone_names;
-
         // Iterate over each cluster (bone)
+        std::vector<std::vector<std::pair<int, float>>> bone_weight(numVertices);
         for (int j = 0; j < pSkin->GetClusterCount(); ++j) {
             FbxCluster* pCluster = pSkin->GetCluster(j);
 
@@ -459,15 +455,26 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
 
             bone_names.emplace_back(pBoneNode->GetName());
             for (int k = 0; k < numIndices; ++k) {
-                for (auto l = 0; l < 4; l++) {
-                    if (bi[indices[k]][l] == -1) {
-                        bi[indices[k]][l] = j;
-                        bw[indices[k]][l] = weights[k];
-                        break;
-                    }
-                }
+                bone_weight[indices[k]].emplace_back(j, weights[k]);
             }
         }
+        int maxnum_boneWeight = 0;
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            maxnum_boneWeight = zeno::max(maxnum_boneWeight, bone_weight[i].size());
+        }
+        for (auto i = 0; i < maxnum_boneWeight; i++) {
+            auto &bi = prim->verts.add_attr<int>(zeno::format("boneName_{}", i));
+            std::fill(bi.begin(), bi.end(), -1);
+            auto &bw = prim->verts.add_attr<float>(zeno::format("boneWeight_{}", i));
+            std::fill(bw.begin(), bw.end(), -1.0);
+        }
+        for (auto i = 0; i < prim->verts.size(); i++) {
+            for (auto j = 0; j < bone_weight[i].size(); j++) {
+                prim->verts.attr<int>(format("boneName_{}", j))[i] = bone_weight[i][j].first;
+                prim->verts.attr<float>(format("boneWeight_{}", j))[i] = bone_weight[i][j].second;
+            }
+        }
+        ud.set2("maxnum_boneWeight", int(maxnum_boneWeight));
         ud.set2("boneName_count", int(bone_names.size()));
         for (auto i = 0; i < bone_names.size(); i++) {
             ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
@@ -520,6 +527,56 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     return prim;
 }
 
+void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &names) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = pNode->GetName();
+        names.emplace_back(name);
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetNames(pNode->GetChild(i), names);
+    }
+}
+
+void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = mesh->GetName();
+        if (target_name == name) {
+            auto sub_prim = GetMesh(pNode);
+            if (sub_prim) {
+                prim = sub_prim;
+            }
+            return;
+        }
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim);
+    }
+}
+void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims) {
+    if (!pNode) return;
+
+    FbxMesh* mesh = pNode->GetMesh();
+    if (mesh) {
+        auto name = mesh->GetName();
+        auto sub_prim = GetMesh(pNode);
+        if (sub_prim) {
+            prims.push_back(sub_prim);
+        }
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetPrims(pNode->GetChild(i), prims);
+    }
+}
+
 struct NewFBXImportSkin : INode {
     virtual void apply() override {
         // Change the following filename to a suitable filename value.
@@ -560,30 +617,19 @@ struct NewFBXImportSkin : INode {
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
         if(lRootNode) {
-            for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                auto pNode = lRootNode->GetChild(i);
-                FbxMesh* pMesh = pNode->GetMesh();
-                if (pMesh) {
-                    std::string meshName = pNode->GetName();
-                    availableRootNames.emplace_back(meshName);
-                }
-            }
-        }
-        auto rootName = get_input2<std::string>("rootName");
-        if(lRootNode) {
+            TraverseNodesToGetNames(lRootNode, availableRootNames);
+            auto rootName = get_input2<std::string>("rootName");
             if (rootName.empty()) {
                 std::vector<std::shared_ptr<PrimitiveObject>> prims;
-                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                    auto pNode = lRootNode->GetChild(i);
-                    auto sub_prim = GetMesh(pNode);
-                    if (sub_prim) {
-                        prims.push_back(sub_prim);
-                    }
-                }
+                TraverseNodesToGetPrims(lRootNode, prims);
 
                 std::map<std::string, int> nameMappingGlobal;
 
                 std::vector<zeno::PrimitiveObject *> prims_ptr;
+                int maxnum_boneWeight = 0;
+                for (auto prim: prims) {
+                    maxnum_boneWeight = zeno::max(maxnum_boneWeight, prim->userData().get2<int>("maxnum_boneWeight"));
+                }
                 for (auto prim: prims) {
                     prims_ptr.push_back(prim.get());
                     std::vector<int> nameMapping;
@@ -600,33 +646,32 @@ struct NewFBXImportSkin : INode {
                     for (auto i = 0; i < boneName_count; i++) {
                         prim->userData().del(zeno::format("boneName_{}", i));
                     }
-                    auto &bis = prim->verts.add_attr<vec4i>("boneName");
-                    for (auto &bi: bis) {
-                        for (auto i = 0; i < 4; i++) {
-                            if (bi[i] != -1) {
-                                bi[i] = nameMapping[bi[i]];
+                    for (auto j = 0; j < maxnum_boneWeight; j++) {
+                        if (!prim->verts.attr_is<int>(format("boneName_{}", j))) {
+                            auto &bi = prim->verts.add_attr<int>(zeno::format("boneName_{}", j));
+                            std::fill(bi.begin(), bi.end(), -1);
+                            auto &bw = prim->verts.add_attr<float>(zeno::format("boneWeight_{}", j));
+                            std::fill(bw.begin(), bw.end(), -1.0);
+                        }
+                        else {
+                            auto &bi = prim->verts.attr<int>(zeno::format("boneName_{}", j));
+                            for (auto &_bi: bi) {
+                                if (_bi != -1) {
+                                    _bi = nameMapping[_bi];
+                                }
                             }
                         }
                     }
                 }
                 prim = primMerge(prims_ptr);
                 prim->userData().set2("boneName_count", int(nameMappingGlobal.size()));
+                prim->userData().set2("maxnum_boneWeight", maxnum_boneWeight);
                 for (auto [key, value]: nameMappingGlobal) {
                     prim->userData().set2(zeno::format("boneName_{}", value), key);
                 }
             }
             else {
-                for(int i = 0; i < lRootNode->GetChildCount(); i++) {
-                    auto pNode = lRootNode->GetChild(i);
-                    std::string nodeName = pNode->GetName();
-                    if (nodeName == rootName) {
-                        auto sub_prim = GetMesh(pNode);
-                        if (sub_prim) {
-                            prim = sub_prim;
-                        }
-                        break;
-                    }
-                }
+                TraverseNodesToGetPrim(lRootNode, rootName, prim);
             }
         }
         if (get_input2<bool>("ConvertUnits")) {
@@ -666,7 +711,7 @@ ZENDEFNODE(NewFBXImportSkin, {
     {
         {"readpath", "path"},
         {"string", "rootName", ""},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
         {"string", "vectors", "nrm,"},
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
     },
@@ -714,8 +759,6 @@ struct NewFBXImportSkeleton : INode {
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
-        auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
 
         auto pose_count = lScene->GetPoseCount();
         bool found_bind_pose = false;
@@ -730,52 +773,76 @@ struct NewFBXImportSkeleton : INode {
             lSdkManager->CreateMissingBindPoses(lScene);
         }
         pose_count = lScene->GetPoseCount();
+
+        std::vector<std::string> bone_names;
+        std::map<std::string, std::string> parent_mapping;
+        std::vector<vec3f> poss;
+        std::vector<vec3f> transform_r0;
+        std::vector<vec3f> transform_r1;
+        std::vector<vec3f> transform_r2;
         for (auto i = 0; i < pose_count; i++) {
             auto pose = lScene->GetPose(i);
             if (pose == nullptr || !pose->IsBindPose()) {
                 continue;
             }
-            std::string name = pose->GetName();
-            prim->verts.resize(pose->GetCount() - 1);
-            std::vector<std::string> bone_names;
-            auto &boneNames = prim->verts.add_attr<int>("boneName");
-            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
-            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
-            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
             for (int j = 1; j < pose->GetCount(); ++j) {
+                std::string bone_name = pose->GetNode(j)->GetName();
+                if (std::count(bone_names.begin(), bone_names.end(), bone_name)) {
+                    continue;
+                }
+
                 FbxMatrix transformMatrix = pose->GetMatrix(j);
                 auto t = transformMatrix.GetRow(3);
-                prim->verts[j - 1] = vec3f(t[0], t[1], t[2]);
+                poss.emplace_back(t[0], t[1], t[2]);
 
                 auto r0 = transformMatrix.GetRow(0);
                 auto r1 = transformMatrix.GetRow(1);
                 auto r2 = transformMatrix.GetRow(2);
-                transform_r0[j - 1] = vec3f(r0[0], r0[1], r0[2]);
-                transform_r1[j - 1] = vec3f(r1[0], r1[1], r1[2]);
-                transform_r2[j - 1] = vec3f(r2[0], r2[1], r2[2]);
+                transform_r0.emplace_back(r0[0], r0[1], r0[2]);
+                transform_r1.emplace_back(r1[0], r1[1], r1[2]);
+                transform_r2.emplace_back(r2[0], r2[1], r2[2]);
 
                 bone_names.emplace_back(pose->GetNode(j)->GetName());
-                boneNames[j - 1] = j - 1;
             }
-            std::vector<int> bone_connects;
             for (int j = 1; j < pose->GetCount(); ++j) {
-                auto parent_name = pose->GetNode(j)->GetParent()->GetName();
-                auto index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
-                if (index < bone_names.size()) {
-                    bone_connects.push_back(index);
-                    bone_connects.push_back(j - 1);
+                auto self_name = pose->GetNode(j)->GetName();
+                auto parent = pose->GetNode(j)->GetParent();
+                if (parent) {
+                    auto parent_name = parent->GetName();
+                    parent_mapping[self_name] = parent_name;
                 }
             }
-            {
-                prim->loops.values = bone_connects;
-                prim->polys.resize(bone_connects.size() / 2);
-                for (auto j = 0; j < bone_connects.size() / 2; j++) {
-                    prim->polys[j] = {j * 2, 2};
+        }
+        {
+            prim->verts.resize(bone_names.size());
+            prim->verts.values = poss;
+            prim->verts.add_attr<vec3f>("transform_r0") = transform_r0;
+            prim->verts.add_attr<vec3f>("transform_r1") = transform_r1;
+            prim->verts.add_attr<vec3f>("transform_r2") = transform_r2;
+            auto &boneNames = prim->verts.add_attr<int>("boneName");
+            std::iota(boneNames.begin(), boneNames.end(), 0);
+
+            std::vector<int> bone_connects;
+            for (auto bone_name: bone_names) {
+                if (parent_mapping.count(bone_name)) {
+                    auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
+                    auto parent_name = parent_mapping[bone_name];
+                    auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    if (self_index >= 0 && parent_index >= 0) {
+                        bone_connects.push_back(parent_index);
+                        bone_connects.push_back(self_index);
+                    }
                 }
             }
-            ud.set2("boneName_count", int(bone_names.size()));
+            prim->loops.values = bone_connects;
+            prim->polys.resize(bone_connects.size() / 2);
+            for (auto j = 0; j < bone_connects.size() / 2; j++) {
+                prim->polys[j] = {j * 2, 2};
+            }
+
+            prim->userData().set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
-                ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
+                prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
             }
         }
 
@@ -783,6 +850,18 @@ struct NewFBXImportSkeleton : INode {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
+            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                transform_r0[i] *= 0.01;
+                transform_r1[i] *= 0.01;
+                transform_r2[i] *= 0.01;
+            }
+        }
+        {
+            auto &ud = prim->userData();
+            ud.set2("version", vec3i(major, minor, revision));
         }
         set_output("prim", prim);
         // Destroy the SDK manager and all the other objects it was handling.
@@ -793,7 +872,7 @@ struct NewFBXImportSkeleton : INode {
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
         {"readpath", "path"},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
     },
     {
         "prim",
@@ -873,7 +952,8 @@ struct NewFBXImportAnimation : INode {
 
         int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
         if (stack_index == clip_names.size()) {
-            zeno::log_error("FBX: Can not find clip name");
+            zeno::log_info("FBX: Can not find default clip name, use first");
+            stack_index = 0;
         }
 //        zeno::log_info("stack_index: {}", stack_index);
 
@@ -964,6 +1044,14 @@ struct NewFBXImportAnimation : INode {
             for (auto & v: prim->verts) {
                 v = v * 0.01;
             }
+            auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+            auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+            auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                transform_r0[i] *= 0.01;
+                transform_r1[i] *= 0.01;
+                transform_r2[i] *= 0.01;
+            }
         }
         set_output("prim", prim);
     }
@@ -975,7 +1063,7 @@ ZENDEFNODE(NewFBXImportAnimation, {
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},
-        {"bool", "ConvertUnits", "1"},
+        {"bool", "ConvertUnits", "0"},
     },
     {
         "prim",
@@ -1180,7 +1268,7 @@ struct NewFBXBoneDeform : INode {
             auto index = std::find(_new.begin(), _new.end(), old[i]) - _new.begin();
             if (index == _new.size()) {
                 index = -1;
-                zeno::log_error("connot find bone: {}, {}", i, old[i]);
+                zeno::log_info("connot find bone: {}, {}", i, old[i]);
             }
             mapping.push_back(index);
         }
@@ -1235,48 +1323,40 @@ struct NewFBXBoneDeform : INode {
         std::vector<glm::mat4> matrixs;
         matrixs.reserve(geometryToDeformBoneNames.size());
         for (auto i = 0; i < geometryToDeformBoneNames.size(); i++) {
-            auto res_inv_matrix = restPointTransformsInv[restPointTransformsBoneMapping[i]];
-            auto deform_matrix = deformPointTransforms[deformPointTransformsBoneMapping[i]];
+            glm::mat4 res_inv_matrix = glm::mat4(1);
+            glm::mat4 deform_matrix = glm::mat4(1);
+            if (restPointTransformsBoneMapping[i] >= 0 && deformPointTransformsBoneMapping[i] >= 0) {
+                res_inv_matrix = restPointTransformsInv[restPointTransformsBoneMapping[i]];
+                deform_matrix = deformPointTransforms[deformPointTransformsBoneMapping[i]];
+            }
             auto matrix = deform_matrix * res_inv_matrix;
             matrixs.push_back(matrix);
         }
 
         auto prim = std::dynamic_pointer_cast<PrimitiveObject>(geometryToDeform->clone());
 
-        auto &bi = prim->verts.add_attr<vec4i>("boneName");
-        auto &bw = prim->verts.add_attr<vec4f>("boneWeight");
+        int maxnum_boneWeight = prim->userData().get2<int>("maxnum_boneWeight");
+        std::vector<std::vector<int>*> bi;
+        std::vector<std::vector<float>*> bw;
+        for (auto i = 0; i < maxnum_boneWeight; i++) {
+            bi.push_back(&prim->verts.add_attr<int>(format("boneName_{}", i)));
+            bw.push_back(&prim->verts.add_attr<float>(format("boneWeight_{}", i)));
+        }
         size_t vert_count = prim->verts.size();
 #pragma omp parallel for
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
             float w = 0;
-            for (auto j = 0; j < 4; j++) {
-                if (bi[i][j] < 0) {
+            for (auto j = 0; j < maxnum_boneWeight; j++) {
+                if (bi[j]->operator[](i) < 0) {
                     continue;
                 }
-                auto matrix = matrixs[bi[i][j]];
-                pos += transform_pos(matrix, opos) * bw[i][j];
-                w += bw[i][j];
+                auto matrix = matrixs[bi[j]->operator[](i)];
+                pos += transform_pos(matrix, opos) * bw[j]->operator[](i);
+                w += bw[j]->operator[](i);
             }
             prim->verts[i] = pos / w;
-        }
-        if (prim->verts.attr_is<vec3f>("nrm")) {
-            auto &nrms = prim->verts.attr<vec3f>("nrm");
-            for (auto i = 0; i < vert_count; i++) {
-                glm::mat4 matrix(0);
-                float w = 0;
-                for (auto j = 0; j < 4; j++) {
-                    if (bi[i][j] < 0) {
-                        continue;
-                    }
-                    matrix += matrixs[bi[i][j]] * bw[i][j];
-                    w += bw[i][j];
-                }
-                matrix = matrix / w;
-                auto nrm = transform_nrm(matrix, nrms[i]);
-                nrms[i] = zeno::normalize(nrm );
-            }
         }
         auto vectors_str = get_input2<std::string>("vectors");
         std::vector<std::string> vectors = zeno::split_str(vectors_str, ',');
@@ -1288,12 +1368,12 @@ struct NewFBXBoneDeform : INode {
                     for (auto i = 0; i < vert_count; i++) {
                         glm::mat4 matrix(0);
                         float w = 0;
-                        for (auto j = 0; j < 4; j++) {
-                            if (bi[i][j] < 0) {
+                        for (auto j = 0; j < maxnum_boneWeight; j++) {
+                            if (bi[j]->operator[](i) < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[i][j]] * bw[i][j];
-                            w += bw[i][j];
+                            matrix += matrixs[bi[j]->operator[](i)] * bw[j]->operator[](i);
+                            w += bw[j]->operator[](i);
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
@@ -1306,12 +1386,12 @@ struct NewFBXBoneDeform : INode {
                         auto vi = prim->loops[i];
                         glm::mat4 matrix(0);
                         float w = 0;
-                        for (auto j = 0; j < 4; j++) {
-                            if (bi[vi][j] < 0) {
+                        for (auto j = 0; j < maxnum_boneWeight; j++) {
+                            if (bi[j]->operator[](vi) < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[vi][j]] * bw[vi][j];
-                            w += bw[vi][j];
+                            matrix += matrixs[bi[j]->operator[](vi)] * bw[j]->operator[](vi);
+                            w += bw[j]->operator[](vi);
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
