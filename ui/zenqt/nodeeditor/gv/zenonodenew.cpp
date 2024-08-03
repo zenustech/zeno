@@ -412,8 +412,9 @@ void ZenoNodeNew::addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QM
 {
     QString name = paramIdx.data(ROLE_PARAM_NAME).toString();
     QFontMetrics fontMetrics(font());
-    qreal margin = ZenoStyle::dpiScaled(2);
-    QSizeF szSocket(fontMetrics.width(name) + margin, fontMetrics.height() + margin);
+    qreal xmargin = ZenoStyle::dpiScaled(10);
+    qreal ymargin = ZenoStyle::dpiScaled(0);
+    QSizeF szSocket(fontMetrics.width(name) + xmargin, fontMetrics.height() + ymargin);
     ZenoSocketItem* socket = new ZenoObjSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
     socket->setBrush(QColor("#CCA44E"), QColor("#ee9922"));
     pSocketLayout->addItem(socket);

@@ -433,7 +433,7 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {"PrimitiveObject", "prim", "", zeno::Socket_Owning},
         {"string", "path"},
         {"vec3f", "translation", "0,0,0"},
         {"vec3f", "eulerXYZ", "0,0,0"},
@@ -444,7 +444,7 @@ ZENDEFNODE(PrimitiveTransform, {
         {"vec3f", "pivotPos", "0,0,0"},
         {"vec3f", "localX", "1,0,0"},
         {"vec3f", "localY", "0,1,0"},
-        {"object", "Matrix"},
+        {"object", "Matrix", "", zeno::Socket_ReadOnly},
         {"object", "preTransform"},
         {"object", "local"},
     },

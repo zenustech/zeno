@@ -444,10 +444,129 @@ ZENO_API Session::Session()
 
 ZENO_API Session::~Session() = default;
 
+
+static CustomUI descToCustomui(const Descriptor& desc) {
+    //兼容以前写的各种ZENDEFINE
+    CustomUI ui;
+
+    ui.nickname = desc.displayName;
+    ui.iconResPath = desc.iconResPath;
+    ui.doc = desc.doc;
+    if (!desc.categories.empty())
+        ui.category = desc.categories[0];   //很多cate都只有一个
+
+    ParamGroup default;
+    for (const SocketDescriptor& param_desc : desc.inputs) {
+        ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
+        if (isPrimitiveType(type)) {
+            //如果是数值类型，就添加到组里
+            ParamPrimitive param;
+            param.name = param_desc.name;
+            param.type = type;
+            param.defl = zeno::str2any(param_desc.defl, param.type);
+            if (param_desc.socketType != zeno::NoSocket)
+                param.socketType = param_desc.socketType;
+            if (param_desc.control != NullControl)
+                param.control = param_desc.control;
+            if (starts_with(param_desc.type, "enum ")) {
+                //compatible with old case of combobox items.
+                param.type = zeno::types::gParamType_String;
+                param.control = Combobox;
+                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                if (!items.empty()) {
+                    items.erase(items.begin());
+                    param.ctrlProps = items;
+                }
+            }
+            if (param.type != Param_Null && param.control == NullControl)
+                param.control = getDefaultControl(param.type);
+            param.tooltip = param_desc.doc;
+            param.prop = Socket_Normal;
+            param.wildCardGroup = param_desc.wildCard;
+            default.params.emplace_back(std::move(param));
+        }
+        else
+        {
+            //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+            ParamObject param;
+            param.name = param_desc.name;
+            param.type = type;
+            if (param_desc.socketType != zeno::NoSocket)
+                param.socketType = param_desc.socketType;
+            param.bInput = true;
+            param.wildCardGroup = param_desc.wildCard;
+            ui.inputObjs.emplace_back(std::move(param));
+        }
+    }
+    for (const ParamDescriptor& param_desc : desc.params) {
+        ParamPrimitive param;
+        param.name = param_desc.name;
+        param.type = zeno::convertToType(param_desc.type, param.name);
+        param.defl = zeno::str2any(param_desc.defl, param.type);
+        param.socketType = NoSocket;
+        //其他控件估计是根据类型推断的。
+        if (starts_with(param_desc.type, "enum ")) {
+            //compatible with old case of combobox items.
+            param.type = zeno::types::gParamType_String;
+            param.control = Combobox;
+            std::vector<std::string> items = split_str(param_desc.type, ' ');
+            if (!items.empty()) {
+                items.erase(items.begin());
+                param.ctrlProps = items;
+            }
+        }
+        if (param.type != Param_Null && param.control == NullControl)
+            param.control = getDefaultControl(param.type);
+        param.tooltip = param_desc.doc;
+        default.params.emplace_back(std::move(param));
+    }
+    for (const SocketDescriptor& param_desc : desc.outputs) {
+        ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
+        if (isPrimitiveType(type)) {
+            //如果是数值类型，就添加到组里
+            ParamPrimitive param;
+            param.name = param_desc.name;
+            param.type = type;
+            param.defl = zeno::str2any(param_desc.defl, param.type);
+            if (param_desc.socketType != zeno::NoSocket)
+                param.socketType = param_desc.socketType;
+            param.control = NullControl;
+            param.tooltip = param_desc.doc;
+            param.prop = Socket_Normal;
+            param.wildCardGroup = param_desc.wildCard;
+            ui.outputPrims.emplace_back(std::move(param));
+        }
+        else
+        {
+            //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+            ParamObject param;
+            param.name = param_desc.name;
+            param.type = type;
+            if (param_desc.socketType != zeno::NoSocket)
+                param.socketType = param_desc.socketType;
+            param.socketType = Socket_Output;
+            param.bInput = false;
+            param.prop = Socket_Normal;
+            param.wildCardGroup = param_desc.wildCard;
+            ui.outputObjs.emplace_back(std::move(param));
+        }
+    }
+    ParamTab tab;
+    tab.groups.emplace_back(std::move(default));
+    ui.inputPrims.tabs.emplace_back(std::move(tab));
+    return ui;
+}
+
 ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
     if (nodeClasses.find(clsname) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", clsname);
     }
+
+    if (clsname == "PrimitiveTransform") {
+        int j;
+        j = 0;
+    }
+
     CustomUI ui = descToCustomui(desc);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, clsname);
     nodeClasses.emplace(clsname, std::move(cls));
