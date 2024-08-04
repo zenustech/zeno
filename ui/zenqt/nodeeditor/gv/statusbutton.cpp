@@ -36,6 +36,19 @@ QPainterPath StatusButton::shape() const
     return m_path;
 }
 
+void StatusButton::updateRightButtomRadius(bool bHasRadius)
+{
+    if (bHasRadius) {
+        m_info.rbradius = 10;
+        initPath();
+    }
+    else {
+        m_info.rbradius = 0;
+        initPath();
+    }
+    update();
+}
+
 void StatusButton::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     painter->setRenderHint(QPainter::Antialiasing, true);

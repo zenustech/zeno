@@ -72,6 +72,10 @@ StatusGroup::StatusGroup(RoundRectInfo info, QGraphicsItem* parent)
         });
 }
 
+void StatusGroup::updateRightButtomRadius(bool bHasRadius) {
+    m_minView->updateRightButtomRadius(bHasRadius);
+}
+
 QRectF StatusGroup::boundingRect() const
 {
     return _base::boundingRect();

@@ -178,6 +178,17 @@ ZGraphicsLayout* ZenoNodeNew::initVerticalSockets(bool bInput)
     return pSocketLayout;
 }
 
+void ZenoNodeNew::setVisibleForParams(bool bVisible) {
+    m_bodyWidget->setVisible(bVisible);
+
+    //还要调整header ui块下面的corner radius.
+    if (bVisible)
+        m_headerWidget->setRadius(10, 10, 0, 0);
+    else
+        m_headerWidget->setRadius(10, 10, 10, 10);
+    m_pStatusWidgets->updateRightButtomRadius(!bVisible);
+    updateWhole();
+}
 
 ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
 {
@@ -220,8 +231,8 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     font2.setPointSize(12);
     font2.setWeight(QFont::Normal);
 
-    auto clsItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), headerWidget);
-    clsItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+    auto nameItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), headerWidget);
+    nameItem->setTextInteractionFlags(Qt::TextEditorInteraction);
     //clsItem->setDefaultTextColor(QColor("#FFFFFF"));
 
     //qreal margin = ZenoStyle::dpiScaled(10);
@@ -299,8 +310,9 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     connect(m_pStatusWidgets, SIGNAL(toggleChanged(STATUS_BTN, bool)), this, SLOT(onOptionsBtnToggled(STATUS_BTN, bool)));
 
     //pHLayout->addLayout(pNameLayout);
-    //pHLayout->addSpacing(ZenoStyle::dpiScaled(5.));
-    pHLayout->addItem(clsItem, Qt::AlignVCenter);
+    pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
+    pHLayout->addItem(nameItem, Qt::AlignVCenter);
+    pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
 
     //补充一些距离
     //pHLayout->addSpacing(szIcon.width());// +ZenoStyle::dpiScaled(20.));
@@ -621,12 +633,12 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
             if (role == ROLE_PARAM_VISIBLE) {
                 bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
                 if (bVisible) {
-                    m_bodyWidget->setVisible(true);
+                    setVisibleForParams(true);
                 }
                 else {
                     ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
                     ZASSERT_EXIT(paramsM);
-                    m_bodyWidget->setVisible(paramsM->hasVisiblePrimParam());
+                    setVisibleForParams(paramsM->hasVisiblePrimParam());
                 }
             }
 

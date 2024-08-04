@@ -69,6 +69,7 @@ private:
     ZGraphicsLayout* initPrimSockets(ParamsModel* pModel, const bool bInput);
     ZGraphicsLayout* initVerticalSockets(bool bInput);
     void _drawShadow(QPainter* painter);
+    void setVisibleForParams(bool bVisible);
 
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx);
