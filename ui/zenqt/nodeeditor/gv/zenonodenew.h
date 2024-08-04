@@ -22,6 +22,21 @@ class ParamsModel;
 class StatusGroup;
 class StatusButton;
 
+class NodeNameItem : public ZGraphicsTextItem
+{
+    Q_OBJECT
+public:
+    NodeNameItem(const QString& name, QGraphicsItem* parent = nullptr);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+};
+
+
 class ZenoNodeNew : public ZenoNodeBase
 {
     Q_OBJECT
@@ -54,6 +69,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
     //ZenoNodeNew:
     virtual ZGraphicsLayout* initCustomParamWidgets();
+    bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
 
 private slots:
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
@@ -94,6 +110,8 @@ private:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+    NodeNameItem* m_nameItem;       //以这个为主
+
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputObjSockets;
     ZGraphicsLayout* m_outputObjSockets;
@@ -101,6 +119,8 @@ private:
     ZGraphicsLayout* m_outputsLayout;
 
     zeno::NodeRunStatus m_nodeStatus;
+
+    QPointF _cache_name_move;
 };
 
 #endif

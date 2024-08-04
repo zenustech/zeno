@@ -43,6 +43,42 @@
 #include "reflect/reflection.generated.hpp"
 
 
+NodeNameItem::NodeNameItem(const QString& name, QGraphicsItem* parent)
+    : ZGraphicsTextItem(name, QFont(), QColor("#FFFFFF"), parent)
+{
+    QFont font2;
+    font2.setPointSize(12);
+    font2.setWeight(QFont::Normal);
+    setFont(font2);
+    //setTextInteractionFlags(Qt::TextEditable);
+    //setAcceptHoverEvents(true);
+}
+
+void NodeNameItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    //override
+    //ZGraphicsTextItem::mousePressEvent(event);
+}
+
+void NodeNameItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    //override
+    //ZGraphicsTextItem::mouseMoveEvent(event);
+}
+
+void NodeNameItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    ZGraphicsTextItem::mouseReleaseEvent(event);
+}
+
+void NodeNameItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
+    setTextInteractionFlags(Qt::TextEditorInteraction);
+    ZGraphicsTextItem::mouseDoubleClickEvent(event);
+    setFocus(Qt::MouseFocusReason);
+}
+
+void NodeNameItem::focusOutEvent(QFocusEvent* event) {
+    setTextInteractionFlags(Qt::NoTextInteraction);
+}
+
+
 ZenoNodeNew::ZenoNodeNew(const NodeUtilParam &params, QGraphicsItem *parent)
     : _base(params, parent)
     , m_bodyWidget(nullptr)
@@ -58,6 +94,7 @@ ZenoNodeNew::ZenoNodeNew(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_NameItemTip(nullptr)
     , m_statusMarker(nullptr)
     , m_errorTip(nullptr)
+    , m_nameItem(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -231,8 +268,8 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     font2.setPointSize(12);
     font2.setWeight(QFont::Normal);
 
-    auto nameItem = new ZGraphicsTextItem(name, font2, QColor("#FFFFFF"), headerWidget);
-    nameItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+    m_nameItem = new NodeNameItem(name);
+    m_nameItem->installEventFilter(this);
     //clsItem->setDefaultTextColor(QColor("#FFFFFF"));
 
     //qreal margin = ZenoStyle::dpiScaled(10);
@@ -311,7 +348,7 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
 
     //pHLayout->addLayout(pNameLayout);
     pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
-    pHLayout->addItem(nameItem, Qt::AlignVCenter);
+    pHLayout->addItem(m_nameItem, Qt::AlignVCenter);
     pHLayout->addSpacing(ZenoStyle::dpiScaled(16.));
 
     //补充一些距离
@@ -1084,6 +1121,18 @@ void ZenoNodeNew::onZoomed()
     }
 }
 
+bool ZenoNodeNew::sceneEventFilter(QGraphicsItem* watched, QEvent* event)
+{
+    if (event->type() == QEvent::GraphicsSceneMousePress) {
+        int j;
+        j = 0;
+    }
+    else if (event->type() == QEvent::GraphicsSceneMouseMove) {
+        int j;
+        j = 0;
+    }
+    return _base::sceneEventFilter(watched, event);
+}
 
 bool ZenoNodeNew::eventFilter(QObject* obj, QEvent* event)
 {
@@ -1130,6 +1179,29 @@ bool ZenoNodeNew::eventFilter(QObject* obj, QEvent* event)
                 m_NameItem->setTextInteractionFlags(Qt::TextEditable);
                 m_NameItem->setDefaultTextColor(QColor(255, 255, 255, 40));
             }
+        }
+    }
+    else if (obj == m_nameItem) {
+        QEvent::Type type = event->type();
+        switch (type)
+        {
+        case QEvent::GraphicsSceneMousePress: {
+            QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+            _cache_name_move = mouseEvent->scenePos();
+            break;
+        }
+        case QEvent::GraphicsSceneMouseMove: {
+            QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+            QPointF mousePos = mouseEvent->scenePos();
+            qreal mx = mousePos.x(), my = mousePos.y();
+            QPointF currPos = this->scenePos();
+            qreal cx = currPos.x(), cy = currPos.y();
+
+            QPointF offset = mousePos - _cache_name_move;
+            setPos(currPos + offset);
+            _cache_name_move = mousePos;
+            break;
+        }
         }
     }
     return _base::eventFilter(obj, event);
