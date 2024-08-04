@@ -1032,6 +1032,7 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam.type = param.type;
     sparam.ctrlProps = param.ctrlProps;
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.bVisible = param.bVisible;
     m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
