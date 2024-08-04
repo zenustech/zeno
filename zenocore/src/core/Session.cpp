@@ -483,6 +483,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.tooltip = param_desc.doc;
             param.prop = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
+            param.bVisible = false;
             default.params.emplace_back(std::move(param));
         }
         else
@@ -518,6 +519,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         if (param.type != Param_Null && param.control == NullControl)
             param.control = getDefaultControl(param.type);
         param.tooltip = param_desc.doc;
+        param.bVisible = false;
         default.params.emplace_back(std::move(param));
     }
     for (const SocketDescriptor& param_desc : desc.outputs) {
@@ -534,6 +536,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.tooltip = param_desc.doc;
             param.prop = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
+            param.bVisible = false;
             ui.outputPrims.emplace_back(std::move(param));
         }
         else

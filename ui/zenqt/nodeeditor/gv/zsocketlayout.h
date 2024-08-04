@@ -29,6 +29,7 @@ public:
     QPersistentModelIndex viewSocketIdx() const;
     virtual void setVisible(bool bVisible);
     void setSocketVisible(bool bVisible);
+    SocketBackgroud* getSocketBg() const { return m_parentItem; }
 
 protected:
     ZenoSocketItem* m_socket;

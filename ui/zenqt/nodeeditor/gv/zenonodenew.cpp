@@ -146,7 +146,7 @@ void ZenoNodeNew::initLayout()
     mainLayout->addSpacing(6);
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
-    mainLayout->addSpacing(6);
+    mainLayout->addSpacing(3);
     mainLayout->addLayout(m_outputObjSockets);
 
     mainLayout->setSpacing(0);
@@ -281,12 +281,17 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     const qreal H_status = ZenoStyle::dpiScaled(50.);
     const qreal radius = ZenoStyle::dpiScaled(9.);
 
+
+    //要检查是否有可见基础类型的参数，如有，会调整header的ui
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+    bool bBodyVisible = paramsM->hasVisiblePrimParam();
+
     RoundRectInfo buttonShapeInfo;
     buttonShapeInfo.W = ZenoStyle::dpiScaled(22.);
     buttonShapeInfo.H = ZenoStyle::dpiScaled(50.);
     buttonShapeInfo.rtradius = ZenoStyle::dpiScaled(9.);
     //根据是否有visible的socket显示来决定
-    buttonShapeInfo.rbradius = ZenoStyle::dpiScaled(9.);
+    buttonShapeInfo.rbradius = bBodyVisible ? 0 : ZenoStyle::dpiScaled(9.);
 
     m_pStatusWidgets = new StatusGroup(buttonShapeInfo);
     bool bView = m_index.data(ROLE_NODE_ISVIEW).toBool();
@@ -365,15 +370,19 @@ ZLayoutBackground* ZenoNodeNew::initBodyWidget()
         m_bodyLayout->addLayout(pLayout);
         m_bodyLayout->addSpacing(margin);
     }
-    m_inputsLayout = initSockets(paramsM, true);
+    m_inputsLayout = initPrimSockets(paramsM, true);
     m_bodyLayout->addLayout(m_inputsLayout);
 
-    m_outputsLayout = initSockets(paramsM, false);
+    m_outputsLayout = initPrimSockets(paramsM, false);
     m_bodyLayout->addLayout(m_outputsLayout);
 
     m_bodyLayout->addSpacing(13, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
     bodyWidget->setLayout(m_bodyLayout);
+
+    bool bVisible = paramsM->hasVisiblePrimParam();
+    bodyWidget->setVisible(bVisible);
+
     return bodyWidget;
 }
 
@@ -460,7 +469,7 @@ void ZenoNodeNew::onLayoutChanged()
             continue;
 
         if (group == zeno::Role_InputObject)
-            addOnlySocketToLayout(m_inputObjSockets, paramIdx, 0);
+            addOnlySocketToLayout(m_inputObjSockets, paramIdx);
         else
             m_inputsLayout->addItem(addSocket(paramIdx, true));
     }
@@ -473,7 +482,7 @@ void ZenoNodeNew::onLayoutChanged()
             continue;
 
         if (group == zeno::Role_OutputObject)
-            addOnlySocketToLayout(m_outputObjSockets, paramIdx, 0);
+            addOnlySocketToLayout(m_outputObjSockets, paramIdx);
         else
             m_outputsLayout->addItem(addSocket(paramIdx, false));
     }
@@ -599,11 +608,28 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
                         auto bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
                         pSocketLayout->setVisible(bVisible);
                         pSocketLayout->setSocketVisible(bVisible);
+                        //layout上面的那个SocketBackground也得设为可见
+                        if (SocketBackgroud* pBg = pSocketLayout->getSocketBg()) {
+                            pBg->setVisible(bVisible);
+                        }
                         emit inSocketPosChanged();
                     }
                     break;
                 }
             }
+
+            if (role == ROLE_PARAM_VISIBLE) {
+                bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+                if (bVisible) {
+                    m_bodyWidget->setVisible(true);
+                }
+                else {
+                    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+                    ZASSERT_EXIT(paramsM);
+                    m_bodyWidget->setVisible(paramsM->hasVisiblePrimParam());
+                }
+            }
+
             updateWhole();
             return;
         }
@@ -678,12 +704,12 @@ void ZenoNodeNew::onViewParamAboutToBeRemoved(const QModelIndex& parent, int fir
     }
 }
 
-ZGraphicsLayout* ZenoNodeNew::initSockets(ParamsModel* pModel, const bool bInput)
+ZGraphicsLayout* ZenoNodeNew::initPrimSockets(ParamsModel* pModel, const bool bInput)
 {
     ZASSERT_EXIT(pModel, nullptr);
 
     ZGraphicsLayout* pSocketsLayout = new ZGraphicsLayout(false);
-    pSocketsLayout->setSpacing(5);
+    pSocketsLayout->setSpacing(0);
 
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -748,6 +774,7 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
     pMiniLayout->setSocketVisible(bVisible);
 
     pBackground->setLayout(pMiniLayout);
+    pBackground->setVisible(bVisible);
     return pBackground;
 }
 
@@ -1169,7 +1196,8 @@ QVariant ZenoNodeNew::itemChange(GraphicsItemChange change, const QVariant &valu
     {
         bool bSelected = isSelected();
         m_headerWidget->toggle(bSelected);
-        m_bodyWidget->toggle(bSelected);
+        if (m_bodyWidget)
+            m_bodyWidget->toggle(bSelected);
     }
     _base::itemChange(change, value);
     return value;
@@ -1196,19 +1224,24 @@ void ZenoNodeNew::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 
 void ZenoNodeNew::onCollaspeBtnClicked()
 {
+#if 0
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
     if (GraphModel* model = qobject_cast<GraphModel*>(pModel))
     {
         model->setModelData(m_index, !bCollasped, ROLE_COLLASPED);
     }
+#endif
 }
 
 void ZenoNodeNew::onCollaspeUpdated(bool collasped)
 {
-    m_bodyWidget->setVisible(!collasped);
+#if 0
+    if (m_bodyWidget)
+        m_bodyWidget->setVisible(!collasped);
     updateWhole();
     update();
+#endif
 }
 
 void ZenoNodeNew::onViewUpdated(bool bView)

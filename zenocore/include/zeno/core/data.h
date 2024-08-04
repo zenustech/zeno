@@ -85,7 +85,7 @@ namespace zeno {
 
         std::string tooltip;
         bool bInput = true;
-        bool bVisible = true;
+        bool bVisible = false;
         std::string wildCardGroup;
     };
 

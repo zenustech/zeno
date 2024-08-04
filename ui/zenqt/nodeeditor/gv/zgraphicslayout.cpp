@@ -398,6 +398,12 @@ QSizeF ZGraphicsLayout::calculateSize()
         j = 0;
     }
 
+    int n = m_items.size();
+    if (n > 10) {
+        int j;
+        j = 0;
+    }
+
     for (int i = 0; i < m_items.size(); i++)
     {
         auto item = m_items[i];
@@ -450,6 +456,12 @@ QSizeF ZGraphicsLayout::calculateSize()
             }
             case Type_Spacing:
             {
+                //如果前一个元素或者后一个元素隐藏了，那这个Spacing也得隐藏
+                //if ((i > 1 && m_items[i - 1]->pItem && !m_items[i - 1]->pItem->isVisible()) ||
+                //    (i < m_items.size() - 1 && m_items[i + 1]->pItem && m_items[i + 1]->pItem->isVisible())) {
+                //    continue;
+                //}
+
                 if (m_bHorizontal) {
                     size.setHeight(qMax(item->gvItemSz.minSize.height() + szMargin.height(), size.height()));
                     size += QSizeF(item->gvItemSz.minSize.width(), 0);

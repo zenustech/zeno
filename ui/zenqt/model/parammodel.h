@@ -46,6 +46,7 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     void getDegrees(int& inDegrees, int& outDegrees);
+    bool hasVisiblePrimParam() const;
 
     //api:
     void setNodeIdx(const QModelIndex& nodeIdx);

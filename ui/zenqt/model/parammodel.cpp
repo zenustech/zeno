@@ -138,6 +138,7 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
+        item.bVisible = param.bVisible;
         const std::string& sClr = zeno::getSession().getColorByRtti(item.type);
         item.m_socketClr = QColor(sClr.c_str());
 
@@ -764,6 +765,17 @@ void ParamsModel::getDegrees(int& inDegrees, int& outDegrees) {
             outDegrees += item.links.size();
         }
     }
+}
+
+bool ParamsModel::hasVisiblePrimParam() const {
+    for (auto item : m_items) {
+        if (item.bVisible &&
+            (item.group == zeno::Role_InputPrimitive || item.group == zeno::Role_OutputPrimitive))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 int ParamsModel::getParamlinkCount(const QModelIndex& paramIdx)
