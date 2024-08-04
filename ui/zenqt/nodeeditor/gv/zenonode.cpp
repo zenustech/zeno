@@ -733,7 +733,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
         const auto paramCtrl = paramIdx.data(ROLE_PARAM_CONTROL).toInt();
-        const zeno::ParamType paramType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+        const zeno::ParamType paramType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
         if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP)
         {
@@ -952,7 +952,7 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput)
 
     const QString& sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
-    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
     const PARAM_LINKS& links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
     int sockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -1008,7 +1008,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
 {
     const QPersistentModelIndex perIdx(paramIdx);
 
-    zeno::ParamType sockType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    zeno::ParamType sockType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
     zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
     bool bFloat = UiHelper::isFloatType(sockType);
     auto cbUpdateSocketDefl = [=](QVariant newValue) {

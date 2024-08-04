@@ -234,7 +234,7 @@ void ParamsModel::onCustomModelDataChanged(const QModelIndex& topLeft, const QMo
             continue;
 
         QVariant newValue = topLeft.data(ROLE_PARAM_VALUE);
-        const zeno::ParamType type = (zeno::ParamType)topLeft.data(ROLE_PARAM_TYPE).toInt();
+        const zeno::ParamType type = (zeno::ParamType)topLeft.data(ROLE_PARAM_TYPE).toLongLong();
         QString name = topLeft.data(ROLE_PARAM_NAME).toString();
         
         auto spNode = m_wpNode.lock();
@@ -257,7 +257,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         break;
 
     case ROLE_PARAM_TYPE:
-        param.type = (zeno::ParamType)value.toInt();
+        param.type = (zeno::ParamType)value.toUInt();
         break;
 
     case ROLE_PARAM_VALUE:

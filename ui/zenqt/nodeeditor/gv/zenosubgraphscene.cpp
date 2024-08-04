@@ -843,8 +843,8 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
         outSockIdx = fixedSockItem->paramIndex();
         inSockIdx = targetSockItem->paramIndex();
     }
-    int inParamType = inSockIdx.data(ROLE_PARAM_TYPE).toInt();
-    int outParamType = outSockIdx.data(ROLE_PARAM_TYPE).toInt();
+    int inParamType = inSockIdx.data(ROLE_PARAM_TYPE).toLongLong();
+    int outParamType = outSockIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
     if (inParamType != outParamType)
     {

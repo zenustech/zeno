@@ -93,7 +93,7 @@ bool sceneMenuEvent(
         {
             bool bInput = selParam.data(ROLE_ISINPUT).toBool();
             QString paramName = selParam.data(ROLE_PARAM_NAME).toString();
-            int type = selParam.data(ROLE_PARAM_TYPE).toInt();
+            int type = selParam.data(ROLE_PARAM_TYPE).toLongLong();
 
             QMenu* socketMenu = new QMenu;
 

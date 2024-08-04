@@ -147,7 +147,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     pVLayout->setContentsMargin(8, 0, 8, 8);
     pVLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
-    const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
     const QString& coreType = m_paramIdx.data(ROLE_PARAM_TYPE).toString();
     m_bDict = type == zeno::types::gParamType_Dict;

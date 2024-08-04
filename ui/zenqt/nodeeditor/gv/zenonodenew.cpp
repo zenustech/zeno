@@ -793,7 +793,7 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
     };
 
     const QString& sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
-    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
     zeno::NodeType nodetype = static_cast<zeno::NodeType>(m_index.data(ROLE_NODETYPE).toInt());
     bool bSocketEnable = true;
@@ -1188,6 +1188,9 @@ bool ZenoNodeNew::eventFilter(QObject* obj, QEvent* event)
         case QEvent::GraphicsSceneMousePress: {
             QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
             _cache_name_move = mouseEvent->scenePos();
+            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(this->scene());
+            ZASSERT_EXIT(pScene, false);
+            pScene->select({m_index});
             break;
         }
         case QEvent::GraphicsSceneMouseMove: {
