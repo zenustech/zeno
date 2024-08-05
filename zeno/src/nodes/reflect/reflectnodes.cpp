@@ -62,4 +62,18 @@ namespace zeno
             return m_handle;
         };
     };
+
+    struct ZRECORD() ReadOnlyNode : public zeno::INode
+    {
+        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
+            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<ReadOnlyNode>());
+            return m_handle;
+        };
+
+        std::shared_ptr<const zeno::IObject> apply(std::shared_ptr<const zeno::IObject> input_obj, const std::string& name1, const std::string& name2, std::string & ret)
+        {
+            ret = input_obj->nodeId;
+            return input_obj;
+        }
+    };
 }

@@ -33,7 +33,7 @@
 #include "reflect/reflection.generated.hpp"
 
 using namespace zeno::reflect;
-
+using namespace zeno::types;
 
 namespace zeno {
 
@@ -277,12 +277,14 @@ struct ReflectNodeClass : INodeClass {
             }
             const RTTITypeInfo& ret_type = func->get_return_rtti();
             ParamType type = ret_type.get_decayed_hash() == 0 ? ret_type.hash_code() : ret_type.get_decayed_hash();
+            bool isConstPtr = false;
+            bool isObject = zeno::isObjectType(ret_type, isConstPtr);
             if (type != Param_Null)
             {
                 //存在返回类型，说明有输出，需要分配一个输出参数
                 int idx = 1;
                 std::string param_name = "result";
-                if (type == Param_Object) {
+                if (isObject) {
                     while (reg_outputobjs.find(param_name) != reg_outputobjs.end()) {
                         param_name = "result" + std::to_string(idx++);
                     }
@@ -303,6 +305,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bInput = false;
                     outPrim.socketType = Socket_Primitve;
                     outPrim.type = type;
+                    outPrim.bVisible = false;
                     outPrim.wildCardGroup;
                     m_customui.outputPrims.emplace_back(outPrim);
                     reg_outputprims.insert(param_name);
@@ -315,19 +318,18 @@ struct ReflectNodeClass : INodeClass {
             for (int i = 0; i < params.size(); i++)
             {
                 const RTTITypeInfo& param_type = params[i];
+                isObject = zeno::isObjectType(param_type, isConstPtr);
 
-                size_t param_code = param_type.hash_code();
                 std::string const& param_name(param_names[i].c_str());
+                type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                 if (param_name.empty()) {
                     //空白参数不考虑
                     continue;
                 }
                 if (!param_type.has_flags(TF_IsConst) && param_type.has_flags(TF_IsLValueRef)) {
                     //引用返回当作是输出处理
-                    if (param_type.get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code() ||
-                        param_type.get_decayed_hash() == zeno::reflect::type_info<std::unique_ptr<zeno::IObject>>().hash_code())
+                    if (isObject)
                     {
-                        type = Param_Object;
                         if (reg_outputobjs.find(param_name) == reg_outputobjs.end()) {
                             ParamObject outputObj;
                             outputObj.name = param_name;
@@ -339,12 +341,11 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     else {
-                        type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                         if (reg_outputprims.find(param_name) == reg_outputprims.end()) {
                             ParamPrimitive prim;
                             prim.name = param_name;
                             prim.bInput = false;
-                            prim.bVisible = true;
+                            prim.bVisible = false;
                             prim.control = NullControl;
                             prim.socketType = Socket_Primitve;
                             prim.type = type;
@@ -358,10 +359,8 @@ struct ReflectNodeClass : INodeClass {
                 }
                 else {
                     //观察是否为shared_ptr<IObject>
-                    if (param_code == get_type<std::shared_ptr<zeno::IObject>>().type_hash() ||
-                        param_code == get_type<std::unique_ptr<zeno::IObject>>().type_hash())
+                    if (isObject)
                     {
-                        type = Param_Object;
                         if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
                             //同名情况，说明成员变量定义了一个相同名字的参数，很罕见，但可以直接跳过
                         }
@@ -369,14 +368,16 @@ struct ReflectNodeClass : INodeClass {
                             ParamObject inObj;
                             inObj.name = param_name;
                             inObj.bInput = true;
-                            inObj.socketType = Socket_Owning;   //TODO: 也许会根据引用类型或者const决定是否owning.
+                            if (isConstPtr)
+                                inObj.socketType = Socket_ReadOnly;
+                            else
+                                inObj.socketType = Socket_Owning;   //默认还是owning
                             inObj.type = type;
                             m_customui.inputObjs.emplace_back(inObj);
                             reg_inputobjs.insert(param_name);
                         }
                     }
                     else {
-                        type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                         if (reg_inputprims.find(param_name) == reg_inputprims.end()) {
                             ParamPrimitive inPrim;
                             inPrim.name = param_name;
@@ -385,6 +386,7 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.type = type;
                             inPrim.defl = initAnyDeflValue(type);
                             inPrim.control = getDefaultControl(type);
+                            inPrim.bVisible = false;
                             inPrim.wildCardGroup;
                             m_customui.inputPrims.tabs[0].groups[0].params.emplace_back(inPrim);
                             reg_inputprims.insert(param_name);

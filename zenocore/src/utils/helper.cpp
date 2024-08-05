@@ -736,6 +736,20 @@ namespace zeno {
         return result;
     }
 
+    bool isObjectType(const zeno::reflect::RTTITypeInfo& type, bool& isConstPtr)
+    {
+        isConstPtr = false;
+        std::string name(type.name());
+        //目前没有太多办法很方便判断是否为对象类型，如果采用枚举值，就得不断登记，先用这种方式，后续可能采用register的方式。
+        if (name.find("shared_ptr<") != std::string::npos) {
+            isConstPtr = name.find("shared_ptr<const ") != std::string::npos;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     bool isNumericType(ParamType type)
     {
         if (type == types::gParamType_Int || type == types::gParamType_Float)

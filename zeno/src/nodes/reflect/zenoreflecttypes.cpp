@@ -39,7 +39,10 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::HeatmapData, Heatmap)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::PrimitiveObject>, Primitive)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::CameraObject>, Camera)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::LightObject>, Light)
+
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::IObject>, sharedIObject)
+REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<const zeno::IObject>, constIObject)
+
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::ListObject>, List)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::DictObject>, Dict)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::unique_ptr<zeno::IObject>, uniqueIObject)
