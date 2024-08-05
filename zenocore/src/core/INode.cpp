@@ -1357,8 +1357,8 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 {
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
-                    update_param_color(param, zeno::getSession().getColorByRtti(type));
-                        return true;
+                    //update_param_color(param, zeno::getSession().getColorByRtti(type));
+                    return true;
                 }
             }
         }
@@ -1374,8 +1374,8 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 {
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
-                    update_param_color(param, zeno::getSession().getColorByRtti(type));
-                        return true;
+                    //update_param_color(param, zeno::getSession().getColorByRtti(type));
+                    return true;
                 }
             }
         }

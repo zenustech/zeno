@@ -108,10 +108,6 @@ void ParamsModel::initParamItems()
             item.name = QString::fromStdString(spParam.name);
             item.type = spParam.type;
             item.value = QVariant::fromValue(spParam.defl);
-
-            const std::string& sClr = zeno::getSession().getColorByRtti(item.type);
-            item.m_socketClr = QColor(sClr.c_str());
-
             item.connectProp = spParam.socketType;
             item.bVisible = spParam.bVisible;
             item.group = zeno::Role_InputPrimitive;
@@ -139,9 +135,6 @@ void ParamsModel::initParamItems()
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
         item.bVisible = param.bVisible;
-        const std::string& sClr = zeno::getSession().getColorByRtti(item.type);
-        item.m_socketClr = QColor(sClr.c_str());
-
         m_items.append(item);
     }
 
@@ -330,9 +323,6 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
             return QVariant::fromValue(param.optCtrlprops);
         else
             return QVariant();
-    }
-    case ROLE_PARAM_SOCKET_CLR: {
-        return param.m_socketClr;
     }
     case ROLE_PARAM_INFO: {
         zeno::ParamPrimitive info;
@@ -719,8 +709,8 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].bVisible = val.toBool();
             else if (role == ROLE_PARAM_GROUP)
                 m_items[i].group = (zeno::NodeDataGroup)val.toInt();
-            else if (role == ROLE_PARAM_SOCKET_CLR)
-                m_items[i].m_socketClr = QColor(val.toString());
+            else if (role == ROLE_PARAM_SOCKET_CLR) {
+            }
             QModelIndex idx = createIndex(i, 0);
             emit dataChanged(idx, idx, { role });
             break;

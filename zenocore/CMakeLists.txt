@@ -102,7 +102,7 @@ if (ZENO_WITH_REFLECTOR)
     )
     include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
     set(headersFile
-        ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
+        src/core/zenoreflecttypes.cpp
         ../zeno/src/nodes/reflect/reflectnodes.cpp
         ../zeno/src/nodes/reflect/reflectnodesexample.cpp
     )

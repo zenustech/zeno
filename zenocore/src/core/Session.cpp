@@ -34,8 +34,6 @@
 
 using namespace zeno::reflect;
 
-extern std::map<size_t, std::string> g_clrMapping;
-
 
 namespace zeno {
 
@@ -127,13 +125,6 @@ struct ReflectNodeClass : INodeClass {
 
                 //根据类型判断一下是object还是primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
-
-                auto iter2 = g_clrMapping.find(zeno::reflect::get_type<int>().type_hash());
-                if (iter2 != g_clrMapping.end()) {
-                    int j;
-                    j = 0;
-                }
-
                 ParamType type = fieldType.type_hash();
                 //role:
                 NodeDataGroup role = Role_InputObject;
@@ -667,13 +658,6 @@ ZENO_API void Session::registerRunTrigger(std::function<void()> func)
 ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
 {
     m_funcNodeStatus = func;
-}
-
-ZENO_API std::string Session::getColorByRtti(const ParamType type)
-{
-    auto iter = g_clrMapping.find(type);
-    if (iter == g_clrMapping.end()) return "#FFFFFF";
-    return iter->second;
 }
 
 void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status)

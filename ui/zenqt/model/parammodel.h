@@ -26,7 +26,6 @@ struct ParamItem
     zeno::NodeDataGroup group;
     zeno::reflect::Any optCtrlprops;
     QList<QPersistentModelIndex> links;
-    QColor m_socketClr;
     bool bVisible = true;
 };
 

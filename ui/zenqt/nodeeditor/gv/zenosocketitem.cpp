@@ -6,6 +6,7 @@
 #include "zassert.h"
 #include "widgets/ztooltip.h"
 #include "util/uihelper.h"
+#include "style/colormanager.h"
 
 #define BASED_ON_SPEHERE
 
@@ -36,7 +37,8 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
 
-    QColor sockClr = m_paramIdx.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
+    zeno::ParamType type = m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
+    QColor sockClr = ZColorManager::getColorByType(type);
     setBrush(sockClr, sockClr);
     //if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
     //    setBrush(QColor("#CC7C5A"), QColor("#5FD2FF"));
