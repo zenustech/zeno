@@ -609,7 +609,7 @@ void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared
 
     FbxMesh* mesh = pNode->GetMesh();
     if (mesh) {
-        auto name = mesh->GetName();
+        auto name = pNode->GetName();
         if (target_name == name) {
             auto sub_prim = GetMesh(pNode);
             if (sub_prim) {
@@ -628,7 +628,6 @@ void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<Primiti
 
     FbxMesh* mesh = pNode->GetMesh();
     if (mesh) {
-        auto name = mesh->GetName();
         auto sub_prim = GetMesh(pNode);
         if (sub_prim) {
             prims.push_back(sub_prim);
