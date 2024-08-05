@@ -64,12 +64,13 @@ void CurveModel::initItems(zeno::CurveData const& curvedat)
         QPointF logicPos = { curvedat.cpbases[i], curvedat.cpoints[i].v };
         QPointF leftOffset = { curvedat.cpoints[i].left_handler[0], curvedat.cpoints[i].left_handler[1] };
         QPointF rightOffset = { curvedat.cpoints[i].right_handler[0], curvedat.cpoints[i].right_handler[1] };
+        int handleType = curvedat.cpoints[i].controlType;
 
         QStandardItem* pItem = new QStandardItem;
         pItem->setData(logicPos, ROLE_NODEPOS);
         pItem->setData(leftOffset, ROLE_LEFTPOS);
         pItem->setData(rightOffset, ROLE_RIGHTPOS);
-        pItem->setData(HDL_ASYM, ROLE_TYPE);
+        pItem->setData(handleType, ROLE_TYPE);
         appendRow(pItem);
     }
      }

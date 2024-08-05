@@ -73,8 +73,8 @@ namespace curve_util
         rg.yTo = 1;
         curve.rg = rg;
 
-        curve.addPoint(rg.xFrom, rg.yFrom, zeno::CurveData::kBezier, { 0,0 }, { 0,0 });
-        curve.addPoint(rg.xTo, rg.yTo, zeno::CurveData::kBezier, { 0,0 }, { 0,0 });
+        curve.addPoint(rg.xFrom, rg.yFrom, zeno::CurveData::kBezier, { 0,0 }, { 0,0 }, zeno::CurveData::HDL_VECTOR);
+        curve.addPoint(rg.xTo, rg.yTo, zeno::CurveData::kBezier, { 0,0 }, { 0,0 }, zeno::CurveData::HDL_VECTOR);
 
         CurveModel *pModel = new CurveModel("x", curve.rg, parent);
         pModel->initItems(curve);
@@ -125,7 +125,7 @@ namespace curve_util
         {
             curve.addPoint(cp.point.x(), cp.point.y(), zeno::CurveData::kBezier,
                 { (float)cp.leftHandler.x(), (float)cp.leftHandler.y() },
-                { (float)cp.rightHandler.x(), (float)cp.rightHandler.y() });
+                { (float)cp.rightHandler.x(), (float)cp.rightHandler.y() }, zeno::CurveData::HDL_VECTOR);
         }
         return curve;
     }

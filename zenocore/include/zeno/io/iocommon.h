@@ -28,6 +28,8 @@ namespace zenoio {
             constexpr const char* key_left_handle = "left-handle";
             constexpr const char* key_right_handle = "right-handle";
             constexpr const char* key_type = "type";
+            constexpr const char* key_handle_type = "handle-type";
+            constexpr const char* key_cycle_type = "cycle-type";
             constexpr const char* key_lockX = "lockX";
             constexpr const char* key_lockY = "lockY";
             constexpr const char* key_visible = "visible";

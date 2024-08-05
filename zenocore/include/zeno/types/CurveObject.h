@@ -98,9 +98,9 @@ struct CurveData : private _CurveDataDetails {
     bool visible = false;
     bool timeline = true;
 
-    void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler) {
+    void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler, HANDLE_TYPE hdl_type) {
         cpbases.push_back(f);
-        cpoints.push_back({v, cp_type, left_handler, right_handler});
+        cpoints.push_back({v, cp_type, left_handler, right_handler, hdl_type});
     }
 
     void updateRange(Range const &newRg) {
@@ -183,6 +183,26 @@ struct CurveData : private _CurveDataDetails {
             return p.v;
         }
     }
+
+    bool operator==(const CurveData& other) {
+        if (other.cpbases.size() != cpbases.size() || other.cpoints.size() != cpoints.size())
+            return false;
+        if (other.cycleType != cycleType || other.visible != visible || other.timeline != timeline)
+            return false;
+        for (int i = 0; i < other.cpbases.size(); i++) {
+            if (other.cpbases[i] != cpbases[i])
+                return false;
+        }
+        for (int i = 0; i < other.cpoints.size(); i++) {
+            if (other.cpoints[i].v != cpoints[i].v || other.cpoints[i].cp_type != cpoints[i].cp_type ||
+                other.cpoints[i].controlType != cpoints[i].controlType || 
+                other.cpoints[i].left_handler[0] != cpoints[i].left_handler[0] || other.cpoints[i].left_handler[1] != cpoints[i].left_handler[1] ||
+                other.cpoints[i].right_handler[0] != cpoints[i].right_handler[0] || other.cpoints[i].right_handler[1] != cpoints[i].right_handler[1]) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 struct CurvesData {
@@ -209,6 +229,20 @@ struct CurvesData {
     CurveData operator[](std::string const& key) {
         if (!contains(key)) return CurveData();
         return keys[key];
+    }
+
+    bool operator==(const CurvesData& other) {
+        if (other.keys.size() != keys.size())
+            return false;
+        for (auto& [otherKey, otherCurve]: other.keys) {
+            const auto& iter = keys.find(otherKey);
+            if (iter == keys.end()) {
+                return false;
+            }else if (!(iter->second == otherCurve)){
+                return false;
+            }
+        }
+        return true;
     }
 
     template <class ...Ts>
