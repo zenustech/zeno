@@ -1273,7 +1273,7 @@ struct NewFBXBoneDeform : INode {
             bw.push_back(&prim->verts.add_attr<float>(format("boneWeight_{}", i)));
         }
         size_t vert_count = prim->verts.size();
-#pragma omp parallel for
+        #pragma omp parallel for
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
@@ -1295,6 +1295,7 @@ struct NewFBXBoneDeform : INode {
             if (vector.size()) {
                 if (prim->verts.attr_is<vec3f>(vector)) {
                     auto &nrms = prim->verts.attr<vec3f>(vector);
+                    #pragma omp parallel for
                     for (auto i = 0; i < vert_count; i++) {
                         glm::mat4 matrix(0);
                         float w = 0;
@@ -1312,6 +1313,7 @@ struct NewFBXBoneDeform : INode {
                 }
                 if (prim->loops.attr_is<vec3f>(vector)) {
                     auto &nrms = prim->loops.attr<vec3f>(vector);
+                    #pragma omp parallel for
                     for (auto i = 0; i < prim->loops.size(); i++) {
                         auto vi = prim->loops[i];
                         glm::mat4 matrix(0);
