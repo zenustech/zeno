@@ -298,6 +298,61 @@ ZENDEFNODE(FBXSDKVisibility,
            });
 
 namespace zeno {
+struct FBXObject : PrimitiveObject {
+    FbxManager* lSdkManager = nullptr;
+    FbxScene* lScene = nullptr;
+};
+
+struct ReadFBXFile: INode {
+    virtual void apply() override {
+        // Change the following filename to a suitable filename value.
+        auto lFilename = get_input2<std::string>("path");
+
+        // Initialize the SDK manager. This object handles all our memory management.
+        FbxManager* lSdkManager = FbxManager::Create();
+
+        // Create the IO settings object.
+        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+        lSdkManager->SetIOSettings(ios);
+
+        // Create an importer using the SDK manager.
+        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
+
+        // Use the first argument as the filename for the importer.
+        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
+            printf("Call to FbxImporter::Initialize() failed.\n");
+            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+            exit(-1);
+        }
+        int major, minor, revision;
+        lImporter->GetFileVersion(major, minor, revision);
+        auto fbx_object = std::make_shared<FBXObject>();
+        fbx_object->lSdkManager = lSdkManager;
+        // Create a new scene so that it can be populated by the imported file.
+        fbx_object->lScene = FbxScene::Create(lSdkManager,"myScene");
+
+        // Import the contents of the file into the scene.
+        lImporter->Import(fbx_object->lScene);
+
+        // The file is imported; so get rid of the importer.
+        lImporter->Destroy();
+        fbx_object->userData().set2("version", vec3i(major, minor, revision));
+
+        set_output("fbx_object", std::move(fbx_object));
+    }
+};
+
+ZENDEFNODE(ReadFBXFile, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        "fbx_object",
+    },
+    {},
+    {"FBX"},
+});
+
 /**
 * Return a string-based representation based on the attribute type.
 */
@@ -579,36 +634,8 @@ void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<Primiti
 
 struct NewFBXImportSkin : INode {
     virtual void apply() override {
-        // Change the following filename to a suitable filename value.
-        auto lFilename = get_input2<std::string>("path");
-
-        // Initialize the SDK manager. This object handles all our memory management.
-        FbxManager* lSdkManager = FbxManager::Create();
-
-        // Create the IO settings object.
-        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
-        lSdkManager->SetIOSettings(ios);
-
-        // Create an importer using the SDK manager.
-        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
-
-        // Use the first argument as the filename for the importer.
-        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
-            printf("Call to FbxImporter::Initialize() failed.\n");
-            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-            exit(-1);
-        }
-        int major, minor, revision;
-        lImporter->GetFileVersion(major, minor, revision);
-
-        // Create a new scene so that it can be populated by the imported file.
-        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
-
-        // Import the contents of the file into the scene.
-        lImporter->Import(lScene);
-
-        // The file is imported; so get rid of the importer.
-        lImporter->Destroy();
+        auto fbx_object = get_input2<FBXObject>("fbx_object");
+        auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
         // Note that we are not printing the root node because it should
@@ -695,21 +722,18 @@ struct NewFBXImportSkin : INode {
         }
         {
             auto &ud = prim->userData();
-            ud.set2("version", vec3i(major, minor, revision));
             ud.set2("AvailableRootName_count", int(availableRootNames.size()));
             for (int i = 0; i < availableRootNames.size(); i++) {
                 ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
             }
         }
         set_output("prim", prim);
-        // Destroy the SDK manager and all the other objects it was handling.
-        lSdkManager->Destroy();
     }
 };
 
 ZENDEFNODE(NewFBXImportSkin, {
     {
-        {"readpath", "path"},
+        "fbx_object",
         {"string", "rootName", ""},
         {"bool", "ConvertUnits", "0"},
         {"string", "vectors", "nrm,"},
@@ -724,36 +748,9 @@ ZENDEFNODE(NewFBXImportSkin, {
 
 struct NewFBXImportSkeleton : INode {
     virtual void apply() override {
-        // Change the following filename to a suitable filename value.
-        auto lFilename = get_input2<std::string>("path");
-
-        // Initialize the SDK manager. This object handles all our memory management.
-        FbxManager* lSdkManager = FbxManager::Create();
-
-        // Create the IO settings object.
-        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
-        lSdkManager->SetIOSettings(ios);
-
-        // Create an importer using the SDK manager.
-        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
-
-        // Use the first argument as the filename for the importer.
-        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
-            printf("Call to FbxImporter::Initialize() failed.\n");
-            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-            exit(-1);
-        }
-        int major, minor, revision;
-        lImporter->GetFileVersion(major, minor, revision);
-
-        // Create a new scene so that it can be populated by the imported file.
-        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
-
-        // Import the contents of the file into the scene.
-        lImporter->Import(lScene);
-
-        // The file is imported; so get rid of the importer.
-        lImporter->Destroy();
+        auto fbx_object = get_input2<FBXObject>("fbx_object");
+        auto lSdkManager = fbx_object->lSdkManager;
+        auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
         // Note that we are not printing the root node because it should
@@ -859,19 +856,13 @@ struct NewFBXImportSkeleton : INode {
                 transform_r2[i] *= 0.01;
             }
         }
-        {
-            auto &ud = prim->userData();
-            ud.set2("version", vec3i(major, minor, revision));
-        }
         set_output("prim", prim);
-        // Destroy the SDK manager and all the other objects it was handling.
-        lSdkManager->Destroy();
     }
 };
 
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
-        {"readpath", "path"},
+        "fbx_object",
         {"bool", "ConvertUnits", "0"},
     },
     {
@@ -894,45 +885,15 @@ struct NewFBXImportAnimation : INode {
         FbxTime curTime;       // The time for each key in the animation curve(s)
         curTime.SetSecondDouble(t);   // Starting time
 
-        // Change the following filename to a suitable filename value.
-        auto lFilename = get_input2<std::string>("path");
-
-        // Initialize the SDK manager. This object handles all our memory management.
-        FbxManager* lSdkManager = FbxManager::Create();
-
-        // Create the IO settings object.
-        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
-        lSdkManager->SetIOSettings(ios);
-        // Destroy the SDK manager and all the other objects it was handling.
-        zeno::scope_exit sp([=]() { lSdkManager->Destroy(); });
-
-        // Create an importer using the SDK manager.
-        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
-
-        // Use the first argument as the filename for the importer.
-        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
-            printf("Call to FbxImporter::Initialize() failed.\n");
-            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-            exit(-1);
-        }
-        int major, minor, revision;
-        lImporter->GetFileVersion(major, minor, revision);
-
-        // Create a new scene so that it can be populated by the imported file.
-        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
-
-        // Import the contents of the file into the scene.
-        lImporter->Import(lScene);
-
-        // The file is imported; so get rid of the importer.
-        lImporter->Destroy();
+        auto fbx_object = get_input2<FBXObject>("fbx_object");
+        auto lSdkManager = fbx_object->lSdkManager;
+        auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
         auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
 
         FbxArray<FbxString*> animationStackNames;
         std::vector<std::string> clip_names;
@@ -1059,7 +1020,7 @@ struct NewFBXImportAnimation : INode {
 
 ZENDEFNODE(NewFBXImportAnimation, {
     {
-        {"readpath", "path"},
+        "fbx_object",
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},
@@ -1084,46 +1045,15 @@ struct NewFBXImportCamera : INode {
         float t = float(frameid) / fps;
         FbxTime curTime;       // The time for each key in the animation curve(s)
         curTime.SetSecondDouble(t);   // Starting time
-
-        // Change the following filename to a suitable filename value.
-        auto lFilename = get_input2<std::string>("path");
-
-        // Initialize the SDK manager. This object handles all our memory management.
-        FbxManager* lSdkManager = FbxManager::Create();
-
-        // Create the IO settings object.
-        FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
-        lSdkManager->SetIOSettings(ios);
-        // Destroy the SDK manager and all the other objects it was handling.
-        zeno::scope_exit sp([=]() { lSdkManager->Destroy(); });
-
-        // Create an importer using the SDK manager.
-        FbxImporter* lImporter = FbxImporter::Create(lSdkManager,"");
-
-        // Use the first argument as the filename for the importer.
-        if(!lImporter->Initialize(lFilename.c_str(), -1, lSdkManager->GetIOSettings())) {
-            printf("Call to FbxImporter::Initialize() failed.\n");
-            printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-            exit(-1);
-        }
-        int major, minor, revision;
-        lImporter->GetFileVersion(major, minor, revision);
-
-        // Create a new scene so that it can be populated by the imported file.
-        FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene");
-
-        // Import the contents of the file into the scene.
-        lImporter->Import(lScene);
-
-        // The file is imported; so get rid of the importer.
-        lImporter->Destroy();
+        auto fbx_object = get_input2<FBXObject>("fbx_object");
+        auto lSdkManager = fbx_object->lSdkManager;
+        auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
         // Note that we are not printing the root node because it should
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
         auto &ud = prim->userData();
-        ud.set2("version", vec3i(major, minor, revision));
 
         FbxArray<FbxString*> animationStackNames;
         std::vector<std::string> clip_names;
@@ -1224,7 +1154,7 @@ struct NewFBXImportCamera : INode {
 
 ZENDEFNODE(NewFBXImportCamera, {
     {
-        {"readpath", "path"},
+        "fbx_object",
         {"string", "clipName", ""},
         {"frameid"},
         {"float", "fps", "25"},
