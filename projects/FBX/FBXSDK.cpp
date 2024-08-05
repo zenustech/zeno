@@ -304,9 +304,15 @@ struct FBXObject : PrimitiveObject {
 };
 
 struct ReadFBXFile: INode {
+    std::shared_ptr<FBXObject> _inner_fbx_object;
+    std::string usedPath;
     virtual void apply() override {
         // Change the following filename to a suitable filename value.
         auto lFilename = get_input2<std::string>("path");
+        if (lFilename == usedPath && _inner_fbx_object != nullptr) {
+            set_output("fbx_object", _inner_fbx_object);
+            return;
+        }
 
         // Initialize the SDK manager. This object handles all our memory management.
         FbxManager* lSdkManager = FbxManager::Create();
@@ -337,6 +343,8 @@ struct ReadFBXFile: INode {
         // The file is imported; so get rid of the importer.
         lImporter->Destroy();
         fbx_object->userData().set2("version", vec3i(major, minor, revision));
+        usedPath = lFilename;
+        _inner_fbx_object = fbx_object;
 
         set_output("fbx_object", std::move(fbx_object));
     }
