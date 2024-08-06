@@ -587,6 +587,7 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     if (pMesh->GetElementTangentCount() > 0) {
         getAttr(pMesh->GetElementTangent(0), "tang", prim);
     }
+    prim_set_abcpath(prim.get(), format("/ABC/{}", nodeName));
     return prim;
 }
 
@@ -697,7 +698,7 @@ struct NewFBXImportSkin : INode {
                         }
                     }
                 }
-                prim = primMerge(prims_ptr);
+                prim = primMergeWithFacesetMatid(prims_ptr);
                 prim->userData().set2("boneName_count", int(nameMappingGlobal.size()));
                 prim->userData().set2("maxnum_boneWeight", maxnum_boneWeight);
                 for (auto [key, value]: nameMappingGlobal) {
