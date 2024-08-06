@@ -18,6 +18,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
 
 #ifdef ZENO_FBXSDK
 #include <fbxsdk.h>
@@ -1188,6 +1191,177 @@ ZENDEFNODE(NewFBXImportCamera, {
 }
 #endif
 namespace zeno {
+struct RigPoseItemObject : PrimitiveObject {
+    std::string boneName;
+    vec3f translate = {0, 0, 0};
+    vec3f rotate = {0, 0, 0};
+};
+struct NewFBXRigPoseItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<RigPoseItemObject>();
+        item->boneName  = get_input2<std::string>("boneName");
+        item->translate = get_input2<vec3f>("translate");
+        item->rotate    = get_input2<vec3f>("rotate");
+        set_output2("poseItem", std::move(item));
+    }
+};
+
+ZENDEFNODE(NewFBXRigPoseItem, {
+    {
+        {"string", "boneName", ""},
+        {"vec3f", "translate", "0, 0, 0"},
+        {"vec3f", "rotate", "0, 0, 0"},
+    },
+    {
+        "poseItem",
+    },
+    {},
+    {"FBXSDK"},
+});
+static std::vector<glm::mat4> getBoneMatrix(PrimitiveObject *prim) {
+    std::vector<glm::mat4> matrixs;
+    auto &verts = prim->verts;
+    auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
+    auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
+    auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        glm::mat4 matrix;
+        matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
+        matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
+        matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
+        matrix[3] = {verts[i][0], verts[i][1], verts[i][2], 1};
+        matrixs.push_back(matrix);
+    }
+    return matrixs;
+}
+static std::vector<glm::mat4> getInvertedBoneMatrix(PrimitiveObject *prim) {
+    std::vector<glm::mat4> inv_matrixs;
+    auto matrixs = getBoneMatrix(prim);
+    for (auto i = 0; i < matrixs.size(); i++) {
+        auto m = matrixs[i];
+        auto inv_m = glm::inverse(m);
+        inv_matrixs.push_back(inv_m);
+    }
+    return inv_matrixs;
+}
+static vec3f transform_pos(glm::mat4 &transform, vec3f pos) {
+    auto p = transform * glm::vec4(pos[0], pos[1], pos[2], 1);
+    return {p.x, p.y, p.z};
+}
+static vec3f transform_nrm(glm::mat4 &transform, vec3f pos) {
+    auto p = glm::transpose(glm::inverse(transform)) * glm::vec4(pos[0], pos[1], pos[2], 0);
+    return {p.x, p.y, p.z};
+}
+
+struct NewFBXRigPose : INode {
+    std::map<std::string, int> getBoneNameMapping(PrimitiveObject *prim) {
+        auto boneName_count = prim->userData().get2<int>("boneName_count");
+        std::map<std::string, int> boneNames;
+        for (auto i = 0; i < boneName_count; i++) {
+            auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
+            boneNames[boneName] = i;
+        }
+        return boneNames;
+    }
+    std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, std::shared_ptr<zeno::PrimitiveObject> skeleton) {
+        std::vector<int> ordering;
+        std::set<int> ordering_set;
+        while (bone_connects.size()) {
+            std::set<int> need_to_remove;
+            for (auto [s, p]: bone_connects) {
+                if (bone_connects.count(p) == 0) {
+                    if (ordering_set.count(p) == 0) {
+                        ordering.emplace_back(p);
+                        ordering_set.insert(p);
+                    }
+                    need_to_remove.insert(s);
+                }
+            }
+            for (auto index: need_to_remove) {
+                bone_connects.erase(index);
+            }
+        }
+        for (auto i = 0; i < skeleton->verts.size(); i++) {
+            if (ordering_set.count(i) == 0) {
+                ordering.push_back(i);
+            }
+        }
+        if (false) { // debug
+            for (auto i = 0; i < ordering.size(); i++) {
+                auto bi = ordering[i];
+                auto bone_name = skeleton->userData().get2<std::string>(format("boneName_{}", bi));
+                zeno::log_info("{}: {}: {}", i, bi, bone_name);
+            }
+        }
+        return ordering;
+    }
+    virtual void apply() override {
+        auto skeleton = std::dynamic_pointer_cast<PrimitiveObject>(get_input<PrimitiveObject>("skeleton")->clone());
+        auto nodelist = get_input<zeno::ListObject>("Transformations")->getRaw<RigPoseItemObject>();
+        std::map<int, RigPoseItemObject*> Transformations;
+        {
+            auto boneNameMapping = getBoneNameMapping(skeleton.get());
+            for (auto n: nodelist) {
+                if (boneNameMapping.count(n->boneName)) {
+                    Transformations[boneNameMapping[n->boneName]] = n;
+                }
+                else {
+                    zeno::log_warn("{} missing", n->boneName);
+                }
+            }
+        }
+
+        auto WorldSpace = get_input2<bool>("WorldSpace");
+        std::map<int, int> bone_connects;
+        for (auto i = 0; i < skeleton->polys.size(); i++) {
+            bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
+        }
+
+        auto ordering = TopologicalSorting(bone_connects, skeleton);
+        auto &verts = skeleton->verts;
+        auto &transform_r0 = skeleton->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.add_attr<vec3f>("transform_r2");
+        auto transforms    = getBoneMatrix(skeleton.get());
+        auto transformsInv = getInvertedBoneMatrix(skeleton.get());
+        std::map<int, glm::mat4> cache;
+        for (auto bi: ordering) {
+            glm::mat4 transform = glm::mat4(1.0f);
+            if (Transformations.count(bi)) {
+                auto trans = Transformations[bi];
+                glm::mat4 matTrans = glm::translate(vec_to_other<glm::vec3>(trans->translate));
+                glm::mat4 matRotx  = glm::rotate( (float)(trans->rotate[0] * M_PI / 180), glm::vec3(1,0,0) );
+                glm::mat4 matRoty  = glm::rotate( (float)(trans->rotate[1] * M_PI / 180), glm::vec3(0,1,0) );
+                glm::mat4 matRotz  = glm::rotate( (float)(trans->rotate[2] * M_PI / 180), glm::vec3(0,0,1) );
+                transform = matTrans*matRoty*matRotx*matRotz;
+                transform = transforms[bi] * transform * transformsInv[bi];
+            }
+            if (bone_connects.count(bi)) {
+                transform = cache[bone_connects[bi]] * transform;
+            }
+            cache[bi] = transform;
+            verts[bi]        = transform_pos(transform, verts[bi]);
+            transform_r0[bi] = transform_nrm(transform, transform_r0[bi]);
+            transform_r1[bi] = transform_nrm(transform, transform_r1[bi]);
+            transform_r2[bi] = transform_nrm(transform, transform_r2[bi]);
+        }
+
+        set_output2("skeleton", std::move(skeleton));
+    }
+};
+
+ZENDEFNODE(NewFBXRigPose, {
+    {
+        "skeleton",
+        {"bool", "WorldSpace", "0"},
+        {"list", "Transformations"},
+    },
+    {
+        "skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
 struct NewFBXBoneDeform : INode {
     std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
         auto boneName_count = prim->userData().get2<int>("boneName_count");
@@ -1211,40 +1385,6 @@ struct NewFBXBoneDeform : INode {
             mapping.push_back(index);
         }
         return mapping;
-    }
-    std::vector<glm::mat4> getBoneMatrix(PrimitiveObject *prim) {
-        std::vector<glm::mat4> matrixs;
-        auto &verts = prim->verts;
-        auto &transform_r0 = prim->verts.add_attr<vec3f>("transform_r0");
-        auto &transform_r1 = prim->verts.add_attr<vec3f>("transform_r1");
-        auto &transform_r2 = prim->verts.add_attr<vec3f>("transform_r2");
-        for (auto i = 0; i < prim->verts.size(); i++) {
-            glm::mat4 matrix;
-            matrix[0] = {transform_r0[i][0], transform_r0[i][1], transform_r0[i][2], 0};
-            matrix[1] = {transform_r1[i][0], transform_r1[i][1], transform_r1[i][2], 0};
-            matrix[2] = {transform_r2[i][0], transform_r2[i][1], transform_r2[i][2], 0};
-            matrix[3] = {verts[i][0], verts[i][1], verts[i][2], 1};
-            matrixs.push_back(matrix);
-        }
-        return matrixs;
-    }
-    std::vector<glm::mat4> getInvertedBoneMatrix(PrimitiveObject *prim) {
-        std::vector<glm::mat4> inv_matrixs;
-        auto matrixs = getBoneMatrix(prim);
-        for (auto i = 0; i < matrixs.size(); i++) {
-            auto m = matrixs[i];
-            auto inv_m = glm::inverse(m);
-            inv_matrixs.push_back(inv_m);
-        }
-        return inv_matrixs;
-    }
-    vec3f transform_pos(glm::mat4 &transform, vec3f pos) {
-        auto p = transform * glm::vec4(pos[0], pos[1], pos[2], 1);
-        return {p.x, p.y, p.z};
-    }
-    vec3f transform_nrm(glm::mat4 &transform, vec3f pos) {
-        auto p = glm::transpose(glm::inverse(transform)) * glm::vec4(pos[0], pos[1], pos[2], 0);
-        return {p.x, p.y, p.z};
     }
     virtual void apply() override {
         auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
