@@ -18,6 +18,13 @@ static std::map<size_t, std::string> g_clrMapping = {
     {zeno::reflect::get_type<zeno::vec4s>().type_hash(), "#FF00FF"},
     {zeno::reflect::get_type<zeno::CurvesData>().type_hash(), "#FF00FF"},
     {zeno::reflect::get_type<zeno::BCurveObject>().type_hash(), "#FF00FF"},
+    {zeno::reflect::get_type<std::shared_ptr<zeno::PrimitiveObject>>().type_hash(), "#CC7C5A"},
+    {zeno::reflect::get_type<std::shared_ptr<zeno::CameraObject>>().type_hash(), "#3D59AB"},
+    {zeno::reflect::get_type<std::shared_ptr<zeno::LightObject>>().type_hash(), "#8DAD9B"},
+    {zeno::reflect::get_type<std::shared_ptr<zeno::ListObject>>().type_hash(), "#802A2A"},
+    {zeno::reflect::get_type<std::shared_ptr<zeno::DictObject>>().type_hash(), "#A28EB9"},
+    {zeno::reflect::get_type<std::unique_ptr<zeno::IObject>>().type_hash(), "#708090"},
+    {Param_Object, "#5B92AD"},
 };
 
 
