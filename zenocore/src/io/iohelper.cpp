@@ -641,14 +641,7 @@ namespace zenoio
             break;
         }
         case zeno::types::gParamType_Heatmap:
-        case Param_Custom:
-        {
-        //    if (val.IsString())
-        //    {
-        //        defl = val.GetString();
-        //    }
             break;
-        }
         case Param_Null:
         {
             if (val.IsString())

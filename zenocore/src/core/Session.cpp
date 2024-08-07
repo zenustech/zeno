@@ -126,6 +126,12 @@ struct ReflectNodeClass : INodeClass {
                 //根据类型判断一下是object还是primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
                 ParamType type = fieldType.type_hash();
+                const RTTITypeInfo& typeInfo = ReflectionRegistry::get().getRttiMap()->get(type);
+                assert(typeInfo.hash_code());
+                std::string rttiname(typeInfo.name());
+                //后续会有更好的判断方式，原理都是一样：把rtti拿出来
+                bool bObject = rttiname.find("std::shared_ptr") != rttiname.npos;
+
                 //role:
                 NodeDataGroup role = Role_InputObject;
                 if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Role")) {
@@ -137,7 +143,7 @@ struct ReflectNodeClass : INodeClass {
                 }
                 else {
                     //没有指定role，一律都是按input处理，是否为obj根据类型做判断
-                    role = (type == Param_Object) ? Role_InputObject : Role_InputPrimitive;
+                    role = bObject ? Role_InputObject : Role_InputPrimitive;
                 }
 
                 if (role == Role_InputObject)

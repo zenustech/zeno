@@ -488,8 +488,8 @@ ZENO_API void INode::reflecNode_apply()
                     }
                     const zeno::reflect::RTTITypeInfo& rtti = func->get_return_rtti();
                     ParamType _type = rtti.get_decayed_hash() == 0 ? rtti.hash_code() : rtti.get_decayed_hash();
-
-                    if (_type == Param_Object) {
+                    bool bConstPtr = false;
+                    if (zeno::isObjectType(rtti, bConstPtr)) {
                         auto iter = m_outputObjs.find("result");
                         if (iter != m_outputObjs.end())
                             iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);

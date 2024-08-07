@@ -30,9 +30,6 @@ namespace zeno {
     using ParamType = size_t;
 
     #define Param_Null 0
-    #define Param_SrcDst 1
-    #define Param_Object 2
-    #define Param_Custom 3
 
     enum NodeStatus : unsigned int
     {

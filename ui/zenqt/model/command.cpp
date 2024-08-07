@@ -34,12 +34,12 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamObject objInput;
         objInput.bInput = true;
         objInput.name = "objInput1";
-        objInput.type = Param_Object;
+        objInput.type = zeno::types::gParamType_sharedIObject;
         objInput.socketType = zeno::Socket_ReadOnly;
         zeno::ParamObject objOutput;
         objOutput.bInput = false;
         objOutput.name = "objOutput1";
-        objOutput.type = Param_Object;
+        objOutput.type = zeno::types::gParamType_sharedIObject;
         objOutput.socketType = zeno::Socket_Output;
 
         tab.groups.emplace_back(std::move(default));

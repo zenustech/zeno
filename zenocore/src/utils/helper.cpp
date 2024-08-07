@@ -32,10 +32,10 @@ namespace zeno {
         else if (type == "color") { return gParamType_Heatmap; }
         else if (type == "curve") { return gParamType_Curve; }
         else if (starts_with(type, "enum ")) { return gParamType_String; }
-        else if (type == "AxisObject") { return Param_Object; }
-        else if (type == "CameraObject") { return Param_Object; }
+        else if (type == "AxisObject") { return gParamType_sharedIObject; }
+        else if (type == "CameraObject") { return gParamType_Camera; }
         else if (type == "LightObject") { return gParamType_Light; }
-        else if (type == "FunctionObject") { return Param_Object; }
+        else if (type == "FunctionObject") { return gParamType_sharedIObject; }
         else if (type == "object" ||
                 type == "IObject" || 
                 type == "zany" || 
@@ -45,7 +45,7 @@ namespace zeno {
                 type == "shader" ||
                 type == "MaterialObject" ||
                 type == "LBvh") {
-            return Param_Object; 
+            return gParamType_sharedIObject; 
     }
         else if (type == "VDBGrid") {
             return gParamType_sharedIObject;
@@ -56,7 +56,7 @@ namespace zeno {
                 return gParamType_Primitive;
             }
             else if (param_name == "object") {
-                return Param_Object;
+                return gParamType_sharedIObject;
             }
             else if (param_name == "list" || param_name == "droppedList") { return gParamType_List; }
             else if (param_name == "dict") { return gParamType_Dict; }
@@ -67,7 +67,7 @@ namespace zeno {
                 return gParamType_Light;
             }
             else if (param_name == "FOR" || param_name == "FUNC" || param_name == "function") {
-                return Param_Object;    //只能给Object了，不然就要再分配一个枚举值
+                return gParamType_sharedIObject;    //只能给Object了，不然就要再分配一个枚举值
             }
             else if (param_name == "true" ||
                     param_name == "false" ||
@@ -78,7 +78,7 @@ namespace zeno {
                     param_name == "port" ||
                     param_name == "data" ||
                     param_name == "mtl") {
-                return Param_Object;
+                return gParamType_sharedIObject;
             }
             else if (param_name == "VDBGrid" || param_name == "grid") {
                 return gParamType_sharedIObject;
@@ -87,11 +87,11 @@ namespace zeno {
                 return gParamType_Heatmap;
             }
             else {
-                return Param_Object;
+                return gParamType_sharedIObject;
             }
         }
         else
-            return Param_Object;    //zeno各个模块定义的类型不规范程度很大，而且积累了很多，很难一下子改好，所以不明类型都转成obj
+            return gParamType_sharedIObject;    //zeno各个模块定义的类型不规范程度很大，而且积累了很多，很难一下子改好，所以不明类型都转成obj
     }
 
     ZENO_API bool isAnyEqual(const zeno::reflect::Any& lhs, const zeno::reflect::Any& rhs)
@@ -186,7 +186,6 @@ namespace zeno {
         case gParamType_List:    return "list";
         case gParamType_Curve:   return "curve";
         case gParamType_Heatmap: return "color";
-        case Param_SrcDst:  return "";
         default:
             return "";
         }
@@ -415,7 +414,7 @@ namespace zeno {
         {
             return zeno::reflect::make_any<CurvesData>();
         }
-        else if (type == Param_Object)
+        else if (type == gParamType_sharedIObject)
         {
             return std::shared_ptr<IObject>();
         }
@@ -608,7 +607,7 @@ namespace zeno {
         case gParamType_Vec3f:   return zeno::reflect::type_info<zeno::vec3f>();
         case gParamType_Vec4f:   return zeno::reflect::type_info<zeno::vec4f>();
         case gParamType_sharedIObject://TODO: vdbgrid: VDBFloatGrid or VDBFloat3Grid VDBPointsGrid?
-        case Param_Object:  return zeno::reflect::type_info<std::shared_ptr<IObject>>();
+            return zeno::reflect::type_info<std::shared_ptr<IObject>>();
         case gParamType_Primitive:    return zeno::reflect::type_info<std::shared_ptr<zeno::PrimitiveObject>>();
         case gParamType_Camera:  return zeno::reflect::type_info<std::shared_ptr<zeno::CameraObject>>();
         case gParamType_Light:   return zeno::reflect::type_info<std::shared_ptr<zeno::LightObject>>();
@@ -616,8 +615,6 @@ namespace zeno {
         case gParamType_List:    return zeno::reflect::type_info<std::shared_ptr<zeno::ListObject>>();
         case gParamType_Curve:   return zeno::reflect::type_info<zeno::CurvesData>();
         case gParamType_Heatmap: return zeno::reflect::type_info<zeno::HeatmapData>();
-        case Param_SrcDst:
-        case Param_Custom:
         default:
             //no supporting right now.
             //assert(false);
@@ -911,7 +908,6 @@ namespace zeno {
             //Param_Color:  //need this?
         case gParamType_Curve:     return zeno::CurveEditor;
         case gParamType_Heatmap: return zeno::Heatmap;
-        case Param_SrcDst:
         default:
             return zeno::NullControl;
         }

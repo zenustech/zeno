@@ -752,6 +752,8 @@ QStringList UiHelper::getAllControls()
 
 QString UiHelper::getTypeDesc(zeno::ParamType type)
 {
+    //这里如果能通过这些hash码，拿到对应的type_info，而type_info里记录了
+    //所有metadata，包括（1.是否为object 2.名称简称 ）等资源，那是最自然的方式了。
     switch (type)
     {
     case zeno::types::gParamType_String:    return "string";
@@ -764,11 +766,11 @@ QString UiHelper::getTypeDesc(zeno::ParamType type)
     case zeno::types::gParamType_Vec2f:     return "vec2f";
     case zeno::types::gParamType_Vec3f:     return "vec3f";
     case zeno::types::gParamType_Vec4f:     return "vec4f";
-    case zeno::types::gParamType_Primitive:      return "prim";
     case zeno::types::gParamType_List:      return "list";
     case zeno::types::gParamType_Dict:      return "dict";
-    case zeno::types::gParamType_Heatmap: return "color";
-    case Param_Object: return "object";
+    case zeno::types::gParamType_Heatmap:       return "color";
+    case zeno::types::gParamType_sharedIObject: return "object";
+    case zeno::types::gParamType_Primitive:      return "prim";
     case Param_Null:
     default:
         return "";
@@ -1292,8 +1294,6 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
     case zeno::types::gParamType_Dict:
     case zeno::types::gParamType_List:
             //Param_Color,  //need this?
-    
-    case Param_SrcDst:
         break;
     }
     return QVariant();
