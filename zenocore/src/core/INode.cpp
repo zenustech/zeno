@@ -140,7 +140,7 @@ ZENO_API CustomUI INode::export_customui() const
     if (!origin.inputPrims.tabs.empty()) {
         exporttab.name = origin.inputPrims.tabs[0].name;
         if (!origin.inputPrims.tabs[0].groups.empty()) {
-            exportgroup.name = origin.inputPrims.tabs[0].name;
+            exportgroup.name = origin.inputPrims.tabs[0].groups[0].name;
         }
     }
     for (const zeno::ParamTab& tab : origin.inputPrims.tabs) {
