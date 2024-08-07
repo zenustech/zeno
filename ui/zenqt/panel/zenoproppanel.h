@@ -19,10 +19,10 @@ class ZenoPropPanel : public QWidget
     {
         QWidget* pControl;
         QLabel* pLabel;
-        QCheckBox *pCheckBox;
+        QLabel* pIconLabel;
         QLayout* controlLayout;
         QPersistentModelIndex m_viewIdx;    //compare when rename.
-        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pCheckBox(nullptr), controlLayout(nullptr) {}
+        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pIconLabel(nullptr), controlLayout(nullptr) {}
     };
     typedef QKeyList<QString, _PANEL_CONTROL> PANEL_GROUP;
     typedef QKeyList<QString, PANEL_GROUP> PANEL_TAB;
@@ -70,7 +70,8 @@ private:
     zeno::CurvesData getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
     void updateTimelineKeys(const zeno::CurvesData& curves);
     void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
-    QWidget* initWidget(QStandardItem* pItem);
+    QWidget* initInputWidget(QStandardItem* pItem);
+    QWidget* initOutputWidget(QStandardItem* pItem);
 
 
     GraphModel* m_model;
@@ -79,7 +80,8 @@ private:
     QTabWidget* m_tabWidget;
     bool m_bReentry;
 
-    PANEL_TABS m_controls;
+    PANEL_TABS m_inputControls;
+    PANEL_GROUP m_outputControls;
     QList<_PANEL_CONTROL> m_floatColtrols;
 
     QScopedPointer<ZenoHintListWidget> m_hintlist;
