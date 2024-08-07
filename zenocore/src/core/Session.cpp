@@ -315,12 +315,12 @@ struct ReflectNodeClass : INodeClass {
             const ArrayList<RTTITypeInfo>& params = func->get_params();
             const auto& param_names = func->get_params_name();
             assert(params.size() == param_names.size());
-            for (int i = 0; i < params.size(); i++)
+            for (int idxParam = 0; idxParam < params.size(); idxParam++)
             {
-                const RTTITypeInfo& param_type = params[i];
+                const RTTITypeInfo& param_type = params[idxParam];
                 isObject = zeno::isObjectType(param_type, isConstPtr);
 
-                std::string const& param_name(param_names[i].c_str());
+                std::string const& param_name(param_names[idxParam].c_str());
                 type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                 if (param_name.empty()) {
                     //¿Õ°×²ÎÊý²»¿¼ÂÇ
@@ -349,7 +349,7 @@ struct ReflectNodeClass : INodeClass {
                             prim.control = NullControl;
                             prim.socketType = Socket_Primitve;
                             prim.type = type;
-                            prim.defl = initAnyDeflValue(type);
+                            prim.defl = func->init_param_default_value(idxParam);
                             prim.tooltip;
                             prim.wildCardGroup;
                             m_customui.outputPrims.emplace_back(prim);
@@ -384,7 +384,7 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.bInput = true;
                             inPrim.socketType = Socket_Primitve;
                             inPrim.type = type;
-                            inPrim.defl = initAnyDeflValue(type);
+                            inPrim.defl = func->init_param_default_value(idxParam);
                             inPrim.control = getDefaultControl(type);
                             inPrim.bVisible = false;
                             inPrim.wildCardGroup;

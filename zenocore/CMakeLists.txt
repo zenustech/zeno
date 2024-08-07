@@ -112,6 +112,9 @@ if (ZENO_WITH_REFLECTOR)
 
     set(GENERATE_ON_BUILD_DIR ON)
     set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
+    set(INJA_TEMPLATE_DIR_PATH  ${CMAKE_BINARY_DIR}/intermediate)
+    #由于这个template的字符数过大导致MSVC编译期截断，需要分发template，以读写的方式加载
+    file(COPY ${PROJECT_SOURCE_DIR}/reflect/src/template/reflected_type_register.inja DESTINATION ${INJA_TEMPLATE_DIR_PATH})
     zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}")
     target_link_libraries(zenocore PUBLIC libreflect)
 endif()

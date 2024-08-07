@@ -1,26 +1,30 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <memory>
 #include "reflect/core.hpp"
 #include "reflect/type"
 #include "reflect/reflection_traits.hpp"
 #include "reflect/reflection.generated.hpp"
 
 
+#define ZENO_REFLECT_TYPE(T) \
+virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {\
+    return std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<T>());\
+}
+
 namespace zeno
 {
-    struct ZRECORD() TestReflectNode : public zeno::INode
+    struct ZRECORD() TestReflectNode : zeno::INode
     {
         TestReflectNode() = default;
+
+        ZENO_REFLECT_TYPE(TestReflectNode)
 
         ZMETHOD(Name = "×öÐ©ÊÂ")
         int apply(std::string wtf, zeno::vec3f c) {
             param_b = wtf;
             return 233;
-        }
-
-        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
-            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<TestReflectNode>());
-            return m_handle;
         }
 
         ZPROPERTY(Role = zeno::Role_InputObject, DisplayName = "Input Object", Socket = zeno::Socket_Owning)
@@ -48,27 +52,21 @@ namespace zeno
         zeno::vec3f outvec;
     };
 
-    struct ZRECORD() SimpleReflect : public zeno::INode
+    struct ZRECORD() SimpleReflect : zeno::INode
     {
         SimpleReflect() = default;
 
-        std::string apply(std::shared_ptr<zeno::IObject> input_obj, std::string wtf, zeno::vec3f c, float& ret1, std::shared_ptr<zeno::IObject>& output_obj) {
+        ZENO_REFLECT_TYPE(SimpleReflect)
+
+        std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf, zeno::vec3f c, float& ret1, std::shared_ptr<zeno::IObject>& output_obj) {
             ret1 = 8;
             return "";
         }
-
-        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
-            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<SimpleReflect>());
-            return m_handle;
-        };
     };
 
-    struct ZRECORD() ReadOnlyNode : public zeno::INode
+    struct ZRECORD() ReadOnlyNode : zeno::INode
     {
-        virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {
-            std::shared_ptr<zeno::reflect::TypeHandle> m_handle = std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<ReadOnlyNode>());
-            return m_handle;
-        };
+        ZENO_REFLECT_TYPE(TestReflectNode)
 
         std::shared_ptr<const zeno::IObject> apply(std::shared_ptr<const zeno::IObject> input_obj, const std::string& name1, const std::string& name2, std::string & ret)
         {

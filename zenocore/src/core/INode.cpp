@@ -33,6 +33,9 @@
 #include "reflect/reflection.generated.hpp"
 
 
+using namespace zeno::reflect;
+
+
 namespace zeno {
 
 ZENO_API INode::INode() {}
@@ -379,7 +382,7 @@ ZENO_API void INode::reflecNode_apply()
                 if (funcname == "apply") {
                     //从apply参数获取输入
                     zeno::reflect::ArrayList<zeno::reflect::Any> paramValues;
-                    std::vector<std::tuple<std::string, zeno::ParamType>> outputsName;
+                    std::vector<std::tuple<std::string, zeno::ParamType, int>> outputsName;
 
                     const zeno::reflect::ArrayList<zeno::reflect::RTTITypeInfo>& params = func->get_params();
                     const auto& param_names = func->get_params_name();
@@ -387,7 +390,7 @@ ZENO_API void INode::reflecNode_apply()
                         const zeno::reflect::RTTITypeInfo& param_type = params[i];
                         if (!param_type.has_flags(zeno::reflect::TF_IsConst) && param_type.has_flags(zeno::reflect::TF_IsLValueRef)) {
                             ParamType _type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
-                            outputsName.push_back({ param_names[i].c_str(), _type });
+                            outputsName.push_back({ param_names[i].c_str(), _type, i });
                         }
                         else {
                             zeno::reflect::Any inputAny;
@@ -410,7 +413,10 @@ ZENO_API void INode::reflecNode_apply()
                         }
                     }
                     for (auto& paramInfo : outputsName) {
-                        paramValues.add_item(zeno::reflect::move(zeno::initAnyDeflValue(std::get<1>(paramInfo))));
+                        ParamType type = std::get<1>(paramInfo);
+                        int idx = std::get<2>(paramInfo);
+                        //TODO: 这里只能初始化ctor没有参数的类型
+                        paramValues.add_item(func->init_param_default_value(idx));
                     }
                     //从输入到成员变量
                     for (zeno::reflect::IMemberField* field : typebase->get_member_fields()) {
