@@ -38,8 +38,8 @@ ZenoSocketItem::ZenoSocketItem(
     }
 
     zeno::ParamType type = m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
-    QColor sockClr = ZColorManager::getColorByType(type);
-    setBrush(sockClr, sockClr);
+    m_color = ZColorManager::getColorByType(type);
+    setBrush(m_color, m_color);
     //if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
     //    setBrush(QColor("#CC7C5A"), QColor("#5FD2FF"));
     //else
@@ -353,13 +353,13 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     {
         ZASSERT_EXIT(m_bInput);
 
-        QPen pen(QColor("#CC7C5A"), 4);
+        QPen pen(m_color, 4);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
 
         bool bOwn = !links.isEmpty();
         if (bOwn) {
-            painter->setBrush(QColor("#CC7C5A"));
+            painter->setBrush(m_brush);
         }
 
         QPainterPath path;
@@ -387,7 +387,7 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     else if (type == zeno::Socket_ReadOnly)
     {
         ZASSERT_EXIT(m_bInput);
-        QPen pen(QColor("#CC7C5A"), 4);
+        QPen pen(m_color, 4);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
 
@@ -407,8 +407,8 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     else if (type == zeno::Socket_Clone)
     {
         ZASSERT_EXIT(m_bInput);
-        QPen pen(QColor("#CC7C5A"), 4);
-        QBrush brush(QColor("#CC7C5A"));
+        QPen pen(m_color, 4);
+        QBrush brush(m_color);
         painter->setPen(pen);
         painter->setBrush(brush);
 
@@ -434,11 +434,11 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
                 pen = QPen(QColor("#777777"), 2);
             }
             else {
-                painter->fillRect(rc, QColor("#CC7C5A"));
+                painter->fillRect(rc, m_color);
             }
         }
         else {
-            painter->fillRect(rc, QColor("#CC7C5A"));
+            painter->fillRect(rc, m_color);
         }
 
         painter->setPen(pen);

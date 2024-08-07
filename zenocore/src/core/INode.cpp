@@ -296,6 +296,19 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
         return;
 
     if (m_dirty) {
+        for (auto& [name, param] : m_inputObjs) {   //如果input对象是owning类型，mark_dirty时需要将上游也mark_dirty
+            if (param.socketType == Socket_Owning) {
+                for (auto link : param.links) {
+                    auto fromParam = link->fromparam;
+                    assert(fromParam);
+                    if (fromParam) {
+                        auto fromNode = fromParam->m_wpNode.lock();
+                        assert(fromNode);
+                        fromNode->mark_dirty(m_dirty);
+                    }
+                }
+            }
+        }
         for (auto& [name, param] : m_outputObjs) {
             for (auto link : param.links) {
                 auto inParam = link->toparam;

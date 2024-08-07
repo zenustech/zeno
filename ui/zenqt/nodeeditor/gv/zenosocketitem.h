@@ -63,6 +63,7 @@ protected:
 protected:
     QBrush m_brush;
     QBrush m_brushOn;
+    QColor m_color;
     bool m_bInput;
     bool m_bHovered;
 private:
