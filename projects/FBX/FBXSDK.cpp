@@ -1336,7 +1336,7 @@ struct NewFBXRigPose : INode {
                 transform = matTrans*matRoty*matRotx*matRotz;
                 transform = transforms[bi] * transform * transformsInv[bi];
             }
-            if (bone_connects.count(bi)) {
+            if (bone_connects.count(bi) && WorldSpace == false) {
                 transform = cache[bone_connects[bi]] * transform;
             }
             cache[bi] = transform;
