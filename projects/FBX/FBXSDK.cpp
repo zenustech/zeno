@@ -833,10 +833,10 @@ struct NewFBXImportSkeleton : INode {
             std::vector<int> bone_connects;
             for (auto bone_name: bone_names) {
                 if (parent_mapping.count(bone_name)) {
-                    auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
                     auto parent_name = parent_mapping[bone_name];
-                    auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
-                    if (self_index >= 0 && parent_index >= 0) {
+                    if (std::count(bone_names.begin(), bone_names.end(), parent_name)) {
+                        auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
+                        auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
                         bone_connects.push_back(parent_index);
                         bone_connects.push_back(self_index);
                     }
