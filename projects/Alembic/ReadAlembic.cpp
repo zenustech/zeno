@@ -990,6 +990,19 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             offset += count;
         }
     }
+    if (auto width = mesh.getWidthsParam()) {
+        auto widthsamp =
+            width.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int index_size = (int)widthsamp.getIndices()->size();
+        if (prim->verts.size() == index_size) {
+            auto &width_attr = prim->add_attr<float>("width");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                auto index = widthsamp.getIndices()->operator[](i);
+                auto value = widthsamp.getVals()->operator[](index);
+                width_attr[i] = value;
+            }
+        }
+    }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
