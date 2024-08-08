@@ -11,6 +11,7 @@
 class IGraphsModel;
 
 class ZExpandableSection;
+class ZScrollArea;
 
 class ZenoPropPanel : public QWidget
 {
@@ -19,10 +20,10 @@ class ZenoPropPanel : public QWidget
     {
         QWidget* pControl;
         QLabel* pLabel;
-        QCheckBox *pCheckBox;
+        QLabel* pIconLabel;
         QLayout* controlLayout;
         QPersistentModelIndex m_viewIdx;    //compare when rename.
-        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pCheckBox(nullptr), controlLayout(nullptr) {}
+        _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pIconLabel(nullptr), controlLayout(nullptr) {}
     };
     typedef QKeyList<QString, _PANEL_CONTROL> PANEL_GROUP;
     typedef QKeyList<QString, PANEL_GROUP> PANEL_TAB;
@@ -70,16 +71,20 @@ private:
     zeno::CurvesData getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
     void updateTimelineKeys(const zeno::CurvesData& curves);
     void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
-    QWidget* initWidget(QStandardItem* pItem);
+    void normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pItem, int row);
+    void addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pOutputItem, int row);
 
 
     GraphModel* m_model;
     QPersistentModelIndex m_idx;
 
-    QTabWidget* m_tabWidget;
+    QWidget* m_normalNodeInputWidget;       //普通节点input使用
+    QTabWidget* m_tabWidget;                //子图节点input使用
+    QWidget* m_outputWidget;                //output
     bool m_bReentry;
 
-    PANEL_TABS m_controls;
+    PANEL_TABS m_inputControls;
+    PANEL_GROUP m_outputControls;
     QList<_PANEL_CONTROL> m_floatColtrols;
 
     QScopedPointer<ZenoHintListWidget> m_hintlist;

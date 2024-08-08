@@ -541,6 +541,8 @@ void ZenoNodeNew::onLayoutChanged()
 
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
     onCollaspeUpdated(bCollasped);
+
+    updateWhole();
 }
 
 ZGraphicsLayout* ZenoNodeNew::initCustomParamWidgets()

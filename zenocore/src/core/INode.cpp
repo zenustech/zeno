@@ -140,7 +140,7 @@ ZENO_API CustomUI INode::export_customui() const
     if (!origin.inputPrims.tabs.empty()) {
         exporttab.name = origin.inputPrims.tabs[0].name;
         if (!origin.inputPrims.tabs[0].groups.empty()) {
-            exportgroup.name = origin.inputPrims.tabs[0].name;
+            exportgroup.name = origin.inputPrims.tabs[0].groups[0].name;
         }
     }
     for (const zeno::ParamTab& tab : origin.inputPrims.tabs) {
@@ -1426,13 +1426,25 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, z
 ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible)
 {
     CORE_API_BATCH
-    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    auto& iter = m_inputPrims.find(param);
+    if (iter != m_inputPrims.end()) {
+        auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
 
-    if (spParam.bVisible != bVisible)
-    {
-        spParam.bVisible = bVisible;
-        CALLBACK_NOTIFY(update_param_visible, param, bVisible)
-            return true;
+        if (spParam.bVisible != bVisible)
+        {
+            spParam.bVisible = bVisible;
+            CALLBACK_NOTIFY(update_param_visible, param, bVisible)
+                return true;
+        }
+    } else {
+        auto& spParam = safe_at(m_outputPrims, param, "miss output param `" + param + "` on node `" + m_name + "`");
+
+        if (spParam.bVisible != bVisible)
+        {
+            spParam.bVisible = bVisible;
+            CALLBACK_NOTIFY(update_param_visible, param, bVisible)
+                return true;
+        }
     }
     return false;
 }

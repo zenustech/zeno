@@ -591,8 +591,8 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
     m_items.clear();
     //reconstruct params.
     initParamItems();
-    if (spNode->get_nodecls() == "Subnet") {
-        initCustomUI(spNode->export_customui());
+    if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)){
+        updateCustomUiModelIncremental(changes, sbn->get_customui());
     }
     else {
         updateCustomUiModelIncremental(changes, spNode->export_customui());
