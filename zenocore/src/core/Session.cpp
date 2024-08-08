@@ -390,7 +390,16 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.bInput = true;
                             inPrim.socketType = Socket_Primitve;
                             inPrim.type = type;
-                            inPrim.defl = func->init_param_default_value(idxParam);
+
+                            //检查函数是否带有默认参数
+                            const Any& deflVal = func->get_param_default_value(idxParam);
+                            if (deflVal.has_value()) {
+                                inPrim.defl = deflVal;
+                            }
+                            else {
+                                inPrim.defl = func->init_param_default_value(idxParam);
+                            }
+
                             inPrim.control = getDefaultControl(type);
                             inPrim.bVisible = false;
                             inPrim.wildCardGroup;

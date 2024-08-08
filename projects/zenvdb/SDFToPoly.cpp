@@ -6,6 +6,7 @@
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include <zeno/ZenoInc.h>
+#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
@@ -77,7 +78,7 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
 struct SDFToPrimitive : SDFToPoly {
     virtual void apply() override {
         SDFToPoly::apply();
-        set_output("prim", std::move(get_output_obj("Mesh")));
+        set_output("prim", std::move(anyToZAny(get_output_obj("Mesh"), zeno::types::gParamType_sharedIObject)));
     }
 };
 

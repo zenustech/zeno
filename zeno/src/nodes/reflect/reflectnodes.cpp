@@ -1,17 +1,8 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <memory>
-#include "reflect/core.hpp"
-#include "reflect/type"
-#include "reflect/reflection_traits.hpp"
-#include "reflect/reflection.generated.hpp"
+#include <zeno/core/reflectdef.h>
 
-
-#define ZENO_REFLECT_TYPE(T) \
-virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {\
-    return std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<T>());\
-}
 
 namespace zeno
 {
@@ -58,19 +49,57 @@ namespace zeno
 
         ZENO_REFLECT_TYPE(SimpleReflect)
 
-        std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf, zeno::vec3f c, float& ret1, std::shared_ptr<zeno::IObject>& output_obj) {
-            ret1 = 8;
+        std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf = "abc", zeno::vec3f c = zeno::vec3f({ 0,1,0 })/*, float& ret1, std::shared_ptr<zeno::IObject>&output_obj*/) {
+            //ret1 = 8;
             return "";
         }
     };
 
     struct ZRECORD() ReadOnlyNode : zeno::INode
     {
-        ZENO_REFLECT_TYPE(TestReflectNode)
+        ZENO_REFLECT_TYPE(ReadOnlyNode)
 
-        std::shared_ptr<const zeno::IObject> apply(std::shared_ptr<const zeno::IObject> input_obj, const std::string& name1, const std::string& name2, std::string & ret)
+        ReflectCustomUI m_uilayout = {
+            _ObjectGroup {
+                {
+                    _ObjectParam {"input_obj", "Input Object", Socket_Owning},
+                }
+            },
+            _ObjectGroup {
+                {
+                    //空字符串默认mapping到 apply的输出值
+                    _ObjectParam {"", "Output Object", Socket_Owning},
+                }
+            },
+            _ParamTab {
+                "Tab1",
+                {
+                    _ParamGroup {
+                        "Group1",
+                        {
+                            _Param { "name1", "Name 1", "a1" },
+                            _Param { "name2", "Name 2", "a2" }
+                        }
+                    },
+                    _ParamGroup {
+                        "Group2",
+                        {
+                            _Param { "a1", "A1", 345}
+                        }
+                    },
+                }
+            },
+            _ParamGroup {
+
+            }
+        };
+
+        std::shared_ptr<const zeno::IObject> apply(
+            std::shared_ptr<zeno::PrimitiveObject> input_obj,
+            const std::string& name1 = "a1",
+            const std::string& name2 = "a2",
+            int a = 234)
         {
-            ret = input_obj->nodeId;
             return input_obj;
         }
     };

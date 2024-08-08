@@ -6,6 +6,9 @@
 #include <tbb/parallel_for.h>
 #include <thread>
 #include <map>
+#include "reflect/reflection.generated.hpp"
+
+
 namespace zeno {
 
 struct GetVDBPoints : zeno::INode {
@@ -343,7 +346,7 @@ static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("G
 struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
     virtual void apply() override {
         VDBPointsToPrimitive::apply();
-        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("prim"))).get());
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("prim"), zeno::types::gParamType_Primitive))).get());
     }
 };
 

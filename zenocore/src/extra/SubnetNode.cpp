@@ -7,6 +7,8 @@
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/Assets.h>
 #include <zeno/utils/helper.h>
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -129,7 +131,8 @@ ZENO_API void SubnetNode::apply() {
         auto iter = m_inputObjs.find(subinput_node);
         if (iter != m_inputObjs.end()) {
             //object type.
-            bool ret = subinput->set_output("port", iter->second.spObject);
+            zany spObject = zeno::reflect::any_cast<zany>(iter->second.spObject);
+            bool ret = subinput->set_output("port", spObject);
             assert(ret);
             ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
             assert(ret);

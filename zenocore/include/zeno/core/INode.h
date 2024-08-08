@@ -164,13 +164,14 @@ protected:
         return zeno::reflect::any_cast<T>(&iter->second.defl);
     }
 
+    ZENO_API zany anyToZAny(zeno::reflect::Any object, ParamType type) const;
+
 private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
     std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
     std::shared_ptr<ListObject> processList(ObjectParam* in_param);
-    bool receiveOutputObj(ObjectParam* in_param, zany outputObj);
+    bool receiveOutputObj(ObjectParam* in_param, zeno::reflect::Any outputObj, ParamType outobj_type);
     void reportStatus(bool bDirty, NodeRunStatus status);
-
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> T resolveVec(const zeno::reflect::Any& defl, const ParamType type);
 
@@ -185,7 +186,7 @@ public:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
-    ZENO_API zany get_output_obj(std::string const& sock_name);
+    ZENO_API zeno::reflect::Any get_output_obj(std::string const& sock_name);
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {

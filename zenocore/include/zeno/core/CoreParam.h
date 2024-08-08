@@ -44,7 +44,7 @@ struct CoreParam {
 
 struct ObjectParam : CoreParam {
     std::list<std::shared_ptr<ObjectLink>> links;
-    zany spObject;
+    zeno::reflect::Any spObject;
 
     ParamObject exportParam() const;
 };

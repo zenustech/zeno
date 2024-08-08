@@ -6,6 +6,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -98,7 +100,7 @@ static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveTo
 struct ConvertTo_MeshObject_PrimitiveObject : MeshToPrimitive {
     virtual void apply() override {
         MeshToPrimitive::apply();
-        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("param"))).get());
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("param"), zeno::types::gParamType_Primitive))).get());
     }
 };
 
@@ -113,7 +115,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).
 struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
     virtual void apply() override {
         PrimitiveToMesh::apply();
-        get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("mesh"))).get());
+        get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("mesh"), zeno::types::gParamType_sharedIObject))).get());
     }
 };
 
