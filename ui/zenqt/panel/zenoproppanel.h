@@ -11,6 +11,7 @@
 class IGraphsModel;
 
 class ZExpandableSection;
+class ZScrollArea;
 
 class ZenoPropPanel : public QWidget
 {
@@ -70,14 +71,16 @@ private:
     zeno::CurvesData getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
     void updateTimelineKeys(const zeno::CurvesData& curves);
     void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
-    QWidget* initInputWidget(QStandardItem* pItem);
-    QWidget* initOutputWidget(QStandardItem* pItem);
+    void normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pItem, int row);
+    void addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pOutputItem, int row);
 
 
     GraphModel* m_model;
     QPersistentModelIndex m_idx;
 
-    QTabWidget* m_tabWidget;
+    QWidget* m_normalNodeInputWidget;       //普通节点input使用
+    QTabWidget* m_tabWidget;                //子图节点input使用
+    QWidget* m_outputWidget;                //output
     bool m_bReentry;
 
     PANEL_TABS m_inputControls;
