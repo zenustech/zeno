@@ -994,7 +994,6 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
         auto widthsamp =
             width.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
         int index_size = (int)widthsamp.getIndices()->size();
-        prim->userData().set2("index_size", index_size);
         if (prim->verts.size() == index_size) {
             auto &width_attr = prim->add_attr<float>("width");
             for (auto i = 0; i < prim->verts.size(); i++) {
