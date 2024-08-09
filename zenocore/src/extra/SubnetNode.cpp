@@ -53,13 +53,14 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 zeno::ParamPrimitive primitive;
                 primitive.bInput = false;
                 primitive.name = "port";
+                primitive.socketType = Socket_Output;
                 newNode->add_output_prim_param(primitive);
                 }
             else if (!isprim && exist) {
                 zeno::ParamObject paramObj;
                 paramObj.bInput = false;
                 paramObj.name = "port";
-                paramObj.socketType = zeno::Socket_ReadOnly;
+                paramObj.socketType = zeno::Socket_Output;
                 newNode->add_output_obj_param(paramObj);
             }
 

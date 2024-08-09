@@ -1612,6 +1612,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.socketType = param.socketType;
                 sparam.m_wpNode = shared_from_this();
+                sparam.bVisible = param.bVisible;
                 in_outputs[newname] = std::move(sparam);
 
                 new_params.insert(newname);
