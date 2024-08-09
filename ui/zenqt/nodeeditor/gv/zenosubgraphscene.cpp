@@ -33,6 +33,7 @@
 #include "widgets/ztooltip.h"
 #include "zenonodenew.h"
 #include "reflect/reflection.generated.hpp"
+#include <zeno/utils/helper.h>
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
@@ -843,13 +844,17 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
         outSockIdx = fixedSockItem->paramIndex();
         inSockIdx = targetSockItem->paramIndex();
     }
-    int inParamType = inSockIdx.data(ROLE_PARAM_TYPE).toLongLong();
-    int outParamType = outSockIdx.data(ROLE_PARAM_TYPE).toLongLong();
+    zeno::ParamType inParamType = inSockIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
+    zeno::ParamType outParamType = outSockIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
 
     if (inParamType != outParamType)
     {
-        ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
-        return false;
+        if (zeno::outParamTypeCanConvertInParamType(outParamType, inParamType)) {
+        }
+        else {
+            ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
+            return false;
+        }
     }
     auto links = outSockIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
     for (auto& link : links)

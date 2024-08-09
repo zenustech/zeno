@@ -4,6 +4,7 @@
 #include <zeno/core/INode.h>
 #include <zeno/types/ObjectDef.h>
 #include "reflect/reflection.generated.hpp"
+#include <regex>
 
 
 using namespace zeno::types;
@@ -747,6 +748,18 @@ namespace zeno {
         }
     }
 
+    bool isObjectType(ParamType type)
+    {
+        const RTTITypeInfo& typeInfo = ReflectionRegistry::get().getRttiMap()->get(type);
+        assert(typeInfo.hash_code());
+        std::string rttiname(typeInfo.name());
+        std::regex pattern(R"(std::shared_ptr\s*<\s*struct\s*zeno::.+Object\s*>)");
+        if (std::regex_search(rttiname, pattern)) {
+            return true;
+        }
+        return false;
+    }
+
     bool isNumericType(ParamType type)
     {
         if (type == types::gParamType_Int || type == types::gParamType_Float)
@@ -772,6 +785,22 @@ namespace zeno {
             left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
             return true;
         return false;
+    }
+
+    ZENO_API bool outParamTypeCanConvertInParamType(ParamType outType, ParamType inType)
+    {
+        if (isNumericType(outType) && isNumericVecType(inType)) {   //数值连数值vec
+            return true;
+        }
+        else if (isSameDimensionNumericVecType(outType, inType)) { //同维度数值vec互连
+            return true;
+        }
+        else if (zeno::reflect::get_type<std::shared_ptr<zeno::IObject>>().type_hash() == inType && isObjectType(outType)) {    //outType的Obj类型可以转IObject
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
