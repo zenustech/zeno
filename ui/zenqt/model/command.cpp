@@ -22,6 +22,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         param.name = "int1";
         param.defl = zeno::reflect::make_any<int>(0);
         param.type = zeno::types::gParamType_Int;
+        param.bVisible = false;
         info.param = param;
         default.params.push_back(param);
         zeno::ParamPrimitive outputparam;
@@ -30,6 +31,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         outputparam.defl = zeno::reflect::Any();
         outputparam.type = Param_Null;
         outputparam.socketType = zeno::Socket_Primitve;
+        outputparam.bVisible = false;
         info.param = outputparam;
         zeno::ParamObject objInput;
         objInput.bInput = true;

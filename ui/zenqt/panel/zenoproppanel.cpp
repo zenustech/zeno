@@ -978,6 +978,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                         literalNum = UiHelper::variantToString(newVal);
                         pLineEdit->setText(literalNum);
                         QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                        if (properties.empty())
+                            return;
                         pLineEdit->setProperty(g_setKey, properties.first());
                         pLineEdit->style()->unpolish(pLineEdit);
                         pLineEdit->style()->polish(pLineEdit);
@@ -1004,7 +1006,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                     if (pVecEdit->isFloat())
                     {
                         QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
-                        pVecEdit->updateProperties(properties);
+                        if (!properties.empty())
+                            pVecEdit->updateProperties(properties);
                     }
                 }
                 else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))

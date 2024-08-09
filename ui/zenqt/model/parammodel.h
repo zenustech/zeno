@@ -83,7 +83,7 @@ private:
     void updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui); //增量更新m_customParamsM，防止zenoproppanl接收不到数据
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
-    void updateParamData(const QString& name, const QVariant& val, int role);
+    void updateParamData(const QString& name, const QVariant& val, int role, bool bInput = true);
 
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;

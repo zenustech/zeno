@@ -38,10 +38,13 @@ namespace zeno {
     std::string relativePath(std::string currentPath, const std::string& path);
     std::set<std::string> getReferPath(const std::string& path);
     std::set<std::string> getReferPaths(const zvariant& val);
+
     bool isObjectType(const zeno::reflect::RTTITypeInfo& type, bool& isConstPtr);
+    bool isObjectType(ParamType type);
     bool isNumericType(zeno::ParamType type);
     bool isNumericVecType(zeno::ParamType type);
     bool isSameDimensionNumericVecType(zeno::ParamType left, zeno::ParamType right);
+    ZENO_API bool outParamTypeCanConvertInParamType(zeno::ParamType outType, zeno::ParamType inType);
 }
 
 

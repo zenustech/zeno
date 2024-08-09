@@ -794,10 +794,7 @@ bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
 
     if (inParamType != outParamType)
     {
-
-        if (isNumericType(outParamType) && isNumericVecType(inParamType)) {
-        }
-        else if (isSameDimensionNumericVecType(outParamType, inParamType)) {
+        if (outParamTypeCanConvertInParamType(outParamType, inParamType)) {
         }
         else {
             zeno::log_warn("param type no match.");
