@@ -762,20 +762,12 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
 }
 
 bool INode::receiveOutputObj(ObjectParam* in_param, Any output, ParamType outobj_type) {
-    //观察端口属性
-    //TODO
-    // 
-    zany outputObj = anyToZAny(output, outobj_type);
-    //需要提出zany类型的指针，才能clone
 
     if (in_param->socketType == Socket_Clone) {
-        auto newObj = outputObj->clone();
-        in_param->spObject = newObj;
-        //TODO: list/dict case.
+        in_param->spObject.deep_clone(output);
     }
     else if (in_param->socketType == Socket_Owning) {
-        auto newObj = outputObj->move_clone();
-        in_param->spObject = newObj;
+        in_param->spObject.deep_move_clone(output);
     }
     else if (in_param->socketType == Socket_ReadOnly) {
         in_param->spObject = output;
@@ -1905,6 +1897,13 @@ bool INode::set_primitive_output(std::string const& id, const zeno::reflect::Any
     if (iter == m_outputPrims.end())
         return false;
     iter->second.result = val;
+}
+
+ZENO_API void INode::set_output_any(std::string const& param, zeno::reflect::Any obj) {
+    auto iter = m_outputObjs.find(param);
+    if (iter != m_outputObjs.end()) {
+        iter->second.spObject = obj;
+    }
 }
 
 ZENO_API bool INode::set_output(std::string const& param, zany obj) {

@@ -186,6 +186,7 @@ public:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API bool set_output(std::string const &id, zany obj);
+    ZENO_API void set_output_any(std::string const& id, zeno::reflect::Any obj);
     ZENO_API zeno::reflect::Any get_output_obj(std::string const& sock_name);
 
     template <class T>
