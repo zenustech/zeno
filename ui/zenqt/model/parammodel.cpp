@@ -73,8 +73,8 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     });
 
     spNode->register_update_param_visible(
-        [this](const std::string& name, bool bVisible) {
-        updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE);
+        [this](const std::string& name, bool bVisible, bool bInput) {
+        updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE, bInput);
     });
 
     spNode->register_update_param_color(
@@ -284,7 +284,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     {
         auto spNode = m_wpNode.lock();
         if (spNode) {
-            spNode->update_param_visible(param.name.toStdString(), value.toBool());
+            spNode->update_param_visible(param.name.toStdString(), value.toBool(), param.bInput);
             return true;
         }
         return false;
@@ -691,7 +691,7 @@ void ParamsModel::test_customparamsmodel() const
     }
 }
 
-void ParamsModel::updateParamData(const QString& name, const QVariant& val, int role)
+void ParamsModel::updateParamData(const QString& name, const QVariant& val, int role, bool bInput)
 {
     for (int i = 0; i < m_items.size(); i++) {
         if (m_items[i].name == name) {
@@ -703,8 +703,12 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
                 m_items[i].optCtrlprops = val.value<zeno::reflect::Any>();
-            else if (role == ROLE_PARAM_VISIBLE)
-                m_items[i].bVisible = val.toBool();
+            else if (role == ROLE_PARAM_VISIBLE) {
+                if (m_items[i].bInput == bInput)
+                    m_items[i].bVisible = val.toBool();
+                else
+                    continue;
+            }
             else if (role == ROLE_PARAM_GROUP)
                 m_items[i].group = (zeno::NodeDataGroup)val.toInt();
             else if (role == ROLE_PARAM_SOCKET_CLR) {

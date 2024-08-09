@@ -103,8 +103,8 @@ public:
     ZENO_API bool update_param_control_prop(const std::string& name, zeno::reflect::Any props);
     CALLBACK_REGIST(update_param_control_prop, void, const std::string&, zeno::reflect::Any)
 
-    ZENO_API bool update_param_visible(const std::string& name, bool bVisible);
-    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool)
+    ZENO_API bool update_param_visible(const std::string& name, bool bVisible, bool bInput = true);
+    CALLBACK_REGIST(update_param_visible, void, const std::string&, bool, bool)
 
     ZENO_API void update_param_color(const std::string& name, std::string& clr);
     CALLBACK_REGIST(update_param_color, void, const std::string&, std::string&)

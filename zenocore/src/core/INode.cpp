@@ -1460,17 +1460,16 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, z
     return true;
 }
 
-ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible)
+ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible, bool bInput)
 {
     CORE_API_BATCH
-    auto& iter = m_inputPrims.find(param);
-    if (iter != m_inputPrims.end()) {
+    if (bInput) {
         auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
 
         if (spParam.bVisible != bVisible)
         {
             spParam.bVisible = bVisible;
-            CALLBACK_NOTIFY(update_param_visible, param, bVisible)
+            CALLBACK_NOTIFY(update_param_visible, param, bVisible, bInput)
                 return true;
         }
     } else {
@@ -1479,7 +1478,7 @@ ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool b
         if (spParam.bVisible != bVisible)
         {
             spParam.bVisible = bVisible;
-            CALLBACK_NOTIFY(update_param_visible, param, bVisible)
+            CALLBACK_NOTIFY(update_param_visible, param, bVisible, bInput)
                 return true;
         }
     }
