@@ -1262,6 +1262,16 @@ static std::map<std::string, int> getBoneNameMapping(PrimitiveObject *prim) {
     }
     return boneNames;
 }
+static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
+    auto boneName_count = prim->userData().get2<int>("boneName_count");
+    std::vector<std::string> boneNames;
+    boneNames.reserve(boneName_count);
+    for (auto i = 0; i < boneName_count; i++) {
+        auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
+        boneNames.emplace_back(boneName);
+    }
+    return boneNames;
+}
 struct NewFBXRigPose : INode {
     std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, std::shared_ptr<zeno::PrimitiveObject> skeleton) {
         std::vector<int> ordering;
@@ -1363,16 +1373,6 @@ ZENDEFNODE(NewFBXRigPose, {
     {"FBXSDK"},
 });
 struct NewFBXBoneDeform : INode {
-    std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
-        auto boneName_count = prim->userData().get2<int>("boneName_count");
-        std::vector<std::string> boneNames;
-        boneNames.reserve(boneName_count);
-        for (auto i = 0; i < boneName_count; i++) {
-            auto boneName = prim->userData().get2<std::string>(format("boneName_{}", i));
-            boneNames.emplace_back(boneName);
-        }
-        return boneNames;
-    }
     std::vector<int> getBoneMapping(std::vector<std::string> &old, std::vector<std::string> &_new) {
         std::vector<int> mapping;
         mapping.reserve(old.size());
@@ -1500,14 +1500,28 @@ ZENDEFNODE(NewFBXBoneDeform, {
 });
 
 struct NewFBXExtractKeyframe : INode {
+    std::map<std::string, std::string> get_parent_name(PrimitiveObject *prim) {
+        std::vector<std::string> bone_names = getBoneNames(prim);
+        std::map<std::string, std::string> res;
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            auto p = prim->loops[i * 2 + 0];
+            auto s = prim->loops[i * 2 + 1];
+            res[bone_names[s]] = bone_names[p];
+        }
+        return res;
+    }
     virtual void apply() override {
         auto restPointTransformsPrim = get_input2<PrimitiveObject>("RestPointTransforms");
         auto restBoneNameMapping = getBoneNameMapping(restPointTransformsPrim.get());
+        auto restPointTransforms = getBoneMatrix(restPointTransformsPrim.get());
         auto restPointTransformsInv = getInvertedBoneMatrix(restPointTransformsPrim.get());
         auto deformPointTransformsPrim = get_input2<PrimitiveObject>("DeformPointTransforms");
+        auto deformBoneNameMapping = getBoneNameMapping(deformPointTransformsPrim.get());
         auto deformPointTransforms = getBoneMatrix(deformPointTransformsPrim.get());
+        auto deformPointTransformsInv = getInvertedBoneMatrix(deformPointTransformsPrim.get());
         std::vector<std::string> keyframe_boneName;
         std::vector<glm::mat4> keyframe_bone_matrix;
+        auto parent_names = get_parent_name(deformPointTransformsPrim.get());
         auto boneName_count = deformPointTransformsPrim->userData().get2<int>("boneName_count");
         for (auto i = 0; i < boneName_count; i++) {
             auto boneName = deformPointTransformsPrim->userData().get2<std::string>(format("boneName_{}", i));
@@ -1515,9 +1529,14 @@ struct NewFBXExtractKeyframe : INode {
                 continue;
             }
             keyframe_boneName.emplace_back(boneName);
+            glm::mat4 parent_matrix = glm::mat4(1);
+            if (parent_names.count(boneName)) {
+                int pi = deformBoneNameMapping[parent_names[boneName]];
+                parent_matrix = restPointTransforms[pi] * deformPointTransformsInv[pi];
+            }
             glm::mat4 restPointTransformInv = restPointTransformsInv[restBoneNameMapping[boneName]];
             glm::mat4 deformPointTransform = deformPointTransforms[i];
-            auto keyframeTransform = restPointTransformInv * deformPointTransform;
+            auto keyframeTransform = restPointTransformInv * parent_matrix * deformPointTransform;
             keyframe_bone_matrix.emplace_back(keyframeTransform);
         }
 
