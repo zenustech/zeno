@@ -1532,7 +1532,10 @@ struct NewFBXExtractKeyframe : INode {
             glm::mat4 parent_matrix = glm::mat4(1);
             if (parent_names.count(boneName)) {
                 int pi = deformBoneNameMapping[parent_names[boneName]];
-                parent_matrix = restPointTransforms[pi] * deformPointTransformsInv[pi];
+                if (restBoneNameMapping.count(parent_names[boneName])) {
+                    auto rpi = restBoneNameMapping[parent_names[boneName]];
+                    parent_matrix = restPointTransforms[rpi] * deformPointTransformsInv[pi];
+                }
             }
             glm::mat4 restPointTransformInv = restPointTransformsInv[restBoneNameMapping[boneName]];
             glm::mat4 deformPointTransform = deformPointTransforms[i];
