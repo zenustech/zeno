@@ -1272,39 +1272,39 @@ static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
     }
     return boneNames;
 }
-struct NewFBXRigPose : INode {
-    std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, std::shared_ptr<zeno::PrimitiveObject> skeleton) {
-        std::vector<int> ordering;
-        std::set<int> ordering_set;
-        while (bone_connects.size()) {
-            std::set<int> need_to_remove;
-            for (auto [s, p]: bone_connects) {
-                if (bone_connects.count(p) == 0) {
-                    if (ordering_set.count(p) == 0) {
-                        ordering.emplace_back(p);
-                        ordering_set.insert(p);
-                    }
-                    need_to_remove.insert(s);
+static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zeno::PrimitiveObject* skeleton) {
+    std::vector<int> ordering;
+    std::set<int> ordering_set;
+    while (bone_connects.size()) {
+        std::set<int> need_to_remove;
+        for (auto [s, p]: bone_connects) {
+            if (bone_connects.count(p) == 0) {
+                if (ordering_set.count(p) == 0) {
+                    ordering.emplace_back(p);
+                    ordering_set.insert(p);
                 }
-            }
-            for (auto index: need_to_remove) {
-                bone_connects.erase(index);
+                need_to_remove.insert(s);
             }
         }
-        for (auto i = 0; i < skeleton->verts.size(); i++) {
-            if (ordering_set.count(i) == 0) {
-                ordering.push_back(i);
-            }
+        for (auto index: need_to_remove) {
+            bone_connects.erase(index);
         }
-        if (false) { // debug
-            for (auto i = 0; i < ordering.size(); i++) {
-                auto bi = ordering[i];
-                auto bone_name = skeleton->userData().get2<std::string>(format("boneName_{}", bi));
-                zeno::log_info("{}: {}: {}", i, bi, bone_name);
-            }
-        }
-        return ordering;
     }
+    for (auto i = 0; i < skeleton->verts.size(); i++) {
+        if (ordering_set.count(i) == 0) {
+            ordering.push_back(i);
+        }
+    }
+    if (false) { // debug
+        for (auto i = 0; i < ordering.size(); i++) {
+            auto bi = ordering[i];
+            auto bone_name = skeleton->userData().get2<std::string>(format("boneName_{}", bi));
+            zeno::log_info("{}: {}: {}", i, bi, bone_name);
+        }
+    }
+    return ordering;
+}
+struct NewFBXRigPose : INode {
     virtual void apply() override {
         auto skeleton = std::dynamic_pointer_cast<PrimitiveObject>(get_input<PrimitiveObject>("skeleton")->clone());
         auto nodelist = get_input<zeno::ListObject>("Transformations")->getRaw<RigPoseItemObject>();
@@ -1327,7 +1327,7 @@ struct NewFBXRigPose : INode {
             bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
         }
 
-        auto ordering = TopologicalSorting(bone_connects, skeleton);
+        auto ordering = TopologicalSorting(bone_connects, skeleton.get());
         auto &verts = skeleton->verts;
         auto &transform_r0 = skeleton->verts.add_attr<vec3f>("transform_r0");
         auto &transform_r1 = skeleton->verts.add_attr<vec3f>("transform_r1");
@@ -1557,6 +1557,8 @@ struct NewFBXExtractKeyframe : INode {
             transform_r2[i] = {matrix[2][0], matrix[2][1], matrix[2][2]};
             verts[i]        = {matrix[3][0], matrix[3][1], matrix[3][2]};
         }
+        auto &boneNames = keyframe->verts.add_attr<int>("boneName");
+        std::iota(boneNames.begin(), boneNames.end(), 0);
         set_output2("keyframe", keyframe);
     }
 };
@@ -1568,6 +1570,65 @@ ZENDEFNODE(NewFBXExtractKeyframe, {
     },
     {
         "keyframe",
+    },
+    {},
+    {"primitive"},
+});
+
+
+struct NewFBXGenerateAnimation : INode {
+    virtual void apply() override {
+        auto keyframe = get_input2<PrimitiveObject>("keyframe");
+        std::map<std::string, glm::mat4> Transformations;
+        {
+            auto keyframe_matrix = getBoneMatrix(keyframe.get());
+            auto boneNames = getBoneNames(keyframe.get());
+            for (auto i = 0; i < boneNames.size(); i++) {
+                Transformations[boneNames[i]] = keyframe_matrix[i];
+            }
+        }
+
+        auto skeleton = std::dynamic_pointer_cast<PrimitiveObject>(get_input<PrimitiveObject>("skeleton")->clone());
+        std::map<int, int> bone_connects;
+        for (auto i = 0; i < skeleton->polys.size(); i++) {
+            bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
+        }
+        auto ordering = TopologicalSorting(bone_connects, skeleton.get());
+        auto &verts = skeleton->verts;
+        auto &transform_r0 = skeleton->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.add_attr<vec3f>("transform_r2");
+        auto transforms    = getBoneMatrix(skeleton.get());
+        auto transformsInv = getInvertedBoneMatrix(skeleton.get());
+        auto boneNames = getBoneNames(skeleton.get());
+        std::map<int, glm::mat4> cache;
+        for (auto bi: ordering) {
+            glm::mat4 transform = glm::mat4(1.0f);
+            if (Transformations.count(boneNames[bi])) {
+                auto trans = Transformations[boneNames[bi]];
+                transform = transforms[bi] * trans * transformsInv[bi];
+            }
+            if (bone_connects.count(bi)) {
+                transform = cache[bone_connects[bi]] * transform;
+            }
+            cache[bi] = transform;
+            verts[bi]        = transform_pos(transform, verts[bi]);
+            transform_r0[bi] = transform_nrm(transform, transform_r0[bi]);
+            transform_r1[bi] = transform_nrm(transform, transform_r1[bi]);
+            transform_r2[bi] = transform_nrm(transform, transform_r2[bi]);
+        }
+
+        set_output2("DeformPointTransforms", skeleton);
+    }
+};
+
+ZENDEFNODE(NewFBXGenerateAnimation, {
+    {
+        "skeleton",
+        "keyframe",
+    },
+    {
+        "DeformPointTransforms",
     },
     {},
     {"primitive"},
