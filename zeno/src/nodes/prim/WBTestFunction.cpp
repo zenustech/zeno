@@ -250,7 +250,7 @@ struct str2num : INode {
     virtual void apply() override {
         auto str = get_input2<std::string>("str");
         auto type = get_input<zeno::StringObject>("type")->value;
-        auto obj = std::make_unique<zeno::NumericObject>();
+        auto obj = std::make_shared<zeno::NumericObject>();
         std::stringstream strStream(str);
 
         float num_float = 0;

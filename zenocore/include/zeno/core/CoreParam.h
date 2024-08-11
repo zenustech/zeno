@@ -10,6 +10,8 @@
 #include <set>
 #include <map>
 #include <optional>
+#include <zeno/core/data.h>
+
 
 namespace zeno {
 
@@ -39,7 +41,6 @@ struct CoreParam {
     bool bInput = true;
     bool m_idModify = false;    //该output param输出的obj是新创建的(false)还是基于已有的修改(true)
     std::string wildCardGroup;
-    zeno::reflect::RTTITypeInfo rtti = { "<default_type>", 0, 0 };
 };
 
 struct ObjectParam : CoreParam {

@@ -40,7 +40,7 @@ struct GCTest : zeno::IObjectClone<GCTest, zeno::NumericObject> {
 
 struct MakeGCTest : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<GCTest>();
+        auto obj = std::make_shared<GCTest>();
         obj->set<int>(get_param<int>("value"));
         set_output("value", std::move(obj));
     }

@@ -47,7 +47,7 @@ using namespace zeno;
 
 struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
-        auto trans = std::make_unique<BulletTransform>();
+        auto trans = std::make_shared<BulletTransform>();
         trans->trans.setIdentity();
         if (has_input("translate")) {
             auto origin = get_input<zeno::NumericObject>("translate")->get<zeno::vec3f>();
@@ -133,7 +133,7 @@ struct BulletComposeTransform : zeno::INode {
     virtual void apply() override {
         auto transFirst = get_input<BulletTransform>("transFirst")->trans;
         auto transSecond = get_input<BulletTransform>("transSecond")->trans;
-        auto trans = std::make_unique<BulletTransform>();
+        auto trans = std::make_shared<BulletTransform>();
         trans->trans = transFirst * transSecond;
         set_output("trans", std::move(trans));
     }
@@ -153,7 +153,7 @@ ZENDEFNODE(BulletComposeTransform, {
 struct PrimitiveToBulletMesh : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto mesh = std::make_unique<BulletTriangleMesh>();
+        auto mesh = std::make_shared<BulletTriangleMesh>();
         auto pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < prim->tris.size(); i++) {
             auto f = prim->tris[i];
@@ -2297,7 +2297,7 @@ ZENDEFNODE(BulletMultiBodyPDControl, {
 struct BulletMakeMultiBodyWorld : zeno::INode {
 	virtual void apply() override {
 		auto solverType = get_param<std::string>("solverType");
-		auto world = std::make_unique<BulletMultiBodyWorld>(solverType);
+		auto world = std::make_shared<BulletMultiBodyWorld>(solverType);
 		set_output("world", std::move(world));
 	}
 };
@@ -2981,7 +2981,7 @@ ZENDEFNODE(BulletMultiBodyGetJointVelPos, {
 struct BulletMultiBodyGetBaseTransform : zeno::INode {
     virtual void apply() {
         auto object = get_input<BulletMultiBodyObject>("object");
-        auto trans = std::make_unique<BulletTransform>();
+        auto trans = std::make_shared<BulletTransform>();
         trans->trans = object->multibody->getBaseWorldTransform();
         set_output("trans", std::move(trans));
     }

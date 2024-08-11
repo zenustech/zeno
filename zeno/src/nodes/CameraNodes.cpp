@@ -15,7 +15,7 @@ namespace zeno {
 
 struct MakeCamera : INode {
     virtual void apply() override {
-        auto camera = std::make_unique<CameraObject>();
+        auto camera = std::make_shared<CameraObject>();
 
         camera->pos = get_input2<vec3f>("pos");
         camera->up = get_input2<vec3f>("up");
@@ -82,7 +82,7 @@ ZENO_DEFNODE(SetPhysicalCamera)({
 
 struct TargetCamera : INode {
     virtual void apply() override {
-        auto camera = std::make_unique<CameraObject>();
+        auto camera = std::make_shared<CameraObject>();
 
         auto refUp = zeno::normalize(get_input2<vec3f>("refUp"));
         auto pos = get_input2<vec3f>("pos");
@@ -131,7 +131,7 @@ ZENO_DEFNODE(TargetCamera)({
 
 struct MakeLight : INode {
     virtual void apply() override {
-        auto light = std::make_unique<LightObject>();
+        auto light = std::make_shared<LightObject>();
         light->lightDir = normalize(get_input2<vec3f>("lightDir"));
         light->intensity = get_input2<float>("intensity");
         light->shadowTint = get_input2<vec3f>("shadowTint");
@@ -267,7 +267,7 @@ struct CameraFrustum : INode {
         auto ffar = cam->ffar;
         auto right = zeno::cross(view, up);
         float ratio = float(width) / float(height);
-        auto prim = std::make_unique<PrimitiveObject>();
+        auto prim = std::make_shared<PrimitiveObject>();
         prim->verts.resize(8);
         vec3f _near_left_up = pos + fnear * (view - right * std::tan(fov / 2) * ratio + up * std::tan(fov / 2));
         vec3f _near_left_down = pos + fnear * (view - right * std::tan(fov / 2) * ratio - up * std::tan(fov / 2));

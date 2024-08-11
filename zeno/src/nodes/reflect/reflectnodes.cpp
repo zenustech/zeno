@@ -98,7 +98,8 @@ namespace zeno
             std::shared_ptr<zeno::PrimitiveObject> input_obj,
             const std::string& name1 = "a1",
             const std::string& name2 = "a2",
-            int a = 234)
+            int a = 234,
+            float b = 456.2)
         {
             return input_obj;
         }

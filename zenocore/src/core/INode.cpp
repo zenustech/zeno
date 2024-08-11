@@ -544,7 +544,7 @@ ZENO_API void INode::registerObjToManager()
     {
         if (param.spObject.has_value())
         {
-            zany spObject = anyToZAny(param.spObject, param.type);
+            zany spObject = zeno::reflect::any_cast<zany>(param.spObject);
             assert(spObject);
 
             if (std::dynamic_pointer_cast<NumericObject>(spObject) ||
@@ -567,27 +567,6 @@ ZENO_API void INode::registerObjToManager()
             std::shared_ptr<INode> spNode = shared_from_this();
             objsMan->collectingObject(spObject, spNode, m_bView);
         }
-    }
-}
-
-zany INode::anyToZAny(zeno::reflect::Any object, ParamType type) const {
-
-#if 0
-    //反射库暂时不提供这种转换支持，除非针对shared_ptr<T>写一套模板，重载ValueContainer，后续会跟进
-    zany spObject = zeno::reflect::any_cast<zany>(object);
-    return spObject;
-#endif
-    assert(type == (object.type().get_decayed_hash() != 0 ? object.type().get_decayed_hash() : object.type().hash_code()));
-
-    switch (type) {
-    case zeno::types::gParamType_sharedIObject: return any_cast<std::shared_ptr<IObject>>(object);
-    case zeno::types::gParamType_Primitive:     return any_cast<std::shared_ptr<PrimitiveObject>>(object);
-    case zeno::types::gParamType_Camera:    return any_cast<std::shared_ptr<CameraObject>>(object);
-    case zeno::types::gParamType_Light:     return any_cast<std::shared_ptr<LightObject>>(object);
-    case zeno::types::gParamType_List:      return any_cast<std::shared_ptr<ListObject>>(object);
-    case zeno::types::gParamType_Dict:      return any_cast<std::shared_ptr<DictObject>>(object);
-    default:
-        return nullptr;
     }
 }
 
@@ -630,7 +609,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
 
             auto outResult = outNode->get_output_obj(out_param->name);
             assert(outResult.has_value());
-            spDict->lut[keyName] = anyToZAny(outResult, out_param->type);
+            spDict->lut[keyName] = zeno::reflect::any_cast<zany>(outResult);
         }
     }
     return spDict;
@@ -674,14 +653,14 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
 
                 auto outResult = outNode->get_output_obj(out_param->name);
                 assert(outResult.has_value());
-                zany outResultObj = anyToZAny(outResult, out_param->type);;
+                zany outResultObj = zeno::reflect::any_cast<zany>(outResult);
                 spList->push_back(outResultObj);
                 //spList->dirtyIndice.insert(indx);
             }
             else {
                 auto outResult = outNode->get_output_obj(out_param->name);
                 assert(outResult.has_value());
-                zany outResultObj = anyToZAny(outResult, out_param->type);;
+                zany outResultObj = zeno::reflect::any_cast<zany>(outResult);
                 spList->push_back(outResultObj);
             }
         }
@@ -1861,10 +1840,8 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     else {
         auto iter2 = m_inputObjs.find(id);
         if (iter2 != m_inputObjs.end()) {
-            return anyToZAny(iter2->second.spObject, iter2->second.type);
             zany spObject = zeno::reflect::any_cast<zany>(iter2->second.spObject);
-            if (spObject);
-                return spObject;
+            return spObject;
         }
         return nullptr;
     }
@@ -1904,85 +1881,6 @@ ZENO_API void INode::set_output_any(std::string const& param, zeno::reflect::Any
     if (iter != m_outputObjs.end()) {
         iter->second.spObject = obj;
     }
-}
-
-ZENO_API bool INode::set_output(std::string const& param, zany obj) {
-    //只给旧节点模块使用，如果函数暴露reflect::Any，就会迫使所有使用这个函数的cpp文件include headers
-    //会增加程序体积以及编译时间，待后续生成文件优化后再考虑处理。
-    auto iter = m_outputObjs.find(param);
-    if (iter != m_outputObjs.end()) {
-        if (auto spObject = std::dynamic_pointer_cast<PrimitiveObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<LightObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<ListObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<DictObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<CameraObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else {
-            iter->second.spObject = obj;
-        }
-        return true;
-    }
-    else {
-        auto iter2 = m_outputPrims.find(param);
-        if (iter2 != m_outputPrims.end()) {
-            //兼容以前NumericObject的情况
-            if (auto numObject = std::dynamic_pointer_cast<NumericObject>(obj)) {
-                const auto& val = numObject->value;
-                if (std::holds_alternative<int>(val))
-                {
-                    iter2->second.result = std::get<int>(val);
-                }
-                else if (std::holds_alternative<float>(val))
-                {
-                    iter2->second.result = std::get<float>(val);
-                }
-                else if (std::holds_alternative<vec2i>(val))
-                {
-                    iter2->second.result = std::get<vec2i>(val);
-                }
-                else if (std::holds_alternative<vec2f>(val))
-                {
-                    iter2->second.result = std::get<vec2f>(val);
-                }
-                else if (std::holds_alternative<vec3i>(val))
-                {
-                    iter2->second.result = std::get<vec3i>(val);
-                }
-                else if (std::holds_alternative<vec3f>(val))
-                {
-                    iter2->second.result = std::get<vec3f>(val);
-                }
-                else if (std::holds_alternative<vec4i>(val))
-                {
-                    iter2->second.result = std::get<vec4i>(val);
-                }
-                else if (std::holds_alternative<vec4f>(val))
-                {
-                    iter2->second.result = std::get<vec4f>(val);
-                }
-                else
-                {
-                    //throw makeError<TypeError>(typeid(T));
-                    //error, throw expection.
-                }
-            }
-            else if (auto strObject = std::dynamic_pointer_cast<StringObject>(obj)) {
-                const auto& val = strObject->value;
-                iter2->second.result = val;
-            }
-            return true;
-        }
-    }
-    return false;
 }
 
 ZENO_API zeno::reflect::Any INode::get_output_obj(std::string const& param) {

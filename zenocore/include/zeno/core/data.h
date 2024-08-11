@@ -11,7 +11,6 @@
 #include <optional>
 #include <zeno/utils/api.h>
 #include <reflect/container/any>
-#include <reflect/type.hpp>
 #include <zeno/types/CurveObject.h>
 
 

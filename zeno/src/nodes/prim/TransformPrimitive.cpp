@@ -143,7 +143,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
         auto matrix = pre_mat*local*matTrans*matRotate*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
-        auto outprim = std::make_unique<PrimitiveObject>(*prim);
+        auto outprim = std::make_shared<PrimitiveObject>(*prim);
 
         if (prim->has_attr("pos")) {
             auto &pos = outprim->attr<zeno::vec3f>("pos");

@@ -3,7 +3,8 @@
 #include <reflect/container/any>
 #include <zeno/types/ObjectDef.h>
 #include <memory>
-#include "reflect/reflection.generated.hpp"
+#include "reflect/zenocore/zenoreflecttypes.cpp.generated.hpp"
+
 
 using namespace zeno::reflect;
 
@@ -55,6 +56,8 @@ namespace zeno
                 return AnyConversionMethod::AsIs;
             }
             else {
+                if (other_type.hash_code() == zeno::types::gParamType_sharedIObject)
+                    return AnyConversionMethod::AsIs;
                 return AnyConversionMethod::Impossible;
             }
         }

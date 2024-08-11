@@ -3,7 +3,6 @@
 // Created by zhouhang on 2022/12/14.
 //
 
-#include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>

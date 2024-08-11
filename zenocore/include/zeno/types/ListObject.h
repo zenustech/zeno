@@ -4,6 +4,8 @@
 #include <zeno/funcs/LiterialConverter.h>
 #include <vector>
 #include <memory>
+#include <set>
+
 
 namespace zeno {
 

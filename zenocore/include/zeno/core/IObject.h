@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/core/Session.h>
+#include <zeno/core/Session.h>  //屏蔽这句竟然会导致 GlobalVarible.obj没法link INode Graph，真是神奇
 #include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/uuid.h>

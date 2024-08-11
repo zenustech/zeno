@@ -1,6 +1,7 @@
 #include <zeno/core/ObjectManager.h>
 #include <zeno/core/Graph.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/core/Session.h>
 
 
 namespace zeno {

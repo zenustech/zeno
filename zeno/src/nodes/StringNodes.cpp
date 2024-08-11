@@ -17,9 +17,7 @@ namespace {
 
 struct MakeWritePath : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zeno::StringObject>();
-        obj->set(get_param<std::string>("path"));
-        set_output("path", std::move(obj));
+        set_primitive_output("path", get_param<std::string>("path"));
     }
 };
 
@@ -32,9 +30,7 @@ ZENDEFNODE(MakeWritePath, {
 
 struct MakeReadPath : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zeno::StringObject>();
-        obj->set(get_param<std::string>("path"));
-        set_output("path", std::move(obj));
+        set_primitive_output("path", get_param<std::string>("path"));
     }
 };
 
@@ -47,9 +43,7 @@ ZENDEFNODE(MakeReadPath, {
 
 struct MakeString : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zeno::StringObject>();
-        obj->set(get_param<std::string>("value"));
-        set_output("value", std::move(obj));
+        set_primitive_output("value", get_param<std::string>("value"));
     }
 };
 
@@ -546,20 +540,17 @@ struct StringToNumber : zeno::INode {
     virtual void apply() override {
         auto in_str = get_input2<std::string>("str");
         auto type = get_input2<std::string>("type");
-        auto obj = std::make_unique<zeno::NumericObject>();
         if (type == "float") {
             float v = std::stof(in_str);
-            obj->set(v);
+            set_primitive_output("num_str", v);
         }
         else if (type == "int") {
             int v = std::stoi(in_str);
-            obj->set(v);
+            set_primitive_output("num_str", v);
         }
         else {
             throw zeno::makeError("Unknown type");
         }
-
-        set_output("num_str", std::move(obj));
     }
 };
 
@@ -664,11 +655,9 @@ ZENDEFNODE(StringJoin, {
 struct NumbertoString : zeno::INode {
     virtual void apply() override {
         auto num = get_input<zeno::NumericObject>("number");
-        auto obj = std::make_unique<zeno::StringObject>();
         std::visit([&](const auto &v) {
-            obj->set(zeno::to_string(v));
+            set_primitive_output("string", zeno::to_string(v));
         }, num->value);
-        set_output("string", std::move(obj));
     }
 };
 

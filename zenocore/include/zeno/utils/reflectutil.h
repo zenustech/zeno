@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zeno/core/objectptrcontainer.h>
-#include "reflect/reflection.generated.hpp"
+//#include "reflect/zenocore/zenoreflecttypes.cpp.generated.hpp"
 
 using namespace zeno::reflect;
 

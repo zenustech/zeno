@@ -278,7 +278,7 @@ namespace zeno {
             auto refprim = get_input<PrimitiveObject>("prim");
             auto& ref_pos_attr = refprim->attr<zeno::vec3f>("pos");
 
-            auto outprim = std::make_unique<PrimitiveObject>();
+            auto outprim = std::make_shared<PrimitiveObject>();
             std::vector<zeno::vec3f> new_pos_attr;
             std::unordered_map<int32_t, int32_t> point_map;
             for(auto key:refprim->attr_keys())
