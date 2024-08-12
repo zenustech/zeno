@@ -34,6 +34,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include <tinygltf/json.hpp>
 
 #include <map>
 #include <string>
@@ -635,26 +636,26 @@ struct GraphicsManager {
                 } 
                 else 
                 {
-                    auto p2 = prim_in->verts[prim_in->tris[0][0]];
-                    auto p0 = prim_in->verts[prim_in->tris[0][1]];
-                    auto p1 = prim_in->verts[prim_in->tris[0][2]];
-                    auto e1 = p1 - p0;
-                    auto e2 = p2 - p1;
+                    auto v0 = prim_in->verts[0];
+                    auto v1 = prim_in->verts[1];
+                    auto v3 = prim_in->verts[3];
+                    auto e1 = v1 - v3;
+                    auto e2 = v0 - v1;
                     
-                    // p0 ---(+x)--> p1
+                    // v3 ---(+x)--> v1
                     // |||||||||||||(-)
                     // |||||||||||||(z)
                     // |||||||||||||(+)
-                    // p* <--(-x)--- p2
+                    // v2 <--(-x)--- v0
 
-                    p0 = p0 + e2; // p* as p0
+                    v3 = v3 + e2; // p* as p0
                     e2 = -e2;     // invert e2
                 
                     // facing down in local space
                     auto ne2 = zeno::normalize(e2);
                     auto ne1 = zeno::normalize(e1);
                     nor = zeno::normalize(zeno::cross(ne2, ne1));
-                    if (ivD) { nor *= -1; }
+                    //if (ivD) { nor *= -1; }
 
                     if (prim_in->verts.has_attr("clr")) {
                         clr = prim_in->verts.attr<zeno::vec3f>("clr")[0];
@@ -665,15 +666,15 @@ struct GraphicsManager {
                     clr = color;
                     extraStep();
 
-                    std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
-                    std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
-                    std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
+                    std::cout << "light: v"<<v3[0]<<" "<<v3[1]<<" "<<v3[2]<<"\n";
+                    std::cout << "light: v"<<v1[0]<<" "<<v1[1]<<" "<<v1[2]<<"\n";
+                    std::cout << "light: v"<<v0[0]<<" "<<v0[1]<<" "<<v0[2]<<"\n";
                     std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
                     std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
                     std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                     std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                    xinxinoptix::load_light(key, ld, p0.data(), e1.data(), e2.data());
+                    xinxinoptix::load_light(key, ld, v3.data(), e1.data(), e2.data());
                 }
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
@@ -696,11 +697,88 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
+                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path
+                        && OptixUtil::sky_tex.value() != OptixUtil::default_sky_tex ) {
+                        OptixUtil::removeTexture( {OptixUtil::sky_tex.value(), false} );
+                    }
+
                     OptixUtil::sky_tex = path;
-                    OptixUtil::addTexture(path);
+                    OptixUtil::addSkyTexture(path);
+                } else {
+                    OptixUtil::sky_tex = OptixUtil::default_sky_tex;
                 }
+
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
+
+                if (OptixUtil::portal_delayed.has_value()) {
+                    OptixUtil::portal_delayed.value()();
+                    //OptixUtil::portal_delayed.reset();
+            }
+        }
+            else if (prim_in->userData().has<int>("SkyComposer")) {
+
+                auto& attr_dir = prim_in->verts;
+
+                std::vector<zeno::DistantLightData> dlights;
+                dlights.reserve(attr_dir->size());
+                
+                if (attr_dir->size()) {
+
+                    auto& attr_angle = attr_dir.attr<float>("angle");
+                    auto& attr_color = attr_dir.attr<zeno::vec3f>("color");
+                    auto& attr_inten = attr_dir.attr<float>("inten");
+
+                    for (size_t i=0; i<attr_dir->size(); ++i) {
+
+                        auto& dld = dlights.emplace_back();
+                        dld.direction = attr_dir[i];
+                        dld.angle = attr_angle[i];
+                        dld.color = attr_color[i];
+                        dld.intensity = attr_inten[i];
+                    }
+                }
+                xinxinoptix::updateDistantLights(dlights);
+
+                if(prim_in->userData().has<std::string>("portals")) {
+
+                    auto portals_string = prim_in->userData().get2<std::string>("portals");
+                    auto portals_json = nlohmann::json::parse(portals_string);
+
+                    auto ps_string = prim_in->userData().get2<std::string>("psizes");
+                    auto ps_json = nlohmann::json::parse(ps_string);
+
+                    std::vector<Portal> portals {};
+
+                    if (portals_json.is_array() && portals_json.size()%4 == 0) {
+                        
+                        portals.reserve(portals_json.size()/4);
+
+                        auto pack = [&portals_json](size_t i) {
+                            auto x = portals_json[i][0].template get<float>();
+                            auto y = portals_json[i][1].template get<float>();
+                            auto z = portals_json[i][2].template get<float>();
+                            return zeno::vec3f(x, y, z);
+                        };
+                        
+                        for (size_t i=0; i<portals_json.size(); i+=4) {
+                            auto v0 = pack(i+0);
+                            auto v1 = pack(i+1);
+                            auto v2 = pack(i+2);
+                            auto v3 = pack(i+3);
+
+                            uint32_t psize = ps_json[i/4].template get<int>(); 
+                            portals.push_back({v0, v1, v2, v3, psize});
+                        }
+                    } 
+
+                    if (OptixUtil::sky_tex.has_value()) {
+                        xinxinoptix::updatePortalLights(portals);
+                    }
+                    OptixUtil::portal_delayed = [=]() {
+                        xinxinoptix::updatePortalLights(portals);
+                    }; 
+                } //portals
             }
         }
         return sky_found;
@@ -906,6 +984,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
+        if (posWS == glm::vec3()) {
+            return {};
+        }
+        auto const &cam = *scene->camera;
+        posWS += cam.m_pos;
+        return posWS;
+    }
 
     auto setupState() {
         return std::tuple{
@@ -1005,7 +1092,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         graphicsMan->load_shader_uniforms(objs);
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
@@ -1099,7 +1186,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
-    void draw() override {
+    void draw(bool _) override {
         //std::cout<<"in draw()"<<std::endl;
 #ifdef OPTIX_BASE_GL
         auto guard = setupState();
@@ -1138,9 +1225,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate || camNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating camera");
-
-            auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
-            auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+            auto lodright = cam.m_rotation * glm::vec3(1, 0, 0);
+            auto lodup = cam.m_rotation * glm::vec3(0, 1, 0);
+            auto lodfront = cam.m_rotation * glm::vec3(0, 0, -1);
 
             std::random_device rd;
             std::mt19937 gen(rd());
@@ -1149,7 +1236,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
-                                        glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                        glm::value_ptr(lodfront), glm::value_ptr(cam.m_pos),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
             xinxinoptix::set_physical_camera_param(
                 cam.zOptixCameraSettingInfo.aperture,
@@ -1234,7 +1321,51 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cachedSphereMaterials = xinxinoptix::uniqueMatsForSphere();
             } // preserve material names for materials-only updating case 
 
-            //for (auto const &[key, obj]: graphicsMan->graphics)
+            // Auto unload unused texure
+            {
+                std::set<OptixUtil::TexKey> realNeedTexPaths;
+                for(auto const &[matkey, mtldet] : matMap) {
+                    if (mtldet->parameters.find("vol") != std::string::npos
+                        || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
+                        || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) 
+                    {
+                        for(auto& tex: mtldet->tex2Ds) {
+                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
+                        }
+                    }
+                    
+                }
+                // add light map
+                for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
+                    // if (ld.profileKey.size()) {
+                    //     realNeedTexPaths.emplace_back(ld.profileKey);
+                    // }
+                    if (ld.textureKey.size()) {
+                        realNeedTexPaths.insert( {ld.textureKey, false});
+                    }
+                }
+                std::vector<OptixUtil::TexKey> needToRemoveTexPaths;
+                for(auto const &[key, _]: OptixUtil::tex_lut) {
+
+                    if (realNeedTexPaths.count(key) > 0) {
+                        continue; 
+                    }
+                    if (OptixUtil::sky_tex.has_value() && key.path == OptixUtil::sky_tex.value()) {
+                        continue;
+                    }
+                    if (key.path == OptixUtil::default_sky_tex) {
+                        continue;
+                    }
+                    needToRemoveTexPaths.emplace_back(key);
+                }
+                for (const auto& need_remove_tex: needToRemoveTexPaths) {
+                    OptixUtil::removeTexture(need_remove_tex);
+                }
+                for (const auto& realNeedTexKey: realNeedTexPaths) {
+
+                    OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
+                }
+            }
             for(auto const &[matkey, mtldet] : matMap)
             {       
                     bool has_vdb = false;
@@ -1290,17 +1421,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     callable.append(shadtpl2.second);
                     //std::cout<<callable<<std::endl;
 
-                    std::vector<std::string> shaderTex;
-                    int texid=0;
-                    for(auto tex:mtldet->tex2Ds)
-                    {
-                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
-                            OptixUtil::addTexture(tex->path.c_str());
-                            shaderTex.emplace_back(tex->path);
-                            texid++;
-                        }
-                    }
-
                     ShaderPrepared shaderP; 
 
                         shaderP.callable = callable;
@@ -1308,7 +1428,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.parameters = mtldet->parameters;
 
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.tex_names = shaderTex;
+                        for(auto tex:mtldet->tex2Ds)
+                        {
+                            shaderP.tex_keys.push_back( {tex->path, tex->blockCompression} );
+                        }
 
                     if (isVol) {
                         
@@ -1458,7 +1581,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     ~RenderEngineOptx() override {
-        xinxinoptix::optixcleanup();
+        xinxinoptix::optixDestroy();
+    }
+
+    void cleanupAssets() override {
+        xinxinoptix::optixCleanup();
+    }
+
+    void cleanupWhenExit() override {
+
     }
 };
 

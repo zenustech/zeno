@@ -833,7 +833,10 @@ struct FleshDynamicStepping : INode {
                         T stiffness = (2.0066 * mu + 1.0122 * lambda) * b_verts("strength",vi);
 
 
-                        auto alpha = stiffness * bone_driven_weight * bcws("strength",vi) * bcws("cnorm",vi) * eles("vol",ei) * eles("bdw",ei);
+                        auto area = (T)1.0;
+                        if(b_verts.hasProperty("area"))
+                            area = b_verts("area",vi);
+                        auto alpha = area * stiffness * bone_driven_weight * bcws("strength",vi) * bcws("cnorm",vi) * eles("vol",ei) * eles("bdw",ei);
 
                         for(size_t i = 0;i != 4;++i){
                             auto tmp = -pdiff * alpha * w[i]; 
@@ -1321,7 +1324,7 @@ struct FleshDynamicStepping : INode {
                 act_buffer.tuple(dim_c<2>,"act",i) = vec2(act_[i][0],act_[i][1]);
         });
 
-        act_buffer = act_buffer.clone({zs::memsrc_e::device, 0});
+        act_buffer = act_buffer.clone({zs::memsrc_e::device});
 
         auto driven_tag = get_input2<std::string>("driven_tag");
         auto bone_driven_weight = get_input2<float>("driven_weight");
@@ -1331,12 +1334,13 @@ struct FleshDynamicStepping : INode {
             {"inds",1},
             {"w",4},
             {"strength",1},
-            {"cnorm",1}},0,zs::memsrc_e::device,0);
+            {"cnorm",1}},0,zs::memsrc_e::device);
 
         auto bverts = typename ZenoParticles::particles_t({
             {"x",3},
             {"intersect",1},
-            {"strength",1}},0,zs::memsrc_e::device,0);
+            {"area",1},
+            {"strength",1}},0,zs::memsrc_e::device);
         if(has_input<ZenoParticles>("driven_boudary") && zsparticles->hasAuxData(driven_tag)){
             auto zsbones = get_input<ZenoParticles>("driven_boudary");
             const auto& zsbones_verts = zsbones->getParticles();
@@ -1354,6 +1358,12 @@ struct FleshDynamicStepping : INode {
             else
                TILEVEC_OPS::fill(cudaPol,bverts,"intersect",(T)0.0); 
 
+            if(zsbones_verts.hasProperty("area")) {
+                TILEVEC_OPS::copy(cudaPol,zsbones_verts,"area",bverts,"area");
+                std::cout << "use dynamic area driven weight" << std::endl;
+            } else
+                TILEVEC_OPS::fill(cudaPol,bverts,"area",(T)1.0);
+
             const auto& inbbw = (*zsparticles)[driven_tag];
             bbw.resize(inbbw.size());
             TILEVEC_OPS::copy(cudaPol,inbbw,"X",bbw,"X");
@@ -1361,16 +1371,8 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::copy(cudaPol,inbbw,"w",bbw,"w");
             TILEVEC_OPS::copy(cudaPol,inbbw,"strength",bbw,"strength");
             TILEVEC_OPS::copy(cudaPol,inbbw,"cnorm",bbw,"cnorm");
-
-            // if(zsbones_verts.has_attr<float>("drivenStrength"))
-            //     ompExec(zs::range(zsbones_verts.size()),
-            //         [bverts = proxy<host_space>(bverts),&zsbones_verts] (int i) mutable {
-            //             auto v = zsbones_verts[i];
-            //             bverts[i] = zs::vec<T,3>{v[0],v[1],v[2]};
-            //     });
-
         }
-        // bverts = bverts.clone({zs::memsrc_e::device,0});
+        // bverts = bverts.clone({zs::memsrc_e::device});
         // std::cout << "bverts.size() = " << bverts.size() << std::endl;
 
         auto kverts = typename ZenoParticles::particles_t({
@@ -1380,29 +1382,11 @@ struct FleshDynamicStepping : INode {
                 {"binderStiffness",1},
                 {planeConsIDTag,1},
                 {"nrm",3},
-                {"area",1}},0,zs::memsrc_e::device,0);
+                {"area",1}},0,zs::memsrc_e::device);
         auto ktris = typename ZenoParticles::particles_t({
                 {"inds",3},
-                {"nrm",3}},0,zs::memsrc_e::device,0);
+                {"nrm",3}},0,zs::memsrc_e::device);
 
-
-        // dtiles_t surf_tris_buffer{tris.get_allocator(),{
-        //     {"inds",3},
-        //     {"nrm",3},
-        //     {"he_inds",1}
-        // },tris.size()};
-
-        // dtiles_t surf_verts_buffer{points.get_allocator(),{
-        //     {"inds",1},
-        //     {"xn",3},
-        //     {"is_loop_vertex",1},
-        //     {"mustExclude",1}
-        // },points.size()};
-        // TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
-        // TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
-        // TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
-        // reorder_topology(cudaPol,points,surf_tris_buffer);
-        // zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
         dtiles_t gia_res{points.get_allocator(),{
             {"ring_mask",1},
             {"type_mask",1},
@@ -1515,10 +1499,11 @@ struct FleshDynamicStepping : INode {
         // auto max_collision_pairs = tris.size() / 10; 
         dtiles_t etemp(eles.get_allocator(), {
                 // {"H", 12 * 12},
-                    {"ActInv",3*3},\
+                    {"ActInv",3*3},
                     {"dfiber",3},
                     // {"muscle_ID",1},
-                    {"is_inverted",1}
+                    {"is_inverted",1},
+                    {"fiberStretch",1}
                 }, eles.size()
         );
 
@@ -1619,6 +1604,12 @@ struct FleshDynamicStepping : INode {
         if(!eles.hasProperty("Act"))
             eles.append_channels(cudaPol,{{"Act",1}});
 
+
+        if(!eles.hasProperty("fiberStretch"))
+            eles.append_channels(cudaPol,{{"fiberStretch",1}});
+
+        TILEVEC_OPS::fill(cudaPol,eles,"fiberStretch",1.f);
+        
         if(!eles.hasProperty("fiber"))
             fmt::print(fg(fmt::color::red),"the quadrature has no \"fiber\"\n");
         if(!verts.hasProperty(muscle_id_tag))
@@ -1691,13 +1682,17 @@ struct FleshDynamicStepping : INode {
                             verts.template pack<3>("x",inds[3]),
                             eles.template pack<3,3>("IB",ei));
                         auto dfiber = F * fiber;
+                        auto dfiberN = dfiber.norm();
+                        auto fiberN = fiber.norm();
                         dfiber = dfiber / dfiber.norm();
                         etemp.tuple(dim_c<3>,"dfiber",ei) = dfiber;
+                        eles("fiberStretch",ei) = dfiberN / fiberN;
                     }
                 }else{
                     fiber = zs::vec<T,3>(1.0,0.0,0.0);
                     act = vec3{1,1,1};
                     eles("Act",ei) = (T)0.0;
+                    
                 }
                 if(fabs(fiber.norm() - 1.0) > 0.1) {
                     printf("invalid fiber[%d] detected : %f %f %f\n",(int)ei,

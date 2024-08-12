@@ -79,6 +79,7 @@ void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
     m_recordInfo.bAutoRemoveCache = info.bAutoRemoveCache;
     m_recordInfo.bAov = info.bAov;
     m_recordInfo.bExr = info.bExr;
+    m_recordInfo.exePath = info.exePath;
 }
 
 void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)

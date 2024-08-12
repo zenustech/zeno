@@ -171,7 +171,8 @@ namespace zenomodel
         ZASSERT_EXIT(paramVal.HasMember("control"), param);
         const rapidjson::Value& controlObj = paramVal["control"];
 
-        if (controlObj.HasMember("items") || (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max")))
+        if (controlObj.HasMember("items") || controlObj.HasMember("filter") || 
+            (controlObj.HasMember("step") && controlObj.HasMember("min") && controlObj.HasMember("max")))
         {
             JsonHelper::importControl(controlObj, param.m_info.control, param.controlInfos);
         } 

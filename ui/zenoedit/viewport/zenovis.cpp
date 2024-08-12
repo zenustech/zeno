@@ -110,6 +110,16 @@ bool Zenovis::isLoopPlaying()
     return m_loopPlaying;
 }
 
+void Zenovis::cleanupView()
+{
+    if (!session)
+        return;
+
+    auto pScene = session->get_scene();
+    ZASSERT_EXIT(pScene);
+    pScene->cleanupView();
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
@@ -154,7 +164,6 @@ int Zenovis::setCurrentFrameId(int frameid)
         if (m_camera_keyframe && m_camera_control) {
             PerspectiveInfo r;
             if (m_camera_keyframe->queryFrame(frameid, r)) {
-                m_camera_control->setKeyFrame();
                 m_camera_control->updatePerspective();
             }
         }

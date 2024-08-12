@@ -710,6 +710,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
             triObj.prog->set_uniformi("mCustomColor", custom_color);
+            {
+                auto camera_center = scene->camera->m_pos;
+                triObj.prog->set_uniform("mCameraCenter", camera_center);
+            }
 
             triObj.ebo->bind();
             if (!scene->drawOptions->render_wireframe) {

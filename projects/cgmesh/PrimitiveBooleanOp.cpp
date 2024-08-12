@@ -43,7 +43,7 @@ struct PrimitiveBooleanOp : INode {
             auto attrValB = get_input<NumericObject>("faceAttrB")->value;
             std::visit([&] (auto const &valA) {
                 using T = std::decay_t<decltype(valA)>;
-                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, vec3f>) {
+                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, zeno::vec3f>) {
                     auto valB = std::get<T>(attrValB);
                     auto &arrC = primC->tris.add_attr<T>(attrName);
                     for (int i = 0; i < primC->tris.size(); i++) {

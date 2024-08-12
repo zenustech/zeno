@@ -35,7 +35,7 @@ struct ZSMakeSparseGrid : INode {
         else if (type == "vector3")
             nc = 3;
 
-        spg = ZenoSparseGrid::spg_t{{{attr, nc}}, 0, zs::memsrc_e::device, 0};
+        spg = ZenoSparseGrid::spg_t{{{attr, nc}}, 0, zs::memsrc_e::device};
         spg.scale(dx);
         spg._background = bg;
 
@@ -235,10 +235,10 @@ struct ZSVDBToSparseGrid : INode {
             if (vdbType == "FloatGrid") {
                 auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
                 spg =
-                    zs::convert_floatgrid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0}, attr);
+                    zs::convert_floatgrid_to_sparse_grid(vdb_->m_grid, zs::MemoryProperty{zs::memsrc_e::device, -1}, attr);
             } else if (vdbType == "Vec3fGrid") {
                 auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
-                spg = zs::convert_float3grid_to_sparse_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0},
+                spg = zs::convert_float3grid_to_sparse_grid(vdb_->m_grid, zs::MemoryProperty{zs::memsrc_e::device, -1},
                                                             attr);
             } else {
                 throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
@@ -420,7 +420,7 @@ struct ZSCombineSparseGrid : INode {
 
             set_output("Grid", GridA);
         } else {
-            ZenoSparseGrid::spg_t sdf{{{tag, 1}}, 0, zs::memsrc_e::device, 0};
+            ZenoSparseGrid::spg_t sdf{{{tag, 1}}, 0, zs::memsrc_e::device};
             // topo copy
             bool AisBigger = spgA.numBlocks() >= spgB.numBlocks();
             auto &bigger = AisBigger ? spgA : spgB;
@@ -678,7 +678,7 @@ struct ZSMakeDenseSDF : INode {
 
         auto zsSPG = std::make_shared<ZenoSparseGrid>();
         auto &spg = zsSPG->spg;
-        spg = ZenoSparseGrid::spg_t{{{"sdf", 1}}, numExpectedBlocks, zs::memsrc_e::device, 0};
+        spg = ZenoSparseGrid::spg_t{{{"sdf", 1}}, numExpectedBlocks, zs::memsrc_e::device};
         spg.scale(dx);
         spg._background = dx;
 

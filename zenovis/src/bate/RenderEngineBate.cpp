@@ -8,15 +8,17 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
+#include "zenovis/bate/FrameBufferRender.h"
 
 namespace zenovis::bate {
-
 struct RenderEngineBate : RenderEngine {
     std::unique_ptr<opengl::VAO> vao;
     std::unique_ptr<GraphicsManager> graphicsMan;
     std::vector<std::unique_ptr<IGraphicDraw>> hudGraphics;
     std::unique_ptr<IGraphicDraw> primHighlight;
+    std::unique_ptr<FrameBufferRender> fbr;
     Scene *scene;
+    bool released = false;
 
     int bateEnginIdx = 0;
     int getEnginIdx() {
@@ -37,6 +39,7 @@ struct RenderEngineBate : RenderEngine {
 
         vao = std::make_unique<opengl::VAO>();
         graphicsMan = std::make_unique<GraphicsManager>(scene);
+        fbr = std::make_unique<FrameBufferRender>(scene);
 
         hudGraphics.push_back(makeGraphicGrid(scene));
         hudGraphics.push_back(makeGraphicAxis(scene));
@@ -52,7 +55,10 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->update_objs(zeno::getSession().globalComm->getCurrentFrameObjs(), zeno::getSession().globalComm->getNeedUpdateToviewObjs(), bateEnginIdx);
     }
 
-    void draw() override {
+    void draw(bool record) override {
+        if (released) {
+            return;
+        }
         auto guard = setupState();
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
@@ -60,6 +66,10 @@ struct RenderEngineBate : RenderEngine {
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        if (!record) {
+            fbr->generate_buffers();
+            fbr->bind();
+        }
 
         auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
         graphicsMan->draw();
@@ -68,6 +78,7 @@ struct RenderEngineBate : RenderEngine {
 //        }
         primHighlight->draw();
         if (scene->drawOptions->show_grid) {
+            glDepthMask(GL_FALSE);
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
@@ -85,11 +96,55 @@ struct RenderEngineBate : RenderEngine {
                     *scene->camera = backup;
                 }
             }
+            glDepthMask(GL_TRUE);
         }
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
             scene->drawOptions->handler->draw();
         }
+        if (!record) {
+            fbr->unbind();
+            fbr->draw_to_screen();
+        }
+    }
+
+    void cleanupAssets() override {
+
+    }
+
+    void cleanupWhenExit() override {
+        released = true;
+        scene->shaderMan = nullptr;
+        scene->drawOptions->handler = nullptr;
+        vao = nullptr;
+        graphicsMan = nullptr;
+        hudGraphics.clear();
+        primHighlight = nullptr;
+        fbr = nullptr;
+    }
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        auto depth = fbr->getDepth(x, y);
+        if (depth == 0) {
+            return {};
+        }
+//        zeno::log_info("depth: {}", depth);
+
+        auto fov = scene->camera->m_fov;
+        float cz = scene->camera->inf_z_near / depth;
+        auto w = scene->camera->m_nx;
+        auto h = scene->camera->m_ny;
+//        zeno::log_info("{} {} {} {}", x, y, w, h);
+//        zeno::log_info("fov: {}", fov);
+//        zeno::log_info("w: {}, h: {}", w, h);
+        auto u = (2.0 * x / w) - 1;
+        auto v = 1 - (2.0 * y / h);
+//        zeno::log_info("u: {}, v: {}", u, v);
+        auto cy = v * tan(glm::radians(fov) / 2) * cz;
+        auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+        glm::vec4 cc = {cx, cy, -cz, 1};
+        auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
+        wc /= wc.w;
+        return glm::vec3(wc);
     }
 };
 

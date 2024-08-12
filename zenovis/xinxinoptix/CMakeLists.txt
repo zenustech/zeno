@@ -11,8 +11,11 @@ target_sources(zenovis PRIVATE
   volume/optixVolume.h
   optixSphere.cpp
   optixSphere.h
+  Portal.h
   Shape.h
   XAS.h
+
+  BCX.h
 
   LightTree.cpp
   LightTree.h
@@ -35,10 +38,6 @@ target_sources(zenovis PRIVATE
   SDK/sutil/PPMLoader.h         SDK/sutil/vec_math.h
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
   )
-
-#if (OPTIX_USE_20XX)
-    #target_compile_definitions(zenovis PRIVATE -DUSING_20XX)
-#endif()
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
@@ -132,6 +131,8 @@ set(FILE_LIST
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Portal.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
     ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h

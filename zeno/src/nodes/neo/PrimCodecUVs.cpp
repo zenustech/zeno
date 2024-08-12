@@ -3,6 +3,9 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/log.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace zeno {
 
@@ -14,7 +17,7 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
     if (prim->loops.size() && prim->has_attr("uvs")) {
         auto &loop_uvs = prim->loops.attr<int>("uvs");
-        auto &vert_uv = prim->verts.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
+        auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
         for (size_t i = 0; i < loop_uvs.size(); i++) {
             auto uv = prim->uvs[loop_uvs[i]];
@@ -70,7 +73,7 @@ ZENO_DEFNODE(PrimLoopUVsToVerts)({
 struct PrimUVVertsToLoopsuv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &vuv = prim->verts.attr<vec3f>("uv");
+        auto &vuv = prim->verts.attr<zeno::vec3f>("uv");
         if (prim->loops.size()) {
             auto &uvs = prim->loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
@@ -83,9 +86,9 @@ struct PrimUVVertsToLoopsuv : INode {
             }
         }
         else if (prim->tris.size()) {
-            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-            auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+            auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+            auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+            auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
             for (auto i = 0; i < prim->tris.size(); i++) {
                 uv0[i] = vuv[prim->tris[i][0]];
                 uv1[i] = vuv[prim->tris[i][1]];
@@ -148,7 +151,7 @@ struct PrimUVEdgeDuplicate : INode {
         });
         std::swap(prim->verts, new_verts);
         if (writeUVToVertex) {
-            auto &vert_uv = prim->verts.add_attr<vec3f>("uv");
+            auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv");
             auto &loopsuv = prim->loops.attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto uv = prim->uvs[loopsuv[i]];
@@ -175,6 +178,77 @@ ZENO_DEFNODE(PrimUVEdgeDuplicate)({
      {"primitive"},
  });
 
+struct PrimSplitVertexForSharedNormal : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (prim->loops.attr_is<vec3f>("nrm")) {
+            std::vector<int> indexs;
+            indexs.reserve(prim->loops.size());
+            std::map<std::tuple<float, float, float>, int> mapping;
+            {
+                auto &nrm = prim->loops.attr<zeno::vec3f>("nrm");
+                for (auto i = 0; i < prim->loops.size(); i++) {
+                    std::tuple<float, float, float> n = {nrm[i][0], nrm[i][1], nrm[i][2]};
+                    if (mapping.count(n) == 0) {
+                        int count = mapping.size();
+                        mapping[n] = count;
+                    }
+                    indexs.push_back(mapping[n]);
+                }
+                prim->loops.erase_attr("nrm");
+            }
+            std::map<int, vec3f> revert_mapping;
+            for (auto [k, v]: mapping) {
+                revert_mapping[v] = {std::get<0>(k), std::get<1>(k), std::get<2>(k)};
+            }
+            std::map<std::pair<int, int>, int> new_mapping;
+            std::vector<int> new_indexs;
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                std::pair<int, int> new_index = {prim->loops[i], indexs[i]};
+                if (new_mapping.count(new_index) == 0) {
+                    int count = new_mapping.size();
+                    new_mapping[new_index] = count;
+                }
+                new_indexs.push_back(new_mapping[new_index]);
+            }
+            std::map<int, std::pair<int, int>> revert_new_mapping;
+            for (auto [k, v]: new_mapping) {
+                revert_new_mapping[v] = k;
+            }
+            AttrVector<vec3f> verts(new_mapping.size());
+            auto &nrm = verts.add_attr<zeno::vec3f>("nrm");
+            for (auto i = 0; i < verts.size(); i++) {
+                verts[i] = prim->verts[revert_new_mapping[i].first];
+                nrm[i] = revert_mapping[revert_new_mapping[i].second];
+            }
+            prim->verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                zeno::log_info("key: {}", key);
+                auto &attr = verts.add_attr<T>(key);
+                for (auto i = 0; i < attr.size(); i++) {
+                    attr[i] = arr[revert_new_mapping[i].first];
+                }
+            });
+
+            prim->verts = verts;
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                prim->loops[i] = new_indexs[i];
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(PrimSplitVertexForSharedNormal)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
 }
 
 }

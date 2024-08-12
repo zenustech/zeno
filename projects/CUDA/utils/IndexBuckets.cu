@@ -19,7 +19,7 @@ struct MakeZSBuckets : zeno::INode {
         auto &ibs = out->get();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         spatial_hashing(cudaPol, pars, radius + radius, ibs);
 
         fmt::print("done building index buckets with {} entries, {} buckets\n", ibs.numEntries(), ibs.numBuckets());
@@ -57,7 +57,7 @@ struct MakeZSLBvh : zeno::INode {
         auto &bvh = out->get();
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         if (pars->hasImage(ZenoParticles::s_particleTag))
             buildBvh(cudaPol, pars->getParticles<true>(), radius, bvh);
         else

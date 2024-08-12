@@ -7,6 +7,15 @@
 #include <zeno/types/CameraObject.h>
 
 namespace zenovis {
+enum class CameraLookToDir {
+    front_view,
+    right_view,
+    top_view,
+    back_view,
+    left_view,
+    bottom_view,
+    back_to_origin,
+};
 
 namespace opengl {
     class Program;
@@ -20,8 +29,8 @@ struct ZOptixCameraSettingInfo {
 };
 
 struct Camera {
+    float inf_z_near = 0.001f;
     int m_nx{512}, m_ny{512};
-    glm::mat4x4 m_view{1}, m_proj{1};
 
     float m_near = 0.01f;
     float m_far = 20000.0f;
@@ -32,38 +41,43 @@ struct Camera {
     float m_dof = -1.f;
     float m_safe_frames = 0;
 
-    glm::vec3 m_lodcenter{0, 0, -1};
-    glm::vec3 m_lodfront{0, 0, 1};
-    glm::vec3 m_lodup{0, 1, 0};
+    glm::vec3 m_pos{0, 0, 5};
+    glm::vec3 m_pivot = {};
+    glm::quat m_rotation = {1, 0, 0, 0};
 
-    bool m_need_sync = false;
     bool m_block_window = false;
-    bool m_auto_radius = false;
-
-    float m_theta = 0;
-    float m_phi = 0;
-    float m_roll = 0;
-    zeno::vec3f m_center = {};
+public:
+    void reset() {
+        m_pos = {0, 0, 5};
+        m_pivot = {};
+        m_rotation = {1, 0, 0, 0};
+        updateMatrix();
+    }
+    glm::vec3 get_lodfront() {
+        return m_rotation * glm::vec3(0, 0, -1);
+    }
+    glm::vec3 get_lodup() {
+        return m_rotation * glm::vec3(0, 1, 0);
+    }
     bool m_ortho_mode = false;
-    float m_radius = 5;
+    float get_radius() {
+        return glm::distance(m_pos, m_pivot);
+    }
+    glm::vec3 getPos() {
+        return m_pos;
+    }
+    void setPos(glm::vec3 value) {
+        m_pos = value;
+    }
+    glm::vec3 getPivot() {
+        return m_pivot;
+    }
+    void setPivot(glm::vec3 value) {
+        m_pivot = value;
+    }
 
     zeno::vec2i viewport_offset = {};
     ZOptixCameraSettingInfo zOptixCameraSettingInfo = {};
-
-    // only used in real-shader
-    struct ZxxHappyLookParam {
-        float cx = 0;
-        float cy = 0;
-        float cz = 0;
-        float theta = 0;
-        float phi = 0;
-        float radius = 0;
-        float fov = 0;
-        bool ortho_mode = false;
-        float aperture = 0;
-        float focalPlaneDistance = 0;
-    };
-    struct ZxxHappyLookParam m_zxx;
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
@@ -76,11 +90,31 @@ struct Camera {
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
     void setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure);
-    void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up);
-    void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
+    void placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up);
+    void placeCamera(glm::vec3 pos, glm::quat rotation);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
     void updateMatrix();
+    glm::mat4x4 get_view_matrix() {
+        return glm::lookAt(m_pos, m_pos + get_lodfront(), get_lodup());
+    }
+    static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear) {
+        float f = 1.0f / tan(fovY_radians / 2.0f);
+        return glm::mat4(
+                f / aspectWbyH, 0.0f,  0.0f,  0.0f,
+                0.0f,    f,  0.0f,  0.0f,
+                0.0f, 0.0f,  0.0f, -1.0f,
+                0.0f, 0.0f, zNear,  0.0f);
+    }
+    glm::mat4x4 get_proj_matrix() {
+        if (m_ortho_mode) {
+            auto radius = get_radius();
+            return glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
+                radius, m_far, m_near);
+        } else {
+            return MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), inf_z_near);
+        }
+    }
 };
 
 } // namespace zenovis

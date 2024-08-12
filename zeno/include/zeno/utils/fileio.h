@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <vector>
 #include <filesystem>
+namespace fs = std::filesystem;
 
 namespace zeno {
 
@@ -172,5 +173,13 @@ void bin_write_le(std::vector<char> &data, T e) {
     auto cur = data.size();
     data.resize(cur + sizeof(T));
     *(T*)&data[cur] = e;
+}
+static std::string create_directories_when_write_file(std::string u8_path) {
+    auto path = fs::u8path(u8_path);
+    auto folderPath = path.parent_path();
+    if (!fs::exists(folderPath)) {
+        fs::create_directories(folderPath);
+    }
+    return path.string();
 }
 }

@@ -88,7 +88,7 @@ struct ScaleHandler final : IGraphicHandler {
     }
 
     void draw() override {
-        auto dist = glm::distance(scene->camera->m_lodcenter, glm::vec3(center[0], center[1], center[2]));
+        auto dist = glm::distance(scene->camera->m_pos, glm::vec3(center[0], center[1], center[2]));
 
         bound = dist / 5.0f * scale;
 
@@ -144,7 +144,7 @@ struct ScaleHandler final : IGraphicHandler {
         }
         // xyz
         if (mode == INTERACT_NONE || mode == INTERACT_XYZ) {
-            const auto& view = scene->camera->m_view;
+            const auto& view = scene->camera->get_view_matrix();
             // http://www.opengl-tutorial.org/cn/intermediate-tutorials/billboards-particles/billboards/
             // always face camera
             // This is equivalent to mlutiplying (1,0,0) and (0,1,0) by inverse(ViewMatrix).
@@ -164,7 +164,7 @@ struct ScaleHandler final : IGraphicHandler {
         auto z_axis = glm::cross(x_axis, y_axis);
 
         auto model_matrix = glm::translate(zeno::vec_to_other<glm::vec3>(center));
-        const auto& view = scene->camera->m_view;
+        const auto& view = scene->camera->get_view_matrix();
         
         float t;
 

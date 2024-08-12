@@ -314,11 +314,15 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             QDir dir = fileInfo.dir();
             dirPath = dir.path();
         }
-
+        QString filter = this->property("filter").toString();
+        if (filter.isEmpty())
+        {
+            filter = "All Files(*);;";
+        }
         if (m_control == CONTROL_READPATH) {
-            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, "All Files(*);;");
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", dirPath, filter);
         } else if (m_control == CONTROL_WRITEPATH) {
-            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, "All Files(*);;");
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", dirPath, filter);
         } else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
@@ -327,7 +331,10 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         }
 
         if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
-            path.replace(zsgDir, "=$ZSG");
+        {
+            if (QMessageBox::question(nullptr, tr("zsg path"), tr("Whether to use $ZSG replace zsg file path?")) == QMessageBox::Yes)
+                path.replace(zsgDir, "=$ZSG");
+        }
 
         setText(path);
     }

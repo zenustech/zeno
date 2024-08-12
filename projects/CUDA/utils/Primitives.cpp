@@ -3859,7 +3859,7 @@ struct QueryClosestPrimitive : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
         } else if (has_input<NumericObject>("prim")) {
-            auto p = get_input<NumericObject>("prim")->get<vec3f>();
+            auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
             using vec3 = zs::vec<float, 3>;
             auto pi = vec3::from_array(p);
             auto lbvhv = zs::proxy<zs::execspace_e::host>(lbvh);
@@ -4122,7 +4122,7 @@ struct ComputeParticlesDirection : INode {
         zeno::vec3f trans{0, 0, 0};
 
         if (has_input("origin")) {
-            trans = get_input2<vec3f>("origin");
+            trans = get_input2<zeno::vec3f>("origin");
         } else {
             std::vector<float> locs[3];
             for (int d = 0; d != 3; ++d) {
@@ -4632,6 +4632,54 @@ ZENDEFNODE(AdvanceFrame, {
                              {},
                              {"zs_geom"},
                          });
+
+struct PrimAssignRefAttrib : INode {
+    virtual void apply() override {
+        auto points = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("ref_prim");
+        auto idTag = get_input2<std::string>("pointIdTag");
+        auto tag = get_input2<std::string>("attribTag");
+
+        auto pointIndex = points->attr<int>(idTag);
+
+        auto assignAttrib = [&pointIndex](auto &dstAttrib, const auto &srcAttrib) {
+            if constexpr (zs::is_same_v<RM_CVREF_T(dstAttrib), RM_CVREF_T(srcAttrib)>) {
+    #pragma omp parallel for
+                for (auto index = 0; index < dstAttrib.size(); ++index) {
+                    dstAttrib[index] = srcAttrib[(int)pointIndex[index]];
+                }
+            } else 
+                throw std::runtime_error(
+                    fmt::format("destination attrib [{}], source attrib [{}]\n", 
+                    zs::get_var_type_str(dstAttrib), zs::get_var_type_str(srcAttrib)));
+        };
+
+        if (tag == "pos") {
+            assignAttrib(points->verts.values, prim->verts.values);
+        } else {
+            zs::match([&verts = points->verts, &tag](const auto &src) {
+                verts.add_attr<RM_CVREF_T(src[0])>(tag);
+            })(prim->verts.attr(tag));
+            zs::match([&assignAttrib](auto &dst, const auto &src) { 
+                assignAttrib(dst, src); 
+            })(points->verts.attr(tag), prim->verts.attr(tag));
+        }
+
+        set_output("prim", get_input("prim"));
+    }
+};
+
+ZENDEFNODE(PrimAssignRefAttrib, {
+                                      {
+                                          "prim",
+                                          "ref_prim",
+                                          {"string", "pointIdTag", "bvh_id"},
+                                          {"string", "attribTag"},
+                                      },
+                                      {"prim"},
+                                      {},
+                                      {"primitive"},
+                                  });
 
 struct RemovePrimitiveTopo : INode {
     void apply() override {

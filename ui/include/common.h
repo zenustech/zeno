@@ -40,7 +40,9 @@ struct RECORD_SETTING
     bool bMask;
     bool bExr;
 
-    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false), bMask(false) {}
+    QString exePath;
+
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false), bMask(false){}
 };
 
 struct LAYOUT_SETTING {
@@ -104,16 +106,17 @@ struct ZENO_RECORD_RUN_INITPARAM {
     bool isExportVideo = false;
     bool needDenoise = false;
     bool export_exr = false;
+    bool bAov = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
-    int iBitrate = 0;
-    int iFps = 0;
+    int iBitrate = 20000;
+    int iFps = 24;
     QString sPixel = "";
     QString sPath = "";
     QString audioPath = "";
     QString configFilePath = "";
-    QString videoName = "";
+    QString videoName = "output.mp4";
     QString subZsg = "";
     QString paramsJson = "";
     bool exitWhenRecordFinish = false;

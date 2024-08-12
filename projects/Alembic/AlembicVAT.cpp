@@ -189,6 +189,12 @@ struct AlembicToSoftBodyVAT: public INode {
             }
             double _start, _end;
             GetArchiveStartAndEndTime(archive, _start, _end);
+            TimeAndSamplesMap timeMap;
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
             auto obj = archive.getTop();
             std::vector<float> pos_f32;
             std::vector<float> nrm_f32;
@@ -197,7 +203,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 const int32_t frameIndex = frameEnd - idx - 1;
                 auto abctree = std::make_shared<ABCTree>();
                 auto prims = std::make_shared<zeno::ListObject>();
-                traverseABC(obj, *abctree, idx, read_done, false, "", false);
+                traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
                 if (use_xform) {
                     prims = get_xformed_prims(abctree);
                 } else {
@@ -383,6 +389,12 @@ struct AlembicToDynamicRemeshVAT : public INode {
       if (!read_done) {
         archive = readABC(path);
       }
+        TimeAndSamplesMap timeMap;
+        Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+        for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+            timeMap.add(archive.getTimeSampling(s),
+                        archive.getMaxNumSamplesForTimeSamplingIndex(s));
+        }
 
       auto obj = archive.getTop();
       std::shared_ptr<ListObject> frameList = std::make_shared<ListObject>();
@@ -391,7 +403,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         const int32_t frameIndex = frameEnd - idx - 1;
         auto abctree = std::make_shared<ABCTree>();
         auto prims = std::make_shared<zeno::ListObject>();
-        traverseABC(obj, *abctree, idx, read_done, false, "", false);
+        traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
         if (use_xform) {
           prims = get_xformed_prims(abctree);
         } else {

@@ -61,6 +61,14 @@ endif()
 message(STATUS "Build directory: ${PROJECT_BINARY_DIR}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
+cmake_path(GET CMAKE_CXX_COMPILER STEM LAST_ONLY ZENO_CXX_COMPILER_BINARY)
+message(STATUS "Current C++ compiler is ${ZENO_CXX_COMPILER_BINARY} (${CMAKE_CXX_COMPILER})")
+
+# intel sycl compiler
+if(${ZENO_CXX_COMPILER_BINARY} STREQUAL "icx")
+    add_compile_options(-Wno-error=register -Wno-enum-constexpr-conversion -Wno-implicit-function-declaration)
+endif()
+
 if (WIN32)
     # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
@@ -123,9 +131,21 @@ macro (zeno_dbg_msvc project)
     endif()
 endmacro()
 
+if (ZENO_WITH_PYTHON3)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+    message("****************************************************************")
+    message(STATUS "cPython3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+    message(STATUS "pythons lib:" ${Python3_LIBRARIES})
+
+    set(Zeno_Python3_LIB ${ZENO_OUTPUT_DIR}/Lib)
+    #copy ze module to zeno Python home
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/projects/Python/Lib/ze DESTINATION ${Zeno_Python3_LIB})
+    add_definitions(-DZENO_PYTHON_MODULE_DIR="${Zeno_Python3_LIB}")
+endif()
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
-    message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})
+    message(STATUS "CUDA_PATH: $ENV{CUDA_PATH}")
     if (NOT DEFINED CUDAToolkit_ROOT AND NOT DEFINED ENV{CUDAToolkit_ROOT} AND DEFINED ENV{CUDA_PATH})
         set(CUDAToolkit_ROOT $ENV{CUDA_PATH} CACHE FILEPATH "ZENOCIHOUCUDA" FORCE)
         if (NOT DEFINED CUDAToolkit_NVCC_EXECUTABLE)
@@ -135,21 +155,21 @@ if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
             set(CMAKE_CUDA_COMPILER ${CUDAToolkit_NVCC_EXECUTABLE} CACHE FILEPATH "ZENOCIHOUCUDA" FORCE)
         endif()
     endif()
-    message(STATUS "CUDAToolkit_ROOT: "${CUDAToolkit_ROOT})
-    message(STATUS "CUDAToolkit_ROOT_DIR: "${CUDAToolkit_ROOT_DIR})
-    message(STATUS "CUDAToolkit_NVCC_EXECUTABLE: "${CUDAToolkit_NVCC_EXECUTABLE})
-    message(STATUS "CUDAToolkit_BIN_DIR: "${CUDAToolkit_BIN_DIR})
+    message(STATUS "CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
+    message(STATUS "CUDAToolkit_ROOT_DIR: ${CUDAToolkit_ROOT_DIR}")
+    message(STATUS "CUDAToolkit_NVCC_EXECUTABLE: ${CUDAToolkit_NVCC_EXECUTABLE}")
+    message(STATUS "CUDAToolkit_BIN_DIR: ${CUDAToolkit_BIN_DIR}")
     message(STATUS "Now invoking FindCUDAToolkit.cmake")
     find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
-    message(STATUS "CUDAToolkit_ROOT: "${CUDAToolkit_ROOT})
-    message(STATUS "CUDAToolkit_ROOT_DIR: "${CUDAToolkit_ROOT_DIR})
-    message(STATUS "CUDAToolkit_NVCC_EXECUTABLE: "${CUDAToolkit_NVCC_EXECUTABLE})
-    message(STATUS "CUDAToolkit_BIN_DIR: "${CUDAToolkit_BIN_DIR})
-    message(STATUS "CUDAToolkit_INCLUDE_DIRS: "${CUDAToolkit_INCLUDE_DIRS})
-    message(STATUS "CUDAToolkit_LIBRARY_DIR: "${CUDAToolkit_LIBRARY_DIR})
-    message(STATUS "CUDAToolkit_VERSION: "${CUDAToolkit_VERSION})
-    message(STATUS "CMAKE_CUDA_COMPILER: "${CMAKE_CUDA_COMPILER})
-    message(STATUS "CMAKE_CUDA_COMPILER_VERSION: "${CMAKE_CUDA_COMPILER_VERSION})
+    message(STATUS "CUDAToolkit_ROOT: ${CUDAToolkit_ROOT}")
+    message(STATUS "CUDAToolkit_ROOT_DIR: ${CUDAToolkit_ROOT_DIR}")
+    message(STATUS "CUDAToolkit_NVCC_EXECUTABLE: ${CUDAToolkit_NVCC_EXECUTABLE}")
+    message(STATUS "CUDAToolkit_BIN_DIR: ${CUDAToolkit_BIN_DIR}")
+    message(STATUS "CUDAToolkit_INCLUDE_DIRS: ${CUDAToolkit_INCLUDE_DIRS}")
+    message(STATUS "CUDAToolkit_LIBRARY_DIR: ${CUDAToolkit_LIBRARY_DIR}")
+    message(STATUS "CUDAToolkit_VERSION: ${CUDAToolkit_VERSION}")
+    message(STATUS "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}")
+    message(STATUS "CMAKE_CUDA_COMPILER_VERSION: ${CMAKE_CUDA_COMPILER_VERSION}")
     enable_language(CUDA)  # otherwise projects/CUDA will fail to compile
 endif()
 ## --- end cihou wxl cuda

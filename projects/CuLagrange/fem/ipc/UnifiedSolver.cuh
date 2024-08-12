@@ -294,7 +294,7 @@ struct UnifiedIPCSystem : IObject {
     template <typename ValT>
     struct DynamicBuffer {
         DynamicBuffer(std::size_t n = 0)
-            : buf{n, zs::memsrc_e::device, 0}, cnt{1, zs::memsrc_e::device, 0}, prevCount{0} {
+            : buf{n, zs::memsrc_e::device}, cnt{1, zs::memsrc_e::device}, prevCount{0} {
             reset();
         }
         ~DynamicBuffer() = default;

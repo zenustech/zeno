@@ -52,6 +52,16 @@ struct _to_stream_impl {
         return _helper_tuple_to_stream(os, t, fms, std::make_index_sequence<std::tuple_size_v<T> - 1>{});
     }
 
+    template <class Os, class T>
+    static auto to_stream(Os &os, T const &t, std::string_view fms) -> decltype((std::enable_if_t<!_has_stream_bit_shl<Os &, T const &>::value && !_has_range_begin_end<T>::value, void>)(std::declval<T&>()[0], std::declval<T&>().length())) {
+        os << "[glm: ";
+        for (int i = 0; i < t.length(); ++i) {
+            to_stream(os, t[i], fms);
+            os << ", ";
+        }
+        os << "]";
+    }
+
     template <class Os, class T, std::enable_if_t<!_has_stream_bit_shl<Os &, T const &>::value
         && (std::tuple_size<T>::value == 0), int> = 0>
     static void to_stream(Os &os, T const &t, std::string_view fms) {

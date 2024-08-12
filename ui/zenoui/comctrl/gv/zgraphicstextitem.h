@@ -119,6 +119,7 @@ protected:
     void focusOutEvent(QFocusEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
+    bool event(QEvent* evt) override;
 
 private slots:
     void onContentsChanged();
@@ -134,6 +135,7 @@ private:
     bool m_bFocusIn;
     bool m_bValidating;
     bool m_bShowSlider;
+    QValidator::State m_validState;
 };
 
 class ZenoSocketItem;

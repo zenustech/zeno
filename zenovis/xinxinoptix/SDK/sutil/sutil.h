@@ -144,7 +144,7 @@ SUTILAPI void calculateCameraVariables(
 double SUTILAPI currentTime();
 
 // Get input data, either pre-compiled with NVCC or JIT compiled by NVRTC.
-SUTILAPI const char* getInputData( const char* source,
+SUTILAPI const char* getCodePTX( const char* source,
                                    const char* macro,
                                    const char* name,
                                    size_t&     dataSize,

@@ -9,6 +9,7 @@
 #include "settings/zenosettingsmanager.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include "glm/gtx/quaternion.hpp"
 #include <cmath>
 
 
@@ -34,38 +35,29 @@ void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
 
-float CameraControl::getRoll() const {
+glm::vec3 CameraControl::getPos() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_roll;
+    return scene->camera->getPos();
 }
-void CameraControl::setRoll(float roll) {
+void CameraControl::setPos(glm::vec3 value) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_roll = roll;
+    scene->camera->setPos(value);
 }
-
-float CameraControl::getTheta() const {
+glm::vec3 CameraControl::getPivot() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_theta;
+    return scene->camera->getPivot();
 }
-void CameraControl::setTheta(float theta) {
+void CameraControl::setPivot(glm::vec3 value) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_theta = theta;
+    scene->camera->setPivot(value);
 }
-float CameraControl::getPhi() const {
+glm::quat CameraControl::getRotation() {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_phi;
+    return scene->camera->m_rotation;
 }
-void CameraControl::setPhi(float phi) {
+void CameraControl::setRotation(glm::quat value) {
     auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_phi = phi;
-}
-zeno::vec3f CameraControl::getCenter() const {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_center;
-}
-void CameraControl::setCenter(zeno::vec3f center) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_center = center;
+    scene->camera->m_rotation = value;
 }
 bool CameraControl::getOrthoMode() const {
     auto *scene = m_zenovis->getSession()->get_scene();
@@ -77,11 +69,7 @@ void CameraControl::setOrthoMode(bool orthoMode) {
 }
 float CameraControl::getRadius() const {
     auto *scene = m_zenovis->getSession()->get_scene();
-    return scene->camera->m_radius;
-}
-void CameraControl::setRadius(float radius) {
-    auto *scene = m_zenovis->getSession()->get_scene();
-    scene->camera->m_radius = radius;
+    return scene->camera->get_radius();
 }
 
 float CameraControl::getFOV() const {
@@ -117,38 +105,26 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+            if (m_hit_posWS.has_value()) {
+                scene->camera->setPivot(m_hit_posWS.value());
     }
-    if (scene->camera->m_need_sync) {
-        scene->camera->m_need_sync = false;
-        if (bool(m_picker) && scene->camera->m_auto_radius) {
-            this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
-                if (depth < 0.001f) {
-                    return;
                 }
-                glm::vec4 ndc = {0, 0, depth, 1};
-                glm::vec4 posCS = glm::inverse(scene->camera->m_proj) * ndc;
-                glm::vec4 posVS = posCS / posCS.w;
-                glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
-                glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
-                setRadius(glm::length(scene->camera->m_lodcenter - p3WS));
-                setCenter({p3WS.x, p3WS.y, p3WS.z});
-            });
-            int mid_x = int(this->res().x() * 0.5);
-            int mid_y = int(this->res().y() * 0.5);
-            this->m_picker->pick_depth(mid_x, mid_y);
         }
-    }
+    auto m_picker = this->m_picker.lock();
+    auto m_transformer = this->m_transformer.lock();
     int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
-    auto front = scene->camera->m_lodfront;
-    auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+    auto front = scene->camera->get_lodfront();
+    auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
     {
         if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
-            m_transformer->clickedAnyHandler(realPos(), dir, front))
+            m_transformer->clickedAnyHandler(getPos(), dir, front))
         {
             bTransform = true;
         }
@@ -165,62 +141,24 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     }
 }
 
-void CameraControl::lookTo(int dir) {
-    if (dir < 0 || dir > 6)
-        return;
-    auto x_axis = QVector3D(1, 0, 0);
-    auto y_axis = QVector3D(0, 1, 0);
-    auto z_axis = QVector3D(0, 0, 1);
-
+void CameraControl::lookTo(zenovis::CameraLookToDir dir) {
     ZASSERT_EXIT(m_zenovis);
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    auto radius = getRadius();
 
     switch (dir) {
-    case 0:
-        // front view
-        setTheta(0);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center + z_axis * radius, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::front_view:
         break;
-    case 1:
-        // right view
-        setTheta(0);
-        setPhi(-glm::pi<float>() / 2);
-        m_zenovis->updateCameraFront(center + x_axis * radius, -x_axis, y_axis);
+    case zenovis::CameraLookToDir::right_view:
         break;
-    case 2:
-        // top view
-        setTheta(-glm::pi<float>() / 2);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center + y_axis * radius, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::top_view:
         break;
-    case 3:
-        // back view
-        setTheta(0);
-        setPhi(glm::pi<float>());
-        m_zenovis->updateCameraFront(center - z_axis * radius, z_axis, y_axis);
+    case zenovis::CameraLookToDir::back_view:
         break;
-    case 4:
-        // left view
-        setTheta(0);
-        setPhi(glm::pi<float>() / 2);
-        m_zenovis->updateCameraFront(center - x_axis * radius, x_axis, y_axis);
+    case zenovis::CameraLookToDir::left_view:
         break;
-    case 5:
-        // bottom view
-        setTheta(glm::pi<float>() / 2);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center - y_axis * radius, y_axis, z_axis);
+    case zenovis::CameraLookToDir::bottom_view:
         break;
-    case 6:
-        // back to origin
-        setCenter({0, 0, 0});
-        setRadius(5);
-        setTheta(0);
-        setPhi(0);
-        m_zenovis->updateCameraFront(center, -z_axis, y_axis);
+    case zenovis::CameraLookToDir::back_to_origin:
+        break;
     default: break;
     }
     setOrthoMode(true);
@@ -229,6 +167,7 @@ void CameraControl::lookTo(int dir) {
 }
 
 void CameraControl::clearTransformer() {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->clear();
@@ -236,6 +175,7 @@ void CameraControl::clearTransformer() {
 
 void CameraControl::changeTransformOperation(const QString &node)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -258,6 +198,7 @@ void CameraControl::changeTransformOperation(const QString &node)
 
 void CameraControl::changeTransformOperation(int mode)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -272,6 +213,7 @@ void CameraControl::changeTransformOperation(int mode)
 
 void CameraControl::changeTransformCoordSys()
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->changeCoordSys();
@@ -280,6 +222,7 @@ void CameraControl::changeTransformCoordSys()
 
 void CameraControl::resizeTransformHandler(int dir)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->resizeHandler(dir);
@@ -288,6 +231,7 @@ void CameraControl::resizeTransformHandler(int dir)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
+    auto m_transformer = this->m_transformer.lock();
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     bool alt_pressed = event->modifiers() & Qt::AltModifier;
 
@@ -305,37 +249,37 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     if (m_transformer) {
         bTransform = m_transformer->isTransforming();
         // check if hover a handler
-        auto front = scene->camera->m_lodfront;
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+        auto front = scene->camera->get_lodfront();
+        auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
         if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
-            m_transformer->hoveredAnyHandler(realPos(), dir, front);
+            m_transformer->hoveredAnyHandler(getPos(), dir, front);
         }
     }
 
-    if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
-        dx *= ratio / m_res[0];
-        dy *= ratio / m_res[1];
-        float cos_t = cos(getTheta());
-        float sin_t = sin(getTheta());
-        float cos_p = cos(getPhi());
-        float sin_p = sin(getPhi());
-        QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        QVector3D delta = -back * dy;
-        auto c = getCenter();
-        QVector3D center = {c[0], c[1], c[2]};
-        center += delta * getRadius();
-        setCenter({float(center.x()), float(center.y()), float(center.z())});
+    if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+        // zoom
+        if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false) == false) {
+            float dy = ypos - m_lastMidButtonPos.y();
+            auto step = 0.99f;
+            float scale = glm::pow(step, -dy);
+            auto pos = getPos();
+            auto pivot = getPivot();
+            auto new_pos = (pos - pivot) * scale + pivot;
+            setPos(new_pos);
+        }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
-    else if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+    else if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
+        // rot roll
+        float step = 1.0f;
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dy = ypos - m_lastMidButtonPos.y();
-        dy *= ratio / m_res[1];
-        float roll = getRoll();
-        roll += dy;
-        setRoll(roll);
+        dy *= ratio / m_res[1] * step;
+        {
+            auto rot = getRotation();
+            rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
+            setRotation(rot);
+        }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
     else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
@@ -346,41 +290,61 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
-            float cos_t = cos(getTheta());
-            float sin_t = sin(getTheta());
-            float cos_p = cos(getPhi());
-            float sin_p = sin(getPhi());
-            QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-            QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-            QVector3D right = QVector3D::crossProduct(up, back);
-            up = QVector3D::crossProduct(back, right);
-            right.normalize();
-            up.normalize();
-            QVector3D delta = right * dx + up * dy;
-            auto c = getCenter();
-            QVector3D center = {c[0], c[1], c[2]};
-            if (getOrthoMode()) {
-                delta = (right * dx * m_res[0] / m_res[1] + up * dy) * 2;
+            // translate
+            if (m_hit_posWS.has_value()) {
+                auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+                auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
+                if (new_pos.has_value()) {
+                    auto diff = new_pos.value() - getPos();
+                    setPivot(getPivot() + diff);
+                    setPos(new_pos.value());
+                }
             }
-            center += delta * getRadius();
-            setCenter({float(center.x()), float(center.y()), float(center.z())});
+                else {
+                auto left = getRightDir() * -1.0f;
+                auto up = getUpDir();
+                auto delta = left * dx + up * dy;
+                if (getOrthoMode()) {
+                    delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
+                }
+                auto diff = delta * getRadius();
+                setPivot(getPivot() + diff);
+                auto new_pos = getPos() + diff;
+                setPos(new_pos);
+            }
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
+            float step = 4.0f;
+            dx *= step;
+            if (getUpDir().y < 0) {
+                dx *= -1;
+                }
+            dy *= step;
+            // rot yaw pitch
             setOrthoMode(false);
-            setTheta(getTheta() - dy * M_PI);
-            if (int(abs(getTheta()) / M_PI) % 2 == 0) {
-                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
-            setPhi(getPhi() + dx * M_PI);
-        }
-                else {
-                    setPhi(getPhi() - dx * M_PI);
+            {
+                auto rot = getRotation();
+                auto beforeMat = glm::toMat3(rot);
+                rot = glm::angleAxis(-dx, glm::vec3(0, 1, 0)) * rot;
+                rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
+                setRotation(rot);
+                auto afterMat = glm::toMat3(rot);
+                if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
+                    if (glm::abs(glm::dot(getRightDir(), {0, 1, 0})) > 0.01) {
+                        auto right_dir = glm::cross(getViewDir(), {0, 1, 0});
+                        auto up_dir = glm::cross(right_dir, getViewDir());
+                        glm::mat3 rotation;
+                        rotation[0] = right_dir;
+                        rotation[1] = up_dir;
+                        rotation[2] = -getViewDir();
+                        setRotation(glm::quat_cast(rotation));
+                    };
+                    setPivot(getPos());
                 }
-            }
-            else {
-                if (glm::fract(abs(getTheta()) / M_PI) < 0.5) {
-                    setPhi(getPhi() - dx * M_PI);
-                }
                 else {
-                    setPhi(getPhi() + dx * M_PI);
+                    auto pos = getPos();
+                    auto pivot = getPivot();
+                    auto new_pos = afterMat * glm::inverse(beforeMat) * (pos - pivot) + pivot;
+                    setPos(new_pos);
                 }
             }
         }
@@ -389,8 +353,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
-                auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
-                auto camera_pos = realPos();
+                auto dir = screenPosToRayWS(event->pos().x() / res().x(), event->pos().y() / res().y());
 
                 // mouse pos
                 auto mouse_pos = glm::vec2(xpos, ypos);
@@ -401,8 +364,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 mouse_start[0] = (2 * mouse_start[0] / res().x()) - 1;
                 mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
 
-                auto vp = scene->camera->m_proj * scene->camera->m_view;
-                m_transformer->transform(camera_pos, dir, mouse_start, mouse_pos, scene->camera->m_lodfront, vp);
+                auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
                 float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
@@ -456,7 +419,53 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
-        setRadius(getRadius() * scale);
+        if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
+            auto FPN_move_speed = zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0);
+            FPN_move_speed += dy > 0? 1: -1;
+            zeno::getSession().userData().set2("viewport-FPN-move-speed", FPN_move_speed);
+            auto pMainWindow = zenoApp->getMainWindow();
+            if (pMainWindow) {
+                pMainWindow->statusbarShowMessage(zeno::format("First Person Navigation: movement speed level: {}", FPN_move_speed), 10000);
+    }
+        }
+        else {
+            auto pos = getPos();
+            if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+                auto session = m_zenovis->getSession();
+                auto scene = session->get_scene();
+                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+                if (hit_posWS.has_value()) {
+                    auto pivot = hit_posWS.value();
+                    auto new_pos = (pos - pivot) * scale + pivot;
+                    setPos(new_pos);
+                }
+                else {
+                    auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
+                    auto pivot = posOnFloorWS;
+                    if (dot((pivot - pos), getViewDir()) > 0) {
+                        auto translate = (pivot - pos) * (1 - scale);
+                        if (glm::length(translate) < 0.01) {
+                            translate = glm::normalize(translate) * 0.01f;
+                        }
+                        auto new_pos = translate + pos;
+                        setPos(new_pos);
+                    }
+                    else {
+                        auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
+                        if (getPos().y < 0) {
+                            translate *= -1;
+                        }
+                        auto new_pos = translate + pos;
+                        setPos(new_pos);
+                    }
+                }
+            }
+            else {
+                auto pivot = getPivot();
+                auto new_pos = (pos - pivot) * scale + pivot;
+                setPos(new_pos);
+            }
+        }
     }
     updatePerspective();
 
@@ -469,6 +478,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
 void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
+    auto m_picker = this->m_picker.lock();
     if (!m_picker)
         return;
     auto scene = m_zenovis->getSession()->get_scene();
@@ -519,67 +529,69 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         }
     }
 }
-//void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent* event) {
-void CameraControl::setKeyFrame() {
-    //todo
-}
 
 void CameraControl::focus(QVector3D center, float radius) {
-    setCenter({float(center.x()), float(center.y()), float(center.z())});
+    setPivot({float(center.x()), float(center.y()), float(center.z())});
     if (getFOV() >= 1e-6)
         radius /= (getFOV() / 45.0f);
-    setRadius(radius);
+    auto dir = getRotation() * glm::vec3(0, 0, 1) * radius;
+    setPos(getPivot() + dir);
     updatePerspective();
 }
 
 QVector3D CameraControl::realPos() const {
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    return center - back * getRadius();
+    auto p = getPos();
+    return {p[0], p[1], p[2]};
+}
+
+// 计算射线与平面的交点
+std::optional<glm::vec3> CameraControl::intersectRayPlane(
+        glm::vec3 ray_origin
+        , glm::vec3 ray_direction
+        , glm::vec3 plane_point
+        , glm::vec3 plane_normal
+) {
+    // 计算射线方向和平面法向量的点积
+    float denominator = glm::dot(plane_normal, ray_direction);
+
+    // 如果点积接近于0，说明射线与平面平行或在平面内
+    if (glm::abs(denominator) < 1e-6f) {
+        return std::nullopt; // 返回空，表示没有交点
+    }
+
+    // 计算射线起点到平面上一点的向量
+    glm::vec3 diff = plane_point - ray_origin;
+
+    // 计算t值
+    float t = glm::dot(diff, plane_normal) / denominator;
+
+    // 如果t < 0，说明交点在射线起点之前，返回空
+
+    if (t < 0) {
+        return std::nullopt;
+    }
+
+    // 计算交点
+    glm::vec3 intersection = ray_origin + t * ray_direction;
+
+    return intersection;
 }
 
 // x, y from [0, 1]
-QVector3D CameraControl::screenToWorldRay(float x, float y) const {
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    QVector3D right = QVector3D::crossProduct(up, back);
-    up = QVector3D::crossProduct(back, right);
-    right.normalize();
-    up.normalize();
-    QMatrix4x4 view;
-    view.setToIdentity();
-    auto c = getCenter();
-    QVector3D center = {c[0], c[1], c[2]};
-    view.lookAt(realPos(), center, up);
+glm::vec3 CameraControl::screenPosToRayWS(float x, float y)  {
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
     float v = std::tan(glm::radians(getFOV()) * 0.5f);
     float aspect = res().x() / res().y();
-    auto dir = QVector3D(v * x * aspect, v * y, -1);
-    dir = dir.normalized();
-    dir = view.inverted().mapVector(dir);
-    return dir;
+    auto dir = glm::normalize(glm::vec3(v * x * aspect, v * y, -1));
+    return getRotation() * dir;
 }
 
-QVariant CameraControl::hitOnFloor(float x, float y) const {
-    auto dir = screenToWorldRay(x, y);
-    auto pos = realPos();
-    float t = (0 - pos.y()) / dir.y();
-    if (t > 0) {
-        auto p = pos + dir * t;
-        return p;
-    } else {
-        return {};
-    }
+glm::vec3 CameraControl::screenHitOnFloorWS(float x, float y) {
+    auto dir = screenPosToRayWS(x, y);
+    auto pos = getPos();
+    float t = (0 - pos.y) / dir.y;
+    return pos + dir * t;
 }
 
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
@@ -587,7 +599,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
         middle_button_pressed = false;
     }
     if (event->button() == Qt::LeftButton) {
-
+        auto m_transformer = this->m_transformer.lock();
+        auto m_picker = this->m_picker.lock();
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
         //float x = (float)event->x() / m_res.x();
         //float y = (float)event->y() / m_res.y();
@@ -665,7 +678,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 } else {
                     m_picker->pick(releasePos.x(), releasePos.y());
                     m_picker->sync_to_scene();
-                    if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
+                    if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
                     m_transformer->clear();
                     m_transformer->addObjects(m_picker->get_picked_prims());
@@ -696,7 +709,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
                 m_picker->pick(x0, y0, x1, y1, mode);
                 m_picker->sync_to_scene();
-                if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
+                if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();
                 m_transformer->clear();
                 m_transformer->addObjects(m_picker->get_picked_prims());
@@ -756,51 +769,46 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
         updatePerspective();
         return true;
     }
+    if ((uKey & 0xff) == Qt::Key_G && uKey & Qt::AltModifier) {
+        auto *scene = m_zenovis->getSession()->get_scene();
+        scene->camera->reset();
+        updatePerspective();
+        return true;
+    }
     if (!middle_button_pressed) {
         return false;
     }
-    float cos_t = cos(getTheta());
-    float sin_t = sin(getTheta());
-    float cos_p = cos(getPhi());
-    float sin_p = sin(getPhi());
-    zeno::vec3f back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    zeno::vec3f up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    zeno::vec3f left = zeno::cross(up, back);
-    auto center = getCenter();
-    float step = 1.0f;
+    float step = glm::pow(1.2f, float(zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0)));
 
     bool processed = false;
     if (uKey == Qt::Key_Q) {
-        setCenter(center + zeno::vec3f(0, -1, 0) * step);
+        setPos(getPos() - getUpDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_E) {
-        setCenter(center + zeno::vec3f(0, 1, 0) * step);
+        setPos(getPos() + getUpDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_W) {
-        setCenter(center + back * step);
+        setPos(getPos() + getViewDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_S) {
-        setCenter(center - back * step);
+        setPos(getPos() - getViewDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_A) {
-        setCenter(center + left * step);
+        setPos(getPos() - getRightDir() * step);
         processed = true;
     }
     else if (uKey == Qt::Key_D) {
-        setCenter(center - left * step);
+        setPos(getPos() + getRightDir() * step);
         processed = true;
     }
     if (processed) {
         updatePerspective();
-        return true;
     }
-    else {
-        return false;
-    }
+    return processed;
 }
 
 bool CameraControl::fakeKeyReleaseEvent(int uKey) {

@@ -28,9 +28,9 @@ public:
     FakeTransformer(ViewportWidget* viewport);
     void addObjects(const std::unordered_set<std::string>& names);
     bool calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
-    bool clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
-    bool hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front);
-    void transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp);
+    bool clickedAnyHandler(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
+    bool hoveredAnyHandler(glm::vec3 ori, glm::vec3 dir, glm::vec3 front);
+    void transform(glm::vec3 camera_pos, glm::vec3 ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp);
     void startTransform();
     void endTransform(bool moved);
     bool isTransforming() const;
@@ -65,10 +65,6 @@ private:
 
     // 把FakeTransform上的SRT应用到primitive上
     void doTransform();
-
-    static glm::vec3 QVec3ToGLMVec3(QVector3D QVec3) {
-        return {QVec3.x(), QVec3.y(), QVec3.z()};
-    }
 
     void markObjectsInteractive();
     void unmarkObjectsInteractive();

@@ -62,6 +62,7 @@ struct GlobalComm {
     ZENO_API void clearFrameState();
     ZENO_API std::shared_ptr<IObject> getViewObject(std::string const& key);
     ZENO_API bool load_objects(const int frameid, bool& isFrameValid);
+    ZENO_API void clear_objects(const std::function<void()>& cb);
     ZENO_API bool isFrameCompleted(int frameid) const;
     ZENO_API FRAME_STATE getFrameState(int frameid) const;
     ZENO_API bool isFrameBroken(int frameid) const;

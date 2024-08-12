@@ -321,7 +321,9 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
         const float& thickness,
         bool use_barycentric_interpolator = false,
         bool skip_too_close_pair_at_rest_configuration = false,
-        bool use_collision_group = false) {
+        bool use_collision_group = false,
+        bool among_same_group = true,
+        bool among_different_group = true) {
             using namespace zs;
             using vec2i = zs::vec<int,2>;
             using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -348,6 +350,8 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             // nm_ints.setVal(0);
 #endif
             pol(zs::range(edges.size()),[
+                among_different_group = among_different_group,
+                among_same_group = among_same_group,
                 exec_tag = exec_tag,
                 edges = edges.begin("inds", dim_c<2>, int_c),
                 triNrmOffset = tris.getPropertyOffset("nrm"),
@@ -447,6 +451,19 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                                         return;
                                     if((tVs[i] - Ve).norm() < thickness)
                                         return;    
+                                }
+                            }
+                        }
+
+                        if(hasCollisionGroup) {
+                            for(int i = 0;i != 2;++i) {
+                                for(int j = 0;j != 3;++j) {
+                                    if(zs::abs(verts(collisionGroupOffset,edge[i]) - verts(collisionGroupOffset,tri[j])) > 0.5) {
+                                        if(!among_different_group)
+                                            return;
+                                        if(!among_same_group)
+                                            return;
+                                    }
                                 }
                             }
                         }
@@ -555,18 +572,20 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
         typename BaryTileVec,
         typename TriBVH>
     void retrieve_intersection_with_edge_tri_pairs(Pol& pol,
-        const PosTileVec& verts, const zs::SmallString& xtag,
+        const PosTileVec& verts, const zs::SmallString& xtag,const zs::SmallString& collisionGroupName,
         const EdgeTileVec& edges,
         // const TriTileVec& tris,
         // const TriBVH& tri_bvh,
-        const PosTileVec& kverts, const zs::SmallString& kxtag,
+        const PosTileVec& kverts, const zs::SmallString& kxtag,const zs::SmallString& kCollisionGroupName,
         // const EdgeTileVec& kedges,
         const TriTileVec& ktris,
         const TriBVH& ktri_bvh,
         zs::bht<int,2,int>& res,
         // zs::bht<int,2,int>& cs_KET,
         BaryTileVec& bary_buffer,
-        bool use_barycentric_interpolator = false) {
+        bool use_barycentric_interpolator = false,
+        bool among_same_group = true,
+        bool among_different_group = true) {
             using namespace zs;
             using vec2i = zs::vec<int,2>;
             using bv_t = typename ZenoParticles::lbvh_t::Box;
@@ -583,10 +602,16 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             // timer.tick();
 
             pol(zs::range(edges.size()),[
+                among_same_group = among_same_group,
+                among_different_group = among_different_group,
                 exec_tag = exec_tag,
                 use_barycentric_interpolator = use_barycentric_interpolator,
                 edges = edges.begin("inds", dim_c<2>, int_c),
                 bary_buffer = proxy<space>({},bary_buffer),
+                hasKCollisionGroup = kverts.hasProperty(kCollisionGroupName),
+                kCollisionGroupOffset = kverts.getPropertyOffset(kCollisionGroupName),
+                hasCollisionGroup = verts.hasProperty(collisionGroupName),
+                collisionGroupOffset = verts.getPropertyOffset(collisionGroupName),
                 ktriNrmOffset = ktris.getPropertyOffset("nrm"),
                 ktriDOffset = ktris.getPropertyOffset("d"),
                 ktriIndsOffset = ktris.getPropertyOffset("inds"),
@@ -642,6 +667,20 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
 
                         if(!is_dynamic_edge || !is_dynamic_ktri)
                             return;      
+
+
+                        if(hasCollisionGroup && hasKCollisionGroup) {
+                            for(int i = 0;i != 2;++i) {
+                                for(int j = 0;j != 3;++j) {
+                                    if(zs::abs(verts(collisionGroupOffset,edge[i]) - kverts(kCollisionGroupOffset,ktri[j])) > 0.5) {
+                                        if(!among_different_group)
+                                            return;
+                                        if(!among_same_group)
+                                            return;
+                                    }
+                                }
+                            }
+                        }
 
                         vec3 ktvs[3] = {};
                         for(int i = 0;i != 3;++i)

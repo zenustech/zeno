@@ -28,7 +28,7 @@ namespace zeno {
 
 std::set<std::string> lightCameraNodes({
 "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-"LightNode", "BindLight", "ProceduralSky", "HDRSky",
+"LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
     });
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
@@ -821,6 +821,16 @@ std::shared_ptr<IObject> GlobalComm::getViewObject(std::string const& key) {
 
     return nullptr;
 }
+
+ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
+{
+    std::lock_guard lck(m_mtx);
+    if (!callback)
+        return;
+
+    callback();
+}
+
 
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,

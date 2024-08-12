@@ -1298,9 +1298,9 @@ ZENDEFNODE(Image3DAnalyze, {
 */
 struct CreateCameraMatrix : INode {
     void apply() override {
-        auto top = get_input2<vec3f>("top");
-        auto mid = get_input2<vec3f>("mid");
-        auto bot = get_input2<vec3f>("bot");
+        auto top = get_input2<zeno::vec3f>("top");
+        auto mid = get_input2<zeno::vec3f>("mid");
+        auto bot = get_input2<zeno::vec3f>("bot");
 
         cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_32F);
         cameraMatrix.at<float>(0, 0) = top[0];

@@ -11,6 +11,10 @@
 
 using namespace JsonHelper;
 
+QSet<QString> lightCameraNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
+    });
 
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
@@ -46,7 +50,8 @@ void resolveOutputSocket(
         AddStringList({"addNodeOutput", mockNode, outSock}, writer);
 
         //add link from source output node    to    mockNode(ExtractDict).
-        AddStringList({"bindNodeInput", mockNode, mockSocket, outNodeId, dictlistName}, writer);
+        const QString& mockOutNode = nameMangling(graphIdPrefix, outNodeId);
+        AddStringList({"bindNodeInput", mockNode, mockSocket, mockOutNode, dictlistName}, writer);
 
         realOutputId = mockNode;
         realOutputSock = outSock;

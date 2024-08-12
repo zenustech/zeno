@@ -332,6 +332,11 @@ void OptixWorker::needUpdateCamera()
     m_pTimer->start(m_sampleFeq);
 }
 
+void OptixWorker::onCleanUpView()
+{
+    m_zenoVis->cleanupView();
+}
+
 void OptixWorker::onSetBackground(bool bShowBg)
 {
     auto& ud = zeno::getSession().userData();
@@ -342,8 +347,8 @@ void OptixWorker::onSetBackground(bool bShowBg)
     ZASSERT_EXIT(session);
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
-    zeno::getSession().globalComm->setNeedUpdateLight(true);
-    scene->drawOptions->simpleRender = true;
+    //scene->objectsMan->needUpdateLight = true;
+    //scene->drawOptions->simpleRender = true;
     updateFrame();
 }
 
@@ -428,6 +433,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_updateEngine, m_worker, &OptixWorker::onUpdateEngine);
+    connect(this, &ZOptixViewport::sig_cleanUpView, m_worker, &OptixWorker::onCleanUpView);
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
@@ -465,7 +471,7 @@ void ZOptixViewport::setSimpleRenderOption()
     scene->drawOptions->simpleRender = true;
 }
 
-void ZOptixViewport::cameraLookTo(int dir)
+void ZOptixViewport::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     m_camera->lookTo(dir);
 }
@@ -500,6 +506,11 @@ void ZOptixViewport::setSlidFeq(int feq)
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
 {
     emit sig_modifyLightData(pos, scale, rotate, color, intensity, name, skipParam);
+}
+
+void ZOptixViewport::cleanupView()
+{
+    emit sig_cleanUpView();
 }
 
 void ZOptixViewport::updateEngine()
@@ -678,26 +689,26 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
 
     key = settings.getShortCut(ShortCut_FrontView);
     if (uKey == key)
-        this->cameraLookTo(0);
+        this->cameraLookTo(zenovis::CameraLookToDir::front_view);
     key = settings.getShortCut(ShortCut_RightView);
     if (uKey == key)
-        this->cameraLookTo(1);
+        this->cameraLookTo(zenovis::CameraLookToDir::right_view);
     key = settings.getShortCut(ShortCut_VerticalView);
     if (uKey == key)
-        this->cameraLookTo(2);
+        this->cameraLookTo(zenovis::CameraLookToDir::top_view);
     key = settings.getShortCut(ShortCut_InitViewPos);
     if (uKey == key)
-        this->cameraLookTo(6);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
 
     key = settings.getShortCut(ShortCut_BackView);
     if (uKey == key)
-        this->cameraLookTo(3);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_view);
     key = settings.getShortCut(ShortCut_LeftView);
     if (uKey == key)
-        this->cameraLookTo(4);
+        this->cameraLookTo(zenovis::CameraLookToDir::left_view);
     key = settings.getShortCut(ShortCut_UpwardView);
     if (uKey == key)
-        this->cameraLookTo(5);
+        this->cameraLookTo(zenovis::CameraLookToDir::bottom_view);
 
     key = settings.getShortCut(ShortCut_InitHandler);
     if (uKey == key)

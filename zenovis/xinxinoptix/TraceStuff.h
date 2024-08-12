@@ -16,10 +16,6 @@
 #include "Host.h"
 #endif
 
-#ifndef uint
-using uint = unsigned int;
-#endif
-
 #define MISS_HIT 0
 #define DIFFUSE_HIT 1
 #define SPECULAR_HIT 2
@@ -109,6 +105,7 @@ struct RadiancePRD
     unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
+    vec3         click_pos;
     unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;

@@ -121,7 +121,7 @@ QWidget* ZTabDockWidget::widget() const
     return m_tabWidget;
 }
 
-void ZTabDockWidget::testCleanupGL()
+void ZTabDockWidget::cleanupView()
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
@@ -129,7 +129,7 @@ void ZTabDockWidget::testCleanupGL()
         if (DockContent_View* pDis = qobject_cast<DockContent_View*>(wid)) {
             DisplayWidget* pWid = pDis->getDisplayWid();
             if (pWid)
-                pWid->testCleanUp();
+                pWid->cleanupView();
         }
     }
 }
