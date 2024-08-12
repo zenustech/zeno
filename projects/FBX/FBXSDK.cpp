@@ -666,12 +666,12 @@ struct NewFBXImportSkin : INode {
                 std::vector<zeno::PrimitiveObject *> prims_ptr;
                 int maxnum_boneWeight = 0;
                 for (auto prim: prims) {
-                    maxnum_boneWeight = zeno::max(maxnum_boneWeight, prim->userData().get2<int>("maxnum_boneWeight"));
+                    maxnum_boneWeight = zeno::max(maxnum_boneWeight, prim->userData().get2<int>("maxnum_boneWeight", 0));
                 }
                 for (auto prim: prims) {
                     prims_ptr.push_back(prim.get());
                     std::vector<int> nameMapping;
-                    auto boneName_count = prim->userData().get2<int>("boneName_count");
+                    auto boneName_count = prim->userData().get2<int>("boneName_count", 0);
                     for (auto i = 0; i < boneName_count; i++) {
                         auto boneName = prim->userData().get2<std::string>(zeno::format("boneName_{}", i));
                         if (nameMappingGlobal.count(boneName) == 0) {
