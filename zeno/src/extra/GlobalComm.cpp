@@ -824,7 +824,7 @@ std::shared_ptr<IObject> GlobalComm::getViewObject(std::string const& key) {
 
 ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
 {
-    std::lock_guard lck(m_mtx);
+    std::lock_guard lck(g_objsMutex);
     if (!callback)
         return;
 

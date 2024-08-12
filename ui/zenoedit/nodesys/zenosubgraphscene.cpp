@@ -1248,16 +1248,19 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
         int options = OPT_VIEW;
-        updateNodeStatus(m_bViewOn, options);
+        updateNodeStatus(OPT_VIEW);
     }
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Cache))
     {
-        int options = OPT_CACHE;
-        if (m_bCacheOn) {
-            options |= OPT_VIEW;
-            m_bViewOn = false;
-        }
-        updateNodeStatus(m_bCacheOn, options);
+        removeNodeCache();
+
+
+        //int options = OPT_CACHE;
+        //if (m_bCacheOn) {
+        //    options |= OPT_VIEW;
+        //    m_bViewOn = false;
+        //}
+        //updateNodeStatus(m_bCacheOn, options);
     }
 }
 
