@@ -1427,14 +1427,18 @@ struct NewFBXBoneDeform : INode {
             vec3f pos = {};
             float w = 0;
             for (auto j = 0; j < maxnum_boneWeight; j++) {
-                if (bi[j]->operator[](i) < 0) {
+                auto index = bi[j]->operator[](i);
+                if (index < 0) {
                     continue;
                 }
-                auto matrix = matrixs[bi[j]->operator[](i)];
-                pos += transform_pos(matrix, opos) * bw[j]->operator[](i);
-                w += bw[j]->operator[](i);
+                auto matrix = matrixs[index];
+                auto weight = bw[j]->operator[](i);
+                pos += transform_pos(matrix, opos) * weight;
+                w += weight;
             }
-            prim->verts[i] = pos / w;
+            if (w > 0) {
+                prim->verts[i] = pos / w;
+            }
         }
         auto vectors_str = get_input2<std::string>("vectors");
         std::vector<std::string> vectors = zeno::split_str(vectors_str, ',');
@@ -1448,11 +1452,13 @@ struct NewFBXBoneDeform : INode {
                         glm::mat4 matrix(0);
                         float w = 0;
                         for (auto j = 0; j < maxnum_boneWeight; j++) {
-                            if (bi[j]->operator[](i) < 0) {
+                            auto index = bi[j]->operator[](i);
+                            if (index < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[j]->operator[](i)] * bw[j]->operator[](i);
-                            w += bw[j]->operator[](i);
+                            auto weight = bw[j]->operator[](i);
+                            matrix += matrixs[index] * weight;
+                            w += weight;
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
@@ -1467,11 +1473,13 @@ struct NewFBXBoneDeform : INode {
                         glm::mat4 matrix(0);
                         float w = 0;
                         for (auto j = 0; j < maxnum_boneWeight; j++) {
-                            if (bi[j]->operator[](vi) < 0) {
+                            auto index = bi[j]->operator[](vi);
+                            if (index < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[j]->operator[](vi)] * bw[j]->operator[](vi);
-                            w += bw[j]->operator[](vi);
+                            auto weight = bw[j]->operator[](vi);
+                            matrix += matrixs[index] * weight;
+                            w += weight;
                         }
                         matrix = matrix / w;
                         auto nrm = transform_nrm(matrix, nrms[i]);
