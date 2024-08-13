@@ -27,7 +27,7 @@ ZENO_API void primSimplifyTag(PrimitiveObject *prim, std::string tagAttr) {
 
 ZENO_API void primColorByTag(PrimitiveObject *prim, std::string tagAttr, std::string clrAttr, int seed) {
     auto const &tag = prim->verts.attr<int>(tagAttr);
-    auto &clr = prim->verts.add_attr<vec3f>(clrAttr);
+    auto &clr = prim->verts.add_attr<zeno::vec3f>(clrAttr);
     std::unordered_map<int, vec3f> lut;
     std::mt19937 gen{seed == -1 ? std::random_device{}() : seed};
     std::uniform_real_distribution<float> unif(0.2f, 1.0f);

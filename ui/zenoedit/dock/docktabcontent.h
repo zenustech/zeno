@@ -145,6 +145,7 @@ protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget *initWidget() override;
     void initConnections() override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     DisplayWidget* m_pDisplay;
@@ -162,6 +163,9 @@ private:
     QPushButton *m_camera_setting = nullptr;
     QCheckBox *m_background;
     QCheckBox *m_uv_mode = nullptr;
+    QCheckBox *m_depth = nullptr;
+    QCheckBox *m_FPN = nullptr;
+    QPushButton *m_Reset = nullptr;
 
     QComboBox* m_cbRes;
     QAction* m_pFocus;

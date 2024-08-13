@@ -980,8 +980,35 @@ namespace zeno { namespace CONSTRAINT {
 //     corr1 = -invMass1 * lambda * p2p1;
 //     corr2 = -invMass2 * lambda * p1p0;
 
-//     return true;
-// }
+// ----------------------------------------------------------------------------------------------
+#if 0
+template<typename VECTOR3d,typename SCALER>
+constexpr bool solve_PerpendiculaBisectorConstraint(
+    const VECTOR3d &p0, SCALER invMass0,
+    const VECTOR3d &p1, SCALER invMass1,
+    const VECTOR3d &p2, SCALER invMass2,
+    const SCALER stiffness,
+    VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2)
+{
+    const VECTOR3d pm = 0.5 * (p0 + p1);
+    const VECTOR3d p0p2 = p0 - p2;
+    const VECTOR3d p2p1 = p2 - p1;
+    const VECTOR3d p1p0 = p1 - p0;
+    const VECTOR3d p2pm = p2 - pm;
+
+    SCALER wSum = invMass0 * p0p2.l2NormSqr() + invMass1 * p2p1.l2NormSqr() + invMass2 * p1p0.l2NormSqr();
+    if (wSum < eps)
+        return false;
+
+    const SCALER lambda = stiffness * p2pm.dot(p1p0) / wSum;
+
+    corr0 = -invMass0 * lambda * p0p2;
+    corr1 = -invMass1 * lambda * p2p1;
+    corr2 = -invMass2 * lambda * p1p0;
+
+    return true;
+}
+#endif
 
 //     // ----------------------------------------------------------------------------------------------
 //     template<typename VECTOR3d,typename SCALER>

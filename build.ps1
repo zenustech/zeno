@@ -71,6 +71,7 @@ Write-Output "Making minimum build with Optix..."
 
 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+    -DDEACTIVATE_ZLIB=ON `
     -DZENO_WITH_zenvdb:BOOL=ON `
     -DZENO_SYSTEM_OPENVDB:BOOL=OFF `
     -DZENO_WITH_ZenoFX:BOOL=ON `
@@ -86,6 +87,7 @@ Write-Output "Making full build..."
 
 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+    -DDEACTIVATE_ZLIB=ON `
     -DZENO_WITH_CUDA:BOOL=ON `
     -DZENO_WITH_ZenoFX:BOOL=ON `
     -DZENO_ENABLE_OPTIX:BOOL=ON `

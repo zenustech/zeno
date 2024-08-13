@@ -5,7 +5,6 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
-#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -32,7 +31,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <fstream>
-#include <regex>
 
 #define SET_CAMERA_DATA                         \
     out_pos = (n->pos);                       \
@@ -85,58 +83,6 @@ ZENO_DEFNODE(CihouMayaCameraFov)({
         {"float", "fov"},
     },
     {},
-    {"FBX"},
-});
-
-struct CameraNode: zeno::INode{
-    virtual void apply() override {
-        auto camera = std::make_unique<zeno::CameraObject>();
-
-        camera->pos = get_input2<zeno::vec3f>("pos");
-        camera->up = get_input2<zeno::vec3f>("up");
-        camera->view = get_input2<zeno::vec3f>("view");
-        camera->fov = get_input2<float>("fov");
-        camera->aperture = get_input2<float>("aperture");
-        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
-        camera->userData().set2("frame", get_input2<float>("frame"));
-
-        auto other_props = get_input2<std::string>("other");
-        std::regex reg(",");
-        std::sregex_token_iterator p(other_props.begin(), other_props.end(), reg, -1);
-        std::sregex_token_iterator end;
-        std::vector<float> prop_vals;
-        while (p != end) {
-            prop_vals.push_back(std::stof(*p));
-            p++;
-        }
-        if (prop_vals.size() == 6) {
-            camera->isSet = true;
-            camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
-            camera->theta = prop_vals[3];
-            camera->phi = prop_vals[4];
-            camera->radius = prop_vals[5];
-        }
-
-        set_output("camera", std::move(camera));
-    }
-};
-
-ZENO_DEFNODE(CameraNode)({
-    {
-        {"vec3f", "pos", "0,0,5"},
-        {"vec3f", "up", "0,1,0"},
-        {"vec3f", "view", "0,0,-1"},
-        {"float", "fov", "45"},
-        {"float", "aperture", "11"},
-        {"float", "focalPlaneDistance", "2.0"},
-        {"string", "other", ""},
-        {"int", "frame", "0"},
-    },
-    {
-        {"CameraObject", "camera"},
-    },
-    {
-    },
     {"FBX"},
 });
 

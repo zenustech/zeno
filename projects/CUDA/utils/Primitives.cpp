@@ -3859,7 +3859,7 @@ struct QueryClosestPrimitive : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
         } else if (has_input<NumericObject>("prim")) {
-            auto p = get_input<NumericObject>("prim")->get<vec3f>();
+            auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
             using vec3 = zs::vec<float, 3>;
             auto pi = vec3::from_array(p);
             auto lbvhv = zs::proxy<zs::execspace_e::host>(lbvh);
@@ -4122,7 +4122,7 @@ struct ComputeParticlesDirection : INode {
         zeno::vec3f trans{0, 0, 0};
 
         if (has_input("origin")) {
-            trans = get_input2<vec3f>("origin");
+            trans = get_input2<zeno::vec3f>("origin");
         } else {
             std::vector<float> locs[3];
             for (int d = 0; d != 3; ++d) {

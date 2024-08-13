@@ -990,6 +990,19 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             offset += count;
         }
     }
+    if (auto width = mesh.getWidthsParam()) {
+        auto widthsamp =
+            width.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int index_size = (int)widthsamp.getIndices()->size();
+        if (prim->verts.size() == index_size) {
+            auto &width_attr = prim->add_attr<float>("width");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                auto index = widthsamp.getIndices()->operator[](i);
+                auto value = widthsamp.getVals()->operator[](index);
+                width_attr[i] = value;
+            }
+        }
+    }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
@@ -1006,6 +1019,7 @@ void traverseABC(
     std::string path,
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
+    bool skipInvisibleObject,
     bool outOfRangeAsEmpty
 ) {
     {
@@ -1037,66 +1051,67 @@ void traverseABC(
         else {
             tree.visible = parent_visible;
         }
+        if (!(tree.visible == ObjectVisibility::kVisibilityHidden && skipInvisibleObject)) {
+            if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found a mesh [{}]", obj.getName());
+                }
 
-        if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found a mesh [{}]", obj.getName());
+                Alembic::AbcGeom::IPolyMesh meshy(obj);
+                auto &mesh = meshy.getSchema();
+                tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, outOfRangeAsEmpty, obj.getName());
+                tree.prim->userData().set2("_abc_name", obj.getName());
+                prim_set_abcpath(tree.prim.get(), path);
+            } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found a Xform [{}]", obj.getName());
+                }
+                Alembic::AbcGeom::IXform xfm(obj);
+                auto &cam_sch = xfm.getSchema();
+                tree.xform = foundABCXform(cam_sch, frameid);
+            } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found a Camera [{}]", obj.getName());
+                }
+                Alembic::AbcGeom::ICamera cam(obj);
+                auto &cam_sch = cam.getSchema();
+                tree.camera_info = foundABCCamera(cam_sch, frameid);
+            } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found points [{}]", obj.getName());
+                }
+                Alembic::AbcGeom::IPoints points(obj);
+                auto &points_sch = points.getSchema();
+                tree.prim = foundABCPoints(points_sch, frameid, read_done, outOfRangeAsEmpty);
+                tree.prim->userData().set2("_abc_name", obj.getName());
+                prim_set_abcpath(tree.prim.get(), path);
+                tree.prim->userData().set2("faceset_count", 0);
+            } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found curves [{}]", obj.getName());
+                }
+                Alembic::AbcGeom::ICurves curves(obj);
+                auto &curves_sch = curves.getSchema();
+                tree.prim = foundABCCurves(curves_sch, frameid, read_done, outOfRangeAsEmpty);
+                tree.prim->userData().set2("_abc_name", obj.getName());
+                prim_set_abcpath(tree.prim.get(), path);
+                tree.prim->userData().set2("faceset_count", 0);
+            } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
+                if (!read_done) {
+                    log_debug("[alembic] found SubD [{}]", obj.getName());
+                }
+                Alembic::AbcGeom::ISubD subd(obj);
+                auto &subd_sch = subd.getSchema();
+                tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set, outOfRangeAsEmpty);
+                tree.prim->userData().set2("_abc_name", obj.getName());
+                prim_set_abcpath(tree.prim.get(), path);
             }
-
-            Alembic::AbcGeom::IPolyMesh meshy(obj);
-            auto &mesh = meshy.getSchema();
-            tree.prim = foundABCMesh(mesh, frameid, read_done, read_face_set, outOfRangeAsEmpty, obj.getName());
-            tree.prim->userData().set2("_abc_name", obj.getName());
-            prim_set_abcpath(tree.prim.get(), path);
-        } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found a Xform [{}]", obj.getName());
-            }
-            Alembic::AbcGeom::IXform xfm(obj);
-            auto &cam_sch = xfm.getSchema();
-            tree.xform = foundABCXform(cam_sch, frameid);
-        } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found a Camera [{}]", obj.getName());
-            }
-            Alembic::AbcGeom::ICamera cam(obj);
-            auto &cam_sch = cam.getSchema();
-            tree.camera_info = foundABCCamera(cam_sch, frameid);
-        } else if(Alembic::AbcGeom::IPointsSchema::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found points [{}]", obj.getName());
-            }
-            Alembic::AbcGeom::IPoints points(obj);
-            auto &points_sch = points.getSchema();
-            tree.prim = foundABCPoints(points_sch, frameid, read_done, outOfRangeAsEmpty);
-            tree.prim->userData().set2("_abc_name", obj.getName());
-            prim_set_abcpath(tree.prim.get(), path);
-            tree.prim->userData().set2("faceset_count", 0);
-        } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found curves [{}]", obj.getName());
-            }
-            Alembic::AbcGeom::ICurves curves(obj);
-            auto &curves_sch = curves.getSchema();
-            tree.prim = foundABCCurves(curves_sch, frameid, read_done, outOfRangeAsEmpty);
-            tree.prim->userData().set2("_abc_name", obj.getName());
-            prim_set_abcpath(tree.prim.get(), path);
-            tree.prim->userData().set2("faceset_count", 0);
-        } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
-            if (!read_done) {
-                log_debug("[alembic] found SubD [{}]", obj.getName());
-            }
-            Alembic::AbcGeom::ISubD subd(obj);
-            auto &subd_sch = subd.getSchema();
-            tree.prim = foundABCSubd(subd_sch, frameid, read_done, read_face_set, outOfRangeAsEmpty);
-            tree.prim->userData().set2("_abc_name", obj.getName());
-            prim_set_abcpath(tree.prim.get(), path);
-        }
-        if (tree.prim) {
-            tree.prim->userData().set2("vis", tree.visible);
-            if (tree.visible == 0) {
-                for (auto i = 0; i < tree.prim->verts.size(); i++) {
-                    tree.prim->verts[i] = {};
+            if (tree.prim) {
+                tree.prim->userData().set2("vis", tree.visible);
+                if (tree.visible == 0) {
+                    for (auto i = 0; i < tree.prim->verts.size(); i++) {
+                        tree.prim->verts[i] = {};
+                    }
                 }
             }
         }
@@ -1116,7 +1131,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, outOfRangeAsEmpty);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, skipInvisibleObject, outOfRangeAsEmpty);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -1172,6 +1187,7 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
+            bool skipInvisibleObject = get_input2<bool>("skipInvisibleObject");
             Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
             TimeAndSamplesMap timeMap;
             for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
@@ -1179,7 +1195,8 @@ struct ReadAlembic : INode {
                             archive.getMaxNumSamplesForTimeSamplingIndex(s));
             }
 
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred,
+                        skipInvisibleObject, outOfRangeAsEmpty);
             read_done = true;
             usedPath = path;
         }
@@ -1207,6 +1224,7 @@ ZENDEFNODE(ReadAlembic, {
         {"readpath", "path"},
         {"bool", "read_face_set", "1"},
         {"bool", "outOfRangeAsEmpty", "0"},
+        {"bool", "skipInvisibleObject", "1"},
         {"frameid"},
     },
     {

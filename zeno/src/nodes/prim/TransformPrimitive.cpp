@@ -364,7 +364,7 @@ struct PrimitiveTransform : zeno::INode {
         auto path = get_input2<std::string>("path");
 
         std::string pivotType = get_input2<std::string>("pivot");
-        auto pivotPos = get_input2<vec3f>("pivotPos");
+        auto pivotPos = get_input2<zeno::vec3f>("pivotPos");
 
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
             iObject = iObject->clone();

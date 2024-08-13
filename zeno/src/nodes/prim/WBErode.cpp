@@ -915,7 +915,7 @@ struct erode_tumble_material_v1 : INode {
         }
         auto &height                = terrain->verts.attr<float>("height");
         auto &_material             = terrain->verts.attr<float>("_material");
-        auto &flowdir               = terrain->verts.attr<vec3f>("flowdir");
+        auto &flowdir               = terrain->verts.attr<zeno::vec3f>("flowdir");
 
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -1406,7 +1406,7 @@ struct erode_tumble_material_v3 : INode {
         auto &height            = terrain->verts.attr<float>("height");
         auto &_material         = terrain->verts.attr<float>("_material");
         auto &_temp_material    = terrain->verts.attr<float>("_temp_material");
-        auto &flowdir           = terrain->verts.attr<vec3f>("flowdir");
+        auto &flowdir           = terrain->verts.attr<zeno::vec3f>("flowdir");
 
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -2384,7 +2384,7 @@ struct HF_maskByFeature : INode {
         auto &height = terrain->verts.attr<float>(heightLayer);
         auto &mask = terrain->verts.attr<float>(maskLayer);
 
-        auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
+        auto &_grad = terrain->verts.add_attr<zeno::vec3f>("_grad");
         std::fill(_grad.begin(), _grad.end(), vec3f(0,0,0));
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -2537,8 +2537,8 @@ struct HF_rotate_displacement_2d : INode {
     void apply() override {
         auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
-        auto& var = terrain->verts.attr<vec3f>("var"); // hardcode
-        auto& pos = terrain->verts.attr<vec3f>("tempPos"); // hardcode
+        auto& var = terrain->verts.attr<zeno::vec3f>("var"); // hardcode
+        auto& pos = terrain->verts.attr<zeno::vec3f>("tempPos"); // hardcode
 
         auto angle = get_input<NumericObject>("Rotate Displacement")->get<float>();
         float gl_angle = glm::radians(angle);
@@ -2628,7 +2628,7 @@ struct HF_remap : INode {
                 var[i] = fit(var[i], 0, 1, outMin, outMax);
             }
             if (remapLayer == "height"){
-                terrain->verts.attr<vec3f>("pos")[i][1] = var[i];
+                terrain->verts.attr<zeno::vec3f>("pos")[i][1] = var[i];
             }
         }
 

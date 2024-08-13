@@ -172,7 +172,7 @@ template <zs::execspace_e space, typename LBvhT> struct LBvhView<space, const LB
 };
 
 template <zs::execspace_e space, int dim, int lane_width, typename Ti, typename T, typename Allocator>
-constexpr decltype(auto) proxy(const ZenoLBvh<dim, lane_width, Ti, T, Allocator> &lbvh) {
+decltype(auto) proxy(const ZenoLBvh<dim, lane_width, Ti, T, Allocator> &lbvh) {
     return LBvhView<space, const ZenoLBvh<dim, lane_width, Ti, T, Allocator>>{lbvh};
 }
 

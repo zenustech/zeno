@@ -4497,7 +4497,7 @@
                         "enable": {
                             "link": null,
                             "type": "bool",
-                            "default-value": false,
+                            "default-value": true,
                             "control": {
                                 "name": "Boolean"
                             }
@@ -4533,7 +4533,7 @@
                         "strength": {
                             "link": null,
                             "type": "float",
-                            "default-value": 1.0,
+                            "default-value": 0.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -4560,7 +4560,9 @@
                         6656.0884600564509,
                         487.12836685064578
                     ],
-                    "options": []
+                    "options": [
+                        "VIEW"
+                    ]
                 }
             },
             "view_rect": {}

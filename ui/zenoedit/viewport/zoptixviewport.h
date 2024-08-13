@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "optixviewport.h"
+#include "zenovis/Camera.h"
 
 class Zenovis;
 class CameraControl;
@@ -16,7 +17,7 @@ public:
     ~ZOptixProcViewport();
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
-    void cameraLookTo(int dir);
+    void cameraLookTo(zenovis::CameraLookToDir dir);
     void updateViewport();
     void updateCameraProp(float aperture, float disPlane);
     void updatePerspective();
