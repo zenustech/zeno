@@ -13,7 +13,6 @@
 #include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
-#include "reflect/reflection.generated.hpp"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)

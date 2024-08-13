@@ -9,7 +9,6 @@
 #include <zeno/core/INode.h>
 #include <zeno/zeno.h>
 #include <limits>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

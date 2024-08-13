@@ -7,7 +7,6 @@
 #include "panel/zenoproppanel.h"
 #include "zassert.h"
 #include <zeno/core/IObject.h>
-#include "reflect/reflection.generated.hpp"
 
 
 ZVecEditor::ZVecEditor(const QVariant& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)

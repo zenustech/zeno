@@ -6,7 +6,6 @@
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include <zeno/ZenoInc.h>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

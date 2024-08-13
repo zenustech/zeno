@@ -4,7 +4,6 @@
 #include <zeno/utils/logger.h>
 #include <cstdio>
 #include <thread>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace {

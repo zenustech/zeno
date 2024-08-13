@@ -9,7 +9,6 @@
 #include "zenomainwindow.h"
 #include "util/uihelper.h"
 #include "variantptr.h"
-#include "reflect/reflection.generated.hpp"
 
 
 ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &index, QWidget *parent)

@@ -11,7 +11,6 @@
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
 #include "variantptr.h"
-#include "reflect/reflection.generated.hpp"
 
 
 #define min(a, b) ((a) < (b) ? (a) : (b))

@@ -22,7 +22,6 @@
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 #include "widgets/zcodeeditor.h"
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zenoui

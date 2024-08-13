@@ -1,6 +1,5 @@
 #include "command.h"
 #include "variantptr.h"
-#include "reflect/reflection.generated.hpp"
 
 
 AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath)

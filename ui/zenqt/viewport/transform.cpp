@@ -10,7 +10,6 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include "zassert.h"
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

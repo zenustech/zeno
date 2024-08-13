@@ -6,7 +6,6 @@
 #include "zassert.h"
 #include <zeno/core/ObjectManager.h>
 #include <zeno/core/Session.h>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

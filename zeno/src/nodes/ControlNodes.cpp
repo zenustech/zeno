@@ -6,9 +6,8 @@
 #include <zeno/extra/ContextManaged.h>
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/utils/safe_at.h>
-
 #include <zeno/core/GlobalVariable.h>
-#include "reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 

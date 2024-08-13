@@ -6,7 +6,7 @@
 #include <zeno/utils/helper.h>
 #include <filesystem>
 #include <zeno/io/iotags.h>
-#include "reflect/reflection.generated.hpp"
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 
 namespace zenoio

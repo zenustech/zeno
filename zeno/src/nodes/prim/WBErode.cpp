@@ -12,7 +12,6 @@
 #include <vector>
 
 #include <glm/gtx/quaternion.hpp>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno

@@ -34,7 +34,6 @@
 #include "layout/zdockwidget.h"
 #include "calculation/calculationmgr.h"
 #include "model/GraphModel.h"
-#include "reflect/reflection.generated.hpp"
 
 
 

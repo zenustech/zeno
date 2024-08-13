@@ -40,7 +40,6 @@
 #include "statusgroup.h"
 #include "statusbutton.h"
 #include "model/assetsmodel.h"
-#include "reflect/reflection.generated.hpp"
 
 
 NodeNameItem::NodeNameItem(const QString& name, QGraphicsItem* parent)

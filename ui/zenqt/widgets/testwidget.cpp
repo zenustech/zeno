@@ -1,7 +1,6 @@
 #include "testwidget.h"
 #include "widgets/zwidgetfactory.h"
 #include "uicommon.h"
-#include "reflect/reflection.generated.hpp"
 
 
 TestNormalWidget::TestNormalWidget()

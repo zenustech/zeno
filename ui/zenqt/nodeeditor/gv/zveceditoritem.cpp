@@ -3,7 +3,6 @@
 #include "util/curveutil.h"
 #include "style/zenostyle.h"
 #include <zeno/utils/log.h>
-#include "reflect/reflection.generated.hpp"
 
 
 ZVecEditorItem::ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)

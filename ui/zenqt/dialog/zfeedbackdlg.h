@@ -16,6 +16,10 @@ public:
     bool isSendFile() const;
     void sendEmail(const QString& subject, const QString& content, const QString& zsgContent);
 
+signals:
+    void signal1();
+    void signal2();
+
 private:
     Ui::FeedBackDlg *m_ui;
 };

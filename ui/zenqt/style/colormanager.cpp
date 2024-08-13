@@ -1,5 +1,4 @@
 #include "colormanager.h"
-#include "reflect/reflection.generated.hpp"
 
 
 static std::map<size_t, std::string> g_clrMapping = {

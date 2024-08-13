@@ -3,7 +3,6 @@
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
 #include <zeno/types/ObjectDef.h>
-#include "reflect/reflection.generated.hpp"
 #include <regex>
 
 

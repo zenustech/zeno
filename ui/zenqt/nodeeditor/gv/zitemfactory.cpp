@@ -14,7 +14,6 @@
 #include "util/uihelper.h"
 #include "util/ztfutil.h"
 #include "util/jsonhelper.h"
-#include "reflect/reflection.generated.hpp"
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT

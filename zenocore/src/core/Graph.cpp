@@ -22,7 +22,7 @@
 #include <regex>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
-#include "reflect/reflection.generated.hpp"
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 
 namespace zeno {

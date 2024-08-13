@@ -6,7 +6,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

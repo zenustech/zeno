@@ -21,6 +21,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <zeno/utils/reflectutil.h>
 
 
 #define ROTATE_COMPUTE                          \
@@ -454,7 +455,8 @@ struct CreateCube : zeno::INode {
         }
 
         NORMUV_CIHOU
-        set_output("prim", std::move(prim));
+        set_output_any("prim", constructObject(std::move(prim)));
+        //set_output("prim", std::move(prim));
     }
 };
 

@@ -29,8 +29,8 @@
 #include <reflect/container/object_proxy>
 #include <reflect/container/any>
 #include <reflect/container/arraylist>
+#include "zeno_types/reflect/reflection.generated.hpp"
 
-#include "reflect/reflection.generated.hpp"
 
 using namespace zeno::reflect;
 using namespace zeno::types;
@@ -764,10 +764,12 @@ void Session::initReflectNodes() {
     for (zeno::reflect::TypeBase* type : registry->all()) {
         //TODO: 判断type的基类是不是基于INode
         const zeno::reflect::ReflectedTypeInfo& info = type->get_info();
-        zeno::reflect::ITypeConstructor& ctor = type->get_constructor_checked({});
+        zeno::reflect::ITypeConstructor* ctor = type->get_constructor_or_null({});
+        assert(ctor);
 
-        defNodeReflectClass([&]()->std::shared_ptr<INode> {
-            INode* pNewNode = static_cast<INode*>(ctor.new_instance());
+        defNodeReflectClass([=]()->std::shared_ptr<INode> {
+            INode* pNewNode = static_cast<INode*>(ctor->new_instance());
+            pNewNode->initTypeBase(type);
             std::shared_ptr<INode> spNode(pNewNode);
             return spNode;
         }, type);

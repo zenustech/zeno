@@ -7,7 +7,8 @@
 #include "parser.hpp"
 #include <regex>
 #include <zeno/core/ReferManager.h>
-#include "reflect/reflection.generated.hpp"
+#include "zeno_types/reflect/reflection.generated.hpp"
+
 
 using namespace zeno;
 

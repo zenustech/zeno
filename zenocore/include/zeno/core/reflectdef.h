@@ -4,12 +4,7 @@
 #include "reflect/core.hpp"
 #include "reflect/type"
 #include "reflect/reflection_traits.hpp"
-#include "reflect/reflection.generated.hpp"
 
-#define ZENO_REFLECT_TYPE(T) \
-virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType() override {\
-    return std::make_shared<zeno::reflect::TypeHandle>(zeno::reflect::get_type<T>());\
-}
 
 namespace zeno {
 

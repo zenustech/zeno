@@ -41,7 +41,6 @@
 #include "statusbutton.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
-#include "reflect/reflection.generated.hpp"
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
