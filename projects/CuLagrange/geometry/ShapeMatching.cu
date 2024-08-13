@@ -84,10 +84,10 @@ struct MatchTransformation : zeno::INode {
 
         // R = R.transpose();
 
-        printf("R:\n%f\b%f\b%f\n%f\b%f\b%f\n%f\b%f\b%f\n",
-            (float)R(0,0),(float)R(0,1),(float)R(0,2),
-            (float)R(1,0),(float)R(1,1),(float)R(1,2),
-            (float)R(2,0),(float)R(2,1),(float)R(2,2));
+        // printf("R:\n%f\b%f\b%f\n%f\b%f\b%f\n%f\b%f\b%f\n",
+        //     (float)R(0,0),(float)R(0,1),(float)R(0,2),
+        //     (float)R(1,0),(float)R(1,1),(float)R(1,2),
+        //     (float)R(2,0),(float)R(2,1),(float)R(2,2));
 
         auto b = tcm - R * rcm;
         
