@@ -17,7 +17,6 @@
 #include <zeno/core/CoreParam.h>
 #include <functional>
 #include <reflect/registry.hpp>
-#include <zeno/core/objectptrcontainer.h>
 
 
 namespace zeno {
@@ -35,10 +34,6 @@ struct ObjectLink;
 struct PrimitiveLink;
 struct SubnetNode;
 
-namespace reflect {
-    class TypeHandle;
-}
-
 
 class INode : public std::enable_shared_from_this<INode>
 {
@@ -49,7 +44,6 @@ public:
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
-    ZENO_API virtual std::shared_ptr<zeno::reflect::TypeHandle> getReflectType();
 
     ZENO_API void doComplete();
     ZENO_API void doApply();
@@ -146,6 +140,7 @@ public:
     bool removeLink(bool bInput, const EdgeInfo& edge);
     void mark_dirty_objs();
     std::vector<std::string> getWildCardParams(const std::string& name, bool bPrim);
+    void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
 
 protected:
     ZENO_API virtual void complete();
@@ -186,22 +181,8 @@ public:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output_any(std::string const& id, zeno::reflect::Any obj);
+    ZENO_API bool set_output(std::string const& param, zany obj);
     ZENO_API zeno::reflect::Any get_output_obj(std::string const& sock_name);
-
-    template <class T>
-    bool set_output(std::string const& param, std::shared_ptr<T> obj) {
-        auto iter = m_outputObjs.find(param);
-        if (iter != m_outputObjs.end()) {
-            auto pContainer = new ObjectPtrContainer(obj);
-            iter->second.spObject = make_any_by_container(pContainer);
-            return true;
-        }
-        else {
-            //TODO: 删掉所有NumericObject StringObject等，这里不会处理这些类型
-            assert(false);
-            return false;
-        }
-    }
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
@@ -269,6 +250,8 @@ private:
     std::weak_ptr<Graph> graph;
     bool m_bView = false;
     bool m_dirty = true;
+
+    zeno::reflect::TypeBase* m_pTypebase = nullptr;
 
     friend class SubnetNode;
 };

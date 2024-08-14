@@ -3,7 +3,6 @@
 #include "reflect/core.hpp"
 #include "reflect/type"
 #include "reflect/reflection_traits.hpp"
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno
@@ -17,10 +16,6 @@ namespace zeno
             param_bb = wtf;
             param_c = c;
             return 233;
-        }
-
-        virtual zeno::reflect::TypeHandle gettype() {
-            return zeno::reflect::get_type<TestReflectExample>();
         }
 
         //ZPROPERTY(Role = "input", DisplayName = "Input Object")

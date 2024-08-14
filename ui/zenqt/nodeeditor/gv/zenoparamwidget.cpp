@@ -11,7 +11,6 @@
 #include <zeno/extra/TempNode.h>
 #include <zeno/extra/assetDir.h>
 #include "widgets/zlineedit.h"
-#include "reflect/reflection.generated.hpp"
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)

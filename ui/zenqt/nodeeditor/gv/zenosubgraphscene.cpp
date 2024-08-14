@@ -32,7 +32,6 @@
 #include <zeno/io/zenreader.h>
 #include "widgets/ztooltip.h"
 #include "zenonodenew.h"
-#include "reflect/reflection.generated.hpp"
 #include <zeno/utils/helper.h>
 //#include "nodeeditor/gv/pythonmaterialnode.h"
 

@@ -94,29 +94,40 @@ endif()
 
 if (ZENO_WITH_REFLECTOR)
     #生成反射信息
-    target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR)
-
+    target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR -DAPPLY_REFLECTION_GEN)
+    target_link_libraries(zenocore PUBLIC libreflect)
     target_include_directories(zenocore PUBLIC
         ${CMAKE_SOURCE_DIR}/reflect/crates/libreflect/include
-        ${CMAKE_BINARY_DIR}/intermediate/zenocore
+        ${CMAKE_BINARY_DIR}/intermediate
     )
     include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
-    set(headersFile
-        ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
-        ../zeno/src/nodes/reflect/reflectnodes.cpp
-        ../zeno/src/nodes/reflect/reflectnodesexample.cpp
-    )
-    make_absolute_paths(REFLECTION_HEADERS 
-        ${headersFile}
-    )
 
     set(GENERATE_ON_BUILD_DIR ON)
     set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
     set(INJA_TEMPLATE_DIR_PATH  ${CMAKE_BINARY_DIR}/intermediate)
+
+    #头文件包含目录
+    set(CUSTOM_HEADER_INCLUDE_DIR ${CMAKE_BINARY_DIR}/intermediate)
+
     #由于这个template的字符数过大导致MSVC编译期截断，需要分发template，以读写的方式加载
     file(COPY ${PROJECT_SOURCE_DIR}/reflect/src/template/reflected_type_register.inja DESTINATION ${INJA_TEMPLATE_DIR_PATH})
-    zeno_declare_reflection_support(zenocore "${REFLECTION_HEADERS}")
-    target_link_libraries(zenocore PUBLIC libreflect)
+
+    # 将节点的反射和类型的反射分离，有助于编译时间的优化和头文件的管理
+
+    #生成类型（包括对象类型，基础类型和自定义数据类型）的反射信息
+    set(reflecttypes
+        ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
+    )
+    make_absolute_paths(REFLECTION_TYPES ${reflecttypes})
+    zeno_declare_reflection_support(zenocore "${REFLECTION_TYPES}" zeno_types)
+
+    # 生成节点类的反射信息
+    set(reflectnodes
+        ../zeno/src/nodes/reflect/reflectnodes.cpp
+        ../zeno/src/nodes/reflect/reflectnodesexample.cpp
+    )
+    make_absolute_paths(REFLECTION_NODES ${reflectnodes})
+    zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
 endif()
 
 #if (ZENO_NO_WARNING)

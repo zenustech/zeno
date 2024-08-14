@@ -1,8 +1,6 @@
 #pragma once
 
 #include <zeno/core/common.h>
-#include <zeno/core/IObject.h>
-#include <zeno/core/INode.h>
 #include <zeno/types/ObjectDef.h>
 #include "reflect/core.hpp"
 #include "reflect/type.hpp"
@@ -11,8 +9,9 @@
 #include "reflect/container/object_proxy"
 #include "reflect/container/any"
 #include "reflect/container/arraylist"
+#include <vector>
 #include <memory>
-#include "reflect/reflection.generated.hpp"
+//#include "reflect/reflection.generated.hpp"
 
 
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(bool, Bool)
@@ -29,7 +28,6 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec3s, Vec3s)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4i, Vec4i)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4f, Vec4f)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4s, Vec4s)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::INode, INode)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<std::string>, StringList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<int>, IntList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<float>, FloatList)

@@ -11,7 +11,6 @@
 #include "nodeeditor/gv/zenogvhelper.h"
 #include "variantptr.h"
 #include "zassert.h"
-#include "reflect/reflection.generated.hpp"
 
 
 static void dumpToClipboard(const QString& copyInfo)

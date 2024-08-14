@@ -5,7 +5,7 @@
 #include "reflect/core.hpp"
 #include "reflect/type.hpp"
 #include "reflect/container/any"
-#include "reflect/reflection.generated.hpp"
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 
 namespace zeno {

@@ -30,8 +30,8 @@
 #include <reflect/container/any>
 #include <reflect/container/arraylist>
 #include <zeno/core/reflectdef.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
 
-#include "reflect/reflection.generated.hpp"
 
 using namespace zeno::reflect;
 using namespace zeno::types;
@@ -83,7 +83,7 @@ struct ReflectNodeClass : INodeClass {
     {
     }
 
-    //ÕûÀícustomui²ã¼¶
+    //æ•´ç†customuiå±‚çº§
     void adjustCustomUiStructure(std::shared_ptr<INode> spNode,
         std::map<std::string, ParamPrimitive>& inputPrims, std::map<std::string, ParamObject>& inputObjs,
         std::map<std::string, ParamPrimitive>& outputPrims, std::map<std::string, ParamObject>& outputObjs) {
@@ -99,7 +99,7 @@ struct ReflectNodeClass : INodeClass {
                         ParamGroup group;
                         group.name = reflectgroup.name;
                         for (auto& param : reflectgroup.params) {
-                            if (inputPrims.find(param.mapTo) != inputPrims.end()) { //°´ÕÕReflectCustomUIµÄĞÅÏ¢¸üĞÂParamPrimitive²¢·ÅÈë¶ÔÓ¦µÄgroup
+                            if (inputPrims.find(param.mapTo) != inputPrims.end()) { //æŒ‰ç…§ReflectCustomUIçš„ä¿¡æ¯æ›´æ–°ParamPrimitiveå¹¶æ”¾å…¥å¯¹åº”çš„group
                                 inputPrims[param.mapTo].name = param.dispName;
                                 inputPrims[param.mapTo].defl = param.defl;
                                 group.params.push_back(std::move(inputPrims[param.mapTo]));
@@ -124,12 +124,12 @@ struct ReflectNodeClass : INodeClass {
                             m_customui.outputObjs.push_back(std::move(outputObjs[reflectOutputObj.mapTo]));
                             outputObjs.erase(reflectOutputObj.mapTo);
                         }else if (reflectOutputObj.mapTo.empty()) {
-                            if (outputObjs.find("result") != outputObjs.end()) {    //¿Õ´®mappingµ½·µ»ØÖµ,·µ»ØÖµÃûÎª"result"
+                            if (outputObjs.find("result") != outputObjs.end()) {    //ç©ºä¸²mappingåˆ°è¿”å›å€¼,è¿”å›å€¼åä¸º"result"
                                 outputObjs["result"].name = reflectOutputObj.dispName;
                                 outputObjs["result"].socketType = reflectOutputObj.type;
                                 m_customui.outputObjs.push_back(std::move(outputObjs["result"]));
                                 outputObjs.erase("result");
-                            } else {    //apply·µ»ØÖµÎªvoidµ«ReflectCustomUI¶¨ÒåÁË¿Õ´®£¬¼ÓÈëÒ»¸öÄ¬ÈÏIObjectÊä³ö
+                            } else {    //applyè¿”å›å€¼ä¸ºvoidä½†ReflectCustomUIå®šä¹‰äº†ç©ºä¸²ï¼ŒåŠ å…¥ä¸€ä¸ªé»˜è®¤IObjectè¾“å‡º
                                 ParamObject outputObj;
                                 outputObj.name = "result";
                                 outputObj.bInput = false;
@@ -146,7 +146,7 @@ struct ReflectNodeClass : INodeClass {
                             outputPrims.erase(reflectOutputPrim.mapTo);
                         }
                     }
-                    //ÈôÓĞÊ£Óà(ÊÇ³ÉÔ±±äÁ¿»òapplyÖĞÓĞ,µ«ReflectCustomUIÃ»ÓĞµÄ²ÎÊı)£¬ÔÙ½«Ê£Óà¼ÓÈë
+                    //è‹¥æœ‰å‰©ä½™(æ˜¯æˆå‘˜å˜é‡æˆ–applyä¸­æœ‰,ä½†ReflectCustomUIæ²¡æœ‰çš„å‚æ•°)ï¼Œå†å°†å‰©ä½™åŠ å…¥
                     if (m_customui.inputPrims.tabs.empty()) {
                         zeno::ParamTab tab;
                         tab.name = "Tab1";
@@ -171,7 +171,7 @@ struct ReflectNodeClass : INodeClass {
                 }
             }
         }
-        //Èç¹ûÃ»ÓĞ¶¨ÒåReflectCustomUIÀàĞÍ³ÉÔ±±äÁ¿£¬Ê¹ÓÃÄ¬ÈÏ
+        //å¦‚æœæ²¡æœ‰å®šä¹‰ReflectCustomUIç±»å‹æˆå‘˜å˜é‡ï¼Œä½¿ç”¨é»˜è®¤
         if (m_customui.inputPrims.tabs.empty())
         {
             zeno::ParamTab tab;
@@ -210,9 +210,9 @@ struct ReflectNodeClass : INodeClass {
         std::map<std::string, ParamObject> inputObjs;
         std::map<std::string, ParamObject> outputObjs;
 
-        //ÏÈ±éÀúËùÓĞ³ÉÔ±£¬ÊÕ¼¯ËùÓĞ²ÎÊı£¬Ä¿Ç°¼Ù¶¨ËùÓĞ³ÉÔ±±äÁ¿¶¼×÷Îª½ÚµãµÄ²ÎÊı´æÔÚ£¬ºóĞø¿´Çé¿ö¿ÉÒÔÖ¸¶¨
+        //å…ˆéå†æ‰€æœ‰æˆå‘˜ï¼Œæ”¶é›†æ‰€æœ‰å‚æ•°ï¼Œç›®å‰å‡å®šæ‰€æœ‰æˆå‘˜å˜é‡éƒ½ä½œä¸ºèŠ‚ç‚¹çš„å‚æ•°å­˜åœ¨ï¼Œåç»­çœ‹æƒ…å†µå¯ä»¥æŒ‡å®š
         for (IMemberField* field : typebase->get_member_fields()) {
-            // ÕÒµ½ÎÒÃÇÒªµÄ
+            // æ‰¾åˆ°æˆ‘ä»¬è¦çš„
             std::string field_name(field->get_name().c_str());
             std::string param_name;
             if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
@@ -224,15 +224,15 @@ struct ReflectNodeClass : INodeClass {
                 else {
                     param_name = field_name;
                 }
-                //TODO: Ãû³ÆºÏ·¨ĞÔÅĞ¶Ï
+                //TODO: åç§°åˆæ³•æ€§åˆ¤æ–­
 
-                //¸ù¾İÀàĞÍÅĞ¶ÏÒ»ÏÂÊÇobject»¹ÊÇprimitive
+                //æ ¹æ®ç±»å‹åˆ¤æ–­ä¸€ä¸‹æ˜¯objectè¿˜æ˜¯primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
                 ParamType type = fieldType.type_hash();
                 const RTTITypeInfo& typeInfo = ReflectionRegistry::get().getRttiMap()->get(type);
                 assert(typeInfo.hash_code());
                 std::string rttiname(typeInfo.name());
-                //ºóĞø»áÓĞ¸üºÃµÄÅĞ¶Ï·½Ê½£¬Ô­Àí¶¼ÊÇÒ»Ñù£º°ÑrttiÄÃ³öÀ´
+                //åç»­ä¼šæœ‰æ›´å¥½çš„åˆ¤æ–­æ–¹å¼ï¼ŒåŸç†éƒ½æ˜¯ä¸€æ ·ï¼šæŠŠrttiæ‹¿å‡ºæ¥
                 bool bObject = rttiname.find("std::shared_ptr") != rttiname.npos;
 
                 //role:
@@ -245,18 +245,18 @@ struct ReflectNodeClass : INodeClass {
                     role = static_cast<NodeDataGroup>(_role);
                 }
                 else {
-                    //Ã»ÓĞÖ¸¶¨role£¬Ò»ÂÉ¶¼ÊÇ°´input´¦Àí£¬ÊÇ·ñÎªobj¸ù¾İÀàĞÍ×öÅĞ¶Ï
+                    //æ²¡æœ‰æŒ‡å®šroleï¼Œä¸€å¾‹éƒ½æ˜¯æŒ‰inputå¤„ç†ï¼Œæ˜¯å¦ä¸ºobjæ ¹æ®ç±»å‹åšåˆ¤æ–­
                     role = bObject ? Role_InputObject : Role_InputPrimitive;
                 }
 
                 if (role == Role_InputObject)
                 {
                     if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
-                        //ÒòÎªÊÇ¶¨ÒåÔÚPROPERTYÉÏ£¬ËùÒÔÀíÂÛÉÏ¿ÉÒÔÖØ¸´Ğ´
+                        //å› ä¸ºæ˜¯å®šä¹‰åœ¨PROPERTYä¸Šï¼Œæ‰€ä»¥ç†è®ºä¸Šå¯ä»¥é‡å¤å†™
                         throw makeError<UnimplError>("repeated name on input objs");
                     }
 
-                    //¹Û²ìÓĞÎŞ¶¨ÒåsocketÊôĞÔ
+                    //è§‚å¯Ÿæœ‰æ— å®šä¹‰socketå±æ€§
                     SocketType socketProp = Socket_Owning;
                     if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Socket")) {
                         int _role = value->as_int();
@@ -279,7 +279,7 @@ struct ReflectNodeClass : INodeClass {
                 else if (role == Role_OutputObject)
                 {
                     if (reg_outputobjs.find(param_name) != reg_outputobjs.end()) {
-                        //ÒòÎªÊÇ¶¨ÒåÔÚPROPERTYÉÏ£¬ËùÒÔÀíÂÛÉÏ¿ÉÒÔÖØ¸´Ğ´
+                        //å› ä¸ºæ˜¯å®šä¹‰åœ¨PROPERTYä¸Šï¼Œæ‰€ä»¥ç†è®ºä¸Šå¯ä»¥é‡å¤å†™
                         throw makeError<UnimplError>("repeated name on input objs");
                     }
                     ParamObject outputObj;
@@ -355,13 +355,13 @@ struct ReflectNodeClass : INodeClass {
                     prim.tooltip;
                     prim.wildCardGroup;
 
-                    //»º´æÔÚinputrims£¬ºóÃæÔÙÒÆ¶¯µ½ÕıÈ·²ã¼¶
+                    //ç¼“å­˜åœ¨inputrimsï¼Œåé¢å†ç§»åŠ¨åˆ°æ­£ç¡®å±‚çº§
                     inputPrims.insert({ field_name, prim});
                 }
                 else if (role == Role_OutputPrimitive)
                 {
                     if (reg_outputprims.find(param_name) != reg_outputprims.end()) {
-                        //ÒòÎªÊÇ¶¨ÒåÔÚPROPERTYÉÏ£¬ËùÒÔÀíÂÛÉÏ¿ÉÒÔÖØ¸´Ğ´
+                        //å› ä¸ºæ˜¯å®šä¹‰åœ¨PROPERTYä¸Šï¼Œæ‰€ä»¥ç†è®ºä¸Šå¯ä»¥é‡å¤å†™
                         throw makeError<UnimplError>("repeated name on output prims");
                     }
 
@@ -380,7 +380,7 @@ struct ReflectNodeClass : INodeClass {
             }
         }
 
-        //Í¨¹ıÑ°ÕÒapplyº¯ÊıÉÏµÄ²ÎÊıºÍ·µ»ØÖµ£¬Îª½ÚµãÌí¼Ó²ÎÊı£¬²»¹ıZenoReflect»¹Ã»Ö§³Ö²ÎÊıÃû³ÆµÄ·´Éä£¬Ö»ÓĞÀàĞÍĞÅÏ¢
+        //é€šè¿‡å¯»æ‰¾applyå‡½æ•°ä¸Šçš„å‚æ•°å’Œè¿”å›å€¼ï¼Œä¸ºèŠ‚ç‚¹æ·»åŠ å‚æ•°ï¼Œä¸è¿‡ZenoReflectè¿˜æ²¡æ”¯æŒå‚æ•°åç§°çš„åå°„ï¼Œåªæœ‰ç±»å‹ä¿¡æ¯
         for (IMemberFunction* func : typebase->get_member_functions())
         {
             const auto& funcname = func->get_name();
@@ -393,7 +393,7 @@ struct ReflectNodeClass : INodeClass {
             bool isObject = zeno::isObjectType(ret_type, isConstPtr);
             if (type != Param_Null)
             {
-                //´æÔÚ·µ»ØÀàĞÍ£¬ËµÃ÷ÓĞÊä³ö£¬ĞèÒª·ÖÅäÒ»¸öÊä³ö²ÎÊı
+                //å­˜åœ¨è¿”å›ç±»å‹ï¼Œè¯´æ˜æœ‰è¾“å‡ºï¼Œéœ€è¦åˆ†é…ä¸€ä¸ªè¾“å‡ºå‚æ•°
                 int idx = 1;
                 std::string param_name = "result";
                 if (isObject) {
@@ -437,11 +437,11 @@ struct ReflectNodeClass : INodeClass {
                 std::string const& param_name(param_names[idxParam].c_str());
                 type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
                 if (param_name.empty()) {
-                    //¿Õ°×²ÎÊı²»¿¼ÂÇ
+                    //ç©ºç™½å‚æ•°ä¸è€ƒè™‘
                     continue;
                 }
                 if (!param_type.has_flags(TF_IsConst) && param_type.has_flags(TF_IsLValueRef)) {
-                    //ÒıÓÃ·µ»Øµ±×÷ÊÇÊä³ö´¦Àí
+                    //å¼•ç”¨è¿”å›å½“ä½œæ˜¯è¾“å‡ºå¤„ç†
                     if (isObject)
                     {
                         if (reg_outputobjs.find(param_name) == reg_outputobjs.end()) {
@@ -475,11 +475,11 @@ struct ReflectNodeClass : INodeClass {
                     }
                 }
                 else {
-                    //¹Û²ìÊÇ·ñÎªshared_ptr<IObject>
+                    //è§‚å¯Ÿæ˜¯å¦ä¸ºshared_ptr<IObject>
                     if (isObject)
                     {
                         if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
-                            //Í¬ÃûÇé¿ö£¬ËµÃ÷³ÉÔ±±äÁ¿¶¨ÒåÁËÒ»¸öÏàÍ¬Ãû×ÖµÄ²ÎÊı£¬ºÜº±¼û£¬µ«¿ÉÒÔÖ±½ÓÌø¹ı
+                            //åŒåæƒ…å†µï¼Œè¯´æ˜æˆå‘˜å˜é‡å®šä¹‰äº†ä¸€ä¸ªç›¸åŒåå­—çš„å‚æ•°ï¼Œå¾ˆç½•è§ï¼Œä½†å¯ä»¥ç›´æ¥è·³è¿‡
                         }
                         else {
                             ParamObject inObj;
@@ -488,7 +488,7 @@ struct ReflectNodeClass : INodeClass {
                             if (isConstPtr)
                                 inObj.socketType = Socket_ReadOnly;
                             else
-                                inObj.socketType = Socket_Owning;   //Ä¬ÈÏ»¹ÊÇowning
+                                inObj.socketType = Socket_Owning;   //é»˜è®¤è¿˜æ˜¯owning
                             inObj.type = type;
 
                             inputObjs.insert({ param_name, inObj });
@@ -503,7 +503,7 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.socketType = Socket_Primitve;
                             inPrim.type = type;
 
-                            //¼ì²éº¯ÊıÊÇ·ñ´øÓĞÄ¬ÈÏ²ÎÊı
+                            //æ£€æŸ¥å‡½æ•°æ˜¯å¦å¸¦æœ‰é»˜è®¤å‚æ•°
                             const Any& deflVal = func->get_param_default_value(idxParam);
                             if (deflVal.has_value()) {
                                 inPrim.defl = deflVal;
@@ -516,7 +516,7 @@ struct ReflectNodeClass : INodeClass {
                             inPrim.bVisible = false;
                             inPrim.wildCardGroup;
 
-                            //»º´æÔÚinputrims£¬ºóÃæÔÙÒÆ¶¯µ½ÕıÈ·²ã¼¶
+                            //ç¼“å­˜åœ¨inputrimsï¼Œåé¢å†ç§»åŠ¨åˆ°æ­£ç¡®å±‚çº§
                             inputPrims.insert({ param_name, inPrim});
                             reg_inputprims.insert(param_name);
                         }
@@ -570,20 +570,20 @@ ZENO_API Session::~Session() = default;
 
 
 static CustomUI descToCustomui(const Descriptor& desc) {
-    //¼æÈİÒÔÇ°Ğ´µÄ¸÷ÖÖZENDEFINE
+    //å…¼å®¹ä»¥å‰å†™çš„å„ç§ZENDEFINE
     CustomUI ui;
 
     ui.nickname = desc.displayName;
     ui.iconResPath = desc.iconResPath;
     ui.doc = desc.doc;
     if (!desc.categories.empty())
-        ui.category = desc.categories[0];   //ºÜ¶àcate¶¼Ö»ÓĞÒ»¸ö
+        ui.category = desc.categories[0];   //å¾ˆå¤šcateéƒ½åªæœ‰ä¸€ä¸ª
 
     ParamGroup default;
     for (const SocketDescriptor& param_desc : desc.inputs) {
         ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
         if (isPrimitiveType(type)) {
-            //Èç¹ûÊÇÊıÖµÀàĞÍ£¬¾ÍÌí¼Óµ½×éÀï
+            //å¦‚æœæ˜¯æ•°å€¼ç±»å‹ï¼Œå°±æ·»åŠ åˆ°ç»„é‡Œ
             ParamPrimitive param;
             param.name = param_desc.name;
             param.type = type;
@@ -612,7 +612,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         }
         else
         {
-            //ÆäËûÒ»ÂÉÈÏÎªÊÇ¶ÔÏó£¨ZenoÄ¿Ç°µÄÀàĞÍ¹ÜÀí·Ç³£»ìÂÒ£¬ÓĞĞ©ÀàĞÍÖµÊÇ¿Õ×Ö·û´®£¬µ«¾ø´ó¶àÊıÊÇ¶ÔÏóÀàĞÍ
+            //å…¶ä»–ä¸€å¾‹è®¤ä¸ºæ˜¯å¯¹è±¡ï¼ˆZenoç›®å‰çš„ç±»å‹ç®¡ç†éå¸¸æ··ä¹±ï¼Œæœ‰äº›ç±»å‹å€¼æ˜¯ç©ºå­—ç¬¦ä¸²ï¼Œä½†ç»å¤§å¤šæ•°æ˜¯å¯¹è±¡ç±»å‹
             ParamObject param;
             param.name = param_desc.name;
             param.type = type;
@@ -629,7 +629,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         param.type = zeno::convertToType(param_desc.type, param.name);
         param.defl = zeno::str2any(param_desc.defl, param.type);
         param.socketType = NoSocket;
-        //ÆäËû¿Ø¼ş¹À¼ÆÊÇ¸ù¾İÀàĞÍÍÆ¶ÏµÄ¡£
+        //å…¶ä»–æ§ä»¶ä¼°è®¡æ˜¯æ ¹æ®ç±»å‹æ¨æ–­çš„ã€‚
         if (starts_with(param_desc.type, "enum ")) {
             //compatible with old case of combobox items.
             param.type = zeno::types::gParamType_String;
@@ -649,7 +649,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
     for (const SocketDescriptor& param_desc : desc.outputs) {
         ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
         if (isPrimitiveType(type)) {
-            //Èç¹ûÊÇÊıÖµÀàĞÍ£¬¾ÍÌí¼Óµ½×éÀï
+            //å¦‚æœæ˜¯æ•°å€¼ç±»å‹ï¼Œå°±æ·»åŠ åˆ°ç»„é‡Œ
             ParamPrimitive param;
             param.name = param_desc.name;
             param.type = type;
@@ -665,7 +665,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         }
         else
         {
-            //ÆäËûÒ»ÂÉÈÏÎªÊÇ¶ÔÏó£¨ZenoÄ¿Ç°µÄÀàĞÍ¹ÜÀí·Ç³£»ìÂÒ£¬ÓĞĞ©ÀàĞÍÖµÊÇ¿Õ×Ö·û´®£¬µ«¾ø´ó¶àÊıÊÇ¶ÔÏóÀàĞÍ
+            //å…¶ä»–ä¸€å¾‹è®¤ä¸ºæ˜¯å¯¹è±¡ï¼ˆZenoç›®å‰çš„ç±»å‹ç®¡ç†éå¸¸æ··ä¹±ï¼Œæœ‰äº›ç±»å‹å€¼æ˜¯ç©ºå­—ç¬¦ä¸²ï¼Œä½†ç»å¤§å¤šæ•°æ˜¯å¯¹è±¡ç±»å‹
             ParamObject param;
             param.name = param_desc.name;
             param.type = type;
@@ -714,7 +714,7 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
     assert(pTypeBase);
     const zeno::reflect::ReflectedTypeInfo& info = pTypeBase->get_info();
     auto& nodecls = std::string(info.qualified_name.c_str());
-    //ÓĞĞ©name·´Éä³öÀ´¿ÉÄÜ´øÓĞÃüÃû¿Õ¼ä±ÈÈçzeno::XXX
+    //æœ‰äº›nameåå°„å‡ºæ¥å¯èƒ½å¸¦æœ‰å‘½åç©ºé—´æ¯”å¦‚zeno::XXX
     int idx = nodecls.find_last_of(':');
     if (idx != std::string::npos) {
         nodecls = nodecls.substr(idx + 1);
@@ -835,9 +835,9 @@ ZENO_API bool Session::run() {
 
     globalError->clearState();
 
-    //±¾´ÎÔËĞĞÇå³ım_objectsÖĞÉÏÒ»´ÎÔËĞĞÊ±±»±ê¼ÇÒÆ³ıµÄobj£¬²»ÄÜÁ¢¿ÌÇå³ıÒòÎªÊÓ´°export_loading_objsÊ±£¬ĞèÒªÔÚm_objectsÖĞ²éÕÒ±»É¾³ıµÄobj
+    //æœ¬æ¬¡è¿è¡Œæ¸…é™¤m_objectsä¸­ä¸Šä¸€æ¬¡è¿è¡Œæ—¶è¢«æ ‡è®°ç§»é™¤çš„objï¼Œä¸èƒ½ç«‹åˆ»æ¸…é™¤å› ä¸ºè§†çª—export_loading_objsæ—¶ï¼Œéœ€è¦åœ¨m_objectsä¸­æŸ¥æ‰¾è¢«åˆ é™¤çš„obj
     objsMan->clearLastUnregisterObjs();
-    //¶ÔÖ®Ç°É¾³ı½ÚµãÊ±¼ÇÂ¼µÄobj£¬¶ÔÓ¦µÄËùÓĞÆäËû¹ØÁª½Úµã£¬¶¼±êÔà
+    //å¯¹ä¹‹å‰åˆ é™¤èŠ‚ç‚¹æ—¶è®°å½•çš„objï¼Œå¯¹åº”çš„æ‰€æœ‰å…¶ä»–å…³è”èŠ‚ç‚¹ï¼Œéƒ½æ ‡è„
     objsMan->remove_attach_node_by_removing_objs();
 
     zeno::GraphException::catched([&] {
@@ -878,12 +878,14 @@ void Session::initNodeCates() {
 void Session::initReflectNodes() {
     auto& registry = zeno::reflect::ReflectionRegistry::get();
     for (zeno::reflect::TypeBase* type : registry->all()) {
-        //TODO: ÅĞ¶ÏtypeµÄ»ùÀàÊÇ²»ÊÇ»ùÓÚINode
+        //TODO: åˆ¤æ–­typeçš„åŸºç±»æ˜¯ä¸æ˜¯åŸºäºINode
         const zeno::reflect::ReflectedTypeInfo& info = type->get_info();
-        zeno::reflect::ITypeConstructor& ctor = type->get_constructor_checked({});
+        zeno::reflect::ITypeConstructor* ctor = type->get_constructor_or_null({});
+        assert(ctor);
 
-        defNodeReflectClass([&]()->std::shared_ptr<INode> {
-            INode* pNewNode = static_cast<INode*>(ctor.new_instance());
+        defNodeReflectClass([=]()->std::shared_ptr<INode> {
+            INode* pNewNode = static_cast<INode*>(ctor->new_instance());
+            pNewNode->initTypeBase(type);
             std::shared_ptr<INode> spNode(pNewNode);
             return spNode;
         }, type);

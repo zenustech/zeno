@@ -9,6 +9,8 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/core/CoreParam.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 

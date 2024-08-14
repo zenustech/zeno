@@ -1,8 +1,10 @@
-#include <zeno/core/INode.h>
+ï»¿#include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/core/reflectdef.h>
-
+#ifdef APPLY_REFLECTION_GEN
+#include "zeno_types/reflect/reflection.generated.hpp"
+#endif
 
 namespace zeno
 {
@@ -10,9 +12,7 @@ namespace zeno
     {
         TestReflectNode() = default;
 
-        ZENO_REFLECT_TYPE(TestReflectNode)
-
-        ZMETHOD(Name = "×öÐ©ÊÂ")
+        ZMETHOD(Name = "abc")
         int apply(std::string wtf, zeno::vec3f c) {
             param_b = wtf;
             return 233;
@@ -47,18 +47,15 @@ namespace zeno
     {
         SimpleReflect() = default;
 
-        ZENO_REFLECT_TYPE(SimpleReflect)
-
         std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf = "abc", zeno::vec3f c = zeno::vec3f({ 0,1,0 })/*, float& ret1, std::shared_ptr<zeno::IObject>&output_obj*/) {
             //ret1 = 8;
+            zeno::reflect::Any vec = zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f({ 0.,1.0,2. }));
             return "";
         }
     };
 
     struct ZRECORD() ReadOnlyNode : zeno::INode
     {
-        ZENO_REFLECT_TYPE(ReadOnlyNode)
-
         ReflectCustomUI m_uilayout = {
             _ObjectGroup {
                 {
@@ -67,7 +64,7 @@ namespace zeno
             },
             _ObjectGroup {
                 {
-                    //¿Õ×Ö·û´®Ä¬ÈÏmappingµ½ applyµÄÊä³öÖµ
+                    //ç©ºå­—ç¬¦ä¸²é»˜è®¤mappingåˆ° applyçš„è¾“å‡ºå€¼
                     _ObjectParam {"", "Output Object", Socket_Owning},
                 }
             },
@@ -96,10 +93,10 @@ namespace zeno
 
         std::shared_ptr<const zeno::IObject> apply(
             std::shared_ptr<zeno::PrimitiveObject> input_obj,
-            const std::string& name1 = "a1",
-            const std::string& name2 = "a2",
+            const std::string& name1 = "a16",
+            const std::string& name2 = "a24",
             int a = 234,
-            float b = 456.2)
+            float b = 456.234)
         {
             return input_obj;
         }

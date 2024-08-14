@@ -5,7 +5,6 @@
 #include "zassert.h"
 #include "util/uihelper.h"
 #include "zveceditoritem.h"
-#include "reflect/reflection.generated.hpp"
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)

@@ -13,7 +13,6 @@
 #include "layout/docktabcontent.h"
 #include "layout/zdockwidget.h"
 #include "util/uihelper.h"
-#include "reflect/reflection.generated.hpp"
 
 
 QString AppHelper::nativeWindowTitle(const QString& currentFilePath)

@@ -7,7 +7,7 @@
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/Assets.h>
 #include <zeno/utils/helper.h>
-#include "reflect/reflection.generated.hpp"
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 
 namespace zeno {

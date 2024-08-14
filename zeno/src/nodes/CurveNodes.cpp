@@ -7,7 +7,6 @@
 #include <zeno/utils/arrayindex.h>
 #include <reflect/container/any>
 #include <reflect/type.hpp>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

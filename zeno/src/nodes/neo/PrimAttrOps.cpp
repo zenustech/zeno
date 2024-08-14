@@ -8,7 +8,6 @@
 #include <zeno/utils/parallel_reduce.h>
 #include <stdexcept>
 #include <cmath>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

@@ -6,7 +6,6 @@
 #include <tbb/parallel_for.h>
 #include <thread>
 #include <map>
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {

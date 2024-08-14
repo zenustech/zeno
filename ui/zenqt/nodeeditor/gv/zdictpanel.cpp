@@ -11,7 +11,6 @@
 #include <zeno/utils/scope_exit.h>
 #include "model/parammodel.h"
 #include "model/GraphModel.h"
-#include "reflect/reflection.generated.hpp"
 
 
 class ZDictPanel;

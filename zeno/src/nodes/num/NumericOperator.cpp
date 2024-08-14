@@ -145,7 +145,7 @@ struct NumericOperator : zeno::INode {
 
     virtual void apply() override {
         auto op = get_param<std::string>("op_type");
-        Any ret;
+        zeno::reflect::Any ret;
         auto lhs = get_input<zeno::NumericObject>("lhs");
         auto rhs = has_input("rhs") ?
             get_input<zeno::NumericObject>("rhs")

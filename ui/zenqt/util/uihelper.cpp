@@ -17,7 +17,6 @@
 #include "model/graphsmanager.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
-#include "reflect/reflection.generated.hpp"
 
 
 const char* g_setKey = "setKey";

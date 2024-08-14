@@ -6,7 +6,6 @@
 #include "reflect/registry.hpp"
 #include "reflect/container/object_proxy"
 #include "reflect/container/arraylist"
-#include "reflect/reflection.generated.hpp"
 
 
 namespace zeno {
