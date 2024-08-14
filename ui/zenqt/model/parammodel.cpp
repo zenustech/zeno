@@ -725,7 +725,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
     auto pItems = m_customParamsM->findItems(name, flags);
     for (auto pItem : pItems)
     {
-        if (pItem->data(ROLE_ISINPUT).toBool())
+        if (pItem->data(ROLE_ISINPUT).toBool() || role == ROLE_PARAM_VISIBLE) //更新输入，或更新输入/输出的visible时,更新customUiModel
         {
             pItem->setData(val, role);
         }
