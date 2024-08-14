@@ -2,8 +2,7 @@
 
 #include <zeno/core/common.h>
 #include <zeno/types/ObjectDef.h>
-#include "reflect/core.hpp"
-#include "reflect/type.hpp"
+#include <zeno/core/reflectdef.h>
 #include "reflect/metadata.hpp"
 #include "reflect/registry.hpp"
 #include "reflect/container/object_proxy"
@@ -34,6 +33,7 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<float>, FloatList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::CurvesData, Curve)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::BCurveObject, BCurve)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::HeatmapData, Heatmap)
+REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::ReflectCustomUI, ReflectCustomUI)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::PrimitiveObject>, Primitive)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::CameraObject>, Camera)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::LightObject>, Light)
