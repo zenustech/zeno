@@ -17,6 +17,8 @@
 #include "model/graphsmanager.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
+#include <regex>
 
 
 const char* g_setKey = "setKey";
@@ -2196,4 +2198,29 @@ PANEL_TYPE UiHelper::title2Type(const QString& title)
         type = PANEL_OPEN_PATH;
     }
     return type;
+}
+
+QString UiHelper::getTypeNameFromRtti(zeno::ParamType type)
+{
+    QString typeStr;
+    if (type == Param_Null) {
+        typeStr = "null";
+    }
+    else {
+        const zeno::reflect::RTTITypeInfo& typeInfo = zeno::reflect::ReflectionRegistry::get().getRttiMap()->get(type);
+        std::vector<std::regex> patterns = {
+            std::regex (R"(std::shared_ptr\s*<\s*struct\s*zeno::(.*?)\s*>)"),   //提取obj名
+            std::regex (R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))")   //提取vec名
+        };
+        std::string rttiname = typeInfo.name();
+        typeStr = QString::fromStdString(rttiname);
+        for (const auto& pattern : patterns) {
+            std::smatch match;
+            if (std::regex_search(rttiname, match, pattern)) {
+                typeStr = QString::fromStdString(match[1].str());
+                break;
+            }
+        }
+    }
+    return typeStr;
 }

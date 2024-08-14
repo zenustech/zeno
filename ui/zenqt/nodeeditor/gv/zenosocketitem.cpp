@@ -128,7 +128,7 @@ void ZenoSocketItem::setHovered(bool bHovered)
     if (m_bHovered && m_paramIdx.isValid())
     {
         QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        QString type = UiHelper::getTypeDesc(m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+        QString type = UiHelper::getTypeNameFromRtti(m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
         ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name + " ( " + (type.isEmpty() ? "null" : type) + " )");
     }
     else
@@ -420,7 +420,7 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         painter->drawText(rc, Qt::AlignCenter, name);
     }
     else {
-        ZASSERT_EXIT(!m_bInput && type == zeno::Socket_Output);
+        //ZASSERT_EXIT(!m_bInput && type == zeno::Socket_Output);   //可能是wildcard的Input/Output
         qreal radius = rc.height() * 0.2;
         QPen pen = QPen(Qt::white, 2);
 

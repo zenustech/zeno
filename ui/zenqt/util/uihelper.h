@@ -108,6 +108,8 @@ public:
     static int getIndegree(const QModelIndex& nodeIdx);
     static PANEL_TYPE title2Type(const QString& title);
 
+    static QString getTypeNameFromRtti(zeno::ParamType type);
+
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
