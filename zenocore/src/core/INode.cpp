@@ -1872,6 +1872,7 @@ ZENO_API void INode::set_output_any(std::string const& param, zeno::reflect::Any
     }
 }
 
+#if 0
 ZENO_API bool INode::set_output(std::string const& param, zany obj) {
     //只给旧节点模块使用，如果函数暴露reflect::Any，就会迫使所有使用这个函数的cpp文件include headers
     //会增加程序体积以及编译时间，待后续生成文件优化后再考虑处理。
@@ -1950,6 +1951,7 @@ ZENO_API bool INode::set_output(std::string const& param, zany obj) {
     }
     return false;
 }
+#endif
 
 ZENO_API zeno::reflect::Any INode::get_output_obj(std::string const& param) {
     auto& spParam = safe_at(m_outputObjs, param, "miss output param `" + param + "` on node `" + m_name + "`");

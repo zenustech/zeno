@@ -3,7 +3,9 @@
 #include <reflect/container/any>
 #include <zeno/types/ObjectDef.h>
 #include <memory>
+#ifdef APPLY_REFLECTION_GEN
 #include "zeno_types/reflect/reflection.generated.hpp"
+#endif
 
 
 using namespace zeno::reflect;

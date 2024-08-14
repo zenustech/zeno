@@ -17,6 +17,7 @@
 #include <zeno/core/CoreParam.h>
 #include <functional>
 #include <reflect/registry.hpp>
+#include <zeno/core/objectptrcontainer.h>
 
 
 namespace zeno {
@@ -153,6 +154,24 @@ protected:
     ZENO_API bool set_primitive_input(std::string const& id, const zeno::reflect::Any& val);
     ZENO_API bool set_primitive_output(std::string const& id, const zeno::reflect::Any& val);
 
+    ZENO_API void set_output_any(std::string const& id, zeno::reflect::Any obj);
+    //ZENO_API bool set_output(std::string const& param, zany obj);
+
+    template <class T>
+    bool set_output(std::string const& param, std::shared_ptr<T> obj) {
+        auto iter = m_outputObjs.find(param);
+        if (iter != m_outputObjs.end()) {
+            auto pContainer = new ObjectPtrContainer(obj);
+            iter->second.spObject = make_any_by_container(pContainer);
+            return true;
+        }
+        else {
+            //TODO: 删掉所有NumericObject StringObject等，这里不会处理这些类型
+            assert(false);
+            return false;
+        }
+    }
+
     template <class T>
     const T* get_input_prim(std::string const& name) const {
         auto iter = m_inputPrims.find(name);
@@ -180,8 +199,7 @@ public:
 
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API zany get_input(std::string const &id) const;
-    ZENO_API void set_output_any(std::string const& id, zeno::reflect::Any obj);
-    ZENO_API bool set_output(std::string const& param, zany obj);
+
     ZENO_API zeno::reflect::Any get_output_obj(std::string const& sock_name);
 
     template <class T>
