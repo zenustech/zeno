@@ -21,6 +21,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
+#include "DualQuaternion.h"
 
 #ifdef ZENO_FBXSDK
 #include <fbxsdk.h>
@@ -1009,6 +1010,7 @@ struct NewFBXImportAnimation : INode {
             ud.set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
                 ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
+                zeno::log_info("boneName: {}", bone_names[i]);
             }
         }
 
@@ -1387,6 +1389,7 @@ struct NewFBXBoneDeform : INode {
         return mapping;
     }
     virtual void apply() override {
+        auto usingDualQuaternion = get_input2<std::string>("SkinningMethod") == "DualQuaternion";
         auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
         auto geometryToDeformBoneNames = getBoneNames(geometryToDeform.get());
         auto restPointTransformsPrim = get_input2<PrimitiveObject>("RestPointTransforms");
@@ -1400,6 +1403,8 @@ struct NewFBXBoneDeform : INode {
 
         std::vector<glm::mat4> matrixs;
         matrixs.reserve(geometryToDeformBoneNames.size());
+        std::vector<DualQuaternion> dqs;
+        dqs.reserve(geometryToDeformBoneNames.size());
         for (auto i = 0; i < geometryToDeformBoneNames.size(); i++) {
             glm::mat4 res_inv_matrix = glm::mat4(1);
             glm::mat4 deform_matrix = glm::mat4(1);
@@ -1409,6 +1414,7 @@ struct NewFBXBoneDeform : INode {
             }
             auto matrix = deform_matrix * res_inv_matrix;
             matrixs.push_back(matrix);
+            dqs.push_back(mat4ToDualQuat2(matrix));
         }
 
         auto prim = std::dynamic_pointer_cast<PrimitiveObject>(geometryToDeform->clone());
@@ -1425,16 +1431,31 @@ struct NewFBXBoneDeform : INode {
         for (auto i = 0; i < vert_count; i++) {
             auto opos = prim->verts[i];
             vec3f pos = {};
+            DualQuaternion dq_acc({0, 0, 0, 0}, {0, 0, 0, 0});
             float w = 0;
             for (auto j = 0; j < maxnum_boneWeight; j++) {
-                if (bi[j]->operator[](i) < 0) {
+                auto index = bi[j]->operator[](i);
+                if (index < 0) {
                     continue;
                 }
-                auto matrix = matrixs[bi[j]->operator[](i)];
-                pos += transform_pos(matrix, opos) * bw[j]->operator[](i);
-                w += bw[j]->operator[](i);
+                auto weight = bw[j]->operator[](i);
+                if (usingDualQuaternion) {
+                    dq_acc = dq_acc + dqs[index] * weight;
+                }
+                else {
+                    pos += transform_pos(matrixs[index], opos) * weight;
+                }
+                w += weight;
             }
-            prim->verts[i] = pos / w;
+            if (w > 0) {
+                if (usingDualQuaternion) {
+                    dq_acc = normalized(dq_acc);
+                    prim->verts[i] = transformPoint2(dq_acc, opos);
+                }
+                else {
+                    prim->verts[i] = pos / w;
+                }
+            }
         }
         auto vectors_str = get_input2<std::string>("vectors");
         std::vector<std::string> vectors = zeno::split_str(vectors_str, ',');
@@ -1446,17 +1467,33 @@ struct NewFBXBoneDeform : INode {
                     #pragma omp parallel for
                     for (auto i = 0; i < vert_count; i++) {
                         glm::mat4 matrix(0);
+                        DualQuaternion dq_acc({0, 0, 0, 0}, {0, 0, 0, 0});
                         float w = 0;
                         for (auto j = 0; j < maxnum_boneWeight; j++) {
-                            if (bi[j]->operator[](i) < 0) {
+                            auto index = bi[j]->operator[](i);
+                            if (index < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[j]->operator[](i)] * bw[j]->operator[](i);
-                            w += bw[j]->operator[](i);
+                            auto weight = bw[j]->operator[](i);
+                            if (usingDualQuaternion) {
+                                dq_acc = dq_acc + dqs[index] * weight;
+                            }
+                            else {
+                                matrix += matrixs[index] * weight;
+                            }
+                            w += weight;
                         }
-                        matrix = matrix / w;
-                        auto nrm = transform_nrm(matrix, nrms[i]);
-                        nrms[i] = zeno::normalize(nrm);
+                        if (w > 0) {
+                            if (usingDualQuaternion) {
+                                dq_acc = normalized(dq_acc);
+                                nrms[i] = transformVector(dq_acc, nrms[i]);
+                            }
+                            else {
+                                matrix = matrix / w;
+                                nrms[i] = transform_nrm(matrix, nrms[i]);
+                            }
+                            nrms[i] = zeno::normalize(nrms[i]);
+                        }
                     }
                 }
                 if (prim->loops.attr_is<vec3f>(vector)) {
@@ -1465,17 +1502,33 @@ struct NewFBXBoneDeform : INode {
                     for (auto i = 0; i < prim->loops.size(); i++) {
                         auto vi = prim->loops[i];
                         glm::mat4 matrix(0);
+                        DualQuaternion dq_acc({0, 0, 0, 0}, {0, 0, 0, 0});
                         float w = 0;
                         for (auto j = 0; j < maxnum_boneWeight; j++) {
-                            if (bi[j]->operator[](vi) < 0) {
+                            auto index = bi[j]->operator[](vi);
+                            if (index < 0) {
                                 continue;
                             }
-                            matrix += matrixs[bi[j]->operator[](vi)] * bw[j]->operator[](vi);
-                            w += bw[j]->operator[](vi);
+                            auto weight = bw[j]->operator[](vi);
+                            if (usingDualQuaternion) {
+                                dq_acc = dq_acc + dqs[index] * weight;
+                            }
+                            else {
+                                matrix += matrixs[index] * weight;
+                            }
+                            w += weight;
                         }
-                        matrix = matrix / w;
-                        auto nrm = transform_nrm(matrix, nrms[i]);
-                        nrms[i] = zeno::normalize(nrm);
+                        if (w > 0) {
+                            if (usingDualQuaternion) {
+                                dq_acc = normalized(dq_acc);
+                                nrms[i] = transformVector(dq_acc, nrms[i]);
+                            }
+                            else {
+                                matrix = matrix / w;
+                                nrms[i] = transform_nrm(matrix, nrms[i]);
+                            }
+                            nrms[i] = zeno::normalize(nrms[i]);
+                        }
                     }
                 }
             }
@@ -1490,6 +1543,7 @@ ZENDEFNODE(NewFBXBoneDeform, {
         "GeometryToDeform",
         "RestPointTransforms",
         "DeformPointTransforms",
+        {"enum Linear DualQuaternion", "SkinningMethod", "Linear"},
         {"string", "vectors", "nrm,"},
     },
     {
