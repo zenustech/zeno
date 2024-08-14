@@ -125,6 +125,7 @@ if (ZENO_WITH_REFLECTOR)
     set(reflectnodes
         ../zeno/src/nodes/reflect/reflectnodes.cpp
         ../zeno/src/nodes/reflect/reflectnodesexample.cpp
+        ../zeno/src/nodes/TestNode.cpp
     )
     make_absolute_paths(REFLECTION_NODES ${reflectnodes})
     zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
