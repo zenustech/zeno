@@ -131,8 +131,8 @@ public:
     bool add_input_obj_param(ParamObject param);
     bool add_output_prim_param(ParamPrimitive param);
     bool add_output_obj_param(ParamObject param);
-    void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink);
-    void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink);
+    void init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink, const std::string& targetParam);
+    void init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink, const std::string& targetParam);
     bool isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist);
     std::vector<EdgeInfo> getLinks() const;
     std::vector<EdgeInfo> getLinksByParam(bool bInput, const std::string& param_name) const;

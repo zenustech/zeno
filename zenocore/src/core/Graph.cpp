@@ -325,15 +325,15 @@ ZENO_API void Graph::init(const GraphData& graph) {
 
         if (bInputPrim) {
             std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
-            outNode->init_primitive_link(false, link.outParam, spLink);
-            inNode->init_primitive_link(true, link.inParam, spLink);
+            outNode->init_primitive_link(false, link.outParam, spLink, link.targetParam);
+            inNode->init_primitive_link(true, link.inParam, spLink, link.targetParam);
         }
         else {
             std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
             spLink->fromkey = link.outKey;
             spLink->tokey = link.inKey;
-            outNode->init_object_link(false, link.outParam, spLink);
-            inNode->init_object_link(true, link.inParam, spLink);
+            outNode->init_object_link(false, link.outParam, spLink, link.targetParam);
+            inNode->init_object_link(true, link.inParam, spLink, link.targetParam);
         }
     }
 }
@@ -906,16 +906,16 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     assert(bInputPrim == bOutputPrim);
     if (bInputPrim) {
         std::shared_ptr<PrimitiveLink> spLink = std::make_shared<PrimitiveLink>();
-        outNode->init_primitive_link(false, edge.outParam, spLink);
-        inNode->init_primitive_link(true, edge.inParam, spLink);
+        outNode->init_primitive_link(false, edge.outParam, spLink, edge.targetParam);
+        inNode->init_primitive_link(true, edge.inParam, spLink, edge.targetParam);
         adjustEdge.bObjLink = false;
     }
     else {
         std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
         spLink->fromkey = edge.outKey;
         spLink->tokey = edge.inKey;
-        outNode->init_object_link(false, edge.outParam, spLink);
-        inNode->init_object_link(true, edge.inParam, spLink);
+        outNode->init_object_link(false, edge.outParam, spLink, edge.targetParam);
+        inNode->init_object_link(true, edge.inParam, spLink, edge.targetParam);
         adjustEdge.bObjLink = true;
     }
 

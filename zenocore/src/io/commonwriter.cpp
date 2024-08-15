@@ -193,6 +193,8 @@ namespace zenoio
                     writer.String(link.outKey.c_str());
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
+                    writer.Key("target-socket");
+                    writer.String(link.targetParam.c_str());
                 }
                 writer.EndArray();
             }
@@ -270,6 +272,8 @@ namespace zenoio
                     writer.String(link.outKey.c_str());
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
+                    writer.Key("target-socket");
+                    writer.String(link.targetParam.c_str());
                 }
                 writer.EndArray();
             }

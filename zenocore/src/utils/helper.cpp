@@ -496,7 +496,7 @@ namespace zeno {
         const std::string& outParam = spOutParam->name;
         const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
-        edge = { outNode, outParam, spLink->fromkey, inNode, inParam, spLink->tokey, true };
+        edge = { outNode, outParam, spLink->fromkey, inNode, inParam, spLink->tokey, spLink->targetParam, true };
         return edge;
     }
 
@@ -516,7 +516,7 @@ namespace zeno {
         const std::string& outParam = spOutParam->name;
         const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
-        edge = { outNode, outParam, "", inNode, inParam, "", false};
+        edge = { outNode, outParam, "", inNode, inParam, "", spLink->targetParam, false};
         return edge;
     }
 

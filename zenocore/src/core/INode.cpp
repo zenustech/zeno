@@ -1087,21 +1087,23 @@ ZENO_API void INode::set_result(bool bInput, const std::string& name, zany spObj
     }
 }
 
-void INode::init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink) {
+void INode::init_object_link(bool bInput, const std::string& paramname, std::shared_ptr<ObjectLink> spLink, const std::string& targetParam) {
     auto iter = bInput ? m_inputObjs.find(paramname) : m_outputObjs.find(paramname);
     if (bInput)
         spLink->toparam = &iter->second;
     else
         spLink->fromparam = &iter->second;
+    spLink->targetParam = targetParam;
     iter->second.links.emplace_back(spLink);
 }
 
-void INode::init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink) {
+void INode::init_primitive_link(bool bInput, const std::string& paramname, std::shared_ptr<PrimitiveLink> spLink, const std::string& targetParam) {
     auto iter = bInput ? m_inputPrims.find(paramname) : m_outputPrims.find(paramname);
     if (bInput)
         spLink->toparam = &iter->second;
     else
         spLink->fromparam = &iter->second;
+    spLink->targetParam = targetParam;
     iter->second.links.emplace_back(spLink);
 }
 

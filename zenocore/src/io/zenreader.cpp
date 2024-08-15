@@ -350,13 +350,17 @@ namespace zenoio
                 const std::string& innode = id;
                 const std::string& insock = sockName;
                 const std::string& inkey = linkObj["in-key"].GetString();
+                std::string targetsock = "";
+                if (linkObj.HasMember("target-socket")) {
+                    targetsock = linkObj["target-socket"].GetString();
+                }
                 std::string property = "copy";
                 if (linkObj.HasMember("property")) {
                     property = linkObj["property"].GetString();
                 }
 
                 zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
-                zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
+                zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, targetsock, prop };
                 paramLinks.push_back(link);
                 links.push_back(link);
             }
@@ -460,13 +464,17 @@ namespace zenoio
                         const std::string& innode = id;
                         const std::string& insock = sockName;
                         const std::string& inkey = linkObj["in-key"].GetString();
+                        std::string targetsock = "";
+                        if (linkObj.HasMember("target-socket")) {
+                            targetsock = linkObj["target-socket"].GetString();
+                        }
                         std::string property = "copy";
                         if (linkObj.HasMember("property")) {
                             property = linkObj["property"].GetString();
                         }
 
                         zeno::LinkFunction prop = property == "copy" ? zeno::Link_Copy : zeno::Link_Ref;
-                        zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, prop };
+                        zeno::EdgeInfo link = { outnode, outsock, outkey, innode, insock, inkey, targetsock, prop };
                         links.push_back(link);
                     }
                 }

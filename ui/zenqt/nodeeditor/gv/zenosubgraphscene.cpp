@@ -1016,6 +1016,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
             newEdge.inParam = inSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
             newEdge.bObjLink = inSockIdx.data(ROLE_SOCKET_TYPE).toInt() != zeno::Socket_Primitve;
+            newEdge.targetParam = targetSock->paramIndex().data(ROLE_PARAM_NAME).toString().toStdString();
 
             if (!fixedInput)
             {

@@ -25,6 +25,8 @@ namespace zeno {
         std::string inParam;
         std::string inKey;
 
+        std::string targetParam;
+
         bool bObjLink = true;
 
         bool operator==(const EdgeInfo& rhs) const {
