@@ -102,7 +102,7 @@ struct ReflectNodeClass : INodeClass {
                         for (auto& param : reflectgroup.params) {
                             if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
                                 inputPrims[param.mapTo].name = param.dispName;
-                                inputPrims[param.mapTo].defl = param.defl;
+                                inputPrims[param.mapTo].defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
                                 group.params.push_back(std::move(inputPrims[param.mapTo]));
                                 inputPrims.erase(param.mapTo);
                             }
@@ -121,7 +121,7 @@ struct ReflectNodeClass : INodeClass {
                     for (auto& reflectOutputObj : reflectCustomUi.outputObjs.objs) {
                         if (outputObjs.find(reflectOutputObj.mapTo) != outputObjs.end()) {
                             outputObjs[reflectOutputObj.mapTo].name = reflectOutputObj.dispName;
-                            outputObjs[reflectOutputObj.mapTo].socketType = reflectOutputObj.type;
+                            outputObjs[reflectOutputObj.mapTo].socketType = reflectOutputObj.type == Socket_Owning ? Socket_Output : reflectOutputObj.type;
                             m_customui.outputObjs.push_back(std::move(outputObjs[reflectOutputObj.mapTo]));
                             outputObjs.erase(reflectOutputObj.mapTo);
                         }else if (reflectOutputObj.mapTo.empty()) {
