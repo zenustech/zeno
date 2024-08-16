@@ -139,7 +139,10 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
-    void updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
+    //增/删边之后更新wildCard端口的类型
+    void AddLinkUpdateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
+    void RemoveLinkResetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
+
     bool isLinkValid(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;

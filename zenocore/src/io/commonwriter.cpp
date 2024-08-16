@@ -325,19 +325,18 @@ namespace zenoio
                 }
             }
 #endif
-
-            writer.Key("socket-type");
-            switch (param.socketType)
-            {
-            case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
-            case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
-            case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
-            case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
-            case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
-            default:
-                writer.String(iotags::params::socket_none);
-            }
-
+        }
+        //输出现在也可能有Socket_WildCard类型，需记录socket_type
+        writer.Key("socket-type");
+        switch (param.socketType)
+        {
+        case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
+        case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
+        case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
+        case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+        case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
+        default:
+            writer.String(iotags::params::socket_none);
         }
         writer.Key("visible");
         writer.Bool(param.bVisible);

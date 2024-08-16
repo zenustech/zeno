@@ -393,47 +393,26 @@ std::string Graph::generateNewName(const std::string& node_cls, const std::strin
     return "";
 }
 
-void Graph::updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype)
+void Graph::AddLinkUpdateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype)
 {
-    //std::function<void(std::shared_ptr<Graph>, std::shared_ptr<INode>, std::string, bool, bool, ParamType)> updateFunc =
-        //[&updateFunc](std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype) {
-        if (spNode->get_nodecls() == "SubOutput") { //由子图内部传导出来
-            spNode->update_param_type(paramName, bPrim, bInput, newtype);
-            if (std::shared_ptr<Graph> graph = spNode->getGraph().lock()) {
-                if (graph->optParentSubgNode.has_value()) {
-                    if (SubnetNode* parentSubgNode = graph->optParentSubgNode.value()) {
-                        parentSubgNode->update_param_type(spNode->get_name(), bPrim, false, newtype);
-                        for (auto& link : parentSubgNode->getLinksByParam(false, spNode->get_name())) {
-                            if (std::shared_ptr<Graph> parentGraph = parentSubgNode->getGraph().lock()) {
-                                auto const& inNode = parentGraph->getNode(link.inNode);
-                                auto const& outNode = parentGraph->getNode(link.outNode);
-                                ParamType inNodeParamType;
-                                SocketType inNodeSocketType;
-                                ParamType outNodeParamType;
-                                SocketType outNodeSocketType;
-                                inNode->getParamTypeAndSocketType(link.inParam, bPrim, true, inNodeParamType, inNodeSocketType);
-                                outNode->getParamTypeAndSocketType(link.outParam, bPrim, false, outNodeParamType, outNodeSocketType);
-                                if (inNodeParamType != outNodeParamType) {
-                                    if (inNodeSocketType != Socket_WildCard)
-                                        parentGraph->removeLink(link);
-                                    else
-                                        updateWildCardParamTypeRecursive(parentGraph, inNode, link.inParam, bPrim, bInput, newtype);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } 
-        else if (spNode->get_nodecls() == "Subnet") {  //通过inputObj传入子图
-            spNode->update_param_type(paramName, bPrim, bInput, newtype);
-            if (std::shared_ptr<SubnetNode> subnet = std::dynamic_pointer_cast<SubnetNode>(spNode)) {
-                if (auto subinput = subnet->subgraph->getNode(paramName)) {
-                    for (auto& objParam: subinput->get_output_object_params()) {
-                        subinput->update_param_type(objParam.name, bPrim, false, newtype);
-                        for (auto& link: subinput->getLinksByParam(false, objParam.name)) {
-                            auto const& inNode = subnet->subgraph->getNode(link.inNode);
-                            auto const& outNode = subnet->subgraph->getNode(link.outNode);
+    if (!spCurrGarph || !spNode)
+        return;
+    if (spNode->get_nodecls() == "SubOutput" || spNode->get_nodecls() == "SubInput") { //由子图内部传导出来
+        spNode->update_param_type(paramName, bPrim, bInput, newtype);
+        for (auto& link : spNode->getLinksByParam(bInput, paramName)) {
+            if (bInput)
+                AddLinkUpdateWildCardParamTypeRecursive(spCurrGarph, spCurrGarph->getNode(link.outNode), link.outParam, bPrim, bInput, newtype);
+            else
+                AddLinkUpdateWildCardParamTypeRecursive(spCurrGarph, spCurrGarph->getNode(link.inNode), link.inParam, bPrim, bInput, newtype);
+        }
+        if (std::shared_ptr<Graph> graph = spNode->getGraph().lock()) {
+            if (graph->optParentSubgNode.has_value()) {
+                if (SubnetNode* parentSubgNode = graph->optParentSubgNode.value()) {
+                    parentSubgNode->update_param_type(spNode->get_name(), bPrim, !bInput, newtype);
+                    for (auto& link : parentSubgNode->getLinksByParam(!bInput, spNode->get_name())) {
+                        if (std::shared_ptr<Graph> parentGraph = parentSubgNode->getGraph().lock()) {
+                            auto const& inNode = parentGraph->getNode(link.inNode);
+                            auto const& outNode = parentGraph->getNode(link.outNode);
                             ParamType inNodeParamType;
                             SocketType inNodeSocketType;
                             ParamType outNodeParamType;
@@ -442,49 +421,165 @@ void Graph::updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph,
                             outNode->getParamTypeAndSocketType(link.outParam, bPrim, false, outNodeParamType, outNodeSocketType);
                             if (inNodeParamType != outNodeParamType) {
                                 if (inNodeSocketType != Socket_WildCard)
-                                    subnet->subgraph->removeLink(link);
-                                else
-                                    updateWildCardParamTypeRecursive(subnet->subgraph, inNode, link.inParam, bPrim, bInput, newtype);
+                                    parentGraph->removeLink(link);
+                                else {
+                                    if (bInput)
+                                        AddLinkUpdateWildCardParamTypeRecursive(parentGraph, inNode, link.inParam, bPrim, bInput, newtype);
+                                    else {
+                                        if (outNodeSocketType == Socket_WildCard)
+                                            AddLinkUpdateWildCardParamTypeRecursive(parentGraph, outNode, link.outParam, bPrim, bInput, newtype);
+                                        else
+                                            parentGraph->removeLink(link);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        else {
-            const auto& params = spNode->getWildCardParams(paramName, bPrim);
-            for (const auto& param : params) {
-                spNode->update_param_type(param.first, bPrim, param.second, newtype);
-                for (auto& link : spNode->getLinksByParam(param.second, param.first)) {      //有其他边连接这个参数，类型不同则删除
-                    std::shared_ptr<INode> otherNodeLinkToThis = param.second ? spCurrGarph->getNode(link.outNode) : spCurrGarph->getNode(link.inNode);
-                    if (otherNodeLinkToThis) {
-                        if (param.second) { //是输入
-                            ParamType paramType;
-                            SocketType socketType;
-                            otherNodeLinkToThis->getParamTypeAndSocketType(link.outParam, bPrim, false, paramType, socketType);
-                            if (paramType != newtype) {
-                                if (socketType == Socket_WildCard)
-                                    updateWildCardParamTypeRecursive(spCurrGarph, otherNodeLinkToThis, link.outParam, bPrim, false, newtype);
-                                else
-                                    spCurrGarph->removeLink(link);
+    } 
+    else if (spNode->get_nodecls() == "Subnet") {  //通过inputObj传入子图
+        spNode->update_param_type(paramName, bPrim, bInput, newtype);
+        if (std::shared_ptr<SubnetNode> subnet = std::dynamic_pointer_cast<SubnetNode>(spNode)) {
+            if (auto innerNode = subnet->subgraph->getNode(paramName)) {
+                std::vector<std::string> inparamNames;
+                if (bInput) {
+                    for (auto& param : innerNode->get_output_object_params())
+                        inparamNames.emplace_back(param.name);
+                }
+                else {
+                    if (bPrim)
+                        for (auto& param: innerNode->get_input_primitive_params())
+                            inparamNames.emplace_back(param.name);
+                    else
+                        for (auto& param : innerNode->get_input_object_params())
+                            inparamNames.emplace_back(param.name);
+                }
+                for (auto& name: inparamNames) {
+                    innerNode->update_param_type(name, bPrim, !bInput, newtype);
+                    for (auto& link: innerNode->getLinksByParam(!bInput, name)) {
+                        auto const& inNode = subnet->subgraph->getNode(link.inNode);
+                        auto const& outNode = subnet->subgraph->getNode(link.outNode);
+                        ParamType inNodeParamType;
+                        SocketType inNodeSocketType;
+                        ParamType outNodeParamType;
+                        SocketType outNodeSocketType;
+                        inNode->getParamTypeAndSocketType(link.inParam, bPrim, true, inNodeParamType, inNodeSocketType);
+                        outNode->getParamTypeAndSocketType(link.outParam, bPrim, false, outNodeParamType, outNodeSocketType);
+                        if (inNodeParamType != outNodeParamType) {
+                            if (inNodeSocketType != Socket_WildCard)
+                                subnet->subgraph->removeLink(link);
+                            else {
+                                if (bInput)
+                                    AddLinkUpdateWildCardParamTypeRecursive(subnet->subgraph, inNode, link.inParam, bPrim, bInput, newtype);
+                                else {
+                                    if (outNodeSocketType == Socket_WildCard)
+                                        AddLinkUpdateWildCardParamTypeRecursive(subnet->subgraph, outNode, link.outParam, bPrim, bInput, newtype);
+                                    else
+                                        subnet->subgraph->removeLink(link);
+                                }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        const auto& params = spNode->getWildCardParams(paramName, bPrim);
+        for (const auto& param : params) {
+            spNode->update_param_type(param.first, bPrim, param.second, newtype);
+            for (auto& link : spNode->getLinksByParam(param.second, param.first)) {      //有其他边连接这个参数，类型不同则删除
+                std::shared_ptr<INode> otherNodeLinkToThis = param.second ? spCurrGarph->getNode(link.outNode) : spCurrGarph->getNode(link.inNode);
+                if (otherNodeLinkToThis) {
+                    if (param.second) { //是输入
+                        ParamType paramType;
+                        SocketType socketType;
+                        otherNodeLinkToThis->getParamTypeAndSocketType(link.outParam, bPrim, false, paramType, socketType);
+                        if (paramType != newtype) {
+                            if (socketType == Socket_WildCard)
+                                AddLinkUpdateWildCardParamTypeRecursive(spCurrGarph, otherNodeLinkToThis, link.outParam, bPrim, false, newtype);
+                            else
+                                spCurrGarph->removeLink(link);
+                        }
+                    }
+                    else {
+                        ParamType paramType;
+                        SocketType socketType;
+                        otherNodeLinkToThis->getParamTypeAndSocketType(link.inParam, bPrim, true, paramType, socketType);
+                        if (paramType != newtype) {
+                            if (socketType == Socket_WildCard)
+                                AddLinkUpdateWildCardParamTypeRecursive(spCurrGarph, otherNodeLinkToThis, link.inParam, bPrim, true, newtype);
+                            else
+                                spCurrGarph->removeLink(link);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Graph::RemoveLinkResetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput)
+{
+    if (!node)
+        return;
+    if (socketType == Socket_WildCard) {
+        const auto& params = node->getWildCardParams(paramName, bPrimType);
+        for (auto& param : params) {
+            if (!node->getLinksByParam(param.second, param.first).empty()) {
+                return;
+            }
+        }
+
+        for (auto& param : params) {
+            //updateWildCardParamTypeRecursive(shared_from_this(), node, param.first, bPrimType, true, bPrimType ? Param_Wildcard : Obj_Wildcard);
+            if (node->get_nodecls() == "SubOutput" || node->get_nodecls() == "SubInput") {
+                if (std::shared_ptr<Graph> graph = node->getGraph().lock()) {
+                    if (graph->optParentSubgNode.has_value()) {
+                        if (SubnetNode* parentSubgNode = graph->optParentSubgNode.value()) {
+                            if (parentSubgNode->getLinksByParam(!bInput, node->get_name()).empty()) {
+                                parentSubgNode->update_param_type(node->get_name(), bPrimType, !bInput, bPrimType ? Param_Wildcard : Obj_Wildcard);
+                                node->update_param_type(param.first, bPrimType, param.second, bPrimType ? Param_Wildcard : Obj_Wildcard);
+                            }
+                        }
+                    }
+                }
+
+            }
+            else if (node->get_nodecls() == "Subnet") {
+                if (std::shared_ptr<SubnetNode> subnet = std::dynamic_pointer_cast<SubnetNode>(node)) {
+                    if (auto innerNode = subnet->subgraph->getNode(paramName)) {
+                        std::vector<std::string> inparamNames;
+                        if (bInput) {
+                            for (auto& param : innerNode->get_output_object_params())
+                                inparamNames.emplace_back(param.name);
                         }
                         else {
-                            ParamType paramType;
-                            SocketType socketType;
-                            otherNodeLinkToThis->getParamTypeAndSocketType(link.inParam, bPrim, true, paramType, socketType);
-                            if (paramType != newtype) {
-                                if (socketType == Socket_WildCard)
-                                    updateWildCardParamTypeRecursive(spCurrGarph, otherNodeLinkToThis, link.inParam, bPrim, true, newtype);
-                                else
-                                    spCurrGarph->removeLink(link);
-                            }
+                            if (bPrimType)
+                                for (auto& param : innerNode->get_input_primitive_params())
+                                    inparamNames.emplace_back(param.name);
+                            else
+                                for (auto& param : innerNode->get_input_object_params())
+                                    inparamNames.emplace_back(param.name);
+                        }
+                        for (auto& name : inparamNames) {
+                            if (!innerNode->getLinksByParam(!bInput, name).empty())
+                                return;
+                        }
+                        node->update_param_type(param.first, bPrimType, param.second, bPrimType ? Param_Wildcard : Obj_Wildcard);
+                        for (auto& name : inparamNames) {
+                            innerNode->update_param_type(name, bPrimType, !bInput, bPrimType ? Param_Wildcard : Obj_Wildcard);
                         }
                     }
                 }
             }
+            else {
+                node->update_param_type(param.first, bPrimType, param.second, bPrimType ? Param_Wildcard : Obj_Wildcard);
+            }
         }
-    //};
+    }
 }
 
 ZENO_API bool Graph::isAssets() const
@@ -955,23 +1050,23 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
             ParamType newType;
             if (edge.targetParam == edge.outParam) {
                 if (inParamType == Param_Wildcard || inParamType == Obj_Wildcard)
-                    updateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bOutputPrim, true, outParamType);
+                    AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bOutputPrim, true, outParamType);
                 else
-                    updateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bOutputPrim, false, inParamType);
+                    AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bOutputPrim, false, inParamType);
             }
             else {
                 if (outParamType == Param_Wildcard || outParamType == Obj_Wildcard)
-                    updateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bInputPrim, false, inParamType);
+                    AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bInputPrim, false, inParamType);
                 else
-                    updateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bInputPrim, true, outParamType);
+                    AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bInputPrim, true, outParamType);
             }
         }
     }
     else if (outSocketType == zeno::Socket_WildCard) {
-        updateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bOutputPrim, false, inParamType);
+        AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), outNode, edge.outParam, bOutputPrim, false, inParamType);
     }
     else if (inSocketType == zeno::Socket_WildCard) {
-        updateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bInputPrim, true, outParamType);
+        AddLinkUpdateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bInputPrim, true, outParamType);
     }
 
     CALLBACK_NOTIFY(addLink, adjustEdge);
@@ -1003,32 +1098,14 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     inNode->mark_dirty(true);
 
     //删除边后，如果有涉及wildCard类型的param，判断是否需要将所属wildCard组reset
-    std::function<void(SocketType&, std::shared_ptr<INode>&, const std::string&)> resetWildCardParamsType = [&bPrimType, this](SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName) {
-        if (socketType == Socket_WildCard) {
-            const auto& params = node->getWildCardParams(paramName, bPrimType);
-            for (auto& param : params) {
-                if (!node->getLinksByParam(param.second, param.first).empty()) {
-                    return;
-                }
-            }
-
-            for (auto& param : params) {
-                if (node->get_nodecls() == "SubOutput") {
-                    updateWildCardParamTypeRecursive(shared_from_this(), node, param.first, bPrimType, true, bPrimType ? Param_Wildcard : Obj_Wildcard);
-                } else {
-                    node->update_param_type(param.first, bPrimType, param.second, bPrimType ? Param_Wildcard : Obj_Wildcard);
-                }
-            }
-        }
-    };
     SocketType inSocketType;
     ParamType inParamType;
     inNode->getParamTypeAndSocketType(edge.inParam, bPrimType, true, inParamType, inSocketType);
-    resetWildCardParamsType(inSocketType, inNode, edge.inParam);
+    RemoveLinkResetWildCardParamsType(inSocketType, inNode, edge.inParam, bPrimType, true);
     SocketType outSocketType;
     ParamType outParamType;
     outNode->getParamTypeAndSocketType(edge.outParam, bPrimType, false, outParamType, outSocketType);
-    resetWildCardParamsType(outSocketType, outNode, edge.outParam);
+    RemoveLinkResetWildCardParamsType(outSocketType, outNode, edge.outParam, bPrimType, false);
 
     CALLBACK_NOTIFY(removeLink, edge)
     return true;

@@ -60,7 +60,8 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 zeno::ParamObject paramObj;
                 paramObj.bInput = false;
                 paramObj.name = "port";
-                paramObj.socketType = zeno::Socket_Output;
+                paramObj.type = Obj_Wildcard;
+                paramObj.socketType = zeno::Socket_WildCard;
                 newNode->add_output_obj_param(paramObj);
             }
 

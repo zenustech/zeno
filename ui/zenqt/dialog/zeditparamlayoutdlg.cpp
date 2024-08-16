@@ -752,10 +752,10 @@ void ZEditParamLayoutDlg::onBtnAddObjInputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Obj_Wildcard, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
+    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
 
     m_paramsLayoutM_objInputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -770,10 +770,10 @@ void ZEditParamLayoutDlg::onBtnAddObjOutputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Obj_Wildcard, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_ReadOnly, ROLE_SOCKET_TYPE);
+    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
 
     m_paramsLayoutM_objOutputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -788,10 +788,10 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     auto pNewItem = new QStandardItem(newParamName);
     pNewItem->setData(newParamName, ROLE_PARAM_NAME);
     pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Param_Null, ROLE_PARAM_TYPE);
+    pNewItem->setData(Param_Wildcard, ROLE_PARAM_TYPE);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
     pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_Output, ROLE_SOCKET_TYPE);
+    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
 
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
