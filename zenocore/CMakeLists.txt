@@ -94,7 +94,7 @@ endif()
 
 if (ZENO_WITH_REFLECTOR)
     #生成反射信息
-    target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR -DAPPLY_REFLECTION_GEN)
+    target_compile_definitions(zenocore PUBLIC -DZENO_WITH_REFLECTOR)
     target_link_libraries(zenocore PUBLIC libreflect)
     target_include_directories(zenocore PUBLIC
         ${CMAKE_SOURCE_DIR}/reflect/crates/libreflect/include
@@ -102,33 +102,61 @@ if (ZENO_WITH_REFLECTOR)
     )
     include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
 
+
+
     set(GENERATE_ON_BUILD_DIR ON)
     set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
     set(INJA_TEMPLATE_DIR_PATH  ${CMAKE_BINARY_DIR}/intermediate)
 
-    #头文件包含目录
+        #头文件包含目录
     set(CUSTOM_HEADER_INCLUDE_DIR ${CMAKE_BINARY_DIR}/intermediate)
 
     #由于这个template的字符数过大导致MSVC编译期截断，需要分发template，以读写的方式加载
     file(COPY ${PROJECT_SOURCE_DIR}/reflect/src/template/reflected_type_register.inja DESTINATION ${INJA_TEMPLATE_DIR_PATH})
 
-    # 将节点的反射和类型的反射分离，有助于编译时间的优化和头文件的管理
+    # 将节点的反射和数据类型的反射分离，有助于编译时间的优化和头文件的管理
 
-    #生成类型（包括对象类型，基础类型和自定义数据类型）的反射信息
+    # BEGIN - 基础数据类型和自定义类型的自动扫描
     set(reflecttypes
         ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
     )
+
+    get_filename_component(basic_path "../zeno/src/nodes/reflect/zenoreflecttypes.cpp" ABSOLUTE)
+    message("basic_path: " ${basic_path})
+
     make_absolute_paths(REFLECTION_TYPES ${reflecttypes})
-    zeno_declare_reflection_support(zenocore "${REFLECTION_TYPES}" zeno_types)
+    #遍历整个目录，并收集所有标有ZRECORD或者ZPRIMITIVE的类的文件
+    file(GLOB_RECURSE scan_source CONFIGURE_DEPENDS include/*.h src/*.cpp ../zeno/*.h ../zeno/*.cpp)    #暂时不包含project文件夹，以后可能插件化
+    set(REFLECTE_ZENO_TYPES_HEADER ${basic_path})
+    foreach(file_path ${scan_source})
+        file(READ ${file_path} CURR_FILE_CONTENT)
+        string(FIND "${CURR_FILE_CONTENT}" "ZPRIMITIVE" OUT_MATCH_RESULT)
+        if (NOT OUT_MATCH_RESULT EQUAL -1)
+            list(APPEND REFLECTE_ZENO_TYPES_HEADER ${file_path})
+        endif()
+    endforeach()
+
+    #送入Generator并生成
+    zeno_declare_reflection_support(zenocore "${REFLECTE_ZENO_TYPES_HEADER}" zeno_types)
+    # END - 基础数据类型和自定义类型的自动扫描
+
+
+    # BEGIN - 节点定义的自动扫描，在这里我们把带有ZDEFNODE标识的约定为节点的定义
 
     # 生成节点类的反射信息
-    set(reflectnodes
-        ../zeno/src/nodes/reflect/reflectnodes.cpp
-        ../zeno/src/nodes/reflect/reflectnodesexample.cpp
-        ../zeno/src/nodes/TestNode.cpp
-    )
-    make_absolute_paths(REFLECTION_NODES ${reflectnodes})
+    set(REFLECTION_NODES "dummy")
+    #make_absolute_paths(REFLECTION_NODES ${reflectnodes})
+    foreach(file_path ${scan_source})
+        file(READ ${file_path} CURR_FILE_CONTENT)
+        string(FIND "${CURR_FILE_CONTENT}" "ZDEFNODE" OUT_MATCH_RESULT)
+        if (NOT OUT_MATCH_RESULT EQUAL -1)
+            list(APPEND REFLECTION_NODES ${file_path})
+        endif()
+    endforeach()
+    list(POP_FRONT REFLECTION_NODES)
+    #送入Generator并生成
     zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
+    # END - 节点定义的自动扫描，在这里我们把带有ZDEFNODE标识的约定为节点的定义
 endif()
 
 #if (ZENO_NO_WARNING)

@@ -2,13 +2,11 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/core/reflectdef.h>
-#ifdef APPLY_REFLECTION_GEN
 #include "zeno_types/reflect/reflection.generated.hpp"
-#endif
 
 namespace zeno
 {
-    struct ZRECORD() TestReflectNode : zeno::INode
+    struct ZDEFNODE() TestReflectNode : zeno::INode
     {
         TestReflectNode() = default;
 
@@ -43,18 +41,20 @@ namespace zeno
         zeno::vec3f outvec;
     };
 
-    struct ZRECORD() SimpleReflect : zeno::INode
+    struct ZDEFNODE(DisplayName = "IsImplNode") SimpleReflect : zeno::INode
     {
         SimpleReflect() = default;
 
         std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf = "abc", zeno::vec3f c = zeno::vec3f({ 0,1,0 })/*, float& ret1, std::shared_ptr<zeno::IObject>&output_obj*/) {
             //ret1 = 8;
             zeno::reflect::Any vec = zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f({ 0.,1.0,2. }));
+            zeno::reflect::any_cast<zeno::vec3f>(vec);
+            vec.type();
             return "";
         }
     };
 
-    struct ZRECORD() ReadOnlyNode : zeno::INode
+    struct ZDEFNODE() ReadOnlyNode : zeno::INode
     {
         ReflectCustomUI m_uilayout = {
             _ObjectGroup {
@@ -101,4 +101,11 @@ namespace zeno
             return input_obj;
         }
     };
+
+    struct ZDEFNODE() ReadOnlyNode2 : ReadOnlyNode
+    {
+
+    };
 }
+
+REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(INode, INode)

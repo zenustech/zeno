@@ -60,4 +60,9 @@ namespace zeno {
         //TODO
         std::vector<zeno::vec3f> colors;
     };
+
+    struct ZPRIMITIVE() HeatmapData2 {
+        //TODO
+        std::vector<zeno::vec3f> colors;
+    };
 }

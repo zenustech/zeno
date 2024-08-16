@@ -31,6 +31,7 @@
 #include <reflect/container/arraylist>
 #include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
+#include "zeno_nodes/reflect/reflection.generated.hpp"
 
 
 using namespace zeno::reflect;
@@ -875,20 +876,42 @@ void Session::initNodeCates() {
     }
 }
 
+static bool isBasedINode(const size_t hash) {
+    if (hash == zeno::types::gParamType_INode)
+        return true;
+
+    auto& registry = zeno::reflect::ReflectionRegistry::get();
+    auto typeHdl = registry->get(hash);
+    const ArrayList<TypeHandle>& baseclasses = typeHdl->get_base_classes();
+    for (auto& _typeHdl : baseclasses) {
+        if (isBasedINode(_typeHdl.type_hash()))
+            return true;
+    }
+    return false;
+}
+
+
 void Session::initReflectNodes() {
     auto& registry = zeno::reflect::ReflectionRegistry::get();
     for (zeno::reflect::TypeBase* type : registry->all()) {
-        //TODO: 判断type的基类是不是基于INode
         const zeno::reflect::ReflectedTypeInfo& info = type->get_info();
         zeno::reflect::ITypeConstructor* ctor = type->get_constructor_or_null({});
-        assert(ctor);
+        const ArrayList<TypeHandle>& baseclasses = type->get_base_classes();
 
-        defNodeReflectClass([=]()->std::shared_ptr<INode> {
-            INode* pNewNode = static_cast<INode*>(ctor->new_instance());
-            pNewNode->initTypeBase(type);
-            std::shared_ptr<INode> spNode(pNewNode);
-            return spNode;
-        }, type);
+        //多重继承的情况需要检测
+        auto hash = type->type_hash();
+        if (isBasedINode(hash)) {
+            assert(ctor);
+            defNodeReflectClass([=]()->std::shared_ptr<INode> {
+                INode* pNewNode = static_cast<INode*>(ctor->new_instance());
+                pNewNode->initTypeBase(type);
+                std::shared_ptr<INode> spNode(pNewNode);
+                return spNode;
+            }, type);
+        }
+        else {
+            //自定义数据类型
+        }
     }
 }
 
