@@ -135,7 +135,7 @@ struct ReflectNodeClass : INodeClass {
                                 outputObj.name = "result";
                                 outputObj.bInput = false;
                                 outputObj.socketType = Socket_Output;
-                                outputObj.type = gParamType_sharedIObject;
+                                outputObj.type = gParamType_IObject;
                             }
                         }
                     }

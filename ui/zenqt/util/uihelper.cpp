@@ -768,7 +768,7 @@ QString UiHelper::getTypeDesc(zeno::ParamType type)
     case zeno::types::gParamType_List:      return "list";
     case zeno::types::gParamType_Dict:      return "dict";
     case zeno::types::gParamType_Heatmap:       return "color";
-    case zeno::types::gParamType_sharedIObject: return "object";
+    case zeno::types::gParamType_IObject: return "object";
     case zeno::types::gParamType_Primitive:      return "prim";
     case Param_Null:
     default:

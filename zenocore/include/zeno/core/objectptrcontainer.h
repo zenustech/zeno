@@ -56,7 +56,7 @@ namespace zeno
                 return AnyConversionMethod::AsIs;
             }
             else {
-                if (other_type.hash_code() == zeno::types::gParamType_sharedIObject)
+                if (other_type.hash_code() == zeno::types::gParamType_IObject)
                     return AnyConversionMethod::AsIs;
                 return AnyConversionMethod::Impossible;
             }

@@ -6,6 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <reflect/core.hpp>
 
 namespace zeno {
     struct HeatmapObject : IObjectClone<HeatmapObject> {

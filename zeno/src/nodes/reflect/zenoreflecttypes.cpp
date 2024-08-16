@@ -11,6 +11,12 @@
 #include <vector>
 #include <memory>
 
+/*
+这里是直接将已定义的类型或者内置类型，直接注册反射类型，如果需要定义颜色，可以到ui\zenqt\style\colormanager.cpp上登记
+
+还有一种定义自定义primitive类型的方式是在一个单独的文件里定义反射类，参考HeatmapObject.h里的HeatmapData2，
+但这种方式的缺点是不会生成枚举值的hashcode，比如gParamType_Heatmap2这种，好处是可以统一定义颜色等属性。
+*/
 
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(bool, Bool)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(int, Int)
@@ -32,15 +38,13 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<float>, FloatList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::CurvesData, Curve)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::BCurveObject, BCurve)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::HeatmapData, Heatmap)
+
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::ReflectCustomUI, ReflectCustomUI)
 
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::PrimitiveObject>, Primitive)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::CameraObject>, Camera)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::LightObject>, Light)
-
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::IObject>, sharedIObject)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<const zeno::IObject>, constIObject)
-
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::ListObject>, List)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::shared_ptr<zeno::DictObject>, Dict)
-REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::unique_ptr<zeno::IObject>, uniqueIObject)
+//由于对象类型必须用shared_ptr包着，所以只能用这种做法定义（继承shared_ptr<T>的情况没考虑，而且反射起来可能有坑）
+REFLECT_REGISTER_OBJECT(zeno::PrimitiveObject, Primitive)
+REFLECT_REGISTER_OBJECT(zeno::CameraObject, Camera)
+REFLECT_REGISTER_OBJECT(zeno::LightObject, Light)
+REFLECT_REGISTER_OBJECT(zeno::IObject, IObject)
+REFLECT_REGISTER_OBJECT(zeno::ListObject, List)
+REFLECT_REGISTER_OBJECT(zeno::DictObject, Dict)
