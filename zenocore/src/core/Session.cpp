@@ -672,7 +672,8 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.type = type;
             if (param_desc.socketType != zeno::NoSocket)
                 param.socketType = param_desc.socketType;
-            param.socketType = Socket_Output;
+            //if (param.socketType != zeno::Socket_WildCard)
+                param.socketType = Socket_Output;
             param.bInput = false;
             param.prop = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;

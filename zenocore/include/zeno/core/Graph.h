@@ -139,6 +139,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
+    void updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
     bool isLinkValid(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;

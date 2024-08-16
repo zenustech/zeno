@@ -90,6 +90,9 @@ namespace zeno {
                 return gParamType_IObject;
             }
         }
+        else if (type == "null") {
+            return Param_Null;
+        }
         else if (type == "paramWildcard") {
             return Param_Wildcard;
         } else if (type == "objWildcard") {
@@ -175,7 +178,7 @@ namespace zeno {
     {
         switch (type)
         {
-        case Param_Null:    return "";
+        case Param_Null:    return "null";
         case Param_Wildcard:    return "paramWildcard";
         case Obj_Wildcard:      return "objWildcard";
         case gParamType_Bool:    return "bool";

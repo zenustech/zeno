@@ -206,10 +206,10 @@ QString ZenoSocketItem::netLabel() const
 
 void ZenoSocketItem::onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (!roles.empty() && roles[0] == ROLE_PARAM_SOCKET_CLR) {
+    if (!roles.empty() && roles[0] == ROLE_PARAM_TYPE) {
         if (m_paramIdx.data(ROLE_PARAM_NAME).toString() == topLeft.data(ROLE_PARAM_NAME).toString()) {
-            m_brushOn = topLeft.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
-            m_brush = topLeft.data(ROLE_PARAM_SOCKET_CLR).value<QColor>();
+            m_color = ZColorManager::getColorByType(topLeft.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+            setBrush(m_color, m_color);
             update();
         }
     }

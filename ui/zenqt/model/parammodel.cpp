@@ -17,7 +17,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     , m_customParamsM(nullptr)
 {
     initParamItems();
-    initCustomUI(spNode->get_customui());
+    initCustomUI(spNode->export_customui());
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
     cbUpdateParam = spNode->register_update_param(

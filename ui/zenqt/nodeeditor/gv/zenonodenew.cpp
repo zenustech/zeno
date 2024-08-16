@@ -491,6 +491,10 @@ void ZenoNodeNew::addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QM
     pSocketLayout->addItem(socket);
     pSocketLayout->addSpacing(16);
 
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS))) {
+        QObject::connect(paramsM, &QStandardItemModel::dataChanged, socket, &ZenoSocketItem::onCustomParamDataChanged);
+    }
+
     QObject::connect(socket, &ZenoSocketItem::clicked, [=](bool bInput) {
         emit socketClicked(socket);
     });

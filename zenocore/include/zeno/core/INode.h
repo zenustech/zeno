@@ -91,7 +91,7 @@ public:
     ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
-    ZENO_API bool update_param_type(const std::string& name, bool bPrim, ParamType type);
+    ZENO_API bool update_param_type(const std::string& name, bool bPrim, bool bInput, ParamType type);
     CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
 
     ZENO_API bool update_param_control(const std::string& name, ParamControl control);
@@ -140,8 +140,9 @@ public:
     bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
     bool removeLink(bool bInput, const EdgeInfo& edge);
     void mark_dirty_objs();
-    std::vector<std::string> getWildCardParams(const std::string& name, bool bPrim);
+    std::vector<std::pair<std::string, bool>> getWildCardParams(const std::string& name, bool bPrim);
     void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
+    void getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType);
 
 protected:
     ZENO_API virtual void complete();

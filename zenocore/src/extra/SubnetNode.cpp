@@ -67,7 +67,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             for (const auto& [param, _] : params) {     //创建Subinput时,更新Subinput的port接口类型
                 if (auto paramPrim = std::get_if<ParamPrimitive>(&param)) {
                     if (name == paramPrim->name) {
-                        newNode->update_param_type("port", true, paramPrim->type);
+                        newNode->update_param_type("port", true, false, paramPrim->type);
                         break;
                     }
                 }
@@ -94,6 +94,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 zeno::ParamPrimitive primitive;
                 primitive.bInput = true;
                 primitive.name = "port";
+                primitive.type = Param_Wildcard;
                 primitive.socketType = Socket_WildCard;
                 newNode->add_input_prim_param(primitive);
         }
@@ -101,7 +102,8 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 zeno::ParamObject paramObj;
                 paramObj.bInput = true;
                 paramObj.name = "port";
-                paramObj.socketType = zeno::Socket_ReadOnly;
+                paramObj.type = Obj_Wildcard;
+                paramObj.socketType = zeno::Socket_WildCard;
                 newNode->add_input_obj_param(paramObj);
             }
             params_change_info changes;
