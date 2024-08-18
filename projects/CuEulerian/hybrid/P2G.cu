@@ -368,15 +368,15 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                         /* inputs: */
                                         {"ZSParticles",
                                          "SparseGrid",
-                                         {"string", "ParticleAttribute", ""},
-                                         {"string", "GridAttribute"},
+                                         {gParamType_String, "ParticleAttribute", ""},
+                                         {gParamType_String, "GridAttribute"},
                                          {"enum replace-all replace-local accumulate", "OpType", "replace-all"},
                                          {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
-                                         {"bool", "staggered", "0"},
-                                         {"bool", "initialize", "1"},
-                                         {"bool", "normalize", "1"},
-                                         {"bool", "activateBlock", "0"},
-                                         {"bool", "activateMultiGrid", "0"}},
+                                         {gParamType_Bool, "staggered", "0"},
+                                         {gParamType_Bool, "initialize", "1"},
+                                         {gParamType_Bool, "normalize", "1"},
+                                         {gParamType_Bool, "activateBlock", "0"},
+                                         {gParamType_Bool, "activateMultiGrid", "0"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */

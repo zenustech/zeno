@@ -10,8 +10,8 @@ struct FLIPSimTemplate : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPSimTemplate, {
-    {{"", "Velocity", ""}, {"", "Collision", ""}, {"", "PostAdvVel", ""}, {"", "Pressure", ""}, {"", "CollisionVel", ""}, {"", "DynEmitter", ""}, {"", "ifEmit", ""}, {"", "Particles", ""}, {"", "VelocityWeights", ""}, {"", "dx", ""}, {"", "ExtractedLiquidSDF", ""}, {"", "Gravity", ""}, {"", "CellFWeight", ""}, {"", "Divergence", ""}, {"", "LiquidSDF", ""}, {"", "dt", ""}, {"", "DynEmitterVelVolume", ""}, {"", "DynEmitterVelInit", ""}},
-    {{"", "Particles", ""}},
+    {{gParamType_VDBGrid, "Velocity", ""}, {gParamType_VDBGrid, "Collision", ""}, {gParamType_Unknown, "PostAdvVel", ""}, {gParamType_Unknown, "Pressure", ""}, {gParamType_Unknown, "CollisionVel", ""}, {gParamType_Unknown, "DynEmitter", ""}, {gParamType_Unknown, "ifEmit", ""}, {gParamType_Particles, "Particles", ""}, {gParamType_VDBGrid, "VelocityWeights", ""}, {gParamType_Float, "dx", ""}, {gParamType_VDBGrid, "ExtractedLiquidSDF", ""}, {gParamType_Unknown, "Gravity", ""}, {gParamType_Unknown, "CellFWeight", ""}, {gParamType_Unknown, "Divergence", ""}, {gParamType_Unknown, "LiquidSDF", ""}, {gParamType_Unknown, "dt", ""}, {gParamType_Unknown, "DynEmitterVelVolume", ""}, {gParamType_Unknown, "DynEmitterVelInit", ""}},
+    {{gParamType_Particles, "Particles", ""}},
     {},
     {"FLIPSolver"},
 });
@@ -23,8 +23,8 @@ struct FLIPMakeCollider : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeCollider, {
-    {{"", "StaticSDF", ""}, {"", "dynamicPrim", ""}, {"", "dx", ""}},
-    {{"", "Collider", ""}},
+    {{gParamType_VDBGrid, "StaticSDF", ""}, {gParamType_Primitive, "dynamicPrim", ""}, {gParamType_Float, "dx", ""}},
+    {{gParamType_Unknown, "Collider", ""}},
     {},
     {"FLIP"},
 });
@@ -36,8 +36,8 @@ struct FLIPMakeParticles : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeParticles, {
-    {{"", "TankSDF", ""}, {"", "dx", ""}},
-    {{"", "Particles", ""}},
+    {{gParamType_VDBGrid, "TankSDF", ""}, {gParamType_Float, "dx", ""}},
+    {{gParamType_Particles, "Particles", ""}},
     {},
     {"FLIP"},
 });
@@ -49,8 +49,8 @@ struct MakeFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(MakeFLIPWorld, {
-    {{"", "dx", ""}},
-    {{"", "World", ""}},
+    {{gParamType_Float, "dx", ""}},
+    {{gParamType_VDBGrid, "World", ""}},
     {},
     {"FLIP"},
 });
@@ -62,8 +62,8 @@ struct SubstepFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(SubstepFLIPWorld, {
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "gravity", ""}, {"", "Collider", ""}, {"", "dt", ""}, {"", "Emitter", ""}, {"", "Absorber", ""}},
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "LiquidSDF", ""}},
+    {{gParamType_VDBGrid, "World", ""}, {gParamType_Particles, "Particles", ""}, {gParamType_Unknown, "gravity", ""}, {gParamType_Unknown, "Collider", ""}, {gParamType_Float, "dt", ""}, {gParamType_Unknown, "Emitter", ""}, {gParamType_Unknown, "Absorber", ""}},
+    {{gParamType_VDBGrid, "World", ""}, {gParamType_Particles, "Particles", ""}, {gParamType_Unknown, "LiquidSDF", ""}},
     {},
     {"FLIP"},
 });
@@ -75,7 +75,7 @@ struct SmoothLiquidSDF : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(SmoothLiquidSDF, {
-    {{"", "inParticles", ""}, {"", "Dx", "0.04"}, {"", "DxScale", ""}, {"", "voxelScale", ""}, {"", "dropletScale", ""}, {"", "influenceScale", ""}},
+    {{gParamType_Particles, "inParticles", ""}, {gParamType_Float, "Dx", "0.04"}, {gParamType_Unknown, "DxScale", ""}, {gParamType_Unknown, "voxelScale", ""}, {gParamType_Unknown, "dropletScale", ""}, {gParamType_Unknown, "influenceScale", ""}},
     {{"VDBGrid", "inoutSDF"}},
     {},
     {"FLIP"},
@@ -88,8 +88,8 @@ struct StepFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(StepFLIPWorld, {
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "Environ", ""}, {"", "gravity", ""}, {"", "dt", ""}, {"", "min_scale", ""}, {"", "dt_scale", ""}},
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "LiquidSDF", ""}},
+    {{gParamType_VDBGrid, "World", ""}, {gParamType_Particles, "Particles", ""}, {gParamType_Unknown, "Environ", ""}, {gParamType_Unknown, "gravity", ""}, {gParamType_Float, "dt", ""}, {gParamType_Unknown, "min_scale", ""}, {gParamType_Unknown, "dt_scale", ""}},
+    {{gParamType_VDBGrid, "World", ""}, {gParamType_Particles, "Particles", ""}, {gParamType_VDBGrid, "LiquidSDF", ""}},
     {},
     {"FLIP"},
 });
@@ -101,8 +101,8 @@ struct FLIPMakeEmitter : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeEmitter, {
-    {{"", "EmitSDF", ""}, {"", "VelGrid", ""}, {"", "isEnabled", ""}, {"", "VelInit", ""}},
-    {{"", "Emitter", ""}},
+    {{gParamType_Unknown, "EmitSDF", ""}, {gParamType_Unknown, "VelGrid", ""}, {gParamType_Unknown, "isEnabled", ""}, {gParamType_Unknown, "VelInit", ""}},
+    {{gParamType_Unknown, "Emitter", ""}},
     {},
     {"FLIP"},
 });
@@ -114,8 +114,8 @@ struct FLIPMakeEnviron : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeEnviron, {
-    {{"", "Collider", ""}, {"", "Emitter", ""}, {"", "Absorber", ""}},
-    {{"", "Environ", ""}},
+    {{gParamType_Unknown, "Collider", ""}, {gParamType_Unknown, "Emitter", ""}, {gParamType_Unknown, "Absorber", ""}},
+    {{gParamType_Unknown, "Environ", ""}},
     {},
     {"FLIP"},
 });
@@ -127,8 +127,8 @@ struct FLIPMakeAbsorber : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeAbsorber, {
-    {{"", "AbsorbSDF", ""}, {"", "isEnabled", ""}},
-    {{"", "Absorber", ""}},
+    {{gParamType_Unknown, "AbsorbSDF", ""}, {gParamType_Unknown, "isEnabled", ""}},
+    {{gParamType_Unknown, "Absorber", ""}},
     {},
     {"FLIP"},
 });
@@ -140,8 +140,8 @@ struct FLIPGetEnvironArgs : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPGetEnvironArgs, {
-    {{"", "environArgs", ""}},
-    {{"", "dt", ""}, {"", "portion", ""}},
+    {{gParamType_Unknown, "environArgs", ""}},
+    {{gParamType_Unknown, "dt", ""}, {gParamType_Unknown, "portion", ""}},
     {},
     {"FLIP"},
 });

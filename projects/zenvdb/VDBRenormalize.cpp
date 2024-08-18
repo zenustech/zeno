@@ -45,8 +45,8 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      {"VDBGrid", "inoutSDF"}
      }, /* params: */ {
          {"enum 1oUpwind", "method", "1oUpwind"},
-         {"int", "iterations", "4"},
-         {"int", "dilateIters", "0"},
+         {gParamType_Int, "iterations", "4"},
+         {gParamType_Int, "dilateIters", "0"},
      }, /* category: */ {
      "openvdb",
      }});
@@ -96,8 +96,8 @@ ZENO_DEFNODE(VDBSmooth)(
     {"VDBGrid", "inoutVDB", "", zeno::Socket_ReadOnly},
     {"VDBGrid", "MaskGrid", "", zeno::Socket_ReadOnly},
     {"enum Mean Gaussian Median", "type", "Gaussian"},
-    {"int", "width", "1"},
-    {"int", "iterations", "1"},
+    {gParamType_Int, "width", "1"},
+    {gParamType_Int, "iterations", "1"},
     }, /* outputs: */ {
         {"VDBGrid", "inoutVDB"},
     }, /* params: */ {
@@ -125,9 +125,9 @@ static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
      }, /* outputs: */ {
      {"VDBGrid", "inoutSDF"},
      }, /* params: */ {
-         {"int", "width", "1"},
-         {"int", "iterations", "1"},
-         {"string", "DEPRECATED", "Use VDBSmooth Instead"},
+         {gParamType_Int, "width", "1"},
+         {gParamType_Int, "iterations", "1"},
+         {gParamType_String, "DEPRECATED", "Use VDBSmooth Instead"},
      }, /* category: */ {
      "deprecated",
      }});
@@ -146,7 +146,7 @@ struct  VDBDilateTopo : zeno::INode {
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
      {"VDBGrid", "inField", "", zeno::Socket_ReadOnly},
-     {"int", "layers",}
+     {gParamType_Int, "layers",}
      }, /* outputs: */ {
          {"VDBGrid", "oField"}
      }, /* params: */ {
@@ -174,7 +174,7 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     {"VDBGrid", "inoutSDF"}, {"float", "depth"},
+     {"VDBGrid", "inoutSDF"}, {gParamType_Float, "depth"},
      }, /* outputs: */ {
        {"VDBGrid", "inoutSDF"}
      }, /* params: */ {

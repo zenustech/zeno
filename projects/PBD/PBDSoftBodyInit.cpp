@@ -92,7 +92,7 @@ public:
 };
 
 ZENDEFNODE(PBDSoftBodyInit, {// inputs:
-                 {"prim"},
+                 {gParamType_Primitive, "prim"},
                  // outputs:
                 {"outPrim"},
                  // params:

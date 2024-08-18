@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/ParticlesObject.h>
 #include <omp.h>
 //#include <tl/function_ref.hpp>

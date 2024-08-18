@@ -188,18 +188,18 @@ struct PrimDuplicate : INode {
 
 ZENDEFNODE(PrimDuplicate, {
     {
-    {"PrimitiveObject", "parsPrim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "meshPrim", "", zeno::Socket_ReadOnly},
-    {"string", "dirAttr", ""},
-    {"string", "tanAttr", ""},
-    {"string", "radAttr", ""},
+    {gParamType_Primitive, "parsPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "meshPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "dirAttr", ""},
+    {gParamType_String, "tanAttr", ""},
+    {gParamType_String, "radAttr", ""},
     {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
-    {"float", "radius", "1"},
-    {"bool", "copyParsAttr", "1"},
-    {"bool", "copyMeshAttr", "1"},
+    {gParamType_Float, "radius", "1"},
+    {gParamType_Bool, "copyParsAttr", "1"},
+    {gParamType_Bool, "copyMeshAttr", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -237,18 +237,18 @@ struct PrimDuplicateConnLines : INode {
 
 ZENDEFNODE(PrimDuplicateConnLines, {
     {
-    {"PrimitiveObject", "parsPrim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "meshPrim", "", zeno::Socket_ReadOnly},
-    {"string", "dirAttr", ""},
-    {"string", "tanAttr", ""},
-    {"string", "radAttr", ""},
+    {gParamType_Primitive, "parsPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "meshPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "dirAttr", ""},
+    {gParamType_String, "tanAttr", ""},
+    {gParamType_String, "radAttr", ""},
     {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
-    {"float", "radius", "1"},
-    {"bool", "copyParsAttr", "1"},
-    {"bool", "copyMeshAttr", "1"},
+    {gParamType_Float, "radius", "1"},
+    {gParamType_Bool, "copyParsAttr", "1"},
+    {gParamType_Bool, "copyMeshAttr", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

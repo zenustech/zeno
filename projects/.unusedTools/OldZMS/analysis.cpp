@@ -53,8 +53,8 @@ struct KineticEnergy: zeno::INode {
 
 static int defKineticEnergy = zeno::defNodeClass<KineticEnergy>("KineticEnergy",
     { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
     "kinetic energy",
     }, /* params: */ {
     }, /* category: */ {

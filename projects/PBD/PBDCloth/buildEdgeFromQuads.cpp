@@ -55,7 +55,7 @@ struct buildEdgeFromQuads : zeno::INode {
 
 ZENDEFNODE(
     buildEdgeFromQuads,{
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"outPrim"},
         {},
         {"PBD"}

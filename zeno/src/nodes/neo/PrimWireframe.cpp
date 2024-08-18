@@ -139,12 +139,12 @@ struct PrimEdgeBound : INode {
 
 ZENDEFNODE(PrimEdgeBound, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"bool", "removeFaces", "1"},
-    {"bool", "killDeadVerts", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Bool, "removeFaces", "1"},
+    {gParamType_Bool, "killDeadVerts", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -161,11 +161,11 @@ struct PrimWireframe : INode {
 
 ZENDEFNODE(PrimWireframe, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"bool", "removeFaces", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Bool, "removeFaces", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -182,13 +182,13 @@ struct PrimitiveWireframe : INode {
 
 ZENDEFNODE(PrimitiveWireframe, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
-    {"bool", "removeFaces", "1"},
+    {gParamType_Bool, "removeFaces", "1"},
     },
     {"deprecated"},
 });

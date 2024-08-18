@@ -126,7 +126,7 @@ struct ZSLevelSetBinaryOperator : INode {
 
 ZENDEFNODE(ZSLevelSetBinaryOperator,
            {
-               {"ZSFieldA", "ZSFieldB", {"float", "a", "1"}, {"float", "b", "1"}},
+               {"ZSFieldA", "ZSFieldB", {gParamType_Float, "a", "1"}, {gParamType_Float, "b", "1"}},
                {"ZSFieldA"},
                {{"enum aX_plus_bY aX_minus_bY aX_mul_bY aX_div_bY", "operator", "aX_plus_bY"}},
                {"Volume"},
@@ -226,7 +226,7 @@ struct ResampleZSLevelSet : INode {
 };
 
 ZENDEFNODE(ResampleZSLevelSet, {
-                                   {"ZSField", "RefZSField", {"string", "property", "sdf"}},
+                                   {"ZSField", "RefZSField", {gParamType_String, "property", "sdf"}},
                                    {"ZSField"},
                                    {},
                                    {"Volume"},
@@ -308,7 +308,7 @@ struct AdvectZSLevelSet : INode {
 };
 
 ZENDEFNODE(AdvectZSLevelSet, {
-                                 {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
+                                 {"ZSField", "ZSVelField", {gParamType_Float, "dt", "0.1"}},
                                  {"ZSField", "nvoxels"},
                                  {},
                                  {"Volume"},
@@ -403,7 +403,7 @@ struct ClampZSLevelSet : INode {
 };
 
 ZENDEFNODE(ClampZSLevelSet, {
-                                {"ZSField", "RefZSField", "ZSVelField", {"float", "dt", "0.1"}},
+                                {"ZSField", "RefZSField", "ZSVelField", {gParamType_Float, "dt", "0.1"}},
                                 {"ZSField"},
                                 {},
                                 {"Volume"},

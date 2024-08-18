@@ -12,7 +12,7 @@
 #include "Libs/WENO.h"
 #include <omp.h>
 #include <stdio.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/StringObject.h>
@@ -231,7 +231,7 @@ struct GetDenseField : zeno::INode {
 ZENDEFNODE(GetDenseField, {
                               {"inSolverData"},
                               {"outDenseField"},
-                              {{"string", "FieldName", "p u rho"}},
+                              {{gParamType_String, "FieldName", "p u rho"}},
                               {"CompressibleFlow"},
                           });
 

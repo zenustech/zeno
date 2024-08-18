@@ -67,8 +67,8 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {{"vec3f", "translate"},  "rotation"},
-    {"trans"},
+    {{gParamType_Vec3f, "translate"},  {gParamType_Vec3f, "rotation", "", Socket_WildCard}},
+    {{gParamType_Unknown, "trans"}},
     {},
     {"Bullet"},
 });
@@ -82,7 +82,7 @@ struct BulletTransformSetBasisEuler : zeno::INode {
 };
 
 ZENDEFNODE(BulletTransformSetBasisEuler, {
-    {"trans", "eulerZYX"},
+    {{gParamType_Unknown, "trans"}, {gParamType_Vec3f, "eulerZYX"}},
     {},
     {},
     {"Bullet"}
@@ -103,8 +103,8 @@ struct BulletMakeFrameFromPivotAxis : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeFrameFromPivotAxis, {
-	{"pivot", "axis"},
-	{"frame"},
+	{{gParamType_Vec3f, "pivot"}, {gParamType_Vec3f, "axis"}},
+	{{gParamType_Unknown, "frame"}},
 	{},
 	{"Bullet"}
 });
@@ -123,8 +123,8 @@ struct BulletQuatRotate : zeno::INode {
 };
 
 ZENDEFNODE(BulletQuatRotate, {
-    {"quat", "vec3"},
-    {{"vec3f","vec3"}},
+    {{gParamType_Vec4f, "quat"}, {gParamType_Vec3f, "vec3"}},
+    {{gParamType_Vec3f,"vec3"}},
     {},
     {"Bullet"}
 });
@@ -140,8 +140,8 @@ struct BulletComposeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletComposeTransform, {
-    {"transFirst", "transSecond"},
-    {"trans"},
+    {{gParamType_Unknown, "transFirst"}, {gParamType_Unknown, "transSecond"}},
+    {{gParamType_Unknown, "trans"}},
     {},
     {"Bullet"},
 });
@@ -167,8 +167,8 @@ struct PrimitiveToBulletMesh : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveToBulletMesh, {
-    {"prim"},
-    {"mesh"},
+    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Unknown, "mesh"}},
     {},
     {"Bullet"},
 });
@@ -291,7 +291,7 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveConvexDecompositionV, {
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {"listPrim"},
     {},
     {"Bullet"},
@@ -406,14 +406,14 @@ struct PrimitiveConvexDecomposition : zeno::INode {
 ZENDEFNODE(PrimitiveConvexDecomposition, {
     {
         "prim", 
-        {"float","CompacityWeight","0.1"},
-        {"float","VolumeWeight","0.0"},
-        {"int","NClusters","2"},
-        {"int","NVerticesPerCH","100"},
-        {"float","Concavity","100.0"},
-        {"bool","AddExtraDistPoints","false"},
-        {"bool","AddNeighboursDistPoints","false"},
-        {"bool","AddFacesPoints","false"}
+        {gParamType_Float,"CompacityWeight","0.1"},
+        {gParamType_Float,"VolumeWeight","0.0"},
+        {gParamType_Int,"NClusters","2"},
+        {gParamType_Int,"NVerticesPerCH","100"},
+        {gParamType_Float,"Concavity","100.0"},
+        {gParamType_Bool,"AddExtraDistPoints","false"},
+        {gParamType_Bool,"AddNeighboursDistPoints","false"},
+        {gParamType_Bool,"AddFacesPoints","false"}
 
         },
     {"listPrim"},
@@ -436,7 +436,7 @@ struct BulletMakeBoxShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeBoxShape, {
-    {{"vec3f", "semiSize", "1,1,1"}},
+    {{gParamType_Vec3f, "semiSize", "1,1,1"}},
     {"shape"},
     {},
     {"Bullet"},
@@ -452,7 +452,7 @@ struct BulletMakeSphereShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeSphereShape, {
-    {{"float", "radius", "1"}},
+    {{gParamType_Float, "radius", "1"}},
     {"shape"},
     {},
     {"Bullet"},
@@ -469,7 +469,7 @@ struct BulletMakeStaticPlaneShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeStaticPlaneShape, {
-	{"planeNormal", {"float", "planeConstant", "40"}},
+	{"planeNormal", {gParamType_Float, "planeConstant", "40"}},
 	{"shape"},
 	{},
 	{"Bullet"},
@@ -486,7 +486,7 @@ struct BulletMakeCapsuleShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeCapsuleShape, {
-	{{"float", "radius", "1"}, {"float", "height", "1"}},
+	{{gParamType_Float, "radius", "1"}, {gParamType_Float, "height", "1"}},
 	{"shape"},
 	{},
 	{"Bullet"},
@@ -608,7 +608,7 @@ struct BulletMakeGlueObjectList : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeGlueObjectList, {
-    {"glueCompShape", "trans", {"float", "mass", "0"}},
+    {"glueCompShape", "trans", {gParamType_Float, "mass", "0"}},
     {"objectList"},
     {},
     {"Bullet"},
@@ -632,7 +632,7 @@ ZENDEFNODE(BulletGlueCompoundAddChild, {
 		"compound",
 		"childShape",
 		"trans",
-        {"float", "mass"},
+        {gParamType_Float, "mass"},
 	},
 	{
 		"compound",
@@ -688,8 +688,8 @@ struct BulletColShapeCalcLocalInertia : zeno::INode {
 };
 
 ZENDEFNODE(BulletColShapeCalcLocalInertia, {
-	{"colObject", {"float", "mass", "1"}},
-    {{"vec3f","localInertia"}},
+	{"colObject", {gParamType_Float, "mass", "1"}},
+    {{gParamType_Vec3f,"localInertia"}},
 	{{"enum true false", "isCompound", "false"}},
 	{"Bullet"}
 });
@@ -774,7 +774,7 @@ convex->setMargin(btScalar(margin));
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-	{"triMesh", {"float", "margin", "0"}},
+	{"triMesh", {gParamType_Float, "margin", "0"}},
 	{"shape"},
 	{},
 	{"Bullet"},
@@ -797,7 +797,7 @@ struct BulletMakeObject : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeObject, {
-    {"shape", "trans", {"float", "mass", "0"}},
+    {"shape", "trans", {gParamType_Float, "mass", "0"}},
     {"object"},
     {},
     {"Bullet"},
@@ -815,7 +815,7 @@ struct BulletObjectSetDamping : zeno::INode {
 };
 
 ZENDEFNODE(BulletObjectSetDamping, {
-    {"object", {"float", "dampLin", "0"}, {"float", "dampAug", "0"}},
+    {"object", {gParamType_Float, "dampLin", "0"}, {gParamType_Float, "dampAug", "0"}},
     {"object"},
     {},
     {"Bullet"},
@@ -832,7 +832,7 @@ struct BulletObjectSetFriction : zeno::INode {
 };
 
 ZENDEFNODE(BulletObjectSetFriction, {
-    {"object", {"float", "friction", "0"}},
+    {"object", {gParamType_Float, "friction", "0"}},
     {"object"},
     {},
     {"Bullet"},
@@ -849,7 +849,7 @@ struct BulletObjectSetRestitution : zeno::INode {
 };
 
 ZENDEFNODE(BulletObjectSetRestitution, {
-    {"object", {"float", "restitution", "0"}},
+    {"object", {gParamType_Float, "restitution", "0"}},
     {"object"},
     {},
     {"Bullet"},
@@ -943,8 +943,8 @@ struct BulletObjectGetVel : zeno::INode {
 ZENDEFNODE(BulletObjectGetVel, {
     {"object"},
     {
-        {"vec3f","linearVel"},
-        {"vec3f","angularVel"}
+        {gParamType_Vec3f,"linearVel"},
+        {gParamType_Vec3f,"angularVel"}
     },
     {},
     {"Bullet"},
@@ -969,8 +969,8 @@ ZENDEFNODE(BulletObjectGetVel, {
 //};
 //
 //ZENDEFNODE(RigidVelToPrimitive, {
-//    {"prim", "centroid", "linearVel", "angularVel"},
-//    {"prim"},
+//    {gParamType_Primitive, "centroid", "linearVel", "angularVel"},
+//    {gParamType_Primitive, "prim"},
 //    {},
 //    {"Bullet"},
 //});
@@ -989,7 +989,7 @@ struct BulletExtractTransform : zeno::INode {
 
 ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
-    {{"vec3f","origin"}, {"vec4f", "rotation"}},
+    {{gParamType_Vec3f,"origin"}, {gParamType_Vec4f, "rotation"}},
     {},
     {"Bullet"},
 });
@@ -1070,7 +1070,7 @@ struct BulletMakeConstraint : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConstraint, {
-    {"obj1", "obj2", {"int", "iternum", "100"}},
+    {"obj1", "obj2", {gParamType_Int, "iternum", "100"}},
     {"constraint"},
     {{"enum ConeTwist Fixed Gear Generic6Dof Generic6DofSpring Generic6DofSpring2 Hinge Hinge2 Point2Point Slider Universal", "constraintType", "Fixed"}},
     {"Bullet"},
@@ -1089,8 +1089,8 @@ struct BulletConstraintDisplay: zeno::INode{
 };
 
 ZENDEFNODE(BulletConstraintDisplay, {
-    {"prim", "nlist"},
-    {"prim"},
+    {gParamType_Primitive, "nlist"},
+    {gParamType_Primitive, "prim"},
     {},
     {"Bullet"},
 });
@@ -1105,7 +1105,7 @@ struct BulletConstraintSetBreakThres : zeno::INode {
 };
 
 ZENDEFNODE(BulletConstraintSetBreakThres, {
-    {"constraint", {"float", "threshold", "3.0"}},
+    {"constraint", {gParamType_Float, "threshold", "3.0"}},
     {"constraint"},
     {},
     {"Bullet"},
@@ -1416,7 +1416,7 @@ struct BulletConstraintSetSpring : zeno::INode {
 };
 
 ZENDEFNODE(BulletConstraintSetSpring , {
-    {"constraint", {"bool", "enable", "true"}, "stiffness", "damping", "equilibriumPointVal"},
+    {"constraint", {gParamType_Bool, "enable", "true"}, "stiffness", "damping", "equilibriumPointVal"},
     {"constraint"},
     {{"enum Fixed Generic6DofSpring Generic6DofSpring2 Hinge2", "constraintType", "Fixed"}, {"enum linearX linearY linearZ angularX angularY angularZ", "axisId", "linearX"}},
     {"Bullet"},
@@ -1493,7 +1493,7 @@ struct BulletConstraintSetMotor : zeno::INode {
 };
 
 ZENDEFNODE(BulletConstraintSetMotor , {
-    {"constraint", {"float","bounce","0"}, {"bool", "enableMotor", "1"}, {"bool","enableServo","1"}, {"float", "maxMotorForce", "0"}, {"float","servoTarget","0"}, {"float", "targetVelocity", "0"}, {"float","maxMotorImpulse","0"}, {"float","maxMotorImpulseNormalized","0"}, {"vec4f","motorTarget","0,0,0,1"}, {"vec4f","motorTargetConstraint","0,0,0,1"}, {"float","angularOnly","1"}, {"float","fixThresh","0"}, {"float","dt","0"}},
+    {"constraint", {gParamType_Float,"bounce","0"}, {gParamType_Bool, "enableMotor", "1"}, {gParamType_Bool,"enableServo","1"}, {gParamType_Float, "maxMotorForce", "0"}, {gParamType_Float,"servoTarget","0"}, {gParamType_Float, "targetVelocity", "0"}, {gParamType_Float,"maxMotorImpulse","0"}, {gParamType_Float,"maxMotorImpulseNormalized","0"}, {gParamType_Vec4f,"motorTarget","0,0,0,1"}, {gParamType_Vec4f,"motorTargetConstraint","0,0,0,1"}, {gParamType_Float,"angularOnly","1"}, {gParamType_Float,"fixThresh","0"}, {gParamType_Float,"dt","0"}},
     {"constraint"},
     {{"enum ConeTwist Generic6Dof Generic6DofSpring2 Hinge Hinge2", "constraintType", "ConeTwist"}, {"enum linearX linearY linearZ angularX angularY angularZ", "axisId", "linearX"}},
     {"Bullet"},
@@ -1553,7 +1553,7 @@ struct BulletGearConstraintSetRatio : zeno::INode {
 };
 
 ZENDEFNODE(BulletGearConstraintSetRatio, {
-    {"constraint", {"float", "ratio", "1"}},
+    {"constraint", {gParamType_Float, "ratio", "1"}},
     {"constraint"},
     {},
     {"Bullet"},
@@ -1654,7 +1654,7 @@ struct BulletWorldSetGravity : zeno::INode {
 };
 
 ZENDEFNODE(BulletWorldSetGravity, {
-                                      {"world", {"vec3f", "gravity", "0,0,-9.8"}},
+                                      {"world", {gParamType_Vec3f, "gravity", "0,0,-9.8"}},
                                       {"world"},
                                       {},
                                       {"Bullet"},
@@ -1671,7 +1671,7 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-                                {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
+                                {"world", {gParamType_Float, "dt", "0.04"}, {gParamType_Int, "steps", "1"}},
                                 {"world"},
                                 {},
                                 {"Bullet"},
@@ -1785,7 +1785,7 @@ struct BulletObjectApplyForce:zeno::INode {
 };
 
 ZENDEFNODE(BulletObjectApplyForce, {
-                                       {"object", {"vec3f", "ForceImpulse", "0,0,0"}, {"vec3f", "TorqueImpulse", "0,0,0"}},
+                                       {"object", {gParamType_Vec3f, "ForceImpulse", "0,0,0"}, {gParamType_Vec3f, "TorqueImpulse", "0,0,0"}},
                                        {},
                                        {},
                                        {"Bullet"},
@@ -1814,7 +1814,7 @@ struct BulletMultiBodyObjectMakeStart : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyObjectMakeStart, {
-	{"nLinks", {"float", "mass", "0"}, "inertia"},
+	{"nLinks", {gParamType_Float, "mass", "0"}, "inertia"},
 	{"object"},
 	{{"enum true false", "fixedBase", "true"}, {"enum true false", "canSleep", "true"}},
 	{"Bullet"}
@@ -1931,7 +1931,7 @@ struct BulletMultiBodySetJointProperty : zeno::INode{
 };
 
 ZENDEFNODE(BulletMultiBodySetJointProperty, {
-	{"object", {"int", "linkIndex", "0"}, "damping", "friction", "lowerLimit", "upperLimit", "maxForce", "maxVelocity"},
+	{"object", {gParamType_Int, "linkIndex", "0"}, "damping", "friction", "lowerLimit", "upperLimit", "maxForce", "maxVelocity"},
 	{"object"},
 	{},
 	{"Bullet"}
@@ -2055,7 +2055,7 @@ struct BulletMultiBodySetProperty : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetProperty, {
-	{"object", {"float", "linearDamp", "0"}, {"float", "angularDamp", "0"}},
+	{"object", {gParamType_Float, "linearDamp", "0"}, {gParamType_Float, "angularDamp", "0"}},
 	{"object"},
 	{{"enum true false", "canSleep", "false"},
 		{"enum true false", "selfCollide", "false"},
@@ -2179,7 +2179,7 @@ struct BulletMultiBodySetJointPosMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointPosMultiDof, {
-	{"object", {"int", "startIndex", "0"}, "pos"},
+	{"object", {gParamType_Int, "startIndex", "0"}, "pos"},
 	{"object"},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},
@@ -2205,7 +2205,7 @@ struct BulletMultiBodySetJointVelMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointVelMultiDof, {
-	{"object", {"int", "startIndex", "0"}, "pos"},
+	{"object", {gParamType_Int, "startIndex", "0"}, "pos"},
 	{"object"},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},
@@ -2285,7 +2285,7 @@ struct BulletMultiBodyPDControl : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyPDControl, {
-	{"object", {"float", "kp", "100"}, {"float", "kd", "20"}, {"float", "maxForce", "100"}, "qDesiredList", "dqDesiredList"},
+	{"object", {gParamType_Float, "kp", "100"}, {gParamType_Float, "kd", "20"}, {gParamType_Float, "maxForce", "100"}, "qDesiredList", "dqDesiredList"},
 	{},
 	{},
 	{"Bullet"},
@@ -2319,7 +2319,7 @@ struct BulletMultiBodyWorldSetGravity : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyWorldSetGravity, {
-	{"world", {"vec3f", "gravity", "0,0,-9.8"}},
+	{"world", {gParamType_Vec3f, "gravity", "0,0,-9.8"}},
 	{"world"},
 	{},
 	{"Bullet"},
@@ -2338,7 +2338,7 @@ struct BulletStepMultiBodyWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepMultiBodyWorld, {
-	{"world", {"float", "dt", "0.04"}, {"int", "maxSubSteps", "1"}, {"float", "fixedTimeStep", "0.0042"}},
+	{"world", {gParamType_Float, "dt", "0.04"}, {gParamType_Int, "maxSubSteps", "1"}, {gParamType_Float, "fixedTimeStep", "0.0042"}},
 	{"world"},
 	{},
 	{"Bullet"},
@@ -2859,7 +2859,7 @@ struct BulletCalcInverseKinematics : zeno::INode {
 };
 
 ZENDEFNODE(BulletCalcInverseKinematics, {
-	{"object", "gravity", "endEffectorLinkIndices", "targetPositions", "targetOrientations", {"int", "numIterations", "20"}, {"float", "residualThreshold", "0.0001"}},
+	{"object", "gravity", "endEffectorLinkIndices", "targetPositions", "targetOrientations", {gParamType_Int, "numIterations", "20"}, {gParamType_Float, "residualThreshold", "0.0001"}},
 	{"poses"},
 	{{"enum VEL_DLS_ORI_NULL VEL_SDLS_ORI VEL_DLS_ORI VEL_DLS_NULL VEL_SDLS VEL_DLS JACOB_TRANS", "IKMethod", "VEL_DLS_ORI_NULL"}},
 	{"Bullet"},
@@ -2887,7 +2887,7 @@ struct BulletMultiBodyMakeJointMotor : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodyMakeJointMotor, {
-    {"object", "linkIndex", {"int", "linkDof", "0"}, {"float", "desiredVelocity", "0"}, {"float", "maxMotorImpulse", "10.0"}},
+    {"object", "linkIndex", {gParamType_Int, "linkDof", "0"}, {gParamType_Float, "desiredVelocity", "0"}, {gParamType_Float, "maxMotorImpulse", "10.0"}},
     {"object", "world"},
     {},
     {"Bullet"}
@@ -2929,7 +2929,7 @@ struct BulletMultiBodyGetLinkForce : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetLinkForce, {
                                               {"object", "linkIndex"},
-                                              {{"vec3f","force"}},
+                                              {{gParamType_Vec3f,"force"}},
                                               {},
                                               {"Bullet"}
                                           });
@@ -2948,7 +2948,7 @@ struct BulletMultiBodyGetLinkTorque : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetLinkTorque, {
                                             {"object", "linkIndex"},
-                                            {{"vec3f","torque"}},
+                                            {{gParamType_Vec3f,"torque"}},
                                             {},
                                             {"Bullet"}
                                         });
@@ -2973,7 +2973,7 @@ struct BulletMultiBodyGetJointVelPos : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetJointVelPos, {
                                               {"object", "linkIndex"},
-                                              {{"float","vel"}, {"float","pos"}},
+                                              {{gParamType_Float,"vel"}, {gParamType_Float,"pos"}},
                                               {},
                                               {"Bullet"}
                                           });
@@ -3007,7 +3007,7 @@ struct BulletMultiBodyGetBaseTransform : zeno::INode {
 
  ZENDEFNODE(BulletMultiBodyGetBaseVelocity, {
                                                  {"object"},
-                                                 {{"vec3f","vel"}},
+                                                 {{gParamType_Vec3f,"vel"}},
                                                  {},
                                                  {"Bullet"},
                                              });
@@ -3425,7 +3425,7 @@ struct BulletMultiBodyGetNumBodies : zeno::INode {
 
 ZENDEFNODE(BulletMultiBodyGetNumBodies, {
                                                    {"world"},
-                                                   {{"int","numBodies"}},
+                                                   {{gParamType_Int,"numBodies"}},
                                                    {},
                                                    {"Bullet"},
                                                });
@@ -3440,7 +3440,7 @@ struct BulletMultiBodyGetBodyId : zeno::INode {
 };
 ZENDEFNODE(BulletMultiBodyGetBodyId, {
                                             {"object"},
-                                            {{"int","id"}},
+                                            {{gParamType_Int,"id"}},
                                             {},
                                             {"Bullet"},
                                         });
@@ -3521,7 +3521,7 @@ struct BulletGetAABB : zeno::INode {
 
 ZENDEFNODE(BulletGetAABB, {
                                                 {"object"},
-                                                {{"vec3f","aabbMin"}, {"vec3f","aabbMax"}},
+                                                {{gParamType_Vec3f,"aabbMin"}, {gParamType_Vec3f,"aabbMax"}},
                                                 {},
                                                 {"Bullet"},
                                             });

@@ -1,6 +1,6 @@
 #include <cstddef>
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
@@ -54,12 +54,12 @@ struct MeshToSDF : zeno::INode{
 
 static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        {"object", "mesh", "", zeno::Socket_ReadOnly},
-        {"float","Dx"},
+        {gParamType_Mesh, "mesh", "", zeno::Socket_ReadOnly},
+        {gParamType_Float,"Dx"},
     }, /* outputs: */ {
         {"object", "sdf"},
     }, /* params: */ {
-    {"float", "voxel_size", "0.08 0"},
+    {gParamType_Float, "voxel_size", "0.08 0"},
     {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
     "deprecated",
@@ -117,11 +117,11 @@ struct PrimitiveToSDF : zeno::INode{
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
         {"object", "PrimitiveMesh", "", zeno::Socket_ReadOnly},
-        {"float","Dx","0.08"},
+        {gParamType_Float,"Dx","0.08"},
     }, /* outputs: */ {
         {"object", "sdf"},
     }, /* params: */ {
-        //{"float", "voxel_size", "0.08 0"},
+        //{gParamType_Float, "voxel_size", "0.08 0"},
         {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
@@ -142,7 +142,7 @@ struct SDFToFog : INode
 static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
     { /* inputs: */ {
         {"VDBGrid", "SDF", "", zeno::Socket_ReadOnly},
-        {"bool", "inplace", "0"},
+        {gParamType_Bool, "inplace", "0"},
     }, /* outputs: */ {
         {"object", "oSDF"},
     }, /* params: */ {

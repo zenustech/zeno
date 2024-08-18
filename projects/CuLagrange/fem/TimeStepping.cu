@@ -105,6 +105,6 @@ struct ExplicitTimeStepping : INode {
     }
 };
 
-ZENDEFNODE(ExplicitTimeStepping, {{"ZSParticles", {"float", "dt", "0.01"}}, {"ZSParticles"}, {}, {"FEM"}});
+ZENDEFNODE(ExplicitTimeStepping, {{"ZSParticles", {gParamType_Float, "dt", "0.01"}}, {"ZSParticles"}, {}, {"FEM"}});
 
 } // namespace zeno

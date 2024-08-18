@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -55,9 +55,9 @@ struct G2PAdvectorSheet : zeno::INode {
 
 static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
     "G2PAdvectorSheetty", {/* inputs: */ {
-                               {"float", "dt"},{"float", "Dx"},
-                               {"float", "pic_min", "0.03"},
-                               {"float", "pic_max", "0.05"},
+                               {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                               {gParamType_Float, "pic_min", "0.03"},
+                               {gParamType_Float, "pic_max", "0.05"},
                                "Particles",
                                "Velocity",
                                "ViscousVelocity",
@@ -69,10 +69,10 @@ static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
                            /* outputs: */ {},
                            /* params: */
                            {
-                               {"float", "dx", "0.01 0.0"},
-                               {"int", "RK_ORDER", "1 1 4"},
-                               {"float", "pic_smoothness", "0.1 0.0 1.0"},
-                               {"int", "surface_size", "4 0 8"},
+                               {gParamType_Float, "dx", "0.01 0.0"},
+                               {gParamType_Int, "RK_ORDER", "1 1 4"},
+                               {gParamType_Float, "pic_smoothness", "0.1 0.0 1.0"},
+                               {gParamType_Int, "surface_size", "4 0 8"},
                            },
 
                            /* category: */

@@ -318,12 +318,12 @@ struct PythonScript : INode {
 };
 ZENO_DEFNODE(PythonScript)({
     {
-        {"string", "code"},
-        {"readpath", "path"},
-        {"DictObject", "args"},
+        {gParamType_String, "code"},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Dict,"args"},
     },
     {
-        {"DictObject", "rets"},
+        {gParamType_Dict,"rets"},
     },
     {},
     {"python"},

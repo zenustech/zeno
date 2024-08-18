@@ -35,7 +35,7 @@ struct USDOpenStage : zeno::INode {
 ZENDEFNODE(USDOpenStage,
            {       /* inputs: */
             {
-                {"readpath", "path"},
+                {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
             },  /* outputs: */
             {
                 "zuc"

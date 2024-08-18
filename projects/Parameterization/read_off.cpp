@@ -41,7 +41,7 @@ struct ReadOFFPrim : zeno::INode {
 
 ZENDEFNODE(ReadOFFPrim, {
     {{"readpath","path"}},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"Parameterization"},
 });

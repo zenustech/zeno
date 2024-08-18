@@ -30,17 +30,17 @@ struct ProceduralSky : INode {
 
 ZENDEFNODE(ProceduralSky, {
         {
-                {"vec2f", "sunLightDir", "-60,45"},
-                {"float", "sunLightSoftness", "1"},
-                {"float", "sunLightIntensity", "1"},
-                {"float", "colorTemperatureMix", "0"},
-                {"float", "colorTemperature", "6500"},
-                {"vec2f", "windDir", "0,0"},
-                {"float", "timeStart", "0"},
-                {"float", "timeSpeed", "0.1"},
+                {gParamType_Vec2f, "sunLightDir", "-60,45"},
+                {gParamType_Float, "sunLightSoftness", "1"},
+                {gParamType_Float, "sunLightIntensity", "1"},
+                {gParamType_Float, "colorTemperatureMix", "0"},
+                {gParamType_Float, "colorTemperature", "6500"},
+                {gParamType_Vec2f, "windDir", "0,0"},
+                {gParamType_Float, "timeStart", "0"},
+                {gParamType_Float, "timeSpeed", "0.1"},
         },
         {
-                {"prim", "ProceduralSky"},
+                {gParamType_Primitive, "ProceduralSky"},
         },
         {
         },
@@ -70,14 +70,14 @@ struct HDRSky : INode {
 
 ZENDEFNODE(HDRSky, {
     {
-        {"bool", "enable", "1"},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"float", "rotation", "0"},
-        {"vec3f", "rotation3d", "0,0,0"},
-        {"float", "strength", "1"},
+        {gParamType_Bool, "enable", "1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Float, "rotation", "0"},
+        {gParamType_Vec3f, "rotation3d", "0,0,0"},
+        {gParamType_Float, "strength", "1"},
     },
     {
-        {"prim", "HDRSky"},
+        {gParamType_Primitive, "HDRSky"},
     },
     {
     },
@@ -124,10 +124,10 @@ struct DistantLight : INode {
 
 ZENDEFNODE(DistantLight, {
     {
-        {"vec2f", "Lat-Lon", "45, 90"},
-        {"float", "angleExtent", "0.5"},
-        {"colorvec3f", "color", "1,1,1"},
-        {"float", "intensity", "1"}
+        {gParamType_Vec2f, "Lat-Lon", "45, 90"},
+        {gParamType_Float, "angleExtent", "0.5"},
+        {gParamType_Vec3f, "color", "1,1,1"},
+        {gParamType_Float, "intensity", "1"}
     },
     {
         {"object", "out"},
@@ -212,13 +212,13 @@ struct PortalLight : INode {
 
 ZENDEFNODE(PortalLight, {
     {
-        {"vec3f", "pos", "0,0,0"},
-        {"vec2f", "scale", "1, 1"},
-        {"vec3f", "rotate", "0,0,0"},
-        {"int", "size", "180"}
+        {gParamType_Vec3f, "pos", "0,0,0"},
+        {gParamType_Vec2f, "scale", "1, 1"},
+        {gParamType_Vec3f, "rotate", "0,0,0"},
+        {gParamType_Int, "size", "180"}
     },
     {
-        {"prim", "out"},
+        {gParamType_Primitive, "out"},
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
@@ -302,11 +302,11 @@ struct SkyComposer : INode {
 ZENDEFNODE(SkyComposer, {
     {
 
-        {"list", "dlights"},
-        {"list", "portals"}
+        {gParamType_List, "dlights"},
+        {gParamType_List, "portals"}
     },
     {
-        {"prim", "out"},
+        {gParamType_Primitive, "out"},
     },
     {
         {"enum SphereUnbounded", "proxy", "SphereUnbounded"},
@@ -353,10 +353,10 @@ struct Blackbody : INode {
 
 ZENDEFNODE(Blackbody, {
     {
-        {"float", "temperature", "6500"},
+        {gParamType_Float, "temperature", "6500"},
     },
     {
-        {"vec3f","color"},
+        {gParamType_Vec3f,"color"},
     },
     {
     },

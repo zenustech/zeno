@@ -98,21 +98,21 @@ struct PrimBend : zeno::INode {
 
 ZENDEFNODE(PrimBend, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    //{"vec3f", "origin", "0,0,0"},
-    {"vec3f", "tangent", "0,1,0"},
-    {"vec3f", "direction", "1,0,0"},
-    {"float", "angle", "45"},
-    {"float", "limitMin", "0"},
-    {"float", "limitMax", "1"},
-    {"float", "midPoint", "0.5"},
-    {"float", "biasDir", "0.5"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    //{gParamType_Vec3f, "origin", "0,0,0"},
+    {gParamType_Vec3f, "tangent", "0,1,0"},
+    {gParamType_Vec3f, "direction", "1,0,0"},
+    {gParamType_Float, "angle", "45"},
+    {gParamType_Float, "limitMin", "0"},
+    {gParamType_Float, "limitMax", "1"},
+    {gParamType_Float, "midPoint", "0.5"},
+    {gParamType_Float, "biasDir", "0.5"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
-    //{"bool", "useOrigin", "0"},
+    //{gParamType_Bool, "useOrigin", "0"},
     },
     {"primitive"},
 });

@@ -295,9 +295,9 @@ struct LoadGLTFModel : INode {
 
 ZENDEFNODE(LoadGLTFModel, {
     {
-        {"readpath", "path"},
-        {"bool", "cm unit", "0"},
-        {"bool", "transform", "1"},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Bool, "cm unit", "0"},
+        {gParamType_Bool, "transform", "1"},
     },
     {
         "prim"
@@ -349,12 +349,12 @@ struct ReadTile : INode {
 
 ZENDEFNODE(ReadTile, {
     {
-        {"readpath", "path"},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
         {"frame"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"alembic"},
 });

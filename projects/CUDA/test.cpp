@@ -345,7 +345,7 @@ struct ZSFileTest : INode {
 };
 
 ZENDEFNODE(ZSFileTest, {
-                           {{"string", "file", ""}},
+                           {{gParamType_String, "file", ""}},
                            {},
                            {},
                            {"ZPCTest"},

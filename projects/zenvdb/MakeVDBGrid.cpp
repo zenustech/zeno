@@ -63,16 +63,16 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {{"float","Dx","0.08"},{"float","background","0"}}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {{gParamType_Float,"Dx","0.08"},{gParamType_Float,"background","0"}}, /* outputs: */
                     {
                         "data",
                     },
                     /* params: */
                     {
-                        //{"float", "dx", "0.08"},
+                        //{gParamType_Float, "dx", "0.08"},
                         {"enum float float3 int int3 points", "type", "float"},
                         {"enum vertex Centered Staggered", "structure", "Centered"},
-                        {"string", "name", ""},
+                        {gParamType_String, "name", ""},
                     },
                     /* category: */
                     {
@@ -96,8 +96,8 @@ static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridNam
                                                                                      },
                                                                                      /* params: */
                                                                                      {
-                                                                                         //{"float", "dx", "0.08"},
-                                                                                         {"string", "name", "density"},
+                                                                                         //{gParamType_Float, "dx", "0.08"},
+                                                                                         {gParamType_String, "name", "density"},
                                                                                      },
                                                                                      /* category: */
                                                                                      {

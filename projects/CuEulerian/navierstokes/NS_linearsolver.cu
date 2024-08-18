@@ -1605,10 +1605,10 @@ ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
                                  {"NSGrid",
                                   "SolidSDF",
                                   "dt",
-                                  {"float", "Density", "1.0"},
-                                  {"float", "Tolerance", "1e-4"},
-                                  {"int", "MaxIterations", "10"},
-                                  {"bool", "hasDivergence", "0"}},
+                                  {gParamType_Float, "Density", "1.0"},
+                                  {gParamType_Float, "Tolerance", "1e-4"},
+                                  {gParamType_Int, "MaxIterations", "10"},
+                                  {gParamType_Bool, "hasDivergence", "0"}},
                                  /* outputs: */
                                  {"NSGrid"},
                                  /* params: */

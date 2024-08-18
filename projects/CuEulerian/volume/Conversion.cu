@@ -53,7 +53,7 @@ struct WriteZSLevelSetToVDBGrid : INode {
 ZENDEFNODE(WriteZSLevelSetToVDBGrid, {
                                          {
                                              {"ZSLevelSet", "vdbGrid"},
-                                             {"string", "Attr", "sdf"},
+                                             {gParamType_String, "Attr", "sdf"},
                                          },
                                          {"vdbGrid"},
                                          {},

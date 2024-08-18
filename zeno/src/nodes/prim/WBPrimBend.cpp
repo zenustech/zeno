@@ -112,17 +112,17 @@ struct WBPrimBend : INode {
 };
 ZENDEFNODE(WBPrimBend,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"int", "Limit Deformation", "1"},
-                   {"int", "Symmetric Deformation", "0"},
-                   {"float", "Bend Angle (degree)", "90"},
-                   {"vec3f", "Up Vector", "0,1,0"},
-                   {"vec3f", "Capture Origin", "0,0,0"},
-                   {"vec3f", "Capture Direction", "0,0,1"},
-                   {"float", "Capture Length", "1.0"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Int, "Limit Deformation", "1"},
+                   {gParamType_Int, "Symmetric Deformation", "0"},
+                   {gParamType_Float, "Bend Angle (degree)", "90"},
+                   {gParamType_Vec3f, "Up Vector", "0,1,0"},
+                   {gParamType_Vec3f, "Capture Origin", "0,0,0"},
+                   {gParamType_Vec3f, "Capture Direction", "0,0,1"},
+                   {gParamType_Float, "Capture Length", "1.0"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "primitive",
                }});
@@ -151,11 +151,11 @@ struct CreateCircle : INode {
 };
 ZENDEFNODE(CreateCircle,
            {  /* inputs: */ {
-                   {"int","segments","32"},
-                   {"float","r","1.0"},
+                   {gParamType_Int,"segments","32"},
+                   {gParamType_Float,"r","1.0"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "primitive",
                } });
@@ -185,10 +185,10 @@ struct ParameterizeLine : INode {
 };
 ZENDEFNODE(ParameterizeLine,
            {  /* inputs: */ {
-                {"", "prim", "", zeno::Socket_ReadOnly},
+                {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
             }, /* outputs: */ {
-                "prim",
-            }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
             }, /* category: */ {
                 "primitive",
             } });
@@ -319,13 +319,13 @@ struct LineResample : INode {
 };
 ZENDEFNODE(LineResample,
     {  /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"int", "segments", "3"},
-            {"prim", "PrimSampler"},
-            {"string", "SampleBy", "t"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Int, "segments", "3"},
+            {gParamType_Primitive, "PrimSampler"},
+            {gParamType_String, "SampleBy", "t"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         }, /* category: */ {
             "primitive",
         } });
@@ -367,13 +367,13 @@ struct CurveOrientation  : INode {
 };
 ZENDEFNODE(CurveOrientation,
            {  /* inputs: */ {
-                {"", "prim", "", zeno::Socket_ReadOnly},
-                {"string", "dirName", "dir"},
-                {"string", "tanName", "tan"},
-                {"string", "bitanName", "bitan"},
+                {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                {gParamType_String, "dirName", "dir"},
+                {gParamType_String, "tanName", "tan"},
+                {gParamType_String, "bitanName", "bitan"},
             }, /* outputs: */ {
-                "prim",
-            }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
 
             }, /* category: */ {
                 "primitive",
@@ -459,13 +459,13 @@ struct LineCarve : INode {
 };
 ZENDEFNODE(LineCarve,
     {  /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"float", "insertU", "0.15"},
-            {"bool", "cut", "0"},
-            {"bool", "cut insert to end", "1"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "insertU", "0.15"},
+            {gParamType_Bool, "cut", "0"},
+            {gParamType_Bool, "cut insert to end", "1"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
 
         }, /* category: */ {
             "primitive",
@@ -538,13 +538,13 @@ struct VisVec3Attribute : INode {
 };
 ZENDEFNODE(VisVec3Attribute,
            {  /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"string", "name", "vel"},
-                   {"bool", "normalize", "1"},
-                   {"float", "lengthScale", "1.0"},
-                   {"vec3f", "color", "1,1,0"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "name", "vel"},
+                   {gParamType_Bool, "normalize", "1"},
+                   {gParamType_Float, "lengthScale", "1.0"},
+                   {gParamType_Vec3f, "color", "1,1,0"},
                }, /* outputs: */ {
-                   {"prim", "primVis"},
+                   {gParamType_Primitive, "primVis"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -602,11 +602,11 @@ struct TracePositionOneStep : INode {
 };
 ZENDEFNODE(TracePositionOneStep,
            {  /* inputs: */ {
-                   {"prim", "primData", "", zeno::Socket_ReadOnly},
-                   {"prim", "primStart", "", zeno::Socket_ReadOnly},
-                   {"string", "lineTag", "lineID"},
+                   {gParamType_Primitive, "primData", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "primStart", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "lineTag", "lineID"},
                }, /* outputs: */ {
-                   {"prim", "primVis"},
+                   {gParamType_Primitive, "primVis"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -675,13 +675,13 @@ struct PrimCopyAttr : INode {
 };
 ZENDEFNODE(PrimCopyAttr,
            { /* inputs: */ {
-                   {"prim", "prim", "", zeno::Socket_ReadOnly},
-                   {"string", "sourceName", "s"},
-                   {"string", "targetName", "t"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "sourceName", "s"},
+                   {gParamType_String, "targetName", "t"},
                    {"enum vert tri loop poly line", "scope", "vert"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "erode",
                }});
@@ -714,11 +714,11 @@ struct BVHNearestPos : INode {
 };
 ZENDEFNODE(BVHNearestPos,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"prim", "primNei", "", zeno::Socket_ReadOnly},
-                   {"string", "bvhIdTag", "bvh_id"},
-                   {"string", "bvhWeightTag", "bvh_ws"},
-                   {"string", "bvhPosTag", "bvh_pos"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "primNei", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "bvhIdTag", "bvh_id"},
+                   {gParamType_String, "bvhWeightTag", "bvh_ws"},
+                   {gParamType_String, "bvhPosTag", "bvh_pos"},
                }, /* outputs: */ {
                    "prim"
                }, /* params: */ {
@@ -773,7 +773,7 @@ struct BVHNearestAttr : INode {
             }
         }
 
-        }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
+        }, enum_variant<std::variant<float, vec3f>>(array_index({gParamType_Float, "vec3f"}, bvhAttributesType)));
 
 
         set_output("prim", get_input("prim"));
@@ -781,11 +781,11 @@ struct BVHNearestAttr : INode {
 };
 ZENDEFNODE(BVHNearestAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"prim", "primNei", "", zeno::Socket_ReadOnly},
-                   {"string", "bvhIdTag", "bvh_id"},
-                   {"string", "bvhWeightTag", "bvh_ws"},
-                   {"string", "bvhAttrTag", "bvh_attr"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "primNei", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "bvhIdTag", "bvh_id"},
+                   {gParamType_String, "bvhWeightTag", "bvh_ws"},
+                   {gParamType_String, "bvhAttrTag", "bvh_attr"},
                    {"enum float vec3f", "bvhAttributesType", "float"},
                    {"enum tris points", "targetPrimType", "tris"},
                }, /* outputs: */ {
@@ -855,16 +855,16 @@ struct HeightStarPattern : zeno::INode {
 };
 ZENDEFNODE(HeightStarPattern,
            {/* inputs: */ {
-                   {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                   {"float", "rotate", "0"},
-                   {"float", "anglerandom", "0"},
-                   {"float", "shapesize", "0.5"},
-                   {"float", "posjitter", "0"},
-                   {"float", "sharpness", "0.5"},
-                   {"float", "starness", "0.5"},
-                   {"int", "sides", "5"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Float, "rotate", "0"},
+                   {gParamType_Float, "anglerandom", "0"},
+                   {gParamType_Float, "shapesize", "0.5"},
+                   {gParamType_Float, "posjitter", "0"},
+                   {gParamType_Float, "sharpness", "0.5"},
+                   {gParamType_Float, "starness", "0.5"},
+                   {gParamType_Int, "sides", "5"},
                }, /* outputs: */ {
-                   {"PrimitiveObject", "prim"},
+                   {gParamType_Primitive, "prim"},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",
@@ -920,22 +920,22 @@ struct PrimSetAttr : INode {
               }
             },
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+                array_index({gParamType_Float, "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
         set_output("prim", std::move(prim));
     }
 };
 ZENDEFNODE(PrimSetAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"int", "value", "0"},
-                   {"string", "name", "index"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Int, "value", "0"},
+                   {gParamType_String, "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
                    {"enum vert tri line loop poly", "method", "tri"},
-                   {"int", "index", "0"},
+                   {gParamType_Int, "index", "0"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "erode",
                }});
@@ -985,18 +985,18 @@ struct PrimGetAttr : INode {
               }
             },
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+                array_index({gParamType_Float, "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
         set_output("value", std::move(value));
     }
 };
 ZENDEFNODE(PrimGetAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"string", "name", "index"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
                    {"enum vert tri line loop poly", "method", "tri"},
-                   {"int", "index", "0"},
+                   {gParamType_Int, "index", "0"},
                }, /* outputs: */ {
                    {"NumericObject","value"},
                }, /* params: */ {
@@ -1076,13 +1076,13 @@ struct PrimitiveDelAttrs : zeno::INode {
 };
 ZENDEFNODE(PrimitiveDelAttrs,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"bool", "invert", "0"},
-                   {"string", "names", "name_1 name_2"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Bool, "invert", "0"},
+                   {gParamType_String, "names", "name_1 name_2"},
                    {"enum vert tri loop poly line all", "scope", "all"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "erode",
                } });
@@ -1110,10 +1110,10 @@ struct QuatRotBetweenVectors : INode {
 };
 ZENDEFNODE(QuatRotBetweenVectors,
            {  /* inputs: */ {
-                   {"vec3f", "start", "1,0,0"},
-                   {"vec3f", "dest", "1,0,0"},
+                   {gParamType_Vec3f, "start", "1,0,0"},
+                   {gParamType_Vec3f, "dest", "1,0,0"},
                }, /* outputs: */ {
-                   {"vec4f", "quat", "0,0,0,1"},
+                   {gParamType_Vec4f, "quat", "0,0,0,1"},
                }, /* params: */ {
                }, /* category: */ {
                    "quat",
@@ -1137,10 +1137,10 @@ struct QuatRotate : INode {
 };
 ZENDEFNODE(QuatRotate,
            {/* inputs: */ {
-                   {"vec4f", "quat", "0,0,0,1"},
-                   {"vec3f", "vec3", "1,0,0"},
+                   {gParamType_Vec4f, "quat", "0,0,0,1"},
+                   {gParamType_Vec3f, "vec3", "1,0,0"},
                }, /* outputs: */ {
-                   {"vec3f", "vec3", "1,0,0"},
+                   {gParamType_Vec3f, "vec3", "1,0,0"},
                }, /* params: */ {
                }, /* category: */ {
                    "quat",
@@ -1166,10 +1166,10 @@ struct QuatAngleAxis : INode {
 };
 ZENDEFNODE(QuatAngleAxis,
            {  /* inputs: */ {
-                   {"float", "angle(D)", "0"},
-                   {"vec3f", "axis", "1,0,0"},
+                   {gParamType_Float, "angle(D)", "0"},
+                   {gParamType_Vec3f, "axis", "1,0,0"},
                }, /* outputs: */ {
-                   {"vec4f", "quat", "0,0,0,1"},
+                   {gParamType_Vec4f, "quat", "0,0,0,1"},
                }, /* params: */ {
                }, /* category: */ {
                    "quat",
@@ -1191,9 +1191,9 @@ struct QuatGetAngle : INode {
 };
 ZENDEFNODE(QuatGetAngle,
            {/* inputs: */ {
-                   {"vec4f", "quat", "0,0,0,1"},
+                   {gParamType_Vec4f, "quat", "0,0,0,1"},
                }, /* outputs: */ {
-                   {"float", "angle(D)", "0"},
+                   {gParamType_Float, "angle(D)", "0"},
                }, /* params: */ {
                }, /* category: */ {
                    "quat",
@@ -1215,9 +1215,9 @@ struct QuatGetAxis : INode {
 };
 ZENDEFNODE(QuatGetAxis,
            { /* inputs: */ {
-                   {"vec4f", "quat", "0,0,0,1"},
+                   {gParamType_Vec4f, "quat", "0,0,0,1"},
                }, /* outputs: */ {
-                   {"vec3f", "axis", "1,0,0"},
+                   {gParamType_Vec3f, "axis", "1,0,0"},
                }, /* params: */ {
                }, /* category: */ {
                    "quat",
@@ -1271,10 +1271,10 @@ struct PrimCurveDir : INode {
 };
 ZENDEFNODE(PrimCurveDir,
            {  /* inputs: */ {
-                   {"prim", "prim_curve", "", zeno::Socket_ReadOnly},
-                   {"string", "dirName", "nrm"},
+                   {gParamType_Primitive, "prim_curve", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "dirName", "nrm"},
                }, /* outputs: */ {
-                   {"prim", "prim_curve"},
+                   {gParamType_Primitive, "prim_curve"},
                }, /* params: */ {
                }, /* category: */ {
                    "primCurve",
@@ -1628,7 +1628,7 @@ struct PrimAttribBlur : INode {
 
             },
             enum_variant<std::variant<float, vec3f>>(
-                array_index({"float", "vec3f"}, attr_type)));
+                array_index({gParamType_Float, "vec3f"}, attr_type)));
 
 //        QueryPerformanceCounter(&t2_2);
 //        double time_2 = (double)(t2_2.QuadPart - t1_2.QuadPart)/(double)tc_2.QuadPart;
@@ -1657,22 +1657,22 @@ struct PrimAttribBlur : INode {
 };
 ZENDEFNODE(PrimAttribBlur,
            {/* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
                    {"enum line tri", "primType", "tri"},
-//                   {"string", "group", "mask"},
-                   {"string", "attributes", "ratio"},
+//                   {gParamType_String, "group", "mask"},
+                   {gParamType_String, "attributes", "ratio"},
                    {"enum float vec3f ", "attributesType", "float"},
-                   {"bool", "useEdgeLengthWeight", "false"},
-                   {"int", "blurringIterations", "0"},
+                   {gParamType_Bool, "useEdgeLengthWeight", "false"},
+                   {gParamType_Int, "blurringIterations", "0"},
                    {"enum laplacian VolumePreserving custom", "mode", "laplacian"},
-                   {"float", "stepSize", "0.683"},
-                   {"float", "cutoffFrequency", "0.1"},
-                   {"float", "evenStepSize", "0.5"},
-                   {"float", "oddStepSize", "0.5"},
-                   {"string", "weightAttributes", "weight"},
+                   {gParamType_Float, "stepSize", "0.683"},
+                   {gParamType_Float, "cutoffFrequency", "0.1"},
+                   {gParamType_Float, "evenStepSize", "0.5"},
+                   {gParamType_Float, "oddStepSize", "0.5"},
+                   {gParamType_String, "weightAttributes", "weight"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "primCurve",
                }});
@@ -1693,9 +1693,9 @@ struct PrimCurveFromVerts : INode {
 };
 ZENDEFNODE(PrimCurveFromVerts,
            { /* inputs: */ {
-                   {"prim", "primVerts", "", zeno::Socket_ReadOnly}
+                   {gParamType_Primitive, "primVerts", "", zeno::Socket_ReadOnly}
                }, /* outputs: */ {
-                   {"prim", "primCurve"},
+                   {gParamType_Primitive, "primCurve"},
                }, /* params: */ {
                }, /* category: */ {
                    "primCurve",
@@ -1801,12 +1801,12 @@ struct CreatePrimCurve : INode {
 };
 ZENDEFNODE(CreatePrimCurve,
            {{
-                   {"prim", "inputPoints", "", zeno::Socket_ReadOnly},
-                   {"float", "precision", "0.01"},
+                   {gParamType_Primitive, "inputPoints", "", zeno::Socket_ReadOnly},
+                   {gParamType_Float, "precision", "0.01"},
                },
                {
-                   "prim",
-               },
+{gParamType_Primitive, "prim"},
+},
                {
                    {"enum Bezier", "Type", "Bezier"},
                },
@@ -1844,11 +1844,11 @@ struct PrimHasAttr : INode {
 };
 ZENDEFNODE(PrimHasAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
                    {"enum vert tri loop poly line", "scope", "vert"},
-                   {"string", "attrName", "attr_x"},
+                   {gParamType_String, "attrName", "attr_x"},
                }, /* outputs: */ {
-                   {"bool","hasAttr"},
+                   {gParamType_Bool,"hasAttr"},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",

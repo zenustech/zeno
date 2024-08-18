@@ -40,7 +40,7 @@ struct PBFWorld_Debug : zeno::INode {
 ZENDEFNODE(
     PBFWorld_Debug,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"}

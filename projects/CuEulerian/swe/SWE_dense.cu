@@ -163,10 +163,10 @@ struct ZSSolveShallowWaterHeight : INode {
 ZENDEFNODE(ZSSolveShallowWaterHeight, {/* inputs: */
                                        {
                                            "SWGrid",
-                                           {"float", "dt", "0.04"},
-                                           {"string", "height_attr", "height"},
-                                           {"string", "u_attr", "u"},
-                                           {"string", "w_attr", "w"},
+                                           {gParamType_Float, "dt", "0.04"},
+                                           {gParamType_String, "height_attr", "height"},
+                                           {gParamType_String, "u_attr", "u"},
+                                           {gParamType_String, "w_attr", "w"},
                                        },
                                        /* outputs: */
                                        {
@@ -299,10 +299,10 @@ struct SolveShallowWaterHeight : INode {
 ZENDEFNODE(SolveShallowWaterHeight, {/* inputs: */
                                      {
                                          "SWGrid",
-                                         {"float", "dt", "0.04"},
-                                         {"string", "height_attr", "height"},
-                                         {"string", "u_attr", "u"},
-                                         {"string", "w_attr", "w"},
+                                         {gParamType_Float, "dt", "0.04"},
+                                         {gParamType_String, "height_attr", "height"},
+                                         {gParamType_String, "u_attr", "u"},
+                                         {gParamType_String, "w_attr", "w"},
                                      },
                                      /* outputs: */
                                      {
@@ -512,12 +512,12 @@ struct ZSSolveShallowWaterMomentum : INode {
 ZENDEFNODE(ZSSolveShallowWaterMomentum, {/* inputs: */
                                          {
                                              "SWGrid",
-                                             {"float", "dt", "0.04"},
-                                             {"float", "gravity", "9.8"},
-                                             {"string", "terrain_attr", "terrain"},
-                                             {"string", "height_attr", "height"},
-                                             {"string", "u_attr", "u"},
-                                             {"string", "w_attr", "w"},
+                                             {gParamType_Float, "dt", "0.04"},
+                                             {gParamType_Float, "gravity", "9.8"},
+                                             {gParamType_String, "terrain_attr", "terrain"},
+                                             {gParamType_String, "height_attr", "height"},
+                                             {gParamType_String, "u_attr", "u"},
+                                             {gParamType_String, "w_attr", "w"},
                                          },
                                          /* outputs: */
                                          {
@@ -697,12 +697,12 @@ struct SolveShallowWaterMomentum : INode {
 ZENDEFNODE(SolveShallowWaterMomentum, {/* inputs: */
                                        {
                                            "SWGrid",
-                                           {"float", "dt", "0.04"},
-                                           {"float", "gravity", "9.8"},
-                                           {"string", "terrain_attr", "terrain"},
-                                           {"string", "height_attr", "height"},
-                                           {"string", "u_attr", "u"},
-                                           {"string", "w_attr", "w"},
+                                           {gParamType_Float, "dt", "0.04"},
+                                           {gParamType_Float, "gravity", "9.8"},
+                                           {gParamType_String, "terrain_attr", "terrain"},
+                                           {gParamType_String, "height_attr", "height"},
+                                           {gParamType_String, "u_attr", "u"},
+                                           {gParamType_String, "w_attr", "w"},
                                        },
                                        /* outputs: */
                                        {

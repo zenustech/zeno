@@ -72,13 +72,13 @@ struct ZenoPlugin : INode {
 ZENO_DEFNODE(ZenoPlugin)
 ({/* inputs: */
   {
-      {"readpath", "plugin_path", ""},
-      {"string", "node_name", ""},
-      {"DictObject", "args"},
+      {gParamType_String,"plugin_path", "", "", Socket_Primitve, ReadPathEdit},
+      {gParamType_String, "node_name", ""},
+      {gParamType_Dict,"args"},
   },
   /* outputs: */
   {
-      {"DictObject", "rets"},
+      {gParamType_Dict,"rets"},
   },
   /* params: */
   {},

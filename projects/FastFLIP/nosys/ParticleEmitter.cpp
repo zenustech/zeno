@@ -51,9 +51,9 @@ static int defParticleEmitter = zeno::defNodeClass<ParticleEmitter>(
                         },
                         /* params: */
                         {
-                            {"float", "vx", "0.0"},
-                            {"float", "vy", "0.0"},
-                            {"float", "vz", "0.0"},
+                            {gParamType_Float, "vx", "0.0"},
+                            {gParamType_Float, "vy", "0.0"},
+                            {gParamType_Float, "vz", "0.0"},
                         },
 
                         /* category: */

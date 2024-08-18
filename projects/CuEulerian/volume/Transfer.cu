@@ -257,7 +257,7 @@ struct PrimitiveToZSLevelSet : INode {
 };
 
 ZENDEFNODE(PrimitiveToZSLevelSet, {
-                                      {"prim", {"float", "dx", "0.1"}, {"float", "thickness", "0.1"}},
+                                      {"prim", {gParamType_Float, "dx", "0.1"}, {gParamType_Float, "thickness", "0.1"}},
                                       {"ZSLevelSet"},
                                       {},
                                       {"Volume"},

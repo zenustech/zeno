@@ -247,7 +247,7 @@ struct DoSkinning : zeno::INode {
 ZENDEFNODE(DoSkinning, {
     {"shape","Qs","Ts","restBones"},
     {"dshape"},
-    {{"enum LBS DQS","algorithm","DQS"},{"string","attr_prefix","sw"},{"string","out_channel","curPos"},{"int","FK","0"}},
+    {{"enum LBS DQS","algorithm","DQS"},{gParamType_String,"attr_prefix","sw"},{gParamType_String,"out_channel","curPos"},{gParamType_Int,"FK","0"}},
     {"Skinning"},
 });
 

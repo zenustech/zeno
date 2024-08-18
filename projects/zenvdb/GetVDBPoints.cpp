@@ -261,8 +261,8 @@ static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("V
     { /* inputs: */ {
         {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
       "openvdb",
     }});
@@ -335,8 +335,8 @@ static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("G
         {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
         {"VDBGrid", "sdf", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
       "openvdb",
     }});
@@ -352,7 +352,7 @@ struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
 ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPointsGrid).name(), typeid(PrimitiveObject).name())({
         {
             {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
-            {"", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         },
         {},
         {},
@@ -376,7 +376,7 @@ struct ToVisualize_VDBPointsGrid : VDBPointsToPrimitive {
 ZENO_DEFOVERLOADNODE(ToVisualize, _VDBPointsGrid, typeid(VDBPointsGrid).name())({
         {"grid"},
         {},
-        {{"string", "path", ""}},
+        {{gParamType_String, "path", ""}},
         {"primitive"},
 });
 #endif

@@ -84,10 +84,10 @@ struct SolveBiharmonicWeight : zeno::INode {
 };
 
 ZENDEFNODE(SolveBiharmonicWeight, {
-    {"skinMesh",{"float","nm_handles","2"}},
-    {"mesh"},
+    {{gParamType_Primitive, "skinMesh"},{gParamType_Float,"nm_handles","2"}},
+    {{gParamType_Primitive, "mesh"}},
     {
-        {"string","attr_prefix","sw"},
+        {gParamType_String,"attr_prefix","sw"},
     },
     {"Skinning"},
 });
@@ -352,14 +352,14 @@ struct GenerateSkinningWeight : zeno::INode {
 };
 
 ZENDEFNODE(GenerateSkinningWeight, {
-    {"skinMesh","skinBone"},
-    {"mesh"},
+    {{gParamType_Primitive, "skinMesh"}, {gParamType_Primitive, "skinBone"}},
+    {{gParamType_Primitive, "mesh"}},
     {
-        {"string","attr_prefix","sw"},
-        {"float","sp_radius","1e-6"},
-        {"float","bone_radius","1e-6"},
-        {"float","cage_radius","1e-6"},
-        {"float","duplicate","1.0"}
+        {gParamType_String,"attr_prefix","sw"},
+        {gParamType_Float,"sp_radius","1e-6"},
+        {gParamType_Float,"bone_radius","1e-6"},
+        {gParamType_Float,"cage_radius","1e-6"},
+        {gParamType_Float,"duplicate","1.0"}
     },
     {"Skinning"},
 });

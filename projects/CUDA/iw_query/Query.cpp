@@ -338,14 +338,14 @@ struct QueryNearestPoints : INode {
 
 ZENDEFNODE(QueryNearestPoints, {/* inputs: */
                                 {
-                                    {"PrimitiveObject", "points", ""},
-                                    {"PrimitiveObject", "target_prim", ""},
-                                    {"string", "idTag", "bvh_id"},
-                                    {"string", "distTag", "bvh_dist"},
-                                    {"string", "closestPointTag", "cp"},
+                                    {gParamType_Primitive, "points", ""},
+                                    {gParamType_Primitive, "target_prim", ""},
+                                    {gParamType_String, "idTag", "bvh_id"},
+                                    {gParamType_String, "distTag", "bvh_dist"},
+                                    {gParamType_String, "closestPointTag", "cp"},
                                 },
                                 /* outputs: */
-                                {{"PrimitiveObject", "points", ""}},
+                                {{gParamType_Primitive, "points", ""}},
                                 /* params: */
                                 {},
                                 /* category: */

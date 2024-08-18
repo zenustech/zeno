@@ -32,14 +32,14 @@ struct MakeCamera : INode {
 
 ZENO_DEFNODE(MakeCamera)({
     {
-        {"vec3f", "pos", "0,0,5"},
-        {"vec3f", "up", "0,1,0"},
-        {"vec3f", "view", "0,0,-1"},
-        {"float", "near", "0.01"},
-        {"float", "far", "20000"},
-        {"float", "fov", "45"},
-        {"float", "aperture", "11"},
-        {"float", "focalPlaneDistance", "2.0"},
+        {gParamType_Vec3f, "pos", "0,0,5"},
+        {gParamType_Vec3f, "up", "0,1,0"},
+        {gParamType_Vec3f, "view", "0,0,-1"},
+        {gParamType_Float, "near", "0.01"},
+        {gParamType_Float, "far", "20000"},
+        {gParamType_Float, "fov", "45"},
+        {gParamType_Float, "aperture", "11"},
+        {gParamType_Float, "focalPlaneDistance", "2.0"},
     },
     {
         {"CameraObject", "camera"},
@@ -65,12 +65,12 @@ struct SetPhysicalCamera : INode {
 
 ZENO_DEFNODE(SetPhysicalCamera)({
     {
-        {"", "camera", "", zeno::Socket_ReadOnly},
-        {"float", "aperture", "2"},
-        {"float", "shutter_speed", "0.04"},
-        {"float", "iso", "150"},
-        {"bool", "aces", "0"},
-        {"bool", "exposure", "0"},
+        {gParamType_Camera, "camera", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "aperture", "2"},
+        {gParamType_Float, "shutter_speed", "0.04"},
+        {gParamType_Float, "iso", "150"},
+        {gParamType_Bool, "aces", "0"},
+        {gParamType_Bool, "exposure", "0"},
     },
     {
             {"CameraObject", "camera"},
@@ -111,15 +111,15 @@ struct TargetCamera : INode {
 
 ZENO_DEFNODE(TargetCamera)({
     {
-        {"vec3f", "pos", "0,0,5"},
-        {"vec3f", "refUp", "0,1,0"},
-        {"vec3f", "target", "0,0,0"},
-        {"float", "near", "0.01"},
-        {"float", "far", "20000"},
-        {"float", "fov", "45"},
-        {"float", "aperture", "11"},
-        {"bool","AutoFocus","false"},
-        {"float", "focalPlaneDistance", "2.0"},
+        {gParamType_Vec3f, "pos", "0,0,5"},
+        {gParamType_Vec3f, "refUp", "0,1,0"},
+        {gParamType_Vec3f, "target", "0,0,0"},
+        {gParamType_Float, "near", "0.01"},
+        {gParamType_Float, "far", "20000"},
+        {gParamType_Float, "fov", "45"},
+        {gParamType_Float, "aperture", "11"},
+        {gParamType_Bool,"AutoFocus","false"},
+        {gParamType_Float, "focalPlaneDistance", "2.0"},
     },
     {
         {"CameraObject", "camera"},
@@ -146,14 +146,14 @@ struct MakeLight : INode {
 
 ZENO_DEFNODE(MakeLight)({
     {
-        {"vec3f", "lightDir", "1,1,0"},
-        {"float", "intensity", "10"},
-        {"vec3f", "shadowTint", "0.2,0.2,0.2"},
-        {"float", "lightHight", "1000.0"},
-        {"float", "shadowSoftness", "1.0"},
-        {"vec3f", "lightColor", "1,1,1"},
-        {"float", "lightScale", "1"},
-        {"bool", "isEnabled", "1"},
+        {gParamType_Vec3f, "lightDir", "1,1,0"},
+        {gParamType_Float, "intensity", "10"},
+        {gParamType_Vec3f, "shadowTint", "0.2,0.2,0.2"},
+        {gParamType_Float, "lightHight", "1000.0"},
+        {gParamType_Float, "shadowSoftness", "1.0"},
+        {gParamType_Vec3f, "lightColor", "1,1,1"},
+        {gParamType_Float, "lightScale", "1"},
+        {gParamType_Bool, "isEnabled", "1"},
     },
     {
         {"LightObject", "light"},
@@ -238,16 +238,16 @@ struct ScreenSpaceProjectedGrid : INode {
 
 ZENO_DEFNODE(ScreenSpaceProjectedGrid)({
      {
-         "cam",
-         {"int", "width", "1920"},
-         {"int", "height", "1080"},
-         {"int", "u_padding", "0"},
-         {"int", "v_padding", "0"},
-         {"float", "sea_level", "0"},
+         {gParamType_Camera, "cam"},
+         {gParamType_Int, "width", "1920"},
+         {gParamType_Int, "height", "1080"},
+         {gParamType_Int, "u_padding", "0"},
+         {gParamType_Int, "v_padding", "0"},
+         {gParamType_Float, "sea_level", "0"},
      },
      {
-         "prim",
-     },
+{gParamType_Primitive, "prim"},
+},
      {
      },
      {"shader"},
@@ -306,13 +306,13 @@ struct CameraFrustum : INode {
 
 ZENO_DEFNODE(CameraFrustum)({
      {
-         "cam",
-         {"int", "width", "1920"},
-         {"int", "height", "1080"},
+         {gParamType_Camera, "cam"},
+         {gParamType_Int, "width", "1920"},
+         {gParamType_Int, "height", "1080"},
      },
      {
-         "prim",
-     },
+{gParamType_Primitive, "prim"},
+},
      {
      },
      {"shader"},

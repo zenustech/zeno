@@ -51,16 +51,16 @@ struct CachePrimitive : zeno::INode {
 ZENDEFNODE(CachePrimitive,
     {
         {
-            {"prim", "inPrim"},
-            {"int", "frameNum"},
+            {gParamType_Primitive, "inPrim"},
+            {gParamType_Int, "frameNum"},
         },
         {
-            {"prim", "outPrim"},
+            {gParamType_Primitive, "outPrim"},
         },
         {
-            {"string", "dir", "/tmp/cache"},
-            {"string", "prefix", ""},
-            {"bool", "ignore", "0"},
+            {gParamType_String, "dir", "/tmp/cache"},
+            {gParamType_String, "prefix", ""},
+            {gParamType_Bool, "ignore", "0"},
         }, 
         {
             "deprecated",

@@ -46,17 +46,17 @@ struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
 
 ZENDEFNODE(ShaderLinearFit, {
     {
-        {"float", "in", "0"},
-        {"float", "inMin", "0"},
-        {"float", "inMax", "1"},
-        {"float", "outMin", "0"},
-        {"float", "outMax", "1"},
+        {gParamType_Float, "in", "0"},
+        {gParamType_Float, "inMin", "0"},
+        {gParamType_Float, "inMax", "1"},
+        {gParamType_Float, "outMin", "0"},
+        {gParamType_Float, "outMax", "1"},
     },
     {
-        {"float", "out"},
+        {gParamType_Float, "out"},
     },
     {
-        {"bool", "clamped", "0"},
+        {gParamType_Bool, "clamped", "0"},
     },
     {"shader"},
 });
@@ -159,11 +159,11 @@ struct ShaderNormalMap : ShaderNodeClone<ShaderNormalMap> {
 
 ZENDEFNODE(ShaderNormalMap, {
     {
-        {"vec3f", "normalTexel", "0.5,0.5,1.0"},
-        {"float", "scale", "1"},
+        {gParamType_Vec3f, "normalTexel", "0.5,0.5,1.0"},
+        {gParamType_Float, "scale", "1"},
     },
     {
-        {"vec3f", "out"},
+        {gParamType_Vec3f, "out"},
     },
     {},
     {"shader"},
@@ -185,14 +185,14 @@ struct CalcCameraUp : INode {
 
 ZENDEFNODE(CalcCameraUp, {
     {
-        {"vec3f", "refUp", "0, 1, 0"},
-        {"vec3f", "pos", "0, 0, 5"},
-        {"vec3f", "target", "0, 0, 0"},
+        {gParamType_Vec3f, "refUp", "0, 1, 0"},
+        {gParamType_Vec3f, "pos", "0, 0, 5"},
+        {gParamType_Vec3f, "target", "0, 0, 0"},
     },
     {
-        {"vec3f", "pos"},
-        {"vec3f", "up"},
-        {"vec3f", "view"},
+        {gParamType_Vec3f, "pos"},
+        {gParamType_Vec3f, "up"},
+        {gParamType_Vec3f, "view"},
     },
     {},
     {"shader"},
@@ -211,11 +211,11 @@ struct SetPrimInvisible : INode {
 
 ZENDEFNODE(SetPrimInvisible, {
     {
-        { "", "prim", "", zeno::Socket_ReadOnly },
-        { "bool", "invisible", "1" },
+        { gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly },
+        { gParamType_Bool, "invisible", "1"},
     },
     {
-        {"prim", "out" },
+        {gParamType_Primitive, "out" },
     },
     {},
     { "shader" },

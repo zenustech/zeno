@@ -48,7 +48,7 @@ static int defWriteBgeo =
                                                 },
                                                 /* outputs: */ {}, /* params: */
                                                 {
-                                                    {"string", "path", ""},
+                                                    {gParamType_String, "path", ""},
                                                 },
                                                 /* category: */
                                                 {

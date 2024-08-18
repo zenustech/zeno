@@ -42,11 +42,11 @@ struct PrimDecodeUVs : INode {
 
 ZENO_DEFNODE(PrimDecodeUVs)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly}
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"deprecated"},
 });
@@ -61,11 +61,11 @@ struct PrimLoopUVsToVerts : INode {
 
 ZENO_DEFNODE(PrimLoopUVsToVerts)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -101,11 +101,11 @@ struct PrimUVVertsToLoopsuv : INode {
 
 ZENO_DEFNODE(PrimUVVertsToLoopsuv)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -168,12 +168,12 @@ struct PrimUVEdgeDuplicate : INode {
 
 ZENO_DEFNODE(PrimUVEdgeDuplicate)({
      {
-         {"", "prim", "", zeno::Socket_ReadOnly},
-         {"bool", "writeUVToVertex", "1"},
+         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+         {gParamType_Bool, "writeUVToVertex", "1"},
      },
      {
-         "prim",
-     },
+{gParamType_Primitive, "prim"},
+},
      {},
      {"primitive"},
  });
@@ -241,11 +241,11 @@ struct PrimSplitVertexForSharedNormal : INode {
 
 ZENO_DEFNODE(PrimSplitVertexForSharedNormal)({
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });

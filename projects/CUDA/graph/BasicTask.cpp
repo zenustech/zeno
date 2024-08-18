@@ -223,7 +223,7 @@ struct WriteTaskDependencyGraph : INode {
 ZENO_DEFNODE(WriteTaskDependencyGraph)
 ({/* inputs: */
   {
-      {"list", "job"},
+      {gParamType_List, "job"},
       {"writepath", "json_file_path", ""},
   },
   /* outputs: */
@@ -270,9 +270,9 @@ struct AssembleJob : INode {
 ZENO_DEFNODE(AssembleJob)
 ({/* inputs: */
   {
-      {"string", "name_tag"},
-      {"list", "scripts"},
-      {"list", "dependencies"},
+      {gParamType_String, "name_tag"},
+      {gParamType_List, "scripts"},
+      {gParamType_List, "dependencies"},
   },
   /* outputs: */
   {
@@ -306,8 +306,8 @@ ZENO_DEFNODE(SetWorkDependencies)
 ({/* inputs: */
   {
       {"WorkNode", "job"},
-      {"list", "dependencies"},
-      {"bool", "reset", "false"},
+      {gParamType_List, "dependencies"},
+      {gParamType_Bool, "reset", "false"},
   },
   /* outputs: */
   {

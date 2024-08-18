@@ -37,7 +37,7 @@ static int defVec3FieldExtrapolate =
                                                                       /* outputs: */ {},
                                                                       /* params: */
                                                                       {
-                                                                          {"int", "NumIterates", "1"},
+                                                                          {gParamType_Int, "NumIterates", "1"},
                                                                       },
 
                                                                       /* category: */

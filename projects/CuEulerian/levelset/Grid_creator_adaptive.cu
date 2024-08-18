@@ -77,9 +77,9 @@ struct ZSMakeAdaptiveGrid : INode {
 
 ZENDEFNODE(ZSMakeAdaptiveGrid, {/* inputs: */
                                 {
-                                    {"string", "Attribute", ""},
-                                    {"float", "Dx", "1.0"},
-                                    {"float", "background", "0"},
+                                    {gParamType_String, "Attribute", ""},
+                                    {gParamType_Float, "Dx", "1.0"},
+                                    {gParamType_Float, "background", "0"},
                                     {"enum scalar vector3", "type", "scalar"},
                                     {"enum cell-centered vertex-centered",
                                      "structure", "cell-centered"},
@@ -173,10 +173,10 @@ struct ZSAdaptiveGridToVDB : INode {
 ZENDEFNODE(ZSAdaptiveGridToVDB,
            {/* inputs: */
             {"AdaptiveGrid",
-             {"string", "Attribute", ""},
+             {gParamType_String, "Attribute", ""},
              {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass",
               "LEVEL_SET"},
-             {"string", "VDBGridName", "AdaptiveGrid"}},
+             {gParamType_String, "VDBGridName", "AdaptiveGrid"}},
             /* outputs: */
             {"VDB"},
             /* params: */
@@ -253,7 +253,7 @@ struct ZSVDBToAdaptiveGrid : INode {
 
 ZENDEFNODE(ZSVDBToAdaptiveGrid,
            {/* inputs: */
-            {"VDB", "AdaptiveGrid", {"string", "Attribute", "sdf"}},
+            {"VDB", "AdaptiveGrid", {gParamType_String, "Attribute", "sdf"}},
             /* outputs: */
             {"AdaptiveGrid"},
             /* params: */

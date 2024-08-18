@@ -42,7 +42,7 @@ struct buildQuads : zeno::INode {
 
 ZENDEFNODE(
     buildQuads,{
-        {"prim",{"int","numWidth","128"}},
+        {gParamType_Primitive,{gParamType_Int,"numWidth","128"}},
         {"outPrim"},
         {},
         {"PBD"}

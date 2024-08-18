@@ -1,7 +1,7 @@
 #include "FLIP_vdb.h"
 #include "../vdb_velocity_extrapolator.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
@@ -43,7 +43,7 @@ struct FLIP_P2G : zeno::INode {
 
 static int defFLIP_P2G =
     zeno::defNodeClass<FLIP_P2G>("FLIP_P2G", {/* inputs: */ {
-                                                  {"float", "Dx"},
+                                                  {gParamType_Float, "Dx"},
                                                   "Particles",
                                                   "Velocity",
                                                   "PostP2GVelocity",
@@ -52,8 +52,8 @@ static int defFLIP_P2G =
                                               /* outputs: */ {},
                                               /* params: */
                                               {
-                                                  {"float", "dx", "0.01 0.0"},
-                                                  {"int", "VelExtraLayer", "3"},
+                                                  {gParamType_Float, "dx", "0.01 0.0"},
+                                                  {gParamType_Int, "VelExtraLayer", "3"},
                                               },
 
                                               /* category: */

@@ -94,7 +94,7 @@ struct AssetConversion : INode {
 };
 ZENDEFNODE(AssetConversion,
            {/* inputs: */ {
-                {"string", "path", ""}, {"string", "input_model_file", ""}, {"string", "output_model_file", ""}},
+                {gParamType_String, "path", ""}, {gParamType_String, "input_model_file", ""}, {gParamType_String, "output_model_file", ""}},
             /* outputs: */
             {},
             /* params: */
@@ -157,15 +157,15 @@ struct PrimitiveLineify : INode {
 };
 
 ZENDEFNODE(PrimitiveLineify, {/* inputs: */
-                              {{"primitive", "prim"}},
+                              {{gParamType_Primitive, "prim"}},
                               /* outputs: */
                               {
-                                  {"primitive", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               /* params: */
                               {
-                                  {"bool", "from_poly", "1"},
-                                  {"bool", "with_uv", "1"},
+                                  {gParamType_Bool, "from_poly", "1"},
+                                  {gParamType_Bool, "with_uv", "1"},
                               },
                               /* category: */
                               {
@@ -260,7 +260,7 @@ struct PointsToZSParticles : INode {
 };
 
 ZENDEFNODE(PointsToZSParticles, {
-                                    {"prim", {"bool", "add_customed_attr", "1"}},
+                                    {gParamType_Primitive, {gParamType_Bool, "add_customed_attr", "1"}},
                                     {"ZSParticles"},
                                     {},
                                     {"conversion"},
@@ -379,8 +379,8 @@ struct PointsToZSParticles2 : INode {
 ZENDEFNODE(PointsToZSParticles2, {
                                      {
                                          "prim",
-                                         {"bool", "add_customed_attr", "1"},
-                                         {"string", "selected_custom_attr_tags", ""},
+                                         {gParamType_Bool, "add_customed_attr", "1"},
+                                         {gParamType_String, "selected_custom_attr_tags", ""},
                                      },
                                      {"ZSParticles"},
                                      {},

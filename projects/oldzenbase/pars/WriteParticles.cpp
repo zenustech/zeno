@@ -37,7 +37,7 @@ struct WriteParticles : zeno::INode {
 static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticles",
     { /* inputs: */ {
     {"object", "pars"},
-     {"string", "path", "", NoSocket, WritePathEdit},
+     {gParamType_String, "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -56,7 +56,7 @@ struct ExportParticles : zeno::INode {
 static int defExportParticles = zeno::defNodeClass<ExportParticles>("ExportParticles",
     { /* inputs: */ {
     {"object", "pars"},
-    {"string", "path", "", NoSocket, WritePathEdit},
+    {gParamType_String, "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

@@ -53,7 +53,7 @@ ZENDEFNODE(GetVDBBound, {
                             {
                                 {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
                             },
-                            {{"vec3f", "bmin"}, {"vec3f", "bmax"}},
+                            {{gParamType_Vec3f, "bmin"}, {gParamType_Vec3f, "bmax"}},
                             {},
                             {"openvdb"},
                         });
@@ -81,7 +81,7 @@ ZENDEFNODE(GetVDBVoxelSize, {
                             {
                                 {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
                             },
-                            {{"float","dx"}, {"float","dy"}, {"float","dz"}, {"vec3f","dxyz"}},
+                            {{gParamType_Float,"dx"}, {gParamType_Float,"dy"}, {gParamType_Float,"dz"}, {gParamType_Vec3f,"dxyz"}},
                             {},
                             {"openvdb"},
                         });

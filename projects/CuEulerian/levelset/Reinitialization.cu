@@ -295,7 +295,7 @@ struct ZSRenormalizeSDF : INode {
 };
 
 ZENDEFNODE(ZSRenormalizeSDF, {/* inputs: */
-                              {"Grid", {"string", "SDFAttrName", "sdf"}, {"int", "iterations", "10"}},
+                              {"Grid", {gParamType_String, "SDFAttrName", "sdf"}, {gParamType_Int, "iterations", "10"}},
                               /* outputs: */
                               {"Grid"},
                               /* params: */

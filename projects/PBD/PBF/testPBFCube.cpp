@@ -42,10 +42,10 @@ struct testPBFCube : INode{
 
 ZENDEFNODE(testPBFCube, {
     {
-        {"int", "numParticles", "10000"},
-        {"vec3f", "initPos", "10,10,10"},
-        {"float", "cubeSize", "20"},
-        {"float", "spacing", "1"},
+        {gParamType_Int, "numParticles", "10000"},
+        {gParamType_Vec3f, "initPos", "10,10,10"},
+        {gParamType_Float, "cubeSize", "20"},
+        {gParamType_Float, "spacing", "1"},
     },
     {"outPrim"},
     {},

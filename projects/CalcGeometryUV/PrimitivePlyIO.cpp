@@ -108,8 +108,8 @@ ZENDEFNODE(
         },
         // outpus
         {
-            "prim",
-        },
+{gParamType_Primitive, "prim"},
+},
         // params
         {
         },

@@ -35,11 +35,11 @@ struct PrimTranslate : INode {
 
 ZENDEFNODE(PrimTranslate, {
                               {
-                                  {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                                  {"vec3f", "offset", "0,0,0"},
+                                  {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                                  {gParamType_Vec3f, "offset", "0,0,0"},
                               },
                               {
-                                  {"PrimitiveObject", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               {},
                               {"primitive"},
@@ -56,11 +56,11 @@ struct PrimScale : INode {
 
 ZENDEFNODE(PrimScale, {
                           {
-                              {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                              {"vec3f", "scale", "1,1,1"},
+                              {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                              {gParamType_Vec3f, "scale", "1,1,1"},
                           },
                           {
-                              {"PrimitiveObject", "prim"},
+                              {gParamType_Primitive, "prim"},
                           },
                           {},
                           {"primitive"},

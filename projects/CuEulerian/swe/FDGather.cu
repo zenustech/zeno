@@ -238,9 +238,9 @@ struct ZSGather2DFiniteDifference : zeno::INode {
 
 ZENDEFNODE(ZSGather2DFiniteDifference, {
                                            {{"ZSParticles", "grid"},
-                                            {"int", "nx", "1"},
-                                            {"int", "ny", "1"},
-                                            {"string", "channel", "pos"},
+                                            {gParamType_Int, "nx", "1"},
+                                            {gParamType_Int, "ny", "1"},
+                                            {gParamType_String, "channel", "pos"},
                                             {"enum vec3 float", "attrT", "float"},
                                             {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                            {{"ZSParticles", "prim"}},
@@ -287,11 +287,11 @@ struct ZSCheckGather2DFiniteDifference : zeno::INode {
 };
 
 ZENDEFNODE(ZSCheckGather2DFiniteDifference, {
-                                                {{"PrimitiveObject", "grid"},
+                                                {{gParamType_Primitive, "grid"},
                                                  {"ZSParticles", "ZSParticles"},
-                                                 {"int", "nx", "1"},
-                                                 {"int", "ny", "1"},
-                                                 {"string", "channel", "pos"},
+                                                 {gParamType_Int, "nx", "1"},
+                                                 {gParamType_Int, "ny", "1"},
+                                                 {gParamType_String, "channel", "pos"},
                                                  {"enum vec3 float", "attrT", "float"},
                                                  {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                                 {{"ZSParticles", "prim"}},
@@ -360,7 +360,7 @@ struct ZSCheckPrimAttribs : zeno::INode {
 
 ZENDEFNODE(ZSCheckPrimAttribs,
            {
-               {{"PrimitiveObject", "grid"}, {"ZSParticles", "ZSParticles"}, {"ListObject", "attribs"}},
+               {{gParamType_Primitive, "grid"}, {"ZSParticles", "ZSParticles"}, {"ListObject", "attribs"}},
                {{"ZSParticles", "prim"}},
                {},
                {"zenofx"},
@@ -410,10 +410,10 @@ struct ZSMomentumTransfer2DFiniteDifference : zeno::INode {
 
 ZENDEFNODE(ZSMomentumTransfer2DFiniteDifference, {
                                                      {{"ZenoParticles", "grid"},
-                                                      {"int", "nx", "1"},
-                                                      {"int", "ny", "1"},
-                                                      {"string", "channel", "d"},
-                                                      {"string", "add_channel", "d"},
+                                                      {gParamType_Int, "nx", "1"},
+                                                      {gParamType_Int, "ny", "1"},
+                                                      {gParamType_String, "channel", "d"},
+                                                      {gParamType_String, "add_channel", "d"},
                                                       {"enum vec3 float", "attrT", "float"},
                                                       {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                                      {{"ZenoParticles", "prim"}},
@@ -483,12 +483,12 @@ struct ZSGrid2DSample : zeno::INode {
 };
 ZENDEFNODE(ZSGrid2DSample, {
                                {{"ZenoParticles", "grid"},
-                                {"int", "nx", "1"},
-                                {"int", "ny", "1"},
-                                {"float", "h", "1"},
-                                {"vec3f", "bmin", "0,0,0"},
-                                {"string", "channel", "pos"},
-                                {"string", "sampleBy", "pos"},
+                                {gParamType_Int, "nx", "1"},
+                                {gParamType_Int, "ny", "1"},
+                                {gParamType_Float, "h", "1"},
+                                {gParamType_Vec3f, "bmin", "0,0,0"},
+                                {gParamType_String, "channel", "pos"},
+                                {gParamType_String, "sampleBy", "pos"},
                                 {"enum vec3 float", "attrT", "float"}},
                                {{"ZenoParticles", "prim"}},
                                {},

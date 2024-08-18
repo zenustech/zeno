@@ -179,24 +179,24 @@ struct WhitewaterSource : INode {
 };
 
 ZENDEFNODE(WhitewaterSource, {{/* inputs: */
-                               {"prim", "Primitive"},
-                               {"float", "dt", "0.04"},
-                               {"float", "Lifespan", "0.8"},
+                               {gParamType_Primitive, "Primitive"},
+                               {gParamType_Float, "dt", "0.04"},
+                               {gParamType_Float, "Lifespan", "0.8"},
                                {"VDBGrid", "LiquidSDF"},
                                {"VDBGrid", "SolidSDF"},
                                {"VDBGrid", "Velocity"},
                                {"VDBGrid", "PreVelocity"},
-                               {"vec2f", "LimitDepth", "-1, 0.5"},
-                               {"vec2f", "SpeedRange", "0, 1"},
-                               {"float", "EmitFromCurvature", "0"},
-                               {"float", "MaxVelocityAngle", "45"},
-                               {"vec2f", "CurvatureRange", "0, 1"},
-                               {"float", "EmitFromAcceleration", "0"},
-                               {"vec2f", "AccelerationRange", "0, 1"},
-                               {"float", "EmitFromVorticity", "0"},
-                               {"vec2f", "VorticityRange", "0, 1"}},
+                               {gParamType_Vec2f, "LimitDepth", "-1, 0.5"},
+                               {gParamType_Vec2f, "SpeedRange", "0, 1"},
+                               {gParamType_Float, "EmitFromCurvature", "0"},
+                               {gParamType_Float, "MaxVelocityAngle", "45"},
+                               {gParamType_Vec2f, "CurvatureRange", "0, 1"},
+                               {gParamType_Float, "EmitFromAcceleration", "0"},
+                               {gParamType_Vec2f, "AccelerationRange", "0, 1"},
+                               {gParamType_Float, "EmitFromVorticity", "0"},
+                               {gParamType_Vec2f, "VorticityRange", "0, 1"}},
                               /* outputs: */
-                              {{"prim", "Primitive"}},
+                              {{gParamType_Primitive, "Primitive"}},
                               /* params: */
                               {},
                               /* category: */
@@ -287,19 +287,19 @@ struct WhitewaterSolver : INode {
 };
 
 ZENDEFNODE(WhitewaterSolver, {/* inputs: */
-                              {{"prim", "Primitive"},
-                               {"float", "dt", "0.04"},
+                              {{gParamType_Primitive, "Primitive"},
+                               {gParamType_Float, "dt", "0.04"},
                                {"VDBGrid", "LiquidSDF"},
                                {"VDBGrid", "SolidSDF"},
-                               {"string", "TargetVelAttr", "tv"},
-                               {"vec3f", "Gravity", "0, -9.8, 0"},
+                               {gParamType_String, "TargetVelAttr", "tv"},
+                               {gParamType_Vec3f, "Gravity", "0, -9.8, 0"},
                                {"enum linear square", "DragModel", "linear"},
-                               {"float", "AirDrag", "0.05"},
-                               {"float", "FoamDrag", "0.9"},
-                               {"float", "BubbleDrag", "0.1"},
-                               {"float", "Buoyancy", "5"}},
+                               {gParamType_Float, "AirDrag", "0.05"},
+                               {gParamType_Float, "FoamDrag", "0.9"},
+                               {gParamType_Float, "BubbleDrag", "0.1"},
+                               {gParamType_Float, "Buoyancy", "5"}},
                               /* outputs: */
-                              {{"prim", "Primitive"}},
+                              {{gParamType_Primitive, "Primitive"}},
                               /* params: */
                               {},
                               /* category: */

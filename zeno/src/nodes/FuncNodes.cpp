@@ -4,6 +4,10 @@
 #include <zeno/types/DummyObject.h>
 #include <zeno/extra/ContextManaged.h>
 #include <zeno/extra/MethodCaller.h>
+
+
+//func的实现可能在zeno3已经不需要了，因为脚本和python绝对是更好的选择。
+#if 0
 namespace zeno {
 namespace {
 
@@ -28,8 +32,8 @@ struct FuncBegin : zeno::INode {
 };
 
 ZENDEFNODE(FuncBegin, {
-    {{"DictObject", "extraArgs"}},
-    {{"DictObject", "args"}, "FUNC"},
+    {{gParamType_Dict,"extraArgs"}},
+    {{gParamType_Dict,"args"}, "FUNC"},
     {},
     {"control"},
 });
@@ -78,8 +82,8 @@ struct FuncEnd : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncEnd, {
     {
-        {"DictObject", "rets", "", zeno::Socket_ReadOnly},
-        {"", "FUNC", "", zeno::Socket_ReadOnly},
+        {gParamType_Dict,"rets", "", zeno::Socket_ReadOnly},
+        {gParamType_, "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},
     {},
@@ -152,7 +156,7 @@ struct FuncSimpleEnd : zeno::ContextManagedNode {
 ZENDEFNODE(FuncSimpleEnd, {
     {
         {"object", "ret", "", zeno::Socket_ReadOnly},
-        {"", "FUNC", "", zeno::Socket_ReadOnly},
+        {gParamType_, "FUNC", "", zeno::Socket_ReadOnly},
     },
     {"function"},
     {},
@@ -210,13 +214,13 @@ struct FuncCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncCallInDict, {
     {
-        {"DictObject", "funcDict", "", zeno::Socket_ReadOnly},
-        {"bool", "mayNotFound", "1"},
-        {"string", "dictKey"},
-        {"DictObject", "args", "", zeno::Socket_ReadOnly},
+        {gParamType_Dict,"funcDict", "", zeno::Socket_ReadOnly},
+        {gParamType_Bool, "mayNotFound", "1"},
+        {gParamType_String, "dictKey"},
+        {gParamType_Dict,"args", "", zeno::Socket_ReadOnly},
     },
     {
-        {"DictObject", "rets"},
+        {gParamType_Dict,"rets"},
     },
     {},
     {"control"},
@@ -284,14 +288,14 @@ struct FuncSimpleCallInDict : zeno::ContextManagedNode {
 
 ZENDEFNODE(FuncSimpleCallInDict, {
     {
-        {"DictObject", "funcDict", "", zeno::Socket_ReadOnly},
-        {"string", "dictKey"},
+        {gParamType_Dict,"funcDict", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "dictKey"},
         {"IObject", "arg", "", zeno::Socket_ReadOnly},
-        {"bool", "mayNotFound", "1"},
+        {gParamType_Bool, "mayNotFound", "1"},
         {"IObject", "notFoundRet", "", zeno::Socket_ReadOnly},
     },
     {
-        {"bool", "isFound"},
+        {gParamType_Bool, "isFound"},
         {"IObject", "ret"},
     },
     {},
@@ -333,3 +337,5 @@ ZENDEFNODE(FuncSimpleCallInDict, {
 // }
 }
 }
+
+#endif

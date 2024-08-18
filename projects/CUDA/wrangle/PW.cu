@@ -257,7 +257,7 @@ struct ZSParticlesWrangler : zeno::INode {
 
 ZENDEFNODE(ZSParticlesWrangler,
            {
-               {{"ZenoParticles", "ZSParticles"}, {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+               {{"ZenoParticles", "ZSParticles"}, {gParamType_String, "zfxCode"}, {"DictObject:NumericObject", "params"}},
                {"ZSParticles"},
                {},
                {"zswrangle"},

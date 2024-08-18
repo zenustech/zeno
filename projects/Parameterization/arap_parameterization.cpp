@@ -101,8 +101,8 @@ struct CalPrimitiveUVMapARAP : zeno::INode {
 };
 
 ZENDEFNODE(CalPrimitiveUVMapARAP, {
-    {"prim"},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"Parameterization"},
 });

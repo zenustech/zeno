@@ -165,10 +165,10 @@ struct PrimitiveMerge : zeno::INode {
 
 ZENDEFNODE(PrimitiveMerge, {
     {
-        {"prim", "dst", "", zeno::Socket_ReadOnly},
-        {"list", "listPrim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "dst", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "listPrim", "", zeno::Socket_ReadOnly},
     },
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"deprecated"},
 });

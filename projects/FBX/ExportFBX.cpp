@@ -63,14 +63,14 @@ struct ExportFBX : zeno::INode {
 ZENDEFNODE(ExportFBX,
            {       /* inputs: */
             {
-                {"string", "custom_command"},
-                {"string", "extra_param", " -b=5"},
-                {"string", "abcpath"},
-                {"string", "fbxpath"},
-                {"string", "outpath"}
+                {gParamType_String, "custom_command"},
+                {gParamType_String, "extra_param", " -b=5"},
+                {gParamType_String, "abcpath"},
+                {gParamType_String, "fbxpath"},
+                {gParamType_String, "outpath"}
             },  /* outputs: */
             {
-                {"int","result"}
+                {gParamType_Int,"result"}
             },  /* params: */
             {
 

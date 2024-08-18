@@ -30,7 +30,7 @@ struct GLCreateShader : zeno::INode {
 ZENDEFNODE(GLCreateShader, {
         {"source"},
         {"shader"},
-        {{"string", "type", "vertex"}},
+        {{gParamType_String, "type", "vertex"}},
         {"EasyGL"},
 });
 
@@ -86,7 +86,7 @@ struct GLDrawArrayTriangles : zeno::INode {
 };
 
 ZENDEFNODE(GLDrawArrayTriangles, {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {},
         {},
         {"EasyGL"},
@@ -110,7 +110,7 @@ struct MakeSimpleTriangle : zeno::INode {
 
 ZENDEFNODE(MakeSimpleTriangle, {
         {},
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {},
         {"EasyGL"},
 });
@@ -136,7 +136,7 @@ struct MakeFullscreenRect : zeno::INode {
 
 ZENDEFNODE(MakeFullscreenRect, {
         {},
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {},
         {"EasyGL"},
 });

@@ -11,3 +11,5 @@
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/LightObject.h>
 #include <zeno/types/HeatmapObject.h>
+#include <zeno/types/MeshObject.h>
+#include <zeno/types/ParticlesObject.h>

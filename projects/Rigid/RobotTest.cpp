@@ -175,7 +175,7 @@ struct RobotLoadURDF : zeno::INode {
 };
 
 ZENDEFNODE(RobotLoadURDF, {
-    {"path", {"float", "globalScaling", "1"}, "world"},
+    {"path", {gParamType_Float, "globalScaling", "1"}, "world"},
     {"world", "object", "visualMap"},
     {{"enum true false", "fixedBase", "true"}},
     {"Robot"},

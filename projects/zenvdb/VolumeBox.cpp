@@ -114,12 +114,12 @@ struct CreateVolumeBox : zeno::INode {
 
 ZENDEFNODE(CreateVolumeBox, {
     {
-        {"vec3f", "pos", "0, 0, 0"},
-        {"vec3f", "scale", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
+        {gParamType_Vec3f, "pos", "0, 0, 0"},
+        {gParamType_Vec3f, "scale", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
         {"VDBGrid", "vdbGrid" },
     },
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}

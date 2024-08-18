@@ -144,10 +144,10 @@ struct VDBAddPerlinNoise : INode {
 ZENO_DEFNODE(VDBAddPerlinNoise)(
      { /* inputs: */ {
      {"VDBGrid", "inoutSDF", "", zeno::Socket_ReadOnly},
-     {"float", "strength", "1.0"},
-     {"float", "scale", "8.0"},
-     {"vec3f", "scaling", "1,1,1"},
-     {"vec3f", "translation", "0,0,0"},
+     {gParamType_Float, "strength", "1.0"},
+     {gParamType_Float, "scale", "8.0"},
+     {gParamType_Vec3f, "scaling", "1,1,1"},
+     {gParamType_Vec3f, "translation", "0,0,0"},
      }, /* outputs: */ {
          {"VDBGrid","inoutSDF"},
      }, /* params: */ {
@@ -283,16 +283,16 @@ struct VDBAddTurbulentNoise : INode {
 ZENO_DEFNODE(VDBAddTurbulentNoise)(
      { /* inputs: */ {
      {"VDBGrid", "inoutSDF", "", zeno::Socket_ReadOnly},
-     {"float", "strength", "3.0"},
-     {"float", "scale", "16.0"},
-     {"vec3f", "scaling", "1,1,1"},
-     {"vec3f", "translation", "0,0,0"},
+     {gParamType_Float, "strength", "3.0"},
+     {gParamType_Float, "scale", "16.0"},
+     {gParamType_Vec3f, "scaling", "1,1,1"},
+     {gParamType_Vec3f, "translation", "0,0,0"},
      }, /* outputs: */ {
          {"VDBGrid", "inoutSDF"},
      }, /* params: */ {
-//{"float","Power","5.059"},
-//{"float","MaxLength","0.9904"},
-//{"float","Dumping","10.0"},
+//{gParamType_Float,"Power","5.059"},
+//{gParamType_Float,"MaxLength","0.9904"},
+//{gParamType_Float,"Dumping","10.0"},
      }, /* category: */ {
      "openvdb",
      }});

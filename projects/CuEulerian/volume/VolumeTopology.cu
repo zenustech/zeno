@@ -42,7 +42,7 @@ struct MarkZSLevelSet : INode {
 };
 
 ZENDEFNODE(MarkZSLevelSet, {
-                               {"ZSField", {"float", "threshold", "1e-6"}},
+                               {"ZSField", {gParamType_Float, "threshold", "1e-6"}},
                                {"ZSField"},
                                {},
                                {"Volume"},
@@ -163,7 +163,7 @@ struct ExtendZSLevelSet : INode {
 };
 
 ZENDEFNODE(ExtendZSLevelSet, {
-                                 {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
+                                 {"ZSField", "ZSVelField", {gParamType_Float, "dt", "0.1"}},
                                  {"ZSField"},
                                  {},
                                  {"Volume"},

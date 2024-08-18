@@ -281,11 +281,11 @@ struct FBXSDKVisibility : zeno::INode {
 ZENDEFNODE(FBXSDKVisibility,
            {       /* inputs: */
             {
-                {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                {"bool", "inherit", "false"},
+                {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_Bool, "inherit", "false"},
             },  /* outputs: */
             {
-                {"DictObject", "visibility", ""},
+                {gParamType_Dict,"visibility", ""},
             },  /* params: */
             {
                 {"enum e24 e30", "fps", "e24"},
@@ -597,13 +597,13 @@ struct NewFBXImportSkin : INode {
 
 ZENDEFNODE(NewFBXImportSkin, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"string", "rootName", ""},
-        {"bool", "ConvertUnits", "1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "rootName", ""},
+        {gParamType_Bool, "ConvertUnits", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -723,12 +723,12 @@ struct NewFBXImportSkeleton : INode {
 
 ZENDEFNODE(NewFBXImportSkeleton, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "ConvertUnits", "1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "ConvertUnits", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -902,15 +902,15 @@ struct NewFBXImportAnimation : INode {
 
 ZENDEFNODE(NewFBXImportAnimation, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"string", "clipName", ""},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "clipName", ""},
         {"frameid"},
-        {"float", "fps", "25"},
-        {"bool", "ConvertUnits", "1"},
+        {gParamType_Float, "fps", "25"},
+        {gParamType_Bool, "ConvertUnits", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -1067,25 +1067,25 @@ struct NewFBXImportCamera : INode {
 
 ZENDEFNODE(NewFBXImportCamera, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"string", "clipName", ""},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "clipName", ""},
         {"frameid"},
-        {"float", "fps", "25"},
-        {"bool", "ConvertUnits", "1"},
-        {"int", "nx", "1920"},
-        {"int", "ny", "1080"},
+        {gParamType_Float, "fps", "25"},
+        {gParamType_Bool, "ConvertUnits", "1"},
+        {gParamType_Int, "nx", "1920"},
+        {gParamType_Int, "ny", "1080"},
     },
     {
-        {"vec3f","pos"},
-        {"vec3f","up"},
-        {"vec3f","view"},
-        {"vec3f","right"},
-        {"float","fov_y"},
-        {"float","focal_length"},
-        {"float","horizontalAperture"},
-        {"float","verticalAperture"},
-        {"float","near"},
-        {"float","far"},
+        {gParamType_Vec3f,"pos"},
+        {gParamType_Vec3f,"up"},
+        {gParamType_Vec3f,"view"},
+        {gParamType_Vec3f,"right"},
+        {gParamType_Float,"fov_y"},
+        {gParamType_Float,"focal_length"},
+        {gParamType_Float,"horizontalAperture"},
+        {gParamType_Float,"verticalAperture"},
+        {gParamType_Float,"near"},
+        {gParamType_Float,"far"},
     },
     {},
     {"primitive"},
@@ -1221,8 +1221,8 @@ ZENDEFNODE(NewFBXBoneDeform, {
         "DeformPointTransforms",
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -1250,7 +1250,7 @@ struct NormalView : INode {
 ZENDEFNODE(NormalView, {
     {
         "prim",
-        {"float", "scale", "0.01"},
+        {gParamType_Float, "scale", "0.01"},
     },
     {
         "normals",
@@ -1297,8 +1297,8 @@ struct BoneTransformView : INode {
 ZENDEFNODE(BoneTransformView, {
     {
         "bones",
-        {"float", "scale", "0.1"},
-        {"int", "index", "-1"},
+        {gParamType_Float, "scale", "0.1"},
+        {gParamType_Int, "index", "-1"},
     },
     {
         "view",

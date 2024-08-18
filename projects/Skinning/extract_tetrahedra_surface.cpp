@@ -86,8 +86,8 @@ struct MarkSurfacePoints : zeno::INode {
 };
 
 ZENDEFNODE(MarkSurfacePoints, {
-    {"shape"},
-    {"res"},
+    {{gParamType_Primitive, "shape"}},
+    {{gParamType_Primitive, "res"}},
     {},
     {"Skinning"},
 });

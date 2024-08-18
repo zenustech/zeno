@@ -160,15 +160,15 @@ struct ZSComputeRBFWeights : INode {
 
 ZENDEFNODE(ZSComputeRBFWeights, {{{"zspars"},
         {"nei_zspars"},
-        {"float","uniform_radius","1"},
-        {"float","uniform_neighbor_radius","1"},
-        {"string","radius_attr","r"},
-        {"string","neighbor_radius_attr","r"},
-        {"string","xtag","x"},
-        {"string","neighbor_xtag","x"},
-        {"int","max_number_binders","10"},
-        {"string","rbf_weights_name","rbf"},
-        {"float","varience","10"}
+        {gParamType_Float,"uniform_radius","1"},
+        {gParamType_Float,"uniform_neighbor_radius","1"},
+        {gParamType_String,"radius_attr","r"},
+        {gParamType_String,"neighbor_radius_attr","r"},
+        {gParamType_String,"xtag","x"},
+        {gParamType_String,"neighbor_xtag","x"},
+        {gParamType_Int,"max_number_binders","10"},
+        {gParamType_String,"rbf_weights_name","rbf"},
+        {gParamType_Float,"varience","10"}
     },
     {
         {"zspars"},
@@ -339,13 +339,13 @@ struct ZSComputeSurfaceBaryCentricWeights : INode {
 
 
 ZENDEFNODE(ZSComputeSurfaceBaryCentricWeights, {{
-        {"dest"},{"string","dest_pos_attr","x"},
-        {"source"},{"string","source_pos_attr","x"},
-        {"string","sampler_name","sampler_name"},
-        {"float","thickness","0.1"},
-        {"float","varience","1.0"},
-        {"bool","bind_closest_tri_only","1"},
-        {"string","cloth_group_id","clothID"}
+        {"dest"},{gParamType_String,"dest_pos_attr","x"},
+        {"source"},{gParamType_String,"source_pos_attr","x"},
+        {gParamType_String,"sampler_name","sampler_name"},
+        {gParamType_Float,"thickness","0.1"},
+        {gParamType_Float,"varience","1.0"},
+        {gParamType_Bool,"bind_closest_tri_only","1"},
+        {gParamType_String,"cloth_group_id","clothID"}
     },
     {{"dest"},{"source"}},
     {},
@@ -445,12 +445,12 @@ struct ZSComputeSurfaceBaryCentricWeights2 : INode {
 
 
 ZENDEFNODE(ZSComputeSurfaceBaryCentricWeights2, {{
-        {"dest"},{"string","dest_pos_attr","x"},
-        {"source"},{"string","source_pos_attr","x"},
-        {"string","sampler_name","sampler_name"},
-        {"float","thickness","0.1"},
-        {"bool","bind_closest_tri_only","1"},
-        {"string","cloth_group_id","clothID"}
+        {"dest"},{gParamType_String,"dest_pos_attr","x"},
+        {"source"},{gParamType_String,"source_pos_attr","x"},
+        {gParamType_String,"sampler_name","sampler_name"},
+        {gParamType_Float,"thickness","0.1"},
+        {gParamType_Bool,"bind_closest_tri_only","1"},
+        {gParamType_String,"cloth_group_id","clothID"}
     },
     {{"dest"},{"source"}},
     {},
@@ -511,9 +511,9 @@ struct ZSDeformEmbedPrimWithSurfaceMesh : zeno::INode {
 }; 
 
 ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh, {{
-    {"dest"},{"string","dest_pos_attr","x"},
-    {"source"},{"string","source_pos_attr","x"},
-    {"string","sampler_name","sampler_name"}
+    {"dest"},{gParamType_String,"dest_pos_attr","x"},
+    {"source"},{gParamType_String,"source_pos_attr","x"},
+    {gParamType_String,"sampler_name","sampler_name"}
 },
 {{"dest"},{"source"}},
 {},
@@ -783,14 +783,14 @@ struct ZSComputeSurfaceBaryCentricWeights3 : INode {
 
 
 ZENDEFNODE(ZSComputeSurfaceBaryCentricWeights3, {{
-        {"dest"},{"string","dest_pos_attr","x"},
-        {"source"},{"string","source_pos_attr","x"},
-        {"string","sampler_name","sampler_name"},
-        {"float","thickness","0.1"},
-        {"bool","do_boundary_edge_binding","0"},
-        {"string","cloth_group_id","clothID"},
-        {"float","distance_ratio","0.1"},
-        {"float","extend_distance","0.1"}
+        {"dest"},{gParamType_String,"dest_pos_attr","x"},
+        {"source"},{gParamType_String,"source_pos_attr","x"},
+        {gParamType_String,"sampler_name","sampler_name"},
+        {gParamType_Float,"thickness","0.1"},
+        {gParamType_Bool,"do_boundary_edge_binding","0"},
+        {gParamType_String,"cloth_group_id","clothID"},
+        {gParamType_Float,"distance_ratio","0.1"},
+        {gParamType_Float,"extend_distance","0.1"}
     },
     {{"dest"},{"source"}},
     {},
@@ -887,9 +887,9 @@ struct VisualizeBoundingCells : zeno::INode {
 };
 
 ZENDEFNODE(VisualizeBoundingCells, {{
-    {"source"},{"string","source_pos_attr","x"},
-    {"float","thickness","0.1"},
-    {"float","extend_distance","0.1"}
+    {"source"},{gParamType_String,"source_pos_attr","x"},
+    {gParamType_Float,"thickness","0.1"},
+    {gParamType_Float,"extend_distance","0.1"}
 },
 {{"prim"}},
 {},
@@ -1043,11 +1043,11 @@ struct ZSDeformEmbedPrimWithSurfaceMesh3 : zeno::INode {
 };
 
 ZENDEFNODE(ZSDeformEmbedPrimWithSurfaceMesh3, {{
-    {"dest"},{"string","dest_pos_attr","x"},
-    {"source"},{"string","source_pos_attr","x"},
-    {"string","sampler_name","sampler_name"},
-    {"float","thickness","0.1"},
-    {"float","extend_distance","0.1"}
+    {"dest"},{gParamType_String,"dest_pos_attr","x"},
+    {"source"},{gParamType_String,"source_pos_attr","x"},
+    {gParamType_String,"sampler_name","sampler_name"},
+    {gParamType_Float,"thickness","0.1"},
+    {gParamType_Float,"extend_distance","0.1"}
 },
 {{"dest"},{"source"}},
 {},
@@ -1135,9 +1135,9 @@ struct ZSSample : zeno::INode {
 ZENDEFNODE(ZSSample, {{
         {"to"},
         {"from"},
-        {"string","sampler_name","sampler_name"},
-        {"string","to_attr","to_attr"},
-        {"string","from_attr","from_attr"}
+        {gParamType_String,"sampler_name","sampler_name"},
+        {gParamType_String,"to_attr","to_attr"},
+        {gParamType_String,"from_attr","from_attr"}
     },
     {{"to"},{"from"}},
     {},
@@ -1330,9 +1330,9 @@ struct ZSComputeBaryCentricWeights : INode {
     }
 };
 
-ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"},{"int","mark_elm","0"},{"int","nmCpns","1"},{"string","tag","skin"}},
+ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"},{gParamType_Int,"mark_elm","0"},{gParamType_Int,"nmCpns","1"},{gParamType_String,"tag","skin"}},
                             {{"interpolator on gpu", "zsvolume"},{"embed surf on gpu","zssurf"}},
-                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","bvh_channel","x"}},
+                            {{gParamType_Float,"bvh_thickness","0"},{gParamType_Int,"fitting_in","1"},{gParamType_String,"bvh_channel","x"}},
                             {"ZSGeometry"}});
 
 
@@ -1365,7 +1365,7 @@ ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed s
 //     }
 // };
 
-// ZENDEFNODE(VisualizeInterpolator, {{{"interpolator","zsvolume"},{"string","interpolator_name","skin"}},
+// ZENDEFNODE(VisualizeInterpolator, {{{"interpolator","zsvolume"},{gParamType_String,"interpolator_name","skin"}},
 //                             {{"visual bcw", "bcw_vis"}},
 //                             {},
                             // {"ZSGeometry"}});
@@ -1434,7 +1434,7 @@ struct ZSSampleEmbedVectorField : zeno::INode {
 
 ZENDEFNODE(ZSSampleEmbedVectorField, {{{"volume"}, {"embed vec field", "vec_field"},{"default value","default"}},
                             {{"out volume", "volume"}},
-                            {{"string","bcw_channel","bcw"},{"string","sampleAttr","vec_field"},{"string","outAttr"," vec_field"},{"enum element vert","type","element"}},
+                            {{gParamType_String,"bcw_channel","bcw"},{gParamType_String,"sampleAttr","vec_field"},{gParamType_String,"outAttr"," vec_field"},{"enum element vert","type","element"}},
                             {"ZSGeometry"}});
 
 
@@ -1500,7 +1500,7 @@ struct ZSSampleEmbedTagField : zeno::INode {
 
 ZENDEFNODE(ZSSampleEmbedTagField, {{{"volume"}, {"embed tag field", "tag_field"},{"default value","default"}},
                             {{"out volume", "volume"}},
-                            {{"string","interpolate_tag","bws"},{"string","sampleAttr","vec_field"},{"string","outAttr"," vec_field"},{"enum element vert","type","element"}},
+                            {{gParamType_String,"interpolate_tag","bws"},{gParamType_String,"sampleAttr","vec_field"},{gParamType_String,"outAttr"," vec_field"},{"enum element vert","type","element"}},
                             {"ZSGeometry"}});
 
 
@@ -1624,11 +1624,11 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
 };
 
 
-ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"},{"string","bcw_tag","skin_bw"}},
+ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"},{gParamType_String,"bcw_tag","skin_bw"}},
                             {{"dest"}},
                             {
-                                {"string","srcAttr","x"},
-                                {"string","dstAttr","x"},
+                                {gParamType_String,"srcAttr","x"},
+                                {gParamType_String,"dstAttr","x"},
                                 {"enum p2p q2p","strategy","p2p"}
 
                             },
@@ -1745,14 +1745,14 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
 ZENDEFNODE(ZSInterpolateEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
                             {{"embed primitive", "zssurf"}},
                             {
-                                {"string","inAttr","x"},
-                                {"string","outAttr","x"},
-                                // {"string","refAttr","X"},
-                                {"string","tag","skin_bw"}
-                                // {"int","use_xform","0"},
-                                // {"int","useDispMap","0"},
-                                // {"string","refDispMapTag","dX"},
-                                // {"string","outDispMapTag","dx"}
+                                {gParamType_String,"inAttr","x"},
+                                {gParamType_String,"outAttr","x"},
+                                // {gParamType_String,"refAttr","X"},
+                                {gParamType_String,"tag","skin_bw"}
+                                // {gParamType_Int,"use_xform","0"},
+                                // {gParamType_Int,"useDispMap","0"},
+                                // {gParamType_String,"refDispMapTag","dX"},
+                                // {gParamType_String,"outDispMapTag","dx"}
                                 },
                             {"ZSGeometry"}});
 
@@ -1818,10 +1818,10 @@ struct ZSDeformEmbedPrim : zeno::INode {
 ZENDEFNODE(ZSDeformEmbedPrim, {{{"zsvolume"}, {"embed primitive", "zssurf"}},
                             {{"embed primitive", "zssurf"},{"zsvolume"}},
                             {
-                                {"string","inAttr","V"},
-                                {"string","outAttr","v"},
-                                {"string","tag","skin_bw"},
-                                {"string","deformField","F"}
+                                {gParamType_String,"inAttr","V"},
+                                {gParamType_String,"outAttr","v"},
+                                {gParamType_String,"tag","skin_bw"},
+                                {gParamType_String,"deformField","F"}
                                 },
                             {"ZSGeometry"}});
 

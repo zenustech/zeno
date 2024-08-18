@@ -110,8 +110,8 @@ struct ParticlesWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesWrangle, {
-    {"prim", "zfxCode", "params"},
-    {"prim"},
+    {gParamType_Primitive, "zfxCode", "params"},
+    {gParamType_Primitive, "prim"},
     {},
     {"zenofx"},
 });

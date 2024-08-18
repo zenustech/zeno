@@ -169,11 +169,11 @@ struct ZSSparseGridToPrimitive : INode {
 ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                      {"SparseGrid",
                                       "ZSParticles",
-                                      {"string", "GridAttribute"},
-                                      {"string", "ParticleAttribute", ""},
+                                      {gParamType_String, "GridAttribute"},
+                                      {gParamType_String, "ParticleAttribute", ""},
                                       {"enum replace accumulate", "OpType", "replace"},
                                       {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
-                                      {"bool", "staggered", "0"}},
+                                      {gParamType_Bool, "staggered", "0"}},
                                      /* outputs: */
                                      {"ZSParticles"},
                                      /* params: */

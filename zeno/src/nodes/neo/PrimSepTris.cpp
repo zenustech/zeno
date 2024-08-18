@@ -233,11 +233,11 @@ struct PrimSepTriangles : INode {
 
 ZENDEFNODE(PrimSepTriangles,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
-        {"bool", "smoothNormal", "1"},
-        {"bool", "keepTriFaces", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Bool, "smoothNormal", "1"},
+        {gParamType_Bool, "keepTriFaces", "1"},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
         }, /* category: */ {
         "primitive",

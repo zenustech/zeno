@@ -17,8 +17,8 @@ struct ListLength : zeno::INode {
 };
 
 ZENDEFNODE(ListLength, {
-    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
-    {{"int","length"}},
+    {{gParamType_List, "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
+    {{gParamType_Int,"length"}},
     {},
     {"list"},
 });
@@ -44,9 +44,9 @@ struct ListGetItem : zeno::INode {
 };
 
 ZENDEFNODE(ListGetItem, {
-    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
-     {"int", "index"}},
-    {"object"},
+    {{gParamType_List, "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
+     {gParamType_Int, "index"}},
+    {{gParamType_IObject, "object"}},
     {},
     {"list"},
 });
@@ -67,7 +67,7 @@ struct ExtractList : zeno::INode {
 };
 
 ZENDEFNODE(ExtractList, {
-    {{"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
+    {{gParamType_List, "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel}},
     {},
     {},
     {"list"},
@@ -82,7 +82,7 @@ struct EmptyList : zeno::INode {
 
 ZENDEFNODE(EmptyList, {
     {},
-    {"list"},
+    {{gParamType_List, "list"}},
     {},
     {"list"},
 });
@@ -99,10 +99,10 @@ struct AppendList : zeno::INode {
 
 ZENDEFNODE(AppendList, {
     {
-        {"list", "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
-        {"", "object", "", zeno::Socket_ReadOnly}
+        {gParamType_List, "list", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
+        {gParamType_IObject, "object", "", zeno::Socket_ReadOnly}
     },
-    {"list"},
+    {{gParamType_List, "list"}},
     {},
     {"list"},
 });
@@ -120,10 +120,10 @@ struct ExtendList : zeno::INode {
 
 ZENDEFNODE(ExtendList, {
     {
-        {"list", "list1", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
-        {"list", "list2", "", zeno::Socket_ReadOnly, NoMultiSockPanel}
+        {gParamType_List, "list1", "", zeno::Socket_ReadOnly, NoMultiSockPanel},
+        {gParamType_List, "list2", "", zeno::Socket_ReadOnly, NoMultiSockPanel}
     },
-    {{"list", "list1"}},
+    {{gParamType_List, "list1"}},
     {},
     {"list"},
 });
@@ -139,8 +139,8 @@ struct ResizeList : zeno::INode {
 };
 
 ZENDEFNODE(ResizeList, {
-    {"list", {"int", "newSize"}},
-    {"list"},
+    {gParamType_List, {gParamType_Int, "newSize"}},
+    {{gParamType_List, "list"}},
     {},
     {"list"},
 });
@@ -178,8 +178,8 @@ ZENDEFNODE(MakeSmallList, {
         {"object", "obj4"},
         {"object", "obj5"}
     },
-    {"list"},
-    {{"bool", "doConcat", "1"}},
+    {{gParamType_List, "list"}},
+    {{gParamType_Bool, "doConcat", "1"}},
     {"list"},
 });
 
@@ -191,8 +191,8 @@ struct MakeList : zeno::INode {
 };
 
 ZENDEFNODE(MakeList, {
-    {{"list", "objs", "", zeno::Socket_ReadOnly}},
-    {"list"},
+    {{gParamType_List, "objs", "", zeno::Socket_ReadOnly}},
+    {{gParamType_List, "list"}},
     {},
     {"list"},
     });
@@ -212,8 +212,8 @@ struct NumericRangeList : zeno::INode {
 };
 
 ZENDEFNODE(NumericRangeList, {
-    {{"int","start","0"},{"int","end","1"},{"int","skip","1"}},
-    {"list"},
+    {{gParamType_Int,"start","0"},{gParamType_Int,"end","1"},{gParamType_Int,"skip","1"}},
+    {{gParamType_List, "list"}},
     {},
     {"list"},
     });
@@ -230,9 +230,9 @@ struct IsList : zeno::INode {
 
 ZENDEFNODE(IsList, {
     {
-        {"", "list", "", zeno::Socket_ReadOnly},
+        {gParamType_, "list", "", zeno::Socket_ReadOnly},
     },
-    {{"int","result"}},
+    {{gParamType_Int,"result"}},
     {},
     {"list"},
 });
@@ -259,7 +259,7 @@ struct ToVisualize_ListObject : zeno::INode {
 ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({
         {"list"},
         {},
-        {{"string", "path", ""}},
+        {{gParamType_String, "path", ""}},
         {"list"},
 });
 #endif*/

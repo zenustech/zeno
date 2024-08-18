@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
@@ -188,7 +188,7 @@ struct SprayParticles : zeno::INode {
 static int defSprayParticles = zeno::defNodeClass<SprayParticles>(
     "SprayParticles", {/* inputs: */ {
                            "TrianglePrim", 
-                           {"float", "Dx", "0.01"},
+                           {gParamType_Float, "Dx", "0.01"},
                        },
                        /* outputs: */
                        {

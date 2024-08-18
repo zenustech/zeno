@@ -430,8 +430,8 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         val.emplace("thinWalled", SMaterialProp{72,                     false, aiColor4D(), {aiTextureType_NONE}, {"$ai.thinWalled",}});
 
         val.emplace("opacity", SMaterialProp{75,                        false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
-        val.emplace("displacement", SMaterialProp{76,                   false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {"",}});
-        val.emplace("normal", SMaterialProp{77,                         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
+        val.emplace("displacement", SMaterialProp{76,                   false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {gParamType_,}});
+        val.emplace("normal", SMaterialProp{77,                         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {gParamType_,}});
     }
 
     std::vector<std::string> getTexList(){

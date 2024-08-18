@@ -132,11 +132,11 @@ struct PrimCurvature2: INode {
 };
 ZENDEFNODE(PrimCurvature2, {
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
         {"enum object image", "type", "object"},
     },
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"deprecated"},
@@ -182,12 +182,12 @@ struct PrimCurvature: INode {
 };
 ZENDEFNODE(PrimCurvature, {
     {
-        {"PrimitiveObject", "prim"},
-        {"bool", "curvature", "0"},
-        {"bool", "gaussianCurvature", "0"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Bool, "curvature", "0"},
+        {gParamType_Bool, "gaussianCurvature", "0"},
     },
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},
@@ -255,7 +255,7 @@ ZENDEFNODE(PrimCurvature, {
 //ZENDEFNODE(CompCurvature, {
 //    {
 //        {"image"},
-//        {"float","threshold","0"},
+//        {gParamType_Float,"threshold","0"},
 //        {"enum R G B","channel","R"}
 //    },
 //    {

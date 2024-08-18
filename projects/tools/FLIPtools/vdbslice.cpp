@@ -10,8 +10,8 @@ struct SlicePlaneForPrimitive : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(SlicePlaneForPrimitive, {
-    {{"", "origin", ""}, {"", "normal", ""}, {"", "primIn", ""}, {"", "resolution", ""}},
-    {{"", "primPlane", ""}},
+    {{gParamType_Unknown, "origin", ""}, {gParamType_Unknown, "normal", ""}, {gParamType_Unknown, "primIn", ""}, {gParamType_Unknown, "resolution", ""}},
+    {{gParamType_Unknown, "primPlane", ""}},
     {},
     {"math"},
 });
@@ -23,8 +23,8 @@ struct VdbSlice : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(VdbSlice, {
-    {{"", "vdbGrid", ""}, {"", "channelName", ""}, {"", "origin", ""}, {"", "normal", ""}, {"", "resolution", ""}},
-    {{"", "slicePrim", ""}},
+    {{gParamType_Unknown, "vdbGrid", ""}, {gParamType_Unknown, "channelName", ""}, {gParamType_Unknown, "origin", ""}, {gParamType_Unknown, "normal", ""}, {gParamType_Unknown, "resolution", ""}},
+    {{gParamType_Unknown, "slicePrim", ""}},
     {},
     {"visualize"},
 });
@@ -36,8 +36,8 @@ struct VDBVisualize : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(VDBVisualize, {
-    {{"", "grid", ""}},
-    {{"", "visualPrim", ""}},
+    {{gParamType_Unknown, "grid", ""}},
+    {{gParamType_Unknown, "visualPrim", ""}},
     {},
     {"visualize"},
 });

@@ -201,11 +201,11 @@ public:
 
 ZENDEFNODE(PBD, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
-                    {"vec3f", "external_force", "0.0, -10.0, 0.0"},
-                    {"int", "numSubsteps", "10"},
-                    {"float", "edgeCompliance", "100.0"},
-                    {"float", "volumeCompliance", "0.0"}
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Vec3f, "external_force", "0.0, -10.0, 0.0"},
+                    {gParamType_Int, "numSubsteps", "10"},
+                    {gParamType_Float, "edgeCompliance", "100.0"},
+                    {gParamType_Float, "volumeCompliance", "0.0"}
                 },
                  // outputs:
                  {"outPrim"},

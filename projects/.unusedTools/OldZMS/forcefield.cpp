@@ -101,8 +101,8 @@ static int defApplyForce = zeno::defNodeClass<ApplyForce>("ApplyForce",
     "forcefield",
     "boxlength",
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "Molecular",
     }});

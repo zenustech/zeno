@@ -24,8 +24,12 @@ struct MakeEmptyBones : zeno::INode {
 };
 
 ZENDEFNODE(MakeEmptyBones, {
-    {"root"},
-    {"bones"},
+{
+    {gParamType_Vec3f, "root"},
+},
+{
+    {gParamType_Primitive, "bones"},
+},
     {},
     {"Skinning"},
 });
@@ -46,8 +50,8 @@ struct AddBone : zeno::INode {
 };
 
 ZENDEFNODE(AddBone, {
-    {"bones","node","conn_to"},
-    {"bones_out"},
+    {{gParamType_Primitive, "bones"},{gParamType_Vec3f,"node"},{gParamType_Int,"conn_to"}},
+    {{gParamType_Primitive, "bones_out"}},
     {},
     {"Skinning"},
 });
@@ -73,7 +77,7 @@ struct EvalBonesAngle : zeno::INode {
 
 ZENDEFNODE(EvalBonesAngle, {
     {"bones","bs_idx"},
-    {{"float","res"}},
+    {{gParamType_Float,"res"}},
     {},
     {"Skinning"},
 });

@@ -459,9 +459,9 @@ struct EvalBlenderFile : zeno::INode {
 ZENDEFNODE(EvalBlenderFile,
            {       /* inputs: */
             {
-                {"string", "script_file", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                {"string", "blender_file", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                {"string", "output_path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_String, "script_file", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_String, "blender_file", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_String, "output_path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
             },  /* outputs: */
             {
                 "fake"
@@ -716,22 +716,22 @@ ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
                    {"frameid"},
-                   //{"float", "fps", "24.0"},
+                   //{gParamType_Float, "fps", "24.0"},
                    "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
                    "prim",
-                   "camera", "light", {"string","matName"}, {"string", "meshName"}, {"string","pathName"}, "bsPrimsOrigin",
-                   {"list", "bsPrims", ""},
+                   "camera", "light", {gParamType_String,"matName"}, {gParamType_String, "meshName"}, {gParamType_String,"pathName"}, "bsPrimsOrigin",
+                   {gParamType_List, "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
-                   "writeData", {"bool", "visibility"}
+                   "writeData", {gParamType_Bool, "visibility"}
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
                    {"enum TRUE FALSE", "interAnimData", "TRUE"},
-                   {"bool", "writeData", "false"},
-                   {"bool", "printAnimData", "false"},
-                   {"bool", "evalBlendShape", "true"},
+                   {gParamType_Bool, "writeData", "false"},
+                   {gParamType_Bool, "printAnimData", "false"},
+                   {gParamType_Bool, "evalBlendShape", "true"},
                },  /* category: */
                {
                    "FBX",

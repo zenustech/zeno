@@ -2,6 +2,7 @@
 // Created by zh on 2023/11/14.
 //
 
+//有了Python，其实不需要这样手动处理json了
 #ifdef ENABLE_LEGACY_ZENO_NODE
 
 #include "zeno/types/DictObject.h"
@@ -33,7 +34,7 @@ struct ReadJson : zeno::INode {
 };
 ZENDEFNODE(ReadJson, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     },
     {
         "json",
@@ -146,7 +147,7 @@ ZENDEFNODE(JsonToString, {
          "json",
      },
      {
-         {"string","out"}
+         {gParamType_String,"out"}
      },
      {},
      {
@@ -181,7 +182,7 @@ struct JsonSetDataSimple : zeno::INode {
 ZENDEFNODE(JsonSetDataSimple, {
     {
         {"json"},
-        {"string", "path"},
+        {gParamType_String, "path"},
         "value",
     },
     {
@@ -235,7 +236,7 @@ struct JsonSetData : zeno::INode {
 ZENDEFNODE(JsonSetData, {
     {
         {"json"},
-        {"multiline_string", "paths", "input_name:json_path"},
+        {gParamType_String, "paths", "input_name:json_path"},
         {"dict", "dict"},
     },
     {
@@ -257,7 +258,7 @@ struct ReadJsonFromString : zeno::INode {
 };
 ZENDEFNODE(ReadJsonFromString, {
     {
-        {"string", "content"},
+        {gParamType_String, "content"},
     },
     {
         "json",
@@ -275,10 +276,10 @@ struct JsonGetArraySize : zeno::INode {
 };
 ZENDEFNODE(JsonGetArraySize, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
     },
     {
-        {"int", "size"},
+        {gParamType_Int, "size"},
     },
     {},
     {
@@ -296,8 +297,8 @@ struct JsonGetArrayItem : zeno::INode {
 };
 ZENDEFNODE(JsonGetArrayItem, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
-        {"int", "index"}
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
+        {gParamType_Int, "index"}
     },
     {
         "json",
@@ -349,12 +350,12 @@ struct JsonGetChild : zeno::INode {
 };
 ZENDEFNODE(JsonGetChild, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
-        {"string", "name"},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "name"},
         {"enum json int float string vec2f vec3f vec4f", "type"},
     },
     {
-        {"vec4f","out"},
+        {gParamType_Vec4f,"out"},
     },
     {},
     {
@@ -369,7 +370,7 @@ struct JsonGetInt : zeno::INode {
 };
 ZENDEFNODE(JsonGetInt, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
     },
     {
         "value",
@@ -388,7 +389,7 @@ struct JsonGetFloat : zeno::INode {
 };
 ZENDEFNODE(JsonGetFloat, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
     },
     {
         "value",
@@ -407,7 +408,7 @@ struct JsonGetString : zeno::INode {
 };
 ZENDEFNODE(JsonGetString, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
     },
     {
         "string",
@@ -425,7 +426,7 @@ struct JsonGetTypeName : zeno::INode {
 };
 ZENDEFNODE(JsonGetTypeName, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
     },
     {
         "string",
@@ -504,8 +505,8 @@ struct JsonData : zeno::INode {
 };
 ZENDEFNODE(JsonData, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
-        {"string", "path"},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "path"},
     },
     {
         "out",
@@ -657,11 +658,11 @@ struct JsonGetData : zeno::INode {
 };
 ZENDEFNODE(JsonGetData, {
     {
-        {"", "json", "", zeno::Socket_ReadOnly},
-        {"multiline_string", "paths", "json_path:vec3f:output_name"},
+        {gParamType_, "json", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "paths", "json_path:vec3f:output_name"},
     },
     {
-        {"DictObject", "outs"}
+        {gParamType_Dict,"outs"}
     },
     {},
     {

@@ -80,14 +80,14 @@ struct VDBPerlinNoise : INode {
 ZENO_DEFNODE(VDBPerlinNoise)(
      { /* inputs: */ {
      {"VDBGrid", "inoutSDF", "", zeno::Socket_ReadOnly},
-    {"float", "scale", "5"},
-    {"vec3f", "scale3d", "1,1,1"},
-    {"float", "detail", "2"},
-    {"float", "roughness", "0.5"},
-    {"float", "disortion", "0"},
-    {"vec3f", "offset", "0,0,0"},
-    {"float", "average", "0"},
-    {"float", "strength", "1"},
+    {gParamType_Float, "scale", "5"},
+    {gParamType_Vec3f, "scale3d", "1,1,1"},
+    {gParamType_Float, "detail", "2"},
+    {gParamType_Float, "roughness", "0.5"},
+    {gParamType_Float, "disortion", "0"},
+    {gParamType_Vec3f, "offset", "0,0,0"},
+    {gParamType_Float, "average", "0"},
+    {gParamType_Float, "strength", "1"},
      }, /* outputs: */ {
          {"VDBGrid", "inoutSDF"},
      }, /* params: */ {

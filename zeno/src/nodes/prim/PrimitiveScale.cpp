@@ -25,13 +25,13 @@ struct PrimitiveScale : zeno::INode {
 
 ZENDEFNODE(PrimitiveScale, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "origin", "0,0,0"},
-    {"vec3f", "axis", "0,1,0"},
-    {"float", "scale", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "origin", "0,0,0"},
+    {gParamType_Vec3f, "axis", "0,1,0"},
+    {gParamType_Float, "scale", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},

@@ -35,10 +35,10 @@ namespace zeno {
     ZENO_DEFNODE(RemoteLandscapeInput)
     ({
         {
-            {"string", "SubjectName", "ReservedName_Landscape"},
+            {gParamType_String, "SubjectName", "ReservedName_Landscape"},
         },
         {
-            {"prim"},
+            {gParamType_Primitive, "prim"},
         },
         {},
         {"Unreal"},
@@ -61,7 +61,7 @@ namespace zeno {
     ({
         {},
         {
-            {"prim"},
+            {gParamType_Primitive, "prim"},
         },
         {},
         {"Unreal"},
@@ -106,10 +106,10 @@ namespace zeno {
     ZENO_DEFNODE(PackVec3fToString)
     ({
         {
-            {"vec3f", "vec3f"},
+            {gParamType_Vec3f, "vec3f"},
         },
         {
-            {"string", "string"},
+            {gParamType_String, "string"},
         },
         {},
         {"Unreal"},
@@ -142,11 +142,11 @@ namespace zeno {
     ZENO_DEFNODE(PackBoundDiffToString)
     ({
         {
-            {"prim", "OriginPrim"},
-            {"prim", "CurrentPrim"},
+            {gParamType_Primitive, "OriginPrim"},
+            {gParamType_Primitive, "CurrentPrim"},
         },
         {
-            {"string", "string"},
+            {gParamType_String, "string"},
         },
         {},
         {"Unreal"},

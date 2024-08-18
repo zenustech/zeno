@@ -55,7 +55,7 @@ struct PBFWorld_NeighborhoodSearch: INode
 
 ZENDEFNODE(PBFWorld_NeighborhoodSearch,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"},

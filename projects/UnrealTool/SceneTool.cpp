@@ -534,8 +534,8 @@ namespace zeno {
             ExportHeightfieldToImage,
             {
                 {
-                    {"prim"},
-                    {"string", "channel", "height"},
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_String, "channel", "height"},
                     {"writepath", "output_path"},
                 },
                 {},
@@ -547,8 +547,8 @@ namespace zeno {
             ExportTextureToImage,
             {
                 {
-                    {"prim"},
-                    {"string", "channel", "clr"},
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_String, "channel", "clr"},
                     {"writepath", "output_path"},
                 },
                 {},
@@ -560,10 +560,10 @@ namespace zeno {
             ExtractVertexHeightField,
             {
                 {
-                    {"prim"},
-                    {"string", "HeightChannel", "height"},
-                    {"string", "NxUserDataChannel", "nx"},
-                    {"string", "NyUserDataChannel", "ny"},
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_String, "HeightChannel", "height"},
+                    {gParamType_String, "NxUserDataChannel", "nx"},
+                    {gParamType_String, "NyUserDataChannel", "ny"},
                 },
                 {{"LandscapeData"}},
                 {},
@@ -574,8 +574,8 @@ namespace zeno {
             ExtractVertexAttributeToTexture,
             {
                 {
-                    {"prim"},
-                    {"string", "channel", "clr"},
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_String, "channel", "clr"},
                     {"enum HeightField vec3f", "type", "vec3f"},
                 },
                 {{"pngTexture"}},
@@ -588,7 +588,7 @@ namespace zeno {
             {
                 {
                     {"LandscapeData"},
-                    {"string", "guidRef"},
+                    {gParamType_String, "guidRef"},
                 },
                 {{"LandscapeData"}},
                 {},
@@ -614,7 +614,7 @@ namespace zeno {
                     {"Asset"},
                 },
                 {{"Bundle"},
-                 {"string", "GUID"}},
+                 {gParamType_String, "GUID"}},
                 {},
                 {"Unreal"},
             });
@@ -648,10 +648,10 @@ namespace zeno {
             {
                 {
                     {"Prim"},
-                    {"vec3f", "Scale"},
-                    {"string", "HeightChannel", "height"},
-                    {"string", "NxUserDataChannel", "nx"},
-                    {"string", "NyUserDataChannel", "ny"},
+                    {gParamType_Vec3f, "Scale"},
+                    {gParamType_String, "HeightChannel", "height"},
+                    {gParamType_String, "NxUserDataChannel", "nx"},
+                    {gParamType_String, "NyUserDataChannel", "ny"},
                 },
                 {
                     {"Prim"},

@@ -1,7 +1,7 @@
 #include "FLIP_vdb.h"
 #include "../vdb_velocity_extrapolator.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -69,9 +69,9 @@ struct SubtractPressureGradient : zeno::INode {
 static int defSubtractPressureGradient =
     zeno::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
                                                  {/* inputs: */ {
-                                                      {"float", "dt"},{"float", "Dx"},
-                                                      {"float", "Density", "1000.0"},
-                                                      {"float", "SurfaceTension", "0.0"},
+                                                      {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                                                      {gParamType_Float, "Density", "1000.0"},
+                                                      {gParamType_Float, "SurfaceTension", "0.0"},
                                                       "LiquidSDF",
                                                       "SolidSDF",
                                                       "Pressure",
@@ -84,8 +84,8 @@ static int defSubtractPressureGradient =
                                                   /* outputs: */ {},
                                                   /* params: */
                                                   {
-                                                      {"float", "dx", "0.0"},
-                                                      {"int", "VelExtraLayer", "3"},
+                                                      {gParamType_Float, "dx", "0.0"},
+                                                      {gParamType_Int, "VelExtraLayer", "3"},
                                                   },
 
                                                   /* category: */

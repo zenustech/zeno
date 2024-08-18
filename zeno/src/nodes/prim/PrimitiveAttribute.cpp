@@ -39,14 +39,14 @@ struct PrimitiveAddAttr : zeno::INode {
 ZENDEFNODE(PrimitiveAddAttr, 
     { 
         {
-            {"vec3f", "fillValue", "", zeno::Socket_ReadOnly},
-            {"prim", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Vec3f, "fillValue", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         }, 
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {
-        {"string", "name", "clr"},
+        {gParamType_String, "name", "clr"},
         {"enum float float3", "type", "float3"},
-        {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
+        {gParamType_String, "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
     },
     {
     "deprecated",
@@ -71,11 +71,11 @@ struct PrimitiveDelAttr : zeno::INode {
 ZENDEFNODE(PrimitiveDelAttr,
     {
         {
-            {"", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         },
-    {"prim"}, 
+    {{gParamType_Primitive, "prim"}},
     {
-        {"string", "name", "nrm"},
+        {gParamType_String, "name", "nrm"},
     },
     {
     "deprecated",
@@ -113,14 +113,14 @@ struct PrimitiveGetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetAttrValue, {
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int","index","0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int,"index","0"},
     }, 
     {
         {"NumericObject","value"},
     },
     {
-        {"string", "name", "pos"},
+        {gParamType_String, "name", "pos"},
         {"enum float float3", "type", "float3"},
     },
     {"deprecated"} 
@@ -156,15 +156,15 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveSetAttrValue,{ 
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int","index","0"},
-        {"float","value"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int,"index","0"},
+        {gParamType_Float,"value"},
     }, 
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        {"string", "name", "pos"},
+        {gParamType_String, "name", "pos"},
         {"enum float float3", "type", "float3"},
     },
     {

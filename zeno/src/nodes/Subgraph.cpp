@@ -39,7 +39,7 @@ struct SubInput : zeno::INode {
 
 ZENDEFNODE(SubInput, {
     {},
-    {{"bool", "hasValue"}},
+    {{gParamType_Bool, "hasValue"}},
     {},
     {"subgraph"},
 });

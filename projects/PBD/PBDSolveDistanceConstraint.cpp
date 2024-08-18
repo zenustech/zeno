@@ -70,8 +70,8 @@ public:
 
 ZENDEFNODE(PBDSolveDistanceConstraint, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
-                    {"float", "disntanceCompliance", "100.0"}
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Float, "disntanceCompliance", "100.0"}
                 },
                  // outputs:
                  {"outPrim"},

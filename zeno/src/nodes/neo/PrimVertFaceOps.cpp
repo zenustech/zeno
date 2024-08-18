@@ -157,14 +157,14 @@ struct PrimVertsAttrToFaces : INode {
 
 ZENDEFNODE(PrimVertsAttrToFaces, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     {"enum lines tris quads polys", "faceType", "tris"},
-    {"string", "vertAttr", "tmp"},
-    {"string", "faceAttr", "tmp"},
+    {gParamType_String, "vertAttr", "tmp"},
+    {gParamType_String, "faceAttr", "tmp"},
     {"enum sum average min max", "method", "average"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -225,15 +225,15 @@ struct PrimFacesAttrToVerts : INode {
 
 ZENDEFNODE(PrimFacesAttrToVerts, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     {"enum lines tris quads polys", "faceType", "tris"},
-    {"string", "faceAttr", "tmp"},
-    {"string", "vertAttr", "tmp"},
-    {"float", "deflVal", "0"},
+    {gParamType_String, "faceAttr", "tmp"},
+    {gParamType_String, "vertAttr", "tmp"},
+    {gParamType_Float, "deflVal", "0"},
     {"enum sum average min max", "method", "average"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -288,12 +288,12 @@ struct PrimFacesCenterAsVerts : INode {
 
 ZENDEFNODE(PrimFacesCenterAsVerts, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     {"enum faces lines", "faceType", "faces"},
-    {"bool", "copyFaceAttrs", "1"},
+    {gParamType_Bool, "copyFaceAttrs", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

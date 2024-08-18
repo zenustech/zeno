@@ -60,13 +60,13 @@ struct testCloth : zeno::INode
 };
 ZENDEFNODE(testCloth, {
     {
-        {"int","nx","128"},
-        {"int","ny","128"},
-        {"float","dx","0.0078125"},
-        {"float","dy","0.0078125"}
+        {gParamType_Int,"nx","128"},
+        {gParamType_Int,"ny","128"},
+        {gParamType_Float,"dx","0.0078125"},
+        {gParamType_Float,"dy","0.0078125"}
     },
     {   
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"PBD"},

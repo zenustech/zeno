@@ -216,7 +216,7 @@ public:
 
 ZENDEFNODE(PBDClothInit, {// inputs:
                           {
-                              {"PrimitiveObject", "prim"}
+                              {gParamType_Primitive, "prim"}
                           },
                           // outputs:
                           {

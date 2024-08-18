@@ -80,10 +80,10 @@ void main()
       MakeMaterial,
       {
           {
-              {"string", "vert", ""},
-              {"string", "frag", ""},
-              {"string", "common", ""},
-              {"string", "extensions", ""},
+              {gParamType_String, "vert", ""},
+              {gParamType_String, "frag", ""},
+              {gParamType_String, "common", ""},
+              {gParamType_String, "extensions", ""},
           },
           {
               {"material", "mtl"},
@@ -122,11 +122,11 @@ struct ExtractMaterialShader : zeno::INode
       SetMaterial,
       {
           {
-              {"primitive", "prim", "", zeno::Socket_ReadOnly},
-              {"material", "mtl", "", zeno::Socket_ReadOnly},
+              {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+              {gParamType_Material, "mtl", "", zeno::Socket_ReadOnly},
           },
           {
-              {"primitive", "prim"},
+              {gParamType_Primitive, "prim"},
           },
           {},
           {
@@ -174,11 +174,11 @@ struct ExtractMaterialShader : zeno::INode
       BindMaterial,
       {
           {
-              {"", "object", "", zeno::Socket_ReadOnly},
-              {"string", "mtlid", "Mat1"},
+              {gParamType_Primitive, "object", "", zeno::Socket_ReadOnly},
+              {gParamType_String, "mtlid", "Mat1"},
           },
           {
-              {"object"},
+              {gParamType_Primitive, "object"},
           },
           {},
           {
@@ -222,12 +222,12 @@ struct ExtractMaterialShader : zeno::INode
         BindLight,
         {
             {
-                {"", "object", "", zeno::Socket_ReadOnly},
-                {"bool", "islight", "1"},// actually string or list
-                {"bool", "invertdir", "0"}
+                {gParamType_Primitive, "object", "", zeno::Socket_ReadOnly},
+                {gParamType_Bool, "islight", "1"},// actually string or list
+                {gParamType_Bool, "invertdir", "0"}
             },
             {
-                {"object"},
+                {gParamType_Primitive, "object"},
             },
             {},
             {

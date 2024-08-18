@@ -85,7 +85,7 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
         static const std::map<std::string, int> type_map {
             //{"half", 0},
-            //{"float", 1},
+            //{gParamType_Float, 1},
             {"vec2", 2},
         };
 
@@ -127,9 +127,9 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
     ZENDEFNODE(ShaderTexture2D, {
     {
-        {"int", "texId", "0"},
-        {"vec2f", "coord"},
-        {"vec2f", "uvtiling", "1,1"},
+        {gParamType_Int, "texId", "0"},
+        {gParamType_Vec2f, "coord"},
+        {gParamType_Vec2f, "uvtiling", "1,1"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
@@ -143,9 +143,9 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
 ZENDEFNODE(ShaderTexture3D, {
     {
-        {"int", "texId", "0"},
-        {"vec3f", "coord", "0,0,0"},
-        {"bool", "cihou", "0"},
+        {gParamType_Int, "texId", "0"},
+        {gParamType_Vec3f, "coord", "0,0,0"},
+        {gParamType_Bool, "cihou", "0"},
         {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
         
@@ -341,20 +341,20 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
 
 ZENDEFNODE(SmartTexture2D, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"heatmap"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Heatmap, "heatmap"},
         {(std::string) "enum " + SmartTexture2D::texWrapping, "wrapS", "REPEAT"},
         {(std::string) "enum " + SmartTexture2D::texWrapping, "wrapT", "REPEAT"},
         {(std::string) "enum " + SmartTexture2D::texFiltering, "minFilter", "LINEAR"},
         {(std::string) "enum " + SmartTexture2D::texFiltering, "magFilter", "LINEAR"},
-        {"vec2f", "coord"},
-        {"vec2f", "uvtiling", "1,1"},
-        {"vec4f", "value", "0,0,0,0"},
+        {gParamType_Vec2f, "coord"},
+        {gParamType_Vec2f, "uvtiling", "1,1"},
+        {gParamType_Vec4f, "value", "0,0,0,0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
         {"enum raw srgb normal_map", "post_process", "raw"}
     },
     {
-        {"shader", "out"},
+        {gParamType_IObject, "out"},
     },
     {},
     {

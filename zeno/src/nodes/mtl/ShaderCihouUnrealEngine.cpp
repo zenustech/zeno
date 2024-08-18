@@ -43,7 +43,7 @@ ZENDEFNODE(ShaderCihouUnrealEngine, {
         {"MaterialObject", "mtl", "", zeno::Socket_ReadOnly},
     },
     {
-        {"string", "code"},
+        {gParamType_String, "code"},
     },
     {
     },

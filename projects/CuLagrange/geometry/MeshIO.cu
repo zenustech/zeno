@@ -54,7 +54,7 @@ ZENDEFNODE(ReadVTKMesh, {/* inputs: */ {
                         },
                         /* params: */
                         {
-                            {"int","view_interior","0"}
+                            {gParamType_Int,"view_interior","0"}
                         },
                         /* category: */
                         {
@@ -87,8 +87,8 @@ ZENDEFNODE(WriteVTKMesh, {/* inputs: */ {
                         },
                         /* params: */
                         {
-                            {"int","outVertAttr","0"},
-                            {"int","outCellAttr","0"}
+                            {gParamType_Int,"outVertAttr","0"},
+                            {gParamType_Int,"outCellAttr","0"}
                         },
                         /* category: */
                         {

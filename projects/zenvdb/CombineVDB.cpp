@@ -31,7 +31,7 @@ namespace zeno {
 //     "grid",
 //     }, /* outputs: */ {
 //     }, /* params: */ {
-//     {"float", "dx", "0.08 0"},
+//     {gParamType_Float, "dx", "0.08 0"},
 //     {"float3", "position", "0 0 0"},
 //     {"float3", "rotation", "0 0 0"},
 //     {"float3", "scale", "1 1 1"},
@@ -192,10 +192,10 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      }, /* outputs: */ {
          {"VDBGrid", "FieldOut"},
      }, /* params: */ {
-       {"float", "MultiplierA", "1"},
-       {"float", "MultiplierB", "1"},
+       {gParamType_Float, "MultiplierA", "1"},
+       {gParamType_Float, "MultiplierB", "1"},
        {"enum CSGUnion CSGIntersection CSGDifference Add Mul Replace A_Sample_B", "OpType", "CSGUnion"},
-       {"bool", "writeBack", "0"},
+       {gParamType_Bool, "writeBack", "0"},
      }, /* category: */ {
      "openvdb",
      }});

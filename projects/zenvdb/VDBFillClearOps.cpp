@@ -45,10 +45,10 @@ struct VDBFillActiveVoxels : INode {
 
 ZENO_DEFNODE(VDBFillActiveVoxels)(
      { /* inputs: */ {
-     {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
-     {"NumericObject", "fillValue", "0.0"},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Float, "fillValue", "0.0"},
      }, /* outputs: */ {
-         {"VDBGrid", "grid"},
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -89,7 +89,7 @@ struct VDBMultiplyOperation : INode {
 ZENO_DEFNODE(VDBMultiplyOperation)(
      { /* inputs: */ {
      "grid",
-     {"NumericObject", "fillValue", "0.0"},
+     {gParamType_Float, "fillValue", "0.0"},
      }, /* outputs: */ {
        "grid",
      }, /* params: */ {
@@ -138,11 +138,11 @@ struct VDBTouchAABBRegion : INode {
 
 ZENO_DEFNODE(VDBTouchAABBRegion)(
      { /* inputs: */ {
-     {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
-     {"vec3f", "bmin", "-1,-1,-1"},
-     {"vec3f", "bmax", "1,1,1"},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Vec3f, "bmin", "-1,-1,-1"},
+     {gParamType_Vec3f, "bmax", "1,1,1"},
      }, /* outputs: */ {
-       "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -191,10 +191,10 @@ struct VDBTopoCopy : INode{
 };
 ZENO_DEFNODE(VDBTopoCopy)(
      { /* inputs: */ {
-     {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
-     {"VDBGrid", "topo", "", zeno::Socket_ReadOnly}
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_VDBGrid, "topo", "", zeno::Socket_ReadOnly}
      }, /* outputs: */ {
-       "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

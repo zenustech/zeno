@@ -168,6 +168,7 @@ namespace zeno {
 
     ZENO_API std::string paramTypeToString(ParamType type)
     {
+        //TODO: 自定义类型的处理方式？
         switch (type)
         {
         case Param_Null:    return "";

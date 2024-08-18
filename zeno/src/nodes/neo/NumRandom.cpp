@@ -196,14 +196,14 @@ struct NumRandom : INode {
 
 ZENDEFNODE(NumRandom, {
     {
-    {"vec3f", "dir", "0,0,1"},
-    {"float", "base", "0"},
-    {"float", "scale", "1"},
-    {"int", "seed", "-1"},
+    {gParamType_Vec3f, "dir", "0,0,1"},
+    {gParamType_Float, "base", "0"},
+    {gParamType_Float, "scale", "1"},
+    {gParamType_Int, "seed", "-1"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},
     },
     {
-    {"int", "value"},
+    {gParamType_Int, "value"},
     },
     {
     },
@@ -223,13 +223,13 @@ struct NumRandomSeedCombine : INode {
 
 ZENDEFNODE(NumRandomSeedCombine, {
     {
-    {"int", "x", "0"},
-    {"int", "y", "0"},
-    {"int", "z", "0"},
-    {"int", "w", "0"},
+    {gParamType_Int, "x", "0"},
+    {gParamType_Int, "y", "0"},
+    {gParamType_Int, "z", "0"},
+    {gParamType_Int, "w", "0"},
     },
     {
-    {"int", "seed"},
+    {gParamType_Int, "seed"},
     },
     {
     },
@@ -251,12 +251,12 @@ struct NumRandomInt : INode {
 
 ZENDEFNODE(NumRandomInt, {
     {
-    {"int", "seed", "-1"},
-    {"int", "valmin", "0"},
-    {"int", "valmax", "1"},
+    {gParamType_Int, "seed", "-1"},
+    {gParamType_Int, "valmin", "0"},
+    {gParamType_Int, "valmax", "1"},
     },
     {
-    {"int", "value"},
+    {gParamType_Int, "value"},
     },
     {
     },
@@ -278,12 +278,12 @@ struct NumRandomFloat : INode {
 
 ZENDEFNODE(NumRandomFloat, {
     {
-    {"int", "seed", "-1"},
-    {"float", "valmin", "0"},
-    {"float", "valmax", "1"},
+    {gParamType_Int, "seed", "-1"},
+    {gParamType_Float, "valmin", "0"},
+    {gParamType_Float, "valmax", "1"},
     },
     {
-    {"float", "value"},
+    {gParamType_Float, "value"},
     },
     {
     },

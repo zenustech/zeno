@@ -211,7 +211,7 @@ ZENDEFNODE(DemBones,{
         "SkiningInfo",
         "FrameInfo",
     },
-    {{"int", "bone_number", "20"}},
+    {{gParamType_Int, "bone_number", "20"}},
     {"DemBones"},
 });
 

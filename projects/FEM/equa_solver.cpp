@@ -79,12 +79,12 @@ struct Jiggle : zeno::INode {
 
 
 ZENDEFNODE(Jiggle, {
-    {"prim",
-        {"float","jiggleStiffness","10"},
-        {"float","jiggleDamping","0.5"},
-        {"float","jiggleRate","1"}
+    {{gParamType_Primitive, "prim"},
+        {gParamType_Float,"jiggleStiffness","10"},
+        {gParamType_Float,"jiggleDamping","0.5"},
+        {gParamType_Float,"jiggleRate","1"}
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"FEM"},
 });
@@ -258,9 +258,12 @@ struct BuildLapaceOperator : zeno::INode {
 };
 
 ZENDEFNODE(BuildLapaceOperator,{
-    {"prim","elmView","integrator","skin"
+    {{gParamType_Primitive, "prim"},
+     {gParamType_Primitive, "elmView"},
+     {gParamType_Unknown, "integrator"},
+     {gParamType_Primitive, "skin"}
     },
-    {"res"},
+    {{gParamType_Unknown, "res"}},
     {},
     {"FEM"},
 });
@@ -375,11 +378,22 @@ struct SolveFEMFast : zeno::INode {
 };
 
 ZENDEFNODE(SolveFEMFast,{
-    {"integrator","shape","elmView","laplaceOp","skin",{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
-        {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},
-        {"float","epsilon","1e-8"},{"float","rel_epsilon","1e-5"},{"int","window_size","5"}
+    {
+        {gParamType_Unknown, "integrator"},
+        {gParamType_Primitive, "shape"},
+        {gParamType_Primitive, "elmView"},
+        {gParamType_Unknown, "laplaceOp"},
+        {gParamType_Primitive, "skin"},
+        {gParamType_Int,"maxNRIters","10"},
+        {gParamType_Int,"maxBTLs","10"},
+        {gParamType_Float,"ArmijoCoeff","0.01"},
+        {gParamType_Float,"CurvatureCoeff","0.9"},
+        {gParamType_Float,"BTL_shrinkingRate","0.5"},
+        {gParamType_Float,"epsilon","1e-8"},
+        {gParamType_Float,"rel_epsilon","1e-5"},
+        {gParamType_Int,"window_size","5"}
     },
-    {"shape"},
+    {{gParamType_Primitive, "shape"}},
     {},
     {"FEM"},
 });
@@ -583,11 +597,19 @@ struct SolveFEM : zeno::INode {
 };
 
 ZENDEFNODE(SolveFEM,{
-    {"integrator","shape","elmView","skin",{"int","maxNRIters","10"},{"int","maxBTLs","10"},{"float","ArmijoCoeff","0.01"},
-        {"float","CurvatureCoeff","0.9"},{"float","BTL_shrinkingRate","0.5"},
-        {"float","epsilon","1e-8"}
+    {
+        {gParamType_Unknown, "integrator"},
+        {gParamType_Primitive, "shape"},
+        {gParamType_Primitive, "elmView"},
+        {gParamType_Primitive, "skin"},
+        {gParamType_Int,"maxNRIters","10"},
+        {gParamType_Int,"maxBTLs","10"},
+        {gParamType_Float,"ArmijoCoeff","0.01"},
+        {gParamType_Float,"CurvatureCoeff","0.9"},
+        {gParamType_Float,"BTL_shrinkingRate","0.5"},
+        {gParamType_Float,"epsilon","1e-8"}
     },
-    {"shape"},
+    {{gParamType_Primitive, "shape"}},
     {},
     {"FEM"},
 });

@@ -64,11 +64,11 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
     { /* inputs: */ {
         {"VDBGrid", "SDF", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"prim", "Mesh"},
+        {gParamType_Primitive, "Mesh"},
     }, /* params: */ {
-        {"float", "isoValue", "0"},
-        {"float", "adaptivity", "0"},
-        {"bool", "allowQuads", "0"},
+        {gParamType_Float, "isoValue", "0"},
+        {gParamType_Float, "adaptivity", "0"},
+        {gParamType_Bool, "allowQuads", "0"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -85,11 +85,11 @@ static int defSDFToPrimitive = zeno::defNodeClass<SDFToPrimitive>("SDFToPrimitiv
     { /* inputs: */ {
         {"object", "SDF", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ {
-        {"float", "isoValue", "0"},
-        {"float", "adaptivity", "0"},
-        {"bool", "allowQuads", "0"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+        {gParamType_Float, "isoValue", "0"},
+        {gParamType_Float, "adaptivity", "0"},
+        {gParamType_Bool, "allowQuads", "0"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -129,7 +129,7 @@ struct ToVisualize_VDBFloatGrid : SDFToPoly {
 ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
         {"SDF"},
         {},
-        {{"string", "path", ""}},
+        {{gParamType_String, "path", ""}},
         {"primitive"},
 });
 #endif
@@ -200,13 +200,13 @@ struct SDFToPrim : zeno::INode{
 ZENDEFNODE(SDFToPrim, {
     {
         {"object", "SDF", "", zeno::Socket_ReadOnly},
-        {"float", "isoValue", "0"},
-        {"float", "adaptivity", "0"},
-        {"bool", "allowQuads", "0"},
+        {gParamType_Float, "isoValue", "0"},
+        {gParamType_Float, "adaptivity", "0"},
+        {gParamType_Bool, "allowQuads", "0"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
     },
     {

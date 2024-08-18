@@ -61,10 +61,10 @@ struct ShaderPackVector : ShaderNodeClone<ShaderPackVector> {
 
 ZENDEFNODE(ShaderPackVector, {
     {
-        {"float", "x", "0"},
-        {"float", "y", "0"},
-        {"float", "z", "0"},
-        {"float", "w", "0"},
+        {gParamType_Float, "x", "0"},
+        {gParamType_Float, "y", "0"},
+        {gParamType_Float, "z", "0"},
+        {gParamType_Float, "w", "0"},
     },
     {{"NumericObject","out"}},
     {
@@ -119,7 +119,7 @@ ZENDEFNODE(ShaderPackVec, {
         {"shader", "w"},
     },
     {
-        {"vec4f", "out"},
+        {gParamType_Vec4f, "out"},
     },
     {},
     {"deprecated"},
@@ -131,13 +131,13 @@ struct ShaderMakeVec : ShaderPackVec {
 
 ZENDEFNODE(ShaderMakeVec, {
     {
-        {"float", "x"},
-        {"float", "y"},
-        {"float", "z"},
-        {"float", "w"},
+        {gParamType_Float, "x"},
+        {gParamType_Float, "y"},
+        {gParamType_Float, "z"},
+        {gParamType_Float, "w"},
     },
     {
-        {"vec4f", "out"},
+        {gParamType_Vec4f, "out"},
     },
     {},
     {"deprecated"},
@@ -176,11 +176,11 @@ struct ShaderFillVec : ShaderNodeClone<ShaderFillVec> {
 
 ZENDEFNODE(ShaderFillVec, {
     {
-        {"float", "in", "0"},
+        {gParamType_Float, "in", "0"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
-        {"vec4f", "out"},
+        {gParamType_Vec4f, "out"},
     },
     {},
     {"shader"},

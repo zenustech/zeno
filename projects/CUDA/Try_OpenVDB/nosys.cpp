@@ -350,7 +350,7 @@ struct ViewVDBBoundingBox : zeno::INode {
 
 ZENDEFNODE(ViewVDBBoundingBox,{
     {{"readpath","input_filename"}},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"TEST_OPENVDB"},
 });
@@ -440,7 +440,7 @@ struct ViewLeafNodeBoundingBox : zeno::INode {
 
 ZENDEFNODE(ViewLeafNodeBoundingBox,{
     {{"readpath","input_filename"}},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"TEST_OPENVDB"},
 });
@@ -652,7 +652,7 @@ struct ViewVDBPoints : zeno::INode {
 
 ZENDEFNODE(ViewVDBPoints,{
     {"points","point_width"},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"TEST_OPENVDB"},
 });
@@ -809,7 +809,7 @@ void add_colored_aabb(const openvdb::Vec3f& wmin,
 
 ZENDEFNODE(ViewVDBPointsWithAttribute,{
     {"points","radius"},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"TEST_OPENVDB"},
 });
@@ -1063,8 +1063,8 @@ struct TestDilation : zeno::INode {
 
 ZENDEFNODE(TestDilation,{
     {"points"},
-    {"prim"},
-    {{"float","radius","0.1"},{"int","dilate","1"},{"int","view_av_only","1"}},
+    {gParamType_Primitive, "prim"},
+    {{gParamType_Float,"radius","0.1"},{gParamType_Int,"dilate","1"},{gParamType_Int,"view_av_only","1"}},
     {"TEST_OPENVDB"},
 });
 

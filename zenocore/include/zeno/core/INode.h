@@ -19,6 +19,9 @@
 #include <reflect/registry.hpp>
 #include <zeno/core/objectptrcontainer.h>
 
+#if !defined(ZENO_REFLECT_PROCESSING)
+using namespace zeno::types;
+#endif
 
 namespace zeno {
 

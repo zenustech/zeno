@@ -133,7 +133,7 @@ struct ApplyBoundaryOnVertices : INode {
 };
 
 ZENDEFNODE(ApplyBoundaryOnVertices, {
-                                        {"ZSParticles", "ZSBoundary", {"float", "dt", "0.01"}},
+                                        {"ZSParticles", "ZSBoundary", {gParamType_Float, "dt", "0.01"}},
                                         {"ZSParticles"},
                                         {},
                                         {"FEM"},
@@ -190,7 +190,7 @@ struct MoveTowards : INode {
 };
 
 ZENDEFNODE(MoveTowards, {
-                            {"ZSBoundaryPrimitive", {"float", "framedt", "0.1"}, "ZSParticles"},
+                            {"ZSBoundaryPrimitive", {gParamType_Float, "framedt", "0.1"}, "ZSParticles"},
                             {"ZSBoundaryPrimitive"},
                             {},
                             {"FEM"},

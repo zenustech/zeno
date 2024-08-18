@@ -12,10 +12,10 @@ struct MakeColor : zeno::INode {
 
 ZENO_DEFNODE(MakeColor)({
     {
-        {"colorvec3f", "color", "1, 1, 1"},
+        {gParamType_Vec3f, "color", "1, 1, 1"},
     },
     {
-        {"vec3f", "color"},
+        {gParamType_Vec3f, "color"},
     },
     {   
     },

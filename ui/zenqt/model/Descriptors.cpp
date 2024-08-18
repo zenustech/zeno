@@ -47,20 +47,20 @@ void Descriptors::initDescs()
             {"quads", "bool", zeno::Checkbox},
             {"SRC", ""},
         },
-        {{"prim", "prim"},
+        {{gParamType_Primitive, "prim"},
          {"DST", ""}}
     });
 
     m_descs.insert("ParticlesWrangle",
         { "ParticlesWrangle",
         {
-            {"prim", "prim"},
+            {gParamType_Primitive, "prim"},
             {"zfxCode", "string", zeno::Multiline},
             {"params", "dict"},
             {"SRC", ""}
         },
         {
-            {"prim", "prim"},
+            {gParamType_Primitive, "prim"},
             {"DST", ""}
         }
         }

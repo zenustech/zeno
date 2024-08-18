@@ -30,6 +30,7 @@
 #include <zeno/formula/formula.h>
 #include <zeno/core/ReferManager.h>
 #include "reflect/type.hpp"
+#include <zeno/types/MeshObject.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 

@@ -42,7 +42,7 @@ static int defScaleVelocity = zeno::defNodeClass<ScaleVelocity>("ScaleVelocity",
     "prim",
     "kinetic energy",
     }, /* params: */ {
-        {"float", "rel_error_to_scale", "0.05"},
+        {gParamType_Float, "rel_error_to_scale", "0.05"},
     }, /* category: */ {
     "Molecular",
     }});

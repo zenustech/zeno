@@ -284,12 +284,12 @@ struct AlembicToSoftBodyVAT: public INode {
 
 ZENDEFNODE(AlembicToSoftBodyVAT, {
     {
-      {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-      {"bool", "useXForm", "1"},
-      {"bool", "flipFrontBack", "1"},
-      {"int", "frameEnd", "1"},
-      {"int", "frameStart", "0"},
-      {"string", "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+      {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+      {gParamType_Bool, "useXForm", "1"},
+      {gParamType_Bool, "flipFrontBack", "1"},
+      {gParamType_Int, "frameEnd", "1"},
+      {gParamType_Int, "frameStart", "0"},
+      {gParamType_String, "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
     },
     { {"primitive"} },
     {
@@ -480,12 +480,12 @@ struct AlembicToDynamicRemeshVAT : public INode {
 
 ZENDEFNODE(AlembicToDynamicRemeshVAT, {
   {
-    {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-    {"bool", "useXForm", "1"},
-    {"bool", "flipFrontBack", "1"},
-    {"int", "frameEnd", "1"},
-    {"int", "frameStart", "0"},
-    {"string", "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+    {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+    {gParamType_Bool, "useXForm", "1"},
+    {gParamType_Bool, "flipFrontBack", "1"},
+    {gParamType_Int, "frameEnd", "1"},
+    {gParamType_Int, "frameStart", "0"},
+    {gParamType_String, "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
   },
   { {"primitive"} },
   {},

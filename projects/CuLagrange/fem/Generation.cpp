@@ -42,11 +42,11 @@ struct ReadVtkMesh : INode {
 };
 
 ZENDEFNODE(ReadVtkMesh, {/* inputs: */ {
-                             {"readpath", "path"},
+                             {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
                          },
                          /* outputs: */
                          {
-                             {"primitive", "prim"},
+                             {gParamType_Primitive, "prim"},
                          },
                          /* params: */
                          {},
@@ -454,7 +454,7 @@ struct ToBoundaryPrimitive : INode {
 };
 
 ZENDEFNODE(ToBoundaryPrimitive, {
-                                    {"prim"},
+                                    {gParamType_Primitive, "prim"},
                                     {"ZSParticles"},
                                     {},
                                     {"FEM"},
@@ -708,7 +708,7 @@ struct ToZSTetrahedra : INode {
 
 ZENDEFNODE(ToZSTetrahedra, {{{"ZSModel"}, {"quad (tet) mesh", "prim"}},
                             {{"tetmesh on gpu", "ZSParticles"}},
-                            {{"int", "add_customed_attr", "0"}},
+                            {{gParamType_Int, "add_customed_attr", "0"}},
                             {"FEM"}});
 
 struct ToZSTriMesh : INode {
@@ -851,7 +851,7 @@ struct ToZSTriMesh : INode {
 
 ZENDEFNODE(ToZSTriMesh, {{{"surf (tri) mesh", "prim"}},
                          {{"trimesh on gpu", "ZSParticles"}},
-                         {{"int", "add_customed_attr", "0"}},
+                         {{gParamType_Int, "add_customed_attr", "0"}},
                          {"FEM"}});
 
 struct ToZSSurfaceMesh : INode {
@@ -1187,10 +1187,10 @@ struct ToZSSurfaceMesh : INode {
 
 ZENDEFNODE(ToZSSurfaceMesh, {{{"ZSModel"},
                               {"surf (tri) mesh", "prim"},
-                              {"float", "rest_shape_scaling", "1.0"},
-                              {"bool", "high_precision", "true"},
-                              {"bool", "with_bending", "false"},
-                              {"DictObject", "params"}},
+                              {gParamType_Float, "rest_shape_scaling", "1.0"},
+                              {gParamType_Bool, "high_precision", "true"},
+                              {gParamType_Bool, "with_bending", "false"},
+                              {gParamType_Dict,"params"}},
                              {{"trimesh on gpu", "ZSParticles"}},
                              {},
                              {"FEM"}});
@@ -1214,7 +1214,7 @@ struct MakeSample1dLine : INode {
         set_output("prim", prim);
     }
 };
-ZENDEFNODE(MakeSample1dLine, {{{"int", "n", "1"}, {"float", "scale", "1"}}, {{"line", "prim"}}, {}, {"FEM"}});
+ZENDEFNODE(MakeSample1dLine, {{{gParamType_Int, "n", "1"}, {gParamType_Float, "scale", "1"}}, {{"line", "prim"}}, {}, {"FEM"}});
 
 struct ToZSStrands : INode {
     using T = float;

@@ -78,16 +78,16 @@ struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and Primitiv
 
 ZENDEFNODE(PrimTwist, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "origin", "0,0,0"},
-    {"vec3f", "direction", "0,1,0"},
-    {"vec3f", "tangent"},
-    {"float", "angle", "45"},
-    {"float", "limitMin", "0"},
-    {"float", "limitMax", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "origin", "0,0,0"},
+    {gParamType_Vec3f, "direction", "0,1,0"},
+    {gParamType_Vec3f, "tangent"},
+    {gParamType_Float, "angle", "45"},
+    {gParamType_Float, "limitMin", "0"},
+    {gParamType_Float, "limitMax", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

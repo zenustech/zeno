@@ -740,8 +740,8 @@ namespace zeno {
     ({
         {
             {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
-            {"string", "name", "SubjectFromZeno"},
-            {"prim"},
+            {gParamType_String, "name", "SubjectFromZeno"},
+            {gParamType_Primitive, "prim"},
         },
         {"primRef"},
         {},
@@ -753,8 +753,8 @@ namespace zeno {
     ({
         {
             {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
-            {"string", "name", "SubjectFromZeno"},
-            {"prim"},
+            {gParamType_String, "name", "SubjectFromZeno"},
+            {gParamType_Primitive, "prim"},
         },
         {"primRef"},
         {},
@@ -828,13 +828,13 @@ namespace zeno {
 
     ZENO_DEFNODE(ReadPrimitiveFromRegistry)
     ({{
-          {"string", "name", "SubjectFromZeno"},
+          {gParamType_String, "name", "SubjectFromZeno"},
           {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
-          {"int", "nx", "0"},
-          {"int", "ny", "0"},
-          {"float", "scale", "250"},
+          {gParamType_Int, "nx", "0"},
+          {gParamType_Int, "ny", "0"},
+          {gParamType_Float, "scale", "250"},
       },
-      {"prim"},
+      {gParamType_Primitive, "prim"},
       {},
       {"Unreal"}});
 
@@ -877,7 +877,7 @@ namespace zeno {
 
     ZENO_DEFNODE(DeclareRemoteParameter)
     ({{
-          {"string", "name", "ParamA"},
+          {gParamType_String, "name", "ParamA"},
           {"enum Integer Float", "type", "Integer"},
           {"DefaultValue"},
       },
@@ -930,7 +930,7 @@ namespace zeno {
 
     ZENO_DEFNODE(SetExecutionResult)
     ({{
-          {"string", "name", "OutputA"},
+          {gParamType_String, "name", "OutputA"},
           {"value"},
           {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
           {"meta"},

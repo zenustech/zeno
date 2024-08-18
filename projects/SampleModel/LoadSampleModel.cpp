@@ -45,10 +45,10 @@ struct LoadSampleModel : INode {
 ZENO_DEFNODE(LoadSampleModel)({
     {
         {"enum cube monkey sphere humannose Pig_Head temple star", "name", "cube"},
-        {"bool", "triangulate", "1"},
-        {"bool", "decodeUVs", "1"},
+        {gParamType_Bool, "triangulate", "1"},
+        {gParamType_Bool, "decodeUVs", "1"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });
@@ -109,10 +109,10 @@ struct LoadStringPrim : INode {
 
 ZENO_DEFNODE(LoadStringPrim)({
     {
-        {"string", "str", "Zello World!"},
-        {"bool", "triangulate", "1"},
+        {gParamType_String, "str", "Zello World!"},
+        {gParamType_Bool, "triangulate", "1"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });

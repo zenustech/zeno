@@ -475,8 +475,8 @@ struct StepClothSystem : INode {
 
 ZENDEFNODE(StepClothSystem, {{
                                  "ZSClothSystem",
-                                 {"int", "num_substeps", "1"},
-                                 {"float", "dt", "0.01"},
+                                 {gParamType_Int, "num_substeps", "1"},
+                                 {gParamType_Float, "dt", "0.01"},
                              },
                              {"ZSClothSystem"},
                              {},

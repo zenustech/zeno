@@ -68,9 +68,9 @@ struct ShaderCustomFunc : INode {
 
 ZENDEFNODE(ShaderCustomFunc, {
     {
-        {"string", "args", "vec3 arg1, vec3 arg2"},
+        {gParamType_String, "args", "vec3 arg1, vec3 arg2"},
         {"enum float vec2 vec3 vec4", "rettype", "vec3"},
-        {"string", "code", "return arg1 + arg2;"},
+        {gParamType_String, "code", "return arg1 + arg2;"},
     },
     {
         {"object", "func"},
@@ -126,7 +126,7 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
 ZENDEFNODE(ShaderInvokeFunc, {
     {
         {"object", "func", "", zeno::Socket_ReadOnly},
-        {"list", "args", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "args", "", zeno::Socket_ReadOnly},
     },
     {
         {"shader", "out"},

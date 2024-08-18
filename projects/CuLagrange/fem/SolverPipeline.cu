@@ -3502,8 +3502,8 @@ struct StepIPCSystem : INode {
 
 ZENDEFNODE(StepIPCSystem, {{
                                "ZSIPCSystem",
-                               {"int", "num_substeps", "1"},
-                               {"float", "dt", "0.01"},
+                               {gParamType_Int, "num_substeps", "1"},
+                               {gParamType_Float, "dt", "0.01"},
                            },
                            {"ZSIPCSystem"},
                            {},
@@ -3682,10 +3682,10 @@ struct IPCSystemClothBinding : INode { // usually called once before stepping
 ZENDEFNODE(IPCSystemClothBinding, {{
                                        "ZSIPCSystem",
                                        "ZSLevelSet",
-                                       {"bool", "hard_constraint", "1"},
-                                       {"float", "dist_cap", "0"},
-                                       {"float", "rest_length", "0.1"},
-                                       {"float", "strength", "0"},
+                                       {gParamType_Bool, "hard_constraint", "1"},
+                                       {gParamType_Float, "dist_cap", "0"},
+                                       {gParamType_Float, "rest_length", "0.1"},
+                                       {gParamType_Float, "strength", "0"},
                                    },
                                    {"ZSIPCSystem"},
                                    {},
@@ -3781,7 +3781,7 @@ struct IPCSystemForceField : INode {
 
 ZENDEFNODE(IPCSystemForceField,
            {
-               {"ZSIPCSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
+               {"ZSIPCSystem", "ZSLevelSet", {gParamType_Float, "wind_drag", "0"}, {gParamType_Float, "wind_density", "1"}},
                {"ZSIPCSystem"},
                {},
                {"FEM"},

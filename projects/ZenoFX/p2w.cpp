@@ -249,11 +249,11 @@ struct ParticlesTwoWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesTwoWrangle, {
-    {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-     {"PrimitiveObject", "prim2", "", zeno::Socket_ReadOnly},
-     {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+     {gParamType_Primitive, "prim2", "", zeno::Socket_ReadOnly},
+     {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
      {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
-    {{"PrimitiveObject", "prim"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"zenofx"},
 });

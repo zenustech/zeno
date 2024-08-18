@@ -73,8 +73,8 @@ struct PoissonDiskSample : INode {
     }
 };
 ZENDEFNODE(PoissonDiskSample, {
-                                  {"VDBGrid", {"float", "dx", "0.1"}, {"float", "ppc", "8"}, {"string", "path", ""}},
-                                  {"prim"},
+                                  {"VDBGrid", {gParamType_Float, "dx", "0.1"}, {gParamType_Float, "ppc", "8"}, {gParamType_String, "path", ""}},
+                                  {gParamType_Primitive, "prim"},
                                   {},
                                   {"MPM"},
                               });
@@ -142,9 +142,9 @@ struct ZSPoissonDiskSample : INode {
     }
 };
 ZENDEFNODE(ZSPoissonDiskSample, {
-                                    {"ZSLevelSet", {"float", "dx", "0.1"}, {"float", "ppc", "8"}},
-                                    {"prim"},
-                                    {{"string", "path", ""}},
+                                    {"ZSLevelSet", {gParamType_Float, "dx", "0.1"}, {gParamType_Float, "ppc", "8"}},
+                                    {gParamType_Primitive, "prim"},
+                                    {{gParamType_String, "path", ""}},
                                     {"MPM"},
                                 });
 
@@ -268,8 +268,8 @@ struct SurfaceToSprings : INode {
 };
 
 ZENDEFNODE(SurfaceToSprings, {
-                                 {"prim"},
-                                 {"prim"},
+                                 {gParamType_Primitive, "prim"},
+                                 {gParamType_Primitive, "prim"},
                                  {},
                                  {"MPM"},
                              });
@@ -423,7 +423,7 @@ struct ToZSSprings : INode {
 
 ZENDEFNODE(ToZSSprings,
            {
-               {"prim", {"float", "density", "1"}, {"float", "thickness", "0.05"}, {"float", "stiffness", "1"}},
+               {gParamType_Primitive, {gParamType_Float, "density", "1"}, {gParamType_Float, "thickness", "0.05"}, {gParamType_Float, "stiffness", "1"}},
                {"ZSParticles"},
                {},
                {"Mesh"},
@@ -677,11 +677,11 @@ struct ToZSCloth : INode {
 };
 
 ZENDEFNODE(ToZSCloth, {
-                          {"ZSModel", "prim",
-                           /*gamma*/ {"float", "stiffness_shear", "0."},
-                           /*k*/ {"float", "stiffness_normal", "800."},
-                           /*fa*/ {"float", "friction_angle", "0."},
-                           /*dc*/ {"float", "damping_coeff", "0."}},
+                          {{gParamType_Unknown, "ZSModel"}, {gParamType_Primitive, "prim"},
+                           /*gamma*/ {gParamType_Float, "stiffness_shear", "0."},
+                           /*k*/ {gParamType_Float, "stiffness_normal", "800."},
+                           /*fa*/ {gParamType_Float, "friction_angle", "0."},
+                           /*dc*/ {gParamType_Float, "damping_coeff", "0."}},
                           {"ZSParticles"},
                           {},
                           {"MPM"},
@@ -1145,7 +1145,7 @@ struct ToZSParticles : INode {
 };
 
 ZENDEFNODE(ToZSParticles, {
-                              {"ZSModel", "prim", {"int", "category", "0"}},
+                              {{gParamType_Unknown, "ZSModel"}, {gParamType_Primitive, "prim"}, {gParamType_Int, "category", "0"}},
                               {"ZSParticles"},
                               {},
                               {"MPM"},
@@ -1475,7 +1475,7 @@ struct ToBoundaryParticles : INode {
 };
 
 ZENDEFNODE(ToBoundaryParticles, {
-                                    {"prim", "prim_tris", {"float", "dx", "0.1"}},
+                                    {gParamType_Primitive, "prim_tris", {gParamType_Float, "dx", "0.1"}},
                                     {"ZSParticles"},
                                     {},
                                     {"MPM"},
@@ -1499,8 +1499,8 @@ struct ScalePrimitiveAlongNormal : zeno::INode {
 };
 
 ZENDEFNODE(ScalePrimitiveAlongNormal, {
-                                          {"prim", {"float", "dis", "0"}},
-                                          {"prim"},
+                                          {gParamType_Primitive, {gParamType_Float, "dis", "0"}},
+                                          {gParamType_Primitive, "prim"},
                                           {},
                                           {"primitive"},
                                       });
@@ -1527,7 +1527,7 @@ struct ComputePrimitiveSequenceVelocity : zeno::INode {
 };
 
 ZENDEFNODE(ComputePrimitiveSequenceVelocity, {
-                                                 {"prim0", "prim1", {"float", "dt", "1"}},
+                                                 {{gParamType_Primitive, "prim0"}, {gParamType_Primitive, "prim1"}, {gParamType_Float, "dt", "1"}},
                                                  {},
                                                  {},
                                                  {"primitive"},
@@ -1572,7 +1572,7 @@ struct ToZSLevelSet : INode {
 ZENDEFNODE(ToZSLevelSet, {
                              {"VDBGrid"},
                              {"ZSLevelSet"},
-                             {{"string", "path", ""}},
+                             {{gParamType_String, "path", ""}},
                              {"MPM"},
                          });
 

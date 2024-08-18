@@ -119,7 +119,7 @@ struct ZSPrimitiveReduction : zeno::INode {
 };
 ZENDEFNODE(ZSPrimitiveReduction, {/* inputs: */ {
                                       "ZSParticles",
-                                      {"string", "attr", "pos"},
+                                      {gParamType_String, "attr", "pos"},
                                       {"enum avg max min absmax", "op", "avg"},
                                   },
                                   /* outputs: */
@@ -146,8 +146,8 @@ struct ZSGetUserData : zeno::INode {
 
 ZENDEFNODE(ZSGetUserData, {
                               {"object"},
-                              {"data", {"bool", "hasValue"}},
-                              {{"string", "key", ""}},
+                              {"data", {gParamType_Bool, "hasValue"}},
+                              {{gParamType_String, "key", ""}},
                               {"lifecycle"},
                           });
 
@@ -237,8 +237,8 @@ struct ColoringSelected : INode {
 ZENDEFNODE(ColoringSelected, {{
                                   "ZSParticles",
                                   "ZSLevelSet",
-                                  {"bool", "boundary_wise", "0"},
-                                  {"string", "markTag", "selected"},
+                                  {gParamType_Bool, "boundary_wise", "0"},
+                                  {gParamType_String, "markTag", "selected"},
                               },
                               {"ZSParticles"},
                               {},

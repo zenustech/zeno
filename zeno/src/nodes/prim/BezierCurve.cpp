@@ -124,15 +124,15 @@ struct CreateBezierCurve : zeno::INode {
 };
 
 ZENDEFNODE(CreateBezierCurve, {{
-                                   {"list", "CustomPoints"}, //input
-                                   {"prim", "SamplePoints"}, //input
-                                   {"float", "precision", "0.01"},
+                                   {gParamType_List, "CustomPoints"}, //input
+                                   {gParamType_Primitive, "SamplePoints"}, //input
+                                   {gParamType_Float, "precision", "0.01"},
                                },
-                               {"prim",{"curve", "curev"}}, //output
+                               {gParamType_Primitive,{gParamType_Curve, "curev"}}, //output
                                {
                                    {"enum Bezier", "Type", "Bezier"},
-                                   {"string", "SampleTag", ""},
-                                   {"string", "SampleAttr", ""},
+                                   {gParamType_String, "SampleTag", ""},
+                                   {gParamType_String, "SampleAttr", ""},
                                },           //prim
                                {"create"}}); //cate
 
@@ -156,12 +156,12 @@ ZENDEFNODE(CreatePoint, {/*输入*/
 
                          },
                          /*输出*/
-                         {"prim"},
+                         {{gParamType_Primitive, "prim"}},
                          /*参数*/
                          {
-                             {"float", "x", "0"},
-                             {"float", "y", "0"},
-                             {"float", "z", "0"},
+                             {gParamType_Float, "x", "0"},
+                             {gParamType_Float, "y", "0"},
+                             {gParamType_Float, "z", "0"},
                          },
                          /*类别*/
                          {"create"}});

@@ -56,19 +56,19 @@ struct PBFWorld_Setup : INode
 
 ZENDEFNODE(PBFWorld_Setup, {
     {
-        {"PrimitiveObject","prim"},
-        {"float","dt"," 0.0025"},
-        {"float","particle_radius","0.025"},
-        {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
-        {"vec3f","bounds_max","10.0, 10.0, 10.0"},
-        {"vec3f","externForce", "0.0, -10.0, 0.0"},
-        {"float","rho0","1000.0"},
-        {"float","lambdaEpsilon","1e-6"},
-        {"float","coeffDq","0.3"},
-        {"float","coeffK","0.1"},
-        {"int","numSubsteps","5"}
+        {gParamType_Primitive,"prim"},
+        {gParamType_Float,"dt"," 0.0025"},
+        {gParamType_Float,"particle_radius","0.025"},
+        {gParamType_Vec3f,"bounds_min","-10.0, 0.0, -10.0"},
+        {gParamType_Vec3f,"bounds_max","10.0, 10.0, 10.0"},
+        {gParamType_Vec3f,"externForce", "0.0, -10.0, 0.0"},
+        {gParamType_Float,"rho0","1000.0"},
+        {gParamType_Float,"lambdaEpsilon","1e-6"},
+        {gParamType_Float,"coeffDq","0.3"},
+        {gParamType_Float,"coeffK","0.1"},
+        {gParamType_Int,"numSubsteps","5"}
     },
-    {"prim","PBFWorld"},
+    {gParamType_Primitive,"PBFWorld"},
     {},
     {"PBD"},
 });

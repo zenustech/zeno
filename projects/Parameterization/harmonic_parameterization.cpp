@@ -57,9 +57,9 @@ namespace {
     };
 
     ZENDEFNODE(CalPrimitveUVMapHarmonic, {
-        {"prim"},
-        {"prim"},
-        {{"int","order","1"}},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Primitive, "prim"},
+        {{gParamType_Int,"order","1"}},
         {"Parameterization"},
     });
 

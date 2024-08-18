@@ -95,7 +95,7 @@ struct MaintainSpatialAccelerator : INode {
 
 /// for discrete collision detections etc.
 ZENDEFNODE(MaintainSpatialAccelerator, {
-                                           {"ZSParticles", {"float", "thickness", "0.0"}},
+                                           {"ZSParticles", {gParamType_Float, "thickness", "0.0"}},
                                            {"ZSParticles"},
                                            {},
                                            {"FEM"},
@@ -331,8 +331,8 @@ struct VisualizeBvh : INode {
 /// for discrete collision detections etc.
 ZENDEFNODE(VisualizeBvh, {
                              {"ZSParticles",
-                              {"float", "thickness", "0.0"},
-                              {"int", "level", "0"}},
+                              {gParamType_Float, "thickness", "0.0"},
+                              {gParamType_Int, "level", "0"}},
                              {"prim"},
                              {{"enum point edge surface", "target", "surface"}},
                              {"FEM"},

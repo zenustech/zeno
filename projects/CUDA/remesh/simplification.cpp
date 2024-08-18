@@ -223,9 +223,9 @@ struct PolyReduceLite : INode {
 };
 
 ZENDEFNODE(PolyReduceLite, {
-                               {{"PrimitiveObject", "prim"}, {"int", "iterations", "100"}},
+                               {{gParamType_Primitive, "prim"}, {gParamType_Int, "iterations", "100"}},
                                {
-                                   {"PrimitiveObject", "prim"},
+                                   {gParamType_Primitive, "prim"},
                                },
                                {},
                                {"zs_geom"},

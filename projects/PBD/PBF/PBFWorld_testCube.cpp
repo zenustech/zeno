@@ -35,10 +35,10 @@ struct PBFWorld_testCube : INode{
 
 ZENDEFNODE(PBFWorld_testCube, {
     {
-        {"float","cubeSize","0.5"},
-        {"int","numParticles","4500"},
-        {"vec3f","initPos","0.0, 0.0, 0.0"},
-        {"float","spacing","0.025"},
+        {gParamType_Float,"cubeSize","0.5"},
+        {gParamType_Int,"numParticles","4500"},
+        {gParamType_Vec3f,"initPos","0.0, 0.0, 0.0"},
+        {gParamType_Float,"spacing","0.025"},
     },
     {"outPrim"},
     {},

@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -66,9 +66,9 @@ struct AssembleSolvePPE : zeno::INode {
 
 static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>(
     "AssembleSolvePPE", {/* inputs: */ {
-                             {"float", "dt"},{"float", "Dx"},
-                             {"float", "Density", "1000.0"},
-                             {"float", "SurfaceTension", "0.0"},
+                             {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                             {gParamType_Float, "Density", "1000.0"},
+                             {gParamType_Float, "SurfaceTension", "0.0"},
                              "LiquidSDF",
                              "Divergence",
                              "Pressure",
@@ -80,7 +80,7 @@ static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>(
                          /* outputs: */ {},
                          /* params: */
                          {
-                             {"float", "dx", "0.0"},
+                             {gParamType_Float, "dx", "0.0"},
                          },
 
                          /* category: */

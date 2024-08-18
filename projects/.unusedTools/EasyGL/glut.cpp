@@ -103,6 +103,6 @@ struct GLUTMainLoop : zeno::INode {
 ZENDEFNODE(GLUTMainLoop, {
         {"drawFunc", "resolution"},
         {},
-        {{"int", "interval", "17 0"}},
+        {{gParamType_Int, "interval", "17 0"}},
         {"EasyGL"},
 });

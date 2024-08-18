@@ -30,8 +30,8 @@ struct PrimitiveToParticles : zeno::INode{
 
 static int defPrimitiveToParticles = zeno::defNodeClass<PrimitiveToParticles>("PrimitiveToParticles",
     { /* inputs: */ {
-        "prim",
-    }, /* outputs: */ {
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
         {"object", "pars"},
     }, /* params: */ { 
     }, /* category: */ {

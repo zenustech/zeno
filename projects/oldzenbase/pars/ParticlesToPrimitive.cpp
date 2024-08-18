@@ -35,8 +35,8 @@ static int defParticlesToPrimitive = zeno::defNodeClass<ParticlesToPrimitive>("P
     { /* inputs: */ {
         {"object", "pars"},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ { 
+{gParamType_Primitive, "prim"},
+}, /* params: */ { 
     }, /* category: */ {
     "deprecated",
     }});

@@ -1,9 +1,10 @@
 #include <zeno/core/Descriptor.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 namespace zeno {
 
 SocketDescriptor::SocketDescriptor(
-        std::string const &type,
+        size_t type,
         std::string const &name,
         std::string const &defl,
         SocketType connProp,
@@ -18,13 +19,31 @@ SocketDescriptor::SocketDescriptor(
         , socketType(connProp)
         , control(ctrl) {}
 
+SocketDescriptor::SocketDescriptor(std::string const& comboitemsDesc, std::string const& name, std::string const& defl)
+    : type(zeno::types::gParamType_String)
+    , name(name)
+    , socketType(zeno::Socket_Primitve)
+    , control(zeno::Combobox)
+    , comboxitems(comboitemsDesc)
+    , defl(defl)
+{
+}
+
 SocketDescriptor::~SocketDescriptor() = default;
 
 
-ParamDescriptor::ParamDescriptor(std::string const &type,
+ParamDescriptor::ParamDescriptor(size_t type,
 	  std::string const &name, std::string const &defl, std::string const &doc)
       : type(type), name(name), defl(defl), doc(doc) {}
 ParamDescriptor::~ParamDescriptor() = default;
+
+ParamDescriptor::ParamDescriptor(std::string const& comboitemsDesc, std::string const& name, std::string const& defl)
+    : type(zeno::types::gParamType_String)
+    , name(name)
+    , comboxitems(comboitemsDesc)
+    , defl(defl)
+{
+}
 
 ZENO_API Descriptor::Descriptor() = default;
 ZENO_API Descriptor::Descriptor(

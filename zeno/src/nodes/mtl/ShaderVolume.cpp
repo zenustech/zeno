@@ -154,18 +154,18 @@ struct ShaderVolume : INode {
 
 ZENDEFNODE(ShaderVolume, {
     {
-        {"string", "mtlid", "VolMat1"},
+        {gParamType_String, "mtlid", "VolMat1"},
 
-        {"list", "tex2dList"},
-        {"list", "tex3dList"},
+        {gParamType_List, "tex2dList"},
+        {gParamType_List, "tex3dList"},
 
-        {"float", "depth",    "999"},
-        {"float", "extinction", "1"},
-        {"float", "anisotropy", "0"},
+        {gParamType_Float, "depth",    "999"},
+        {gParamType_Float, "extinction", "1"},
+        {gParamType_Float, "anisotropy", "0"},
 
-        {"colorvec3f", "albedo", "0.5,0.5,0.5"},
-        {"float", "density", "0"},
-        {"vec3f", "emission", "0.0,0.0,0.0"}
+        {gParamType_Vec3f, "albedo", "0.5,0.5,0.5"},
+        {gParamType_Float, "density", "0"},
+        {gParamType_Vec3f, "emission", "0.0,0.0,0.0"}
     },
     { {"MaterialObject", "mtl"} },
     {
@@ -223,13 +223,13 @@ struct ShaderVolumeHomogeneous : INode {
 
 ZENDEFNODE(ShaderVolumeHomogeneous, {
     {
-        {"colorvec3f", "albedo", "1,1,1"},
-        {"vec3f", "extinction", "0.01,0.01,0.01"},
-        {"float", "anisotropy", "0"},
+        {gParamType_Vec3f, "albedo", "1,1,1"},
+        {gParamType_Vec3f, "extinction", "0.01,0.01,0.01"},
+        {gParamType_Float, "anisotropy", "0"},
         
-        {"bool", "debug", "false"},
-        {"bool", "multiscatter", "false"},
-        {"string", "mtlid", "VolMat1"},
+        {gParamType_Bool, "debug", "false"},
+        {gParamType_Bool, "multiscatter", "false"},
+        {gParamType_String, "mtlid", "VolMat1"},
     },
     { {"MaterialObject", "mtl"} },
     {},

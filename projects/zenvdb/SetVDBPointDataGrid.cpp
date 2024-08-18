@@ -114,12 +114,12 @@ struct PrimToVDBPointDataGrid : zeno::INode {
 
 static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
-        {"prim", "ParticleGeo", "", zeno::Socket_ReadOnly},
-        {"float","Dx"}, {"VDBGrid", "vdbPoints"},
+        {gParamType_Primitive, "ParticleGeo", "", zeno::Socket_ReadOnly},
+        {gParamType_Float,"Dx"}, {"VDBGrid", "vdbPoints"},
     }, /* outputs: */ {
         {"VDBGrid", "Particles"},
     }, /* params: */ {
-    //{"float", "dx", "0.08"},
+    //{gParamType_Float, "dx", "0.08"},
     }, /* category: */ {
         "openvdb",
     }});
@@ -150,11 +150,11 @@ struct SetVDBPointDataGrid : zeno::INode {
 static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
     { /* inputs: */ {
         {"object", "ParticleGeo", "", zeno::Socket_ReadOnly},
-        {"float","Dx"},
+        {gParamType_Float,"Dx"},
     }, /* outputs: */ {
         {"VDBGrid", "Particles"},
     }, /* params: */ {
-    {"float", "dx", "0.08"},
+    {gParamType_Float, "dx", "0.08"},
     }, /* category: */ {
         "deprecated",
     }});

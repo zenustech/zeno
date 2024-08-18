@@ -303,7 +303,7 @@ struct ZSVolumeWrangler : zeno::INode {
 };
 
 ZENDEFNODE(ZSVolumeWrangler, {
-                                 {"ZSGrid", {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+                                 {"ZSGrid", {gParamType_String, "zfxCode"}, {"DictObject:NumericObject", "params"}},
                                  {"ZSGrid"},
                                  {},
                                  {"zswrangle"},

@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/utils/vec.h>
@@ -45,9 +45,9 @@ struct MeshToPrimitive : zeno::INode{
 
 static int defMeshToPrimitive = zeno::defNodeClass<MeshToPrimitive>("MeshToPrimitive",
     { /* inputs: */ {
-        {"object", "mesh"},
+        {gParamType_Mesh, "mesh"},
     }, /* outputs: */ {
-        "prim",
+        {gParamType_Primitive, "prim"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",
@@ -87,9 +87,9 @@ struct PrimitiveToMesh : zeno::INode{
 
 static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveToMesh",
     { /* inputs: */ {
-        "prim",
-    }, /* outputs: */ {
-        {"object","mesh"},
+    {gParamType_Primitive, "prim"},
+}, /* outputs: */ {
+        {gParamType_Mesh, "mesh"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",
@@ -119,7 +119,7 @@ struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_MeshObject, typeid(PrimitiveObject).name(), typeid(MeshObject).name())({
-        {"prim", {"object","mesh"}},
+        {{gParamType_Primitive, "prim"}, {gParamType_Mesh, "mesh"}},
         {},
         {},
         {"deprecated"},

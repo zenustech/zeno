@@ -174,15 +174,15 @@ struct WriteAlembic : INode {
 
 ZENDEFNODE(WriteAlembic, {
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"frameid"},
-        {"string", "path", "", zeno::NoSocket, zeno::WritePathEdit}
+        {gParamType_String, "path", "", zeno::NoSocket, zeno::WritePathEdit}
     },
     {},
     {
-        {"int", "frame_start", "0"},
-        {"int", "frame_end", "100"},
-        {"bool", "flipFrontBack", "1"},
+        {gParamType_Int, "frame_start", "0"},
+        {gParamType_Int, "frame_end", "100"},
+        {gParamType_Bool, "flipFrontBack", "1"},
     },
     {"deprecated"},
 });
@@ -721,15 +721,15 @@ struct WriteAlembic2 : INode {
 
 ZENDEFNODE(WriteAlembic2, {
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"frameid"},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
-        {"int", "frame_start", "0"},
-        {"int", "frame_end", "100"},
-        {"float", "fps", "25"},
-        {"bool", "flipFrontBack", "1"},
-        {"bool", "outputPoint", "0"},
-        {"bool", "outputToMaya", "0"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Int, "frame_start", "0"},
+        {gParamType_Int, "frame_end", "100"},
+        {gParamType_Float, "fps", "25"},
+        {gParamType_Bool, "flipFrontBack", "1"},
+        {gParamType_Bool, "outputPoint", "0"},
+        {gParamType_Bool, "outputToMaya", "0"},
     },
     {
     },
@@ -976,15 +976,15 @@ struct WriteAlembicPrims : INode {
 
 ZENDEFNODE(WriteAlembicPrims, {
     {
-        {"prim"},
-        {"list", "prims"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_List, "prims"},
         {"frameid"},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
-        {"int", "frame_start", "0"},
-        {"int", "frame_end", "100"},
-        {"float", "fps", "25"},
-        {"bool", "flipFrontBack", "1"},
-        {"bool", "outputToMaya", "0"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Int, "frame_start", "0"},
+        {gParamType_Int, "frame_end", "100"},
+        {gParamType_Float, "fps", "25"},
+        {gParamType_Bool, "flipFrontBack", "1"},
+        {gParamType_Bool, "outputToMaya", "0"},
     },
     {
     },

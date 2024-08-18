@@ -75,7 +75,7 @@ ZENDEFNODE(ExtractMatName,
                 "material", "key"
             },  /* outputs: */
             {
-                {"string","name"}
+                {gParamType_String,"name"}
             },  /* params: */
             {
 
@@ -120,7 +120,7 @@ ZENDEFNODE(ExtractMatTexList,
                    {"IMaterial", "material"},
                },  /* outputs: */
                {
-                    "texLists", {"string","name"}
+                    "texLists", {gParamType_String,"name"}
                },  /* params: */
                {
 
@@ -229,9 +229,9 @@ ZENDEFNODE(ExtractMatData,
                 "data"
             },  /* outputs: */
             {
-                {"list", "datas", ""},
-                {"string","matName"},
-                {"list", "texLists", ""},
+                {gParamType_List, "datas", ""},
+                {gParamType_String,"matName"},
+                {gParamType_List, "texLists", ""},
                 {"dict", "texMaps", ""},
                 {"dict", "matValues", ""},
                 {"dict", "texUvs", ""}
@@ -300,18 +300,18 @@ struct ExtractCameraData : zeno::INode {
 ZENDEFNODE(ExtractCameraData,
            {       /* inputs: */
                {
-           {"string", "key", "camera1"}, "camobject"
+           {gParamType_String, "key", "camera1"}, "camobject"
                },  /* outputs: */
                {
-                   {"vec3f","pos"}, 
-                   {"vec3f","up"}, 
-                   {"vec3f","view"}, 
-                   {"float","focL"}, 
-                   {"float","haov"}, 
-                   {"float","waov"}, 
-                   {"float","hfov"},
-                   {"float", "filmW"}, 
-                   {"float","filmH"}
+                   {gParamType_Vec3f,"pos"}, 
+                   {gParamType_Vec3f,"up"}, 
+                   {gParamType_Vec3f,"view"}, 
+                   {gParamType_Float,"focL"}, 
+                   {gParamType_Float,"haov"}, 
+                   {gParamType_Float,"waov"}, 
+                   {gParamType_Float,"hfov"},
+                   {gParamType_Float, "filmW"}, 
+                   {gParamType_Float,"filmH"}
                },  /* params: */
                {
 

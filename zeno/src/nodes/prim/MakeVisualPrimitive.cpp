@@ -103,10 +103,10 @@ struct MakeVisualAABBPrimitive : INode {
 
 ZENDEFNODE(MakeVisualAABBPrimitive,
         { /* inputs: */ {
-        {"float", "dx", "1"}, {"vec3f","boundMin","-0.5,-0.5,-0.5"}, {"vec3f","boundMax","0.5,0.5,0.5"}, {"int", "OpenTop", "0"},
+        {gParamType_Float, "dx", "1"}, {gParamType_Vec3f,"boundMin","-0.5,-0.5,-0.5"}, {gParamType_Vec3f,"boundMax","0.5,0.5,0.5"}, {gParamType_Int, "OpenTop", "0"},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         {{"enum points edges trifaces quadfaces", "type", "edges"}},
         }, /* category: */ {
         "visualize",

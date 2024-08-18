@@ -51,10 +51,10 @@ struct TransformVDB : INode {
 };
 
 ZENDEFNODE(TransformVDB, {/* inputs: */
-                          {{"", "VDBGrid", "", zeno::Socket_ReadOnly},
-                           {"vec3f", "translation", "0, 0, 0"},
-                           {"vec3f", "eulerXYZ", "0, 0, 0"},
-                           {"vec3f", "scaling", "1, 1, 1"}},
+                          {{gParamType_VDBGrid, "VDBGrid", "", zeno::Socket_ReadOnly},
+                           {gParamType_Vec3f, "translation", "0, 0, 0"},
+                           {gParamType_Vec3f, "eulerXYZ", "0, 0, 0"},
+                           {gParamType_Vec3f, "scaling", "1, 1, 1"}},
                           /* outputs: */
                           {"VDBGrid"},
                           /* params: */

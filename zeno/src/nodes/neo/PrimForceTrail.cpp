@@ -110,16 +110,16 @@ struct PrimForceTrail : INode {
 
 ZENDEFNODE(PrimForceTrail, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "trailPrim", "", zeno::Socket_ReadOnly},
-    {"string", "forceAttr", "force"},
-    {"float", "attractForce", "0.5"},
-    {"float", "driftForce", "1"},
-    {"curve", "attractUDFCurve", ""},
-    {"curve", "driftCoordCurve", ""},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "trailPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "forceAttr", "force"},
+    {gParamType_Float, "attractForce", "0.5"},
+    {gParamType_Float, "driftForce", "1"},
+    {gParamType_Curve, "attractUDFCurve", ""},
+    {gParamType_Curve, "driftCoordCurve", ""},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

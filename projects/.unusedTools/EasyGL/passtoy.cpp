@@ -220,7 +220,7 @@ struct PassToyMakeTexture : zeno::INode {
 ZENDEFNODE(PassToyMakeTexture, {
         {"resolution"},
         {"texture"},
-        {{"string", "format", "rgb16f"}},
+        {{gParamType_String, "format", "rgb16f"}},
         {"PassToy"},
 });
 
@@ -346,7 +346,7 @@ struct PassToyLoadImageTexture : zeno::INode {
 ZENDEFNODE(PassToyLoadImageTexture, {
         {},
         {"texture"},
-        {{"string", "path", ""}},
+        {{gParamType_String, "path", ""}},
         {"PassToy"},
 });
 
@@ -394,7 +394,7 @@ struct PassToyMakeTexturePair : zeno::INode {
 ZENDEFNODE(PassToyMakeTexturePair, {
         {"resolution"},
         {"texturePair"},
-        {{"string", "format", "rgb16f"}},
+        {{gParamType_String, "format", "rgb16f"}},
         {"PassToy"},
 });
 

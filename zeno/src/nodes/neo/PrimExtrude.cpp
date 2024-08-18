@@ -257,20 +257,20 @@ struct PrimExtrude : INode {
 
 ZENDEFNODE(PrimExtrude, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "maskAttr", ""},
-    {"float", "extrude", "0.1"},
-    {"float", "inset", "0"},
-    {"vec3f", "offset", "0,0,0"},
-    //{"string", "bridgeMaskAttrO", ""},
-    {"string", "sourceMaskAttrO", ""},
-    {"bool", "delOldFaces", "1"},
-    {"bool", "autoFindEdges", "1"},
-    {"bool", "averagedExtrude", "1"},
-    {"bool", "flipOldFaces", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "maskAttr", ""},
+    {gParamType_Float, "extrude", "0.1"},
+    {gParamType_Float, "inset", "0"},
+    {gParamType_Vec3f, "offset", "0,0,0"},
+    //{gParamType_String, "bridgeMaskAttrO", ""},
+    {gParamType_String, "sourceMaskAttrO", ""},
+    {gParamType_Bool, "delOldFaces", "1"},
+    {gParamType_Bool, "autoFindEdges", "1"},
+    {gParamType_Bool, "averagedExtrude", "1"},
+    {gParamType_Bool, "flipOldFaces", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
