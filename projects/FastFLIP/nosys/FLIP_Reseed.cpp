@@ -17,9 +17,9 @@ struct FluidReseed : zeno::INode {
 
 static int defFluidReseed =
     zeno::defNodeClass<FluidReseed>("FluidReseed", {/* inputs: */ {
-                                                        "Particles",
-                                                        "LiquidSDF",
-                                                        "FluidVel",
+                                                        {gParamType_VDBGrid, "Particles"},
+                                                        {gParamType_VDBGrid, "LiquidSDF"},
+                                                        {gParamType_VDBGrid, "FluidVel"},
                                                     },
                                                     /* outputs: */ {},
                                                     /* params: */ {},

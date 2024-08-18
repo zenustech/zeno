@@ -542,7 +542,7 @@ ZENDEFNODE(CreateDisk, {
         {gParamType_Float, "radius", "1"},
         {gParamType_Int, "divisions", "32"},
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -706,7 +706,7 @@ ZENDEFNODE(CreatePlane, {
         {gParamType_Int, "columns", "1"},
         {gParamType_Bool, "quads", "0"},
     },
-    {gParamType_Primitive, "prim"},
+   { {gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -949,7 +949,7 @@ ZENDEFNODE(CreateTube, {
         {gParamType_Int, "rows", "3"},
         {gParamType_Int, "columns", "12"}
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -1067,7 +1067,7 @@ ZENDEFNODE(CreateTorus, {
         {gParamType_Int, "MinorSegment", "12"},
         {gParamType_Bool, "quads", "0"},
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1314,7 +1314,7 @@ ZENDEFNODE(CreateSphere, {
         {gParamType_Bool, "quads", "0"},
         {gParamType_Bool, "SphereRT", "0"}
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1358,7 +1358,7 @@ ZENDEFNODE(CreateCone, {
         {gParamType_Float, "height", "2"},
         {gParamType_Int, "lons", "32"},
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -1415,7 +1415,7 @@ ZENDEFNODE(CreateCylinder, {
         {gParamType_Float, "height", "2"},
         {gParamType_Int, "lons", "32"},
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });

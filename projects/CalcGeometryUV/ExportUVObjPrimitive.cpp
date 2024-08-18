@@ -61,7 +61,7 @@ ZENDEFNODE(ExportUVObjPrimitive,
 {   /* inputs: */ 
     {
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
-        "prim",
+        {gParamType_Primitive, "prim"},
     }, 
     /* outputs: */ 
     {}, 

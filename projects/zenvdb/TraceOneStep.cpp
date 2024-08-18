@@ -58,7 +58,7 @@ ZENDEFNODE(TraceOneStep, {
                                             {gParamType_Int, "size"},
                                             {gParamType_Int, "steps"},
                                             {gParamType_Float, "maxlength"},
-                                            {"VDBGrid", "vecField"}
+                                            {gParamType_VDBGrid,"vecField"}
                                      },
                                      {gParamType_Primitive, "prim"},
                                      {},

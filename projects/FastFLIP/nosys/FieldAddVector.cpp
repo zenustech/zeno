@@ -34,9 +34,9 @@ struct FieldAddVector : zeno::INode {
 
 static int defFieldAddVector =
     zeno::defNodeClass<FieldAddVector>("FieldAddVector", {/* inputs: */ {
-                                                              "invec3",
-                                                              "Velocity",
-                                                              "FieldWeight",
+                                                              {gParamType_Vec3f, "invec3"},
+                                                              {gParamType_VDBGrid, "Velocity"},
+                                                              {gParamType_Unknown, "FieldWeight"},
                                                           },
                                                           /* outputs: */ {},
                                                           /* params: */

@@ -52,7 +52,7 @@ struct Tension_dt : zeno::INode {
 
 static int defCFL =
     zeno::defNodeClass<CFL>("CFL_dt", {/* inputs: */ {
-                                           {"VDBGrid", "Velocity"}, {gParamType_Float, "Dx"},
+                                           {gParamType_VDBGrid,"Velocity"}, {gParamType_Float, "Dx"},
                                        },
                                        /* outputs: */
                                        {

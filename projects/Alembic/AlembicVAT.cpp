@@ -291,7 +291,7 @@ ZENDEFNODE(AlembicToSoftBodyVAT, {
       {gParamType_Int, "frameStart", "0"},
       {gParamType_String, "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
     },
-    { {"primitive"} },
+    { {gParamType_Primitive, "primitive"} },
     {
     },
     {"alembic", "primitive"},
@@ -487,7 +487,7 @@ ZENDEFNODE(AlembicToDynamicRemeshVAT, {
     {gParamType_Int, "frameStart", "0"},
     {gParamType_String, "outputPath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
   },
-  { {"primitive"} },
+  { {gParamType_Primitive, "primitive"} },
   {},
   {"alembic", "primitive"},
 });

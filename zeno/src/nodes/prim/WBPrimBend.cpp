@@ -720,7 +720,7 @@ ZENDEFNODE(BVHNearestPos,
                    {gParamType_String, "bvhWeightTag", "bvh_ws"},
                    {gParamType_String, "bvhPosTag", "bvh_pos"},
                }, /* outputs: */ {
-                   "prim"
+                   {gParamType_Primitive, "prim"}
                }, /* params: */ {
                }, /* category: */ {
                    "deprecated"
@@ -773,7 +773,7 @@ struct BVHNearestAttr : INode {
             }
         }
 
-        }, enum_variant<std::variant<float, vec3f>>(array_index({gParamType_Float, "vec3f"}, bvhAttributesType)));
+        }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
 
 
         set_output("prim", get_input("prim"));
@@ -789,7 +789,7 @@ ZENDEFNODE(BVHNearestAttr,
                    {"enum float vec3f", "bvhAttributesType", "float"},
                    {"enum tris points", "targetPrimType", "tris"},
                }, /* outputs: */ {
-                   "prim"
+                   {gParamType_Primitive, "prim"}
                }, /* params: */ {
                }, /* category: */ {
                    "primitive"
@@ -920,7 +920,7 @@ struct PrimSetAttr : INode {
               }
             },
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({gParamType_Float, "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
         set_output("prim", std::move(prim));
     }
@@ -985,7 +985,7 @@ struct PrimGetAttr : INode {
               }
             },
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({gParamType_Float, "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
         set_output("value", std::move(value));
     }
@@ -998,7 +998,7 @@ ZENDEFNODE(PrimGetAttr,
                    {"enum vert tri line loop poly", "method", "tri"},
                    {gParamType_Int, "index", "0"},
                }, /* outputs: */ {
-                   {"NumericObject","value"},
+                   {gParamType_Float,"value","", Socket_WildCard},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",
@@ -1236,9 +1236,9 @@ struct MatTranspose : INode {
 };
 ZENDEFNODE(MatTranspose,
            { /* inputs: */ {
-                   {"object", "mat", "", zeno::Socket_ReadOnly},
+                   {gParamType_Matrix4, "mat", "", zeno::Socket_ReadOnly},
                }, /* outputs: */ {
-                   {"object", "transposeMat"},
+                   {gParamType_Matrix4, "transposeMat"},
                }, /* params: */ {
                }, /* category: */ {
                    "math",
@@ -1628,7 +1628,7 @@ struct PrimAttribBlur : INode {
 
             },
             enum_variant<std::variant<float, vec3f>>(
-                array_index({gParamType_Float, "vec3f"}, attr_type)));
+                array_index({"float", "vec3f"}, attr_type)));
 
 //        QueryPerformanceCounter(&t2_2);
 //        double time_2 = (double)(t2_2.QuadPart - t1_2.QuadPart)/(double)tc_2.QuadPart;

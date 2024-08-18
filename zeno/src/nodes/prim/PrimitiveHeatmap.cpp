@@ -136,7 +136,7 @@ ZENDEFNODE(HeatmapFromImage2,
                    {gParamType_Float, "endPos", "1"},
                    {gParamType_Int, "resample", "0"},
                }, /* outputs: */ {
-                   {gParamType_Heatmap "heatmap"},
+                   {gParamType_Heatmap, "heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -183,7 +183,7 @@ ZENDEFNODE(HeatmapFromPrimAttr,
                    {gParamType_Int, "resample", "0"},
                    {gParamType_Bool, "reverse Result", "false"},
                }, /* outputs: */ {
-                   {"color","heatmap"},
+                   {gParamType_Heatmap,"heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",

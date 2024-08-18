@@ -183,7 +183,7 @@ ZENDEFNODE(PrimPointTris, {
     },
     /* outputs: */
     {
-        "list",
+        {gParamType_List, "list"},
     },
     /* params: */ {}, /* category: */
     {

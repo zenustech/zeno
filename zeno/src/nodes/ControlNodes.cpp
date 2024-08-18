@@ -131,7 +131,7 @@ struct EndFor : INode {
 };
 
 ZENDEFNODE(EndFor, {
-    {{gParamType_, "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_FOR, "object", "", zeno::Socket_ReadOnly}},
     {},
     {{gParamType_String, "For Begin", ""}},
     {"control"},

@@ -230,7 +230,7 @@ struct IsList : zeno::INode {
 
 ZENDEFNODE(IsList, {
     {
-        {gParamType_, "list", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "list", "", zeno::Socket_ReadOnly},
     },
     {{gParamType_Int,"result"}},
     {},

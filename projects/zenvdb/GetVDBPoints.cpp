@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/utils/log.h>
@@ -54,7 +54,7 @@ struct GetVDBPoints : zeno::INode {
 
 static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     { /* inputs: */ {
-        {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"grid", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
         {"object", "pars"},
     }, /* params: */ {
@@ -259,7 +259,7 @@ struct VDBPointsToPrimitive : zeno::INode {
 
 static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("VDBPointsToPrimitive",
     { /* inputs: */ {
-        {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"grid", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
 {gParamType_Primitive, "prim"},
 }, /* params: */ {
@@ -332,8 +332,8 @@ struct GetVDBPointsDroplets : zeno::INode {
 
 static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("GetVDBPointsDroplets",
     { /* inputs: */ {
-        {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
-        {"VDBGrid", "sdf", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"grid", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"sdf", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
 {gParamType_Primitive, "prim"},
 }, /* params: */ {
@@ -351,7 +351,7 @@ struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPointsGrid).name(), typeid(PrimitiveObject).name())({
         {
-            {"VDBGrid", "grid", "", zeno::Socket_ReadOnly},
+            {gParamType_VDBGrid,"grid", "", zeno::Socket_ReadOnly},
             {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         },
         {},

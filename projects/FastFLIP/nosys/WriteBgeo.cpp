@@ -1,6 +1,6 @@
 #include <zeno/utils/nowarn.h>
 #include <Partio.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/zeno.h>
 template <class T>
@@ -44,7 +44,7 @@ struct WriteBgeo : zeno::INode {
 
 static int defWriteBgeo =
     zeno::defNodeClass<WriteBgeo>("WriteBgeo", {/* inputs: */ {
-                                                    "data",
+                                                    {gParamType_Primitive, "data"},
                                                 },
                                                 /* outputs: */ {}, /* params: */
                                                 {

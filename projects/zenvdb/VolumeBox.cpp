@@ -117,9 +117,9 @@ ZENDEFNODE(CreateVolumeBox, {
         {gParamType_Vec3f, "pos", "0, 0, 0"},
         {gParamType_Vec3f, "scale", "1, 1, 1"},
         {gParamType_Vec3f, "rotate", "0, 0, 0"},
-        {"VDBGrid", "vdbGrid" },
+        {gParamType_VDBGrid, "vdbGrid" },
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}

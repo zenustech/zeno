@@ -252,7 +252,7 @@ ZENDEFNODE(ParticlesTwoWrangle, {
     {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
      {gParamType_Primitive, "prim2", "", zeno::Socket_ReadOnly},
      {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
-     {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
+     {gParamType_Dict, "params", "", zeno::Socket_ReadOnly}},
     {{gParamType_Primitive, "prim"}},
     {},
     {"zenofx"},

@@ -29,9 +29,9 @@ struct PushOutLiquidSDF : zeno::INode {
 };
 
 static int defPushOutLiquidSDF = zeno::defNodeClass<PushOutLiquidSDF>(
-    "PushOutLiquidSDF", {/* inputs: */ {"Dx",
-                             "LiquidSDF",
-                             "SolidSDF",
+    "PushOutLiquidSDF", {/* inputs: */ {{gParamType_Float, "Dx"},
+                             {gParamType_VDBGrid, "LiquidSDF"},
+                             {gParamType_VDBGrid, "SolidSDF"},
                          },
                          /* outputs: */ {},
                          /* params: */

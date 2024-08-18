@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/MeshObject.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <omp.h>
 #include <zeno/NumericObject.h>
 //#include <tl/function_ref.hpp>

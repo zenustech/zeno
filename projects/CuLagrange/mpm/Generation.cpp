@@ -73,7 +73,7 @@ struct PoissonDiskSample : INode {
     }
 };
 ZENDEFNODE(PoissonDiskSample, {
-                                  {"VDBGrid", {gParamType_Float, "dx", "0.1"}, {gParamType_Float, "ppc", "8"}, {gParamType_String, "path", ""}},
+                                  {gParamType_VDBGrid,{gParamType_Float, "dx", "0.1"}, {gParamType_Float, "ppc", "8"}, {gParamType_String, "path", ""}},
                                   {gParamType_Primitive, "prim"},
                                   {},
                                   {"MPM"},

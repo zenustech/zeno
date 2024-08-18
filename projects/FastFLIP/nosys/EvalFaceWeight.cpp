@@ -25,9 +25,9 @@ struct CutCellWeightEval : zeno::INode {
 
 static int defCutCellWeightEval =
     zeno::defNodeClass<CutCellWeightEval>("CutCellWeight", {/* inputs: */ {
-                                                                {"VDBGrid", "LiquidSDF"},
-                                                                {"VDBGrid", "SolidSDF"},
-                                                                {"VDBGrid", "FaceWeight"},
+                                                                {gParamType_VDBGrid,"LiquidSDF"},
+                                                                {gParamType_VDBGrid,"SolidSDF"},
+                                                                {gParamType_VDBGrid,"FaceWeight"},
                                                             },
                                                             /* outputs: */ {},
                                                             /* params: */

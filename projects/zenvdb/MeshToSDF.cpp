@@ -116,10 +116,10 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        {"object", "PrimitiveMesh", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "PrimitiveMesh", "", zeno::Socket_ReadOnly},
         {gParamType_Float,"Dx","0.08"},
     }, /* outputs: */ {
-        {"object", "sdf"},
+        {gParamType_VDBGrid, "sdf"},
     }, /* params: */ {
         //{gParamType_Float, "voxel_size", "0.08 0"},
         {"enum vertex cell", "type", "vertex"},
@@ -141,7 +141,7 @@ struct SDFToFog : INode
 };
 static int defSDFToFog = zeno::defNodeClass<SDFToFog>("SDFToFog",
     { /* inputs: */ {
-        {"VDBGrid", "SDF", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"SDF", "", zeno::Socket_ReadOnly},
         {gParamType_Bool, "inplace", "0"},
     }, /* outputs: */ {
         {"object", "oSDF"},

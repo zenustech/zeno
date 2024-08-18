@@ -402,9 +402,9 @@ struct ParticlesNeighborWrangle : zeno::INode {
 ZENDEFNODE(ParticlesNeighborWrangle, {
     {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
      {gParamType_Primitive, "primNei", "", zeno::Socket_ReadOnly},
-     {"object", "hashGrid"},
+     {gParamType_Unknown, "hashGrid"},
      {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
-     {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
+     {gParamType_Dict, "params", "", zeno::Socket_ReadOnly}},
     {{gParamType_Primitive, "prim"}},
     {},
     {"zenofx"},

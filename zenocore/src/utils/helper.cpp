@@ -27,7 +27,7 @@ namespace zeno {
         else if (type == "vec4f") { return gParamType_Vec4f; }
         else if (type == "prim" || type == "PrimitiveObject" || type == "primitive") { return gParamType_Primitive; }
         else if (type == "list" || type == "ListObject") { return gParamType_List; }
-        else if (type == "dict" || type == "DictObject" || type == "DictObject:NumericObject") { return gParamType_Dict; }
+        else if (type == "dict" || type == "DictObject" || type == "dict") { return gParamType_Dict; }
         else if (type == "colorvec3f") { return gParamType_Vec3f; }
         else if (type == "color") { return gParamType_Heatmap; }
         else if (type == "curve") { return gParamType_Curve; }

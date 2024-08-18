@@ -5,7 +5,7 @@
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/tools/Morphology.h>
 #include <zeno/VDBGrid.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/zeno.h>
 
 #include "../vdb_velocity_extrapolator.h"

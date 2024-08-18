@@ -152,13 +152,13 @@ struct VDBExplosiveTurbulentNoise : INode {
 
 ZENO_DEFNODE(VDBExplosiveTurbulentNoise)(
      { /* inputs: */ {
-     {"VDBGrid", "inoutSDF"},
+     {gParamType_VDBGrid,"inoutSDF"},
      {gParamType_Float, "strength", "1.0"},
      {gParamType_Float, "scale", "8.0"},
      {gParamType_Vec3f, "scaling", "1,1,1"},
      {gParamType_Vec3f, "translation", "0,0,0"},
      }, /* outputs: */ {
-       {"VDBGrid", "inoutSDF"}
+       {gParamType_VDBGrid,"inoutSDF"}
      }, /* params: */ {
     {gParamType_Float,"UVScale","0.4"},
     {gParamType_Float,"Speed","0.6"},

@@ -262,16 +262,16 @@ struct RigidGetPressureForce : zeno::INode {
 static int defRigidGetPressureForce = zeno::defNodeClass<RigidGetPressureForce>(
     "RigidGetPressureForce", {/* inputs: */ {
                                   {gParamType_Float, "dt"},
-                                  "MassCenter",
-                                  "Rigid",
-                                  "Pressure",
-                                  "CellFWeight",
-                                  "LiquidSDF",
+                                  {gParamType_Vec3f, "MassCenter"},
+                                  {gParamType_Primitive, "Rigid"},
+                                  {gParamType_VDBGrid, "Pressure"},
+                                  {gParamType_VDBGrid, "CellFWeight"},
+                                  {gParamType_VDBGrid, "LiquidSDF"},
                               },
                               /* outputs: */
                               {
-                                  "TotalForceImpulse",
-                                  "TotalTorcImpulse",
+                                  {gParamType_Vec3f, "TotalForceImpulse"},
+                                  {gParamType_Vec3f, "TotalTorcImpulse"},
                               },
                               /* params: */
                               {

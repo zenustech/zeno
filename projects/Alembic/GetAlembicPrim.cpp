@@ -318,7 +318,7 @@ struct AlembicPrimList : INode {
 ZENDEFNODE(AlembicPrimList, {
     {
         {gParamType_Bool, "flipFrontBack", "1"},
-        {"ABCTree", "abctree"},
+        {gParamType_Unknown, "abctree"},
         {gParamType_Bool, "use_xform", "0"},
         {gParamType_Bool, "triangulate", "0"},
         {gParamType_Bool, "splitByFaceset", "0"},
@@ -328,7 +328,7 @@ ZENDEFNODE(AlembicPrimList, {
         {gParamType_String, "facesetInclude", ""},
         {gParamType_String, "facesetExclude", ""},
     },
-    {"prims"},
+    {{gParamType_List, "prims"}},
     {},
     {"alembic"},
 });
@@ -474,7 +474,7 @@ struct ImportAlembicPrim : INode {
 ZENDEFNODE(ImportAlembicPrim, {
     {
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"frameid"},
+        {gParamType_Int, "frameid"},
         {gParamType_Int, "index", "-1"},
         {gParamType_Bool, "use_xform", "0"},
         {gParamType_Bool, "triangulate", "0"},

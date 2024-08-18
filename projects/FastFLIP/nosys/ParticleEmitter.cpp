@@ -40,14 +40,14 @@ struct ParticleEmitter : zeno::INode {
 
 static int defParticleEmitter = zeno::defNodeClass<ParticleEmitter>(
     "ParticleEmitter", {/* inputs: */ {
-                            "Particles",
-                            "ShapeSDF",
-                            "VelocityVolume",
-                            "VelocityInit",
-                            "LiquidSDF",
+                            {gParamType_VDBGrid, "Particles"},
+                            {gParamType_VDBGrid, "ShapeSDF"},
+                            {gParamType_VDBGrid, "VelocityVolume"},
+                            {gParamType_VDBGrid, "VelocityInit"},
+                            {gParamType_VDBGrid, "LiquidSDF"},
                         },
                         /* outputs: */ {
-                            "Particles",
+                            {gParamType_VDBGrid, "Particles"},
                         },
                         /* params: */
                         {

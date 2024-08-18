@@ -7,7 +7,7 @@
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
@@ -115,9 +115,9 @@ struct PrimToVDBPointDataGrid : zeno::INode {
 static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
         {gParamType_Primitive, "ParticleGeo", "", zeno::Socket_ReadOnly},
-        {gParamType_Float,"Dx"}, {"VDBGrid", "vdbPoints"},
+        {gParamType_Float,"Dx"}, {gParamType_VDBGrid,"vdbPoints"},
     }, /* outputs: */ {
-        {"VDBGrid", "Particles"},
+        {gParamType_VDBGrid,"Particles"},
     }, /* params: */ {
     //{gParamType_Float, "dx", "0.08"},
     }, /* category: */ {
@@ -152,7 +152,7 @@ static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("Set
         {"object", "ParticleGeo", "", zeno::Socket_ReadOnly},
         {gParamType_Float,"Dx"},
     }, /* outputs: */ {
-        {"VDBGrid", "Particles"},
+        {gParamType_VDBGrid,"Particles"},
     }, /* params: */ {
     {gParamType_Float, "dx", "0.08"},
     }, /* category: */ {

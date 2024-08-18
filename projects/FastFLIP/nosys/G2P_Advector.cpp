@@ -49,11 +49,11 @@ struct G2P_Advector : zeno::INode {
 static int defG2P_Advector = zeno::defNodeClass<G2P_Advector>(
     "G2P_Advector", {/* inputs: */ {
                          {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
-                         "Particles",
-                         "Velocity",
-                         "PostAdvVelocity",
-                         "SolidSDF",
-                         "SolidVelocity",
+                         {gParamType_VDBGrid, "Particles"},
+                         {gParamType_VDBGrid, "Velocity"},
+                         {gParamType_VDBGrid, "PostAdvVelocity"},
+                         {gParamType_VDBGrid, "SolidSDF"},
+                         {gParamType_VDBGrid, "SolidVelocity"},
                      },
                      /* outputs: */ {},
                      /* params: */

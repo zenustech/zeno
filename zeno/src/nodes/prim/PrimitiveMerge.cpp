@@ -168,7 +168,7 @@ ZENDEFNODE(PrimitiveMerge, {
         {gParamType_Primitive, "dst", "", zeno::Socket_ReadOnly},
         {gParamType_List, "listPrim", "", zeno::Socket_ReadOnly},
     },
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"deprecated"},
 });

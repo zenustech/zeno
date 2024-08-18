@@ -139,10 +139,10 @@ struct SampleVDBToPrimitive : INode {
 ZENDEFNODE(SampleVDBToPrimitive, {
                                      {
                                         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-                                        {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
+                                        {gParamType_VDBGrid,"vdbGrid", "", zeno::Socket_ReadOnly},
                                         {gParamType_String, "sampleBy","pos"},
                                         {gParamType_String, "primAttr", "sdf"}},
-                                     {gParamType_Primitive, "prim"},
+                                     {{gParamType_Primitive, "prim"}},
                                      {{"enum Clamp Periodic", "SampleType", "Clamp"}},
                                      {"openvdb"},
                                  });
@@ -187,7 +187,7 @@ struct PrimSample3D : zeno::INode {
 ZENDEFNODE(PrimSample3D, {
     {
         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-        {"VDBGrid", "vdbGrid", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"vdbGrid", "", zeno::Socket_ReadOnly},
         {gParamType_String, "srcChannel", "pos"},
         {gParamType_String, "dstChannel", "clr"},
         {gParamType_Float, "remapMin", "0"},
@@ -229,7 +229,7 @@ struct PrimSample : zeno::INode {
 ZENDEFNODE(PrimSample, {
     {
         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-        {"object", "sampledObject", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "sampledObject", "", zeno::Socket_ReadOnly},
         {gParamType_String, "srcChannel", "uv"},
         {gParamType_String, "dstChannel", "clr"},
         {gParamType_Float, "remapMin", "0"},

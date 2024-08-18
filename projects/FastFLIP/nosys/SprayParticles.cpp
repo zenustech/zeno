@@ -7,7 +7,7 @@
 #include <cstring>
 #include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>

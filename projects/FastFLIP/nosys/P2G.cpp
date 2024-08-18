@@ -44,10 +44,10 @@ struct FLIP_P2G : zeno::INode {
 static int defFLIP_P2G =
     zeno::defNodeClass<FLIP_P2G>("FLIP_P2G", {/* inputs: */ {
                                                   {gParamType_Float, "Dx"},
-                                                  "Particles",
-                                                  "Velocity",
-                                                  "PostP2GVelocity",
-                                                  "LiquidSDF",
+                                                  {gParamType_VDBGrid, "Particles"},
+                                                  {gParamType_VDBGrid, "Velocity"},
+                                                  {gParamType_VDBGrid, "PostP2GVelocity"},
+                                                  {gParamType_VDBGrid, "LiquidSDF"},
                                               },
                                               /* outputs: */ {},
                                               /* params: */

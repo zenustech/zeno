@@ -40,7 +40,7 @@ struct VDBCreateLevelsetSphere : zeno::INode {
 static int defVDBCreateLevelsetSphere = zeno::defNodeClass<VDBCreateLevelsetSphere>(
     "VDBCreateLevelsetSphere", {/* inputs: */ {{gParamType_Float,"Dx","0.08"},{gParamType_Float,"radius","1.0"},{gParamType_Vec3f,"center","0,0,0"},{gParamType_Float,"half_width","3.0"}}, /* outputs: */
                     {
-                        "data",
+                        {gParamType_VDBGrid, "data"},
                     },
                     /* params: */
                     {

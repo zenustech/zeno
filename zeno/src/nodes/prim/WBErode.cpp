@@ -164,7 +164,7 @@ ZENDEFNODE(erode_rand_color,
                },
                /* outputs: */
                {
-                   "list",
+                   {gParamType_List, "list"},
                },
                /* params: */
                {
@@ -214,7 +214,7 @@ ZENDEFNODE(erode_rand_dir,
                },
                /* outputs: */
                {
-                   "list",
+                   {gParamType_List, "list"},
                },
                /* params: */ {}, /* category: */
                {

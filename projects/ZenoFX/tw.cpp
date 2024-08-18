@@ -273,7 +273,7 @@ struct TrianglesWrangle : zeno::INode {
 ZENDEFNODE(TrianglesWrangle, {
     {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
      {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
-    {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly},
+    {gParamType_Dict, "params", "", zeno::Socket_ReadOnly},
      {"enum points lines tris quads loops polys", "faceType", "tris"}},
     {{gParamType_Primitive, "prim"}},
     {},
@@ -285,7 +285,7 @@ ZENDEFNODE(TrianglesWrangle, {
 
 //ZENDEFNODE(PrimWrangle, {
     //{{gParamType_Primitive, "prim"},
-     //{gParamType_String, "zfxCode"}, {"DictObject:NumericObject", "params"}},
+     //{gParamType_String, "zfxCode"}, {gParamType_Dict, "params"}},
     //{{gParamType_Primitive, "prim"}},
     //{},
     //{"zenofx"},

@@ -95,8 +95,8 @@ struct SDFAdvect : zeno::INode {
 
 ZENO_DEFNODE(SDFAdvect)(
     { /* inputs: */ {
-        {"VDBGrid", "InoutSDF", "", zeno::Socket_ReadOnly},
-        {"VDBGrid", "VecField", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"InoutSDF", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"VecField", "", zeno::Socket_ReadOnly},
         {gParamType_Float, "TimeStep", "0.04"},
         {"enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO", "SpatialScheme", "Order_5_HJ_WENO"},
         {"enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta", "TemporalScheme", "Order_2_Runge_Kuta"},
@@ -104,7 +104,7 @@ ZENO_DEFNODE(SDFAdvect)(
         {"enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO", "TrackerSpatialScheme", "Order_5_HJ_WENO"},
         {"enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta", "TrackerTemporalScheme", "Explicit_Euler"},
     }, /* outputs: */ {
-        {"VDBGrid", "InoutSDF"}
+        {gParamType_VDBGrid,"InoutSDF"}
     }, /* params: */ {
     }, /* category: */ {
         "openvdb",
@@ -193,8 +193,8 @@ struct VolumeAdvect : zeno::INode {
 
 ZENO_DEFNODE(VolumeAdvect)(
     { /* inputs: */ {
-        {"VDBGrid", "InField", "", zeno::Socket_ReadOnly},
-        {"VDBGrid", "VecField", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"InField", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"VecField", "", zeno::Socket_ReadOnly},
         {gParamType_Float, "TimeStep", "0.04"},
         {gParamType_Int, "SubSteps", "1"},
         {"enum SemiLagrangian  MidPoint RK3 RK4 MacCormack BFECC", "Integrator", "BFECC"},

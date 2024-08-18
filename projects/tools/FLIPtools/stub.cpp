@@ -76,7 +76,7 @@ struct SmoothLiquidSDF : zeno::ISerialSubgraphNode {
 };
 ZENDEFNODE(SmoothLiquidSDF, {
     {{gParamType_Particles, "inParticles", ""}, {gParamType_Float, "Dx", "0.04"}, {gParamType_Unknown, "DxScale", ""}, {gParamType_Unknown, "voxelScale", ""}, {gParamType_Unknown, "dropletScale", ""}, {gParamType_Unknown, "influenceScale", ""}},
-    {{"VDBGrid", "inoutSDF"}},
+    {{gParamType_VDBGrid,"inoutSDF"}},
     {},
     {"FLIP"},
 });

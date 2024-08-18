@@ -85,10 +85,10 @@ struct  ResampleVDBGrid : zeno::INode {
 
 static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDBGrid",
      { /* inputs: */ {
-         {"VDBGrid", "resampleTo", "", zeno::Socket_ReadOnly},
-         {"VDBGrid", "resampleFrom", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"resampleTo", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"resampleFrom", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-         {"VDBGrid", "resampleTo"},
+         {gParamType_VDBGrid,"resampleTo"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -187,10 +187,10 @@ struct CombineVDB : zeno::INode{
 };
 static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      { /* inputs: */ {
-         {"VDBGrid", "FieldA", "", zeno::Socket_ReadOnly},
-         {"VDBGrid", "FieldB", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"FieldA", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"FieldB", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-         {"VDBGrid", "FieldOut"},
+         {gParamType_VDBGrid,"FieldOut"},
      }, /* params: */ {
        {gParamType_Float, "MultiplierA", "1"},
        {gParamType_Float, "MultiplierB", "1"},
@@ -256,8 +256,8 @@ struct VDBDeactivate : zeno::INode
 };
 static int defVDBDeactivate = zeno::defNodeClass<VDBDeactivate>("VDBDeactivate",
      { /* inputs: */ {
-         {"VDBGrid", "Field", "", zeno::Socket_ReadOnly},
-         {"VDBGrid", "Mask", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"Field", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"Mask", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      }, /* params: */ {
      }, /* category: */ {

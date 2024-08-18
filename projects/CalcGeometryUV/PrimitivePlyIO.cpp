@@ -161,10 +161,9 @@ ZENDEFNODE(
         // inputs
         {
             {
-                "writepath",
-                "path",
+                {gParamType_String, "path"},
             },
-            "prim",
+            {gParamType_Primitive, "prim"},
         },
         // outpus
         {
