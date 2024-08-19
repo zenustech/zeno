@@ -753,6 +753,8 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
         ObjectParam* in_param = &(iter->second);
         if (in_param->links.empty()) {
             //节点如果定义了对象，但没有边连上去，是否要看节点apply如何处理？
+            //FIX: 没有边的情况要清空掉对象，否则apply以为这个参数连上了对象
+            in_param->spObject.reset();
         }
         else {
             switch (in_param->type)
@@ -1829,7 +1831,7 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     }
     else {
         auto iter2 = m_inputObjs.find(id);
-        if (iter2 != m_inputObjs.end()) {
+        if (iter2 != m_inputObjs.end() && iter2->second.spObject.has_value()) {
             zany spObject = zeno::reflect::any_cast<zany>(iter2->second.spObject);
             return spObject;
         }
