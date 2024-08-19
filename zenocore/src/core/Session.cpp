@@ -564,7 +564,6 @@ ZENO_API Session::Session()
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
 {
     initReflectNodes();
-    //initNodeCates();  //should init after all static initialization finished.
 }
 
 ZENO_API Session::~Session() = default;
@@ -697,6 +696,14 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
 
     CustomUI ui = descToCustomui(desc);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, clsname);
+    if (!clsname.empty() && clsname.front() == '^')
+        return;
+
+    std::string cate = cls->m_customui.category;
+    if (m_cates.find(cate) == m_cates.end())
+        m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+    m_cates[cate].push_back(clsname);
+
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
@@ -727,6 +734,12 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
     auto cls = std::make_unique<ReflectNodeClass>(ctor, nodecls, pTypeBase);
     //TODO: From metadata
     cls->m_customui.category = "reflect";
+
+    std::string cate = cls->m_customui.category;
+    if (m_cates.find(cate) == m_cates.end())
+        m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+    m_cates[cate].push_back(nodecls);
+
     nodeClasses.emplace(nodecls, std::move(cls));
 }
 
@@ -865,17 +878,6 @@ ZENO_API void Session::set_Rerun()
     objsMan->clear();
 }
 
-void Session::initNodeCates() {
-    for (auto const& [key, cls] : nodeClasses) {
-        if (!key.empty() && key.front() == '^')
-            continue;
-        std::string cate = cls->m_customui.category;
-        if (m_cates.find(cate) == m_cates.end())
-            m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
-        m_cates[cate].push_back(key);
-    }
-}
-
 static bool isBasedINode(const size_t hash) {
     if (hash == zeno::types::gParamType_INode)
         return true;
@@ -916,9 +918,6 @@ void Session::initReflectNodes() {
 }
 
 ZENO_API zeno::NodeCates Session::dumpCoreCates() {
-    if (m_cates.empty()) {
-        initNodeCates();
-    }
     return m_cates;
 }
 

@@ -88,7 +88,6 @@ struct Session {
     void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
 
 private:
-    void initNodeCates();
     void initReflectNodes();
 
     zeno::NodeCates m_cates;
