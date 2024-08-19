@@ -270,7 +270,7 @@ ZENDEFNODE(CalcGeometryUV,
     },
     /*输出*/
     {   
-        "prim"
+        {gParamType_Primitive, "prim"}
     },
     /*参数*/
     {},

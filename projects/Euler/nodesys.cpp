@@ -156,8 +156,8 @@ struct DenseFieldToVDB : zeno::INode {
 };
 
 ZENDEFNODE(DenseFieldToVDB, {
-                                {"inDenseField"},
-                                {"VDBField"},
+                                {{gParamType_Unknown, "inDenseField"}},
+                                {{gParamType_Unknown, "VDBField"}},
                                 {},
                                 {"CompressibleFlow"},
                             });
@@ -229,8 +229,8 @@ struct GetDenseField : zeno::INode {
   }
 };
 ZENDEFNODE(GetDenseField, {
-                              {"inSolverData"},
-                              {"outDenseField"},
+                              {{gParamType_Unknown, "inSolverData"}},
+                              {{gParamType_Unknown, "outDenseField"}},
                               {{gParamType_String, "FieldName", "p u rho"}},
                               {"CompressibleFlow"},
                           });
@@ -269,8 +269,8 @@ struct MakeCompressibleFlow : zeno::INode {
 };
 
 ZENDEFNODE(MakeCompressibleFlow, {
-                                     {"bmin", "bmax", "dx", "q_amb"},
-                                     {"CompressibleFlow"},
+                                     {{gParamType_Vec3f, "bmin"}, {gParamType_Vec3f, "bmax"}, {gParamType_Float, "dx"}, {gParamType_String, "q_amb"}},
+                                     {{gParamType_Unknown, "CompressibleFlow"}},
                                      {},
                                      {"CompressibleFlow"},
                                  });
@@ -292,8 +292,8 @@ struct makeCompressibleSim : zeno::INode {
   }
 };
 ZENDEFNODE(makeCompressibleSim, {
-                                    {"inFlowData"},
-                                    {"outFlowData", "SimParam"},
+                                    {{gParamType_Unknown, "inFlowData"}},
+                                    {{gParamType_Unknown, "outFlowData"}, {gParamType_Unknown, "SimParam"}},
                                     {},
                                     {"CompressibleFlow"},
                                 });
@@ -311,8 +311,8 @@ struct BackupField : zeno::INode {
   }
 };
 ZENDEFNODE(BackupField, {
-                            {"inFlowData"},
-                            {"outFlowData"},
+                            {{gParamType_Unknown, "inFlowData"}},
+                            {{gParamType_Unknown, "outFlowData"}},
                             {},
                             {"CompressibleFlow"},
                         });
@@ -333,8 +333,8 @@ struct InitField : zeno::INode {
   }
 };
 ZENDEFNODE(InitField, {
-                          {"inFlowData", "simParam"},
-                          {"outFlowData"},
+                          {{gParamType_Unknown, "inFlowData"}, {gParamType_Unknown, "simParam"}},
+                          {{gParamType_Unknown, "outFlowData"}},
                           {},
                           {"CompressibleFlow"},
                       });
@@ -365,8 +365,8 @@ struct MakeVelocityPressure : zeno::INode {
   }
 };
 ZENDEFNODE(MakeVelocityPressure, {
-                                     {"inFlowData", "simParam"},
-                                     {"outFlowData"},
+                                     {{gParamType_Unknown, "inFlowData"}, {gParamType_Unknown, "simParam"}},
+                                     {{gParamType_Unknown, "outFlowData"}},
                                      {},
                                      {"CompressibleFlow"},
                                  });
@@ -408,8 +408,8 @@ struct CompressibleMarkDOF : zeno::INode {
   }
 };
 ZENDEFNODE(CompressibleMarkDOF, {
-                                    {"inFlowData"},
-                                    {"outFlowData"},
+                                    {{gParamType_Unknown, "inFlowData"}},
+                                    {{gParamType_Unknown, "outFlowData"}},
                                     {},
                                     {"CompressibleFlow"},
                                 });
@@ -516,12 +516,12 @@ struct MarkMovingSolidCellsByVDB : zeno::INode {
 };
 ZENDEFNODE(MarkMovingSolidCellsByVDB, {
                                           {
-                                              "inFlowData",
-                                              "simParam",
-                                              "SDFVDBField",
-                                              "SolidVelVDBField",
+                                              {gParamType_Unknown, "inFlowData"},
+                                              {gParamType_Unknown, "simParam"},
+                                              {gParamType_VDBGrid, "SDFVDBField"},
+                                              {gParamType_VDBGrid, "SolidVelVDBField"},
                                           },
-                                          {"outFlowData"},
+                                          {{gParamType_Unknown, "outFlowData"}},
                                           {},
                                           {"CompressibleFlow"},
                                       });
@@ -557,8 +557,8 @@ struct CompressibleAdvection : zeno::INode {
 };
 ZENDEFNODE(CompressibleAdvection,
            {
-               {"inFlowData", "simParam", "RK_Order", "dt"},
-               {"outFlowData"},
+               {{gParamType_Unknown, "inFlowData"}, {gParamType_Unknown, "simParam"}, {gParamType_Int, "RK_Order"}, {gParamType_Float, "dt"}},
+               {{gParamType_Unknown, "outFlowData"}},
                {},
                {"CompressibleFlow"},
            });
@@ -583,8 +583,8 @@ struct CompressibleProjection : zeno::INode {
 };
 ZENDEFNODE(CompressibleProjection,
            {
-               {"inFlowData", "simParam", "RK_Order", "dt"},
-               {"outFlowData"},
+               {{gParamType_Unknown, "inFlowData"}, {gParamType_Unknown, "simParam"}, {gParamType_Int, "RK_Order"}, {gParamType_Float, "dt"}},
+               {{gParamType_Unknown, "outFlowData"}},
                {},
                {"CompressibleFlow"},
            });

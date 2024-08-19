@@ -449,7 +449,7 @@ struct WriteCustomVAT : INode {
 ZENDEFNODE(WriteCustomVAT, {
     {
         {gParamType_Primitive, "prim"},
-        {"frameid"},
+        {gParamType_Int, "frameid"},
         {gParamType_Bool, "UnrealEngine", "1"},
         {gParamType_String, "path", "", NoSocket, WritePathEdit},
     },
@@ -497,7 +497,7 @@ struct ReadCustomVAT : INode {
 
 ZENDEFNODE(ReadCustomVAT, {
     {
-        {"frameid"},
+        {gParamType_Int, "frameid"},
         {gParamType_String, "path", "", NoSocket, ReadPathEdit},
     },
     { 

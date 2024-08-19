@@ -174,7 +174,7 @@ ZENDEFNODE(ShaderFinalize, {
         {gParamType_Float, "anisoRotation", "0.0"},
 
         {gParamType_Float, "subsurface", "0.0"},
-        {"enum Fixed Adaptive", "sssRadius", "Fixed", Socket_Primitve, Combobox},
+        {"enum Fixed Adaptive", "sssRadius", "Fixed"},
         {gParamType_Vec3f, "sssParam", "1.0,1.0,1.0"},
         {gParamType_Vec3f, "sssColor", "1.0,1.0,1.0", Socket_Primitve, ColorVec},
         {gParamType_Float, "scatterDistance", "10000"},
@@ -216,7 +216,7 @@ ZENDEFNODE(ShaderFinalize, {
         {gParamType_String, "commonCode"},
         {gParamType_String, "extensionsCode"},
         {gParamType_String, "mtlid", "Mat1"},
-        {gParamType_List, "tex2dList", "", zeno::Socket_ReadOnly},//TODO: bate's asset manager
+        {gParamType_List, "tex2dList", ""},//TODO: bate's asset manager
         {gParamType_Vec3i, "mask_value", "0,0,0"},
     },
     {

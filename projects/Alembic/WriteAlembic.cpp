@@ -175,7 +175,7 @@ struct WriteAlembic : INode {
 ZENDEFNODE(WriteAlembic, {
     {
         {gParamType_Primitive, "prim"},
-        {"frameid"},
+        {gParamType_Int, "frameid"},
         {gParamType_String, "path", "", zeno::NoSocket, zeno::WritePathEdit}
     },
     {},
@@ -722,7 +722,7 @@ struct WriteAlembic2 : INode {
 ZENDEFNODE(WriteAlembic2, {
     {
         {gParamType_Primitive, "prim"},
-        {"frameid"},
+        {gParamType_Float, "frameid"},
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {gParamType_Int, "frame_start", "0"},
         {gParamType_Int, "frame_end", "100"},
@@ -978,7 +978,7 @@ ZENDEFNODE(WriteAlembicPrims, {
     {
         {gParamType_Primitive, "prim"},
         {gParamType_List, "prims"},
-        {"frameid"},
+        {gParamType_Float, "frameid"},
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {gParamType_Int, "frame_start", "0"},
         {gParamType_Int, "frame_end", "100"},

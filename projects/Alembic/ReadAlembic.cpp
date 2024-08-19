@@ -1207,11 +1207,11 @@ ZENDEFNODE(ReadAlembic, {
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         {gParamType_Bool, "read_face_set", "1"},
         {gParamType_Bool, "outOfRangeAsEmpty", "0"},
-        {"frameid"},
+        {gParamType_Float, "frameid"},
     },
     {
-        {"ABCTree", "abctree"},
-        "namelist",
+        {gParamType_Unknown, "abctree"},
+        {gParamType_List, "namelist"},
     },
     {},
     {"alembic"},
@@ -1356,7 +1356,7 @@ ZENDEFNODE(CopyPosAndNrmByIndex, {
         {gParamType_List, "list"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1516,11 +1516,11 @@ struct SetFaceset: INode {
 
 ZENDEFNODE(SetFaceset, {
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
         {gParamType_String, "facesetName", "defFS"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1538,11 +1538,11 @@ struct SetABCPath: INode {
 
 ZENDEFNODE(SetABCPath, {
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
         {gParamType_String, "abcpathName", "/ABC/your_path"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},

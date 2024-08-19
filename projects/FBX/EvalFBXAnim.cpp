@@ -464,7 +464,7 @@ ZENDEFNODE(EvalBlenderFile,
                 {gParamType_String, "output_path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
             },  /* outputs: */
             {
-                "fake"
+                {gParamType_Unknown, "fake"}
             },  /* params: */
             {
 
@@ -715,16 +715,27 @@ struct EvalFBXAnim : zeno::INode {
 ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
-                   {"frameid"},
+                    {gParamType_Int, "frameid"},
                    //{gParamType_Float, "fps", "24.0"},
-                   "data", "animinfo", "nodetree", "bonetree",
+                    {gParamType_Unknown, "data"},
+                    {gParamType_Unknown, "animinfo"},
+                    {gParamType_Unknown, "nodetree"},
+                    {gParamType_Unknown, "bonetree"},
                },  /* outputs: */
                {
-                   "prim",
-                   "camera", "light", {gParamType_String,"matName"}, {gParamType_String, "meshName"}, {gParamType_String,"pathName"}, "bsPrimsOrigin",
+                   {gParamType_Primitive, "prim"},
+                   {gParamType_Unknown, "camera"},
+                   {gParamType_Unknown, "light"},
+                   {gParamType_String,"matName"},
+                   {gParamType_String, "meshName"},
+                   {gParamType_String,"pathName"},
+                   {gParamType_List, "bsPrimsOrigin"},
                    {gParamType_List, "bsPrims", ""},
-                   "transDict", "quatDict", "scaleDict",
-                   "writeData", {gParamType_Bool, "visibility"}
+                   {gParamType_Dict, "transDict"},
+                   {gParamType_Dict, "quatDict"},
+                   {gParamType_Dict, "scaleDict"},
+                   {gParamType_Unknown, "writeData"},
+                   {gParamType_Bool, "visibility"}
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},

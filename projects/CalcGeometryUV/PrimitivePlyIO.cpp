@@ -102,14 +102,13 @@ ZENDEFNODE(
         // inputs
         {
             {
-                "string",
-                "path" , "", zeno::Socket_Primitve, zeno::ReadPathEdit
+                gParamType_String, "path" , "", zeno::Socket_Primitve, zeno::ReadPathEdit
             },
         },
         // outpus
         {
-{gParamType_Primitive, "prim"},
-},
+            {gParamType_Primitive, "prim"},
+        },
         // params
         {
         },
@@ -160,9 +159,7 @@ ZENDEFNODE(
     {
         // inputs
         {
-            {
-                {gParamType_String, "path"},
-            },
+            {gParamType_String, "path"},
             {gParamType_Primitive, "prim"},
         },
         // outpus

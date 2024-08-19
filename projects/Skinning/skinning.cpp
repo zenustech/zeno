@@ -33,8 +33,8 @@ struct MakeRestPoses : zeno::INode {
 };
 
 ZENDEFNODE(MakeRestPoses, {
-    {"bones"},
-    {"posesFrame"},
+    {{gParamType_Primitive, "bones"}},
+    {{gParamType_Unknown, "posesFrame"}},
     {},
     {"Skinning"},
 });
@@ -62,8 +62,8 @@ struct BlendPoses : zeno::INode {
 };
 
 ZENDEFNODE(BlendPoses, {
-    {"p1","p2","w"},
-    {"bp"},
+    {{gParamType_Unknown, "p1"}, {gParamType_Unknown, "p2"}, {gParamType_Float, "w"}},
+    {{gParamType_Unknown, "bp"}},
     {},
     {"Skinning"},
 });
@@ -245,8 +245,8 @@ struct DoSkinning : zeno::INode {
 };
 
 ZENDEFNODE(DoSkinning, {
-    {"shape","Qs","Ts","restBones"},
-    {"dshape"},
+    {{gParamType_Primitive, "shape"}, {gParamType_Vec4f, "Qs"}, {gParamType_Vec3f, "Ts"}, {gParamType_Primitive, "restBones"}},
+    {{gParamType_Primitive, "dshape"}},
     {{"enum LBS DQS","algorithm","DQS"},{gParamType_String,"attr_prefix","sw"},{gParamType_String,"out_channel","curPos"},{gParamType_Int,"FK","0"}},
     {"Skinning"},
 });

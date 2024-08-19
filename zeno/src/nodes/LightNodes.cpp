@@ -450,7 +450,7 @@ ZENO_DEFNODE(LightNode)({
         {gParamType_Primitive, "prim"},
     },
     {
-        "prim"
+        {gParamType_Primitive, "prim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},

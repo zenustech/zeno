@@ -86,8 +86,8 @@ struct AlignPrimitiveTopolgy : zeno::INode {
 };
 
 ZENDEFNODE(AlignPrimitiveTopolgy, {
-    {"primSrc","primDst"},
-    {"primOut"},
+    {{gParamType_Primitive, "primSrc"}, {gParamType_Primitive, "primDst"}},
+    {{gParamType_Primitive, "primOut"}},
     {},
     {"Skinning"},
 });

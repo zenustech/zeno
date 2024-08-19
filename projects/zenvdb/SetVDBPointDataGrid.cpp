@@ -149,7 +149,7 @@ struct SetVDBPointDataGrid : zeno::INode {
 
 static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
     { /* inputs: */ {
-        {"object", "ParticleGeo", "", zeno::Socket_ReadOnly},
+        {gParamType_Particles, "ParticleGeo", "", zeno::Socket_ReadOnly},
         {gParamType_Float,"Dx"},
     }, /* outputs: */ {
         {gParamType_VDBGrid,"Particles"},

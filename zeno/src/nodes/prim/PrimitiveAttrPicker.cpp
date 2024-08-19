@@ -65,7 +65,7 @@ ZENDEFNODE(PrimitiveAttrPicker, {
     // outputs
     {
     {gParamType_Primitive, "outPrim"},
-    {"list"}
+    {gParamType_List, "list"}
     },
     // params
     {{gParamType_String, "selected", ""}},

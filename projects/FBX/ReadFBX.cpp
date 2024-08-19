@@ -1239,11 +1239,13 @@ ZENDEFNODE(ReadFBXPrim,
                    {gParamType_Dict,"visibility", ""}
                },  /* outputs: */
                {
-                    "prim",
-                    "data",
-                    {"dict", "datas", ""},
-                    {"dict", "mats", ""},
-                "animinfo", "nodetree", "bonetree",
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Unknown, "data"},
+                    {gParamType_Dict, "datas", ""},
+                    {gParamType_Dict, "mats", ""},
+                    {gParamType_Unknown, "animinfo"},
+                    {gParamType_Unknown, "nodetree"},
+                    {gParamType_Unknown, "bonetree"},
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
@@ -1332,7 +1334,12 @@ ZENDEFNODE(ReadLightFromFile,
                 {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
             },  /* outputs: */
             {
-                "posList", "rotList", "sclList", "colList", "intList", "expList"
+                {gParamType_List, "posList"},
+                {gParamType_List, "rotList"},
+                {gParamType_List, "sclList"},
+                {gParamType_List, "colList"},
+                {gParamType_List, "intList"},
+                {gParamType_List, "expList"}
             },  /* params: */
             {
             },  /* category: */

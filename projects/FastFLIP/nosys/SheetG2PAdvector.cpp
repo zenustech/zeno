@@ -55,16 +55,17 @@ struct G2PAdvectorSheet : zeno::INode {
 
 static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
     "G2PAdvectorSheetty", {/* inputs: */ {
-                               {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                               {gParamType_Float, "dt"},
+                               {gParamType_Float, "Dx"},
                                {gParamType_Float, "pic_min", "0.03"},
                                {gParamType_Float, "pic_max", "0.05"},
-                               "Particles",
-                               "Velocity",
-                               "ViscousVelocity",
-                               "LiquidSDF",
-                               "PostAdvVelocity",
-                               "SolidSDF",
-                               "SolidVelocity",
+                               {gParamType_VDBGrid, "Particles"},
+                               {gParamType_VDBGrid, "Velocity"},
+                               {gParamType_VDBGrid, "ViscousVelocity"},
+                               {gParamType_VDBGrid, "LiquidSDF"},
+                               {gParamType_VDBGrid, "PostAdvVelocity"},
+                               {gParamType_VDBGrid, "SolidSDF"},
+                               {gParamType_VDBGrid, "SolidVelocity"},
                            },
                            /* outputs: */ {},
                            /* params: */

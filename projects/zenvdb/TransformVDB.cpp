@@ -56,7 +56,7 @@ ZENDEFNODE(TransformVDB, {/* inputs: */
                            {gParamType_Vec3f, "eulerXYZ", "0, 0, 0"},
                            {gParamType_Vec3f, "scaling", "1, 1, 1"}},
                           /* outputs: */
-                          {"VDBGrid"},
+                          {{gParamType_VDBGrid, "VDBGrid"}},
                           /* params: */
                           {},
                           /* category: */

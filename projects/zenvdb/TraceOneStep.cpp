@@ -53,14 +53,17 @@ struct TraceOneStep : INode {
 };
 
 ZENDEFNODE(TraceOneStep, {
-                                     {gParamType_Primitive,
+                                     {
+                                            {gParamType_Primitive, "prim"},
                                             {gParamType_Float, "dt"},
                                             {gParamType_Int, "size"},
                                             {gParamType_Int, "steps"},
                                             {gParamType_Float, "maxlength"},
                                             {gParamType_VDBGrid,"vecField"}
                                      },
-                                     {gParamType_Primitive, "prim"},
+                                     {
+                                         {gParamType_Primitive, "prim"},
+                                     },
                                      {},
                                      {"openvdb"},
                                  });

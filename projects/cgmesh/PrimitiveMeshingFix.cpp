@@ -34,10 +34,10 @@ struct PrimitiveMeshingFix : INode {
 
 ZENO_DEFNODE(PrimitiveMeshingFix)({
     {
-{gParamType_Primitive, "prim"},
-},
+        {gParamType_Primitive, "prim"},
+    },
     {
-    "primFixed",
+        {gParamType_Primitive, "primFixed"},
     },
     {
     },

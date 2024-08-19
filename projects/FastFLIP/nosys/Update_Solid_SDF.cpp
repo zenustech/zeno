@@ -30,9 +30,9 @@ struct FLIP_Solid_Modifier : zeno::INode {
 
 static int defFLIP_Solid_Modifier = zeno::defNodeClass<FLIP_Solid_Modifier>(
     "FLIPApplyBoundary", {/* inputs: */ {
-                              "Particles",
-                              "DynaSolid_SDF",
-                              "StatSolid_SDF",
+                              {gParamType_VDBGrid, "Particles"},
+                              {gParamType_VDBGrid, "DynaSolid_SDF"},
+                              {gParamType_VDBGrid, "StatSolid_SDF"},
                           },
                           /* outputs: */ {},
                           /* params: */

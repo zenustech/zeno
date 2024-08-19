@@ -331,8 +331,8 @@ ZENDEFNODE(ReadObjPrimitiveDict,
         { /* inputs: */ {
         {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         }, /* outputs: */ {
-        "prim",
-        "dict",
+        {gParamType_Primitive, "prim"},
+        {gParamType_Dict, "dict"},
         }, /* params: */ {
         }, /* category: */ {
         "primitive",

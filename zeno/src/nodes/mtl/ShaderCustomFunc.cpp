@@ -125,11 +125,11 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
 
 ZENDEFNODE(ShaderInvokeFunc, {
     {
-        {"object", "func", "", zeno::Socket_ReadOnly},
+        {gParamType_Unknown, "func", "", zeno::Socket_ReadOnly},
         {gParamType_List, "args", "", zeno::Socket_ReadOnly},
     },
     {
-        {"shader", "out"},
+        {gParamType_Unknown, "out"},
     },
     {},
     {"shader"},

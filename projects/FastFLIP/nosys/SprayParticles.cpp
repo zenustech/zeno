@@ -187,12 +187,12 @@ struct SprayParticles : zeno::INode {
 
 static int defSprayParticles = zeno::defNodeClass<SprayParticles>(
     "SprayParticles", {/* inputs: */ {
-                           "TrianglePrim", 
+                           {gParamType_Primitive, "TrianglePrim"}, 
                            {gParamType_Float, "Dx", "0.01"},
                        },
                        /* outputs: */
                        {
-                           "particles",
+                           {gParamType_Primitive, "particles"},
                        },
                        /* params: */
                        {
@@ -254,11 +254,11 @@ struct InterpMeshBarycentric : INode{
 
 ZENDEFNODE(InterpMeshBarycentric, {
     {
-      "MeshPrim",
-      "Particles",
+      {gParamType_Primitive, "MeshPrim"},
+      {gParamType_Primitive, "Particles"},
     },
     {
-      "oParticles"
+      {gParamType_Primitive, "oParticles"}
     },
     {},
     {"primitive"},
@@ -301,11 +301,11 @@ struct PrimFindTriangle : INode{
 
 ZENDEFNODE(PrimFindTriangle, {
     {
-      "MeshPrim",
-      "Particles",
+      {gParamType_Primitive, "MeshPrim"},
+      {gParamType_Primitive, "Particles"},
     },
     {
-      "oParticles"
+      {gParamType_Primitive, "oParticles"}
     },
     {},
     {"primitive"},

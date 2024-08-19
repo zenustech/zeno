@@ -76,7 +76,7 @@ struct EvalBonesAngle : zeno::INode {
 };
 
 ZENDEFNODE(EvalBonesAngle, {
-    {"bones","bs_idx"},
+    {{gParamType_Primitive, "bones"}, {gParamType_Vec2i, "bs_idx"}},
     {{gParamType_Float,"res"}},
     {},
     {"Skinning"},

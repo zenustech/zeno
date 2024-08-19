@@ -1,7 +1,6 @@
 #include "graphstreemodel.h"
 #include "uicommon.h"
 #include "variantptr.h"
-#include "descriptors.h"
 #include <zeno/core/common.h>
 
 

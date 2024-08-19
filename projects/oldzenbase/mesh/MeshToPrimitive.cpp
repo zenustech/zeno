@@ -104,7 +104,7 @@ struct ConvertTo_MeshObject_PrimitiveObject : MeshToPrimitive {
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).name(), typeid(PrimitiveObject).name())({
-        {"mesh", "prim"},
+        {{gParamType_Primitive, "mesh"}, {gParamType_Primitive, "prim"}},
         {},
         {},
         {"deprecated"},

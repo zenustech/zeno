@@ -31,8 +31,8 @@ struct Vec3FieldExtrapolate : zeno::INode {
 
 static int defVec3FieldExtrapolate =
     zeno::defNodeClass<Vec3FieldExtrapolate>("Vec3FieldExtrapolate", {/* inputs: */ {
-                                                                          "Field",
-                                                                          "LiquidSDF",
+                                                                          {gParamType_VDBGrid, "Field"},
+                                                                          {gParamType_VDBGrid, "LiquidSDF"},
                                                                       },
                                                                       /* outputs: */ {},
                                                                       /* params: */

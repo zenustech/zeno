@@ -234,8 +234,8 @@ struct CameraEval: zeno::INode {
 
 ZENO_DEFNODE(CameraEval)({
     {
-        {"frameid"},
-        {"nodelist"}
+        {gParamType_Int, "frameid"},
+        {gParamType_List, "nodelist"}
     },
     {
         {gParamType_Camera, "camera"},
@@ -276,7 +276,7 @@ struct ExtractCamera: zeno::INode {
 ZENDEFNODE(ExtractCamera,
            {       /* inputs: */
                {
-                    "camobject"
+                   {gParamType_Camera, "camobject"}
                },  /* outputs: */
                {
                    {gParamType_Vec3f,"pos"}, 
@@ -345,7 +345,7 @@ ZENO_DEFNODE(DirtyTBN)({
         {gParamType_Vec3f, "B", "0, 0, 1"},
     },
     {
-        "prim"
+        {gParamType_Primitive, "prim"}
     },
     {},
     {"shader"},
@@ -550,12 +550,12 @@ struct LiveMeshNode : INode {
 
 ZENO_DEFNODE(LiveMeshNode)({
     {
-        {"frameid"},
+        {gParamType_Int, "frameid"},
         {gParamType_String, "vertSrc", ""},
         {gParamType_Bool, "outDict", "false"}
     },
     {
-        "prims"
+        {gParamType_List, "prims", "", Socket_WildCard}
     },
     {
     },

@@ -1211,7 +1211,7 @@ struct BulletConstraintGetFrames : zeno::INode {
 
 ZENDEFNODE(BulletConstraintGetFrames, {
 	{{gParamType_Unknown, "constraint"}},
-	{"frame1", "frame2"},
+    {{gParamType_Unknown, "frame1"}, {gParamType_Unknown, "frame2"}},
 	{{"enum ConeTwist Fixed Generic6Dof Generic6DofSpring Generic6DofSpring2 Hinge Hinge2 Slider Universal", "constraintType", "Universal"}},
 	{"Bullet"}
 });
@@ -2215,7 +2215,7 @@ struct BulletMultiBodySetJointPosMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointPosMultiDof, {
-	{{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_Wildcard}},
+	{{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_WildCard}},
 	{{gParamType_Unknown, "object"}},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},
@@ -2241,7 +2241,7 @@ struct BulletMultiBodySetJointVelMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointVelMultiDof, {
-    {{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_Wildcard}},
+    {{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_WildCard}},
 	{{gParamType_Unknown, "object"}},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},

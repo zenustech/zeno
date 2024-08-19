@@ -128,7 +128,7 @@ ZENDEFNODE(CreateBezierCurve, {{
                                    {gParamType_Primitive, "SamplePoints"}, //input
                                    {gParamType_Float, "precision", "0.01"},
                                },
-                               {gParamType_Primitive,{gParamType_Curve, "curev"}}, //output
+                               {{gParamType_Primitive, "prim"}, {gParamType_Curve, "curev"}}, //output
                                {
                                    {"enum Bezier", "Type", "Bezier"},
                                    {gParamType_String, "SampleTag", ""},

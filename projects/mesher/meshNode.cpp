@@ -30,8 +30,8 @@ struct MakeMPMMehser : INode {
     }
 };
 ZENDEFNODE(MakeMPMMehser, {
-    {"pathPreFix", "tet_path","smooth_iter", "start", "end",  "edge_stretch"},
-    {"MPMMehser"},
+    {{gParamType_String, "pathPreFix"}, {gParamType_String, "tet_path"}, {gParamType_Int, "smooth_iter"}, {gParamType_Int, "start"}, {gParamType_Int, "end"}, {gParamType_Float, "edge_stretch"}},
+    {{gParamType_Unknown, "MPMMehser"}},
     {},
     {"GPUMPM"},
 });
@@ -61,8 +61,8 @@ struct MesherProcessFrame : INode {
     }
 };
 ZENDEFNODE(MesherProcessFrame, {
-    {"Mesher", "frameNumber"},
-    {"FramePrimitive"},
+    {{gParamType_Unknown, "Mesher"}, {gParamType_Int, "frameNumber"}},
+    {{gParamType_Primitive, "FramePrimitive"}},
     {},
     {"GPUMPM"},
 });

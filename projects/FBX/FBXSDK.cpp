@@ -1216,13 +1216,13 @@ struct NewFBXBoneDeform : INode {
 
 ZENDEFNODE(NewFBXBoneDeform, {
     {
-        "GeometryToDeform",
-        "RestPointTransforms",
-        "DeformPointTransforms",
+        {gParamType_Primitive, "GeometryToDeform"},
+        {gParamType_Primitive, "RestPointTransforms"},
+        {gParamType_Primitive, "DeformPointTransforms"},
     },
     {
-{gParamType_Primitive, "prim"},
-},
+        {gParamType_Primitive, "prim"},
+    },
     {},
     {"primitive"},
 });
@@ -1249,11 +1249,11 @@ struct NormalView : INode {
 
 ZENDEFNODE(NormalView, {
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
         {gParamType_Float, "scale", "0.01"},
     },
     {
-        "normals",
+        {gParamType_Primitive, "normals"},
     },
     {},
     {"debug"},
@@ -1296,12 +1296,12 @@ struct BoneTransformView : INode {
 
 ZENDEFNODE(BoneTransformView, {
     {
-        "bones",
+        {gParamType_Primitive, "bones"},
         {gParamType_Float, "scale", "0.1"},
         {gParamType_Int, "index", "-1"},
     },
     {
-        "view",
+        {gParamType_Primitive, "view"},
     },
     {},
     {"debug"},

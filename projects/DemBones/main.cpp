@@ -205,11 +205,11 @@ struct DemBones : zeno::INode {
 };
 
 ZENDEFNODE(DemBones,{
-    {"BakedPrimList", "RefPrim"},
+    {{gParamType_List, "BakedPrimList"}, {gParamType_Primitive, "RefPrim"}},
     {
-        "BoneBindInfo",
-        "SkiningInfo",
-        "FrameInfo",
+        {gParamType_Unknown, "BoneBindInfo"},
+        {gParamType_Unknown, "SkiningInfo"},
+        {gParamType_Unknown, "FrameInfo"},
     },
     {{gParamType_Int, "bone_number", "20"}},
     {"DemBones"},

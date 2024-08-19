@@ -79,7 +79,7 @@ struct PrimSplit : INode {
 
 ZENDEFNODE(PrimSplit, {
     {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}},
-    {gParamType_Primitive, "prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });

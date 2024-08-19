@@ -139,7 +139,7 @@ struct ResizeList : zeno::INode {
 };
 
 ZENDEFNODE(ResizeList, {
-    {gParamType_List, {gParamType_Int, "newSize"}},
+    {{gParamType_List, "list"}, {gParamType_Int, "newSize"}},
     {{gParamType_List, "list"}},
     {},
     {"list"},
