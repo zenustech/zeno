@@ -224,9 +224,10 @@ struct ReflectNodeClass : INodeClass {
             group.name = "Group1";
             tab.groups.emplace_back(group);
             m_customui.inputPrims.tabs.emplace_back(tab);
-        }
-        if (!m_customui.inputPrims.tabs.empty() && !m_customui.inputPrims.tabs[0].groups.empty()) {
-            m_customui.inputPrims.tabs[0].groups[0].params.clear();
+        } else if (m_customui.inputPrims.tabs[0].groups.empty()) {
+            zeno::ParamGroup group;
+            group.name = "Group1";
+            m_customui.inputPrims.tabs[0].groups.emplace_back(group);
         }
         for (auto& [name, primParam] : inputPrims)
             m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(primParam));
@@ -244,6 +245,9 @@ struct ReflectNodeClass : INodeClass {
         spNode->initUuid(pGraph, classname);
         spNode->set_name(name);
 
+        if (!m_customui.inputPrims.tabs.empty()) {
+            m_customui.inputPrims.tabs.clear();
+        }
         m_customui.inputObjs.clear();
         m_customui.outputPrims.clear();
         m_customui.outputObjs.clear();

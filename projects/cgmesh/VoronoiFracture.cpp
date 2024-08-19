@@ -181,8 +181,12 @@ struct VoronoiFracture : AABBVoronoi {
 
         AABBVoronoi::apply();
 
-        auto primListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(get_output_obj("primList"));
-        auto neighListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(get_output_obj("neighList"));
+        auto outputObjPrimList = get_output_obj("primList");
+        auto outputObjNeightList = get_output_obj("neighList");
+        if (!outputObjPrimList.has_value() || !outputObjNeightList.has_value())
+            return;
+        auto primListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(outputObjPrimList);
+        auto neighListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(outputObjNeightList);
         auto listB = primListB->get<PrimitiveObject>();
         std::map<int, std::shared_ptr<PrimitiveObject>> dictC;
         std::mutex mtx;

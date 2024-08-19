@@ -452,6 +452,8 @@ namespace zenoio
                 }
                 if (paramValue.HasMember("tooltip"))
                     paramInfo.tooltip = paramValue["tooltip"].GetString();
+                if (paramValue.HasMember("visible"))
+                    paramInfo.bVisible = paramValue["visible"].GetBool();
                 //link:
                 if (paramValue.HasMember("links") && paramValue["links"].IsArray())
                 {

@@ -468,7 +468,7 @@ ZENO_API void INode::reflecNode_apply()
                 for (int i = paramValues.size() - 1; i > paramValues.size() - outputsName.size() - 1; i--) {
                     auto iter = m_outputObjs.find(param_names[i].c_str());
                     if (iter != m_outputObjs.end()) {
-                        if (params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
+                        if (paramValues[i].has_value() && params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
                             iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
                         }
                     }
@@ -484,7 +484,7 @@ ZENO_API void INode::reflecNode_apply()
                 bool bConstPtr = false;
                 if (zeno::isObjectType(rtti, bConstPtr)) {
                     auto iter = m_outputObjs.find("result");
-                    if (iter != m_outputObjs.end())
+                    if (iter != m_outputObjs.end() && res.has_value())
                         iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);
                 }
                 else {
@@ -1834,7 +1834,7 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     }
     else {
         auto iter2 = m_inputObjs.find(id);
-        if (iter2 != m_inputObjs.end()) {
+        if (iter2 != m_inputObjs.end() && iter2->second.spObject.has_value()) {
             zany spObject = zeno::reflect::any_cast<zany>(iter2->second.spObject);
             return spObject;
         }

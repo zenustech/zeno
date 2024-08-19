@@ -183,6 +183,14 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
             }
         }
     }
+    QStandardItem* pOutputsRoot = m_customParamsM->item(1);
+    for (int i = 0; i < pOutputsRoot->rowCount(); i++)
+    {
+        auto paramItem = pOutputsRoot->child(i);
+        auto& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
+        int row = indexFromName(paramName, false);
+        paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
+    }
 }
 
 void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui)
