@@ -75,11 +75,11 @@ struct ReduceZsVector : INode {
                        zs::plus<val_t>{});
           else if (opStr == "max")
             zs::reduce(pol, std::begin(vector), std::end(vector),
-                       std::begin(res), zs::limits<val_t>::min(),
+                       std::begin(res), zs::detail::deduce_numeric_min<val_t>(),
                        zs::getmax<val_t>{});
           else
             zs::reduce(pol, std::begin(vector), std::end(vector),
-                       std::begin(res), zs::limits<val_t>::max(),
+                       std::begin(res), zs::detail::deduce_numeric_max<val_t>(),
                        zs::getmin<val_t>{});
           result = static_cast<float>(res.getVal());
         },

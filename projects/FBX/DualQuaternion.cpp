@@ -80,7 +80,7 @@ constexpr glm::quat dual_quat(const glm::quat& q,const glm::vec3& t) {
     auto ty = t[1];
     auto tz = t[2];
 
-    glm::quat qd;
+    glm::quat qd{};
     qd.w = -0.5*( tx*qx + ty*qy + tz*qz);          // qd.w
     qd.x =  0.5*( tx*qw + ty*qz - tz*qy);          // qd.x
     qd.y =  0.5*(-tx*qz + ty*qw + tz*qx);          // qd.y

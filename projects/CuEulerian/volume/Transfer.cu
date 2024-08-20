@@ -131,7 +131,7 @@ struct PrimitiveToZSLevelSet : INode {
                 auto block = ls._grid.block(ls._table.query(c - cellcoord));
                 auto cellno = lsv_t::grid_view_t::coord_to_cellid(cellcoord);
                 auto nodePos = ls.indexToWorld(c);
-                constexpr float eps = limits<float>::epsilon();
+                constexpr float eps = detail::deduce_numeric_epsilon<float>();
                 auto dis = zs::sqrt((x - nodePos).l2NormSqr() + eps);
 
                 atomic_min(exec_cuda, &block("sdf", cellno), dis);
@@ -205,8 +205,8 @@ struct PrimitiveToZSLevelSet : INode {
         ls._table.reset(true);
 
         Vector<IV> mi{1, memsrc_e::device}, ma{1, memsrc_e::device};
-        mi.setVal(IV::uniform(limits<int>::max()));
-        ma.setVal(IV::uniform(limits<int>::lowest()));
+        mi.setVal(IV::uniform(detail::deduce_numeric_max<int>()));
+        ma.setVal(IV::uniform(detail::deduce_numeric_lowest<int>()));
         iterate(cudaPol, nvoxels, xs, ls, mi, ma);
         if (numEles)
             iterate(cudaPol, nvoxels, elePos, ls, mi, ma);
