@@ -120,7 +120,7 @@ struct NumericVec3 : zeno::INode {
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
-        set_primitive_output("vec2", zeno::vec3f(x, y, z));
+        set_primitive_output("vec3", zeno::vec3f(x, y, z));
     }
 };
 

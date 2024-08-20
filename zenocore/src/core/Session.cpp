@@ -685,13 +685,14 @@ static CustomUI descToCustomui(const Descriptor& desc) {
 }
 
 ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
-    if (nodeClasses.find(clsname) != nodeClasses.end()) {
-        log_error("node class redefined: `{}`\n", clsname);
-    }
-
-    if (clsname == "PrimitiveTransform") {
+    if (clsname == "CustomPlugin1Node") {
         int j;
         j = 0;
+    }
+    
+    if (nodeClasses.find(clsname) != nodeClasses.end()) {
+        log_warn("node class redefined: `{}`\n", clsname);
+        return;
     }
 
     CustomUI ui = descToCustomui(desc);
@@ -729,7 +730,8 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
     }
 
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
-        log_error("node class redefined: `{}`\n", nodecls);
+        //log_error("node class redefined: `{}`\n", nodecls);
+        return;
     }
     auto cls = std::make_unique<ReflectNodeClass>(ctor, nodecls, pTypeBase);
     //TODO: From metadata

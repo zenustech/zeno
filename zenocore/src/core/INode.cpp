@@ -485,13 +485,14 @@ ZENO_API void INode::reflecNode_apply()
                 bool bConstPtr = false;
                 if (zeno::isObjectType(rtti, bConstPtr)) {
                     auto iter = m_outputObjs.find("result");
-                    if (iter != m_outputObjs.end())
-                        iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);
+                    if (iter != m_outputObjs.end()) {
+                        iter->second.spObject = res;
+                    }
                 }
                 else {
                     auto iter2 = m_outputPrims.find("result");
                     if (iter2 != m_outputPrims.end()) {
-                        iter2->second.result = zeno::reflect::move(res);
+                        iter2->second.result = res;
                     }
                 }
                 //从成员变量到输入
@@ -1863,6 +1864,7 @@ bool INode::set_primitive_input(std::string const& id, const zeno::reflect::Any&
 
 bool INode::set_primitive_output(std::string const& id, const zeno::reflect::Any& val) {
     auto iter = m_outputPrims.find(id);
+    assert(iter != m_outputPrims.end());
     if (iter == m_outputPrims.end())
         return false;
     iter->second.result = val;
