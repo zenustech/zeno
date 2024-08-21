@@ -1,6 +1,7 @@
 #include "statusbutton.h"
 #include "util/uihelper.h"
 
+int dirtyLayoutHeight = 2;
 
 StatusButton::StatusButton(RoundRectInfo info, QGraphicsItem* parent)
     : QGraphicsObject(parent)
@@ -28,6 +29,8 @@ QRectF StatusButton::boundingRect() const
 void StatusButton::initPath()
 {
     QRectF rc(0, 0, m_info.W, m_info.H);
+    //节点header添加dirty标志,需增加button高度填补空白
+    rc.setHeight(rc.height() + dirtyLayoutHeight);
     m_path = UiHelper::getRoundPath(rc, m_info.ltradius, m_info.rtradius, m_info.lbradius, m_info.rbradius, true);
 }
 

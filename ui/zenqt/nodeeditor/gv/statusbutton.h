@@ -5,6 +5,8 @@
 #include "uicommon.h"
 #include "nodeeditor/gv/nodesys_common.h"
 
+extern int dirtyLayoutHeight;
+
 class StatusButton : public QGraphicsObject
 {
     Q_OBJECT

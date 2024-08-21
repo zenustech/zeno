@@ -525,13 +525,27 @@ void Graph::RemoveLinkResetWildCardParamsType(SocketType& socketType, std::share
 {
     if (!node)
         return;
-    if (socketType == Socket_WildCard) {
+    const std::function<bool(std::shared_ptr<INode>, std::string, bool)>& linkedToSpecificType = 
+        [&linkedToSpecificType, this](std::shared_ptr<INode> node, std::string paramName, bool bPrimType)->bool {
         const auto& params = node->getWildCardParams(paramName, bPrimType);
         for (auto& param : params) {
-            if (!node->getLinksByParam(param.second, param.first).empty()) {
-                return;
+            const auto& links = node->getLinksByParam(param.second, param.first);
+            if (!links.empty()) {
             }
         }
+                return true;
+    };
+    if (socketType == Socket_WildCard) {
+        if (linkedToSpecificType(node, paramName, bPrimType))
+            return;
+        //const auto& params = node->getWildCardParams(paramName, bPrimType);
+        //for (auto& param : params) {
+
+            /*if (!node->getLinksByParam(param.second, param.first).empty()) {
+                return;
+            }*/
+        //}
+        const auto& params = node->getWildCardParams(paramName, bPrimType);
 
         for (auto& param : params) {
             //updateWildCardParamTypeRecursive(shared_from_this(), node, param.first, bPrimType, true, bPrimType ? Param_Wildcard : Obj_Wildcard);

@@ -103,6 +103,7 @@ ZenoNodeNew::ZenoNodeNew(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_statusMarker(nullptr)
     , m_errorTip(nullptr)
     , m_nameItem(nullptr)
+    , m_dirtyMarker(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -365,7 +366,16 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     //pHLayout->addSpacing(100, QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed));
     pHLayout->addItem(m_pStatusWidgets, Qt::AlignRight);
 
-    headerWidget->setLayout(pHLayout);
+    m_dirtyMarker = new ZLayoutBackground;
+    m_dirtyMarker->setColors(false, QColor(240, 215, 4));
+    m_dirtyMarker->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+    m_dirtyMarker->setGeometry(QRectF(0, 0, 50, dirtyLayoutHeight));
+
+    ZGraphicsLayout* pVLayout = new ZGraphicsLayout(false);
+    pVLayout->addLayout(pHLayout);
+    pVLayout->addItem(m_dirtyMarker, Qt::AlignHCenter);
+
+    headerWidget->setLayout(pVLayout);
     headerWidget->setZValue(ZVALUE_BACKGROUND);
     if (const GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_index.data(ROLE_GRAPH)))
     {
@@ -895,6 +905,17 @@ void ZenoNodeNew::markNodeStatus(zeno::NodeRunStatus status)
         m_errorTip->setPos(QPointF(-szIcon/2., -szIcon/2.));
         m_errorTip->setZValue(ZVALUE_ERRORTIP);
         m_errorTip->show();
+    }
+    else if (m_nodeStatus == zeno::Node_DirtyReadyToRun || m_nodeStatus == zeno::Node_RunSucceed)
+    {
+        NodeState state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
+        QColor clrMarker;
+        if (state.bDirty)
+            clrMarker = QColor(240, 215, 4);
+        else
+            clrMarker = QColor(0, 0, 0, 0);
+        ZASSERT_EXIT(m_dirtyMarker);
+        m_dirtyMarker->setColors(false, clrMarker);
     }
     else {
         if (m_errorTip)

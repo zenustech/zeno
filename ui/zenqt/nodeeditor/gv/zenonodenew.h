@@ -111,6 +111,8 @@ private:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+    ZLayoutBackground* m_dirtyMarker;
+
     NodeNameItem* m_nameItem;       //以这个为主
 
     ZGraphicsLayout* m_bodyLayout;
