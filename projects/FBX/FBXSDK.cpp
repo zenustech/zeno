@@ -343,6 +343,7 @@ struct ReadFBXFile: INode {
 
         // Import the contents of the file into the scene.
         lImporter->Import(fbx_object->lScene);
+        FbxRootNodeUtility::RemoveAllFbxRoots(fbx_object->lScene);
 
         // The file is imported; so get rid of the importer.
         lImporter->Destroy();
