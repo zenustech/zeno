@@ -74,8 +74,8 @@ namespace zeno
                     _ParamGroup {
                         "Group1",
                         {
-                            _Param { "name1", "Name 1", std::string("a1") },
-                            _Param { "name2", "Name 2", std::string("a2") },
+                            _Param { "name1", "Name 1", "a1" },
+                            _Param { "name2", "Name 2", "a2" },
                         }
                     },
                     _ParamGroup {

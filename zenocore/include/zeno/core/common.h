@@ -30,6 +30,8 @@ namespace zeno {
     using ParamType = size_t;
 
     #define Param_Null 0
+    #define Param_Wildcard 1
+    #define Obj_Wildcard 2
 
 
 

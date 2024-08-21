@@ -49,6 +49,7 @@ NodeNameItem::NodeNameItem(const QString& name, QGraphicsItem* parent)
     font2.setPointSize(12);
     font2.setWeight(QFont::Normal);
     setFont(font2);
+    setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred));
     //setTextInteractionFlags(Qt::TextEditable);
     //setAcceptHoverEvents(true);
 }
@@ -73,7 +74,15 @@ void NodeNameItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
     setFocus(Qt::MouseFocusReason);
 }
 
+void NodeNameItem::keyPressEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+        return;
+    ZGraphicsTextItem::keyPressEvent(event);
+}
+
 void NodeNameItem::focusOutEvent(QFocusEvent* event) {
+    ZGraphicsTextItem::focusOutEvent(event);
     setTextInteractionFlags(Qt::NoTextInteraction);
 }
 
@@ -294,19 +303,18 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
         //pHLayout->addSpacing(szIcon.width());
     }
 
-    m_NameItem = new ZEditableTextItem(name, headerWidget);
-    m_NameItem->setDefaultTextColor(QColor("#CCCCCC"));
-    m_NameItem->setTextLengthAsBounding(true);
-    m_NameItem->setFont(font2);
-    qreal ww = m_NameItem->boundingRect().width() + ZenoStyle::dpiScaled(2);
-    m_NameItem->setPos(-ww, 14);
-
-    connect(m_NameItem, &ZEditableTextItem::contentsChanged, this, [=]() {
-        qreal ww = m_NameItem->textLength() + ZenoStyle::dpiScaled(2);
-        m_NameItem->setPos(-ww, 14);
-    });
-    connect(m_NameItem, &ZEditableTextItem::editingFinished, this, [=]() {
-        QString newVal = m_NameItem->text();
+    //m_NameItem = new ZEditableTextItem(name, headerWidget);
+    //m_NameItem->setDefaultTextColor(QColor("#CCCCCC"));
+    //m_NameItem->setTextLengthAsBounding(true);
+    //m_NameItem->setFont(font2);
+    //qreal ww = m_NameItem->boundingRect().width() + ZenoStyle::dpiScaled(2);
+    //m_NameItem->setPos(-ww, 14);
+    //connect(m_nameItem, &ZGraphicsTextItem::contentsChanged, this, [=](QString oldText, QString newText) {
+    //    qreal ww = m_nameItem->textLength() + ZenoStyle::dpiScaled(2);
+    //    m_nameItem->setPos(-ww, 14);
+    //});
+    connect(m_nameItem, &ZGraphicsTextItem::editingFinished, this, [=]() {
+        QString newVal = m_nameItem->toPlainText();
         QString oldName = m_index.data(ROLE_NODE_NAME).toString();
         if (newVal == oldName)
             return;
@@ -316,12 +324,13 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
             if (name != newVal)
             {
                 QMessageBox::warning(nullptr, tr("Rename warring"), tr("The name %1 is existed").arg(newVal));
-                m_NameItem->setText(name);
+                m_nameItem->setText(name);
             }
         }
+        ZGraphicsLayout::updateHierarchy(m_nameItem);
     });
-    //TODO: 参照houdini，当名字与类名不重合时，就另外显示。
-    m_NameItem->hide();
+    ////TODO: 参照houdini，当名字与类名不重合时，就另外显示。
+    //m_NameItem->hide();
 
     //pNameLayout->addSpacing(-1);
     const qreal W_status = ZenoStyle::dpiScaled(22.);
@@ -491,6 +500,10 @@ void ZenoNodeNew::addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QM
     pSocketLayout->addItem(socket);
     pSocketLayout->addSpacing(16);
 
+    if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS))) {
+        QObject::connect(paramsM, &QStandardItemModel::dataChanged, socket, &ZenoSocketItem::onCustomParamDataChanged);
+    }
+
     QObject::connect(socket, &ZenoSocketItem::clicked, [=](bool bInput) {
         emit socketClicked(socket);
     });
@@ -551,11 +564,11 @@ ZGraphicsLayout* ZenoNodeNew::initCustomParamWidgets()
 
 void ZenoNodeNew::onNameUpdated(const QString& newName)
 {
-    ZASSERT_EXIT(m_NameItem);
-    if (m_NameItem && newName != m_NameItem->text())
+    ZASSERT_EXIT(m_nameItem);
+    if (m_nameItem && newName != m_nameItem->toPlainText())
     {
-        m_NameItem->setText(newName);
-        ZGraphicsLayout::updateHierarchy(m_NameItem);
+        m_nameItem->setText(newName);
+        ZGraphicsLayout::updateHierarchy(m_nameItem);
     }
 }
 

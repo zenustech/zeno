@@ -57,7 +57,7 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
             const QString& inParam = info.toParam.data(ROLE_PARAM_NAME).toString();
             bool bLinkObj = info.bObjLink;
             zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), info.fromKey.toStdString(),
-                inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString(), bLinkObj};
+                inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString(), info.targetParam.toStdString(), bLinkObj};
             return QVariant::fromValue(edge);
         }
         case ROLE_LINKID:

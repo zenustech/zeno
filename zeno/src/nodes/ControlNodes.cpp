@@ -444,6 +444,28 @@ ZENDEFNODE(Duplicate,
     }
 )
 
+struct TestWildCard : INode {
+};
+ZENDEFNODE(TestWildCard,
+    {
+        {
+            {"paramWildcard", "wilcard1", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {"paramWildcard", "wilcard2", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {"objWildcard", "wilcardObj1", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {"objWildcard", "wilcardObj2", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {"int", "int1", "0", Socket_Primitve},
+        },
+        {
+            {"paramWildcard", "wilcard3", "", Socket_WildCard, NullControl, "wildCardGroup1"},
+            {"objWildcard", "wilcardObj3", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            //{"object", "owning", "", Socket_Output},
+        },
+        {
+        },
+        {"control"}
+    }
+)
+
 /*** Start Of - ZHXX Control Flow ***
 
 struct IF : zeno::INode {

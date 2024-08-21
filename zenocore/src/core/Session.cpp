@@ -21,6 +21,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+#include <regex>
 
 #include <reflect/core.hpp>
 #include <reflect/type.hpp>
@@ -87,7 +88,17 @@ struct ReflectNodeClass : INodeClass {
     //整理customui层级
     void adjustCustomUiStructure(std::shared_ptr<INode> spNode,
         std::map<std::string, ParamPrimitive>& inputPrims, std::map<std::string, ParamObject>& inputObjs,
-        std::map<std::string, ParamPrimitive>& outputPrims, std::map<std::string, ParamObject>& outputObjs) {
+        std::map<std::string, ParamPrimitive>& outputPrims, std::map<std::string, ParamObject>& outputObjs,
+        std::set<std::string>& anyInputs, std::set<std::string>& anyOutputs) {
+        const auto& makeWildCardPrimParam = [](const std::string& name, bool bInput, const std::string& wildCardGroup) {
+            ParamPrimitive wildCardPrim;
+            wildCardPrim.name = name;
+            wildCardPrim.bInput = bInput;
+            wildCardPrim.type = Param_Wildcard;
+            wildCardPrim.socketType = Socket_WildCard;
+            wildCardPrim.wildCardGroup = wildCardGroup;
+            return wildCardPrim;
+        };
         for (IMemberField* field : typebase->get_member_fields()) {
             zeno::reflect::TypeHandle fieldType = field->get_field_type();
             if (fieldType == zeno::reflect::get_type<ReflectCustomUI>()) {
@@ -100,9 +111,13 @@ struct ReflectNodeClass : INodeClass {
                         ParamGroup group;
                         group.name = reflectgroup.name;
                         for (auto& param : reflectgroup.params) {
-                            if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
+                            if (anyInputs.find(param.mapTo) != anyInputs.end()) {   //如果是Any视为wildCard
+                                group.params.push_back(std::move(makeWildCardPrimParam(param.dispName, true, param.wildCardGroup)));
+                                anyInputs.erase(param.mapTo);
+                            }
+                            else if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
                                 inputPrims[param.mapTo].name = param.dispName;
-                                inputPrims[param.mapTo].defl = param.defl;
+                                inputPrims[param.mapTo].defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
                                 group.params.push_back(std::move(inputPrims[param.mapTo]));
                                 inputPrims.erase(param.mapTo);
                             }
@@ -111,7 +126,17 @@ struct ReflectNodeClass : INodeClass {
                     }
                     m_customui.inputPrims.tabs.push_back(std::move(tab));
                     for (auto& reflectInputObj : reflectCustomUi.inputObjs.objs) {
-                        if (inputObjs.find(reflectInputObj.mapTo) != inputObjs.end()) {
+                        if (anyInputs.find(reflectInputObj.mapTo) != anyInputs.end()) {
+                            ParamObject wildCardObj;
+                            wildCardObj.name = reflectInputObj.dispName;
+                            wildCardObj.bInput = true;
+                            wildCardObj.type = Obj_Wildcard;
+                            wildCardObj.socketType = Socket_WildCard;
+                            wildCardObj.wildCardGroup = reflectInputObj.wildCardGroup;
+                            m_customui.inputObjs.push_back(std::move(wildCardObj));
+                            anyInputs.erase(reflectInputObj.mapTo);
+                        }
+                        else if (inputObjs.find(reflectInputObj.mapTo) != inputObjs.end()) {
                             inputObjs[reflectInputObj.mapTo].name = reflectInputObj.dispName;
                             inputObjs[reflectInputObj.mapTo].socketType = reflectInputObj.type;
                             m_customui.inputObjs.push_back(std::move(inputObjs[reflectInputObj.mapTo]));
@@ -119,9 +144,19 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     for (auto& reflectOutputObj : reflectCustomUi.outputObjs.objs) {
-                        if (outputObjs.find(reflectOutputObj.mapTo) != outputObjs.end()) {
+                        if (anyOutputs.find(reflectOutputObj.mapTo) != anyOutputs.end()) {
+                            ParamObject wildCardObj;
+                            wildCardObj.name = reflectOutputObj.dispName;
+                            wildCardObj.bInput = false;
+                            wildCardObj.type = Obj_Wildcard;
+                            wildCardObj.socketType = Socket_WildCard;
+                            wildCardObj.wildCardGroup = reflectOutputObj.wildCardGroup;
+                            m_customui.outputObjs.push_back(std::move(wildCardObj));
+                            anyOutputs.erase(reflectOutputObj.mapTo);
+                        }
+                        else if (outputObjs.find(reflectOutputObj.mapTo) != outputObjs.end()) {
                             outputObjs[reflectOutputObj.mapTo].name = reflectOutputObj.dispName;
-                            outputObjs[reflectOutputObj.mapTo].socketType = reflectOutputObj.type;
+                            outputObjs[reflectOutputObj.mapTo].socketType = reflectOutputObj.type == Socket_Owning ? Socket_Output : reflectOutputObj.type;
                             m_customui.outputObjs.push_back(std::move(outputObjs[reflectOutputObj.mapTo]));
                             outputObjs.erase(reflectOutputObj.mapTo);
                         }else if (reflectOutputObj.mapTo.empty()) {
@@ -140,7 +175,11 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
                     for (auto& reflectOutputPrim : reflectCustomUi.outputPrims.params) {
-                        if (outputPrims.find(reflectOutputPrim.mapTo) != outputPrims.end()) {
+                        if (anyOutputs.find(reflectOutputPrim.mapTo) != anyOutputs.end()) {
+                            m_customui.outputPrims.push_back(std::move(makeWildCardPrimParam(reflectOutputPrim.dispName, false, reflectOutputPrim.wildCardGroup)));
+                            anyOutputs.erase(reflectOutputPrim.mapTo);
+                        }
+                        else if (outputPrims.find(reflectOutputPrim.mapTo) != outputPrims.end()) {
                             outputPrims[reflectOutputPrim.mapTo].name = reflectOutputPrim.dispName;
                             outputPrims[reflectOutputPrim.mapTo].defl = reflectOutputPrim.defl;
                             m_customui.outputPrims.push_back(std::move(outputPrims[reflectOutputPrim.mapTo]));
@@ -168,6 +207,10 @@ struct ReflectNodeClass : INodeClass {
                         m_customui.outputPrims.push_back(std::move(primParam));
                     for (auto& [name, objParam] : outputObjs)
                         m_customui.outputObjs.push_back(std::move(objParam));
+                    for (auto& name : anyInputs)
+                        m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(makeWildCardPrimParam(name, true, "")));
+                    for (auto& name : anyOutputs)
+                        m_customui.outputPrims.push_back(std::move(makeWildCardPrimParam(name, false, "")));
                     return;
                 }
             }
@@ -181,9 +224,10 @@ struct ReflectNodeClass : INodeClass {
             group.name = "Group1";
             tab.groups.emplace_back(group);
             m_customui.inputPrims.tabs.emplace_back(tab);
-        }
-        if (!m_customui.inputPrims.tabs.empty() && !m_customui.inputPrims.tabs[0].groups.empty()) {
-            m_customui.inputPrims.tabs[0].groups[0].params.clear();
+        } else if (m_customui.inputPrims.tabs[0].groups.empty()) {
+            zeno::ParamGroup group;
+            group.name = "Group1";
+            m_customui.inputPrims.tabs[0].groups.emplace_back(group);
         }
         for (auto& [name, primParam] : inputPrims)
             m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(primParam));
@@ -201,6 +245,9 @@ struct ReflectNodeClass : INodeClass {
         spNode->initUuid(pGraph, classname);
         spNode->set_name(name);
 
+        if (!m_customui.inputPrims.tabs.empty()) {
+            m_customui.inputPrims.tabs.clear();
+        }
         m_customui.inputObjs.clear();
         m_customui.outputPrims.clear();
         m_customui.outputObjs.clear();
@@ -210,6 +257,8 @@ struct ReflectNodeClass : INodeClass {
         std::map<std::string, ParamPrimitive> outputPrims;
         std::map<std::string, ParamObject> inputObjs;
         std::map<std::string, ParamObject> outputObjs;
+        std::set<std::string> anyInputs;
+        std::set<std::string> anyOutputs;
 
         //先遍历所有成员，收集所有参数，目前假定所有成员变量都作为节点的参数存在，后续看情况可以指定
         for (IMemberField* field : typebase->get_member_fields()) {
@@ -248,6 +297,17 @@ struct ReflectNodeClass : INodeClass {
                 else {
                     //没有指定role，一律都是按input处理，是否为obj根据类型做判断
                     role = bObject ? Role_InputObject : Role_InputPrimitive;
+                }
+
+                std::regex matchAny(R"(zeno::reflect::Any)");
+                if (std::regex_search(typeInfo.name(), matchAny)) {   //判断Any类型，后续处理
+                    if (role == Role_InputObject || role == Role_InputPrimitive) {
+                        anyInputs.insert(field_name);
+                    }
+                    else {
+                        anyOutputs.insert(field_name);
+                    }
+                    continue;
                 }
 
                 if (role == Role_InputObject)
@@ -397,6 +457,12 @@ struct ReflectNodeClass : INodeClass {
                 //存在返回类型，说明有输出，需要分配一个输出参数
                 int idx = 1;
                 std::string param_name = "result";
+
+                std::regex matchAny(R"(zeno::reflect::Any)");
+                if (std::regex_search(ret_type.name(), matchAny)) {   //判断Any类型，后续处理
+                    anyOutputs.insert(param_name);
+                    continue;
+                } 
                 if (isObject) {
                     while (reg_outputobjs.find(param_name) != reg_outputobjs.end()) {
                         param_name = "result" + std::to_string(idx++);
@@ -443,6 +509,11 @@ struct ReflectNodeClass : INodeClass {
                 }
                 if (!param_type.has_flags(TF_IsConst) && param_type.has_flags(TF_IsLValueRef)) {
                     //引用返回当作是输出处理
+                    std::regex matchAny(R"(zeno::reflect::Any)");
+                    if (std::regex_search(param_type.name(), matchAny)) {   //判断Any类型，后续处理
+                        anyOutputs.insert(param_name);
+                        continue;
+                    }
                     if (isObject)
                     {
                         if (reg_outputobjs.find(param_name) == reg_outputobjs.end()) {
@@ -477,6 +548,11 @@ struct ReflectNodeClass : INodeClass {
                 }
                 else {
                     //观察是否为shared_ptr<IObject>
+                    std::regex matchAny(R"(zeno::reflect::Any)");
+                    if (std::regex_search(param_type.name(), matchAny)) {   //判断Any类型，后续处理
+                        anyInputs.insert(param_name);
+                        continue;
+                    }
                     if (isObject)
                     {
                         if (reg_inputobjs.find(param_name) != reg_inputobjs.end()) {
@@ -526,7 +602,7 @@ struct ReflectNodeClass : INodeClass {
             }
         }
 
-        adjustCustomUiStructure(spNode, inputPrims, inputObjs, outputPrims, outputObjs);
+        adjustCustomUiStructure(spNode, inputPrims, inputObjs, outputPrims, outputObjs, anyInputs, anyOutputs);
 
         //init all params, and set defl value
         for (const ParamObject& param : m_customui.inputObjs)
@@ -671,7 +747,8 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.type = type;
             if (param_desc.socketType != zeno::NoSocket)
                 param.socketType = param_desc.socketType;
-            param.socketType = Socket_Output;
+            if (param.socketType != zeno::Socket_WildCard)  //输出可能是wildCard
+                param.socketType = Socket_Output;
             param.bInput = false;
             param.prop = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;

@@ -779,7 +779,8 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
                 m_tempLink->setAdsortedSocket(pSocket);
                 m_tempLink->setFloatingPos(pos);
                 QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
-                QString type = UiHelper::getTypeDesc(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+
+                QString type = UiHelper::getTypeNameFromRtti(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
                 ZToolTip::showText(QCursor::pos() + QPoint(10, 20), paramName + " ( " + (type.isEmpty() ? "null" : type) + " )");
                 return;
             }
@@ -817,7 +818,7 @@ void ZenoSubGraphScene::onSocketAbsorted(const QPointF& mousePos)
             m_tempLink->setAdsortedSocket(pSocket);
             m_tempLink->setFloatingPos(pos);
             QString paramName = pSocket->paramIndex().data(ROLE_PARAM_NAME).toString();
-            QString type = UiHelper::getTypeDesc(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+            QString type = UiHelper::getTypeNameFromRtti(pSocket->paramIndex().data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
             ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), paramName + " ( " + (type.isEmpty() ? "null" : type) + " )");
         }
     }
@@ -848,7 +849,9 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
 
     if (inParamType != outParamType)
     {
-        if (zeno::outParamTypeCanConvertInParamType(outParamType, inParamType)) {
+        if (zeno::outParamTypeCanConvertInParamType(outParamType, inParamType) || 
+            (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard ||
+            (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard) {
         }
         else {
             ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
@@ -1013,6 +1016,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
             newEdge.inNode = inNodeIdx.data(ROLE_NODE_NAME).toString().toStdString();
             newEdge.inParam = inSockIdx.data(ROLE_PARAM_NAME).toString().toStdString();
             newEdge.bObjLink = inSockIdx.data(ROLE_SOCKET_TYPE).toInt() != zeno::Socket_Primitve;
+            newEdge.targetParam = targetSock->paramIndex().data(ROLE_PARAM_NAME).toString().toStdString();
 
             if (!fixedInput)
             {

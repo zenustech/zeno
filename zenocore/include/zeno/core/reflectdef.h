@@ -13,6 +13,7 @@ namespace zeno {
         std::string mapTo;
         std::string dispName;
         zeno::reflect::Any defl;
+        std::string wildCardGroup;
     };
 
     struct _ObjectParam
@@ -20,6 +21,7 @@ namespace zeno {
         std::string mapTo;
         std::string dispName;
         SocketType type;
+        std::string wildCardGroup;
     };
 
     struct _ParamGroup {

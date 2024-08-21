@@ -15,6 +15,7 @@ class LinkModel : public QAbstractListModel
         QString fromKey;        //need to be updated when renaming key.
         QPersistentModelIndex toParam;
         QString toKey;
+        QString targetParam;
         QUuid uuid;
         bool bObjLink = true;
         bool m_bCollasped = false;

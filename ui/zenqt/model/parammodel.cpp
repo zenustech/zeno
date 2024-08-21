@@ -17,7 +17,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     , m_customParamsM(nullptr)
 {
     initParamItems();
-    initCustomUI(spNode->get_customui());
+    initCustomUI(spNode->export_customui());
 
     //TODO: register callback for core param adding/removing, for the functionally of custom param panel.
     cbUpdateParam = spNode->register_update_param(
@@ -182,6 +182,14 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
                 }
             }
         }
+    }
+    QStandardItem* pOutputsRoot = m_customParamsM->item(1);
+    for (int i = 0; i < pOutputsRoot->rowCount(); i++)
+    {
+        auto paramItem = pOutputsRoot->child(i);
+        auto& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
+        int row = indexFromName(paramName, false);
+        paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
     }
 }
 
@@ -725,7 +733,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
     auto pItems = m_customParamsM->findItems(name, flags);
     for (auto pItem : pItems)
     {
-        if (pItem->data(ROLE_ISINPUT).toBool())
+        if (pItem->data(ROLE_ISINPUT).toBool() || role == ROLE_PARAM_VISIBLE) //更新输入，或更新输入/输出的visible时,更新customUiModel
         {
             pItem->setData(val, role);
         }
