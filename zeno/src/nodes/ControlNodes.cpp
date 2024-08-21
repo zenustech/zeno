@@ -444,20 +444,20 @@ ZENDEFNODE(Duplicate,
     }
 )
 
-struct TestWildCard : INode {
-};
+struct TestWildCard : INode {};
+
 ZENDEFNODE(TestWildCard,
     {
         {
-            {"paramWildcard", "wilcard1", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
-            {"paramWildcard", "wilcard2", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
-            {"objWildcard", "wilcardObj1", "", Socket_WildCard, NullControl, "wildCardGroup2"},
-            {"objWildcard", "wilcardObj2", "", Socket_WildCard, NullControl, "wildCardGroup2"},
-            {"int", "int1", "0", Socket_Primitve},
+            {Param_Wildcard, "wilcard1", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {Param_Wildcard, "wilcard2", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {Obj_Wildcard, "wilcardObj1", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {Obj_Wildcard, "wilcardObj2", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {gParamType_Int, "int1", "0", Socket_Primitve},
         },
         {
-            {"paramWildcard", "wilcard3", "", Socket_WildCard, NullControl, "wildCardGroup1"},
-            {"objWildcard", "wilcardObj3", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {Param_Wildcard, "wilcard3", "", Socket_WildCard, NullControl, "wildCardGroup1"},
+            {Obj_Wildcard, "wilcardObj3", "", Socket_WildCard, NullControl, "wildCardGroup2"},
             //{"object", "owning", "", Socket_Output},
         },
         {
