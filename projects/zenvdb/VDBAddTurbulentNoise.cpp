@@ -113,11 +113,11 @@ struct VDBAddPerlinNoise : INode {
     auto strength = get_input<NumericObject>("strength")->get<float>();
     auto scale = get_input<NumericObject>("scale")->get<float>();
     auto scaling = has_input("scaling") ?
-        get_input<NumericObject>("scaling")->get<vec3f>()
-        : vec3f(1);
+        get_input<NumericObject>("scaling")->get<zeno::vec3f>()
+        : zeno::vec3f(1);
     auto translation = has_input("translation") ?
-        get_input<NumericObject>("translation")->get<vec3f>()
-        : vec3f(0);
+        get_input<NumericObject>("translation")->get<zeno::vec3f>()
+        : zeno::vec3f(0);
     auto inv_scale = 1.f / (scale * scaling);
 
     auto grid = inoutSDF->m_grid;
@@ -127,7 +127,7 @@ struct VDBAddPerlinNoise : INode {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
-            auto pos = (vec3i(coord[0], coord[1], coord[2]) + translation) * inv_scale;
+            auto pos = (zeno::vec3i(coord[0], coord[1], coord[2]) + translation) * inv_scale;
             auto noise = strength * perlin(pos[0], pos[1], pos[2]);
             iter.modifyValue([&] (auto &v) {
                 v += noise;
@@ -169,7 +169,7 @@ auto smoothstep(T0 edge0, T1 edge1, T2 x) {
 
 struct Turbulent {
 
-using vec3 = vec3f;
+using vec3 = zeno::vec3f;
 
 // Noise settings:
 //float Power = 5.059;
@@ -250,11 +250,11 @@ struct VDBAddTurbulentNoise : INode {
     auto strength = get_input<NumericObject>("strength")->get<float>();
     auto scale = get_input<NumericObject>("scale")->get<float>();
     auto scaling = has_input("scaling") ?
-        get_input<NumericObject>("scaling")->get<vec3f>()
-        : vec3f(1);
+        get_input<NumericObject>("scaling")->get<zeno::vec3f>()
+        : zeno::vec3f(1);
     auto translation = has_input("translation") ?
-        get_input<NumericObject>("translation")->get<vec3f>()
-        : vec3f(0);
+        get_input<NumericObject>("translation")->get<zeno::vec3f>()
+        : zeno::vec3f(0);
     auto inv_scale = 1.f / (scale * scaling);
 
     auto grid = inoutSDF->m_grid;
@@ -266,7 +266,7 @@ struct VDBAddTurbulentNoise : INode {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
-            auto pos = (vec3i(coord[0], coord[1], coord[2]) + translation) * inv_scale;
+            auto pos = (zeno::vec3i(coord[0], coord[1], coord[2]) + translation) * inv_scale;
             auto noise = strength * turbulent(pos[0], pos[1], pos[2]);
             iter.modifyValue([&] (auto &v) {
                 v += noise;

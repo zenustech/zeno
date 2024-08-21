@@ -470,7 +470,7 @@ virtual void apply() override {
             rest_scale = rest_scale,
             eles = proxy<space>({},eles),
             verts = proxy<space>({},verts)] ZS_LAMBDA(auto ai,const auto& pair) mutable {
-                eles.tuple(dim_c<2>,"inds",ai) = pair.reinterpret_bits<float>();
+                eles.tuple(dim_c<2>,"inds",ai) = pair.template reinterpret_bits<float>();
                 auto v0 = verts.pack(dim_c<3>,"x",pair[0]);
                 auto v1 = verts.pack(dim_c<3>,"x",pair[1]);
                 eles("r",ai) = (v0 - v1).norm() * rest_scale;

@@ -14,7 +14,7 @@ struct PBFWorld_testCube : INode{
 	    auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto cubeSize = get_input<NumericObject>("cubeSize")->get<float>();
         auto spacing = get_input<NumericObject>("spacing")->get<float>();
-        auto initPos = get_input<NumericObject>("initPos")->get<vec3f>();
+        auto initPos = get_input<NumericObject>("initPos")->get<zeno::vec3f>();
         auto numParticles = get_input<NumericObject>("numParticles")->get<int>();
         auto &pos = prim->verts;
         pos.resize(numParticles);

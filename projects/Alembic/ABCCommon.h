@@ -35,6 +35,7 @@ extern void traverseABC(
     std::string path,
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
+    bool skipInvisibleObject,
     bool outOfRangeAsEmpty
 );
 

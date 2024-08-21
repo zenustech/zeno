@@ -203,7 +203,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 const int32_t frameIndex = frameEnd - idx - 1;
                 auto abctree = std::make_shared<ABCTree>();
                 auto prims = std::make_shared<zeno::ListObject>();
-                traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false);
+                traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
                 if (use_xform) {
                     prims = get_xformed_prims(abctree);
                 } else {
@@ -403,7 +403,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         const int32_t frameIndex = frameEnd - idx - 1;
         auto abctree = std::make_shared<ABCTree>();
         auto prims = std::make_shared<zeno::ListObject>();
-        traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false);
+        traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
         if (use_xform) {
           prims = get_xformed_prims(abctree);
         } else {

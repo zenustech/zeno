@@ -158,7 +158,6 @@ int Zenovis::setCurrentFrameId(int frameid)
         if (m_camera_keyframe && m_camera_control) {
             PerspectiveInfo r;
             if (m_camera_keyframe->queryFrame(frameid, r)) {
-                m_camera_control->setKeyFrame();
                 m_camera_control->updatePerspective();
             }
         }

@@ -17,7 +17,7 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
 ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
     if (prim->loops.size() && prim->has_attr("uvs")) {
         auto &loop_uvs = prim->loops.attr<int>("uvs");
-        auto &vert_uv = prim->verts.add_attr<vec3f>("uv"); // todo: support vec2f in attr...
+        auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv"); // todo: support vec2f in attr...
         /*attr_uv.resize(prim->loop_uvs.size());*/
         for (size_t i = 0; i < loop_uvs.size(); i++) {
             auto uv = prim->uvs[loop_uvs[i]];
@@ -73,7 +73,7 @@ ZENO_DEFNODE(PrimLoopUVsToVerts)({
 struct PrimUVVertsToLoopsuv : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &vuv = prim->verts.attr<vec3f>("uv");
+        auto &vuv = prim->verts.attr<zeno::vec3f>("uv");
         if (prim->loops.size()) {
             auto &uvs = prim->loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
@@ -86,9 +86,9 @@ struct PrimUVVertsToLoopsuv : INode {
             }
         }
         else if (prim->tris.size()) {
-            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-            auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+            auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+            auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+            auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
             for (auto i = 0; i < prim->tris.size(); i++) {
                 uv0[i] = vuv[prim->tris[i][0]];
                 uv1[i] = vuv[prim->tris[i][1]];
@@ -151,7 +151,7 @@ struct PrimUVEdgeDuplicate : INode {
         });
         std::swap(prim->verts, new_verts);
         if (writeUVToVertex) {
-            auto &vert_uv = prim->verts.add_attr<vec3f>("uv");
+            auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv");
             auto &loopsuv = prim->loops.attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto uv = prim->uvs[loopsuv[i]];
@@ -186,7 +186,7 @@ struct PrimSplitVertexForSharedNormal : INode {
             indexs.reserve(prim->loops.size());
             std::map<std::tuple<float, float, float>, int> mapping;
             {
-                auto &nrm = prim->loops.attr<vec3f>("nrm");
+                auto &nrm = prim->loops.attr<zeno::vec3f>("nrm");
                 for (auto i = 0; i < prim->loops.size(); i++) {
                     std::tuple<float, float, float> n = {nrm[i][0], nrm[i][1], nrm[i][2]};
                     if (mapping.count(n) == 0) {
@@ -216,7 +216,7 @@ struct PrimSplitVertexForSharedNormal : INode {
                 revert_new_mapping[v] = k;
             }
             AttrVector<vec3f> verts(new_mapping.size());
-            auto &nrm = verts.add_attr<vec3f>("nrm");
+            auto &nrm = verts.add_attr<zeno::vec3f>("nrm");
             for (auto i = 0; i < verts.size(); i++) {
                 verts[i] = prim->verts[revert_new_mapping[i].first];
                 nrm[i] = revert_mapping[revert_new_mapping[i].second];

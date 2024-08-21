@@ -21,13 +21,13 @@ struct ZSGridPerlinNoise : INode {
         auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
         auto attrTag = get_input2<std::string>("GridAttribute");
         auto opType = get_input2<std::string>("OpType");
-        auto frequency = get_input2<vec3f>("Frequency");
-        auto offset = get_input2<vec3f>("Offset");
+        auto frequency = get_input2<zeno::vec3f>("Frequency");
+        auto offset = get_input2<zeno::vec3f>("Offset");
         auto roughness = get_input2<float>("Roughness");
         auto turbulence = get_input2<int>("Turbulence");
         auto amplitude = get_input2<float>("Amplitude");
         auto attenuation = get_input2<float>("Attenuation");
-        auto mean = get_input2<vec3f>("MeanNoise");
+        auto mean = get_input2<zeno::vec3f>("MeanNoise");
 
         bool isAccumulate = opType == "accumulate" ? true : false;
 
@@ -115,12 +115,12 @@ struct ZSGridCurlNoise : INode {
         auto attrTag = get_input2<std::string>("GridAttribute");
         bool isStaggered = get_input2<bool>("staggered");
         auto opType = get_input2<std::string>("OpType");
-        auto frequency = get_input2<vec3f>("Frequency");
-        auto offset = get_input2<vec3f>("Offset");
+        auto frequency = get_input2<zeno::vec3f>("Frequency");
+        auto offset = get_input2<zeno::vec3f>("Offset");
         auto roughness = get_input2<float>("Roughness");
         auto turbulence = get_input2<int>("Turbulence");
         auto amplitude = get_input2<float>("Amplitude");
-        auto mean = get_input2<vec3f>("MeanNoise");
+        auto mean = get_input2<zeno::vec3f>("MeanNoise");
 
         bool isAccumulate = opType == "accumulate" ? true : false;
 

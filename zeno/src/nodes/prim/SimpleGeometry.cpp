@@ -91,9 +91,9 @@ struct CreateCube : zeno::INode {
         auto &loops = prim->loops;
 
         std::vector<zeno::vec3f> dummy;
-        auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
-        auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
-        auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
+        auto &uv1 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv0") : dummy;
+        auto &uv2 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv1") : dummy;
+        auto &uv3 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv2") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -970,7 +970,7 @@ struct CreateTorus : zeno::INode {
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         prim->verts.resize(majorSegment * minorSegment);
-        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for (auto j = 0; j < minorSegment; j++) {
             float theta = M_PI * 2.0 * j / minorSegment - M_PI;
             float y = sin(theta) * minorRadius;

@@ -98,7 +98,7 @@ ZENDEFNODE(PrimReduction,{
 struct PrimitiveBoundingBox : zeno::INode {
     virtual void apply() override{
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &pos = prim->attr<vec3f>("pos");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
 
         auto bmin = pos.size() ? pos[0] : vec3f(0);
         auto bmax = bmin;

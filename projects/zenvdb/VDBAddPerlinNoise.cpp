@@ -23,18 +23,18 @@ struct fuck_openvdb_vec {
 
 template <>
 struct fuck_openvdb_vec<openvdb::Vec3f> {
-    using type = vec3f;
+    using type = zeno::vec3f;
 };
 
 struct VDBPerlinNoise : INode {
   virtual void apply() override {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
         auto scale = get_input2<float>("scale");
-        auto scale3d = get_input2<vec3f>("scale3d");
+        auto scale3d = get_input2<zeno::vec3f>("scale3d");
         auto detail = get_input2<float>("detail");
         auto roughness = get_input2<float>("roughness");
         auto disortion = get_input2<float>("disortion");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         auto average = get_input2<float>("average");
         auto strength = get_input2<float>("strength");
 
@@ -50,18 +50,18 @@ struct VDBPerlinNoise : INode {
                 typename std::decay_t<decltype(leaf)>::ValueType>>::type;
             OutT noise;
             {
-                vec3f p(coord[0], coord[1], coord[2]);
+                zeno::vec3f p(coord[0], coord[1], coord[2]);
                 p = scale3d * (p - offset);
                 OutT o;
                 if constexpr (std::is_same_v<OutT, float>) {
                     o = PerlinNoise::perlin(p, roughness, detail);
-                } else if constexpr (std::is_same_v<OutT, vec3f>) {
+                } else if constexpr (std::is_same_v<OutT, zeno::vec3f>) {
                     o = OutT(
-                        PerlinNoise::perlin(vec3f(p[0], p[1], p[2]), roughness, detail),
-                        PerlinNoise::perlin(vec3f(p[1], p[2], p[0]), roughness, detail),
-                        PerlinNoise::perlin(vec3f(p[2], p[0], p[1]), roughness, detail));
+                        PerlinNoise::perlin(zeno::vec3f(p[0], p[1], p[2]), roughness, detail),
+                        PerlinNoise::perlin(zeno::vec3f(p[1], p[2], p[0]), roughness, detail),
+                        PerlinNoise::perlin(zeno::vec3f(p[2], p[0], p[1]), roughness, detail));
                 } else {
-                    throw makeError<TypeError>(typeid(vec3f), typeid(OutT), "outType");
+                    throw makeError<TypeError>(typeid(zeno::vec3f), typeid(OutT), "outType");
                 }
                 noise = average + o * strength;
             }

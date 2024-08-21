@@ -30,9 +30,9 @@ struct PBFWorld_Setup : INode
         //用户自定义参数
         data->dt = get_input<zeno::NumericObject>("dt")->get<float>();
         data->radius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
-        data->bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
-        data->bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
-        data->externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
+        data->bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<zeno::vec3f>();
+        data->bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<zeno::vec3f>();
+        data->externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
         data->rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
         data->lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
         data->coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();

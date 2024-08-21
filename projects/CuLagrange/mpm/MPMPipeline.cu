@@ -840,7 +840,7 @@ struct UpdateZSGrid : INode {
         auto gravity = get_input2<float>("gravity");
         auto accel = zs::vec<float, 3>::zeros();
         if (has_input("Accel")) {
-            auto tmp = get_input<NumericObject>("Accel")->get<vec3f>();
+            auto tmp = get_input<NumericObject>("Accel")->get<zeno::vec3f>();
             accel = zs::vec<float, 3>{tmp[0], tmp[1], tmp[2]};
         } else
             accel[1] = gravity;

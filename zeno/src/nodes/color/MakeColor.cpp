@@ -5,7 +5,7 @@ namespace zeno {
 
 struct MakeColor : zeno::INode {
     virtual void apply() override { 
-        auto color = get_input2<vec3f>("color");
+        auto color = get_input2<zeno::vec3f>("color");
         set_output2<vec3f>("color", std::move(color));
     }
 };

@@ -18,7 +18,7 @@ struct PrimitiveFillAttr : INode {
         attrType = "float3";
     }
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     auto &arr = prim->attr(attrName);
@@ -112,7 +112,7 @@ struct PrimitiveRandomizeAttr : INode {
     auto attrName = get_param<std::string>(("attrName"));
     auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     prim->attr_visit(attrName, [min, minY, minZ, max, maxY, maxZ](auto &arr) {
@@ -166,15 +166,15 @@ struct PrimitiveRandomAttr : INode {
     auto attrName = get_param<std::string>(("attrName"));
     auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     prim->attr_visit(attrName, [&](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f f(frand(), frand(), frand());
-                auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
-                auto b = max->is<float>() ? (vec3f)max->get<float>() : max->get<vec3f>();
+                auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<zeno::vec3f>();
+                auto b = max->is<float>() ? (vec3f)max->get<float>() : max->get<zeno::vec3f>();
                 arr[i] = mix(a, b, f);
             } else {
                 float f(frand());

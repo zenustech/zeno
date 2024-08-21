@@ -151,7 +151,7 @@ struct HeatmapFromPrimAttr : zeno::INode {
         bool reverse = get_input2<bool>("reverse Result");
         std::vector<vec3f> temp;
         for (auto i = 0; i < attrNum; i++) {
-            temp.push_back(prim->attr<vec3f>(attrName)[i]);
+            temp.push_back(prim->attr<zeno::vec3f>(attrName)[i]);
         }
         auto resample = get_input2<int>("resample");
         if (0 < resample && resample < attrNum) {

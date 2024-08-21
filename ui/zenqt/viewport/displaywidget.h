@@ -58,7 +58,7 @@ public:
     bool isCurrent();
     void setLoopPlaying(bool enable);
     std::tuple<int, int, bool> getOriginWindowSizeInfo();
-    void cameraLookTo(int dir);
+    void cameraLookTo(zenovis::CameraLookToDir dir);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 

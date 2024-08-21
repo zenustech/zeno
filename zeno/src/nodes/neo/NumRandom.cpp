@@ -184,7 +184,7 @@ namespace {
 
 struct NumRandom : INode {
     virtual void apply() override {
-        auto dir = get_input2<vec3f>("dir");
+        auto dir = get_input2<zeno::vec3f>("dir");
         auto base = get_input2<float>("base");
         auto scale = get_input2<float>("scale");
         auto seed = get_input2<int>("seed");

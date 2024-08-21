@@ -77,9 +77,9 @@ public:
         //用户自定义参数
         dt = get_input<zeno::NumericObject>("dt")->get<float>();
         pRadius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
-        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
-        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
-        gravity = get_input<zeno::NumericObject>("gravity")->get<vec3f>();
+        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<zeno::vec3f>();
+        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<zeno::vec3f>();
+        gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
         rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
         lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
         coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();

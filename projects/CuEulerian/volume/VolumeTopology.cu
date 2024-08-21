@@ -30,7 +30,7 @@ struct MarkZSLevelSet : INode {
         match(
             [this, threshold](auto &lsPtr) -> std::enable_if_t<is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>> {
                 // using SplsT = typename RM_CVREF_T(lsPtr)::element_type;
-                auto cudaPol = cuda_exec().device(0);
+                auto cudaPol = cuda_exec();
                 mark_level_set(cudaPol, *lsPtr, threshold);
                 // refit_level_set_domain(cudaPol, *lsPtr, threshold);
             },
@@ -53,7 +53,7 @@ struct ZSLevelSetTopologyUnion : INode {
     template <typename SplsT, typename TableT>
     void topologyUnion(SplsT &ls, const TableT &refTable) {
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         const auto numInBlocks = refTable.size();
         const auto numPrevBlocks = ls.numBlocks();
@@ -96,7 +96,7 @@ struct ZSLevelSetTopologyUnion : INode {
                 const auto &refTable = refLsPtr->_table;
                 auto numBlocks = lsPtr->numBlocks();
                 auto numRefBlocks = refLsPtr->numBlocks();
-                auto cudaPol = cuda_exec().device(0);
+                auto cudaPol = cuda_exec();
                 /// reserve enough memory
                 lsPtr->resize(cudaPol, numBlocks + numRefBlocks);
                 /// assume sharing the same transformation
@@ -145,7 +145,7 @@ struct ExtendZSLevelSet : INode {
             [this, dt](auto &lsPtr, const auto &velLsPtr)
                 -> std::enable_if_t<is_spls_v<typename RM_CVREF_T(lsPtr)::element_type> &&
                                     is_spls_v<typename RM_CVREF_T(velLsPtr)::element_type>> {
-                auto cudaPol = cuda_exec().device(0);
+                auto cudaPol = cuda_exec();
                 auto vm = get_level_set_max_speed(cudaPol, *velLsPtr);
                 int nvoxels = (int)std::ceil(vm * dt / lsPtr->_grid.dx);
                 auto nlayers = std::max((nvoxels + lsPtr->side_length - 1) / lsPtr->side_length, 2);
@@ -179,7 +179,7 @@ struct ZSLevelSetFloodFill : INode {
 
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
         using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
