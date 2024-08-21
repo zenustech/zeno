@@ -7,8 +7,6 @@
 #include "recordvideomgr.h"
 #include "layout/docktabcontent.h"
 #include "layout/winlayoutrw.h"
-#include <viewport/transform.h>
-#include <viewport/picker.h>
 #include <zeno/core/ObjectManager.h>
 
 #include "transform.h"
@@ -30,6 +28,7 @@ public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
     void testCleanUp();
+    void cleanUpView();
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;

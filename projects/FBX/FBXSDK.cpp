@@ -356,10 +356,10 @@ struct ReadFBXFile: INode {
 
 ZENDEFNODE(ReadFBXFile, {
     {
-        {"readpath", "path"},
+        {gParamType_String, "path", "", Socket_Primitve, ReadPathEdit},
     },
     {
-        "fbx_object",
+        {gParamType_Unknown, "fbx_object"},
     },
     {},
     {"FBX"},
@@ -890,7 +890,7 @@ struct NewFBXImportAnimation : INode {
         if (has_input("frameid")) {
             frameid = std::lround(get_input2<float>("frameid"));
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         float fps = get_input2<float>("fps");
         float t = float(frameid) / fps;
@@ -1033,7 +1033,7 @@ struct NewFBXImportAnimation : INode {
 
 ZENDEFNODE(NewFBXImportAnimation, {
     {
-        "fbx_object",
+        {gParamType_Unknown, "fbx_object"},
         {gParamType_String, "clipName", ""},
         {gParamType_Float, "frameid"},
         {gParamType_Float, "fps", "25"},
@@ -1052,7 +1052,7 @@ struct NewFBXImportCamera : INode {
         if (has_input("frameid")) {
             frameid = std::lround(get_input2<float>("frameid"));
         } else {
-            frameid = getGlobalState()->frameid;
+            frameid = getGlobalState()->getFrameId();
         }
         float fps = get_input2<float>("fps");
         float t = float(frameid) / fps;

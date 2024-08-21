@@ -97,6 +97,14 @@ void DisplayWidget::initRecordMgr()
     });
 }
 
+void DisplayWidget::cleanupView()
+{
+    if (m_glView)
+        m_glView->cleanUpView();
+    else
+        m_optixView->cleanupView();
+}
+
 void DisplayWidget::testCleanUp()
 {
     if (m_glView)
@@ -736,6 +744,28 @@ void DisplayWidget::onMouseHoverMoved()
 #endif
 }
 
+void DisplayWidget::onSetCamera(zenovis::ZOptixCameraSettingInfo value)
+{
+    if (!m_bGLView) {
+        m_optixView->setdata_on_optix_thread(value);
+    }
+}
+
+void DisplayWidget::onSetBackground(bool bShowBackground)
+{
+    if (!m_bGLView) {
+        m_optixView->showBackground(bShowBackground);
+    }
+}
+
+zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
+{
+    if (!m_bGLView) {
+        return m_optixView->getdata_from_optix_thread();
+    }
+    return zenovis::ZOptixCameraSettingInfo{};
+}
+
 void DisplayWidget::onDockViewAction(bool triggered)
 {
     QAction* action = qobject_cast<QAction*>(sender());
@@ -772,6 +802,10 @@ void DisplayWidget::onDockViewAction(bool triggered)
     }
 }
 
+void DisplayWidget::sendTaskToServer(const VideoRecInfo& info) {
+    //TODO or TO be deprecated.
+}
+
 void DisplayWidget::onRecord()
 {
     auto &pGlobalComm = zeno::getSession().globalComm;
@@ -789,6 +823,12 @@ void DisplayWidget::onRecord()
         if (!dlg.getInfo(recInfo))
         {
             QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
+        //send task to server
+        if (false)// && recInfo.bSendToServer)
+        {
+            sendTaskToServer(recInfo);
             return;
         }
         //validation.

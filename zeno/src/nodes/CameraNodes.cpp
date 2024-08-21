@@ -15,7 +15,7 @@
 namespace zeno {
 struct CameraNode: zeno::INode{
     virtual void apply() override {
-        auto camera = std::make_unique<zeno::CameraObject>();
+        auto camera = std::make_shared<zeno::CameraObject>();
 
         camera->pos = get_input2<zeno::vec3f>("pos");
         camera->up = get_input2<zeno::vec3f>("up");

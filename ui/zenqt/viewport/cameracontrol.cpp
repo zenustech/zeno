@@ -116,8 +116,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     }
         }
     }
-    auto m_picker = this->m_picker.lock();
-    auto m_transformer = this->m_transformer.lock();
+
     int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);

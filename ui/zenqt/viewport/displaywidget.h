@@ -7,6 +7,7 @@
 #include "viewport/picker.h"
 #include "layout/docktabcontent.h"
 #include "layout/winlayoutrw.h"
+#include <zenovis/Camera.h>
 
 class ViewportWidget;
 #ifdef ZENO_OPTIX_PROC
@@ -27,6 +28,7 @@ public:
     Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
     void testCleanUp();
+    void cleanupView();
     void cleanUpScene();
     void beforeRun();
     void afterRun();
@@ -79,6 +81,9 @@ public slots:
     void onDockViewAction(bool triggered);
     void onCalcFinished(bool bSucceed, zeno::ObjPath, QString);
     void onJustLoadObjects();
+    void onSetCamera(zenovis::ZOptixCameraSettingInfo value);
+    void onSetBackground(bool bShowBackground);
+    zenovis::ZOptixCameraSettingInfo getCamera() const;
 
 signals:
     void frameUpdated(int new_frame);
@@ -104,6 +109,7 @@ private slots:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
+    void sendTaskToServer(const VideoRecInfo& info);
 
     ViewportWidget* m_glView;
 #ifdef ZENO_OPTIX_PROC

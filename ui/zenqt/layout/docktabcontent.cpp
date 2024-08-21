@@ -34,6 +34,7 @@
 #include "layout/zdockwidget.h"
 #include "calculation/calculationmgr.h"
 #include "model/GraphModel.h"
+#include "dialog/ZOptixCameraSetting.h"
 
 
 
@@ -962,6 +963,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
         pToolLayout->addWidget(m_background);
+        m_camera_setting = new QPushButton("Camera");
+        pToolLayout->addWidget(m_camera_setting);
     }
 
     {
@@ -1071,20 +1074,7 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
     connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
-        auto &ud = zeno::getSession().userData();
-        ud.set2("optix_show_background", state > 0);
-
-        {
-            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
-            ZASSERT_EXIT(pZenoVis);
-            auto session = pZenoVis->getSession();
-            ZASSERT_EXIT(session);
-            auto scene = session->get_scene();
-            ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
-            m_pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        }
+        m_pDisplay->onSetBackground(state > 0);
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
