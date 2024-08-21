@@ -65,14 +65,14 @@ struct SimulationBox : zeno::INode {
 
 static int defSimulationBox = zeno::defNodeClass<SimulationBox>("SimulationBox",
     { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
     "prim",
     "boxlength",
     "n_particles",
     }, /* params: */ {
-      {"float", "boxlength", "1"},
-      {"int", "n_particles", "128"},
+      {gParamType_Float, "boxlength", "1"},
+      {gParamType_Int, "n_particles", "128"},
     }, /* category: */ {
     "Molecular",
     }});
@@ -116,8 +116,8 @@ static int defInitializeSystem = zeno::defNodeClass<InitializeSystem>("Initializ
     "prim",
     "boxlength",
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "Molecular",
     }});

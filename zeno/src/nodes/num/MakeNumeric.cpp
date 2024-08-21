@@ -11,8 +11,8 @@ struct NumericInt : zeno::INode {
 
 ZENDEFNODE(NumericInt, {
     {},
-    {{"int", "value"}},
-    {{"int", "value", "0"}},
+    {{gParamType_Int, "value"}},
+    {{gParamType_Int, "value", "0"}},
     {"numeric"},
 });
 
@@ -28,7 +28,7 @@ struct NumericIntVec2 : zeno::INode {
 ZENDEFNODE(NumericIntVec2, {
     {},
     {{"vec2i", "vec2"}},
-    {{"int", "x", "0"}, {"int", "y", "0"}},
+    {{gParamType_Int, "x", "0"}, {gParamType_Int, "y", "0"}},
     {"deprecated"},
 });
 
@@ -42,7 +42,7 @@ struct PackNumericIntVec2 : zeno::INode {
 };
 
 ZENDEFNODE(PackNumericIntVec2, {
-    {{"int", "x", "0"}, {"int", "y", "0"}},
+    {{gParamType_Int, "x", "0"}, {gParamType_Int, "y", "0"}},
     {{"vec2i", "vec2"}},
     {},
     {"deprecated"},
@@ -61,7 +61,7 @@ struct NumericIntVec3 : zeno::INode {
 ZENDEFNODE(NumericIntVec3, {
     {},
     {{"vec3i", "vec3"}},
-    {{"int", "x", "0"}, {"int", "y", "0"}, {"int", "z", "0"}},
+    {{gParamType_Int, "x", "0"}, {gParamType_Int, "y", "0"}, {gParamType_Int, "z", "0"}},
     {"numeric"},
 });
 
@@ -78,9 +78,9 @@ struct NumericIntVec4 : zeno::INode {
 
 ZENDEFNODE(NumericIntVec4, {
     {},
-    {{"vec4f", "vec4"}},
-    {{"float", "x", "0"}, {"float", "y", "0"},
-     {"float", "z", "0"}, {"float", "w", "0"}},
+    {{gParamType_Vec4f, "vec4"}},
+    {{gParamType_Float, "x", "0"}, {gParamType_Float, "y", "0"},
+     {gParamType_Float, "z", "0"}, {gParamType_Float, "w", "0"}},
     {"numeric"},
 });
 
@@ -93,8 +93,8 @@ struct NumericFloat : zeno::INode {
 
 ZENDEFNODE(NumericFloat, {
     {},
-    {{"float", "value"}},
-    {{"float", "value", "0"}},
+    {{gParamType_Float, "value"}},
+    {{gParamType_Float, "value", "0"}},
     {"numeric"},
 });
 
@@ -109,8 +109,8 @@ struct NumericVec2 : zeno::INode {
 
 ZENDEFNODE(NumericVec2, {
     {},
-    {{"vec2f", "vec2"}},
-    {{"float", "x", "0"}, {"float", "y", "0"}},
+    {{gParamType_Vec2f, "vec2"}},
+    {{gParamType_Float, "x", "0"}, {gParamType_Float, "y", "0"}},
     {"numeric"},
 });
 
@@ -120,14 +120,14 @@ struct NumericVec3 : zeno::INode {
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
-        set_primitive_output("vec2", zeno::vec3f(x, y, z));
+        set_primitive_output("vec3", zeno::vec3f(x, y, z));
     }
 };
 
 ZENDEFNODE(NumericVec3, {
     {},
-    {{"vec3f", "vec3"}},
-    {{"float", "x", "0"}, {"float", "y", "0"}, {"float", "z", "0"}},
+    {{gParamType_Vec3f, "vec3"}},
+    {{gParamType_Float, "x", "0"}, {gParamType_Float, "y", "0"}, {gParamType_Float, "z", "0"}},
     {"numeric"},
 });
 
@@ -144,9 +144,9 @@ struct NumericVec4 : zeno::INode {
 
 ZENDEFNODE(NumericVec4, {
     {},
-    {{"vec4f", "vec4"}},
-    {{"float", "x", "0"}, {"float", "y", "0"},
-     {"float", "z", "0"}, {"float", "w", "0"}},
+    {{gParamType_Vec4f, "vec4"}},
+    {{gParamType_Float, "x", "0"}, {gParamType_Float, "y", "0"},
+     {gParamType_Float, "z", "0"}, {gParamType_Float, "w", "0"}},
     {"numeric"},
 });
 
@@ -171,10 +171,10 @@ struct PackNumericVecInt : zeno::INode {
 
 ZENDEFNODE(PackNumericVecInt, {
     {
-        {"int", "x", "0"},
-        {"int", "y", "0"},
-        {"int", "z", "0"},
-        {"int", "w", "0"},
+        {gParamType_Int, "x", "0"},
+        {gParamType_Int, "y", "0"},
+        {gParamType_Int, "z", "0"},
+        {gParamType_Int, "w", "0"},
     },
     {{"NumericObject","veci"}},
     {
@@ -204,10 +204,10 @@ struct PackNumericVec : zeno::INode {
 
 ZENDEFNODE(PackNumericVec, {
     {
-        {"float", "x", "0"},
-        {"float", "y", "0"},
-        {"float", "z", "0"},
-        {"float", "w", "0"},
+        {gParamType_Float, "x", "0"},
+        {gParamType_Float, "y", "0"},
+        {gParamType_Float, "z", "0"},
+        {gParamType_Float, "w", "0"},
     },
     {{"NumericObject","vec"}},
     {

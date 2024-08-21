@@ -157,11 +157,11 @@ struct PrimitivePolygonate : INode {
 
 ZENDEFNODE(PrimitivePolygonate,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
-        {"bool", "with_uv", "1"},
+        {gParamType_Bool, "with_uv", "1"},
         }, /* category: */ {
         "primitive",
         }});

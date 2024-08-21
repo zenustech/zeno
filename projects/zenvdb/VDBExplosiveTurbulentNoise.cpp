@@ -152,23 +152,23 @@ struct VDBExplosiveTurbulentNoise : INode {
 
 ZENO_DEFNODE(VDBExplosiveTurbulentNoise)(
      { /* inputs: */ {
-     {"VDBGrid", "inoutSDF"},
-     {"float", "strength", "1.0"},
-     {"float", "scale", "8.0"},
-     {"vec3f", "scaling", "1,1,1"},
-     {"vec3f", "translation", "0,0,0"},
+     {gParamType_VDBGrid,"inoutSDF"},
+     {gParamType_Float, "strength", "1.0"},
+     {gParamType_Float, "scale", "8.0"},
+     {gParamType_Vec3f, "scaling", "1,1,1"},
+     {gParamType_Vec3f, "translation", "0,0,0"},
      }, /* outputs: */ {
-       {"VDBGrid", "inoutSDF"}
+       {gParamType_VDBGrid,"inoutSDF"}
      }, /* params: */ {
-    {"float","UVScale","0.4"},
-    {"float","Speed","0.6"},
-    {"float","FBM_WarpPrimary","-0.24"},
-    {"float","FBM_WarpSecond","0.29"},
-    {"float","FBM_WarpPersist","0.78"},
-    {"float","FBM_EvalPersist","0.62"},
-    {"float","FBM_Persistence","0.5"},
-    {"float","FBM_Lacunarity","2.2"},
-    {"int","FBM_Octaves","5"},
+    {gParamType_Float,"UVScale","0.4"},
+    {gParamType_Float,"Speed","0.6"},
+    {gParamType_Float,"FBM_WarpPrimary","-0.24"},
+    {gParamType_Float,"FBM_WarpSecond","0.29"},
+    {gParamType_Float,"FBM_WarpPersist","0.78"},
+    {gParamType_Float,"FBM_EvalPersist","0.62"},
+    {gParamType_Float,"FBM_Persistence","0.5"},
+    {gParamType_Float,"FBM_Lacunarity","2.2"},
+    {gParamType_Int,"FBM_Octaves","5"},
      }, /* category: */ {
      "openvdb",
      }});

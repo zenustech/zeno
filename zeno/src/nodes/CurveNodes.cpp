@@ -27,11 +27,11 @@ ZENO_DEFNODE(MakeCurve)({
     {
     },
     {
-        {"curve", "curve"},
+        {gParamType_Curve, "curve"},
     },
     {
-        //{"string", "madebypengsensei", "pybyes"},
-        {"curve", "curve", ""},
+        //{gParamType_String, "madebypengsensei", "pybyes"},
+        {gParamType_Curve, "curve", ""},
     },
     {"curve"},
 });
@@ -53,11 +53,11 @@ struct EvalCurve : zeno::INode {
 
 ZENO_DEFNODE(EvalCurve)({
     {
-        {"float", "value"},
-        {"curve", "curve", "", zeno::Socket_Primitve},
+        {gParamType_Float, "value"},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
     },
     {
-        {"float", "value"},
+        {gParamType_Float, "value"},
     },
     {},
     {"curve"},
@@ -93,13 +93,13 @@ struct EvalCurveOnPrimAttr : zeno::INode {
 
 ZENO_DEFNODE(EvalCurveOnPrimAttr)({
     {
-        {"prim", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "attrName", "tmp"},
-        {"string", "dstName", ""},
-        {"curve", "curve", "", zeno::Socket_Primitve},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "attrName", "tmp"},
+        {gParamType_String, "dstName", ""},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"curve"},
@@ -125,15 +125,15 @@ struct GetCurveControlPoint : zeno::INode {
 
 ZENO_DEFNODE(GetCurveControlPoint)({
     {
-        {"curve", "curve", "", zeno::Socket_Primitve},
-        {"string", "key", "x"},
-        {"int", "index", "0"},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
+        {gParamType_String, "key", "x"},
+        {gParamType_Int, "index", "0"},
     },
     {
-        {"float", "point_x"},
-        {"float", "point_y"},
-        {"vec2f", "left_handler"},
-        {"vec2f", "right_handler"},
+        {gParamType_Float, "point_x"},
+        {gParamType_Float, "point_y"},
+        {gParamType_Vec2f, "left_handler"},
+        {gParamType_Vec2f, "right_handler"},
     },
     {},
     {"curve"},
@@ -163,16 +163,16 @@ struct UpdateCurveControlPoint : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveControlPoint)({
     {
-        {"curve", "curve", "", zeno::Socket_Primitve},
-        {"string", "key", "x"},
-        {"int", "index", "0"},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
+        {gParamType_String, "key", "x"},
+        {gParamType_Int, "index", "0"},
         {"optional float", "point_x"},
         {"optional float", "point_y"},
         {"optional vec2f", "left_handler"},
         {"optional vec2f", "right_handler"},
     },
     {
-        {"curve", "curve"},
+        {gParamType_Curve, "curve"},
     },
     {},
     {"curve"},
@@ -197,12 +197,12 @@ struct UpdateCurveCycleType : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveCycleType)({
     {
-        {"curve", "curve", "", zeno::Socket_Primitve},
-        {"string", "key", "x"},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
+        {gParamType_String, "key", "x"},
         {"enum CLAMP CYCLE MIRROR", "type", "CLAMP"},
     },
     {
-        {"curve", "curve"},
+        {gParamType_Curve, "curve"},
     },
     {},
     {"curve"},
@@ -230,15 +230,15 @@ struct UpdateCurveXYRange : zeno::INode {
 
 ZENO_DEFNODE(UpdateCurveXYRange)({
     {
-        {"curve", "curve", "", zeno::Socket_Primitve},
-        {"string", "key", "x"},
+        {gParamType_Curve, "curve", "", zeno::Socket_Primitve},
+        {gParamType_String, "key", "x"},
         {"optional float", "x_from"},
         {"optional float", "x_to"},
         {"optional float", "y_from"},
         {"optional float", "y_to"},
     },
     {
-        {"curve", "curve"},
+        {gParamType_Curve, "curve"},
     },
     {},
     {"curve"},

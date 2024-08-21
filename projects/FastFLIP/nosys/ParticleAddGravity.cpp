@@ -21,16 +21,16 @@ struct ParticleAddDV : zeno::INode {
 
 static int defParticleAddDV = zeno::defNodeClass<ParticleAddDV>(
     "ParticleAddDV", {/* inputs: */ {
-                          "Particles",
-                          "dv",
+                          {gParamType_VDBGrid, "Particles"},
+                          {gParamType_Vec3f, "dv"},
                       },
                       /* outputs: */ {},
                       /* params: */
                       {
-                          {"string", "channel", "vel"},
-                          {"float", "vx", "0.0"},
-                          {"float", "vy", "0.0"},
-                          {"float", "vz", "0.0"},
+                          {gParamType_String, "channel", "vel"},
+                          {gParamType_Float, "vx", "0.0"},
+                          {gParamType_Float, "vy", "0.0"},
+                          {gParamType_Float, "vz", "0.0"},
                       },
 
                       /* category: */

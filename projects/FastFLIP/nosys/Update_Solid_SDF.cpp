@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 // void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr>
@@ -30,9 +30,9 @@ struct FLIP_Solid_Modifier : zeno::INode {
 
 static int defFLIP_Solid_Modifier = zeno::defNodeClass<FLIP_Solid_Modifier>(
     "FLIPApplyBoundary", {/* inputs: */ {
-                              "Particles",
-                              "DynaSolid_SDF",
-                              "StatSolid_SDF",
+                              {gParamType_VDBGrid, "Particles"},
+                              {gParamType_VDBGrid, "DynaSolid_SDF"},
+                              {gParamType_VDBGrid, "StatSolid_SDF"},
                           },
                           /* outputs: */ {},
                           /* params: */

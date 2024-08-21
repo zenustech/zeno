@@ -612,7 +612,7 @@ struct BulletMakeConstraintRelationship : zeno::INode {
 
 ZENDEFNODE(BulletMakeConstraintRelationship,
            {
-               {"obj1", "obj2", {"int", "iternum", "100"}},
+               {"obj1", "obj2", {gParamType_Int, "iternum", "100"}},
                {"constraint_relationship"},
                {{"enum Glue Hard Soft Fixed ConeTwist Gear Generic6Dof Generic6DofSpring "
                  "Generic6DofSpring2 Hinge Hinge2 Point2Point Slider Universal",

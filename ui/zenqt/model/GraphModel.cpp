@@ -1,6 +1,5 @@
 #include "GraphModel.h"
 #include "uicommon.h"
-#include "Descriptors.h"
 #include "zassert.h"
 #include "variantptr.h"
 #include "model/GraphsTreeModel.h"

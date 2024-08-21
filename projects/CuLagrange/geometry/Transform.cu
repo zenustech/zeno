@@ -64,11 +64,11 @@ struct ZSParticlesTransform : zeno::INode {
 
 
 ZENDEFNODE(ZSParticlesTransform, {{{"zsparticles"},
-                                {"vec3f","translation","0,0,0"},
-                                {"vec4f","quatRotation","0,0,0,1"},
-                                {"vec3f","scaling","1,1,1"},
-                                {"string","srcTag","x"},
-                                {"string","dstTag","x"}
+                                {gParamType_Vec3f,"translation","0,0,0"},
+                                {gParamType_Vec4f,"quatRotation","0,0,0,1"},
+                                {gParamType_Vec3f,"scaling","1,1,1"},
+                                {gParamType_String,"srcTag","x"},
+                                {gParamType_String,"dstTag","x"}
                             },
                             {{"zsparticles"}},
                             {
@@ -112,9 +112,9 @@ struct SlerpQuaternion : zeno::INode {
     }
 };
 
-ZENDEFNODE(SlerpQuaternion, {{{"vec4f","quatA","0,0,0,1"},
-                                    {"vec4f","quatB","0,0,0,1"},
-                                    {"float","wA","1"}},
+ZENDEFNODE(SlerpQuaternion, {{{gParamType_Vec4f,"quatA","0,0,0,1"},
+                                    {gParamType_Vec4f,"quatB","0,0,0,1"},
+                                    {gParamType_Float,"wA","1"}},
                                     {"res"},
                                     {
                                     },

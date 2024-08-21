@@ -10,8 +10,8 @@ struct IslandVoronoi : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(IslandVoronoi, {
-    {{"", "prim", ""}},
-    {{"", "primList", ""}, {"", "neighList", ""}},
+    {{gParamType_Primitive, "prim", ""}},
+    {{gParamType_List, "primList", ""}, {gParamType_List, "neighList" ""}},
     {},
     {"deprecated"},
 });

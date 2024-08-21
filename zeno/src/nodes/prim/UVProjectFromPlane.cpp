@@ -78,11 +78,11 @@ struct UVProjectFromPlane : zeno::INode {
 
 ZENDEFNODE(UVProjectFromPlane, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-        {"PrimitiveObject", "refPlane", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "refPlane", "", zeno::Socket_ReadOnly},
     },
     {
-        {"PrimitiveObject", "outPrim"}
+        {gParamType_Primitive, "outPrim"}
     },
     {},
     {"primitive"},
@@ -307,24 +307,24 @@ struct PrimSample2D : zeno::INode {
 };
 ZENDEFNODE(PrimSample2D, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-        {"PrimitiveObject", "image", "", zeno::Socket_ReadOnly},
-        {"string", "uvChannel", "uv"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "uvChannel", "uv"},
         {"enum vertex tris loopsuv", "uvSource", "vertex"},
-        {"string", "targetChannel", "clr"},
-        {"float", "remapMin", "0"},
-        {"float", "remapMax", "1"},
+        {gParamType_String, "targetChannel", "clr"},
+        {gParamType_Float, "remapMin", "0"},
+        {gParamType_Float, "remapMax", "1"},
         {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
         {"enum nearest linear", "filter", "nearest"},
-        {"vec3f", "borderColor", "0,0,0"},
-        {"bool", "invert U", "0"},
-        {"bool", "invert V", "0"},
-        {"float", "scale", "1"},
-        {"float", "rotate", "0"},
-        {"vec2f", "translate", "0,0"},
+        {gParamType_Vec3f, "borderColor", "0,0,0"},
+        {gParamType_Bool, "invert U", "0"},
+        {gParamType_Bool, "invert V", "0"},
+        {gParamType_Float, "scale", "1"},
+        {gParamType_Float, "rotate", "0"},
+        {gParamType_Vec2f, "translate", "0,0"},
     },
     {
-        {"PrimitiveObject", "outPrim"}
+        {gParamType_Primitive, "outPrim"}
     },
     {},
     {"primitive"},
@@ -445,11 +445,11 @@ struct ReadImageFile : INode {//todo: select custom color space
 };
 ZENDEFNODE(ReadImageFile, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "Linearize Non-linear Images", "1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "Linearize Non-linear Images", "1"},
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -521,11 +521,11 @@ struct ReadImageFile_v2 : INode {
 };
 ZENDEFNODE(ReadImageFile_v2, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "srgb_to_linear", "0"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "srgb_to_linear", "0"},
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"comp"},
@@ -547,10 +547,10 @@ struct ImageFlipVertical : INode {
 };
 ZENDEFNODE(ImageFlipVertical, {
     {
-        {"prim", "image", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
     },
     {
-        {"prim", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -678,14 +678,14 @@ struct WriteImageFile : INode {
 };
 ZENDEFNODE(WriteImageFile, {
     {
-        {"prim", "image", "", zeno::Socket_ReadOnly},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
-        {"prim", "mask"},
-        {"bool", "gamma", "1"},
+        {gParamType_Primitive, "mask"},
+        {gParamType_Bool, "gamma", "1"},
     },
     {
-        {"prim", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -766,14 +766,14 @@ struct WriteImageFile_v2 : INode {
 };
 ZENDEFNODE(WriteImageFile_v2, {
     {
-        {"prim", "image", "", zeno::Socket_ReadOnly},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum png jpg exr pfm", "type", "png"},
-        {"prim", "mask"},
-        {"bool", "linear_to_srgb_when_save", "0"},
+        {gParamType_Primitive, "mask"},
+        {gParamType_Bool, "linear_to_srgb_when_save", "0"},
     },
     {
-        {"prim", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"comp"},
@@ -847,10 +847,10 @@ struct ImageFloatGaussianBlur : INode {
 
 ZENDEFNODE(ImageFloatGaussianBlur, {
     {
-        {"prim", "image", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
     },
     {
-        {"prim", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -891,12 +891,12 @@ struct EnvMapRot : INode {
 };
 ZENDEFNODE(EnvMapRot, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"vec3f", "dir", "1, 1, 1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Vec3f, "dir", "1, 1, 1"},
     },
     {
-        {"float", "rotation"},
-        {"vec3f", "rotation3d"},
+        {gParamType_Float, "rotation"},
+        {gParamType_Vec3f, "rotation3d"},
     },
     {},
     {"comp"},
@@ -924,12 +924,12 @@ struct PrimLoadExrToChannel : INode {
 
 ZENDEFNODE(PrimLoadExrToChannel, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "channel", "clr"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "channel", "clr"},
     },
     {
-        {"prim", "output"},
+        {gParamType_Primitive, "output"},
     },
     {},
     {"comp"},

@@ -31,8 +31,8 @@ struct RetrieveDisplacementField : zeno::INode {
 };
 
 ZENDEFNODE(RetrieveDisplacementField,{
-    {"shape"},
-    {"shape"},
+    {{gParamType_Primitive, "shape"}},
+    {{gParamType_Primitive, "shape"}},
     {},
     {"Skinning"},
 });
@@ -118,8 +118,8 @@ struct RetrieveAffineField : zeno::INode {
 };
 
 ZENDEFNODE(RetrieveAffineField,{
-    {"shape"},
-    {"shape"},
+    {{gParamType_Primitive, "shape"}},
+    {{gParamType_Primitive, "shape"}},
     {},
     {"Skinning"},
 });
@@ -189,8 +189,8 @@ struct AlignPrimitive : zeno::INode {
 };
 
 ZENDEFNODE(AlignPrimitive,{
-    {{"ref_shape"},{"aligned_shape"}},
-    {"res"},
+    {{gParamType_Primitive, "ref_shape"},{gParamType_Primitive, "aligned_shape"}},
+    {{gParamType_Primitive, "res"}},
     {},
     {"Skinning"},
 });

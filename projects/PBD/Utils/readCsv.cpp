@@ -28,7 +28,7 @@ struct readCsv: INode
 ZENDEFNODE(readCsv,
     {
         {"path"},
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {},
         {"PBD"},
     }

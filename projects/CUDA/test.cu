@@ -184,7 +184,7 @@ struct ZSCUSetActiveDevice : INode {
 };
 
 ZENDEFNODE(ZSCUSetActiveDevice, {
-                                    {{"int", "device_no", "0"}},
+                                    {{gParamType_Int, "device_no", "0"}},
                                     {},
                                     {},
                                     {"ZPCTest"},

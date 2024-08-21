@@ -143,20 +143,20 @@ struct AABBVoronoi : INode {
 
 ZENO_DEFNODE(AABBVoronoi)({
         { // inputs:
-        {"PrimitiveObject", "particlesPrim"},
-        {"vec3f", "bboxMin", "-1,-1,-1"},
-        {"vec3f", "bboxMax", "1,1,1"},
+        {gParamType_Primitive, "particlesPrim"},
+        {gParamType_Vec3f, "bboxMin", "-1,-1,-1"},
+        {gParamType_Vec3f, "bboxMax", "1,1,1"},
         },
         { // outputs:
-        {"ListObject", "primList"},
-        {"ListObject", "neighList"},
+        {gParamType_List, "primList"},
+        {gParamType_List, "neighList"},
         },
         { // params:
-        {"bool", "triangulate", "1"},
-        {"int", "numRandPoints", "64"},
-        {"bool", "periodicX", "0"},
-        {"bool", "periodicY", "0"},
-        {"bool", "periodicZ", "0"},
+        {gParamType_Bool, "triangulate", "1"},
+        {gParamType_Int, "numRandPoints", "64"},
+        {gParamType_Bool, "periodicX", "0"},
+        {gParamType_Bool, "periodicY", "0"},
+        {gParamType_Bool, "periodicZ", "0"},
         },
         {"cgmesh"},
 });
@@ -246,20 +246,20 @@ struct VoronoiFracture : AABBVoronoi {
 
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
-        {"PrimitiveObject", "meshPrim"},
-        {"PrimitiveObject", "particlesPrim"},
+        {gParamType_Primitive, "meshPrim"},
+        {gParamType_Primitive, "particlesPrim"},
         },
         { // outputs:
-        {"ListObject", "primList"},
-        {"ListObject", "neighList"},
+        {gParamType_List, "primList"},
+        {gParamType_List, "neighList"},
         },
         { // params:
-        {"bool", "doMeshFix", "0"},
-        {"bool", "doMeshFix2", "1"},
-        {"int", "numRandPoints", "256"},
-        {"bool", "periodicX", "0"},
-        {"bool", "periodicY", "0"},
-        {"bool", "periodicZ", "0"},
+        {gParamType_Bool, "doMeshFix", "0"},
+        {gParamType_Bool, "doMeshFix2", "1"},
+        {gParamType_Int, "numRandPoints", "256"},
+        {gParamType_Bool, "periodicX", "0"},
+        {gParamType_Bool, "periodicY", "0"},
+        {gParamType_Bool, "periodicZ", "0"},
         },
         {"cgmesh"},
 });
@@ -302,21 +302,21 @@ ZENO_DEFNODE(VoronoiFracture)({
 
 //ZENO_DEFNODE(VoronoiFracture)({
         //{ // inputs:
-        //{"PrimitiveObject", "meshPrim"},
-        //{"PrimitiveObject", "particlesPrim"},
+        //{gParamType_Primitive, "meshPrim"},
+        //{gParamType_Primitive, "particlesPrim"},
         //},
         //{ // outputs:
-        //{"ListObject", "primList"},
-        //{"ListObject", "neighList"},
+        //{gParamType_List, "primList"},
+        //{gParamType_List, "neighList"},
         //},
         //{ // params:
-        //{"bool", "splitIsland", "0"},
-        //{"bool", "doMeshFix", "0"},
-        //{"bool", "doMeshFix2", "1"},
-        //{"int", "numRandPoints", "256"},
-        //{"bool", "periodicX", "0"},
-        //{"bool", "periodicY", "0"},
-        //{"bool", "periodicZ", "0"},
+        //{gParamType_Bool, "splitIsland", "0"},
+        //{gParamType_Bool, "doMeshFix", "0"},
+        //{gParamType_Bool, "doMeshFix2", "1"},
+        //{gParamType_Int, "numRandPoints", "256"},
+        //{gParamType_Bool, "periodicX", "0"},
+        //{gParamType_Bool, "periodicY", "0"},
+        //{gParamType_Bool, "periodicZ", "0"},
         //},
         //{"cgmesh"},
 //});
@@ -358,10 +358,10 @@ struct SimplifyVoroNeighborList : INode {
 
 ZENO_DEFNODE(SimplifyVoroNeighborList)({
         { // inputs:
-        {"ListObject", "neighList"},
+        {gParamType_List, "neighList"},
         },
         { // outputs:
-        {"ListObject", "newNeighList"},
+        {gParamType_List, "newNeighList"},
         },
         { // params:
         },

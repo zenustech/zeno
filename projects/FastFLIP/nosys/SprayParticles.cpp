@@ -5,9 +5,9 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -187,12 +187,12 @@ struct SprayParticles : zeno::INode {
 
 static int defSprayParticles = zeno::defNodeClass<SprayParticles>(
     "SprayParticles", {/* inputs: */ {
-                           "TrianglePrim", 
-                           {"float", "Dx", "0.01"},
+                           {gParamType_Primitive, "TrianglePrim"}, 
+                           {gParamType_Float, "Dx", "0.01"},
                        },
                        /* outputs: */
                        {
-                           "particles",
+                           {gParamType_Primitive, "particles"},
                        },
                        /* params: */
                        {
@@ -254,11 +254,11 @@ struct InterpMeshBarycentric : INode{
 
 ZENDEFNODE(InterpMeshBarycentric, {
     {
-      "MeshPrim",
-      "Particles",
+      {gParamType_Primitive, "MeshPrim"},
+      {gParamType_Primitive, "Particles"},
     },
     {
-      "oParticles"
+      {gParamType_Primitive, "oParticles"}
     },
     {},
     {"primitive"},
@@ -301,11 +301,11 @@ struct PrimFindTriangle : INode{
 
 ZENDEFNODE(PrimFindTriangle, {
     {
-      "MeshPrim",
-      "Particles",
+      {gParamType_Primitive, "MeshPrim"},
+      {gParamType_Primitive, "Particles"},
     },
     {
-      "oParticles"
+      {gParamType_Primitive, "oParticles"}
     },
     {},
     {"primitive"},

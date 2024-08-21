@@ -124,7 +124,7 @@ public:
 
 ZENDEFNODE(buildAdjacentTris, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
+                    {gParamType_Primitive, "prim"},
                 },
                  // outputs:
                  {"outPrim"},

@@ -1,7 +1,7 @@
 #include "FLIP_vdb.h"
 #include "zeno/VDBGrid.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -52,15 +52,15 @@ struct Tension_dt : zeno::INode {
 
 static int defCFL =
     zeno::defNodeClass<CFL>("CFL_dt", {/* inputs: */ {
-                                           {"VDBGrid", "Velocity"}, {"float", "Dx"},
+                                           {gParamType_VDBGrid,"Velocity"}, {gParamType_Float, "Dx"},
                                        },
                                        /* outputs: */
                                        {
-                                           {"float", "cfl_dt"},
+                                           {gParamType_Float, "cfl_dt"},
                                        },
                                        /* params: */
                                        {
-                                           {"float", "dx", "0.0"},
+                                           {gParamType_Float, "dx", "0.0"},
                                        },
 
                                        /* category: */
@@ -74,17 +74,17 @@ static int defSurfaceTension_dt =
     zeno::defNodeClass<Tension_dt>("SurfaceTension_dt", {
                                     /* inputs: */ 
                                     {
-                                      {"float", "Dx"},
-                                      {"float", "Density", "1000.0"},
-                                      {"float", "SurfaceTension", "0.0"},
+                                      {gParamType_Float, "Dx"},
+                                      {gParamType_Float, "Density", "1000.0"},
+                                      {gParamType_Float, "SurfaceTension", "0.0"},
                                     },
                                     /* outputs: */
                                     {
-                                        {"float", "tension_dt"},
+                                        {gParamType_Float, "tension_dt"},
                                     },
                                     /* params: */
                                     {
-                                        {"float", "dx", "0.0"},
+                                        {gParamType_Float, "dx", "0.0"},
                                     },
 
                                     /* category: */

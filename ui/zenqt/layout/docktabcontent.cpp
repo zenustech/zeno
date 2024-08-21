@@ -333,7 +333,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
-    //pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
+    pTestApi = new ZToolBarButton(false, ":/icons/timeline-curvemap.svg", ":/icons/timeline-curvemap.svg");
     pAlways = new QCheckBox(tr("Auto"), this);
     pAlways->setChecked(false);
     pAlways->setProperty("cssClass", "AlwaysCheckBox");
@@ -434,7 +434,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pGroup);
     pToolLayout->addWidget(pShowThumb);
     pToolLayout->addWidget(pRearrangeGraph);
-    //pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
+    pToolLayout->addWidget(pTestApi);     //TOFIX: 添加此项竟然导致最大化窗口无效，要研究布局细节。
     pToolLayout->addWidget(pAlways);
 
     //pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -541,6 +541,8 @@ void DockContent_Editor::initConnections()
             zeno::EdgeInfo edge;
             std::shared_ptr<zeno::INode> spNode;
 
+            HMODULE hDll = LoadLibrary("C:\\zeno3\\Debug\\bin\\customPlugin1.dll");
+            sess.initReflectNodes();
 #if 0
             if (0) {
                 spNode = sess.mainGraph->getNode("NumericInt1");

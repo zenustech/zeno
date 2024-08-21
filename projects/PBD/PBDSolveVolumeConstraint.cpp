@@ -97,8 +97,8 @@ public:
 
 ZENDEFNODE(PBDSolveVolumeConstraint, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
-                    {"float", "volumeCompliance", "0.0"}
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Float, "volumeCompliance", "0.0"}
                 },
                  // outputs:
                  {"outPos"},

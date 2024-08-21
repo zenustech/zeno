@@ -3,6 +3,7 @@
 #include <zeno/core/common.h>
 #include <zeno/types/ObjectDef.h>
 #include <zeno/core/reflectdef.h>
+#include <glm/glm.hpp>
 #include "reflect/metadata.hpp"
 #include "reflect/registry.hpp"
 #include "reflect/container/object_proxy"
@@ -32,6 +33,8 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec3s, Vec3s)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4i, Vec4i)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4f, Vec4f)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::vec4s, Vec4s)
+REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(glm::mat3, Matrix3)
+REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(glm::mat4, Matrix4)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<std::string>, StringList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<int>, IntList)
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(std::vector<float>, FloatList)
@@ -48,3 +51,5 @@ REFLECT_REGISTER_OBJECT(zeno::LightObject, Light)
 REFLECT_REGISTER_OBJECT(zeno::IObject, IObject)
 REFLECT_REGISTER_OBJECT(zeno::ListObject, List)
 REFLECT_REGISTER_OBJECT(zeno::DictObject, Dict)
+REFLECT_REGISTER_OBJECT(zeno::MeshObject, Mesh)
+REFLECT_REGISTER_OBJECT(zeno::ParticlesObject, Particles)

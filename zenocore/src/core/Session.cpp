@@ -640,7 +640,6 @@ ZENO_API Session::Session()
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
 {
     initReflectNodes();
-    //initNodeCates();  //should init after all static initialization finished.
 }
 
 ZENO_API Session::~Session() = default;
@@ -658,7 +657,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
 
     ParamGroup default;
     for (const SocketDescriptor& param_desc : desc.inputs) {
-        ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
+        ParamType type = param_desc.type;
         if (isPrimitiveType(type)) {
             //如果是数值类型，就添加到组里
             ParamPrimitive param;
@@ -669,11 +668,11 @@ static CustomUI descToCustomui(const Descriptor& desc) {
                 param.socketType = param_desc.socketType;
             if (param_desc.control != NullControl)
                 param.control = param_desc.control;
-            if (starts_with(param_desc.type, "enum ")) {
+            if (!param_desc.comboxitems.empty()) {
                 //compatible with old case of combobox items.
                 param.type = zeno::types::gParamType_String;
                 param.control = Combobox;
-                std::vector<std::string> items = split_str(param_desc.type, ' ');
+                std::vector<std::string> items = split_str(param_desc.comboxitems, ' ');
                 if (!items.empty()) {
                     items.erase(items.begin());
                     param.ctrlProps = items;
@@ -703,15 +702,15 @@ static CustomUI descToCustomui(const Descriptor& desc) {
     for (const ParamDescriptor& param_desc : desc.params) {
         ParamPrimitive param;
         param.name = param_desc.name;
-        param.type = zeno::convertToType(param_desc.type, param.name);
+        param.type = param_desc.type;
         param.defl = zeno::str2any(param_desc.defl, param.type);
         param.socketType = NoSocket;
         //其他控件估计是根据类型推断的。
-        if (starts_with(param_desc.type, "enum ")) {
+        if (!param_desc.comboxitems.empty()) {
             //compatible with old case of combobox items.
             param.type = zeno::types::gParamType_String;
             param.control = Combobox;
-            std::vector<std::string> items = split_str(param_desc.type, ' ');
+            std::vector<std::string> items = split_str(param_desc.comboxitems, ' ');
             if (!items.empty()) {
                 items.erase(items.begin());
                 param.ctrlProps = items;
@@ -724,7 +723,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         default.params.emplace_back(std::move(param));
     }
     for (const SocketDescriptor& param_desc : desc.outputs) {
-        ParamType type = zeno::convertToType(param_desc.type, param_desc.name);
+        ParamType type = param_desc.type;
         if (isPrimitiveType(type)) {
             //如果是数值类型，就添加到组里
             ParamPrimitive param;
@@ -763,17 +762,26 @@ static CustomUI descToCustomui(const Descriptor& desc) {
 }
 
 ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
-    if (nodeClasses.find(clsname) != nodeClasses.end()) {
-        log_error("node class redefined: `{}`\n", clsname);
-    }
-
-    if (clsname == "PrimitiveTransform") {
+    if (clsname == "CustomPlugin1Node") {
         int j;
         j = 0;
+    }
+    
+    if (nodeClasses.find(clsname) != nodeClasses.end()) {
+        log_warn("node class redefined: `{}`\n", clsname);
+        return;
     }
 
     CustomUI ui = descToCustomui(desc);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, clsname);
+    if (!clsname.empty() && clsname.front() == '^')
+        return;
+
+    std::string cate = cls->m_customui.category;
+    if (m_cates.find(cate) == m_cates.end())
+        m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+    m_cates[cate].push_back(clsname);
+
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
@@ -799,11 +807,18 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
     }
 
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
-        log_error("node class redefined: `{}`\n", nodecls);
+        //log_error("node class redefined: `{}`\n", nodecls);
+        return;
     }
     auto cls = std::make_unique<ReflectNodeClass>(ctor, nodecls, pTypeBase);
     //TODO: From metadata
     cls->m_customui.category = "reflect";
+
+    std::string cate = cls->m_customui.category;
+    if (m_cates.find(cate) == m_cates.end())
+        m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
+    m_cates[cate].push_back(nodecls);
+
     nodeClasses.emplace(nodecls, std::move(cls));
 }
 
@@ -942,17 +957,6 @@ ZENO_API void Session::set_Rerun()
     objsMan->clear();
 }
 
-void Session::initNodeCates() {
-    for (auto const& [key, cls] : nodeClasses) {
-        if (!key.empty() && key.front() == '^')
-            continue;
-        std::string cate = cls->m_customui.category;
-        if (m_cates.find(cate) == m_cates.end())
-            m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
-        m_cates[cate].push_back(key);
-    }
-}
-
 static bool isBasedINode(const size_t hash) {
     if (hash == zeno::types::gParamType_INode)
         return true;
@@ -993,9 +997,6 @@ void Session::initReflectNodes() {
 }
 
 ZENO_API zeno::NodeCates Session::dumpCoreCates() {
-    if (m_cates.empty()) {
-        initNodeCates();
-    }
     return m_cates;
 }
 
@@ -1009,7 +1010,7 @@ std::string dumpDescriptorToJson(const std::string &key, const Descriptor& descr
     Value inputs(kArrayType);
     for (const auto& input : descriptor.inputs) {
         Value inputArray(kArrayType);
-        inputArray.PushBack(Value().SetString(input.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        inputArray.PushBack(Value().SetString(zeno::paramTypeToString(input.type).c_str(), doc.GetAllocator()), doc.GetAllocator());
         inputArray.PushBack(Value().SetString(input.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
         inputArray.PushBack(Value().SetString(input.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
         inputArray.PushBack(Value().SetString(input.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
@@ -1020,7 +1021,7 @@ std::string dumpDescriptorToJson(const std::string &key, const Descriptor& descr
     Value outputs(kArrayType);
     for (const auto& output : descriptor.outputs) {
         Value outputArray(kArrayType);
-        outputArray.PushBack(Value().SetString(output.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        outputArray.PushBack(Value().SetString(zeno::paramTypeToString(output.type).c_str(), doc.GetAllocator()), doc.GetAllocator());
         outputArray.PushBack(Value().SetString(output.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
         outputArray.PushBack(Value().SetString(output.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
         outputArray.PushBack(Value().SetString(output.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
@@ -1031,7 +1032,7 @@ std::string dumpDescriptorToJson(const std::string &key, const Descriptor& descr
     Value params(kArrayType);
     for (const auto& param : descriptor.params) {
         Value paramArray(kArrayType);
-        paramArray.PushBack(Value().SetString(param.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        paramArray.PushBack(Value().SetString(zeno::paramTypeToString(param.type).c_str(), doc.GetAllocator()), doc.GetAllocator());
         paramArray.PushBack(Value().SetString(param.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
         paramArray.PushBack(Value().SetString(param.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
         paramArray.PushBack(Value().SetString(param.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());

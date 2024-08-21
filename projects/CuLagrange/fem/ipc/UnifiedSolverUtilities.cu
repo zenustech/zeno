@@ -220,11 +220,11 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
                                               "ZSUnifiedIPCSystem",
                                               "ZSLevelSet",
-                                              {"bool", "boundary_wise", "0"},
-                                              {"bool", "hard_constraint", "1"},
-                                              {"float", "dist_cap", "0"},
-                                              {"float", "rest_length", "0.1"},
-                                              {"float", "strength", "0"},
+                                              {gParamType_Bool, "boundary_wise", "0"},
+                                              {gParamType_Bool, "hard_constraint", "1"},
+                                              {gParamType_Float, "dist_cap", "0"},
+                                              {gParamType_Float, "rest_length", "0.1"},
+                                              {gParamType_Float, "strength", "0"},
                                           },
                                           {"ZSUnifiedIPCSystem"},
                                           {},
@@ -320,7 +320,7 @@ struct UnifiedIPCSystemForceField : INode {
 
 ZENDEFNODE(UnifiedIPCSystemForceField,
            {
-               {"ZSUnifiedIPCSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
+               {"ZSUnifiedIPCSystem", "ZSLevelSet", {gParamType_Float, "wind_drag", "0"}, {gParamType_Float, "wind_density", "1"}},
                {"ZSUnifiedIPCSystem"},
                {},
                {"FEM"},
@@ -395,9 +395,9 @@ struct UnifiedIPCSystemMarkExclusion : INode {
 ZENDEFNODE(UnifiedIPCSystemMarkExclusion, {
                                               {"ZSUnifiedIPCSystem",
                                                "ZSLevelSet",
-                                               {"bool", "clear_mark", "false"},
-                                               {"bool", "include_object", "false"},
-                                               {"bool", "include_boundary", "true"}},
+                                               {gParamType_Bool, "clear_mark", "false"},
+                                               {gParamType_Bool, "include_object", "false"},
+                                               {gParamType_Bool, "include_boundary", "true"}},
                                               {"ZSUnifiedIPCSystem"},
                                               {},
                                               {"FEM"},

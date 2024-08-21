@@ -62,14 +62,14 @@ struct PrimitiveUnaryOp : INode {
 
 ZENDEFNODE(PrimitiveUnaryOp,
     { /* inputs: */ {
-    {"prim", "primA", "", zeno::Socket_ReadOnly},
-    {"prim", "primOut", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "primA", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"prim", "primOut"},
+        {gParamType_Primitive, "primOut"},
     }, /* params: */ {
-    {"string", "attrA", "pos"},
-    {"string", "attrOut", "pos"},
-    {"string", "op", "copy"},
+    {gParamType_String, "attrA", "pos"},
+    {gParamType_String, "attrOut", "pos"},
+    {gParamType_String, "op", "copy"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -148,16 +148,16 @@ struct PrimitiveBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveBinaryOp,
     { /* inputs: */ {
-        {"prim", "primB", "", zeno::Socket_ReadOnly},
-        {"prim", "primA", "", zeno::Socket_ReadOnly},
-        {"prim", "primOut", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primB", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primA", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"prim", "primOut"},
+        {gParamType_Primitive, "primOut"},
     }, /* params: */ {
-    {"string", "attrA", "pos"},
-    {"string", "attrB", "pos"},
-    {"string", "attrOut", "pos"},
-    {"string", "op", "copyA"},
+    {gParamType_String, "attrA", "pos"},
+    {gParamType_String, "attrB", "pos"},
+    {gParamType_String, "attrOut", "pos"},
+    {gParamType_String, "op", "copyA"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -199,16 +199,16 @@ struct PrimitiveMix : INode {
 };
 ZENDEFNODE(PrimitiveMix,
     { /* inputs: */ {
-        {"float", "coef", "", zeno::Socket_ReadOnly},
-        {"prim", "primB", "", zeno::Socket_ReadOnly},
-        {"prim", "primA", "", zeno::Socket_ReadOnly},
-        {"prim", "primOut", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "coef", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primB", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primA", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"prim", "primOut"},
+        {gParamType_Primitive, "primOut"},
     }, /* params: */ {
-    {"string", "attrA", "pos"},
-    {"string", "attrB", "pos"},
-    {"string", "attrOut", "pos"},
+    {gParamType_String, "attrA", "pos"},
+    {gParamType_String, "attrB", "pos"},
+    {gParamType_String, "attrOut", "pos"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -287,15 +287,15 @@ struct PrimitiveHalfBinaryOp : INode {
 
 ZENDEFNODE(PrimitiveHalfBinaryOp,
     { /* inputs: */ {
-        {"object", "valueB", "", zeno::Socket_ReadOnly},
-        {"prim", "primA", "", zeno::Socket_ReadOnly},
-        {"prim", "primOut", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "valueB", "", zeno::Socket_WildCard},
+        {gParamType_Primitive, "primA", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"prim", "primOut"},
+        {gParamType_Primitive, "primOut"},
     }, /* params: */ {
-    {"string", "attrA", "pos"},
-    {"string", "attrOut", "pos"},
-    {"string", "op", "copyA"},
+    {gParamType_String, "attrA", "pos"},
+    {gParamType_String, "attrOut", "pos"},
+    {gParamType_String, "op", "copyA"},
     }, /* category: */ {
     "deprecated",
     }});

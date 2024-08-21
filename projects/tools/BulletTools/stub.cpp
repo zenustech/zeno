@@ -10,8 +10,8 @@ struct RigidStepWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidStepWorld, {
-    {{"", "world", ""}, {"", "objList", ""}, {"", "consList", ""}, {"int", "steps", "10"}, {"float", "dt", "0.04"}},
-    {{"", "world", ""}},
+    {{gParamType_Unknown, "world", ""}, {gParamType_Unknown, "objList", ""}, {gParamType_Unknown, "consList", ""}, {gParamType_Int, "steps", "10"}, {gParamType_Float, "dt", "0.04"}},
+    {{gParamType_Unknown, "world", ""}},
     {},
     {"Rigid"},
 });
@@ -23,8 +23,8 @@ struct RigidMakeWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeWorld, {
-    {{"vec3f", "gravity", "0,0,-9.8"}},
-    {{"", "world", ""}},
+    {{gParamType_Vec3f, "gravity", "0,0,-9.8"}},
+    {{gParamType_Unknown, "world", ""}},
     {},
     {"Rigid"},
 });
@@ -36,8 +36,8 @@ struct RigidMakeObject : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeObject, {
-    {{"", "shape", ""}, {"vec3f", "origin", "0,0,0"}, {"vec4f", "rotation", "0,0,0,1"}, {"float", "mass", "0"}, {"", "material", ""}},
-    {{"", "object", ""}},
+    {{gParamType_Unknown, "shape", ""}, {gParamType_Vec3f, "origin", "0,0,0"}, {gParamType_Vec4f, "rotation", "0,0,0,1"}, {gParamType_Float, "mass", "0"}, {gParamType_Unknown, "material", ""}},
+    {{gParamType_Unknown, "object", ""}},
     {},
     {"Rigid"},
 });
@@ -49,8 +49,8 @@ struct RigidRecenterPrim : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidRecenterPrim, {
-    {{"", "prim", ""}},
-    {{"", "outPrim", ""}, {"vec3f", "origin", ""}, {"vec3f", "mass", ""}},
+    {{gParamType_Primitive, "prim", ""}},
+    {{gParamType_Unknown, "outPrim", ""}, {gParamType_Vec3f, "origin", ""}, {gParamType_Vec3f, "mass", ""}},
     {},
     {"Rigid"},
 });
@@ -62,8 +62,8 @@ struct RigidMakeConstraint : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeConstraint, {
-    {{"", "obj1", ""}, {"", "obj2", ""}, {"float", "breakThres", "-1"}},
-    {{"", "constraint", ""}},
+    {{gParamType_Unknown, "obj1", ""}, {gParamType_Unknown, "obj2", ""}, {gParamType_Float, "breakThres", "-1"}},
+    {{gParamType_Unknown, "constraint", ""}},
     {},
     {"Rigid"},
 });
@@ -75,8 +75,8 @@ struct RigidMakeShape : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeShape, {
-    {{"", "prim", ""}, {"enum convex decomp sphere box", "type", "convex"}, {"float", "margin", "0.0"}, {"bool", "recentered", "1"}, {"bool", "auto_mass", "0"}, {"float", "margin", "0.0"}},
-    {{"", "shape", ""}},
+    {{gParamType_Primitive, "prim", ""}, {"enum convex decomp sphere box", "type", "convex"}, {gParamType_Float, "margin", "0.0"}, {gParamType_Bool, "recentered", "1"}, {gParamType_Bool, "auto_mass", "0"}, {gParamType_Float, "margin", "0.0"}},
+    {{gParamType_Unknown, "shape", ""}},
     {},
     {"Rigid"},
 });
@@ -88,8 +88,8 @@ struct RigidObjectToPrimitive : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidObjectToPrimitive, {
-    {{"", "object", ""}},
-    {{"", "prim", ""}},
+    {{gParamType_Unknown, "object", ""}},
+    {{gParamType_Primitive, "prim", ""}},
     {},
     {"Rigid"},
 });
@@ -101,8 +101,8 @@ struct RigidMakeObjectFragments : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeObjectFragments, {
-    {{"", "primList", ""}, {"", "neighList", ""}, {"float", "breakThres", "0.2"}, {"float", "mass", "1.0"}, {"", "material", ""}},
-    {{"", "objectList", ""}, {"", "constrList", ""}},
+    {{gParamType_List, "primList", ""}, {gParamType_List, "neighList" ""}, {gParamType_Float, "breakThres", "0.2"}, {gParamType_Float, "mass", "1.0"}, {gParamType_Unknown, "material", ""}},
+    {{gParamType_Unknown, "objectList", ""}, {gParamType_Unknown, "constrList", ""}},
     {},
     {"Rigid"},
 });
@@ -114,8 +114,8 @@ struct RigidMakeMaterial : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeMaterial, {
-    {{"float", "friction", "0.7"}, {"float", "dampAng", "0.06"}, {"float", "dampLin", "0.1"}, {"float", "restitution", "0.6"}},
-    {{"", "material", ""}},
+    {{gParamType_Float, "friction", "0.7"}, {gParamType_Float, "dampAng", "0.06"}, {gParamType_Float, "dampLin", "0.1"}, {gParamType_Float, "restitution", "0.6"}},
+    {{gParamType_Unknown, "material", ""}},
     {},
     {"Rigid"},
 });
@@ -127,8 +127,8 @@ struct RigidMakeCompoundShape : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidMakeCompoundShape, {
-    {{"", "shapeList", ""}},
-    {{"", "compShape", ""}},
+    {{gParamType_Unknown, "shapeList", ""}},
+    {{gParamType_Unknown, "compShape", ""}},
     {},
     {"Rigid"},
 });
@@ -140,8 +140,8 @@ struct RigidObjectListToPrimitive : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidObjectListToPrimitive, {
-    {{"", "objList", ""}},
-    {{"", "mergedPrim", ""}},
+    {{gParamType_Unknown, "objList", ""}},
+    {{gParamType_Unknown, "mergedPrim", ""}},
     {},
     {"Rigid"},
 });
@@ -153,8 +153,8 @@ struct addRigid : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(addRigid, {
-    {{"", "Primitive", ""}, {"", "Transform", ""}, {"", "mass", ""}},
-    {{"", "RigidObject", ""}},
+    {{gParamType_Unknown, "Primitive", ""}, {gParamType_Unknown, "Transform", ""}, {gParamType_Unknown, "mass", ""}},
+    {{gParamType_Unknown, "RigidObject", ""}},
     {},
     {"Rigid"},
 });
@@ -166,8 +166,8 @@ struct ReCenterPrim : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(ReCenterPrim, {
-    {{"", "PrimIn", ""}},
-    {{"", "MassCenter", ""}, {"", "RecenteredPrim", ""}},
+    {{gParamType_Unknown, "PrimIn", ""}},
+    {{gParamType_Unknown, "MassCenter", ""}, {gParamType_Unknown, "RecenteredPrim", ""}},
     {},
     {"primitive"},
 });
@@ -179,8 +179,8 @@ struct GetRigidSamplePos : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(GetRigidSamplePos, {
-    {{"", "RigidObject", ""}, {"", "localGeo", ""}},
-    {{"", "wsPrim", ""}, {"", "MassCenter", ""}, {"", "Rotation", ""}},
+    {{gParamType_Unknown, "RigidObject", ""}, {gParamType_Unknown, "localGeo", ""}},
+    {{gParamType_Unknown, "wsPrim", ""}, {gParamType_Unknown, "MassCenter", ""}, {gParamType_Unknown, "Rotation", ""}},
     {},
     {"Rigid"},
 });
@@ -201,8 +201,8 @@ struct RasterizeRigid : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RasterizeRigid, {
-    {{"", "RigidList", ""}, {"", "localPrim", ""}, {"", "localPos", ""}},
-    {{"", "outSDF", ""}, {"", "outPrim", ""}, {"", "BCVel", ""}, {"", "end", ""}},
+    {{gParamType_Unknown, "RigidList", ""}, {gParamType_Unknown, "localPrim", ""}, {gParamType_Unknown, "localPos", ""}},
+    {{gParamType_Unknown, "outSDF", ""}, {gParamType_Unknown, "outPrim", ""}, {gParamType_Unknown, "BCVel", ""}, {gParamType_Unknown, "end", ""}},
     {},
     {"Rigid"},
 });
@@ -214,8 +214,8 @@ struct normalize : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(normalize, {
-    {{"", "input1", ""}},
-    {{"", "output1", ""}},
+    {{gParamType_Unknown, "input1", ""}},
+    {{gParamType_Unknown, "output1", ""}},
     {},
     {"deprecated"},
 });
@@ -240,8 +240,8 @@ struct makeXYZ : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(makeXYZ, {
-    {{"", "input1", ""}, {"", "input2", ""}, {"", "input3", ""}},
-    {{"", "output1", ""}},
+    {{gParamType_Unknown, "input1", ""}, {gParamType_Unknown, "input2", ""}, {gParamType_Unknown, "input3", ""}},
+    {{gParamType_Unknown, "output1", ""}},
     {},
     {"deprecated"},
 });
@@ -253,8 +253,8 @@ struct RigidGetForce : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(RigidGetForce, {
-    {{"", "RigidList", ""}, {"", "Pressure", ""}, {"", "CellFWeight", ""}, {"", "LiquidSDF", ""}, {"", "localPos", ""}, {"", "dt", ""}},
-    {{"", "samplePos", ""}},
+    {{gParamType_Unknown, "RigidList", ""}, {gParamType_Unknown, "Pressure", ""}, {gParamType_Unknown, "CellFWeight", ""}, {gParamType_Unknown, "LiquidSDF", ""}, {gParamType_Unknown, "localPos", ""}, {gParamType_Unknown, "dt", ""}},
+    {{gParamType_Unknown, "samplePos", ""}},
     {},
     {"Rigid"},
 });
@@ -267,7 +267,7 @@ struct GetAZLetters : zeno::ISerialSubgraphNode {
 };
 ZENDEFNODE(GetAZLetters, {
     {},
-    {{"", "AToZ", ""}},
+    {{gParamType_Unknown, "AToZ", ""}},
     {},
     {"zelloWorld"},
 });
@@ -279,8 +279,8 @@ struct zelloWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(zelloWorld, {
-    {{"", "string", ""}},
-    {{"", "3Dword", ""}},
+    {{gParamType_String, "string", ""}},
+    {{gParamType_Unknown, "3Dword", ""}},
     {},
     {"zelloWorld"},
 });
@@ -292,8 +292,8 @@ struct FlashRender : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FlashRender, {
-    {{"", "prim", ""}},
-    {{"", "end", ""}},
+    {{gParamType_Primitive, "prim", ""}},
+    {{gParamType_Unknown, "end", ""}},
     {},
     {"zelloWorld"},
 });

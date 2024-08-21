@@ -24,7 +24,7 @@ public:
 };
 ZENDEFNODE(PBDPin, {// inputs:
                 {
-                    {"prim", {"float","pointToPin",""}}
+                    {gParamType_Primitive, {gParamType_Float,"pointToPin",""}}
                 },
                  // outputs:
                  {"outPrim"},

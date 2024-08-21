@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
@@ -261,21 +261,21 @@ struct RigidGetPressureForce : zeno::INode {
 };
 static int defRigidGetPressureForce = zeno::defNodeClass<RigidGetPressureForce>(
     "RigidGetPressureForce", {/* inputs: */ {
-                                  {"float", "dt"},
-                                  "MassCenter",
-                                  "Rigid",
-                                  "Pressure",
-                                  "CellFWeight",
-                                  "LiquidSDF",
+                                  {gParamType_Float, "dt"},
+                                  {gParamType_Vec3f, "MassCenter"},
+                                  {gParamType_Primitive, "Rigid"},
+                                  {gParamType_VDBGrid, "Pressure"},
+                                  {gParamType_VDBGrid, "CellFWeight"},
+                                  {gParamType_VDBGrid, "LiquidSDF"},
                               },
                               /* outputs: */
                               {
-                                  "TotalForceImpulse",
-                                  "TotalTorcImpulse",
+                                  {gParamType_Vec3f, "TotalForceImpulse"},
+                                  {gParamType_Vec3f, "TotalTorcImpulse"},
                               },
                               /* params: */
                               {
-                                  {"float", "dx", "0.0"},
+                                  {gParamType_Float, "dx", "0.0"},
                               },
 
                               /* category: */

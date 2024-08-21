@@ -71,9 +71,9 @@ struct MakeArapSolver : zeno::INode {
 };
 
 ZENDEFNODE(MakeArapSolver,{
-    {"primIn"},
-    {"ARAP_data"},
-    {{"float","max_iter","100"}},
+    {{gParamType_Primitive, "primIn"}},
+    {{gParamType_Unknown, "ARAP_data"}},
+    {{gParamType_Float,"max_iter","100"}},
     {"Skinning"},
 });
 
@@ -110,8 +110,8 @@ struct DoARAPDeformation : zeno::INode {
 };
 
 ZENDEFNODE(DoARAPDeformation,{
-    {"prim","ARAP_data"},
-    {"prim"},
+    {{gParamType_Primitive, "prim"},{gParamType_Unknown, "ARAP_data"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"Skinning"},
 });
@@ -190,8 +190,8 @@ struct TransformPrimitivePartsByTags : zeno::INode {
 };
 
 ZENDEFNODE(TransformPrimitivePartsByTags,{
-    {"prim","Qs","Ts",{"string","tagName","RENAME_ME"}},
-    {"outPrim"},
+    {{gParamType_Primitive, "prim"},{gParamType_Unknown,"Qs"},{gParamType_Unknown,"Ts"},{gParamType_String,"tagName","RENAME_ME"}},
+    {{gParamType_Primitive,"outPrim"}},
     {},
     {"Skinning"},
 });

@@ -205,19 +205,19 @@ struct Blend: INode {//optimize
 
 ZENDEFNODE(Blend, {
     {
-        {"Foreground"},
-        {"Background"},
-        {"Mask"},
+        {gParamType_Primitive, "Foreground"},
+        {gParamType_Primitive, "Background"},
+        {gParamType_Primitive, "Mask"},
         {"enum Over Copy Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Overlay SoftLight Divide Xor", "Blending Mode", "Over"},
         //{"enum IgnoreAlpha SourceAlpha", "Alpha Blending", "Ignore Alpha"}, SUBSTANCE DESIGNER ALPHA MODE
         //{"enum SameWithBlend Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "SameWithBlend"},
         {"enum Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "Over"},
-        {"float", "Mask Opacity", "1"},
-        {"float", "Foreground Opacity", "1"},
-        {"float", "Background Opacity", "1"},
+        {gParamType_Float, "Mask Opacity", "1"},
+        {gParamType_Float, "Foreground Opacity", "1"},
+        {gParamType_Float, "Background Opacity", "1"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "comp" },
@@ -298,14 +298,14 @@ struct CompBlur : INode {//TODO::delete
 
 ZENDEFNODE(CompBlur, {
     {
-        {"image"},
-        {"int", "strength", "5"},
-        {"vec3f", "kerneltop", "0.075,0.124,0.075"},
-        {"vec3f", "kernelmid", "0.124,0.204,0.124"},
-        {"vec3f", "kernelbot", "0.075,0.124,0.075"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Int, "strength", "5"},
+        {gParamType_Vec3f, "kerneltop", "0.075,0.124,0.075"},
+        {gParamType_Vec3f, "kernelmid", "0.124,0.204,0.124"},
+        {gParamType_Vec3f, "kernelbot", "0.075,0.124,0.075"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "deprecated" },
@@ -354,11 +354,11 @@ struct ImageExtractChannel : INode {
 };
 ZENDEFNODE(ImageExtractChannel, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
         {"enum R G B A", "channel", "R"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -417,14 +417,14 @@ struct CompImport : INode {
 
 ZENDEFNODE(CompImport, {
     {
-        {"prim"},
-        {"string", "attrName", ""},
-        {"bool", "Remap", "0"},
-        {"vec2f", "RemapRange", "0, 1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "attrName", ""},
+        {gParamType_Bool, "Remap", "0"},
+        {gParamType_Vec2f, "RemapRange", "0, 1"},
         {"enum float vec3f", "AttributesType", "float"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     { "comp" },

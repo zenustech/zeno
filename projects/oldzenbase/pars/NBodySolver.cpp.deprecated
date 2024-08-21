@@ -64,9 +64,9 @@ static int defNBodySolver = zeno::defNodeClass<NBodySolver>("NBodySolver",
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"float", "r0", "0.02"},
-    {"float", "G", "-10.0"},
-    {"float", "M", "0.001"},
+    {gParamType_Float, "r0", "0.02"},
+    {gParamType_Float, "G", "-10.0"},
+    {gParamType_Float, "M", "0.001"},
     }, /* category: */ {
     "particles",
     }});

@@ -60,23 +60,23 @@ struct PrimSuperFormula : zeno::INode {
 };
 ZENDEFNODE(PrimSuperFormula, {{
                                   /* inputs: */
-                                  {"int", "segments", "1000"},
-                                  {"float", "scale", "1.0"},
+                                  {gParamType_Int, "segments", "1000"},
+                                  {gParamType_Float, "scale", "1.0"},
 
-                                  {"float", "a", "1.0"},
-                                  {"float", "b", "1.0"},
-                                  {"float", "m", "16.0"},
-                                  {"float", "n1", "-8.0"},
-                                  {"float", "n2", "12.0"},
-                                  {"float", "n3", "10.0"},
+                                  {gParamType_Float, "a", "1.0"},
+                                  {gParamType_Float, "b", "1.0"},
+                                  {gParamType_Float, "m", "16.0"},
+                                  {gParamType_Float, "n1", "-8.0"},
+                                  {gParamType_Float, "n2", "12.0"},
+                                  {gParamType_Float, "n3", "10.0"},
 
-                                  {"bool", "hasLines", "1"},
-                                  {"bool", "close", "1"},
+                                  {gParamType_Bool, "hasLines", "1"},
+                                  {gParamType_Bool, "close", "1"},
                               },
 
                               {
                                   /* outputs: */
-                                  {"prim", "output"},
+                                  {gParamType_Primitive, "output"},
                               },
 
                               {

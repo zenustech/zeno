@@ -210,13 +210,13 @@ struct PyZfx : INode {
 };
 ZENO_DEFNODE(PyZfx)({/* inputs: */ 
     {
-        {"string", "code", ""},
-        {"readpath", "path", ""},
-        {"DictObject", "args"},
+        {gParamType_String, "code", ""},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Dict,"args"},
     },
     /* outputs: */
     {
-        {"DictObject", "rets"},
+        {gParamType_Dict,"rets"},
     },
     /* params: */
     {},

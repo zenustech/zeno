@@ -106,13 +106,13 @@ struct erode_value2cond : INode {
 };
 ZENDEFNODE(erode_value2cond,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                   {"float", "value", "1.0"}, // 0.0 ~ 1.0
-                   {"float", "seed", "0.0"},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Float, "value", "1.0"}, // 0.0 ~ 1.0
+                   {gParamType_Float, "seed", "0.0"},
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
@@ -159,12 +159,12 @@ struct erode_rand_color : INode {
 };
 ZENDEFNODE(erode_rand_color,
            {/* inputs: */ {
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
                },
                /* outputs: */
                {
-                   "list",
+                   {gParamType_List, "list"},
                },
                /* params: */
                {
@@ -209,12 +209,12 @@ struct erode_rand_dir : INode {
 };
 ZENDEFNODE(erode_rand_dir,
            {/* inputs: */ {
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
                },
                /* outputs: */
                {
-                   "list",
+                   {gParamType_List, "list"},
                },
                /* params: */ {}, /* category: */
                {
@@ -503,37 +503,37 @@ struct erode_tumble_material_erosion : INode {
 };
 ZENDEFNODE(erode_tumble_material_erosion,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
-                   {"ListObject", "perm"},
-                   {"ListObject", "p_dirs"},
-                   {"ListObject", "x_dirs"},
+                   {gParamType_List, "perm"},
+                   {gParamType_List, "p_dirs"},
+                   {gParamType_List, "x_dirs"},
 
-                   {"float", "seed", "9676.79"},
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
-                   {"int", "i", "0"},
+                   {gParamType_Float, "seed", "9676.79"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
+                   {gParamType_Int, "i", "0"},
 
-                   {"int", "openborder", "0"},
-                   {"float", "maxdepth", "5.0"},
-                   {"float", "global_erosionrate", "1.0"},
-                   {"float", "erosionrate", "0.03"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "maxdepth", "5.0"},
+                   {gParamType_Float, "global_erosionrate", "1.0"},
+                   {gParamType_Float, "erosionrate", "0.03"},
 
-                   {"float", "cutangle", "35"},
-                   {"string", "cutangle_mask_layer", "cutangle_mask"},
+                   {gParamType_Float, "cutangle", "35"},
+                   {gParamType_String, "cutangle_mask_layer", "cutangle_mask"},
 
-                   {"float", "erodability", "0.4"},
-                   {"string", "erodability_mask_layer", "erodability_mask"},
+                   {gParamType_Float, "erodability", "0.4"},
+                   {gParamType_String, "erodability_mask_layer", "erodability_mask"},
 
-                   {"float", "removalrate", "0.7"},
-                   {"string", "removalrate_mask_layer", "removalrate_mask"},
+                   {gParamType_Float, "removalrate", "0.7"},
+                   {gParamType_String, "removalrate_mask_layer", "removalrate_mask"},
 
-                   {"float", "gridbias", "0.0"},
-                   {"string", "gridbias_mask_layer", "gridbias_mask"},
+                   {gParamType_Float, "gridbias", "0.0"},
+                   {gParamType_String, "gridbias_mask_layer", "gridbias_mask"},
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
@@ -826,37 +826,37 @@ struct erode_tumble_material_v0 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v0,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
-                   {"ListObject", "perm"},
-                   {"ListObject", "p_dirs"},
-                   {"ListObject", "x_dirs"},
+                   {gParamType_List, "perm"},
+                   {gParamType_List, "p_dirs"},
+                   {gParamType_List, "x_dirs"},
 
-                   {"float", "seed", "9676.79"},
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
-                   {"int", "i", "0"},
+                   {gParamType_Float, "seed", "9676.79"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
+                   {gParamType_Int, "i", "0"},
 
-                   {"int", "openborder", "0"},
-                   {"float", "maxdepth", "5.0"},
-                   {"float", "global_erosionrate", "1.0"},
-                   {"float", "erosionrate", "0.03"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "maxdepth", "5.0"},
+                   {gParamType_Float, "global_erosionrate", "1.0"},
+                   {gParamType_Float, "erosionrate", "0.03"},
 
-                   {"float", "cutangle", "35"},
-                   {"string", "cutangle_mask_layer", "cutangle_mask"},
+                   {gParamType_Float, "cutangle", "35"},
+                   {gParamType_String, "cutangle_mask_layer", "cutangle_mask"},
 
-                   {"float", "erodability", "0.4"},
-                   {"string", "erodability_mask_layer", "erodability_mask"},
+                   {gParamType_Float, "erodability", "0.4"},
+                   {gParamType_String, "erodability_mask_layer", "erodability_mask"},
 
-                   {"float", "removalrate", "0.7"},
-                   {"string", "removalrate_mask_layer", "removalrate_mask"},
+                   {gParamType_Float, "removalrate", "0.7"},
+                   {gParamType_String, "removalrate_mask_layer", "removalrate_mask"},
 
-                   {"float", "gridbias", "0.0"},
-                   {"string", "gridbias_mask_layer", "gridbias_mask"},
+                   {gParamType_Float, "gridbias", "0.0"},
+                   {gParamType_String, "gridbias_mask_layer", "gridbias_mask"},
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
@@ -1036,17 +1036,17 @@ struct erode_tumble_material_v1 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v1,
            {/* inputs: */ {
-                   {"prim", "HeightField", "", zeno::Socket_ReadOnly},
-                   {"string", "write_back_material_layer", "write_back_material"},
-                   {"int", "openborder", "0"},
-                   {"float", "repose_angle", "15.0"},
-                   {"float", "flow_rate", "1.0"},
-                   {"float", "height_factor", "1.0"},
-                   {"float", "entrainmentrate", "0.0"},
+                   {gParamType_Primitive, "HeightField", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "write_back_material_layer", "write_back_material"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "repose_angle", "15.0"},
+                   {gParamType_Float, "flow_rate", "1.0"},
+                   {gParamType_Float, "height_factor", "1.0"},
+                   {gParamType_Float, "entrainmentrate", "0.0"},
                },
                /* outputs: */
                {
-                   {"prim", "HeightField"},
+                   {gParamType_Primitive, "HeightField"},
                },
                /* params: */
                {
@@ -1312,33 +1312,33 @@ struct erode_tumble_material_v2 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v2,
            {/* inputs: */ {
-                   {"prim", "HeightField", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "HeightField", "", zeno::Socket_ReadOnly},
 
-                   {"string", "stabilitymask", "_stability"},
-                   {"ListObject", "perm"},
-                   {"ListObject", "p_dirs"},
-                   {"ListObject", "x_dirs"},
+                   {gParamType_String, "stabilitymask", "_stability"},
+                   {gParamType_List, "perm"},
+                   {gParamType_List, "p_dirs"},
+                   {gParamType_List, "x_dirs"},
 
-                   {"float", "seed", "15231.3"},
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
-                   {"int", "i", "0"},
+                   {gParamType_Float, "seed", "15231.3"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
+                   {gParamType_Int, "i", "0"},
 
-                   {"int", "openborder", "0"},
-                   {"float", "gridbias", "0.0"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "gridbias", "0.0"},
 
                    // 崩塌流淌相关
-                   {"float", "repose_angle", "15.0"},
-                   {"float", "quant_amt", "0.25"},
-                   {"float", "flow_rate", "1.0"},
+                   {gParamType_Float, "repose_angle", "15.0"},
+                   {gParamType_Float, "quant_amt", "0.25"},
+                   {gParamType_Float, "flow_rate", "1.0"},
                },
                /* outputs: */
                {
-                   {"prim", "HeightField"},
+                   {gParamType_Primitive, "HeightField"},
                },
                /* params: */
                {
-                   //{"string", "stabilitymask", "_stability"},
+                   //{gParamType_String, "stabilitymask", "_stability"},
                },
                /* category: */
                {
@@ -1622,33 +1622,33 @@ struct erode_tumble_material_v3 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v3,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
-                   {"string", "stabilitymask", "_stability"},
-                   {"ListObject", "perm"},
-                   {"ListObject", "p_dirs"},
-                   {"ListObject", "x_dirs"},
+                   {gParamType_String, "stabilitymask", "_stability"},
+                   {gParamType_List, "perm"},
+                   {gParamType_List, "p_dirs"},
+                   {gParamType_List, "x_dirs"},
 
-                   {"float", "seed", "15231.3"},
-                   {"int", "iterations", "0"},
-                   {"int", "iter", "0"},
-                   {"int", "i", "0"},
+                   {gParamType_Float, "seed", "15231.3"},
+                   {gParamType_Int, "iterations", "0"},
+                   {gParamType_Int, "iter", "0"},
+                   {gParamType_Int, "i", "0"},
 
-                   {"int", "openborder", "0"},
-                   {"float", "gridbias", "0.0"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "gridbias", "0.0"},
 
                    // 崩塌流淌相关
-                   {"float", "repose_angle", "0.0"},
-                   {"float", "quant_amt", "0.0"},
-                   {"float", "flow_rate", "1.0"},
+                   {gParamType_Float, "repose_angle", "0.0"},
+                   {gParamType_Float, "quant_amt", "0.0"},
+                   {gParamType_Float, "flow_rate", "1.0"},
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
-                   //{"string", "stabilitymask", "_stability"},
+                   //{gParamType_String, "stabilitymask", "_stability"},
                },
                /* category: */
                {
@@ -2092,50 +2092,50 @@ struct erode_tumble_material_v4 : INode {
 };
 ZENDEFNODE(erode_tumble_material_v4,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
 
-                   {"ListObject", "perm"},
-                   {"ListObject", "p_dirs"},
-                   {"ListObject", "x_dirs"},
+                   {gParamType_List, "perm"},
+                   {gParamType_List, "p_dirs"},
+                   {gParamType_List, "x_dirs"},
 
-                   {"float", "seed", "12.34"},
-                   {"int", "iterations", "40"}, // 流淌的总迭代次数
-                   {"int", "iter", "0"},
-                   {"int", "i", "0"},
+                   {gParamType_Float, "seed", "12.34"},
+                   {gParamType_Int, "iterations", "40"}, // 流淌的总迭代次数
+                   {gParamType_Int, "iter", "0"},
+                   {gParamType_Int, "i", "0"},
 
-                   {"int", "openborder", "0"},
-                   {"float", "gridbias", "0.0"},
+                   {gParamType_Int, "openborder", "0"},
+                   {gParamType_Float, "gridbias", "0.0"},
 
                    // 侵蚀主参数
-                   {"float", "global_erosionrate", "1.0"}, // 全局侵蚀率
-                   {"float", "erodability", "1.0"},        // 侵蚀能力
-                   {"float", "erosionrate", "0.4"},        // 侵蚀率
-                   {"float", "bank_angle", "70.0"},        // 河堤侵蚀角度
+                   {gParamType_Float, "global_erosionrate", "1.0"}, // 全局侵蚀率
+                   {gParamType_Float, "erodability", "1.0"},        // 侵蚀能力
+                   {gParamType_Float, "erosionrate", "0.4"},        // 侵蚀率
+                   {gParamType_Float, "bank_angle", "70.0"},        // 河堤侵蚀角度
 
                    // 高级参数
-                   {"float", "removalrate", "0.1"},      // 风化率/水吸收率
-                   {"float", "max_debris_depth", "5.0"}, // 碎屑最大深度
+                   {gParamType_Float, "removalrate", "0.1"},      // 风化率/水吸收率
+                   {gParamType_Float, "max_debris_depth", "5.0"}, // 碎屑最大深度
 
                    // 侵蚀能力调整
-                   {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
-                   {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
-                   {"float", "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
+                   {gParamType_Int, "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
+                   {gParamType_Float, "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
+                   {gParamType_Float, "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
 
                    // 河床参数
-                   {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
-                   {"float", "depositionrate", "0.01"},        // 沉积率
-                   {"float", "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
+                   {gParamType_Float, "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
+                   {gParamType_Float, "depositionrate", "0.01"},        // 沉积率
+                   {gParamType_Float, "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
                    // 河堤参数
-                   {"float", "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
-                   {"float", "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
+                   {gParamType_Float, "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
+                   {gParamType_Float, "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
 
                    // 河网控制
-                   {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
+                   {gParamType_Float, "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
@@ -2231,13 +2231,13 @@ struct erode_smooth_flow : INode {
 };
 ZENDEFNODE(erode_smooth_flow,
            {/* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                   {"float", "smoothRate", "1.0"},
-                   {"string", "flowName", "flow"},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Float, "smoothRate", "1.0"},
+                   {gParamType_String, "flowName", "flow"},
                },
                /* outputs: */
                {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                },
                /* params: */
                {
@@ -2302,10 +2302,10 @@ struct erode_terrainHiMeLo : INode {
 };
 ZENDEFNODE(erode_terrainHiMeLo,
            { /* inputs: */ {
-                   {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                   {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
                    { "string", "attrName", "fbm" },
                }, /* outputs: */ {
-                   {"prim", "prim_2DGrid"},
+                   {gParamType_Primitive, "prim_2DGrid"},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",
@@ -2501,29 +2501,29 @@ struct HF_maskByFeature : INode {
 };
 ZENDEFNODE(HF_maskByFeature,
            {/* inputs: */ {
-                   {"prim", "HeightField", "", zeno::Socket_ReadOnly},
-                   {"bool", "invert_mask", "0"},
-                   {"string", "height_layer", "height"},
-                   {"string", "mask_layer", "mask"},
-                   {"int", "smooth_radius", "1"},
-                   {"bool", "use_slope", "0"},
-                   {"float", "min_slopeangle", "0"},
-                   {"float", "max_slopeangle", "90"},
-                   {"curve", "slope_ramp"},
+                   {gParamType_Primitive, "HeightField", "", zeno::Socket_ReadOnly},
+                   {gParamType_Bool, "invert_mask", "0"},
+                   {gParamType_String, "height_layer", "height"},
+                   {gParamType_String, "mask_layer", "mask"},
+                   {gParamType_Int, "smooth_radius", "1"},
+                   {gParamType_Bool, "use_slope", "0"},
+                   {gParamType_Float, "min_slopeangle", "0"},
+                   {gParamType_Float, "max_slopeangle", "90"},
+                   {gParamType_Curve, "slope_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                   {"bool", "use_direction", "0"},
-                   {"float", "goal_angle", "0"},
-                   {"float", "angle_spread", "30"},
-                   {"curve", "dir_ramp"},
+                   {gParamType_Bool, "use_direction", "0"},
+                   {gParamType_Float, "goal_angle", "0"},
+                   {gParamType_Float, "angle_spread", "30"},
+                   {gParamType_Curve, "dir_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                   {"bool", "use_height", "0"},
-                   {"float", "min_height", "0.5"},
-                   {"float", "max_height", "1"},
-                   {"curve", "height_ramp"},
+                   {gParamType_Bool, "use_height", "0"},
+                   {gParamType_Float, "min_height", "0.5"},
+                   {gParamType_Float, "max_height", "1"},
+                   {gParamType_Curve, "height_ramp"},
                },
                /* outputs: */
                {
-                   {"prim", "HeightField"},
+                   {gParamType_Primitive, "HeightField"},
                },
                /* params: */
                {
@@ -2561,10 +2561,10 @@ struct HF_rotate_displacement_2d : INode {
 };
 ZENDEFNODE(HF_rotate_displacement_2d,
            { /* inputs: */ {
-               {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-               {"float", "Rotate Displacement", "0"}
+               {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+               {gParamType_Float, "Rotate Displacement", "0"}
            }, /* outputs: */ {
-               {"prim", "prim_2DGrid"},
+               {gParamType_Primitive, "prim_2DGrid"},
            }, /* params: */ {
            }, /* category: */ {
                "erode",
@@ -2637,19 +2637,19 @@ struct HF_remap : INode {
 };
 ZENDEFNODE(HF_remap,
            { /* inputs: */ {
-               {"", "prim", "", zeno::Socket_ReadOnly},
-               {"string", "remap layer", "height"},
-               {"bool", "Auto Compute input range", "0"},
-               {"float", "input min", "0"},
-               {"float", "input max", "1"},
-               {"float", "output min", "0"},
-               {"float", "output max", "1"},
-               {"curve", "remap ramp"},
-               {"bool", "clamp min", "0"},
-               {"bool", "clamp max", "0"}
+               {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+               {gParamType_String, "remap layer", "height"},
+               {gParamType_Bool, "Auto Compute input range", "0"},
+               {gParamType_Float, "input min", "0"},
+               {gParamType_Float, "input max", "1"},
+               {gParamType_Float, "output min", "0"},
+               {gParamType_Float, "output max", "1"},
+               {gParamType_Curve, "remap ramp"},
+               {gParamType_Bool, "clamp min", "0"},
+               {gParamType_Bool, "clamp max", "0"}
            }, /* outputs: */ {
-               "prim",
-           }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
            }, /* category: */ {
                "deprecated",
            } });
@@ -2826,15 +2826,15 @@ struct HF_maskbyOcclusion : INode {
 };
 ZENDEFNODE(HF_maskbyOcclusion,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"bool", "invert mask", "0"},
-                   {"int", "view distance", "200"},
-                   {"float", "step scale", "1"},
-                   {"int", "num of searches", "16"},
-                   {"bool", "dohemisphere", "0"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_Bool, "invert mask", "0"},
+                   {gParamType_Int, "view distance", "200"},
+                   {gParamType_Float, "step scale", "1"},
+                   {gParamType_Int, "num of searches", "16"},
+                   {gParamType_Bool, "dohemisphere", "0"},
                }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
                }, /* category: */ {
                    "erode",
                } });

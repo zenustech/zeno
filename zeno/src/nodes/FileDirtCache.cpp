@@ -47,7 +47,7 @@ struct EmbedZsgGraph : zeno::INode {
 
 ZENO_DEFNODE(EmbedZsgGraph)({
     {
-       {"string", "zsgPath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+       {gParamType_String, "zsgPath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
        {"dict", "argsDict"},
     },
     {

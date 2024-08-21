@@ -54,11 +54,11 @@ struct PrimitiveCalcCentroid : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcCentroid, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-    {"vec3f", "centroid"},
-    {"float", "totalArea"},  // actually mass, can change name to cihou old graphs
+    {gParamType_Vec3f, "centroid"},
+    {gParamType_Float, "totalArea"},  // actually mass, can change name to cihou old graphs
     },
     {
     {"enum Volume Area Vertex", "method", "Volume"}

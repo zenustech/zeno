@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/StringObject.h>
 #include <cstring>
 #include <omp.h>
@@ -153,9 +153,9 @@ struct ReadObjMesh : zeno::INode {
 
 static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     { /* inputs: */ {
-            {"string", "path", "", NoSocket, ReadPathEdit}
+            {gParamType_String, "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
-        {"object", "mesh"},
+        {gParamType_Mesh, "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
@@ -181,11 +181,11 @@ struct MeshMix : zeno::INode {
 
 static int defMeshMix = zeno::defNodeClass<MeshMix>("MeshMix",
     { /* inputs: */ {
-        {"object", "meshA"},
-        {"object", "meshB"},
-        {"float", "coef"},
+        {gParamType_Mesh, "meshA"},
+        {gParamType_Mesh, "meshB"},
+        {gParamType_Float, "coef"},
     }, /* outputs: */ {
-        {"float", "mesh"},
+        {gParamType_Float, "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",
@@ -201,9 +201,9 @@ struct ImportObjMesh : zeno::INode {
 
 static int defImportObjMesh = zeno::defNodeClass<ImportObjMesh>("ImportObjMesh",
     { /* inputs: */ {
-        {"float", "path"},
+        {gParamType_Float, "path"},
     }, /* outputs: */ {
-        {"object", "mesh"},
+        {gParamType_Mesh, "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",

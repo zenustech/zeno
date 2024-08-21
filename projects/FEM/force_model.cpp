@@ -29,8 +29,8 @@ struct MakeElasticForceModel : zeno::INode {
 
 ZENDEFNODE(MakeElasticForceModel, {
     {},
-    {"ElasticModel"},
-    {{"enum HyperElastic Fiberic BSplineModel Stvk", "ForceModel", "HyperElastic"},{"float","aniso_strength","20"}},
+    {{gParamType_Unknown, "ElasticModel"}},
+    {{"enum HyperElastic Fiberic BSplineModel Stvk", "ForceModel", "HyperElastic"},{gParamType_Float,"aniso_strength","20"}},
     {"FEM"},
 });
 
@@ -45,7 +45,7 @@ struct MakeDampingForceModel : zeno::INode {
 
 ZENDEFNODE(MakeDampingForceModel, {
     {},
-    {"DampForceModel"},
+    {{gParamType_Unknown, "DampForceModel"}},
     {},
     {"FEM"},
 });

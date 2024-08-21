@@ -126,7 +126,7 @@ ZENDEFNODE(ZSEvalGradientField, {
                                     {"field"},
                                     {"field"},
                                     {
-                                        {"string","tag","T"},{"string","gtag","gradT"},{"int","skip_boundary","0"},{"int","normalize","0"},{"string","btag","btag"}
+                                        {gParamType_String,"tag","T"},{gParamType_String,"gtag","gradT"},{gParamType_Int,"skip_boundary","0"},{gParamType_Int,"normalize","0"},{gParamType_String,"btag","btag"}
                                     },
                                     {"ZSGeometry"}
 });
@@ -269,7 +269,7 @@ struct ZSRetrieveVectorField : zeno::INode {
 ZENDEFNODE(ZSRetrieveVectorField, {
     {"field","heatmap"},
     {"vec_field"},
-    {{"enum quad tri vert","location","quad"},{"string","gtag","vec_field"},{"string","xtag","x"},{"float","scale","1.0"},{"string","color_tag","color_tag"}},
+    {{"enum quad tri vert","location","quad"},{gParamType_String,"gtag","vec_field"},{gParamType_String,"xtag","x"},{gParamType_Float,"scale","1.0"},{gParamType_String,"color_tag","color_tag"}},
     {"ZSGeometry"},
 });
 
@@ -391,7 +391,7 @@ ZENDEFNODE(ZSSampleQuadratureAttr2Vert,{
     {"ZSParticles"},
     {"ZSParticles"},
     {
-        {"string","attr","attr"},{"string","wtag","vol"},{"int","skip_bou","0"},{"string","bou_tag","btag"}
+        {gParamType_String,"attr","attr"},{gParamType_String,"wtag","vol"},{gParamType_Int,"skip_bou","0"},{gParamType_String,"bou_tag","btag"}
     },
     {"ZSGeometry"}
 });
@@ -463,7 +463,7 @@ ZENDEFNODE(ZSSampleVertAttr2Quadrature,{
     {"field"},
     {"field"},
     {
-        {"string","attr","attr"}
+        {gParamType_String,"attr","attr"}
     },
     {"ZSGeometry"}
 });
@@ -504,7 +504,7 @@ ZENDEFNODE(ZSNormalizeVectorField,{
     {"field"},
     {"field"},
     {
-        {"enum vertex quad","type","vertex"},{"string","attr","attr"}
+        {"enum vertex quad","type","vertex"},{gParamType_String,"attr","attr"}
     },
     {"ZSGeometry"}
 });
@@ -744,14 +744,14 @@ struct ZSGaussianNeighborQuadatureSampler : zeno::INode {
 };
 
 ZENDEFNODE(ZSGaussianNeighborQuadatureSampler,{
-    {"source","dest",{"int","use_append","0"},{"float","radius","1"},{"float","mark","-1.0"}},
+    {"source","dest",{gParamType_Int,"use_append","0"},{gParamType_Float,"radius","1"},{gParamType_Float,"mark","-1.0"}},
     {"dest"},
     {
-        {"string","weight_tag","weight_tag"},
-        {"string","mark_tag","mark_tag"},
-        {"string","attr","attr"},
-        {"string","xtag","x"},
-        {"float","sigma","1"}
+        {gParamType_String,"weight_tag","weight_tag"},
+        {gParamType_String,"mark_tag","mark_tag"},
+        {gParamType_String,"attr","attr"},
+        {gParamType_String,"xtag","x"},
+        {gParamType_Float,"sigma","1"}
     },
     {"ZSGeometry"}
 });
@@ -959,13 +959,13 @@ struct ZSGaussianSampler : zeno::INode {
 };
 
 ZENDEFNODE(ZSGaussianSampler,{
-    {"source","dest",{"float","thickness","0.1"},{"float","sigma","1.0"}},
+    {"source","dest",{gParamType_Float,"thickness","0.1"},{gParamType_Float,"sigma","1.0"}},
     {"dest"},
     {
-        {"string","srcAttr","srcAttr"},
-        {"string","dstAttr","dstAttr"},
-        {"string","markTag","bou_tag"},
-        {"float","markValue","1.0"},
+        {gParamType_String,"srcAttr","srcAttr"},
+        {gParamType_String,"dstAttr","dstAttr"},
+        {gParamType_String,"markTag","bou_tag"},
+        {gParamType_Float,"markValue","1.0"},
         {"enum vert quad","srcType","vert"},
         {"enum vert quad","dstType","vert"},
 
@@ -1025,11 +1025,11 @@ struct ZSAppendAttribute : zeno::INode {
 };
 
 ZENDEFNODE(ZSAppendAttribute,{
-    {"ZSParticles",{"float","fill","0.0"}},
+    {"ZSParticles",{gParamType_Float,"fill","0.0"}},
     {"ZSParticles"},
     {
-        {"string","attr","attr"},
-        {"int","attr_dim","1"},
+        {gParamType_String,"attr","attr"},
+        {gParamType_Int,"attr_dim","1"},
         {"enum particle quadature","type","particle"}
     },
     {"ZSGeometry"}

@@ -29,8 +29,8 @@ struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
 };
 ZENDEFNODE(SetMatrix, {
     {
-    {"object", "dst" },
-    {"object", "src" },
+    {gParamType_Matrix4, "dst" },
+    {gParamType_Matrix4, "src" },
     },
     {},
     {},
@@ -58,11 +58,11 @@ struct MakeLocalSys : zeno::INode{
 };
 ZENDEFNODE(MakeLocalSys, {
     {
-    {"vec3f", "front", "1,0,0"},
-    {"vec3f", "up", "0,1,0"},
-    {"vec3f", "right", "0,0,1"},
+    {gParamType_Vec3f, "front", "1,0,0"},
+    {gParamType_Vec3f, "up", "0,1,0"},
+    {gParamType_Vec3f, "right", "0,0,1"},
     },
-    {{"object", "LocalSys"}},
+    {{gParamType_Matrix4, "LocalSys"}},
     {},
     {"math"},
 });
@@ -178,18 +178,18 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
 
 ZENDEFNODE(TransformPrimitive, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "translation", "0,0,0"},
-    {"vec3f", "eulerXYZ", "0,0,0"},
-    {"vec4f", "quatRotation", "0,0,0,1"},
-    {"vec3f", "scaling", "1,1,1"},
-    {"vec3f", "shear", "0,0,0"},
-    {"object", "Matrix"},
-    {"object", "preTransform"},
-    {"object", "local"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "translation", "0,0,0"},
+    {gParamType_Vec3f, "eulerXYZ", "0,0,0"},
+    {gParamType_Vec4f, "quatRotation", "0,0,0,1"},
+    {gParamType_Vec3f, "scaling", "1,1,1"},
+    {gParamType_Vec3f, "shear", "0,0,0"},
+    {gParamType_Matrix4, "Matrix"},
+    {gParamType_Matrix4, "preTransform"},
+    {gParamType_Matrix4, "local"},
     },
     {
-    {"PrimitiveObject", "outPrim"}
+    {gParamType_Primitive, "outPrim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
@@ -433,23 +433,23 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_Owning},
-        {"string", "path"},
-        {"vec3f", "translation", "0,0,0"},
-        {"vec3f", "eulerXYZ", "0,0,0"},
-        {"vec4f", "quatRotation", "0,0,0,1"},
-        {"vec3f", "scaling", "1,1,1"},
-        {"vec3f", "shear", "0,0,0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_Clone},
+        {gParamType_String, "path"},
+        {gParamType_Vec3f, "translation", "0,0,0"},
+        {gParamType_Vec3f, "eulerXYZ", "0,0,0"},
+        {gParamType_Vec4f, "quatRotation", "0,0,0,1"},
+        {gParamType_Vec3f, "scaling", "1,1,1"},
+        {gParamType_Vec3f, "shear", "0,0,0"},
         {"enum world bboxCenter custom", "pivot", "bboxCenter"},
-        {"vec3f", "pivotPos", "0,0,0"},
-        {"vec3f", "localX", "1,0,0"},
-        {"vec3f", "localY", "0,1,0"},
-        {"object", "Matrix", "", zeno::Socket_ReadOnly},
-        {"object", "preTransform"},
-        {"object", "local"},
+        {gParamType_Vec3f, "pivotPos", "0,0,0"},
+        {gParamType_Vec3f, "localX", "1,0,0"},
+        {gParamType_Vec3f, "localY", "0,1,0"},
+        {gParamType_Matrix4, "Matrix", "", zeno::Socket_ReadOnly},
+        {gParamType_Matrix4, "preTransform"},
+        {gParamType_Matrix4, "local"},
     },
     {
-        {"PrimitiveObject", "outPrim"}
+        {gParamType_Primitive, "outPrim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},

@@ -31,13 +31,13 @@ struct ExtractFBXData : zeno::INode {
 ZENDEFNODE(ExtractFBXData,
            {       /* inputs: */
                {
-                   {"FBXData", "data"},
+                   {gParamType_Unknown, "data"},
                },  /* outputs: */
                {
-                   {"IVertices", "vertices"},
-                   {"IIndices", "indices"},
-                   {"IMaterial", "material"},
-                   {"IBoneOffset", "boneOffset"}
+                   {gParamType_Unknown, "vertices"},
+                   {gParamType_Unknown, "indices"},
+                   {gParamType_Unknown, "material"},
+                   {gParamType_Unknown, "boneOffset"}
                },  /* params: */
                {
 
@@ -72,10 +72,10 @@ struct ExtractMatName : zeno::INode {
 ZENDEFNODE(ExtractMatName,
            {       /* inputs: */
             {
-                "material", "key"
+                {gParamType_Unknown, "material"}, {gParamType_String, "key"}
             },  /* outputs: */
             {
-                {"string","name"}
+                {gParamType_String,"name"}
             },  /* params: */
             {
 
@@ -117,10 +117,10 @@ struct ExtractMatTexList : zeno::INode {
 ZENDEFNODE(ExtractMatTexList,
            {       /* inputs: */
                {
-                   {"IMaterial", "material"},
+                   {gParamType_Unknown, "material"},
                },  /* outputs: */
                {
-                    "texLists", {"string","name"}
+                    {gParamType_List, "texLists"}, {gParamType_String,"name"}
                },  /* params: */
                {
 
@@ -148,10 +148,10 @@ struct ExtractMatDict : zeno::INode {
 ZENDEFNODE(ExtractMatDict,
            {       /* inputs: */
             {
-                {"IMaterial", "material"},
+                {gParamType_Unknown, "material"},
             },  /* outputs: */
             {
-                "mats",
+                {gParamType_Dict, "mats"},
             },  /* params: */
             {
 
@@ -226,15 +226,15 @@ struct ExtractMatData : zeno::INode {
 ZENDEFNODE(ExtractMatData,
            {       /* inputs: */
             {
-                "data"
+                {gParamType_Unknown, "data"}
             },  /* outputs: */
             {
-                {"list", "datas", ""},
-                {"string","matName"},
-                {"list", "texLists", ""},
-                {"dict", "texMaps", ""},
-                {"dict", "matValues", ""},
-                {"dict", "texUvs", ""}
+                {gParamType_List, "datas", ""},
+                {gParamType_String,"matName"},
+                {gParamType_List, "texLists", ""},
+                {gParamType_Dict, "texMaps", ""},
+                {gParamType_Dict, "matValues", ""},
+                {gParamType_Dict, "texUvs", ""}
             },  /* params: */
             {
 
@@ -300,18 +300,18 @@ struct ExtractCameraData : zeno::INode {
 ZENDEFNODE(ExtractCameraData,
            {       /* inputs: */
                {
-           {"string", "key", "camera1"}, "camobject"
+                    {gParamType_String, "key", "camera1"}, {gParamType_Unknown, "camobject"}
                },  /* outputs: */
                {
-                   {"vec3f","pos"}, 
-                   {"vec3f","up"}, 
-                   {"vec3f","view"}, 
-                   {"float","focL"}, 
-                   {"float","haov"}, 
-                   {"float","waov"}, 
-                   {"float","hfov"},
-                   {"float", "filmW"}, 
-                   {"float","filmH"}
+                   {gParamType_Vec3f,"pos"}, 
+                   {gParamType_Vec3f,"up"}, 
+                   {gParamType_Vec3f,"view"}, 
+                   {gParamType_Float,"focL"}, 
+                   {gParamType_Float,"haov"}, 
+                   {gParamType_Float,"waov"}, 
+                   {gParamType_Float,"hfov"},
+                   {gParamType_Float, "filmW"}, 
+                   {gParamType_Float,"filmH"}
                },  /* params: */
                {
 
@@ -362,10 +362,10 @@ struct ExchangeFBXData : zeno::INode {
 ZENDEFNODE(ExchangeFBXData,
            {       /* inputs: */
             {
-                "d", "animinfo", "nodetree", "bonetree",
+                {gParamType_Unknown, "d"}, {gParamType_Unknown, "animinfo"}, {gParamType_Unknown, "nodetree"}, {gParamType_Unknown, "bonetree"},
             },  /* outputs: */
             {
-                "d",
+                {gParamType_Unknown, "d"},
             },  /* params: */
             {
                 {"enum DATA DATAS MATS", "dType", "DATA"},

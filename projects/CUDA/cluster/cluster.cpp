@@ -213,14 +213,14 @@ struct ParticleClustering : INode {
 
 ZENO_DEFNODE(ParticleClustering)
 ({
-    {{"PrimitiveObject", "pars"},
-    {"int", "cluster_number", "0"},
-    {"float", "diameter", "0"},
-    {"string", "cluster_tag", "cluster_index"},
-    {"bool", "paint_color", "1"},
-    {"bool", "output_cluster_center", "1"},
-    {"string", "sum_vert_attribs", ""}},
-    {{"PrimitiveObject", "pars"}},
+    {{gParamType_Primitive, "pars"},
+    {gParamType_Int, "cluster_number", "0"},
+    {gParamType_Float, "diameter", "0"},
+    {gParamType_String, "cluster_tag", "cluster_index"},
+    {gParamType_Bool, "paint_color", "1"},
+    {gParamType_Bool, "output_cluster_center", "1"},
+    {gParamType_String, "sum_vert_attribs", ""}},
+    {{gParamType_Primitive, "pars"}},
     {},
     {"primitive"},
 });

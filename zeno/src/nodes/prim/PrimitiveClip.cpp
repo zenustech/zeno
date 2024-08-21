@@ -330,9 +330,9 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"float", "distance", "0"}},
-    {{"PrimitiveObject", "outPrim"}},
-    {{"bool", "reverse", "0"}},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}, {gParamType_Vec3f, "origin", "0,0,0"}, {gParamType_Vec3f, "direction", "0,0,1"}, {gParamType_Float, "distance", "0"}},
+    {{gParamType_Primitive, "outPrim"}},
+    {{gParamType_Bool, "reverse", "0"}},
     {"primitive"},
     });
 }

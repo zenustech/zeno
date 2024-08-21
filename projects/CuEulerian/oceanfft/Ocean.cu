@@ -488,17 +488,17 @@ struct MakeCuOcean : zeno::INode {
     }
 };
 
-ZENDEFNODE(MakeCuOcean, {/* inputs:  */ {{"int", "WaveExponent", "8"},
-                                         {"float", "depth", "5000"},
-                                         {"float", "chop", "0.5"},
-                                         {"float", "gravity", "9.81"},
-                                         {"float", "windDir", "0"},
-                                         {"float", "timeScale", "1.0"},
-                                         {"float", "patchSize", "100.0"},
-                                         {"float", "speed", "100.0"},
-                                         {"float", "timeshift", "0.0"},
-                                         {"float", "amp", "1.0"},
-                                         {"int","seed", "0" }},
+ZENDEFNODE(MakeCuOcean, {/* inputs:  */ {{gParamType_Int, "WaveExponent", "8"},
+                                         {gParamType_Float, "depth", "5000"},
+                                         {gParamType_Float, "chop", "0.5"},
+                                         {gParamType_Float, "gravity", "9.81"},
+                                         {gParamType_Float, "windDir", "0"},
+                                         {gParamType_Float, "timeScale", "1.0"},
+                                         {gParamType_Float, "patchSize", "100.0"},
+                                         {gParamType_Float, "speed", "100.0"},
+                                         {gParamType_Float, "timeshift", "0.0"},
+                                         {gParamType_Float, "amp", "1.0"},
+                                         {gParamType_Int,"seed", "0" }},
                          /* outputs: */
                          {
                              "gpuOcean",
@@ -682,9 +682,9 @@ struct OceanCompute : zeno::INode {
 
 ZENDEFNODE(OceanCompute, {/* inputs:  */ {
                               "grid",
-                              {"float", "time", "0"},
-                              {"float", "depth", "0"},
-                              {"float", "dt", "0.04"},
+                              {gParamType_Float, "time", "0"},
+                              {gParamType_Float, "depth", "0"},
+                              {gParamType_Float, "dt", "0.04"},
                               "ocean_FFT",
                           },
                           /* outputs: */
@@ -868,9 +868,9 @@ struct OceanCuCompute : zeno::INode {
 
 ZENDEFNODE(OceanCuCompute, {/* inputs:  */ {
                                 "grid",
-                                {"float", "time", "0"},
-                                {"float", "depth", "0"},
-                                {"float", "dt", "0.04"},
+                                {gParamType_Float, "time", "0"},
+                                {gParamType_Float, "depth", "0"},
+                                {gParamType_Float, "dt", "0.04"},
                                 "ocean_FFT",
                             },
                             /* outputs: */

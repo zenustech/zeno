@@ -36,8 +36,8 @@ struct MakeFEMIntegrator : zeno::INode {
 };
 
 ZENDEFNODE(MakeFEMIntegrator,{
-    {{"prim"},{"elasto"},{"visco"},{"float","dt","1"}},
-    {"FEMIntegrator"},
+    {{gParamType_Primitive, "prim"},{gParamType_IObject, "elasto"},{gParamType_IObject, "visco"},{gParamType_Float,"dt","1"}},
+    {{gParamType_Unknown, "FEMIntegrator"}},
     {{"enum BE QS EBQS SDQS", "integType", "QS"}},
     {"FEM"},
 });

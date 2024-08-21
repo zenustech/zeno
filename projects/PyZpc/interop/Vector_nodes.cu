@@ -43,10 +43,10 @@ struct MakeZsVector : INode {
 
 //  memsrc, size, elem_type, dev_id, virtual
 ZENDEFNODE(MakeZsVector, {
-                             {{"int", "size", "0"},
+                             {{gParamType_Int, "size", "0"},
                               {"enum host device um", "memsrc", "device"},
-                              {"int", "dev_id", "0"},
-                              //   {"bool", "virtual", "false"},
+                              {gParamType_Int, "dev_id", "0"},
+                              //   {gParamType_Bool, "virtual", "false"},
                               {"enum float int double", "elem_type", "float"}},
                              {"ZsVector"},
                              {},
@@ -119,7 +119,7 @@ struct CopyZsVectorTo : INode {
 };
 
 ZENDEFNODE(CopyZsVectorTo, {
-                               {"ZsVector", "prim", {"string", "attr", "clr"}},
+                               {"ZsVector", "prim", {gParamType_String, "attr", "clr"}},
                                {"prim"},
                                {},
                                {"PyZFX"},
@@ -155,7 +155,7 @@ struct CopyZsVectorFrom : INode {
 };
 
 ZENDEFNODE(CopyZsVectorFrom, {
-                                 {"ZsVector", "prim", {"string", "attr", "clr"}},
+                                 {"ZsVector", "prim", {gParamType_String, "attr", "clr"}},
                                  {"ZsVector"},
                                  {},
                                  {"PyZFX"},

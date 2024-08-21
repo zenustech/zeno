@@ -169,9 +169,9 @@ public:
 
 ZENDEFNODE(PBDSolveDihedralConstraint, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
-                    {"float", "dihedralCompliance", "0.0"},
-                    {"bool", "isGaussSidel", "1"},
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Float, "dihedralCompliance", "0.0"},
+                    {gParamType_Bool, "isGaussSidel", "1"},
                 },
                  // outputs:
                  {"outPrim"},

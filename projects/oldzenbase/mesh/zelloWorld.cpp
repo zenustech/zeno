@@ -53,8 +53,8 @@ struct StringToMesh : zeno::INode {
 };
 
 ZENDEFNODE(StringToMesh, {
-    {{"string", "string"}, {"object", "AZmesh"} ,{"float", "spacing"}},
-    {{"list", "StringMeshList"}, {"list", "SpacingList"}},
+    {{gParamType_String, "string"}, {"object", "AZmesh"} ,{gParamType_Float, "spacing"}},
+    {{gParamType_List, "StringMeshList"}, {gParamType_List, "SpacingList"}},
     {},
     {"deprecated"},
 });

@@ -34,9 +34,9 @@ namespace {
 
     ZENDEFNODE(FFPlayAudioFile, {
         {
-            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-            {"bool", "nodisp", "0"},
-            {"bool", "wait", "0"},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+            {gParamType_Bool, "nodisp", "0"},
+            {gParamType_Bool, "wait", "0"},
         },
         {
         },
@@ -60,10 +60,10 @@ namespace {
     };
     ZENDEFNODE(AudioSumPower, {
         {
-            "FFTPrim",
+            {gParamType_Primitive, "FFTPrim"},
         },
         {
-            {"float", "sumpower"},
+            {gParamType_Float, "sumpower"},
         },
         {},
         {
@@ -92,13 +92,13 @@ namespace {
     };
     ZENDEFNODE(AudioPowerVariation, {
         {
-            {"float", "sumpower"},
-            {"int", "winwidth", "20"},
-            {"int", "scale", "1"},
-            {"int", "maximum", "1"},
+            {gParamType_Float, "sumpower"},
+            {gParamType_Int, "winwidth", "20"},
+            {gParamType_Int, "scale", "1"},
+            {gParamType_Int, "maximum", "1"},
         },
         {
-            {"float", "powvar"},
+            {gParamType_Float, "powvar"},
         },
         {},
         {

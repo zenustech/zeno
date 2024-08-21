@@ -40,9 +40,9 @@ struct PrimitiveTraceTrail : zeno::INode {
 
 ZENDEFNODE(PrimitiveTraceTrail,
     { /* inputs: */ {
-    {"PrimitiveObject", "parsPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "parsPrim", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    {"PrimitiveObject", "trailPrim"},
+    {gParamType_Primitive, "trailPrim"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
@@ -75,10 +75,10 @@ struct PrimitiveCalcVelocity : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcVelocity,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"float", "dt", "0.04"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "dt", "0.04"},
     }, /* outputs: */ {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
@@ -112,10 +112,10 @@ struct PrimitiveInterpSubframe : zeno::INode {
 
 ZENDEFNODE(PrimitiveInterpSubframe,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"float", "portion"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "portion"},
     }, /* outputs: */ {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",

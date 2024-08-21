@@ -62,10 +62,10 @@ namespace zeno {
     };
 
     ZENDEFNODE(MakeZsTileVector, {
-                                     {{"int", "size", "0"},
+                                     {{gParamType_Int, "size", "0"},
                                       {"DictObject", "prop_tags"},
                                       {"enum host device um", "memsrc", "device"},
-                                      {"int", "dev_id", "0"},
+                                      {gParamType_Int, "dev_id", "0"},
                                       {"enum float int double", "elem_type", "float"}},
                                      {"ZsTileVector"},
                                      {},
@@ -110,7 +110,7 @@ namespace zeno {
 
     ZENDEFNODE(ExtractScalarFromZsTileVector,
         {
-            {"ZsTileVector", {"int", "index", "0"}, {"string", "prop_tag", ""}, {"int", "dim", "0"}},
+            {"ZsTileVector", {gParamType_Int, "index", "0"}, {gParamType_String, "prop_tag", ""}, {gParamType_Int, "dim", "0"}},
             {"result"},
             {},
             {"PyZFX"},
@@ -214,8 +214,8 @@ namespace zeno {
 
     ZENDEFNODE(CopyZsTileVectorTo, {
                                        {"ZsTileVector",
-                                        {"PrimitiveObject", "prim"},
-                                        {"string", "attr", "clr"},
+                                        {gParamType_Primitive, "prim"},
+                                        {gParamType_String, "attr", "clr"},
                                         {"enum convert enforce_bit_cast", "option", "convert"}},
                                        {"prim"},
                                        {},

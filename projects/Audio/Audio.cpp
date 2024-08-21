@@ -97,10 +97,10 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(ReadWavFile, {
         {
-            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
-            "wave",
+            {gParamType_Primitive, "wave"},
         },
         {},
         {
@@ -117,10 +117,10 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(ReadMp3File, {
         {
-            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
-            "wave",
+            {gParamType_Primitive, "wave"},
         },
         {},
         {
@@ -153,10 +153,10 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
 
     ZENDEFNODE(ReadAudioFile, {
         {
-            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
-            "wave",
+            {gParamType_Primitive, "wave"},
         },
         {},
         {
@@ -238,15 +238,15 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
 
     ZENDEFNODE(AudioBeats, {
         {
-            "wave",
-            {"float", "time", "0"},
-            {"float", "threshold", "0.005"},
+            {gParamType_Primitive, "wave"},
+            {gParamType_Float, "time", "0"},
+            {gParamType_Float, "threshold", "0.005"},
         },
         {
-            {"int", "beat"},
-            {"float", "var_H"},
-            "H",
-            "E",
+            {gParamType_Int, "beat"},
+            {gParamType_Float, "var_H"},
+            {gParamType_List,  "H"},
+            {gParamType_List,  "E"},
         },
         {},
         {
@@ -349,16 +349,16 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(AudioEnergy, {
         {
-            "wave",
-            {"float", "time", "0"},
-            {"float", "threshold", "1"},
+            {gParamType_Primitive, "wave"},
+            {gParamType_Float, "time", "0"},
+            {gParamType_Float, "threshold", "1"},
         },
         {
-            {"int", "beat"},
-            {"float", "E"},
-            {"float", "uniE"},
-            {"float", "minE"},
-            {"float", "maxE"},
+            {gParamType_Int, "beat"},
+            {gParamType_Float, "E"},
+            {gParamType_Float, "uniE"},
+            {gParamType_Float, "minE"},
+            {gParamType_Float, "maxE"},
 //            "vis",
         },
         {},
@@ -420,15 +420,15 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(AudioFFT, {
         {
-            "wave",
-            {"float", "time", "0"},
-            {"bool", "preEmphasis", "0"},
-            {"float", "preEmphasisAlpha", "0.97"},
-            {"bool", "hammingWindow", "1"},
-            {"int", "duration_count", "1024"},
+            {gParamType_Primitive, "wave"},
+            {gParamType_Float, "time", "0"},
+            {gParamType_Bool, "preEmphasis", "0"},
+            {gParamType_Float, "preEmphasisAlpha", "0.97"},
+            {gParamType_Bool, "hammingWindow", "1"},
+            {gParamType_Int, "duration_count", "1024"},
         },
         {
-            "FFTPrim",
+            {gParamType_Primitive,"FFTPrim"},
         },
         {},
         {
@@ -455,12 +455,12 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(AudioTrim, {
         {
-            "audio",
-            {"int", "start", "0"},
-            {"int", "length", "-1"},
+            {gParamType_Primitive,"audio"},
+            {gParamType_Int, "start", "0"},
+            {gParamType_Int, "length", "-1"},
         },
         {
-            "audio",
+            {gParamType_Primitive, "audio"},
         },
         {},
         {
@@ -529,14 +529,14 @@ static std::shared_ptr<PrimitiveObject> readMp3(std::string path) {
     };
     ZENDEFNODE(MelFilter, {
         {
-            "FFTPrim",
-            {"int", "count", "15"},
-            {"float", "sampleFreq", "44100"},
-            {"float", "rangePerFilter", "1"},
+            {gParamType_Primitive,"FFTPrim"},
+            {gParamType_Int, "count", "15"},
+            {gParamType_Float, "sampleFreq", "44100"},
+            {gParamType_Float, "rangePerFilter", "1"},
             {"enum none index indexdivcount", "indexType", "index"},
         },
         {
-            "FilterBank",
+            {gParamType_Primitive,"FilterBank"},
         },
         {},
         {

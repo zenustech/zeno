@@ -53,8 +53,8 @@ struct PrimFlipFaces : zeno::INode {
 };
 
 ZENDEFNODE(PrimFlipFaces, {
-    {{"", "prim", "", zeno::Socket_ReadOnly}},
-    {"prim"},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });

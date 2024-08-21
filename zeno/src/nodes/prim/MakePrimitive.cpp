@@ -37,11 +37,11 @@ struct MakePrimitive : zeno::INode {
 
 ZENDEFNODE(MakePrimitive,
     { /* inputs: */ {
-    {"int", "size", "0"},
-    {"string", "points", ""},
+    {gParamType_Int, "size", "0"},
+    {gParamType_String, "points", ""},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "primitive",
     }});
@@ -58,11 +58,11 @@ struct PrimitiveResize : zeno::INode {
 
 ZENDEFNODE(PrimitiveResize,
     { /* inputs: */ {
-    "prim",
-    {"int","size"},
+    {gParamType_Primitive, "prim"},
+    {gParamType_Int,"size"},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "primitive",
     }});
@@ -79,9 +79,9 @@ struct PrimitiveGetSize : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetSize,
     { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    {"int","size"},
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
+    {gParamType_Int,"size"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
@@ -99,9 +99,9 @@ struct PrimitiveGetFaceCount : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetFaceCount,
     { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-        {"int","size"},
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
+        {gParamType_Int,"size"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",

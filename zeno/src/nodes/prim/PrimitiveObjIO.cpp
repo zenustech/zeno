@@ -109,10 +109,10 @@ struct ReadObjPrimitive : zeno::INode {
 
 ZENDEFNODE(ReadObjPrimitive,
         { /* inputs: */ {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         }, /* category: */ {
         "deprecated",
         }});
@@ -122,10 +122,10 @@ struct ImportObjPrimitive : ReadObjPrimitive {
 
 ZENDEFNODE(ImportObjPrimitive,
         { /* inputs: */ {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         }, /* category: */ {
         "deprecated",
         }});
@@ -182,8 +182,8 @@ struct WriteObjPrimitive : zeno::INode {
 
 ZENDEFNODE(WriteObjPrimitive,
         { /* inputs: */ {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
-        "prim",
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "prim"},
         }, /* outputs: */ {
         }, /* params: */ {
         }, /* category: */ {
@@ -201,8 +201,8 @@ struct ExportObjPrimitive : WriteObjPrimitive {
 
 ZENDEFNODE(ExportObjPrimitive,
         { /* inputs: */ {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
-        "prim",
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "prim"},
         }, /* outputs: */ {
         }, /* params: */ {
         }, /* category: */ {
@@ -329,10 +329,10 @@ struct ReadObjPrimitiveDict : zeno::INode {
 
 ZENDEFNODE(ReadObjPrimitiveDict,
         { /* inputs: */ {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         }, /* outputs: */ {
-        "prim",
-        "dict",
+        {gParamType_Primitive, "prim"},
+        {gParamType_Dict, "dict"},
         }, /* params: */ {
         }, /* category: */ {
         "primitive",

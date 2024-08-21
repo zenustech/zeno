@@ -96,9 +96,9 @@ struct ParamFormat : zeno::INode {
 
 ZENDEFNODE(ParamFormat, {
     {
-        {"string", "name"},
+        {gParamType_String, "name"},
         {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i string", "type", "string"},
-        {"string", "defaultValue"},
+        {gParamType_String, "defaultValue"},
     },
     {"format"},
     {},
@@ -260,10 +260,10 @@ struct ParamFileParser : zeno::INode {
 ZENDEFNODE(ParamFileParser, {
     {
         "formatList",
-        {"string", "configFilePath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_String, "configFilePath", "", zeno::Socket_Primitve, zeno::WritePathEdit},
      },
     {
-        {"DictObject", "params"},
+        {gParamType_Dict,"params"},
     },
     {},
     {"string"},

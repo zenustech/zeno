@@ -37,7 +37,7 @@ ZENDEFNODE(ShaderInputAttr, {
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
-        {"shader", "out"},
+        {gParamType_Unknown, "out"},
     },
     {},
     {"shader"},
@@ -71,11 +71,11 @@ struct MakeShaderUniform : zeno::INode {
 
 ZENDEFNODE(MakeShaderUniform, {
     {
-        {"int", "size", "512"},
+        {gParamType_Int, "size", "512"},
         {"dict", "uniformDict"},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"shader"},
@@ -99,11 +99,11 @@ struct ShaderUniformAttr : ShaderNodeClone<ShaderUniformAttr> {
 
 ZENDEFNODE(ShaderUniformAttr, {
                                 {
-                                    {"int", "idx", "0"},
+                                    {gParamType_Int, "idx", "0"},
                                     {"enum float vec2 vec3 vec4", "type", "vec3"},
                                 },
                                 {
-                                    {"shader", "out"},
+                                    {gParamType_Unknown, "out"},
                                 },
                                 {},
                                 {"shader"},

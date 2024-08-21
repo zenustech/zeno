@@ -599,13 +599,13 @@ struct ZSTracerAdvectDiffuse : INode {
 ZENDEFNODE(ZSTracerAdvectDiffuse, {/* inputs: */
                                    {"NSGrid",
                                     "dt",
-                                    {"bool", "Density", "1"},
-                                    {"bool", "Temperature", "1"},
-                                    {"bool", "Fuel", "0"},
+                                    {gParamType_Bool, "Density", "1"},
+                                    {gParamType_Bool, "Temperature", "1"},
+                                    {gParamType_Bool, "Fuel", "0"},
                                     {"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"},
-                                    {"float", "FuelSpeedScale", "0.05"},
-                                    {"float", "Diffusion", "0.0"},
-                                    {"vec3f", "WindVelocity", "0, 0, 0"}},
+                                    {gParamType_Float, "FuelSpeedScale", "0.05"},
+                                    {gParamType_Float, "Diffusion", "0.0"},
+                                    {gParamType_Vec3f, "WindVelocity", "0, 0, 0"}},
                                    /* outputs: */
                                    {"NSGrid"},
                                    /* params: */
@@ -732,18 +732,18 @@ struct ZSTracerEmission : INode {
 ZENDEFNODE(ZSTracerEmission, {/* inputs: */
                               {"NSGrid",
                                "EmitterSDF",
-                               {"bool", "hasEmitterVel", "0"},
+                               {gParamType_Bool, "hasEmitterVel", "0"},
                                "EmitterVel",
-                               {"bool", "fromObjBoundary", "0"},
-                               {"bool", "Density", "1"},
-                               {"float", "DensityAmount", "1.0"},
-                               {"bool", "Temperature", "1"},
-                               {"float", "TemperatureAmount", "1.0"},
-                               {"bool", "Fuel", "0"},
-                               {"float", "FuelAmount", "1.0"},
-                               {"bool", "AddNoise", "0"},
-                               {"float", "NoiseAmpPercent", "0.2"},
-                               {"float", "SwirlSize", "0.05"}},
+                               {gParamType_Bool, "fromObjBoundary", "0"},
+                               {gParamType_Bool, "Density", "1"},
+                               {gParamType_Float, "DensityAmount", "1.0"},
+                               {gParamType_Bool, "Temperature", "1"},
+                               {gParamType_Float, "TemperatureAmount", "1.0"},
+                               {gParamType_Bool, "Fuel", "0"},
+                               {gParamType_Float, "FuelAmount", "1.0"},
+                               {gParamType_Bool, "AddNoise", "0"},
+                               {gParamType_Float, "NoiseAmpPercent", "0.2"},
+                               {gParamType_Float, "SwirlSize", "0.05"}},
                               /* outputs: */
                               {"NSGrid"},
                               /* params: */
@@ -802,9 +802,9 @@ struct ZSSmokeBuoyancy : INode {
 ZENDEFNODE(ZSSmokeBuoyancy, {/* inputs: */
                              {"NSGrid",
                               "dt",
-                              {"vec3f", "Gravity", "0, -9.8, 0"},
-                              {"float", "DensityCoef", "0.0"},
-                              {"float", "TemperatureCoef", "0.0"}},
+                              {gParamType_Vec3f, "Gravity", "0, -9.8, 0"},
+                              {gParamType_Float, "DensityCoef", "0.0"},
+                              {gParamType_Float, "TemperatureCoef", "0.0"}},
                              /* outputs: */
                              {"NSGrid"},
                              /* params: */
@@ -864,11 +864,11 @@ struct ZSVolumeCombustion : INode {
 ZENDEFNODE(ZSVolumeCombustion, {/* inputs: */
                                 {"NSGrid",
                                  "dt",
-                                 {"float", "IgnitionTemperature", "0.8"},
-                                 {"float", "BurnSpeed", "0.5"},
-                                 {"float", "DensityEmitAmount", "0.5"},
-                                 {"float", "TemperatureEmitAmount", "0.5"},
-                                 {"float", "VolumeExpansion", "1.2"}},
+                                 {gParamType_Float, "IgnitionTemperature", "0.8"},
+                                 {gParamType_Float, "BurnSpeed", "0.5"},
+                                 {gParamType_Float, "DensityEmitAmount", "0.5"},
+                                 {gParamType_Float, "TemperatureEmitAmount", "0.5"},
+                                 {gParamType_Float, "VolumeExpansion", "1.2"}},
                                 /* outputs: */
                                 {"NSGrid"},
                                 /* params: */

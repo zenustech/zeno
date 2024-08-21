@@ -108,8 +108,8 @@ namespace zeno {
 
     ZENDEFNODE(CopyZsTileVectorFrom, {
                                          {"ZsTileVector",
-                                          {"PrimitiveObject", "prim"},
-                                          {"string", "attr", "clr"},
+                                          {gParamType_Primitive, "prim"},
+                                          {gParamType_String, "attr", "clr"},
                                           {"enum convert enforce_bit_cast", "option", "convert"}},
                                          {"ZsTileVector"},
                                          {},

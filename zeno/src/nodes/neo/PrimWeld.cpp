@@ -158,12 +158,12 @@ struct PrimWeld : INode {
 
 ZENDEFNODE(PrimWeld, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttr", "weld"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttr", "weld"},
     {"enum oneof average", "method", "oneof"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

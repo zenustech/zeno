@@ -22,8 +22,8 @@ struct MakeWritePath : zeno::INode {
 };
 
 ZENDEFNODE(MakeWritePath, {
-    {{"string", "path", "", NoSocket, WritePathEdit}},
-    {{"string", "path"}},
+    {{gParamType_String, "path", "", NoSocket, WritePathEdit}},
+    {{gParamType_String, "path"}},
     {},
     {"string"},
 });
@@ -35,8 +35,8 @@ struct MakeReadPath : zeno::INode {
 };
 
 ZENDEFNODE(MakeReadPath, {
-    {{"string", "path", "", NoSocket, ReadPathEdit}},
-    {{"string", "path"}},
+    {{gParamType_String, "path", "", NoSocket, ReadPathEdit}},
+    {{gParamType_String, "path"}},
     {},
     {"string"},
 });
@@ -49,8 +49,8 @@ struct MakeString : zeno::INode {
 
 ZENDEFNODE(MakeString, {
     {},
-    {{"string", "value"}},
-    {{"string", "value", ""}},
+    {{gParamType_String, "value"}},
+    {{gParamType_String, "value", ""}},
     {"string"},
 });
 
@@ -59,8 +59,8 @@ struct MakeMultilineString : MakeString {
 
 ZENDEFNODE(MakeMultilineString, {
     {},
-    {{"string", "value"}},
-    {{"multiline_string", "value", ""}},
+    {{gParamType_String, "value"}},
+    {{gParamType_String, "value", ""}},
     {"string"},
 });
 
@@ -73,8 +73,8 @@ struct StringEqual : zeno::INode {
 };
 
 ZENDEFNODE(StringEqual, {
-    {{"string", "lhs"}, {"string", "rhs"}},
-    {{"bool", "isEqual"}},
+    {{gParamType_String, "lhs"}, {gParamType_String, "rhs"}},
+    {{gParamType_Bool, "isEqual"}},
     {},
     {"string"},
 });
@@ -87,7 +87,7 @@ struct PrintString : zeno::INode {
 };
 
 ZENDEFNODE(PrintString, {
-    {{"string", "str"}},
+    {{gParamType_String, "str"}},
     {},
     {},
     {"string"},
@@ -109,8 +109,8 @@ ZENDEFNODE(
     FileWriteString,
     {
         {
-            {"string", "str", ""},
-            {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+            {gParamType_String, "str", ""},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         },
         {},
         {},
@@ -132,10 +132,10 @@ ZENDEFNODE(
     FileReadString,
     {
         {
-            {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+            {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
-            {"string", "str"},
+            {gParamType_String, "str"},
         },
         {},
         {"string"},
@@ -155,8 +155,8 @@ struct StringFormat : zeno::INode {
 };
 
 ZENDEFNODE(StringFormat, {
-    {{"string", "str"}},
-    {{"string", "str"}},
+    {{gParamType_String, "str"}},
+    {{gParamType_String, "str"}},
     {},
     {"deprecated"},
 });
@@ -186,10 +186,10 @@ struct StringFormatNumber : zeno::INode {
 
 ZENDEFNODE(StringFormatNumber, {
     {
-        {"string", "str", "{}"},
-        {"float", "number"},
+        {gParamType_String, "str", "{}"},
+        {gParamType_Float, "number"},
     },
-    {{"string", "str"}},
+    {{gParamType_String, "str"}},
     {},
     {"deprecated"},
 });
@@ -216,10 +216,10 @@ struct StringFormatNumStr : zeno::INode {
 
 ZENDEFNODE(StringFormatNumStr, {
     {
-        {"string", "str", "{}"},
+        {gParamType_String, "str", "{}"},
         {"object", "num_str"},
     },
-    {{"string", "str"}},
+    {{gParamType_String, "str"}},
     {},
     {"string"},
 });
@@ -246,12 +246,12 @@ struct StringRegexMatch : zeno::INode {
 
 ZENDEFNODE(StringRegexMatch, {
     {
-        {"string", "str", ""},
-        {"string", "regex", ""},
-        {"bool","case_sensitive","1"}
+        {gParamType_String, "str", ""},
+        {gParamType_String, "regex", ""},
+        {gParamType_Bool,"case_sensitive","1"}
     },
     {
-        {"int", "output"}
+        {gParamType_Int, "output"}
     },
     {},
     {"string"},
@@ -303,13 +303,13 @@ struct StringRegexSearch : zeno::INode {
 
 ZENDEFNODE(StringRegexSearch, {
     {
-        {"string", "str", ""},
-        {"string", "regex", ""},
-        {"bool","case_sensitive","1"}
+        {gParamType_String, "str", ""},
+        {gParamType_String, "regex", ""},
+        {gParamType_Bool,"case_sensitive","1"}
     },
     {
-        {"int", "search_success"},
-        {"list", "res"}
+        {gParamType_Int, "search_success"},
+        {gParamType_List, "res"}
     },
     {},
     {"string"},
@@ -356,12 +356,12 @@ struct StringSplitAndMerge: zeno::INode{
 
 ZENDEFNODE(StringSplitAndMerge, {
     {
-        {"string", "str", ""},
-        {"string", "schar", "_"},
-        {"string", "merge", "0"},
+        {gParamType_String, "str", ""},
+        {gParamType_String, "schar", "_"},
+        {gParamType_String, "merge", "0"},
     },
     {
-        {"string", "output"}
+        {gParamType_String, "output"}
     },
     {},
     {"deprecated"},
@@ -437,16 +437,16 @@ struct StringSplitAndMerge2: zeno::INode{
 
 ZENDEFNODE(StringSplitAndMerge2, {
     {
-        {"multiline_string", "String", ""},
-        {"string", "Separator", "_"},
+        {gParamType_String, "String", "", Socket_Primitve, Multiline},
+        {gParamType_String, "Separator", "_"},
         {"enum Custom_Index_Merge Clip_And_Merge", "Merge Method", "Custom_Index_Merge"},
-        {"string", "Merge index", "0,1"},
-        {"int", "Clip Count From Start", "0"},
-        {"int", "Clip Count From End", "0"},
-        {"bool", "Remain Separator", "false"},
+        {gParamType_String, "Merge index", "0,1"},
+        {gParamType_Int, "Clip Count From Start", "0"},
+        {gParamType_Int, "Clip Count From End", "0"},
+        {gParamType_Bool, "Remain Separator", "false"},
     },
     {
-        {"string", "string"}
+        {gParamType_String, "string"}
     },
     {},
     {"string"},
@@ -478,10 +478,10 @@ struct FormatString : zeno::INode {
 
 ZENDEFNODE(FormatString, {
     {
-        {"string", "str", "{}"},
-        {"list", "args"},
+        {gParamType_String, "str", "{}"},
+        {gParamType_List, "args"},
     },
-    {{"string", "str"}},
+    {{gParamType_String, "str"}},
     {},
     {"string"},
 });
@@ -510,7 +510,7 @@ struct ExportPath : zeno::INode {  // deprecated
 ZENDEFNODE(ExportPath, {
     {},
     {"path"},
-    {{"string", "ext", "zpm"}},
+    {{gParamType_String, "ext", "zpm"}},
     {"fileio"},
 });
 
@@ -557,7 +557,7 @@ struct StringToNumber : zeno::INode {
 ZENDEFNODE(StringToNumber, {{
                                 /* inputs: */
                                 {"enum float int", "type", "float"},
-                                {"string", "str", "0"},
+                                {gParamType_String, "str", "0"},
                             },
 
                             {
@@ -620,12 +620,12 @@ struct StringToList : zeno::INode {
 
 ZENDEFNODE(StringToList, {
     {
-        {"multiline_string", "string", ""},
-        {"string", "Separator", ""},
-        {"bool", "Trim", "false"},
-        {"bool", "KeepEmpty", "false"},
+        {gParamType_String, "string", ""},
+        {gParamType_String, "Separator", ""},
+        {gParamType_Bool, "Trim", "false"},
+        {gParamType_Bool, "KeepEmpty", "false"},
     },
-    {{"list"},
+    {{gParamType_List, "list"},
     },
     {},
     {"string"},
@@ -643,10 +643,10 @@ struct StringJoin : zeno::INode {//zeno string only support list for now
 
 ZENDEFNODE(StringJoin, {
     {
-        {"list"},
-        {"string", "Separator", ""},
+        {gParamType_List, "list"},
+        {gParamType_String, "Separator", ""},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -663,9 +663,9 @@ struct NumbertoString : zeno::INode {
 
 ZENDEFNODE(NumbertoString, {
     {
-        {"float", "number"},
+        {gParamType_Float, "number"},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -700,11 +700,11 @@ struct StringReplace : zeno::INode {
 
 ZENDEFNODE(StringReplace, {
     {
-        {"multiline_string", "string", ""},
-        {"string", "old", ""},
-        {"string", "new", ""},
+        {gParamType_String, "string", "", Socket_Primitve, Multiline},
+        {gParamType_String, "old", ""},
+        {gParamType_String, "new", ""},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -723,11 +723,11 @@ struct StringFind : zeno::INode {//return -1 if not found
 
 ZENDEFNODE(StringFind, {
     {
-        {"multiline_string", "string", ""},
-        {"string", "substring", ""},
-        {"int", "start", "0"},
+        {gParamType_String, "string", "", Socket_Primitve, Multiline},
+        {gParamType_String, "substring", ""},
+        {gParamType_Int, "start", "0"},
     },
-    {{"int", "Position"},
+    {{gParamType_Int, "Position"},
     },
     {},
     {"string"},
@@ -751,11 +751,11 @@ struct SubString : zeno::INode {//slice...
 
 ZENDEFNODE(SubString, {
     {
-        {"multiline_string", "string", ""},
-        {"int", "start", "0"},
-        {"int", "length", "1"},
+        {gParamType_String, "string", "", Socket_Primitve, Multiline},
+        {gParamType_Int, "start", "0"},
+        {gParamType_Int, "length", "1"},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -773,9 +773,9 @@ struct StringtoLower : zeno::INode {
 
 ZENDEFNODE(StringtoLower, {
     {
-        {"string", "string", ""},
+        {gParamType_String, "string", ""},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -793,9 +793,9 @@ struct StringtoUpper : zeno::INode {
 
 ZENDEFNODE(StringtoUpper, {
     {
-        {"string", "string", ""},
+        {gParamType_String, "string", ""},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -811,9 +811,9 @@ struct StringLength : zeno::INode {
 
 ZENDEFNODE(StringLength, {
     {
-        {"string", "string", ""},
+        {gParamType_String, "string", ""},
     },
-    {{"int", "length"},
+    {{gParamType_Int, "length"},
     },
     {},
     {"string"},
@@ -845,12 +845,12 @@ struct StringSplitPath : zeno::INode {
 
 ZENDEFNODE(StringSplitPath, {
     {
-        {"string", "string", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "SplitExtension", "true"},
+        {gParamType_String, "string", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "SplitExtension", "true"},
     },
-    {{"string", "directory"},
-    {"string", "filename"},
-    {"string", "extension"},
+    {{gParamType_String, "directory"},
+    {gParamType_String, "filename"},
+    {gParamType_String, "extension"},
     },
     {},
     {"string"},
@@ -875,11 +875,11 @@ struct StringInsert : zeno::INode {//if start is less than 0, reverse counting f
 
 ZENDEFNODE(StringInsert, {
     {
-        {"multiline_string", "string", ""},
-        {"string", "substring", ""},
-        {"int", "start", "0"},
+        {gParamType_String, "string", "", Socket_Primitve, Multiline},
+        {gParamType_String, "substring", ""},
+        {gParamType_Int, "start", "0"},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -910,11 +910,11 @@ struct StringTrim : zeno::INode {
 
 ZENDEFNODE(StringTrim, {
     {
-        {"string", "string", ""},
-        {"bool", "trimleft", "true"},
-        {"bool", "trimright", "true"},
+        {gParamType_String, "string", ""},
+        {gParamType_Bool, "trimleft", "true"},
+        {gParamType_Bool, "trimright", "true"},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -991,14 +991,14 @@ struct StringDeleteOrReplace : zeno::INode {
 
 ZENDEFNODE(StringDeleteOrReplace, {
     {
-        {"multiline_string", "String", ""},
+        {gParamType_String, "String", "", Socket_Primitve, Multiline},
         {"enum AllRefString First_N_characters  Last_N_characters All_characters_before_RefString  N_characters_before_RefString All_characters_after_RefString N_characters_after_RefString", "oldString", "AllRefString"},
-        {"string", "RefString", ""},
-        {"bool", "UseLastRefString", "false"},
-        {"int", "N", "1"},
-        {"string", "newString", ""},
+        {gParamType_String, "RefString", ""},
+        {gParamType_Bool, "UseLastRefString", "false"},
+        {gParamType_Int, "N", "1"},
+        {gParamType_String, "newString", ""},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},
@@ -1040,10 +1040,10 @@ struct StringEditNumber : zeno::INode {
 
 ZENDEFNODE(StringEditNumber, {
     {
-        {"multiline_string", "String", ""},
+        {gParamType_String, "String", "", Socket_Primitve, Multiline},
         {"enum Remove_all_numbers Remove_all_non_numbers Remove_last_number Return_last_number_Sequence", "Method", "Remove_all_numbers"},
     },
-    {{"string", "string"},
+    {{gParamType_String, "string"},
     },
     {},
     {"string"},

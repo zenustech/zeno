@@ -40,10 +40,10 @@ return mat;
 
 ZENDEFNODE(ShaderCihouUnrealEngine, {
     {
-        {"MaterialObject", "mtl", "", zeno::Socket_ReadOnly},
+        {gParamType_Material, "mtl", "", zeno::Socket_ReadOnly},
     },
     {
-        {"string", "code"},
+        {gParamType_String, "code"},
     },
     {
     },

@@ -112,11 +112,11 @@ struct Jiggle : zeno::INode {
 
 ZENDEFNODE(Jiggle, {
     {"prim","jprim",
-        // {"float","jiggleWeight","1"},
-        {"float","jiggleDamping","0.5"},
-        {"float","jiggleRate","5"},
-        // {"float","characterLen","1"},
-        {"float","jiggleScale","1"},
+        // {gParamType_Float,"jiggleWeight","1"},
+        {gParamType_Float,"jiggleDamping","0.5"},
+        {gParamType_Float,"jiggleRate","5"},
+        // {gParamType_Float,"characterLen","1"},
+        {gParamType_Float,"jiggleScale","1"},
     },
     {"jprim"},
     {},
@@ -204,19 +204,19 @@ struct ZSJiggle : INode {
 
 ZENDEFNODE(ZSJiggle, {
     {"zsvolume",
-        // {"float","jiggleWeight","1"},
-        {"float","jiggleDamping","0.5"},
-        {"float","jiggleRate","5"},
-        // {"float","characterLen","1"},
-        {"float","jiggleScale","1"},
+        // {gParamType_Float,"jiggleWeight","1"},
+        {gParamType_Float,"jiggleDamping","0.5"},
+        {gParamType_Float,"jiggleRate","5"},
+        // {gParamType_Float,"characterLen","1"},
+        {gParamType_Float,"jiggleScale","1"},
     },
     {"zsvolume"},
     {
-        {"string","drivenTag","x"},
-        {"string","curJiggleTag","cj"},
-        {"string","preJiggleTag","pj"},
-        {"string","prePreJiggleTag","ppj"},
-        {"string","jiggleWeightTag","jw"}
+        {gParamType_String,"drivenTag","x"},
+        {gParamType_String,"curJiggleTag","cj"},
+        {gParamType_String,"preJiggleTag","pj"},
+        {gParamType_String,"prePreJiggleTag","ppj"},
+        {gParamType_String,"jiggleWeightTag","jw"}
     },
     {"FEM"},
 });

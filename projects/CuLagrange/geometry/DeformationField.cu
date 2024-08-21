@@ -141,7 +141,7 @@ struct ZSIsotropicTensionField : INode {
 ZENDEFNODE(ZSIsotropicTensionField, {
                             {"zssurf"},
                             {"zssurf"},
-                            {{"string","ref_channel","X"},{"string","def_channel","x"},{"string","tension_channel"," tension"}},
+                            {{gParamType_String,"ref_channel","X"},{gParamType_String,"def_channel","x"},{gParamType_String,"tension_channel"," tension"}},
                             {"ZSGeometry"}});
 
 struct ZSEvalAffineTransform : zeno::INode {
@@ -283,10 +283,10 @@ ZENDEFNODE(ZSEvalAffineTransform, {
             {"zsparticles"},
             {"zsparticles"},
             {
-                {"string","defShapeTag","x"},
-                {"string","defGradientTag","F"},
-                {"string","restShapeTag","X"},
-                {"string","defTransTag","b"}
+                {gParamType_String,"defShapeTag","x"},
+                {gParamType_String,"defGradientTag","F"},
+                {gParamType_String,"restShapeTag","X"},
+                {gParamType_String,"defTransTag","b"}
             },
             {"ZSGeometry"}});
 
@@ -360,11 +360,11 @@ ZENDEFNODE(ZSApplyAffineTransform, {
             {"zsparticles"},
             {"zsparticles"},
             {
-                {"string","skipTag","skipTag"},
-                {"string","defShapeTag","x"},
-                {"string","defGradientTag","F"},
-                {"string","restShapeTag","X"},
-                {"string","defTransTag","b"}
+                {gParamType_String,"skipTag","skipTag"},
+                {gParamType_String,"defShapeTag","x"},
+                {gParamType_String,"defGradientTag","F"},
+                {gParamType_String,"restShapeTag","X"},
+                {gParamType_String,"defTransTag","b"}
             },
             {"ZSGeometry"}});
 

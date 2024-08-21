@@ -223,7 +223,7 @@ namespace zeno {
     
     ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{
                                     {"zsparticles"},
-                                    {"bool","accept_non_manifold","0"},
+                                    {gParamType_Bool,"accept_non_manifold","0"},
                                 },
                                 {{"zsparticles"}},
                                 {},
@@ -438,7 +438,7 @@ ZENDEFNODE(BuildSurfFacetTetraNeighboring, {{{"zsparticles"}},
                                 {"zsparticles"}
                             },
                             {
-                                // {"string","mark_tag","mark_tag"}
+                                // {gParamType_String,"mark_tag","mark_tag"}
                             },
                             {"ZSGeometry"}});
 

@@ -47,8 +47,8 @@ struct MakeGCTest : zeno::INode {
 
 ZENDEFNODE(MakeGCTest, {
     {},
-    {{"int","value"}},
-    {{"int", "value", "42"}},
+    {{gParamType_Int,"value"}},
+    {{gParamType_Int, "value", "42"}},
     {"debug"},
 });
 
@@ -63,7 +63,7 @@ struct PrintMessage : zeno::INode {
 ZENDEFNODE(PrintMessage, {
     {},
     {},
-    {{"string", "message", "hello-stdout"}},
+    {{gParamType_String, "message", "hello-stdout"}},
     {"debug"},
 });
 
@@ -78,7 +78,7 @@ struct PrintMessageStdErr : zeno::INode {
 ZENDEFNODE(PrintMessageStdErr, {
     {},
     {},
-    {{"string", "message", "hello-stderr"}},
+    {{gParamType_String, "message", "hello-stderr"}},
     {"debug"},
 });
 
@@ -93,8 +93,8 @@ struct InfiniteLoop : zeno::INode {
 };
 
 ZENDEFNODE(InfiniteLoop, {
-    {{"int", "input", "2"}},
-    {{"int", "output"}},
+    {{gParamType_Int, "input", "2"}},
+    {{gParamType_Int, "output"}},
     {},
     {"debug"}
 });
@@ -110,7 +110,7 @@ struct TriggerExitProcess : zeno::INode {
 ZENDEFNODE(TriggerExitProcess, {
     {},
     {},
-    {{"int", "status", "-1"}},
+    {{gParamType_Int, "status", "-1"}},
     {"debug"},
 });
 
@@ -168,7 +168,7 @@ struct SpdlogInfoMessage : zeno::INode {
 ZENDEFNODE(SpdlogInfoMessage, {
     {},
     {},
-    {{"string", "message", "hello from spdlog!"}},
+    {{gParamType_String, "message", "hello from spdlog!"}},
     {"debug"},
 });
 
@@ -182,7 +182,7 @@ struct SpdlogErrorMessage : zeno::INode {
 ZENDEFNODE(SpdlogErrorMessage, {
     {},
     {},
-    {{"string", "message", "error from spdlog!"}},
+    {{gParamType_String, "message", "error from spdlog!"}},
     {"debug"},
 });
 
@@ -196,7 +196,7 @@ struct TriggerException : zeno::INode {
 ZENDEFNODE(TriggerException, {
     {},
     {},
-    {{"string", "message", "exception occurred!"}},
+    {{gParamType_String, "message", "exception occurred!"}},
     {"debug"},
 });
 
@@ -210,7 +210,7 @@ struct TriggerViewportFault : zeno::INode {
 
 ZENDEFNODE(TriggerViewportFault, {
     {},
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"debug"},
 });
@@ -224,10 +224,10 @@ struct MockRunning : zeno::INode {
 };
 
 ZENDEFNODE(MockRunning, {
-    {{"list", "SRC"},
-     {"int", "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
+    {{gParamType_List, "SRC"},
+     {gParamType_Int, "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
     },
-    {"DST"},
+    {{gParamType_IObject, "DST"}},
     {},
     {"debug"},
 });
@@ -251,7 +251,7 @@ struct Group : zeno::INode {
 };
 
 ZENDEFNODE(Group, {
-    {{"string", "title", "title"},{"string", "items"},{"vec3f", "background", "0, 0.39, 0.66"},{"vec2f", "size", "500,500"}},
+    {{gParamType_String, "title", "title"},{gParamType_String, "items"},{gParamType_Vec3f, "background", "0, 0.39, 0.66"},{gParamType_Vec2f, "size", "500,500"}},
     {},
     {},
     {"layout"},

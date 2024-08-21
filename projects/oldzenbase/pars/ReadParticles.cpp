@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/StringObject.h>
 #include <utility>
 #include <cstring>
@@ -53,7 +53,7 @@ struct ReadParticles : zeno::INode {
 
 static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
     { /* inputs: */ {
-        {"string", "path", "", NoSocket, ReadPathEdit}
+        {gParamType_String, "path", "", NoSocket, ReadPathEdit}
     }, /* outputs: */ {
         {"object", "pars"},
     }, /* params: */ {
@@ -73,7 +73,7 @@ struct ImportParticles : zeno::INode {
 
 static int defImportParticles = zeno::defNodeClass<ImportParticles>("ImportParticles",
     { /* inputs: */ {
-        {"string", "path", "", NoSocket, ReadPathEdit},
+        {gParamType_String, "path", "", NoSocket, ReadPathEdit},
     }, /* outputs: */ {
         {"object", "pars"},
     }, /* params: */ {

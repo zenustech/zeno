@@ -98,12 +98,12 @@ ZENDEFNODE(UpdateConstraintTarget, {{
     {"source"},
     {"target"},
     {"constraint"},
-    {"bool","update_weight","0"},
-    {"float","new_uniform_weight","1.0"}
+    {gParamType_Bool,"update_weight","0"},
+    {gParamType_Float,"new_uniform_weight","1.0"}
 },
 {{"source"},{"constraint"}},
 { 
-    // {"string","groupID",""},
+    // {gParamType_String,"groupID",""},
 },
 {"PBD"}});
 

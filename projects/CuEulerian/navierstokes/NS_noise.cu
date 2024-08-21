@@ -93,15 +93,15 @@ struct ZSGridPerlinNoise : INode {
 
 ZENDEFNODE(ZSGridPerlinNoise, {/* inputs: */
                                {"SparseGrid",
-                                {"string", "GridAttribute", "v"},
+                                {gParamType_String, "GridAttribute", "v"},
                                 {"enum replace accumulate", "OpType", "accumulate"},
-                                {"vec3f", "Frequency", "1, 1, 1"},
-                                {"vec3f", "Offset", "0, 0, 0"},
-                                {"float", "Roughness", "0.5"},
-                                {"int", "Turbulence", "4"},
-                                {"float", "Amplitude", "1.0"},
-                                {"float", "Attenuation", "1.0"},
-                                {"vec3f", "MeanNoise", "0, 0, 0"}},
+                                {gParamType_Vec3f, "Frequency", "1, 1, 1"},
+                                {gParamType_Vec3f, "Offset", "0, 0, 0"},
+                                {gParamType_Float, "Roughness", "0.5"},
+                                {gParamType_Int, "Turbulence", "4"},
+                                {gParamType_Float, "Amplitude", "1.0"},
+                                {gParamType_Float, "Attenuation", "1.0"},
+                                {gParamType_Vec3f, "MeanNoise", "0, 0, 0"}},
                                /* outputs: */
                                {"SparseGrid"},
                                /* params: */
@@ -245,15 +245,15 @@ struct ZSGridCurlNoise : INode {
 
 ZENDEFNODE(ZSGridCurlNoise, {/* inputs: */
                              {"SparseGrid",
-                              {"string", "GridAttribute", "v"},
-                              {"bool", "staggered", "1"},
+                              {gParamType_String, "GridAttribute", "v"},
+                              {gParamType_Bool, "staggered", "1"},
                               {"enum replace accumulate", "OpType", "accumulate"},
-                              {"vec3f", "Frequency", "1, 1, 1"},
-                              {"vec3f", "Offset", "0, 0, 0"},
-                              {"float", "Roughness", "0.5"},
-                              {"int", "Turbulence", "4"},
-                              {"float", "Amplitude", "1.0"},
-                              {"vec3f", "MeanNoise", "0, 0, 0"}},
+                              {gParamType_Vec3f, "Frequency", "1, 1, 1"},
+                              {gParamType_Vec3f, "Offset", "0, 0, 0"},
+                              {gParamType_Float, "Roughness", "0.5"},
+                              {gParamType_Int, "Turbulence", "4"},
+                              {gParamType_Float, "Amplitude", "1.0"},
+                              {gParamType_Vec3f, "MeanNoise", "0, 0, 0"}},
                              /* outputs: */
                              {"SparseGrid"},
                              /* params: */

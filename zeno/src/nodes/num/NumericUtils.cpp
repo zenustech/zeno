@@ -28,9 +28,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {{"vec3f", "vec"}},
-    {{"float", "X"}, {"float", "Y"},
-     {"float", "Z"}, {"float", "W"}},
+    {{gParamType_Vec3f, "vec"}},
+    {{gParamType_Float, "X"}, {gParamType_Float, "Y"},
+     {gParamType_Float, "Z"}, {gParamType_Float, "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
@@ -67,9 +67,9 @@ struct NumericRandom : INode {
 };
 
 ZENDEFNODE(NumericRandom, {
-    {{"float", "scale", "1"}},
-    {{"NumericObject", "value"}},
-    {{"int", "dim", "1"}, {"bool", "symmetric", "0"}},
+    {{gParamType_Float, "scale", "1"}},
+    {{gParamType_Float, "value", "1", Socket_WildCard}},
+    {{gParamType_Int, "dim", "1"}, {gParamType_Bool, "symmetric", "0"}},
     {"deprecated"},
 });
 
@@ -89,8 +89,8 @@ struct NumericRandomInt : INode {
 };
 
 ZENDEFNODE(NumericRandomInt, {
-    {{"int", "min", "0"}, {"int", "max", "65536"}},
-    {{"int", "value"}},
+    {{gParamType_Int, "min", "0"}, {gParamType_Int, "max", "65536"}},
+    {{gParamType_Int, "value"}},
     {},
     {"deprecated"},
 });
@@ -109,7 +109,7 @@ struct SetRandomSeed : INode {
 };
 
 ZENDEFNODE(SetRandomSeed, {
-    {{"object", "routeIn"}, {"int", "seed", "0"}},
+    {{"object", "routeIn"}, {gParamType_Int, "seed", "0"}},
     {{"NumericObject","routeOut"}},
     {},
     {"deprecated"},
@@ -128,7 +128,7 @@ struct NumericCounter : INode {
 
 ZENDEFNODE(NumericCounter, {
     {},
-    {{"int", "count"}},
+    {{gParamType_Int, "count"}},
     {},
     {"numeric"},
 });

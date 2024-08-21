@@ -60,9 +60,9 @@ ZENDEFNODE(
     PBDPreSolve,
     {
         {
-            {"prim"},
-            {"float","dt","0.0016667"},
-            {"vec3f", "externForce", "0.0, -10.0, 0.0"}
+            {gParamType_Primitive, "prim"},
+            {gParamType_Float,"dt","0.0016667"},
+            {gParamType_Vec3f, "externForce", "0.0, -10.0, 0.0"}
         },
         {"outPrim"},
         {},

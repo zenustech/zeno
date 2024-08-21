@@ -228,21 +228,21 @@ struct CommandGenerator : INode {
 ZENO_DEFNODE(CommandGenerator)
 ({/* inputs: */
   {
-      {"string", "name_tag", "job0"},
-      {"int", "range", "1"}, // int, int list, int range
-      // {"int", "batch_size", "1"},
+      {gParamType_String, "name_tag", "job0"},
+      {gParamType_Int, "range", "1"}, // int, int list, int range
+      // {gParamType_Int, "batch_size", "1"},
 
-      {"string", "cmd_fmt_string", "cmd {range}"},
-      {"list", "arguments"},
-      {"DictObject", "options"},
+      {gParamType_String, "cmd_fmt_string", "cmd {range}"},
+      {gParamType_List, "arguments"},
+      {gParamType_Dict,"options"},
 
-      {"DictObject", "attributes"},
-      {"list", "dependencies"},
-      {"bool", "verbose", "false"},
+      {gParamType_Dict,"attributes"},
+      {gParamType_List, "dependencies"},
+      {gParamType_Bool, "verbose", "false"},
   },
   /* outputs: */
   {
-      {"list", "cmd_scripts"},
+      {gParamType_List, "cmd_scripts"},
       {"WorkNode", "job"},
   },
   /* params: */
@@ -269,17 +269,17 @@ struct CapturePyScriptOutput : INode {
 ZENO_DEFNODE(CapturePyScriptOutput)
 ({/* inputs: */
   {
-      {"multiline_string", "script",
+      {gParamType_String, "script",
        "import sys\r"
        "argc = len(sys.argv)\r"
        "print('argc: ', argc)\r"
        "for i in range(argc):\r"
        "	print('arg[', i, ']: ', sys.argv[i])\r"},
-      {"list", "arguments"},
+      {gParamType_List, "arguments"},
   },
   /* outputs: */
   {
-      {"string", "output"},
+      {gParamType_String, "output"},
   },
   /* params: */
   {},

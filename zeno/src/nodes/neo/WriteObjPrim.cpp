@@ -62,12 +62,12 @@ struct WriteObjPrim : INode {
 
 ZENDEFNODE(WriteObjPrim,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
-        {"bool", "polygonate", "1"},
+        {gParamType_Bool, "polygonate", "1"},
         }, /* category: */ {
         "primitive",
         }});

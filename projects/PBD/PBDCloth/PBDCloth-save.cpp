@@ -297,11 +297,11 @@ public:
 
 ZENDEFNODE(PBDCloth, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
-                    {"vec3f", "externForce", "0.0, -10.0, 0.0"},
-                    {"int", "numSubsteps", "10"},
-                    {"float", "edgeCompliance", "0.0"},
-                    {"float", "dihedralCompliance", "1.0"}
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Vec3f, "externForce", "0.0, -10.0, 0.0"},
+                    {gParamType_Int, "numSubsteps", "10"},
+                    {gParamType_Float, "edgeCompliance", "0.0"},
+                    {gParamType_Float, "dihedralCompliance", "1.0"}
                 },
                  // outputs:
                  {"outPrim"},

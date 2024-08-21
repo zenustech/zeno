@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -62,12 +62,12 @@ struct TransformMesh : zeno::INode {
 
 static int defTransformMesh = zeno::defNodeClass<TransformMesh>("TransformMesh",
     { /* inputs: */ {
-        {"object", "mesh"},
-        {"vec3f", "translate"},
-        {"vec3f", "rotate"},
-        {"vec3f", "scaling"},
+        {gParamType_Mesh, "mesh"},
+        {gParamType_Vec3f, "translate"},
+        {gParamType_Vec3f, "rotate"},
+        {gParamType_Vec3f, "scaling"},
     }, /* outputs: */ {
-        {"object", "mesh"},
+        {gParamType_Mesh, "mesh"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated",

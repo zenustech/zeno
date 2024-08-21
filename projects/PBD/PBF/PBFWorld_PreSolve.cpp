@@ -59,7 +59,7 @@ struct PBFWorld_PreSolve : zeno::INode {
 ZENDEFNODE(
     PBFWorld_PreSolve,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"}

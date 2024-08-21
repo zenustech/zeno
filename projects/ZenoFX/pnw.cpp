@@ -183,9 +183,9 @@ struct ParticlesBuildHashGrid : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesBuildHashGrid, {
-    {{"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
-     {"float", "radius"},
-     {"float", "radiusMin"}},
+    {{gParamType_Primitive, "primNei", "", zeno::Socket_ReadOnly},
+     {gParamType_Float, "radius"},
+     {gParamType_Float, "radiusMin"}},
     {{"object", "hashGrid"}},
     {},
     {"zenofx"},
@@ -400,12 +400,12 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-     {"PrimitiveObject", "primNei", "", zeno::Socket_ReadOnly},
-     {"object", "hashGrid"},
-     {"string", "zfxCode", "", Socket_Primitve, CodeEditor},
-     {"DictObject:NumericObject", "params", "", zeno::Socket_ReadOnly}},
-    {{"PrimitiveObject", "prim"}},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+     {gParamType_Primitive, "primNei", "", zeno::Socket_ReadOnly},
+     {gParamType_Unknown, "hashGrid"},
+     {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
+     {gParamType_Dict, "params", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"zenofx"},
 });

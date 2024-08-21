@@ -82,20 +82,20 @@ struct PrimPerlinNoise : INode {
 
 ZENDEFNODE(PrimPerlinNoise, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "inAttr", "pos"},
-    {"string", "outAttr", "tmp"},
-    {"float", "scale", "5"},
-    {"float", "detail", "2"},
-    {"float", "roughness", "0.5"},
-    {"float", "disortion", "0"},
-    {"vec3f", "offset", "0,0,0"},
-    {"float", "average", "0"},
-    {"float", "strength", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "inAttr", "pos"},
+    {gParamType_String, "outAttr", "tmp"},
+    {gParamType_Float, "scale", "5"},
+    {gParamType_Float, "detail", "2"},
+    {gParamType_Float, "roughness", "0.5"},
+    {gParamType_Float, "disortion", "0"},
+    {gParamType_Vec3f, "offset", "0,0,0"},
+    {gParamType_Float, "average", "0"},
+    {gParamType_Float, "strength", "1"},
     {"enum float vec3f", "outType", "float"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

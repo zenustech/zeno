@@ -956,8 +956,8 @@ struct StepClothSystem : INode {
 
 ZENDEFNODE(StepClothSystem, {{
                                  "ZSClothSystem",
-                                 {"int", "num_substeps", "1"},
-                                 {"float", "dt", "0.01"},
+                                 {gParamType_Int, "num_substeps", "1"},
+                                 {gParamType_Float, "dt", "0.01"},
                              },
                              {"ZSClothSystem"},
                              {},
@@ -1055,7 +1055,7 @@ struct FastClothSystemForceField : INode {
 
 ZENDEFNODE(FastClothSystemForceField,
            {
-               {"ZSFastClothSystem", "ZSLevelSet", {"float", "wind_drag", "0"}, {"float", "wind_density", "1"}},
+               {"ZSFastClothSystem", "ZSLevelSet", {gParamType_Float, "wind_drag", "0"}, {gParamType_Float, "wind_density", "1"}},
                {"ZSFastClothSystem"},
                {},
                {"FEM"},

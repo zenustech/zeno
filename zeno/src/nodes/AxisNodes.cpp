@@ -19,10 +19,10 @@ ZENDEFNODE(ExtractAxis, {
     {"AxisObject", "math"},
     },
     {
-    {"vec3f", "origin"},
-    {"vec3f", "axisX"},
-    {"vec3f", "axisY"},
-    {"vec3f", "axisZ"},
+    {gParamType_Vec3f, "origin"},
+    {gParamType_Vec3f, "axisX"},
+    {gParamType_Vec3f, "axisY"},
+    {gParamType_Vec3f, "axisZ"},
     },
     {},
     {"math"},
@@ -48,10 +48,10 @@ struct MakeAxis : zeno::INode {
 
 ZENDEFNODE(MakeAxis, {
     {
-    {"vec3f", "origin"},
-    {"vec3f", "axisX"},
-    {"vec3f", "axisY"},
-    {"vec3f", "axisZ"},
+    {gParamType_Vec3f, "origin"},
+    {gParamType_Vec3f, "axisX"},
+    {gParamType_Vec3f, "axisY"},
+    {gParamType_Vec3f, "axisZ"},
     },
     {
     {"AxisObject", "math"},

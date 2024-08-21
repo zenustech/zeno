@@ -130,7 +130,7 @@ struct ZSExtendSparseGrid : INode {
 
 ZENDEFNODE(ZSExtendSparseGrid,
            {/* inputs: */
-            {"SparseGrid", {"int", "layers", "1"}, {"bool", "multigrid", "0"}, {"bool", "fillByBackground", "0"}},
+            {"SparseGrid", {gParamType_Int, "layers", "1"}, {gParamType_Bool, "multigrid", "0"}, {gParamType_Bool, "fillByBackground", "0"}},
             /* outputs: */
             {"SparseGrid"},
             /* params: */
@@ -367,9 +367,9 @@ struct ZSMaintainSparseGrid : INode {
 ZENDEFNODE(ZSMaintainSparseGrid, {/* inputs: */
                                   {"SparseGrid",
                                    {"enum rho sdf", "Attribute", "rho"},
-                                   {"bool", "refit", "1"},
-                                   {"int", "layers", "2"},
-                                   {"bool", "multigrid", "1"}},
+                                   {gParamType_Bool, "refit", "1"},
+                                   {gParamType_Int, "layers", "2"},
+                                   {gParamType_Bool, "multigrid", "1"}},
                                   /* outputs: */
                                   {"SparseGrid"},
                                   /* params: */

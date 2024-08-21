@@ -149,13 +149,13 @@ struct PrimitivePerlinNoiseAttr : INode {
 
 ZENDEFNODE(PrimitivePerlinNoiseAttr,
     { /* inputs: */ {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"vec3f", "seed", "", zeno::Socket_ReadOnly},
-        {"float", "freq", "1.0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Vec3f, "seed", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "freq", "1.0"},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "noise"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+    {gParamType_String, "attrName", "noise"},
     {"enum float float3", "attrType", "float3"},
     }, /* category: */ {
     "noise",
@@ -180,9 +180,9 @@ struct GetPerlinNoise : INode{
 };
 ZENDEFNODE(GetPerlinNoise,
     { /* inputs: */ {
-    {"vec3f","vec3"},{"vec3f", "seed", "", zeno::Socket_ReadOnly},{"float", "freq", "1.0"},
+    {gParamType_Vec3f,"vec3"},{gParamType_Vec3f, "seed", "", zeno::Socket_ReadOnly},{gParamType_Float, "freq", "1.0"},
     }, /* outputs: */ {
-    {"vec3f", "noise"},
+    {gParamType_Vec3f, "noise"},
     }, /* params: */ {
     }, /* category: */ {
     "noise",

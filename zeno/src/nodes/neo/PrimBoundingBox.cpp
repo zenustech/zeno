@@ -40,15 +40,15 @@ struct PrimBoundingBox : INode {
 
 ZENO_DEFNODE(PrimBoundingBox)({
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"float", "extraBound", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "extraBound", "0"},
     },
     {
-    {"vec3f", "bmin"},
-    {"vec3f", "bmax"},
-    {"vec3f", "center"},
-    {"vec3f", "radius"},
-    {"vec3f", "diameter"},
+    {gParamType_Vec3f, "bmin"},
+    {gParamType_Vec3f, "bmax"},
+    {gParamType_Vec3f, "center"},
+    {gParamType_Vec3f, "radius"},
+    {gParamType_Vec3f, "diameter"},
     },
     {
     },
@@ -141,13 +141,13 @@ struct PrimCalcCentroid : zeno::INode {
 
 ZENO_DEFNODE(PrimCalcCentroid)({
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     {"enum Volume Area Vertex BoundBox", "method", "Volume"},
-    {"float", "density", "1"},
+    {gParamType_Float, "density", "1"},
     },
     {
-    {"vec3f", "centroid"},
-    {"float", "mass"},
+    {gParamType_Vec3f, "centroid"},
+    {gParamType_Float, "mass"},
     },
     {
     },

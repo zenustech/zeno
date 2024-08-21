@@ -1232,25 +1232,27 @@ struct ReadFBXPrim : zeno::INode {
 ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
-                   {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                   {"string", "hintPath", "-1", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                   {"bool", "generate", "false"},
-                   {"float", "offset", "0.0"},
-                   {"DictObject", "visibility", ""}
+                   {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                   {gParamType_String, "hintPath", "-1", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                   {gParamType_Bool, "generate", "false"},
+                   {gParamType_Float, "offset", "0.0"},
+                   {gParamType_Dict,"visibility", ""}
                },  /* outputs: */
                {
-                    "prim",
-                    "data",
-                    {"dict", "datas", ""},
-                    {"dict", "mats", ""},
-                "animinfo", "nodetree", "bonetree",
+                    {gParamType_Primitive, "prim"},
+                    {gParamType_Unknown, "data"},
+                    {gParamType_Dict, "datas", ""},
+                    {gParamType_Dict, "mats", ""},
+                    {gParamType_Unknown, "animinfo"},
+                    {gParamType_Unknown, "nodetree"},
+                    {gParamType_Unknown, "bonetree"},
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
-                {"bool", "primitive", "false"},
-                {"bool", "triangulate", "true"},
-                {"bool", "printTree", "false"},
-                {"bool", "indepData", "false"},
+                {gParamType_Bool, "primitive", "false"},
+                {gParamType_Bool, "triangulate", "true"},
+                {gParamType_Bool, "printTree", "false"},
+                {gParamType_Bool, "indepData", "false"},
                },  /* category: */
                {
                    "FBX",
@@ -1329,10 +1331,15 @@ struct ReadLightFromFile : zeno::INode {
 ZENDEFNODE(ReadLightFromFile,
            {       /* inputs: */
             {
-                {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
             },  /* outputs: */
             {
-                "posList", "rotList", "sclList", "colList", "intList", "expList"
+                {gParamType_List, "posList"},
+                {gParamType_List, "rotList"},
+                {gParamType_List, "sclList"},
+                {gParamType_List, "colList"},
+                {gParamType_List, "intList"},
+                {gParamType_List, "expList"}
             },  /* params: */
             {
             },  /* category: */

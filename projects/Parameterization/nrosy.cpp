@@ -205,9 +205,9 @@ struct PrimitiveCalcTangentField : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveCalcTangentField, {
-    {"tris",{"int","degree","4"}},
+    {"tris",{gParamType_Int,"degree","4"}},
     {"nrosy_fields","singular_points","trisOut"},
-    {{"string","cons_facet_tag","RENAME_ME"}},
+    {{gParamType_String,"cons_facet_tag","RENAME_ME"}},
     {"Parameterization"},
 });
 

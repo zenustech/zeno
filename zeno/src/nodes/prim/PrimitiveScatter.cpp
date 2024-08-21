@@ -119,12 +119,12 @@ struct PrimitiveScatter : INode {
 
 ZENDEFNODE(PrimitiveScatter, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"int", "npoints", "100"},
-    {"int", "seed", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Int, "npoints", "100"},
+    {gParamType_Int, "seed", "0"},
     },
     {
-    {"PrimitiveObject", "points"},
+    {gParamType_Primitive, "points"},
     },
     {
     {"enum tris lines", "type", "tris"},

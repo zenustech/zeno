@@ -32,8 +32,8 @@ struct ObjTimeShift : INode {
 ZENDEFNODE(ObjTimeShift, {
     {
     {"IObject", "obj"},
-    {"int", "offset", "1"},
-    {"ListObject", "customList"},
+    {gParamType_Int, "offset", "1"},
+    {gParamType_List, "customList"},
     },
     {
     {"IObject", "obj"},

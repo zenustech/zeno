@@ -124,10 +124,10 @@ struct ReadTiffFile : INode {
 };
 ZENDEFNODE(ReadTiffFile, {
 {
-    {"readpath", "path"},
+    {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
 },
 {
-    {"PrimitiveObject", "image"},
+    {gParamType_Primitive, "image"},
 },
 {},
     {"primitive"},

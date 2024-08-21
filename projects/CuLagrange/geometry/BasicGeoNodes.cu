@@ -82,7 +82,7 @@ struct ZSComputeSurfaceArea : zeno::INode {
 ZENDEFNODE(ZSComputeSurfaceArea, {{{"zsparticles"}},
                             {{"zsparticles"}},
                             {
-                                {"string","attrName","area"}
+                                {gParamType_String,"attrName","area"}
                             },
                             {"ZSGeometry"}});
 
@@ -202,10 +202,10 @@ virtual void apply() override {
 };
 
 
-ZENDEFNODE(ZSCalcSurfaceNormal, {{"zsparticles",{"string","xtag","x"}},
+ZENDEFNODE(ZSCalcSurfaceNormal, {{"zsparticles",{gParamType_String,"xtag","x"}},
                                     {"zsparticles"},
                                     {
-                                    {"int","nm_smooth_iters","0"}
+                                    {gParamType_Int,"nm_smooth_iters","0"}
                                     },
                                     {"ZSGeometry"}});
 };

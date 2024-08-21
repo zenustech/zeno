@@ -468,15 +468,15 @@ struct PrimProject : INode {
 
 ZENDEFNODE(PrimProject, {
                             {
-                                {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                                {"PrimitiveObject", "targetPrim", "", zeno::Socket_ReadOnly},
-                                {"string", "nrmAttr", "nrm"},
-                                {"float", "offset", "0"},
-                                {"float", "limit", "0"},
+                                {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                                {gParamType_Primitive, "targetPrim", "", zeno::Socket_ReadOnly},
+                                {gParamType_String, "nrmAttr", "nrm"},
+                                {gParamType_Float, "offset", "0"},
+                                {gParamType_Float, "limit", "0"},
                                 {"enum front back both", "allowDir", "both"},
                             },
                             {
-                                {"PrimitiveObject", "prim"},
+                                {gParamType_Primitive, "prim"},
                             },
                             {},
                             {"primitive"},
@@ -495,13 +495,13 @@ struct TestRayBox : INode {
 
 ZENDEFNODE(TestRayBox, {
                            {
-                               {"vec3f", "ray_origin"},
-                               {"vec3f", "ray_dir"},
-                               {"vec3f", "box_min"},
-                               {"vec3f", "box_max"},
+                               {gParamType_Vec3f, "ray_origin"},
+                               {gParamType_Vec3f, "ray_dir"},
+                               {gParamType_Vec3f, "box_min"},
+                               {gParamType_Vec3f, "box_max"},
                            },
                            {
-                               {"int","predicate"},
+                               {gParamType_Int,"predicate"},
                            },
                            {},
                            {"primitive"},

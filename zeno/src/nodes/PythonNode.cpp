@@ -320,15 +320,15 @@ namespace zeno {
 
         ZENDEFNODE(PythonNode, {
             {
-                {"string", "script", "", Socket_Primitve, CodeEditor},
-                {"readpath", "path"},
+                {gParamType_String, "script", "", Socket_Primitve, CodeEditor},
+                {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
                 {"dict", "args"}
             },
             {
                 {"dict", "rets"},
             },
             {
-                {"bool", "onlyui", "false"}
+                {gParamType_Bool, "onlyui", "false"}
             },
             {"command"},
         });
@@ -341,8 +341,8 @@ namespace zeno {
 
         ZENDEFNODE(GenerateCommands, {
             {
-                {"string", "source"},
-                {"string", "commands"},
+                {gParamType_String, "source"},
+                {gParamType_String, "commands"},
             },
             {},
             {},
@@ -357,11 +357,11 @@ namespace zeno {
 
         ZENDEFNODE(PythonMaterialNode, {
             {
-                {"string", "nameList"},
-                {"string", "keyWords"},
-                {"string", "materialPath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-                {"string", "matchInputs"}, 
-                {"string", "script", "", Socket_Primitve, Multiline}
+                {gParamType_String, "nameList"},
+                {gParamType_String, "keyWords"},
+                {gParamType_String, "materialPath", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+                {gParamType_String, "matchInputs"}, 
+                {gParamType_String, "script", "", Socket_Primitve, Multiline}
             },
             {},
             {},

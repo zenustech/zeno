@@ -34,15 +34,15 @@ struct PrimGenerateONB : INode {
 
 ZENO_DEFNODE(PrimGenerateONB)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "dirAttr", "nrm"},
-        {"string", "tanAttrOut", "tang"},
-        {"string", "bitanAttrOut", "bitang"},
-        {"bool", "writebackDir", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "dirAttr", "nrm"},
+        {gParamType_String, "tanAttrOut", "tang"},
+        {gParamType_String, "bitanAttrOut", "bitang"},
+        {gParamType_Bool, "writebackDir", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -95,15 +95,15 @@ struct PrimLineGenerateONB : zeno::INode {
 
 ZENO_DEFNODE(PrimLineGenerateONB)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "dirAttrOut", "dir"},
-        {"string", "tanAttrOut", "tang"},
-        {"string", "bitanAttrOut", "bitang"},
-        {"bool", "lineSort", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "dirAttrOut", "dir"},
+        {gParamType_String, "tanAttrOut", "tang"},
+        {gParamType_String, "bitanAttrOut", "bitang"},
+        {gParamType_Bool, "lineSort", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });

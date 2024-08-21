@@ -471,11 +471,11 @@ struct ZSGridExtrapolateAttr : INode {
 
 ZENDEFNODE(ZSGridExtrapolateAttr, {/* inputs: */
                                    {"Grid",
-                                    {"string", "Attribute", ""},
-                                    {"bool", "Staggered", "0"},
-                                    {"string", "SDFAttrName", "sdf"},
+                                    {gParamType_String, "Attribute", ""},
+                                    {gParamType_Bool, "Staggered", "0"},
+                                    {gParamType_String, "SDFAttrName", "sdf"},
                                     {"enum both positive negative", "Direction", "positive"},
-                                    {"int", "Iterations", "5"}},
+                                    {gParamType_Int, "Iterations", "5"}},
                                    /* outputs: */
                                    {"Grid"},
                                    /* params: */

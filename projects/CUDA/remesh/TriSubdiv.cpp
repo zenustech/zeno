@@ -168,13 +168,13 @@ ZENO_DEFNODE(TrianglePrimSubdiv)
 ({
     {
         "prim",
-        {"int", "iters", "2"},
-        {"string", "face_inherit", ""},
-        {"string", "face_avg_edge", ""},
+        {gParamType_Int, "iters", "2"},
+        {gParamType_String, "face_inherit", ""},
+        {gParamType_String, "face_avg_edge", ""},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });

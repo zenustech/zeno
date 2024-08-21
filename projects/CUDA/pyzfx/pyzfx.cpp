@@ -79,9 +79,9 @@ struct PyZpcLite : INode {
 };
 
 ZENDEFNODE(PyZpcLite, {/* inputs: */
-                       {{"string", "path", ""}, {"DictObject", "inputs", ""}},
+                       {{gParamType_String, "path", ""}, {gParamType_Dict,"inputs", ""}},
                        /* outputs: */
-                       {{"DictObject", "outputs", ""}},
+                       {{gParamType_Dict,"outputs", ""}},
                        /* params: */
                        {},
                        /* category: */

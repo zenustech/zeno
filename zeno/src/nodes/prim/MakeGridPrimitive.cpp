@@ -20,10 +20,10 @@ struct MakePointPrimitive :INode{
 };
 ZENDEFNODE(MakePointPrimitive,
     { /* inputs: */ {
-        {"vec3f", "vec3"},
+        {gParamType_Vec3f, "vec3"},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "primitive",
     }});
@@ -86,16 +86,16 @@ struct Make1DLinePrimitive : INode {
 
 ZENDEFNODE(Make1DLinePrimitive,
         { /* inputs: */ {
-        {"int", "n", "2"},
-        {"vec3f", "direction", "1,0,0"},
-        {"float", "scale", "1"},
-        {"vec3f", "origin", "0,0,0"},
+        {gParamType_Int, "n", "2"},
+        {gParamType_Vec3f, "direction", "1,0,0"},
+        {gParamType_Float, "scale", "1"},
+        {gParamType_Vec3f, "origin", "0,0,0"},
         }, /* outputs: */ {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
         {"enum X Y Z", "Direction", "X"}, // zhxxhappy
-        {"bool", "isCentered", "0"},
-        {"bool", "hasLines", "1"},
+        {gParamType_Bool, "isCentered", "0"},
+        {gParamType_Bool, "hasLines", "1"},
         }, /* category: */ {
         "primitive",
         }});
@@ -217,20 +217,20 @@ struct Make2DGridPrimitive : INode {
 
 ZENDEFNODE(Make2DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx", "2"},
-        {"int", "ny", "0"},
-        {"vec3f", "sizeX", "1,0,0"},
-        {"vec3f", "sizeY", "0,1,0"},
-        {"float", "scale", "1"},
-        {"vec3f", "origin", "0,0,0"},
+        {gParamType_Int, "nx", "2"},
+        {gParamType_Int, "ny", "0"},
+        {gParamType_Vec3f, "sizeX", "1,0,0"},
+        {gParamType_Vec3f, "sizeY", "0,1,0"},
+        {gParamType_Float, "scale", "1"},
+        {gParamType_Vec3f, "origin", "0,0,0"},
         }, /* outputs: */ {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
         {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
         {"enum Column-major Row-major", "Layout", "Column-major"},
-        {"bool", "isCentered", "0"},
-        {"bool", "hasFaces", "1"},
-        {"bool", "hasUV", "0"},
+        {gParamType_Bool, "isCentered", "0"},
+        {gParamType_Bool, "hasFaces", "1"},
+        {gParamType_Bool, "hasUV", "0"},
         }, /* category: */ {
         "primitive",
         }});
@@ -295,18 +295,18 @@ struct Make3DGridPrimitive : INode {
 
 ZENDEFNODE(Make3DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx", "2"},
-        {"int", "ny", "0"},
-        {"int", "nz", "0"},
-        {"vec3f", "sizeX", "1,0,0"},
-        {"vec3f", "sizeY", "0,1,0"},
-        {"vec3f", "sizeZ", "0,0,1"},
-        {"float", "scale", "1"},
-        {"vec3f", "origin", "0,0,0"},
+        {gParamType_Int, "nx", "2"},
+        {gParamType_Int, "ny", "0"},
+        {gParamType_Int, "nz", "0"},
+        {gParamType_Vec3f, "sizeX", "1,0,0"},
+        {gParamType_Vec3f, "sizeY", "0,1,0"},
+        {gParamType_Vec3f, "sizeZ", "0,0,1"},
+        {gParamType_Float, "scale", "1"},
+        {gParamType_Vec3f, "origin", "0,0,0"},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
-        {"bool", "isCentered", "0"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+        {gParamType_Bool, "isCentered", "0"},
         }, /* category: */ {
         "primitive",
         }});
@@ -354,15 +354,15 @@ struct Make3DGridPointsInAABB : INode {//xubenhappy
 
 ZENDEFNODE(Make3DGridPointsInAABB,
         { /* inputs: */ {
-        {"int", "nx", "4"},
-        {"int", "ny", "0"},
-        {"int", "nz", "0"},
-        {"vec3f", "bmin", "-1,-1,-1"},
-        {"vec3f", "bmax", "1,1,1"},
+        {gParamType_Int, "nx", "4"},
+        {gParamType_Int, "ny", "0"},
+        {gParamType_Int, "nz", "0"},
+        {gParamType_Vec3f, "bmin", "-1,-1,-1"},
+        {gParamType_Vec3f, "bmax", "1,1,1"},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
-        {"bool", "isStaggered", "1"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+        {gParamType_Bool, "isStaggered", "1"},
         }, /* category: */ {
         "primitive",
         }});
@@ -403,13 +403,13 @@ struct MakeCubePrimitive : INode {
 ZENDEFNODE(MakeCubePrimitive,
         { /* inputs: */
         {
-            {"float","spacing"},
-            {"int","nx"},
-            {"int","ny"},
-            {"vec3f","origin"},
+            {gParamType_Float,"spacing"},
+            {gParamType_Int,"nx"},
+            {gParamType_Int,"ny"},
+            {gParamType_Vec3f,"origin"},
         }, /* outputs: */ {
-        "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         {},
         }, /* category: */ {
         "deprecated",
@@ -465,14 +465,14 @@ struct MakeBoxPrimitive : INode {
 };
 ZENO_DEFNODE(MakeBoxPrimitive)(
     { /* inputs: */ {
-        {"float","size_x","2.0"},
-        {"float","size_y","2.0"},
-        {"float","size_z","2.0"},
-        {"vec3f","origin","0,0,0"},
+        {gParamType_Float,"size_x","2.0"},
+        {gParamType_Float,"size_y","2.0"},
+        {gParamType_Float,"size_z","2.0"},
+        {gParamType_Vec3f,"origin","0,0,0"},
     }, /* outputs: */ {
-        "prim",
-    }, /* params: */ {
-        {"bool","use_quads","0"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+        {gParamType_Bool,"use_quads","0"},
     }, /* category: */ {
         "primitive",
     } }

@@ -1204,14 +1204,14 @@ struct ReadAlembic : INode {
 
 ZENDEFNODE(ReadAlembic, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "read_face_set", "1"},
-        {"bool", "outOfRangeAsEmpty", "0"},
-        {"frameid"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "read_face_set", "1"},
+        {gParamType_Bool, "outOfRangeAsEmpty", "0"},
+        {gParamType_Float, "frameid"},
     },
     {
-        {"ABCTree", "abctree"},
-        "namelist",
+        {gParamType_Unknown, "abctree"},
+        {gParamType_List, "namelist"},
     },
     {},
     {"alembic"},
@@ -1316,12 +1316,12 @@ struct AlembicSplitByName: INode {
 
 ZENDEFNODE(AlembicSplitByName, {
     {
-        {"prim"},
-        {"bool", "killDeadVerts", "1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Bool, "killDeadVerts", "1"},
     },
     {
-        {"DictObject", "dict"},
-        {"ListObject", "namelist"},
+        {gParamType_Dict,"dict"},
+        {gParamType_List, "namelist"},
     },
     {},
     {"alembic"},
@@ -1352,11 +1352,11 @@ struct CopyPosAndNrmByIndex: INode {
 
 ZENDEFNODE(CopyPosAndNrmByIndex, {
     {
-        {"prim"},
-        {"list", "list"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_List, "list"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1411,14 +1411,14 @@ struct PrimsFilterInUserdata: INode {
 
 ZENDEFNODE(PrimsFilterInUserdata, {
     {
-        {"list", "list"},
-        {"string", "name", ""},
-        {"string", "filters"},
-        {"bool", "contain", "1"},
-        {"bool", "fuzzy", "0"},
+        {gParamType_List, "list"},
+        {gParamType_String, "name", ""},
+        {gParamType_String, "filters"},
+        {gParamType_Bool, "contain", "1"},
+        {gParamType_Bool, "fuzzy", "0"},
     },
     {
-        {"list", "out"},
+        {gParamType_List, "out"},
     },
     {},
     {"alembic"},
@@ -1493,8 +1493,8 @@ struct PrimsFilterInUserdataPython: INode {
 
 ZENDEFNODE(PrimsFilterInUserdataPython, {
     {
-        {"list", "list"},
-        {"multiline_string", "py_code", "result = len(ud['label']) > 2"},
+        {gParamType_List, "list"},
+        {gParamType_String, "py_code", "result = len(ud['label']) > 2", Socket_Primitve, Multiline},
     },
     {
         {"out"},
@@ -1516,11 +1516,11 @@ struct SetFaceset: INode {
 
 ZENDEFNODE(SetFaceset, {
     {
-        "prim",
-        {"string", "facesetName", "defFS"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "facesetName", "defFS"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1538,11 +1538,11 @@ struct SetABCPath: INode {
 
 ZENDEFNODE(SetABCPath, {
     {
-        "prim",
-        {"string", "abcpathName", "/ABC/your_path"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "abcpathName", "/ABC/your_path"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},

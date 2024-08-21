@@ -171,12 +171,12 @@ struct erode_noise_perlin : INode {
 };
 ZENDEFNODE(erode_noise_perlin,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "vec3fAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "vec3fAttrName", "pos"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "noise"},
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -569,12 +569,12 @@ struct erode_noise_simplex : INode {
 };
 ZENDEFNODE(erode_noise_simplex,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "posLikeAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "posLikeAttrName", "pos"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "noise"},
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -764,12 +764,12 @@ struct erode_noise_analytic_simplex_2d : INode {
 };
 ZENDEFNODE(erode_noise_analytic_simplex_2d,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "posLikeAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "posLikeAttrName", "pos"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "analyticNoise"},
+            {gParamType_String, "attrName", "analyticNoise"},
         }, /* category: */ {
             "erode",
         } });
@@ -943,18 +943,18 @@ ZENDEFNODE(NoiseImageGen2, {
     {
         {"vec2i", "image size", "1920,1080"},
 //        {"enum sparse_convolution", "type", "sparse_convolution"},
-        {"int", "seed", "1"},
-        {"bool", "noise per component", "1"},
-        {"int", "turbulence", "1"},
-        {"float", "roughness", "0.5"},
-        {"float", "exponent", "1"},
-        {"vec2f", "spatial frequency", "10,10"},
-        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
-        {"int", "pulsenum", "1"}
+        {gParamType_Int, "seed", "1"},
+        {gParamType_Bool, "noise per component", "1"},
+        {gParamType_Int, "turbulence", "1"},
+        {gParamType_Float, "roughness", "0.5"},
+        {gParamType_Float, "exponent", "1"},
+        {gParamType_Vec2f, "spatial frequency", "10,10"},
+        {gParamType_Vec4f, "amplitude", "1.0,1.0,1.0,1.0"},
+        {gParamType_Int, "pulsenum", "1"}
         // image planes?
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1111,17 +1111,17 @@ ZENDEFNODE(NoiseImageGen, {
     {
         {"vec2i", "image size", "1920,1080"},
 //        {"enum sparse_convolution", "type", "sparse_convolution"},
-        {"int", "seed", "1"},
-        {"bool", "noise per component", "1"},
-        {"int", "turbulence", "1"},
-        {"float", "roughness", "0.5"},
-        {"float", "exponent", "1"},
-        {"vec2f", "spatial frequency", "10,10"},
-        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
+        {gParamType_Int, "seed", "1"},
+        {gParamType_Bool, "noise per component", "1"},
+        {gParamType_Int, "turbulence", "1"},
+        {gParamType_Float, "roughness", "0.5"},
+        {gParamType_Float, "exponent", "1"},
+        {gParamType_Vec2f, "spatial frequency", "10,10"},
+        {gParamType_Vec4f, "amplitude", "1.0,1.0,1.0,1.0"},
         // image planes?
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -1169,18 +1169,18 @@ struct erode_noise_sparse_convolution : INode {
     }
 };
 ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
-                                                {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                                                {"string", "posLikeAttrName", "pos"},
-                                                {"int", "pulsenum", "3"},
-                                                {"int", "seed", "1"},
+                                                {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                                                {gParamType_String, "posLikeAttrName", "pos"},
+                                                {gParamType_Int, "pulsenum", "3"},
+                                                {gParamType_Int, "seed", "1"},
                                             },
                                             /* outputs: */
                                             {
-                                                {"prim", "prim_2DGrid"},
+                                                {gParamType_Primitive, "prim_2DGrid"},
                                             },
                                             /* params: */
                                             {
-                                                {"string", "attrName", "noise"},
+                                                {gParamType_String, "attrName", "noise"},
                                                 {"enum float float3", "attrType", "float"},
                                             },
                                             /* category: */
@@ -1347,22 +1347,22 @@ struct Noise_gabor_2d : INode {
 };
 
 ZENDEFNODE(Noise_gabor_2d, {/* inputs: */ {
-                                      {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                                      {"string", "posLikeAttrName", "pos"},
-                                      {"float", "a_", "0.07"},
-                                      {"float", "frequency", "0.2"},
-                                      {"float", "Orientation", "0.8"},
-                                      {"int", "impulses_per_kernel", "64"},
-                                      {"bool", "isotropic", "0"},
-                                      {"float", "offset", "15"},
+                                      {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                                      {gParamType_String, "posLikeAttrName", "pos"},
+                                      {gParamType_Float, "a_", "0.07"},
+                                      {gParamType_Float, "frequency", "0.2"},
+                                      {gParamType_Float, "Orientation", "0.8"},
+                                      {gParamType_Int, "impulses_per_kernel", "64"},
+                                      {gParamType_Bool, "isotropic", "0"},
+                                      {gParamType_Float, "offset", "15"},
                                   },
                                   /* outputs: */
                                   {
-                                      {"prim", "prim_2DGrid"},
+                                      {gParamType_Primitive, "prim_2DGrid"},
                                   },
                                   /* params: */
                                   {
-                                      {"string", "attrName", "noise"},
+                                      {gParamType_String, "attrName", "noise"},
                                   },
                                   /* category: */
                                   {
@@ -1498,16 +1498,16 @@ struct erode_noise_worley : INode {
 };
 ZENDEFNODE(erode_noise_worley,
     { /* inputs: */ {
-        {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-        {"vec3f", "seed", "0,0,0"},
-        {"string", "posLikeAttrName", "pos"},
-        {"float", "celljitter", "1"},
+        {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+        {gParamType_Vec3f, "seed", "0,0,0"},
+        {gParamType_String, "posLikeAttrName", "pos"},
+        {gParamType_Float, "celljitter", "1"},
         {"enum Euclidean Chebyshev Manhattan", "distType", "Euclidean"},
         {"enum F1 F2-F1", "fType", "F1"},
     }, /* outputs: */ {
-        {"prim", "prim_2DGrid"},
+        {gParamType_Primitive, "prim_2DGrid"},
     }, /* params: */ {
-        {"string", "attrName", "noise"},
+        {gParamType_String, "attrName", "noise"},
         {"enum float float3", "attrType", "float"},
     }, /* category: */ {
         "erode",
@@ -1590,17 +1590,17 @@ struct erode_hybridMultifractal_v1 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v1,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1673,17 +1673,17 @@ struct erode_hybridMultifractal_v2 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v2,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1755,17 +1755,17 @@ struct erode_hybridMultifractal_v3 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v3,
     { /* inputs: */ {
-            {"prim", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            {"prim", "prim_2DGrid"},
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1835,15 +1835,15 @@ struct erode_domainWarping_v1 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v1,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"float", "fbmH", "1.0"},
-            {"float", "fbmFrequence", "1.0"},
-            {"float", "fbmAmplitude", "1.0"},
-            {"int", "fbmNumOctaves", "4"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "fbmH", "1.0"},
+            {gParamType_Float, "fbmFrequence", "1.0"},
+            {gParamType_Float, "fbmAmplitude", "1.0"},
+            {gParamType_Int, "fbmNumOctaves", "4"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "noise"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1901,15 +1901,15 @@ struct erode_domainWarping_v2 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v2,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"float", "fbmH", "1.0"},
-            {"float", "fbmFrequence", "1.0"},
-            {"float", "fbmAmplitude", "1.0"},
-            {"int", "fbmNumOctaves", "4"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "fbmH", "1.0"},
+            {gParamType_Float, "fbmFrequence", "1.0"},
+            {gParamType_Float, "fbmAmplitude", "1.0"},
+            {gParamType_Int, "fbmNumOctaves", "4"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "noise"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1956,12 +1956,12 @@ struct erode_voronoi : INode {
 };
 ZENDEFNODE(erode_voronoi,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"prim", "featurePrim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "featurePrim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "voronoi"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "voronoi"},
         }, /* category: */ {
             "erode",
         } });
@@ -2059,16 +2059,16 @@ struct Primcluster : INode {//todo:: just for color ramp now
 };
 ZENDEFNODE(Primcluster,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"int", "numberofcluster", "10"},
-            {"int", "seed", "9"},
-            {"int", "cutoff", "5"},
-            {"int", "maxiter", "20"},
-            {"string", "ControlAttr", "pos"},
-            {"string", "ClusterAttr", "cluster"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Int, "numberofcluster", "10"},
+            {gParamType_Int, "seed", "9"},
+            {gParamType_Int, "cutoff", "5"},
+            {gParamType_Int, "maxiter", "20"},
+            {gParamType_String, "ControlAttr", "pos"},
+            {gParamType_String, "ClusterAttr", "cluster"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         }, /* category: */ {
             "deprecated",
         } });

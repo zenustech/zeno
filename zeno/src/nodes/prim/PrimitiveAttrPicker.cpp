@@ -57,18 +57,18 @@ struct PrimitiveAttrPicker : zeno::INode {
 ZENDEFNODE(PrimitiveAttrPicker, {
     // inputs
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     {"enum point line triangle", "mode", "point"},
-    {"string", "newAttr", ""},
-    {"float", "attrVal", ""},
+    {gParamType_String, "newAttr", ""},
+    {gParamType_Float, "attrVal", ""},
     },
     // outputs
     {
-    {"PrimitiveObject", "outPrim"},
-    {"list"}
+    {gParamType_Primitive, "outPrim"},
+    {gParamType_List, "list"}
     },
     // params
-    {{"string", "selected", ""}},
+    {{gParamType_String, "selected", ""}},
     // category
     {"primitive"}
 });

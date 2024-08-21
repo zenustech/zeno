@@ -49,7 +49,7 @@ struct buildEdgeFromTris : zeno::INode {
 
 ZENDEFNODE(
     buildEdgeFromTris,{
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"outPrim"},
         {},
         {"PBD"}

@@ -58,8 +58,8 @@ ZENDEFNODE(testPoly1, {
     },
     /* outputs: */
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     /* params: */ {}, /* category: */
     {
         "WBTest",
@@ -84,13 +84,13 @@ struct testPoly2 : INode {
 ZENDEFNODE(testPoly2, {
     /* inputs: */
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"", "list", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "list", "", zeno::Socket_ReadOnly},
     },
     /* outputs: */
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     /* params: */
     {
     },
@@ -115,13 +115,13 @@ struct PrimMarkTrisIdx : INode {
 ZENDEFNODE(PrimMarkTrisIdx, {
     /* inputs: */
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "idxName", "index"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "idxName", "index"},
     },
     /* outputs: */
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     /* params: */ {}, /* category: */
     {
         "WBTest",
@@ -139,11 +139,11 @@ struct PrimGetTrisSize : INode {
 ZENDEFNODE(PrimGetTrisSize, {
     /* inputs: */
     {
-        {"", "prim", "", Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", Socket_ReadOnly},
     },
     /* outputs: */
     {
-        {"int", "TrisSize", "0"},
+        {gParamType_Int, "TrisSize", "0"},
     },
     /* params: */ {}, /* category: */
     {
@@ -178,12 +178,12 @@ struct PrimPointTris : INode {
 ZENDEFNODE(PrimPointTris, {
     /* inputs: */
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int", "pointID", "0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int, "pointID", "0"},
     },
     /* outputs: */
     {
-        "list",
+        {gParamType_List, "list"},
     },
     /* params: */ {}, /* category: */
     {
@@ -203,8 +203,8 @@ struct PrimTriPoints : INode {
 ZENDEFNODE(PrimTriPoints, {
     /* inputs: */
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int", "trisID", "0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int, "trisID", "0"},
     },
     /* outputs: */
     {
@@ -230,12 +230,12 @@ struct DictEraseItem : zeno::INode {
 ZENDEFNODE(DictEraseItem, {
     /* inputs: */
     {
-        {"DictObject", "dict", "", zeno::Socket_ReadOnly},
-        {"string", "key"},
+        {gParamType_Dict,"dict", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "key"},
     },
     /* outputs: */
     {
-        {"DictObject", "dict"},
+        {gParamType_Dict,"dict"},
     },
     /* params: */
     {
@@ -284,7 +284,7 @@ ZENDEFNODE(str2num, {
     /* inputs: */
     {
         {"enum float int", "type", "int"},
-        {"string", "str", "0"},
+        {gParamType_String, "str", "0"},
     },
     /* outputs: */
     {
@@ -399,15 +399,15 @@ struct VisPrimAttrValue_Modify : INode {
 };
 ZENO_DEFNODE(VisPrimAttrValue_Modify)( {
      {
-         {"prim"},
-         {"string", "attrName", "pos"},
-         {"float", "scale", "0.05"},
-         {"int", "precision", "3"},
-         {"bool", "includeSelf", "0"},
-         {"bool", "dotDecoration", "0"},
+         {gParamType_Primitive, "prim"},
+         {gParamType_String, "attrName", "pos"},
+         {gParamType_Float, "scale", "0.05"},
+         {gParamType_Int, "precision", "3"},
+         {gParamType_Bool, "includeSelf", "0"},
+         {gParamType_Bool, "dotDecoration", "0"},
      },
      {
-         {"prim", "outPrim"},
+         {gParamType_Primitive, "outPrim"},
      },
      {},
      {"WBTest"},
@@ -467,18 +467,18 @@ struct Grid2DSample_M : zeno::INode {
 ZENDEFNODE(Grid2DSample_M, {
     /* inputs: */
     {
-        {"PrimitiveObject", "grid", "", zeno::Socket_ReadOnly},
-        {"PrimitiveObject", "grid2", "", zeno::Socket_ReadOnly},
-        {"int", "nx", "1"},
-        {"int", "ny", "1"},
-        {"float", "h", "1"},
-        {"vec3f", "bmin", "0,0,0"},
-        {"string", "channel", "pos"},
-        {"string", "sampleBy", "pos"},
+        {gParamType_Primitive, "grid", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "grid2", "", zeno::Socket_ReadOnly},
+        {gParamType_Int, "nx", "1"},
+        {gParamType_Int, "ny", "1"},
+        {gParamType_Float, "h", "1"},
+        {gParamType_Vec3f, "bmin", "0,0,0"},
+        {gParamType_String, "channel", "pos"},
+        {gParamType_String, "sampleBy", "pos"},
     },
     /* outputs: */
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
     },
     /* params: */
     {

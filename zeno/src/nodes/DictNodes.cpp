@@ -19,8 +19,8 @@ struct DictSize : zeno::INode {
 };
 
 ZENDEFNODE(DictSize, {
-    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}},
-    {{"int", "size"}},
+    {{gParamType_Dict,"dict", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Int, "size"}},
     {},
     {"dict"},
 });
@@ -41,8 +41,8 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}, {"string", "key"}, {"IObject", "defl", "", zeno::Socket_ReadOnly}},
-    {{"zany", "object"}},
+    {{gParamType_Dict,"dict", "", zeno::Socket_ReadOnly}, {gParamType_String, "key"}, {gParamType_IObject, "defl", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "object"}},
     {},
     {"dict"},
 });
@@ -57,7 +57,7 @@ struct EmptyDict : zeno::INode {
 
 ZENDEFNODE(EmptyDict, {
     {},
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
 });
@@ -74,8 +74,8 @@ struct DictSetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictSetItem, {
-    {{"DictObject", "dict", "", zeno::Socket_ReadOnly}, {"string", "key"}, {"zany", "object", "", zeno::Socket_ReadOnly}},
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict", "", zeno::Socket_ReadOnly}, {gParamType_String, "key"}, {gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
 });
@@ -89,8 +89,8 @@ struct MakeDict : zeno::INode {
 };
 
 ZENDEFNODE(MakeDict, {
-    {{"dict", "objs", "", zeno::Socket_ReadOnly}},
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict, "objs", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
 });
@@ -103,7 +103,7 @@ struct MocDictAsOutput : zeno::INode {
 
 ZENDEFNODE(MocDictAsOutput, {
     {},
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict2"},
 });
@@ -124,14 +124,14 @@ struct MakeSmallDict : zeno::INode {
 
 ZENDEFNODE(MakeSmallDict, {
     {
-        {"string", "key0"}, {"IObject", "obj0"},
-        {"string", "key1"}, {"IObject", "obj1"},
-        {"string", "key2"}, {"IObject", "obj2"},
-        {"string", "key3"}, {"IObject", "obj3"},
-        {"string", "key4"}, {"IObject", "obj4"},
-        {"string", "key5"}, {"IObject", "obj5"},
+        {gParamType_String, "key0"}, {"IObject", "obj0"},
+        {gParamType_String, "key1"}, {"IObject", "obj1"},
+        {gParamType_String, "key2"}, {"IObject", "obj2"},
+        {gParamType_String, "key3"}, {"IObject", "obj3"},
+        {gParamType_String, "key4"}, {"IObject", "obj4"},
+        {gParamType_String, "key5"}, {"IObject", "obj5"},
     },
-    {"dict"},
+    {{gParamType_Dict, "dict"}},
     {},
     {"dict"},
 });
@@ -152,10 +152,10 @@ struct ZipListAsDict : zeno::INode {
 
 ZENDEFNODE(ZipListAsDict, {
     {
-        {"ListObject", "keys", "", zeno::Socket_ReadOnly},
-        {"ListObject", "values", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "keys", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "values", "", zeno::Socket_ReadOnly},
     },
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
 });
@@ -173,9 +173,9 @@ struct DictUnion : zeno::INode {
 };
 
 ZENDEFNODE(DictUnion, {
-    {{"DictObject", "dict1", "", zeno::Socket_ReadOnly},
-     {"DictObject", "dict2", "", zeno::Socket_ReadOnly}},
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict1", "", zeno::Socket_ReadOnly},
+     {gParamType_Dict,"dict2", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
 });
@@ -198,7 +198,7 @@ struct ExtractDict : zeno::INode {
 };
 
 ZENDEFNODE(ExtractDict, {
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict"}},
     {},
     {},
     {"dict"},
@@ -216,7 +216,7 @@ struct ExtractLegacyDict : ExtractDict {
 };
 
 ZENDEFNODE(ExtractLegacyDict, {
-    {{"DictObject", "dict"}},
+    {{gParamType_Dict,"dict"}},
     {},
     {},
     {"deprecated"},
@@ -237,8 +237,8 @@ struct DictGetKeyList : zeno::INode {
 };
 
 ZENDEFNODE(DictGetKeyList, {
-    {{"DictObject", "dict"}},
-    {{"ListObject", "keys"}},
+    {{gParamType_Dict,"dict"}},
+    {{gParamType_List, "keys"}},
     {},
     {"dict"},
 });
@@ -253,8 +253,8 @@ struct DictHasKey : zeno::INode {
 };
 
 ZENDEFNODE(DictHasKey, {
-    {{"DictObject", "dict"}, {"string", "key"}},
-    {{"bool", "hasKey"}},
+    {{gParamType_Dict,"dict"}, {gParamType_String, "key"}},
+    {{gParamType_Bool, "hasKey"}},
     {},
     {"dict"},
 });

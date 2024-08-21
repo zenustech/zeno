@@ -49,12 +49,12 @@ struct MakeHeatmap : zeno::INode {
 };
 
 ZENDEFNODE(MakeHeatmap,
-        { /* inputs: */ {{"color", "heatmap", "", zeno::NoSocket, zeno::Heatmap},
+        { /* inputs: */ {{gParamType_Heatmap, "heatmap", "", zeno::NoSocket, zeno::Heatmap},
         }, /* outputs: */ {
-            {"color", "heatmap"},
+            {gParamType_Heatmap, "heatmap"},
         }, /* params: */ {
-        //{"int", "nres", "1024"},
-        //{"string", "_RAMPS", "0 0 0.8 0.8 0.8 1"},
+        //{gParamType_Int, "nres", "1024"},
+        //{gParamType_String, "_RAMPS", "0 0 0.8 0.8 0.8 1"},
         }, /* category: */ {
         "visualize",
         }});
@@ -84,9 +84,9 @@ struct HeatmapFromImage : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage,
 { /* inputs: */ {
-    {"prim", "image", "", zeno::Socket_ReadOnly},
-    {"int", "startPos", "0"},
-    {"int", "endPos", "-1"},
+    {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
+    {gParamType_Int, "startPos", "0"},
+    {gParamType_Int, "endPos", "-1"},
 }, /* outputs: */ {
     {"color", "heatmap"},
 }, /* params: */ {
@@ -131,12 +131,12 @@ struct HeatmapFromImage2 : zeno::INode {
 
 ZENDEFNODE(HeatmapFromImage2,
            { /* inputs: */ {
-                   {"prim", "image", "", zeno::Socket_ReadOnly},
-                   {"float", "startPos", "0"},
-                   {"float", "endPos", "1"},
-                   {"int", "resample", "0"},
+                   {gParamType_Primitive, "image", "", zeno::Socket_ReadOnly},
+                   {gParamType_Float, "startPos", "0"},
+                   {gParamType_Float, "endPos", "1"},
+                   {gParamType_Int, "resample", "0"},
                }, /* outputs: */ {
-                   {"heatmap"},
+                   {gParamType_Heatmap, "heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -177,13 +177,13 @@ struct HeatmapFromPrimAttr : zeno::INode {
 
 ZENDEFNODE(HeatmapFromPrimAttr,
            { /* inputs: */ {
-                   {"", "prim", "", zeno::Socket_ReadOnly},
-                   {"string", "attrName", "clr"},
-                   {"int", "attrNum", "10"},
-                   {"int", "resample", "0"},
-                   {"bool", "reverse Result", "false"},
+                   {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                   {gParamType_String, "attrName", "clr"},
+                   {gParamType_Int, "attrNum", "10"},
+                   {gParamType_Int, "resample", "0"},
+                   {gParamType_Bool, "reverse Result", "false"},
                }, /* outputs: */ {
-                   {"color","heatmap"},
+                   {gParamType_Heatmap,"heatmap"},
                }, /* params: */ {
                }, /* category: */ {
                    "visualize",
@@ -221,15 +221,15 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"string","attrName2"},
-            {"color", "heatmap", "", zeno::Socket_Primitve, zeno::Heatmap},
-            {"float", "min", "0"},
-            {"float", "max", "1"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_String,"attrName2"},
+            {gParamType_Heatmap, "heatmap", "", zeno::Socket_Primitve, zeno::Heatmap},
+            {gParamType_Float, "min", "0"},
+            {gParamType_Float, "max", "1"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "rho"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "rho"},
         }, /* category: */ {
             "visualize",
         }});
@@ -249,15 +249,15 @@ struct PrimSample1D : zeno::INode {
 };
 ZENDEFNODE(PrimSample1D, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-        {"color", "heatmap", "", zeno::Socket_Primitve},
-        {"string", "srcChannel", "rho"},
-        {"string", "dstChannel", "clr"},
-        {"float", "remapMin", "0"},
-        {"float", "remapMax", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Heatmap, "heatmap", "", zeno::Socket_Primitve},
+        {gParamType_String, "srcChannel", "rho"},
+        {gParamType_String, "dstChannel", "clr"},
+        {gParamType_Float, "remapMin", "0"},
+        {gParamType_Float, "remapMax", "1"},
     },
     {
-        {"PrimitiveObject", "outPrim"}
+        {gParamType_Primitive, "outPrim"}
     },
     {},
     {"primitive"},

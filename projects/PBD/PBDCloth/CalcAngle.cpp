@@ -35,7 +35,7 @@ struct PBDCalcAngle : zeno::INode {
 
 ZENDEFNODE(
     PBDCalcAngle,{
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"outPrim"},
         {},
         {"PBD"}

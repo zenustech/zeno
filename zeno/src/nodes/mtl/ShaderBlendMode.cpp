@@ -256,9 +256,9 @@ namespace zeno
         ShaderBlendMode,
         {
             {
-                {"float", "base", "0"},
-                {"float", "blend", "0"},
-                {"float", "opacity", "0"},
+                {gParamType_Float, "base", "0"},
+                {gParamType_Float, "blend", "0"},
+                {gParamType_Float, "opacity", "0"},
                 {BLEND_ENUM_STR, "mode", "normal"},
             },
             {

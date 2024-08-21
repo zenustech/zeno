@@ -41,11 +41,11 @@ struct CalculateResidual2 : zeno::INode {
 
 ZENDEFNODE(CalculateResidual2,
         { /* inputs: */ {
-            "args",
+            {gParamType_Dict, "args"},
         }, /* outputs: */ {
-            "rets",
+            {gParamType_Float, "rets", "", zeno::Socket_WildCard},
         }, /* params: */ {
-        {},  // defl min max; defl min; defl
+        // defl min max; defl min; defl
         }, /* category: */ {
         "Zentricle",
         }});
@@ -63,11 +63,11 @@ struct MakeNonlinearProblemObject2 : zeno::INode {
 
 ZENDEFNODE(MakeNonlinearProblemObject2,
         { /* inputs: */ {
-            "function",
+            {gParamType_Unknown, "function"},
         }, /* outputs: */ {
-            "NonlinearProblemObject2",
+            {gParamType_Unknown, "NonlinearProblemObject2"},
         }, /* params: */ {
-        {},  // defl min max; defl min; defl
+              // defl min max; defl min; defl
         }, /* category: */ {
         "Zentricle",
         }});
@@ -93,9 +93,9 @@ struct MakeJFNKSolver2 : zeno::INode {
 ZENDEFNODE(MakeJFNKSolver2,
         { /* inputs: */ {
         }, /* outputs: */ {
-            "JFNKSolverObject2",
+            {gParamType_Unknown, "JFNKSolverObject2"},
         }, /* params: */ {
-        {},  // defl min max; defl min; defl
+             // defl min max; defl min; defl
         }, /* category: */ {
         "Zentricle",
         }});
@@ -124,10 +124,10 @@ struct SolveNonlinearProblem2 : zeno::INode {
 
 ZENDEFNODE(SolveNonlinearProblem2,
         { /* inputs: */ {
-            "JFNKSolverObject2", "NonlinearProblemObject2", "function",
+            {gParamType_Unknown, "JFNKSolverObject2"}, {gParamType_Unknown, "NonlinearProblemObject2"}, {gParamType_Unknown, "function"},
         }, /* outputs: */ {
         }, /* params: */ {
-        {},  // defl min max; defl min; defl
+          // defl min max; defl min; defl
         }, /* category: */ {
         "Zentricle",
         }});

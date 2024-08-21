@@ -35,8 +35,8 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -61,8 +61,8 @@ struct OrthonormalBase : INode {
 };
 
 ZENDEFNODE(OrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -86,8 +86,8 @@ struct PixarOrthonormalBase : INode {
 };
 
 ZENDEFNODE(PixarOrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -111,8 +111,8 @@ struct AABBCollideDetect : INode {
 };
 
 ZENDEFNODE(AABBCollideDetect, {
-    {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
-    {{"bool", "overlap"}, {"bool", "AinsideB"}, {"bool", "BinsideA"}},
+    {{gParamType_Vec3f, "bminA"}, {gParamType_Vec3f, "bmaxA"}, {gParamType_Vec3f, "bminB"}, {gParamType_Vec3f, "bmaxB"}},
+    {{gParamType_Bool, "overlap"}, {gParamType_Bool, "AinsideB"}, {gParamType_Bool, "BinsideA"}},
     {},
     {"math"},
 });
@@ -163,18 +163,18 @@ struct ProjectAndNormalize : INode {
 
 ZENDEFNODE(ProjectAndNormalize, {
     {
-    {"vec3f", "vec"},
+    {gParamType_Vec3f, "vec"},
     {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
-    {"float", "directionScale", "1"},
-    {"float", "lengthScale", "1"},
-    {"float", "heightScale", "1"},
-    {"float", "heightOffset", "0"},
+    {gParamType_Float, "directionScale", "1"},
+    {gParamType_Float, "lengthScale", "1"},
+    {gParamType_Float, "heightScale", "1"},
+    {gParamType_Float, "heightOffset", "0"},
     },
     {
-    {"vec3f", "direction"},
-    {"float", "length"},
-    {"float", "height"},
-    {"float", "phase"},
+    {gParamType_Vec3f, "direction"},
+    {gParamType_Float, "length"},
+    {gParamType_Float, "height"},
+    {gParamType_Float, "phase"},
     },
     {},
     {"math"},
@@ -215,12 +215,12 @@ struct CalcDirectionFromAngle : INode {
 
 ZENDEFNODE(CalcDirectionFromAngle, {
     {
-    {"float", "angle", "0"},
+    {gParamType_Float, "angle", "0"},
     {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
-    {"float", "length", "1"},
+    {gParamType_Float, "length", "1"},
     },
     {
-    {"vec3f", "direction"},
+    {gParamType_Vec3f, "direction"},
     },
     {},
     {"math"},
@@ -238,9 +238,9 @@ struct DegreetoRad : INode {
 };
 
 ZENDEFNODE(DegreetoRad, {
-    {{"float", "degree", ""}, 
+    {{gParamType_Float, "degree", ""}, 
     },
-    {{"float", "radian"}},
+    {{gParamType_Float, "radian"}},
     {},
     {"math"},
 });
@@ -257,9 +257,9 @@ struct RadtoDegree : INode {
 };
 
 ZENDEFNODE(RadtoDegree, {
-    {{"float", "radian", ""}, 
+    {{gParamType_Float, "radian", ""}, 
     },
-    {{"float", "degree"}},
+    {{gParamType_Float, "degree"}},
     {},
     {"math"},
 });

@@ -219,8 +219,8 @@ public:
 
 ZENDEFNODE(PBDClothInit, {// inputs:
                           {
-                              {"PrimitiveObject", "prim"},
-                              {"float", "areaDensity", "1.0"}
+                              {gParamType_Primitive, "prim"},
+                              {gParamType_Float, "areaDensity", "1.0"}
                           },
                           // outputs:
                           {
