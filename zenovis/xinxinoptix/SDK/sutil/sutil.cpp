@@ -1063,7 +1063,7 @@ const char* getCodePTX( const char*                     source,
         *log = NULL;
 
     std::shared_ptr<std::string> ptx {};
-    std::string key = std::string( source ) + (macro!=nullptr? std::string(macro):"");
+    std::string key = (macro!=nullptr? std::string(macro):"") + std::string( source );
 
     if( g_ptxSourceCache.map.count(key) == 0 )
     {

@@ -5,6 +5,8 @@
 #include <sutil/vec_math.h>
 #include "optixPathTracer.h"
 
+#include <cuda/GeometryData.h>
+
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 
@@ -15,6 +17,146 @@
 #include "DisneyBSDF.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
+
+#ifndef __CUDACC_RTC__
+#define _P_TYPE_ 2
+#endif
+
+#include <cuda/curve.h>
+
+// Get curve hit-point in world coordinates.
+static __forceinline__ __device__ float3 getHitPoint()
+{
+    const float  t            = optixGetRayTmax();
+    const float3 rayOrigin    = optixGetWorldRayOrigin();
+    const float3 rayDirection = optixGetWorldRayDirection();
+
+    return rayOrigin + t * rayDirection;
+}
+
+// Compute surface normal of quadratic pimitive in world space.
+static __forceinline__ __device__ float3 normalLinear( const int primitiveIndex )
+{
+    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
+    const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
+    float4                       controlPoints[2];
+
+    optixGetLinearCurveVertexData( gas, primitiveIndex, gasSbtIndex, 0.0f, controlPoints );
+
+    LinearInterpolator interpolator;
+    interpolator.initialize(controlPoints);
+
+    float3               hitPoint = getHitPoint();
+    // interpolators work in object space
+    hitPoint            = optixTransformPointFromWorldToObjectSpace( hitPoint );
+    const float3 normal = surfaceNormal( interpolator, optixGetCurveParameter(), hitPoint );
+    return optixTransformNormalFromObjectToWorldSpace( normal );
+}
+
+// Compute surface normal of quadratic pimitive in world space.
+static __forceinline__ __device__ float3 normalQuadratic( const int primitiveIndex )
+{
+    const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
+    const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
+    float4                       controlPoints[3];
+
+    optixGetQuadraticBSplineVertexData( gas, primitiveIndex, gasSbtIndex, 0.0f, controlPoints );
+
+    QuadraticInterpolator interpolator;
+    interpolator.initializeFromBSpline(controlPoints);
+
+    float3                  hitPoint = getHitPoint();
+    // interpolators work in object space
+    hitPoint            = optixTransformPointFromWorldToObjectSpace( hitPoint );
+    const float3 normal = surfaceNormal( interpolator, optixGetCurveParameter(), hitPoint );
+    return optixTransformNormalFromObjectToWorldSpace( normal );
+}
+
+// Compute surface normal of cubic b-spline pimitive in world space.
+static __forceinline__ __device__ float3 normalCubic( const int primitiveIndex )
+{
+    const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
+    const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
+    float4                       controlPoints[4];
+
+    optixGetCubicBSplineVertexData( gas, primitiveIndex, gasSbtIndex, 0.0f, controlPoints );
+
+    CubicInterpolator interpolator;
+    interpolator.initializeFromBSpline(controlPoints);
+
+    float3              hitPoint = getHitPoint();
+    // interpolators work in object space
+    hitPoint            = optixTransformPointFromWorldToObjectSpace( hitPoint );
+    const float3 normal = surfaceNormal( interpolator, optixGetCurveParameter(), hitPoint );
+    return optixTransformNormalFromObjectToWorldSpace( normal );
+}
+
+// Compute surface normal of Catmull-Rom pimitive in world space.
+static __forceinline__ __device__ float3 normalCatrom( const int primitiveIndex )
+{
+    const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
+    const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
+    float4                       controlPoints[4];
+
+    optixGetCatmullRomVertexData( gas, primitiveIndex, gasSbtIndex, 0.0f, controlPoints );
+
+    CubicInterpolator interpolator;
+    interpolator.initializeFromCatrom(controlPoints);
+
+    float3              hitPoint = getHitPoint();
+    // interpolators work in object space
+    hitPoint            = optixTransformPointFromWorldToObjectSpace( hitPoint );
+    const float3 normal = surfaceNormal( interpolator, optixGetCurveParameter(), hitPoint );
+    return optixTransformNormalFromObjectToWorldSpace( normal );
+}
+
+// Compute surface normal of Catmull-Rom pimitive in world space.
+static __forceinline__ __device__ float3 normalBezier( const int primitiveIndex )
+{
+    const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
+    const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
+    float4                       controlPoints[4];
+
+    optixGetCubicBezierVertexData( gas, primitiveIndex, gasSbtIndex, 0.0f, controlPoints );
+
+    CubicInterpolator interpolator;
+    interpolator.initializeFromBezier(controlPoints);
+
+    float3              hitPoint = getHitPoint();
+    // interpolators work in object space
+    hitPoint            = optixTransformPointFromWorldToObjectSpace( hitPoint );
+    const float3 normal = surfaceNormal( interpolator, optixGetCurveParameter(), hitPoint );
+    return optixTransformNormalFromObjectToWorldSpace( normal );
+}
+
+// Compute normal
+//
+static __forceinline__ __device__ float3 computeCurveNormal( OptixPrimitiveType type, const int primitiveIndex )
+{
+    switch( type ) {
+    case OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR:
+        return normalLinear( primitiveIndex );
+    case OPTIX_PRIMITIVE_TYPE_ROUND_QUADRATIC_BSPLINE:
+        return normalQuadratic( primitiveIndex );
+    case OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE:
+        return normalCubic( primitiveIndex );
+    case OPTIX_PRIMITIVE_TYPE_ROUND_CATMULLROM:
+        return normalCatrom( primitiveIndex );
+    case OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BEZIER:
+        return normalBezier( primitiveIndex );
+        
+    case OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE:
+    {
+        const unsigned int           prim_idx    = optixGetPrimitiveIndex();
+        const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
+        const unsigned int           sbtGASIndex = optixGetSbtGASIndex();
+        const float2                 uv          = optixGetRibbonParameters();
+        auto normal = optixGetRibbonNormal( gas, prim_idx, sbtGASIndex, 0.f /*time*/, uv );
+        return normalize(normal);
+    }
+}
+  return make_float3(0.0f);
+}
 
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
@@ -67,9 +209,21 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
 
+    auto pType = optixGetPrimitiveType();
+    if (pType != OPTIX_PRIMITIVE_TYPE_SPHERE && pType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        
+        prd->attanuation = vec3(0);
+        optixTerminateRay();
+        return;
+    }
+
     bool sphere_external_ray = false;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+    float3 N = {};
+    printf("Should not reach here\n");
+    return;
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -208,7 +362,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         float p = rnd(prd->seed);
 
         float skip = opacity;
-        #if (_SPHERE_)
+        #if (_P_TYPE_==1)
             if (sphere_external_ray) {
                 skip *= opacity;
             }
@@ -257,7 +411,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
-                #if (_SPHERE_)
+                #if (_P_TYPE_==1)
                     if (sphere_external_ray) {
                         prd->attanuation *= vec3(1, 0, 0);
                         if (nDi < (1.0f-_FLT_EPL_)) {
@@ -308,7 +462,43 @@ extern "C" __global__ void __closesthit__radiance()
     MatInput attrs{};
     float estimation = 0;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+
+    float3 N = {}; 
+
+    auto pType = optixGetPrimitiveType();
+    if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        prd->done = true;
+        return;
+    }
+
+    float3 normal = computeCurveNormal( optixGetPrimitiveType(), primIdx );
+
+    if (dot(normal, -ray_dir) < 0) {
+        normal = -normal;
+    }
+
+    N = normal;
+        
+    float3 wldPos = P; 
+    float3 wldNorm = normal;
+    float wldOffset = 0.0f;
+
+    prd->geometryNormal = N;
+
+    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
+    auto hairAux = reinterpret_cast<GeometryData::Curves*>(params.hairAux);
+    // auto& aux = hairAux[hair_idx];
+
+    // uint  strandIndex = aux.strand_i[primIdx];
+    // uint2 strandInfo  = aux.strand_info[strandIndex];
+    // float u = ( primIdx - strandInfo.x ) / (float)strandInfo.y;
+
+    attrs.pos = P;
+    attrs.nrm = N;
+    // attrs.uv = {u, (float)strandIndex/ aux.strand_i.count, 0};
+
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -456,7 +646,12 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-#if _SPHERE_
+#if (_P_TYPE_==2)
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
+        N = faceforward( N, -ray_dir, N );
+        prd->geometryNormal = N;
+    }
+#elif (_P_TYPE_==1)
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N, -ray_dir, N );
@@ -883,7 +1078,12 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     float3 frontPos, backPos;
-    SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    if (wldOffset > 0) {
+        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    } else {
+        frontPos = wldPos;
+        backPos = wldPos;
+    }
 
     shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
@@ -897,6 +1097,8 @@ extern "C" __global__ void __closesthit__radiance()
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
         shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
     }
+
+    shadingP = P + params.cam.eye;
 
     prd->radiance = {};
     prd->direction = normalize(wi);

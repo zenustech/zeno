@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+// Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,209 +31,248 @@
 #include <sutil/vec_math.h>
 #include <vector_types.h>
 
+
 //
 // First order polynomial interpolator
 //
-struct LinearBSplineSegment
+struct LinearInterpolator
 {
-    __device__ __forceinline__ LinearBSplineSegment() {}
-    __device__ __forceinline__ LinearBSplineSegment( const float4* q ) { initialize( q ); }
+    __device__ __forceinline__ LinearInterpolator() {}
 
     __device__ __forceinline__ void initialize( const float4* q )
     {
         p[0] = q[0];
-        p[1] = q[1] - q[0];  // pre-transform p[] for fast evaluation
+        p[1] = q[1] - q[0];
     }
 
-    __device__ __forceinline__ float radius( const float& u ) const { return p[0].w + p[1].w * u; }
 
-    __device__ __forceinline__ float3 position3( float u ) const { return (float3&)p[0] + u * (float3&)p[1]; }
-    __device__ __forceinline__ float4 position4( float u ) const { return p[0] + u * p[1]; }
-
-    __device__ __forceinline__ float min_radius( float u1, float u2 ) const
+    __device__ __forceinline__ float4 position4( float u ) const
     {
-        return fminf( radius( u1 ), radius( u2 ) );
+        return p[0] + u * p[1]; // Horner scheme
     }
 
-    __device__ __forceinline__ float max_radius( float u1, float u2 ) const
+    __device__ __forceinline__ float3 position3( float u ) const
     {
-        if( !p[1].w )
-            return p[0].w;  // a quick bypass for constant width
-        return fmaxf( radius( u1 ), radius( u2 ) );
+        return make_float3( position4( u ) );
     }
 
-    __device__ __forceinline__ float3 velocity3( float u ) const { return (float3&)p[1]; }
-    __device__ __forceinline__ float4 velocity4( float u ) const { return p[1]; }
+    __device__ __forceinline__ float radius( const float& u ) const
+    {
+        return position4( u ).w;
+    }
+
+    __device__ __forceinline__ float4 velocity4( float u ) const
+    {
+        return p[1];
+    }
+
+    __device__ __forceinline__ float3 velocity3( float u ) const
+    {
+        return make_float3( velocity4( u ) );
+    }
+
+    __device__ __forceinline__ float derivative_of_radius( float u ) const
+    {
+        return velocity4( u ).w;
+    }
 
     __device__ __forceinline__ float3 acceleration3( float u ) const { return make_float3( 0.f ); }
     __device__ __forceinline__ float4 acceleration4( float u ) const { return make_float4( 0.f ); }
 
-    __device__ __forceinline__ float derivative_of_radius( float u ) const { return p[1].w; }
 
-    float4 p[2];  // pre-transformed "control points" for fast evaluation
+    float4 p[2];
 };
 
 
 //
 // Second order polynomial interpolator
 //
-struct QuadraticBSplineSegment
+struct QuadraticInterpolator
 {
-    __device__ __forceinline__ QuadraticBSplineSegment() {}
-    __device__ __forceinline__ QuadraticBSplineSegment( const float4* q ) { initializeFromBSpline( q ); }
+    __device__ __forceinline__ QuadraticInterpolator() {}
 
     __device__ __forceinline__ void initializeFromBSpline( const float4* q )
     {
-        // pre-transform control-points for fast evaluation
-        p[0] = q[1] / 2.0f + q[0] / 2.0f;
-        p[1] = q[1] - q[0];
-        p[2] = q[0] / 2.0f - q[1] + q[2] / 2.0f;
+        // Bspline-to-Poly = Matrix([[1/2,  -1, 1/2],
+        //                           [-1,    1,   0],
+        //                           [1/2, 1/2,   0]])
+        p[0] = (         q[0] - 2.0f * q[1] + q[2] ) / 2.0f;
+        p[1] = ( -2.0f * q[0] + 2.0f * q[1]        ) / 2.0f;
+        p[2] = (         q[0] +        q[1]        ) / 2.0f;
     }
 
     __device__ __forceinline__ void export2BSpline( float4 bs[3] ) const
     {
+        // inverse of initializeFromBSpline
+        // Bspline-to-Poly = Matrix([[1/2,  -1, 1/2],
+        //                           [-1,    1,   0],
+        //                           [1/2, 1/2,   0]])
+        // invert to get:
+        // Poly-to-Bspline = Matrix([[0, -1/2, 1],
+        //                           [0,  1/2, 1],
+        //                           [2,  3/2, 1]])
         bs[0] = p[0] - p[1] / 2;
         bs[1] = p[0] + p[1] / 2;
         bs[2] = p[0] + 1.5f * p[1] + 2 * p[2];
     }
 
+    __device__ __forceinline__ float4 position4( float u ) const
+    {
+        return ( p[0] * u + p[1] ) * u + p[2]; // Horner scheme
+    }
+
     __device__ __forceinline__ float3 position3( float u ) const
     {
-        return (float3&)p[0] + u * (float3&)p[1] + u * u * (float3&)p[2];
+        return make_float3( position4( u ) );
     }
-    __device__ __forceinline__ float4 position4( float u ) const { return p[0] + u * p[1] + u * u * p[2]; }
 
-    __device__ __forceinline__ float radius( float u ) const { return p[0].w + u * ( p[1].w + u * p[2].w ); }
-
-    __device__ __forceinline__ float min_radius( float u1, float u2 ) const
+    __device__ __forceinline__ float radius( float u ) const
     {
-        float root1 = clamp( -0.5f * p[1].w / p[2].w, u1, u2 );
-        return fminf( fminf( radius( u1 ), radius( u2 ) ), radius( root1 ) );
+        return position4( u ).w;
     }
 
-    __device__ __forceinline__ float max_radius( float u1, float u2 ) const
+    __device__ __forceinline__ float4 velocity4( float u ) const
     {
-        if( !p[1].w && !p[2].w )
-            return p[0].w;  // a quick bypass for constant width
-        float root1 = clamp( -0.5f * p[1].w / p[2].w, u1, u2 );
-        return fmaxf( fmaxf( radius( u1 ), radius( u2 ) ), radius( root1 ) );
+        return 2.0f * p[0] * u + p[1];
     }
 
-    __device__ __forceinline__ float3 velocity3( float u ) const { return (float3&)p[1] + 2 * u * (float3&)p[2]; }
-    __device__ __forceinline__ float4 velocity4( float u ) const { return p[1] + 2 * u * p[2]; }
+    __device__ __forceinline__ float3 velocity3( float u ) const
+    {
+        return make_float3( velocity4( u ) );
+    }
 
-    __device__ __forceinline__ float3 acceleration3( float u ) const { return 2 * (float3&)p[2]; }
-    __device__ __forceinline__ float4 acceleration4( float u ) const { return 2 * p[2]; }
+    __device__ __forceinline__ float derivative_of_radius( float u ) const
+    {
+        return velocity4( u ).w;
+    }
 
-    __device__ __forceinline__ float derivative_of_radius( float u ) const { return p[1].w + 2 * u * p[2].w; }
+    __device__ __forceinline__ float4 acceleration4( float u ) const
+    {
+        return 2.0f * p[0];
+    }
 
-    float4 p[3];  // pre-transformed "control points" for fast evaluation
+    __device__ __forceinline__ float3 acceleration3( float u ) const
+    {
+        return make_float3( acceleration4( u ) );
+    }
+
+
+    float4 p[3];
 };
 
 //
 // Third order polynomial interpolator
 //
-struct CubicBSplineSegment
+// Storing {p0, p1, p2, p3} for evaluation:
+//     P(u) = p0 * u^3 + p1 * u^2 + p2 * u + p3
+//
+struct CubicInterpolator
 {
-    __device__ __forceinline__ CubicBSplineSegment() {}
-    __device__ __forceinline__ CubicBSplineSegment( const float4* q ) { initializeFromBSpline( q ); }
+    __device__ __forceinline__ CubicInterpolator() {}
 
     __device__ __forceinline__ void initializeFromBSpline( const float4* q )
     {
-        // pre-transform control points for fast evaluation
-        p[0] = ( q[2] + q[0] ) / 6 + ( 4 / 6.0f ) * q[1];
-        p[1] = q[2] - q[0];
-        p[2] = q[2] - q[1];
-        p[3] = q[3] - q[1];
+        // Bspline-to-Poly = Matrix([[-1/6, 1/2, -1/2, 1/6],
+        //                           [ 1/2,  -1,  1/2,   0],
+        //                           [-1/2,   0,  1/2,   0],
+        //                           [ 1/6, 2/3,  1/6,   0]])
+        p[0] = ( q[0] * ( -1.0f ) + q[1] * (  3.0f ) + q[2] * ( -3.0f ) + q[3] ) / 6.0f;
+        p[1] = ( q[0] * (  3.0f ) + q[1] * ( -6.0f ) + q[2] * (  3.0f )        ) / 6.0f;
+        p[2] = ( q[0] * ( -3.0f )                    + q[2] * (  3.0f )        ) / 6.0f;
+        p[3] = ( q[0] * (  1.0f ) + q[1] * (  4.0f ) + q[2] * (  1.0f )        ) / 6.0f;
     }
 
     __device__ __forceinline__ void export2BSpline( float4 bs[4] ) const
     {
         // inverse of initializeFromBSpline
-        bs[0] = p[0] + ( 4 * p[2] - 5 * p[1] ) / 6;
-        bs[1] = p[0] + ( p[1] - 2 * p[2] ) / 6;
-        bs[2] = p[0] + ( p[1] + 4 * p[2] ) / 6;
-        bs[3] = p[0] + p[3] + ( p[1] - 2 * p[2] ) / 6;
+        // Bspline-to-Poly = Matrix([[-1/6, 1/2, -1/2, 1/6],
+        //                           [ 1/2,  -1,  1/2,   0],
+        //                           [-1/2,   0,  1/2,   0],
+        //                           [ 1/6, 2/3,  1/6,   0]])
+        // invert to get:
+        // Poly-to-Bspline = Matrix([[0,  2/3, -1, 1],
+        //                           [0, -1/3,  0, 1],
+        //                           [0,  2/3,  1, 1],
+        //                           [6, 11/3,  2, 1]])
+        bs[0] = (        p[1] * (  2.0f ) + p[2] * ( -1.0f ) + p[3] ) / 3.0f;
+        bs[1] = (        p[1] * ( -1.0f )                    + p[3] ) / 3.0f;
+        bs[2] = (        p[1] * (  2.0f ) + p[2] * (  1.0f ) + p[3] ) / 3.0f;
+        bs[3] = ( p[0] + p[1] * ( 11.0f ) + p[2] * (  2.0f ) + p[3] ) / 3.0f;
     }
 
-    __device__ __forceinline__ static float3 terms( float u )
+
+    __device__ __forceinline__ void initializeFromCatrom(const float4* q)
     {
-        float uu = u * u;
-        float u3 = ( 1 / 6.0f ) * uu * u;
-        return make_float3( u3 + 0.5f * ( u - uu ), uu - 4 * u3, u3 );
+        // Catrom-to-Poly = Matrix([[-1/2, 3/2, -3/2,  1/2],
+        //                          [1,   -5/2,    2, -1/2],
+        //                          [-1/2,   0,  1/2,    0],
+        //                          [0,      1,    0,    0]])
+        p[0] = ( -1.0f * q[0] + (  3.0f ) * q[1] + ( -3.0f ) * q[2] + (  1.0f ) * q[3] ) / 2.0f;
+        p[1] = (  2.0f * q[0] + ( -5.0f ) * q[1] + (  4.0f ) * q[2] + ( -1.0f ) * q[3] ) / 2.0f;
+        p[2] = ( -1.0f * q[0]                    + (  1.0f ) * q[2]                    ) / 2.0f;
+        p[3] = (                (  2.0f ) * q[1]                                       ) / 2.0f;
     }
+
+    __device__ __forceinline__ void export2Catrom(float4 cr[4]) const
+    {
+        // Catrom-to-Poly = Matrix([[-1/2, 3/2, -3/2,  1/2],
+        //                          [1,   -5/2,    2, -1/2],
+        //                          [-1/2,   0,  1/2,    0],
+        //                          [0,      1,    0,    0]])
+        // invert to get:
+        // Poly-to-Catrom = Matrix([[1, 1, -1, 1],
+        //                          [0, 0, 0, 1],
+        //                          [1, 1, 1, 1],
+        //                          [6, 4, 2, 1]])
+        cr[0] = ( p[0] * 6.f/6.f ) - ( p[1] * 5.f/6.f ) + ( p[2] * 2.f/6.f ) + ( p[3] * 1.f/6.f );
+        cr[1] = ( p[0] * 6.f/6.f )                                                               ;
+        cr[2] = ( p[0] * 6.f/6.f ) + ( p[1] * 1.f/6.f ) + ( p[2] * 2.f/6.f ) + ( p[3] * 1.f/6.f );
+        cr[3] = ( p[0] * 6.f/6.f )                                           + ( p[3] * 6.f/6.f );
+    }
+
+    __device__ __forceinline__ void initializeFromBezier(const float4* q)
+    {
+        // Bezier-to-Poly = Matrix([[-1,  3, -3, 1],
+        //                          [ 3, -6,  3, 0],
+        //                          [-3,  3,  0, 0],
+        //                          [ 1,  0,  0, 0]])
+        p[0] = q[0] * ( -1.0f ) + q[1] * (  3.0f ) + q[2] * ( -3.0f ) + q[3];
+        p[1] = q[0] * (  3.0f ) + q[1] * ( -6.0f ) + q[2] * (  3.0f );
+        p[2] = q[0] * ( -3.0f ) + q[1] * (  3.0f );
+        p[3] = q[0];
+    }
+
+    __device__ __forceinline__ void export2Bezier(float4 bz[4]) const
+    {
+        // inverse of initializeFromBezier
+        // Bezier-to-Poly = Matrix([[-1,  3, -3, 1],
+        //                          [ 3, -6,  3, 0],
+        //                          [-3,  3,  0, 0],
+        //                          [ 1,  0,  0, 0]])
+        // invert to get:
+        // Poly-to-Bezier = Matrix([[0,   0,   0, 1],
+        //                          [0,   0, 1/3, 1],
+        //                          [0, 1/3, 2/3, 1],
+        //                          [1,   1,   1, 1]])
+        bz[0] =                                              p[3];
+        bz[1] =                           p[2] * (1.f/3.f) + p[3];
+        bz[2] =        p[1] * (1.f/3.f) + p[2] * (2.f/3.f) + p[3];
+        bz[3] = p[0] + p[1]             + p[2]             + p[3];
+    }
+
+    __device__ __forceinline__ float4 position4( float u ) const
+    {
+        return ( ( ( p[0] * u ) + p[1] ) * u + p[2] ) * u + p[3]; // Horner scheme
+     }
 
     __device__ __forceinline__ float3 position3( float u ) const
     {
-        float3 q = terms( u );
-        return (float3&)p[0] + q.x * (float3&)p[1] + q.y * (float3&)p[2] + q.z * (float3&)p[3];
+        // rely on compiler and inlining for dead code removal
+        return make_float3( position4( u ) );
     }
-    __device__ __forceinline__ float4 position4( float u ) const
-    {
-        float3 q = terms( u );
-        return p[0] + q.x * p[1] + q.y * p[2] + q.z * p[3];
-    }
-
     __device__ __forceinline__ float radius( float u ) const
     {
-        return p[0].w + u * ( p[1].w / 2 + u * ( ( p[2].w - p[1].w / 2 ) + u * ( p[1].w - 4 * p[2].w + p[3].w ) / 6 ) );
-    }
-
-    __device__ __forceinline__ float min_radius( float u1, float u2 ) const
-    {
-        // a + 2 b u - c u^2
-        float a    = p[1].w;
-        float b    = 2 * p[2].w - p[1].w;
-        float c    = 4 * p[2].w - p[1].w - p[3].w;
-        float rmin = fminf( radius( u1 ), radius( u2 ) );
-        if( fabsf( c ) < 1e-5f )
-        {
-            float root1 = clamp( -0.5f * a / b, u1, u2 );
-            return fminf( rmin, radius( root1 ) );
-        }
-        else
-        {
-            float det   = b * b + a * c;
-            det         = det <= 0.0f ? 0.0f : sqrt( det );
-            float root1 = clamp( ( b + det ) / c, u1, u2 );
-            float root2 = clamp( ( b - det ) / c, u1, u2 );
-            return fminf( rmin, fminf( radius( root1 ), radius( root2 ) ) );
-        }
-    }
-
-    __device__ __forceinline__ float max_radius( float u1, float u2 ) const
-    {
-        if( !p[1].w && !p[2].w && !p[3].w )
-            return p[0].w;  // a quick bypass for constant width
-        // a + 2 b u - c u^2
-        float a    = p[1].w;
-        float b    = 2 * p[2].w - p[1].w;
-        float c    = 4 * p[2].w - p[1].w - p[3].w;
-        float rmax = fmaxf( radius( u1 ), radius( u2 ) );
-        if( fabsf( c ) < 1e-5f )
-        {
-            float root1 = clamp( -0.5f * a / b, u1, u2 );
-            return fmaxf( rmax, radius( root1 ) );
-        }
-        else
-        {
-            float det   = b * b + a * c;
-            det         = det <= 0.0f ? 0.0f : sqrt( det );
-            float root1 = clamp( ( b + det ) / c, u1, u2 );
-            float root2 = clamp( ( b - det ) / c, u1, u2 );
-            return fmaxf( rmax, fmaxf( radius( root1 ), radius( root2 ) ) );
-        }
-    }
-
-    __device__ __forceinline__ float3 velocity3( float u ) const
-    {
-        // adjust u to avoid problems with tripple knots.
-        if( u == 0 )
-            u = 0.000001f;
-        if( u == 1 )
-            u = 0.999999f;
-        float v = 1 - u;
-        return 0.5f * v * v * (float3&)p[1] + 2 * v * u * (float3&)p[2] + 0.5f * u * u * (float3&)p[3];
+        return position4( u ).w;
     }
 
     __device__ __forceinline__ float4 velocity4( float u ) const
@@ -243,24 +282,32 @@ struct CubicBSplineSegment
             u = 0.000001f;
         if( u == 1 )
             u = 0.999999f;
-        float v = 1 - u;
-        return 0.5f * v * v * p[1] + 2 * v * u * p[2] + 0.5f * u * u * p[3];
+        return ( ( 3.0f * p[0] * u ) + 2.0f * p[1] ) * u + p[2];
     }
 
-    __device__ __forceinline__ float3 acceleration3( float u ) const { return make_float3( acceleration4( u ) ); }
-    __device__ __forceinline__ float4 acceleration4( float u ) const
+    __device__ __forceinline__ float3 velocity3( float u ) const
     {
-        return 2 * p[2] - p[1] + ( p[1] - 4 * p[2] + p[3] ) * u;
+        return make_float3( velocity4( u ) );
     }
 
     __device__ __forceinline__ float derivative_of_radius( float u ) const
     {
-        float v = 1 - u;
-        return 0.5f * v * v * p[1].w + 2 * v * u * p[2].w + 0.5f * u * u * p[3].w;
+        return velocity4( u ).w;
     }
 
-    float4 p[4];  // pre-transformed "control points" for fast evaluation
+    __device__ __forceinline__ float4 acceleration4( float u ) const
+    {
+        return 6.0f * p[0] * u + 2.0f * p[1]; // Horner scheme
+    }
+
+    __device__ __forceinline__ float3 acceleration3( float u ) const
+    {
+        return make_float3( acceleration4( u ) );
+    }
+
+    float4 p[4];
 };
+
 
 // Compute curve primitive surface normal in object space.
 //
@@ -332,18 +379,18 @@ __device__ __forceinline__ float3 surfaceNormal( const CurveType& bc, float u, f
 }
 
 template <int type = 1>
-__device__ __forceinline__ float3 surfaceNormal( const LinearBSplineSegment& bc, float u, float3& ps )
+__device__ __forceinline__ float3 surfaceNormal( const LinearInterpolator& bc, float u, float3& ps )
 {
     float3 normal;
     if( u == 0.0f )
     {
-        normal = ps - (float3&)(bc.p[0]);  // special handling for round endcaps
+        normal = ps - ( float3 & )( bc.p[0] );  // special handling for round endcaps
     }
     else if( u >= 1.0f )
     {
         // reconstruct second control point (Note: the interpolator pre-transforms
         // the control-points to speed up repeated evaluation.
-        const float3 p1 = (float3&)(bc.p[1]) + (float3&)(bc.p[0]);
+        const float3 p1 = ( float3 & ) (bc.p[1] ) + ( float3 & )( bc.p[0] );
         normal = ps - p1;  // special handling for round endcaps
     }
     else
