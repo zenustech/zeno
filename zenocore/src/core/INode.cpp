@@ -1224,9 +1224,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_inputObjs.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
+                    if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1235,9 +1237,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_inputPrims.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->fromparam->name == edge.outParam) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
+                    if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1248,9 +1252,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_outputObjs.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto inNode = spLink->toparam->m_wpNode.lock()) {
+                    if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1259,9 +1265,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_outputPrims.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->toparam->name == edge.inParam) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto inNode = spLink->toparam->m_wpNode.lock()) {
+                    if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -2084,15 +2092,23 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
 void zeno::INode::getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType)
 {
     if (bPrim) {
-        ParamPrimitive const& primParam = bInput ? get_input_prim_param(param_name) : get_output_prim_param(param_name);
-        paramType = primParam.type;
-        socketType = primParam.socketType;
+        auto iter = bInput ? m_inputPrims.find(param_name) : m_outputPrims.find(param_name);
+        if (bInput ? (iter != m_inputPrims.end()) : (iter != m_outputPrims.end())) {
+            paramType = iter->second.type;
+            socketType = iter->second.socketType;
+            return;
+        }
     }
     else {
-        ParamObject const& objParam = bInput ? get_input_obj_param(param_name) : get_output_obj_param(param_name);
-        paramType = objParam.type;
-        socketType = objParam.socketType;
+        auto iter = bInput ? m_inputObjs.find(param_name) : m_outputObjs.find(param_name);
+        if (bInput ? (iter != m_inputObjs.end()) : (iter != m_outputObjs.end())) {
+            paramType = iter->second.type;
+            socketType = iter->second.socketType;
+            return;
+        }
     }
+    paramType = Param_Null;
+    socketType = Socket_Primitve;
 }
 
 template<class T, class E> T INode::resolveVec(const zeno::reflect::Any& defl, const ParamType type)
