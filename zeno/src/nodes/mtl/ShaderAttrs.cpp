@@ -33,8 +33,8 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv tang bitang NoL LoV N T L V H reflectance fresnel instPos instNrm instUv instClr instTang prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy() rayLength worldNrm worldTan worldBTn camFront camUp camRight", "attr", "pos"},
-        {"enum float vec2 vec3 vec4", "type", "vec3"},
+        {"enum pos clr nrm uv tang bitang NoL LoV N T L V H reflectance fresnel instPos instNrm instUv instClr instTang prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy() rayLength isShadowRay worldNrm worldTan worldBTn camFront camUp camRight", "attr", "pos"},
+        {"enum float vec2 vec3 vec4 bool", "type", "vec3"},
     },
     {
         {"shader", "out"},
