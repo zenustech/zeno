@@ -42,7 +42,7 @@ ZENO_DEFNODE(MakeCamera)({
         {gParamType_Float, "focalPlaneDistance", "2.0"},
     },
     {
-        {"CameraObject", "camera"},
+        {gParamType_Camera, "camera"},
     },
     {
     },
@@ -156,7 +156,7 @@ ZENO_DEFNODE(MakeLight)({
         {gParamType_Bool, "isEnabled", "1"},
     },
     {
-        {"LightObject", "light"},
+        {gParamType_Light, "light"},
     },
     {
     },

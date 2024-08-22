@@ -43,6 +43,9 @@ QColor ZColorManager::getColorByType(zeno::ParamType type)
     if (it != g_clrMapping.end()) {
         return QColor(QString::fromStdString(it->second));
     }
+    else if (type == Param_Wildcard || type == Obj_Wildcard) {
+        return QColor(255, 251, 240);
+    }
     else {
         return QColor();
     }

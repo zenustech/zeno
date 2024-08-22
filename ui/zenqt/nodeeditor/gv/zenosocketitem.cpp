@@ -422,7 +422,7 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     else {
         //ZASSERT_EXIT(!m_bInput && type == zeno::Socket_Output);   //可能是wildcard的Input/Output
         qreal radius = rc.height() * 0.2;
-        QPen pen = QPen(Qt::white, 2);
+        QPen pen = QPen(paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>() == Obj_Wildcard ? Qt::black : Qt::white, 2);
 
         //观察是否被own了
         if (!links.empty()) {
