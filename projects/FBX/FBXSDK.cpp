@@ -465,7 +465,7 @@ void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
     }
 }
 
-std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
+static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
     std::string nodeName = pNode->GetName();
@@ -597,7 +597,7 @@ std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     return prim;
 }
 
-std::shared_ptr<PrimitiveObject> GetSkeleton(FbxNode* pNode) {
+static std::shared_ptr<PrimitiveObject> GetSkeleton(FbxNode* pNode) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
     std::vector<std::string> bone_names;
@@ -676,7 +676,7 @@ std::shared_ptr<PrimitiveObject> GetSkeleton(FbxNode* pNode) {
     return prim;
 }
 
-void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &names) {
+static void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &names) {
     if (!pNode) return;
 
     FbxMesh* mesh = pNode->GetMesh();
@@ -690,7 +690,7 @@ void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &names) {
     }
 }
 
-void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
+static void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
     if (!pNode) return;
 
     FbxMesh* mesh = pNode->GetMesh();
@@ -709,26 +709,7 @@ void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared
         TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim);
     }
 }
-void TraverseNodesToGetSkeleton(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
-    if (!pNode) return;
-
-    FbxMesh* mesh = pNode->GetMesh();
-    if (mesh) {
-        auto name = pNode->GetName();
-        if (target_name == name) {
-            auto sub_prim = GetSkeleton(pNode);
-            if (sub_prim) {
-                prim = sub_prim;
-            }
-            return;
-        }
-    }
-
-    for (int i = 0; i < pNode->GetChildCount(); i++) {
-        TraverseNodesToGetSkeleton(pNode->GetChild(i), target_name, prim);
-    }
-}
-void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims) {
+static void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims) {
     if (!pNode) return;
 
     FbxMesh* mesh = pNode->GetMesh();
@@ -858,6 +839,192 @@ ZENDEFNODE(NewFBXImportSkin, {
     {"primitive"},
 });
 
+static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, std::shared_ptr<PrimitiveObject>& prim) {
+    auto pose_count = lScene->GetPoseCount();
+    bool found_bind_pose = false;
+    for (auto i = 0; i < pose_count; i++) {
+        auto pose = lScene->GetPose(i);
+        if (pose == nullptr || !pose->IsBindPose()) {
+            continue;
+        }
+        found_bind_pose = true;
+    }
+    if (found_bind_pose == false) {
+        lSdkManager->CreateMissingBindPoses(lScene);
+    }
+    pose_count = lScene->GetPoseCount();
+
+    std::vector<std::string> bone_names;
+    std::map<std::string, std::string> parent_mapping;
+    std::vector<vec3f> poss;
+    std::vector<vec3f> transform_r0;
+    std::vector<vec3f> transform_r1;
+    std::vector<vec3f> transform_r2;
+    for (auto i = 0; i < pose_count; i++) {
+        auto pose = lScene->GetPose(i);
+        if (pose == nullptr || !pose->IsBindPose()) {
+            continue;
+        }
+        for (int j = 1; j < pose->GetCount(); ++j) {
+            std::string bone_name = pose->GetNode(j)->GetName();
+            if (std::count(bone_names.begin(), bone_names.end(), bone_name)) {
+                continue;
+            }
+
+            FbxMatrix transformMatrix = pose->GetMatrix(j);
+            auto t = transformMatrix.GetRow(3);
+            poss.emplace_back(t[0], t[1], t[2]);
+
+            auto r0 = transformMatrix.GetRow(0);
+            auto r1 = transformMatrix.GetRow(1);
+            auto r2 = transformMatrix.GetRow(2);
+            transform_r0.emplace_back(r0[0], r0[1], r0[2]);
+            transform_r1.emplace_back(r1[0], r1[1], r1[2]);
+            transform_r2.emplace_back(r2[0], r2[1], r2[2]);
+
+            bone_names.emplace_back(pose->GetNode(j)->GetName());
+        }
+        for (int j = 1; j < pose->GetCount(); ++j) {
+            auto self_name = pose->GetNode(j)->GetName();
+            auto parent = pose->GetNode(j)->GetParent();
+            if (parent) {
+                auto parent_name = parent->GetName();
+                parent_mapping[self_name] = parent_name;
+            }
+        }
+    }
+    {
+        prim->verts.resize(bone_names.size());
+        prim->verts.values = poss;
+        prim->verts.add_attr<vec3f>("transform_r0") = transform_r0;
+        prim->verts.add_attr<vec3f>("transform_r1") = transform_r1;
+        prim->verts.add_attr<vec3f>("transform_r2") = transform_r2;
+        auto &boneNames = prim->verts.add_attr<int>("boneName");
+        std::iota(boneNames.begin(), boneNames.end(), 0);
+
+        std::vector<int> bone_connects;
+        for (auto bone_name: bone_names) {
+            if (parent_mapping.count(bone_name)) {
+                auto parent_name = parent_mapping[bone_name];
+                if (std::count(bone_names.begin(), bone_names.end(), parent_name)) {
+                    auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
+                    auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    bone_connects.push_back(parent_index);
+                    bone_connects.push_back(self_index);
+                }
+            }
+        }
+        prim->loops.values = bone_connects;
+        prim->polys.resize(bone_connects.size() / 2);
+        for (auto j = 0; j < bone_connects.size() / 2; j++) {
+            prim->polys[j] = {j * 2, 2};
+        }
+
+        prim->userData().set2("boneName_count", int(bone_names.size()));
+        for (auto i = 0; i < bone_names.size(); i++) {
+            prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
+        }
+    }
+}
+
+static void TraverseNodesToGetSkeleton(FbxNode* pNode, std::vector<std::string> &bone_names, std::vector<FbxMatrix> &transforms, std::map<std::string, std::string> &parent_mapping) {
+    if (!pNode) return;
+
+    FbxMesh* pMesh = pNode->GetMesh();
+    if (pMesh && pMesh->GetDeformerCount(FbxDeformer::eSkin)) {
+        FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
+        // Iterate over each cluster (bone)
+        for (int j = 0; j < pSkin->GetClusterCount(); ++j) {
+            FbxCluster* pCluster = pSkin->GetCluster(j);
+
+            FbxNode* pBoneNode = pCluster->GetLink();
+            if (!pBoneNode) continue;
+            std::string boneName = pBoneNode->GetName();
+            if (std::count(bone_names.begin(), bone_names.end(), boneName)) {
+                continue;
+            }
+            bone_names.emplace_back(boneName);
+            FbxAMatrix transformLinkMatrix;
+            pCluster->GetTransformLinkMatrix(transformLinkMatrix);
+
+            // The transformation of the mesh at binding time
+            FbxAMatrix transformMatrix;
+            pCluster->GetTransformMatrix(transformMatrix);
+
+            // Inverse bind matrix.
+            FbxAMatrix bindMatrix_ = transformMatrix.Inverse() * transformLinkMatrix;
+            auto bindMatrix = bit_cast<FbxMatrix>(bindMatrix_);
+            transforms.emplace_back(bindMatrix);
+
+            auto pParentNode = pBoneNode->GetParent();
+            if (pParentNode) {
+                std::string parentName = pParentNode->GetName();
+                parent_mapping[boneName] = parentName;
+            }
+        }
+    }
+
+    for (int i = 0; i < pNode->GetChildCount(); i++) {
+        TraverseNodesToGetSkeleton(pNode->GetChild(i), bone_names, transforms, parent_mapping);
+    }
+}
+std::shared_ptr<PrimitiveObject> GetSkeletonFromMesh(FbxScene* lScene) {
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    FbxNode* lRootNode = lScene->GetRootNode();
+    if (lRootNode) {
+        std::vector<std::string> bone_names;
+        std::vector<FbxMatrix> transforms;
+        std::map<std::string, std::string> parent_mapping;
+        TraverseNodesToGetSkeleton(lRootNode, bone_names, transforms, parent_mapping);
+        std::vector<vec3f> poss;
+        std::vector<vec3f> transform_r0;
+        std::vector<vec3f> transform_r1;
+        std::vector<vec3f> transform_r2;
+        for (auto i = 0; i < bone_names.size(); i++) {
+            auto bone_name = bone_names[i];
+            auto bindMatrix = transforms[i];
+            auto t = bindMatrix.GetRow(3);
+            poss.emplace_back(t[0], t[1], t[2]);
+
+            auto r0 = bindMatrix.GetRow(0);
+            auto r1 = bindMatrix.GetRow(1);
+            auto r2 = bindMatrix.GetRow(2);
+            transform_r0.emplace_back(r0[0], r0[1], r0[2]);
+            transform_r1.emplace_back(r1[0], r1[1], r1[2]);
+            transform_r2.emplace_back(r2[0], r2[1], r2[2]);
+        }
+        prim->verts.resize(bone_names.size());
+        prim->verts.values = poss;
+        prim->verts.add_attr<vec3f>("transform_r0") = transform_r0;
+        prim->verts.add_attr<vec3f>("transform_r1") = transform_r1;
+        prim->verts.add_attr<vec3f>("transform_r2") = transform_r2;
+        std::vector<int> bone_connects;
+        for (auto bone_name: bone_names) {
+            if (parent_mapping.count(bone_name)) {
+                auto parent_name = parent_mapping[bone_name];
+                if (std::count(bone_names.begin(), bone_names.end(), parent_name)) {
+                    auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
+                    auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
+                    bone_connects.push_back(parent_index);
+                    bone_connects.push_back(self_index);
+                }
+            }
+        }
+        prim->loops.values = bone_connects;
+        prim->polys.resize(bone_connects.size() / 2);
+        for (auto j = 0; j < bone_connects.size() / 2; j++) {
+            prim->polys[j] = {j * 2, 2};
+        }
+        auto &boneNames = prim->verts.add_attr<int>("boneName");
+        std::iota(boneNames.begin(), boneNames.end(), 0);
+        prim->userData().set2("boneName_count", int(bone_names.size()));
+        for (auto i = 0; i < bone_names.size(); i++) {
+            prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
+        }
+    }
+    return prim;
+}
 struct NewFBXImportSkeleton : INode {
     virtual void apply() override {
         auto fbx_object = get_input2<FBXObject>("fbx_object");
@@ -869,90 +1036,9 @@ struct NewFBXImportSkeleton : INode {
         // not contain any attributes.
         auto prim = std::make_shared<PrimitiveObject>();
 
-        auto pose_count = lScene->GetPoseCount();
-        bool found_bind_pose = false;
-        for (auto i = 0; i < pose_count; i++) {
-            auto pose = lScene->GetPose(i);
-            if (pose == nullptr || !pose->IsBindPose()) {
-                continue;
-            }
-            found_bind_pose = true;
-        }
-        if (found_bind_pose == false) {
-            lSdkManager->CreateMissingBindPoses(lScene);
-        }
-        pose_count = lScene->GetPoseCount();
-
-        std::vector<std::string> bone_names;
-        std::map<std::string, std::string> parent_mapping;
-        std::vector<vec3f> poss;
-        std::vector<vec3f> transform_r0;
-        std::vector<vec3f> transform_r1;
-        std::vector<vec3f> transform_r2;
-        for (auto i = 0; i < pose_count; i++) {
-            auto pose = lScene->GetPose(i);
-            if (pose == nullptr || !pose->IsBindPose()) {
-                continue;
-            }
-            for (int j = 1; j < pose->GetCount(); ++j) {
-                std::string bone_name = pose->GetNode(j)->GetName();
-                if (std::count(bone_names.begin(), bone_names.end(), bone_name)) {
-                    continue;
-                }
-
-                FbxMatrix transformMatrix = pose->GetMatrix(j);
-                auto t = transformMatrix.GetRow(3);
-                poss.emplace_back(t[0], t[1], t[2]);
-
-                auto r0 = transformMatrix.GetRow(0);
-                auto r1 = transformMatrix.GetRow(1);
-                auto r2 = transformMatrix.GetRow(2);
-                transform_r0.emplace_back(r0[0], r0[1], r0[2]);
-                transform_r1.emplace_back(r1[0], r1[1], r1[2]);
-                transform_r2.emplace_back(r2[0], r2[1], r2[2]);
-
-                bone_names.emplace_back(pose->GetNode(j)->GetName());
-            }
-            for (int j = 1; j < pose->GetCount(); ++j) {
-                auto self_name = pose->GetNode(j)->GetName();
-                auto parent = pose->GetNode(j)->GetParent();
-                if (parent) {
-                    auto parent_name = parent->GetName();
-                    parent_mapping[self_name] = parent_name;
-                }
-            }
-        }
-        {
-            prim->verts.resize(bone_names.size());
-            prim->verts.values = poss;
-            prim->verts.add_attr<vec3f>("transform_r0") = transform_r0;
-            prim->verts.add_attr<vec3f>("transform_r1") = transform_r1;
-            prim->verts.add_attr<vec3f>("transform_r2") = transform_r2;
-            auto &boneNames = prim->verts.add_attr<int>("boneName");
-            std::iota(boneNames.begin(), boneNames.end(), 0);
-
-            std::vector<int> bone_connects;
-            for (auto bone_name: bone_names) {
-                if (parent_mapping.count(bone_name)) {
-                    auto parent_name = parent_mapping[bone_name];
-                    if (std::count(bone_names.begin(), bone_names.end(), parent_name)) {
-                        auto self_index = std::find(bone_names.begin(), bone_names.end(), bone_name) - bone_names.begin();
-                        auto parent_index = std::find(bone_names.begin(), bone_names.end(), parent_name) - bone_names.begin();
-                        bone_connects.push_back(parent_index);
-                        bone_connects.push_back(self_index);
-                    }
-                }
-            }
-            prim->loops.values = bone_connects;
-            prim->polys.resize(bone_connects.size() / 2);
-            for (auto j = 0; j < bone_connects.size() / 2; j++) {
-                prim->polys[j] = {j * 2, 2};
-            }
-
-            prim->userData().set2("boneName_count", int(bone_names.size()));
-            for (auto i = 0; i < bone_names.size(); i++) {
-                prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
-            }
+        auto pose_count = GetSkeletonFromBindPose(lSdkManager, lScene, prim);
+        if (pose_count == 0 || get_input2<bool>("ForceFromMesh")) {
+            prim = GetSkeletonFromMesh(lScene);
         }
 
         if (get_input2<bool>("ConvertUnits")) {
@@ -976,45 +1062,13 @@ ZENDEFNODE(NewFBXImportSkeleton, {
     {
         "fbx_object",
         {"bool", "ConvertUnits", "0"},
+        {"bool", "ForceFromMesh", "0"},
     },
     {
         "prim",
     },
     {},
     {"primitive"},
-});
-
-struct NewFBXImportSkeleton2 : INode {
-    virtual void apply() override {
-        auto fbx_object = get_input2<FBXObject>("fbx_object");
-        auto lSdkManager = fbx_object->lSdkManager;
-        auto lScene = fbx_object->lScene;
-
-        auto prim = std::make_shared<PrimitiveObject>();
-
-        FbxNode* lRootNode = lScene->GetRootNode();
-        std::vector<std::string> availableRootNames;
-        TraverseNodesToGetNames(lRootNode, availableRootNames);
-        for (auto name: availableRootNames) {
-            zeno::log_info("fuck: {}", name);
-        }
-        TraverseNodesToGetSkeleton(lRootNode, get_input2<std::string>("name"), prim);
-
-        set_output("prim", prim);
-    }
-};
-
-ZENDEFNODE(NewFBXImportSkeleton2, {
-    {
-        "fbx_object",
-        {"bool", "ConvertUnits", "0"},
-        {"string", "name", "0"},
-    },
-    {
-        "prim",
-    },
-    {},
-    {"deprecated"},
 });
 
 struct NewFBXImportAnimation : INode {
