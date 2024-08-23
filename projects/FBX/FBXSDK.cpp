@@ -1996,4 +1996,172 @@ ZENDEFNODE(PrimAttrFlat, {
     {"debug"},
 });
 
+#if 0
+float length(std::vector<float> &b)
+{
+    float l = 0;
+    for(int i=0;i<b.size();i++)
+    {
+        l += b[i] * b[i];
+    }
+    return sqrt(l);
+}
+//
+void GaussSeidelSolve(std::vector<std::vector<float>> &A, std::vector<float> &b, std::vector<float>&x,
+                      int max_iter, float tol)
+    {
+        int iter=0;
+        float b_nrm = length(b);
+        while(iter<max_iter)
+        {
+            for(int i=0;i<x.size();i++)
+            {
+                float d = 0;
+                for(int j=0;j<A[i].size();j++)
+                {
+                    if(j!=i)
+                    {
+                        d += A[i][j] * x[j];
+                    }
+                }
+
+                x[i] = (b[i] - d)/A[i][i];
+            }
+            float e = 0;
+            for(int i=0;i<x.size();i++)
+            {
+                float d = b[i];
+                for(int j=0;j<A[i].size();j++)
+                {
+                    d -= A[i][j] * x[j];
+                }
+                e = max(abs(d), e);
+            }
+            e = e/b_nrm;
+            if(e<tol)
+                break;
+            iter++;
+        }
+    }
+    void computeJointJacobian(std::vector<int> &index,
+                              std::vector<vec3f> &J,
+                              std::vector<vec3f> &r,
+                              //skeleton * skel_ptr,
+                              vec3f e_curr
+                              )
+    {
+        J.resize(index.size());
+        for(int i=0;i<index.size();i++)
+        {
+            int id = index[i];
+            auto r_i = r[index[i]];
+            auto p_i = getJointPos(id, skel_ptr);
+            auto dedtheta_i = cross(r_i, e_curr - p_i);
+            J[i] = dedtheta_i;
+        }
+    }
+    void computeJTJ(std::vector<vec3f> &J, std::vector<std::vector<float>> &JTJ, float alpha)
+    {
+        JTJ.resize(J.size());
+        for(int i=0;i<J.size();i++)
+        {
+            JTJ[i].resize(J.size());
+        }
+        for(int i=0;i<J.size();i++)
+        {
+            for(int j=0;j<J.size();j++)
+            {
+                JTJ[i][j] = dot(J[i], J[j]);
+            }
+            JTJ[i][i] += alpha;
+        }
+    }
+void solveJointUpdate(int id,
+                      //tarPos,
+                      std::vector<int> &index,
+                      std::vector<float> &dtheta,
+                      std::vector<float> &theta,
+                      float &dist)
+{
+    dtheta.resize(theta.size());
+    dtheta.assign(0);
+    //skeleton = FK(theta);
+    //e_curr = getJointPos(id, skeleton);
+    //de = e - tarPos;
+    dist = length(de);
+    if(dist<0.0001)
+        return;
+    //computeJointJacobian();
+    //computeJTJ(..,..,0.01);
+    auto b = std::vector<float>(index.size());
+    for(int i=0;i<b.size();i++)
+    {
+        b[i] = dot(J[i], de);
+    }
+    auto x = std::vector<float>(0);
+    GaussSeidelSolve(JTJ, b, x, 100, 0.00001);
+    for(int i=0;i<index.size();i++)
+    {
+        dtheta[index[i]] = x[i];
+    }
+}
+
+void SolveIKConstrained(//skeletonPtr,
+                        std::vector<float> & theta,
+                        std::vector<vec2f> & theta_constraints,
+                        std::vector<vec3f> &targets,
+                        std::vector<int> endEffectorIDs,
+                        std::vector<int> startIDs,
+                        int iter_max
+                        )
+{
+    std::vector<std::vector<float>> dtheta;
+    dtheta.resize(endEffectorIDs.size());
+    int iter = 0;
+    std::vector<float> old_theta;
+    old_theta = theta;
+    while(iter<iter_max) {
+        iter++;
+        float err = 0;
+        for (int i = 0; i < endEffectorIDs.size(); i++) {
+            auto endid = endEffectorIDs[i];
+            auto startid = startIDs[i];
+            //index = getIds(startId, endId, skeletonPtr);
+            float e_i;
+            solveJointUpdate(endid, index, dtheta[i], theta, e_i);
+            err += e_i;
+        }
+        if (err < 0.0001)
+            break;
+        std::vector<float> w;
+        w.resize(theta.size());
+        w.assign(0);
+        std::vector<float> total_dtheta;
+        total_dtheta.resize(theta.size());
+        total_dtheta.assign(0);
+
+        for(int j=0;j<endEffectorIDs.size();j++)
+            for (int i = 0; i < theta.size(); i++) {
+                total_dtheta[i] += dtheta[j][i];
+                w[i] += dtheta[j][i] > 0 ? 1 : 0;
+            }
+
+
+        for (int i = 0; i < theta.size(); ++i) {
+            theta[i] = theta[i] + total_dtheta[i] / (w[i] > 0 ? w[i] : 1);
+            theta[i] = clamp(theta[i], theta_constraints[i][0], theta_constraints[i][1]);
+        }
+
+        float max_dtheta = 0;
+        for(int i=0;i<theta.size();i++)
+        {
+            max_dtheta = max(abs(old_theta[i] - theta[i]), max_dtheta);
+        }
+        if(max_dtheta<0.0001) break;
+
+        old_theta = theta;
+    }
+
+}
+#endif
 }
