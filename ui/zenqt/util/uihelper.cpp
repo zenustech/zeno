@@ -2216,8 +2216,9 @@ QString UiHelper::getTypeNameFromRtti(zeno::ParamType type)
     else {
         const zeno::reflect::RTTITypeInfo& typeInfo = zeno::reflect::ReflectionRegistry::get().getRttiMap()->get(type);
         std::vector<std::regex> patterns = {
-            std::regex (R"(std::shared_ptr\s*<\s*struct\s*zeno::(.*?)\s*>)"),   //提取obj名
-            std::regex (R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))")   //提取vec名
+            std::regex(R"(std::shared_ptr\s*<\s*(?:const)?\s*struct\s*zeno::(.*?)\s*>)"),    //提取obj名
+            std::regex(R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))"),   //提取vec名
+            std::regex(R"(std::basic_(.*?)\s*<\s*char\s*>)")                    //提取string
         };
         std::string rttiname = typeInfo.name();
         typeStr = QString::fromStdString(rttiname);

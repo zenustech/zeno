@@ -31,6 +31,7 @@
 #include <zeno/core/ReferManager.h>
 #include "reflect/type.hpp"
 #include <zeno/types/MeshObject.h>
+#include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
@@ -390,21 +391,56 @@ ZENO_API void INode::reflecNode_apply()
         for (zeno::reflect::IMemberFunction* func : m_pTypebase->get_member_functions()) {
             const auto& funcname = func->get_name();
             if (funcname == "apply") {
+                //根据ReflectCustomUI映射apply参数名到节点参数名
+                std::map<std::string, std::string> inputPrims, outputPrims, inputObjs, outputObjs;
+                for (zeno::reflect::IMemberField* field : m_pTypebase->get_member_fields()) {
+                    if (field->get_field_type() == zeno::reflect::get_type<ReflectCustomUI>()) {
+                        zeno::reflect::Any reflectCustomUiAny = field->get_field_value(this);
+                        if (reflectCustomUiAny.has_value()) {
+                            ReflectCustomUI reflectCustomUi = zeno::reflect::any_cast<ReflectCustomUI>(reflectCustomUiAny);
+                            for (auto& group : reflectCustomUi.inputPrims.groups)
+                                for (auto& param : group.params)
+                                    inputPrims.insert({ param.mapTo, param.dispName });
+                            for (auto& param : reflectCustomUi.outputPrims.params)
+                                outputPrims.insert({ param.mapTo, param.dispName });
+                            for (auto& obj: reflectCustomUi.inputObjs.objs)
+                                inputObjs.insert({ obj.mapTo, obj.dispName });
+                            for (auto& obj: reflectCustomUi.outputObjs.objs)
+                                outputObjs.insert({ obj.mapTo, obj.dispName });
+                        }
+                        break;
+                    }
+                }
+                const auto& getOutputParamNameFromFieldName = [&outputPrims, &outputObjs](std::string paramname, bool isPrim) -> std::string {
+                    if (!isPrim)
+                        return outputObjs.find(paramname) == outputObjs.end() ? paramname : outputObjs[paramname];
+                    else
+                        return outputPrims.find(paramname) == outputPrims.end() ? paramname : outputPrims[paramname];
+                };
                 //从apply参数获取输入
                 zeno::reflect::ArrayList<zeno::reflect::Any> paramValues;
                 std::vector<std::tuple<std::string, zeno::ParamType, int>> outputsName;
 
                 const zeno::reflect::ArrayList<zeno::reflect::RTTITypeInfo>& params = func->get_params();
-                const auto& param_names = func->get_params_name();
+                const auto& field_names = func->get_params_name();
                 for (int i = 0; i < params.size(); i++) {
                     const zeno::reflect::RTTITypeInfo& param_type = params[i];
                     if (!param_type.has_flags(zeno::reflect::TF_IsConst) && param_type.has_flags(zeno::reflect::TF_IsLValueRef)) {
                         ParamType _type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
-                        outputsName.push_back({ param_names[i].c_str(), _type, i });
+                        bool bConstPtr;
+                        outputsName.push_back({ getOutputParamNameFromFieldName(field_names[i].c_str(), zeno::isObjectType(param_type, bConstPtr)), _type, i});
                     }
                     else {
                         zeno::reflect::Any inputAny;
-                        auto iter = m_inputPrims.find(param_names[i].c_str());
+                        bool bConstPtr;
+                        std::string inputName;
+                        if (zeno::isObjectType(param_type, bConstPtr)) {
+                            inputName = inputObjs.find(field_names[i].c_str()) == inputObjs.end() ? field_names[i].c_str() : inputObjs[field_names[i].c_str()];
+                        }
+                        else {
+                            inputName = inputPrims.find(field_names[i].c_str()) == inputPrims.end() ? field_names[i].c_str() : inputPrims[field_names[i].c_str()];
+                        }
+                        auto iter = m_inputPrims.find(inputName);
                         if (iter != m_inputPrims.end()) {
                             auto& val = iter->second.result;
                             if (val.has_value()) {
@@ -415,7 +451,7 @@ ZENO_API void INode::reflecNode_apply()
                             }
                         }
                         else {
-                            auto iter2 = m_inputObjs.find(param_names[i].c_str());
+                            auto iter2 = m_inputObjs.find(inputName);
                             if (iter2 != m_inputObjs.end())
                                 inputAny = zeno::reflect::move(iter2->second.spObject);
                         }
@@ -467,14 +503,14 @@ ZENO_API void INode::reflecNode_apply()
                 zeno::reflect::Any res = func->invoke_unsafe(this, paramValues);
                 //从apply参数/返回值获取输出
                 for (int i = paramValues.size() - 1; i > paramValues.size() - outputsName.size() - 1; i--) {
-                    auto iter = m_outputObjs.find(param_names[i].c_str());
+                    auto iter = m_outputObjs.find(getOutputParamNameFromFieldName(field_names[i].c_str(), false));
                     if (iter != m_outputObjs.end()) {
                         if (paramValues[i].has_value() && params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
                             iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
                         }
                     }
                     else {
-                        auto iter2 = m_outputPrims.find(param_names[i].c_str());
+                        auto iter2 = m_outputPrims.find(getOutputParamNameFromFieldName(field_names[i].c_str(), true));
                         if (iter2 != m_outputPrims.end()) {
                             iter2->second.result = zeno::reflect::move(paramValues[i]);
                         }
