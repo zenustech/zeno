@@ -31,7 +31,6 @@
 #include <zeno/core/ReferManager.h>
 #include "reflect/type.hpp"
 #include <zeno/types/MeshObject.h>
-#include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
@@ -391,31 +390,16 @@ ZENO_API void INode::reflecNode_apply()
         for (zeno::reflect::IMemberFunction* func : m_pTypebase->get_member_functions()) {
             const auto& funcname = func->get_name();
             if (funcname == "apply") {
-                //根据ReflectCustomUI映射apply参数名到节点参数名
+                //根据ReflectCustomUI获取fieldName到displayName映射
                 std::map<std::string, std::string> inputPrims, outputPrims, inputObjs, outputObjs;
-                for (zeno::reflect::IMemberField* field : m_pTypebase->get_member_fields()) {
-                    if (field->get_field_type() == zeno::reflect::get_type<ReflectCustomUI>()) {
-                        zeno::reflect::Any reflectCustomUiAny = field->get_field_value(this);
-                        if (reflectCustomUiAny.has_value()) {
-                            ReflectCustomUI reflectCustomUi = zeno::reflect::any_cast<ReflectCustomUI>(reflectCustomUiAny);
-                            for (auto& group : reflectCustomUi.inputPrims.groups)
-                                for (auto& param : group.params)
-                                    inputPrims.insert({ param.mapTo, param.dispName });
-                            for (auto& param : reflectCustomUi.outputPrims.params)
-                                outputPrims.insert({ param.mapTo, param.dispName });
-                            for (auto& obj: reflectCustomUi.inputObjs.objs)
-                                inputObjs.insert({ obj.mapTo, obj.dispName });
-                            for (auto& obj: reflectCustomUi.outputObjs.objs)
-                                outputObjs.insert({ obj.mapTo, obj.dispName });
-                        }
-                        break;
-                    }
-                }
+                getFieldNameParamNameMapByReflectCustomUi(m_pTypebase, shared_from_this(), inputPrims, outputPrims, inputObjs, outputObjs);
                 const auto& getOutputParamNameFromFieldName = [&outputPrims, &outputObjs](std::string paramname, bool isPrim) -> std::string {
-                    if (!isPrim)
+                    if (!isPrim) {
                         return outputObjs.find(paramname) == outputObjs.end() ? paramname : outputObjs[paramname];
-                    else
+                    }
+                    else {
                         return outputPrims.find(paramname) == outputPrims.end() ? paramname : outputPrims[paramname];
+                    }
                 };
                 //从apply参数获取输入
                 zeno::reflect::ArrayList<zeno::reflect::Any> paramValues;

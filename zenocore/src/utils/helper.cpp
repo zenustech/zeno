@@ -3,6 +3,7 @@
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/INode.h>
 #include <zeno/types/ObjectDef.h>
+#include <zeno/core/reflectdef.h>
 #include <regex>
 
 
@@ -810,6 +811,38 @@ namespace zeno {
         }
         else{
             return false;
+        }
+    }
+
+    void getFieldNameParamNameMapByReflectCustomUi(reflect::TypeBase* typeBase, std::shared_ptr<INode> node,
+        std::map<std::string, std::string>& inputPrims, std::map<std::string, std::string>& outputPrims, 
+        std::map<std::string, std::string>& inputObjs, std::map<std::string, std::string>& outputObjs)
+    {
+        if (!typeBase || !node) {
+            return;
+        }
+        for (zeno::reflect::IMemberField* field : typeBase->get_member_fields()) {
+            if (field->get_field_type() == zeno::reflect::get_type<ReflectCustomUI>()) {
+                zeno::reflect::Any reflectCustomUiAny = field->get_field_value(node.get());
+                if (reflectCustomUiAny.has_value()) {
+                    ReflectCustomUI reflectCustomUi = zeno::reflect::any_cast<ReflectCustomUI>(reflectCustomUiAny);
+                    for (auto& group : reflectCustomUi.inputPrims.groups) {
+                        for (auto& param : group.params) {
+                            inputPrims.insert({ param.mapTo, param.dispName });
+                        }
+                    }
+                    for (auto& param : reflectCustomUi.outputPrims.params) {
+                        outputPrims.insert({ param.mapTo, param.dispName });
+                    }
+                    for (auto& obj : reflectCustomUi.inputObjs.objs) {
+                        inputObjs.insert({ obj.mapTo, obj.dispName });
+                    }
+                    for (auto& obj : reflectCustomUi.outputObjs.objs) {
+                        outputObjs.insert({ obj.mapTo, obj.dispName });
+                    }
+                }
+                break;
+            }
         }
     }
 

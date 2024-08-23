@@ -47,6 +47,10 @@ namespace zeno {
     bool isNumericVecType(zeno::ParamType type);
     bool isSameDimensionNumericVecType(zeno::ParamType left, zeno::ParamType right);
     ZENO_API bool outParamTypeCanConvertInParamType(zeno::ParamType outType, zeno::ParamType inType);
+
+    void getFieldNameParamNameMapByReflectCustomUi(zeno::reflect::TypeBase* typeBase, std::shared_ptr<INode> node,
+        std::map<std::string, std::string>& inputPrims, std::map<std::string, std::string>& outputPrims,
+        std::map<std::string, std::string>& inputObjs, std::map<std::string, std::string>& outputObjs);
 }
 
 

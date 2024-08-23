@@ -1,8 +1,6 @@
 #include "statusbutton.h"
 #include "util/uihelper.h"
 
-int dirtyLayoutHeight = 2;
-
 StatusButton::StatusButton(RoundRectInfo info, QGraphicsItem* parent)
     : QGraphicsObject(parent)
     , m_bOn(false)

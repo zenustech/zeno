@@ -369,7 +369,7 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     m_dirtyMarker = new ZLayoutBackground;
     m_dirtyMarker->setColors(false, QColor(240, 215, 4));
     m_dirtyMarker->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-    m_dirtyMarker->setGeometry(QRectF(0, 0, 50, dirtyLayoutHeight));
+    m_dirtyMarker->setGeometry(QRectF(0, 0, ZenoStyle::dpiScaled(50), ZenoStyle::dpiScaled(StatusButton::dirtyLayoutHeight)));
 
     ZGraphicsLayout* pVLayout = new ZGraphicsLayout(false);
     pVLayout->addLayout(pHLayout);
