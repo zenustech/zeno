@@ -5,7 +5,6 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
-#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -32,7 +31,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <fstream>
-#include <regex>
 
 #define SET_CAMERA_DATA                         \
     out_pos = (n->pos);                       \
@@ -75,68 +73,16 @@ struct CihouMayaCameraFov : INode {
 ZENO_DEFNODE(CihouMayaCameraFov)({
     {
         {"enum Horizontal Vertical", "fit_gate", "Horizontal"},
-        {"float", "focL", "35"},
-        {"float", "fw", "36"},
-        {"float", "fh", "24"},
-        {"float", "nx", "0"},
-        {"float", "ny", "0"},
+        {gParamType_Float, "focL", "35"},
+        {gParamType_Float, "fw", "36"},
+        {gParamType_Float, "fh", "24"},
+        {gParamType_Float, "nx", "0"},
+        {gParamType_Float, "ny", "0"},
     },
     {
-        {"float", "fov"},
+        {gParamType_Float, "fov"},
     },
     {},
-    {"FBX"},
-});
-
-struct CameraNode: zeno::INode{
-    virtual void apply() override {
-        auto camera = std::make_unique<zeno::CameraObject>();
-
-        camera->pos = get_input2<zeno::vec3f>("pos");
-        camera->up = get_input2<zeno::vec3f>("up");
-        camera->view = get_input2<zeno::vec3f>("view");
-        camera->fov = get_input2<float>("fov");
-        camera->aperture = get_input2<float>("aperture");
-        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
-        camera->userData().set2("frame", get_input2<float>("frame"));
-
-        auto other_props = get_input2<std::string>("other");
-        std::regex reg(",");
-        std::sregex_token_iterator p(other_props.begin(), other_props.end(), reg, -1);
-        std::sregex_token_iterator end;
-        std::vector<float> prop_vals;
-        while (p != end) {
-            prop_vals.push_back(std::stof(*p));
-            p++;
-        }
-        if (prop_vals.size() == 6) {
-            camera->isSet = true;
-            camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
-            camera->theta = prop_vals[3];
-            camera->phi = prop_vals[4];
-            camera->radius = prop_vals[5];
-        }
-
-        set_output("camera", std::move(camera));
-    }
-};
-
-ZENO_DEFNODE(CameraNode)({
-    {
-        {"vec3f", "pos", "0,0,5"},
-        {"vec3f", "up", "0,1,0"},
-        {"vec3f", "view", "0,0,-1"},
-        {"float", "fov", "45"},
-        {"float", "aperture", "11"},
-        {"float", "focalPlaneDistance", "2.0"},
-        {"string", "other", ""},
-        {"int", "frame", "0"},
-    },
-    {
-        {"CameraObject", "camera"},
-    },
-    {
-    },
     {"FBX"},
 });
 
@@ -219,7 +165,7 @@ struct CameraEval: zeno::INode {
             }
         }
 
-        auto camera = std::make_unique<zeno::CameraObject>();
+        auto camera = std::make_shared<zeno::CameraObject>();
 
         camera->pos = out_pos;
         camera->up = out_up;
@@ -234,11 +180,11 @@ struct CameraEval: zeno::INode {
 
 ZENO_DEFNODE(CameraEval)({
     {
-        {"frameid"},
-        {"nodelist"}
+        {gParamType_Int, "frameid"},
+        {gParamType_List, "nodelist"}
     },
     {
-        {"CameraObject", "camera"},
+        {gParamType_Camera, "camera"},
     },
     {
     },
@@ -276,15 +222,15 @@ struct ExtractCamera: zeno::INode {
 ZENDEFNODE(ExtractCamera,
            {       /* inputs: */
                {
-                    "camobject"
+                   {gParamType_Camera, "camobject"}
                },  /* outputs: */
                {
-                   {"vec3f","pos"}, 
-                   {"vec3f","up"}, 
-                   {"vec3f","view"}, 
-                   {"float","fov"}, 
-                   {"float","aperture"}, 
-                   {"float","focalPlaneDistance"}
+                   {gParamType_Vec3f,"pos"}, 
+                   {gParamType_Vec3f,"up"}, 
+                   {gParamType_Vec3f,"view"}, 
+                   {gParamType_Float,"fov"}, 
+                   {gParamType_Float,"aperture"}, 
+                   {gParamType_Float,"focalPlaneDistance"}
                },  /* params: */
                {
 
@@ -340,12 +286,12 @@ struct DirtyTBN : INode {
 
 ZENO_DEFNODE(DirtyTBN)({
     {
-        {"PrimitiveObject", "prim"},
-        {"vec3f", "T", "1, 0, 0"},
-        {"vec3f", "B", "0, 0, 1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Vec3f, "T", "1, 0, 0"},
+        {gParamType_Vec3f, "B", "0, 0, 1"},
     },
     {
-        "prim"
+        {gParamType_Primitive, "prim"}
     },
     {},
     {"shader"},
@@ -550,12 +496,12 @@ struct LiveMeshNode : INode {
 
 ZENO_DEFNODE(LiveMeshNode)({
     {
-        {"frameid"},
-        {"string", "vertSrc", ""},
-        {"bool", "outDict", "false"}
+        {gParamType_Int, "frameid"},
+        {gParamType_String, "vertSrc", ""},
+        {gParamType_Bool, "outDict", "false"}
     },
     {
-        "prims"
+        {gParamType_List, "prims", "", Socket_WildCard}
     },
     {
     },
@@ -625,7 +571,7 @@ struct LiveCameraNode : INode{
 
 //ZENO_DEFNODE(LiveCameraNode)({
 //    {
-//        {"string", "camSrc", ""},
+//        {gParamType_String, "camSrc", ""},
 //    },
 //    {
 //        "camera"

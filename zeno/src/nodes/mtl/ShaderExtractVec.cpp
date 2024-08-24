@@ -37,13 +37,13 @@ struct ShaderExtractVec : INode {
 
 ZENDEFNODE(ShaderExtractVec, {
     {
-        {"vec3f", "vec"},
+        {gParamType_Vec3f, "vec"},
     },
     {
-        {"float", "x"},
-        {"float", "y"},
-        {"float", "z"},
-        {"float", "w"},
+        {gParamType_Float, "x"},
+        {gParamType_Float, "y"},
+        {gParamType_Float, "z"},
+        {gParamType_Float, "w"},
     },
     {},
     {"shader"},
@@ -78,10 +78,10 @@ struct ShaderReduceVec : ShaderNodeClone<ShaderReduceVec> {
 
 ZENDEFNODE(ShaderReduceVec, {
     {
-        {"vec3f", "in"},
+        {gParamType_Vec3f, "in"},
     },
     {
-        {"float", "out"},
+        {gParamType_Float, "out"},
     },
     {
         {"enum average sum", "op", "average"},

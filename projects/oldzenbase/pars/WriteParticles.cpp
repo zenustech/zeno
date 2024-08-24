@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/StringObject.h>
 #include <cstring>
 
@@ -36,8 +36,8 @@ struct WriteParticles : zeno::INode {
 
 static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticles",
     { /* inputs: */ {
-    "pars",
-     {"string", "path", "", NoSocket, WritePathEdit},
+    {"object", "pars"},
+     {gParamType_String, "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -55,8 +55,8 @@ struct ExportParticles : zeno::INode {
 
 static int defExportParticles = zeno::defNodeClass<ExportParticles>("ExportParticles",
     { /* inputs: */ {
-    "pars",
-    "path",
+    {"object", "pars"},
+    {gParamType_String, "path", "", NoSocket, WritePathEdit},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

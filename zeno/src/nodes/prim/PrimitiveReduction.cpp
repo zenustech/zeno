@@ -57,11 +57,11 @@ struct PrimitiveReduction : zeno::INode {
 };
 ZENDEFNODE(PrimitiveReduction,
     { /* inputs: */ {
-    {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        {"NumericObject", "result"},
+        {gParamType_Vec3f, "result", "", zeno::Socket_WildCard},
     }, /* params: */ {
-    {"string", "attr", "pos"},
+    {gParamType_String, "attr", "pos"},
     {"enum avg max min absmax", "op", "avg"},
     }, /* category: */ {
     "deprecated",
@@ -84,8 +84,8 @@ struct PrimReduction : zeno::INode {
 };
 ZENDEFNODE(PrimReduction,{
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "attrName", "pos"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "attrName", "pos"},
         {"enum avg max min absmax", "op", "avg"},
     },
     {
@@ -98,7 +98,7 @@ ZENDEFNODE(PrimReduction,{
 struct PrimitiveBoundingBox : zeno::INode {
     virtual void apply() override{
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &pos = prim->attr<vec3f>("pos");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
 
         auto bmin = pos.size() ? pos[0] : vec3f(0);
         auto bmax = bmin;
@@ -121,10 +121,10 @@ struct PrimitiveBoundingBox : zeno::INode {
 
 ZENDEFNODE(PrimitiveBoundingBox,
     { /* inputs: */ {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"float", "exWidth", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "exWidth", "0"},
     }, /* outputs: */ {
-    {"vec3f", "bmin"}, {"vec3f", "bmax"},
+    {gParamType_Vec3f, "bmin"}, {gParamType_Vec3f, "bmax"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",

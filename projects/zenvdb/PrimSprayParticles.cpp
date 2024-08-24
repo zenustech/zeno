@@ -125,12 +125,12 @@ struct PrimSprayParticles : zeno::INode {
 
 static int defPrimSprayParticles = zeno::defNodeClass<PrimSprayParticles>(
     "PrimSprayParticles", {/* inputs: */ {
-                           {"", "TrianglePrim", "", zeno::Socket_ReadOnly},
-                           {"float", "Dx", "0.04"},
+                           {gParamType_Primitive, "TrianglePrim", "", zeno::Socket_ReadOnly},
+                           {gParamType_Float, "Dx", "0.04"},
                        },
                        /* outputs: */
                        {
-                           "particlesPrim",
+                           {gParamType_Primitive, "prim"}, {gParamType_Primitive, "particlesPrim"},
                        },
                        /* params: */
                        {

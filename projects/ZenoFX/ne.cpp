@@ -212,13 +212,13 @@ struct NumericEval : zeno::INode {
     ZENDEFNODE(NumericEval, {
                             /* inputs*/
                             {
-                                 {"string", "zfxCode"},
+                                 {gParamType_String, "zfxCode"},
                                  {"enum float vec3f int string", "resType", "float"},
                             },
 
                             /*OutPut*/
                             {
-                                {"float", "result"}
+                                {gParamType_Float, "result"}
                             },
                             {},//参数
                             {"numeric"},

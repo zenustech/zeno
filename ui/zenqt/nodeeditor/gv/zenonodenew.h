@@ -22,6 +22,22 @@ class ParamsModel;
 class StatusGroup;
 class StatusButton;
 
+class NodeNameItem : public ZGraphicsTextItem
+{
+    Q_OBJECT
+public:
+    NodeNameItem(const QString& name, QGraphicsItem* parent = nullptr);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+};
+
+
 class ZenoNodeNew : public ZenoNodeBase
 {
     Q_OBJECT
@@ -54,6 +70,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
     //ZenoNodeNew:
     virtual ZGraphicsLayout* initCustomParamWidgets();
+    bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
 
 private slots:
     void onOptionsBtnToggled(STATUS_BTN btn, bool toggled);
@@ -66,9 +83,10 @@ private slots:
 private:
     ZLayoutBackground* initBodyWidget();
     ZLayoutBackground* initHeaderWidget();
-    ZGraphicsLayout* initSockets(ParamsModel* pModel, const bool bInput);
+    ZGraphicsLayout* initPrimSockets(ParamsModel* pModel, const bool bInput);
     ZGraphicsLayout* initVerticalSockets(bool bInput);
     void _drawShadow(QPainter* painter);
+    void setVisibleForParams(bool bVisible);
 
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx);
@@ -93,6 +111,10 @@ private:
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
+    ZLayoutBackground* m_dirtyMarker;
+
+    NodeNameItem* m_nameItem;       //以这个为主
+
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputObjSockets;
     ZGraphicsLayout* m_outputObjSockets;
@@ -100,6 +122,8 @@ private:
     ZGraphicsLayout* m_outputsLayout;
 
     zeno::NodeRunStatus m_nodeStatus;
+
+    QPointF _cache_name_move;
 };
 
 #endif

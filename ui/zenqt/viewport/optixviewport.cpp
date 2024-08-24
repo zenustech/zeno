@@ -22,6 +22,12 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    //启动光追时加载obj
+    zeno::RenderObjsInfo objs;
+    zeno::getSession().objsMan->export_all_view_objs(objs.newObjs);
+    zeno::getSession().objsMan->export_light_objs(objs);
+    m_zenoVis->load_objects(objs);
 }
 
 OptixWorker::~OptixWorker()
@@ -333,11 +339,48 @@ void OptixWorker::onCleanUpScene()
     m_zenoVis->cleanUpScene();
 }
 
+void OptixWorker::onCleanUpView()
+{
+    m_zenoVis->cleanupView();
+}
+
 void OptixWorker::load_objects()
 {
     zeno::RenderObjsInfo objs;
     zeno::getSession().objsMan->export_loading_objs(objs);
     m_zenoVis->load_objects(objs);
+}
+
+void OptixWorker::onSetBackground(bool bShowBg)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix_show_background", bShowBg);
+
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    //scene->objectsMan->needUpdateLight = true;
+    //scene->drawOptions->simpleRender = true;
+    updateFrame();
+}
+
+void OptixWorker::onSetData(
+    float aperture,
+    float shutter_speed,
+    float iso,
+    bool aces,
+    bool exposure
+) {
+//    zeno::log_info("I am in optix thread, now I want to set value {}", iso);
+    auto scene = m_zenoVis->getSession()->get_scene();
+    scene->camera->zOptixCameraSettingInfo.aperture = aperture;
+    scene->camera->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
+    scene->camera->zOptixCameraSettingInfo.iso = iso;
+    scene->camera->zOptixCameraSettingInfo.aces = aces;
+    scene->camera->zOptixCameraSettingInfo.exposure = exposure;
+    scene->drawOptions->needRefresh = true;
 }
 
 ZOptixViewport::ZOptixViewport(QWidget* parent)
@@ -405,6 +448,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
     connect(this, &ZOptixViewport::sig_cleanUpScene, m_worker, &OptixWorker::onCleanUpScene);
     bool ret = connect(this, &ZOptixViewport::sig_loadObjects, m_worker, &OptixWorker::load_objects);
+    connect(this, &ZOptixViewport::sig_cleanUpView, m_worker, &OptixWorker::onCleanUpView);
+    connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
+    connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -415,6 +461,25 @@ ZOptixViewport::~ZOptixViewport()
     m_thdOptix.quit();
     m_thdOptix.wait();
 }
+
+zenovis::ZOptixCameraSettingInfo ZOptixViewport::getdata_from_optix_thread()
+{
+    auto scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->zOptixCameraSettingInfo;
+}
+
+void ZOptixViewport::setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value)
+{
+//    zeno::log_info("setdata_on_optix_thread {}", value.iso);
+    emit sig_setdata_on_optix_thread(
+            value.aperture,
+            value.shutter_speed,
+            value.iso,
+            value.aces,
+            value.exposure
+    );
+}
+
 
 void ZOptixViewport::load_objects()
 {
@@ -431,7 +496,7 @@ void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool update
     emit sig_setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
 }
 
-void ZOptixViewport::cameraLookTo(int dir)
+void ZOptixViewport::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     m_camera->lookTo(dir);
 }
@@ -466,6 +531,11 @@ void ZOptixViewport::setSlidFeq(int feq)
 void ZOptixViewport::cleanUpScene()
 {
     emit sig_cleanUpScene();
+}
+
+void ZOptixViewport::cleanupView()
+{
+    emit sig_cleanUpView();
 }
 
 void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
@@ -535,6 +605,11 @@ void ZOptixViewport::setNumSamples(int samples)
     if (scene) {
         scene->drawOptions->num_samples = samples;
     }
+}
+
+void ZOptixViewport::showBackground(bool bShow)
+{
+    emit sig_setBackground(bShow);
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)
@@ -639,26 +714,26 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
 
     key = settings.getShortCut(ShortCut_FrontView);
     if (uKey == key)
-        this->cameraLookTo(0);
+        this->cameraLookTo(zenovis::CameraLookToDir::front_view);
     key = settings.getShortCut(ShortCut_RightView);
     if (uKey == key)
-        this->cameraLookTo(1);
+        this->cameraLookTo(zenovis::CameraLookToDir::right_view);
     key = settings.getShortCut(ShortCut_VerticalView);
     if (uKey == key)
-        this->cameraLookTo(2);
+        this->cameraLookTo(zenovis::CameraLookToDir::top_view);
     key = settings.getShortCut(ShortCut_InitViewPos);
     if (uKey == key)
-        this->cameraLookTo(6);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
 
     key = settings.getShortCut(ShortCut_BackView);
     if (uKey == key)
-        this->cameraLookTo(3);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_view);
     key = settings.getShortCut(ShortCut_LeftView);
     if (uKey == key)
-        this->cameraLookTo(4);
+        this->cameraLookTo(zenovis::CameraLookToDir::left_view);
     key = settings.getShortCut(ShortCut_UpwardView);
     if (uKey == key)
-        this->cameraLookTo(5);
+        this->cameraLookTo(zenovis::CameraLookToDir::bottom_view);
 
     key = settings.getShortCut(ShortCut_InitHandler);
     if (uKey == key)
@@ -674,6 +749,10 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
 void ZOptixViewport::keyReleaseEvent(QKeyEvent* event)
 {
     _base::keyReleaseEvent(event);
+    int uKey = event->key();
+    if (m_camera->fakeKeyReleaseEvent(uKey)) {
+        return;
+    }
 }
 
 void ZOptixViewport::paintEvent(QPaintEvent* event)

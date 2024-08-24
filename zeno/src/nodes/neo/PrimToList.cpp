@@ -39,11 +39,11 @@ struct PrimFlattenTris : INode {
 
 ZENO_DEFNODE(PrimFlattenTris)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -126,12 +126,12 @@ struct PrimToList : INode {
 
 ZENO_DEFNODE(PrimToList)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         {"enum verts points lines tris quads polys loops", "type", "verts"},
-        {"string", "attr", "pos"},
+        {gParamType_String, "attr", "pos"},
     },
     {
-        {"list"},
+        {gParamType_List, "list"},
     },
     {},
     {"primitive"},
@@ -222,13 +222,13 @@ struct PrimUpdateFromList : INode {
 
 ZENO_DEFNODE(PrimUpdateFromList)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         {"enum verts points lines tris quads polys loops", "type", "verts"},
-        {"string", "attr", "pos"},
-        {"list"},
+        {gParamType_String, "attr", "pos"},
+        {gParamType_List, "list"},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},

@@ -61,8 +61,8 @@ struct CalPrimitiveUVMapLSCM : zeno::INode {
 };
 
 ZENDEFNODE(CalPrimitiveUVMapLSCM, {
-    {"prim"},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"Parameterization"},
 });

@@ -31,7 +31,7 @@ namespace zeno {
 //     "grid",
 //     }, /* outputs: */ {
 //     }, /* params: */ {
-//     {"float", "dx", "0.08 0"},
+//     {gParamType_Float, "dx", "0.08 0"},
 //     {"float3", "position", "0 0 0"},
 //     {"float3", "rotation", "0 0 0"},
 //     {"float3", "scale", "1 1 1"},
@@ -85,10 +85,10 @@ struct  ResampleVDBGrid : zeno::INode {
 
 static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDBGrid",
      { /* inputs: */ {
-         {"", "resampleTo", "", zeno::Socket_ReadOnly},
-         {"", "resampleFrom", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"resampleTo", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"resampleFrom", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-     "resampleTo",
+         {gParamType_VDBGrid,"resampleTo"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -187,15 +187,15 @@ struct CombineVDB : zeno::INode{
 };
 static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      { /* inputs: */ {
-         {"", "FieldA", "", zeno::Socket_ReadOnly},
-         {"", "FieldB", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"FieldA", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"FieldB", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-       "FieldOut",
+         {gParamType_VDBGrid,"FieldOut"},
      }, /* params: */ {
-       {"float", "MultiplierA", "1"},
-       {"float", "MultiplierB", "1"},
+       {gParamType_Float, "MultiplierA", "1"},
+       {gParamType_Float, "MultiplierB", "1"},
        {"enum CSGUnion CSGIntersection CSGDifference Add Mul Replace A_Sample_B", "OpType", "CSGUnion"},
-       {"bool", "writeBack", "0"},
+       {gParamType_Bool, "writeBack", "0"},
      }, /* category: */ {
      "openvdb",
      }});
@@ -256,8 +256,8 @@ struct VDBDeactivate : zeno::INode
 };
 static int defVDBDeactivate = zeno::defNodeClass<VDBDeactivate>("VDBDeactivate",
      { /* inputs: */ {
-         {"", "Field", "", zeno::Socket_ReadOnly},
-         {"", "Mask", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"Field", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid,"Mask", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
      }, /* params: */ {
      }, /* category: */ {

@@ -132,12 +132,12 @@ struct PrimitiveLineDistance : zeno::INode {
 
 ZENDEFNODE(PrimitiveLineDistance, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "resAttr", "len"},
-    {"int", "start", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "resAttr", "len"},
+    {gParamType_Int, "start", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

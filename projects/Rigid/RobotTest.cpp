@@ -75,8 +75,8 @@ struct BulletSetContactParameters : zeno::INode {
 };
 
 ZENDEFNODE(BulletSetContactParameters, {
-{"collider", "lateralFriction", "restitution", "rollingFriction", "spinningFriction", "stiffness", "damping"},
-{"collider"},
+{{gParamType_Unknown, "collider"}, {gParamType_Float, "lateralFriction"}, {gParamType_Float, "restitution"}, {gParamType_Float, "rollingFriction"}, {gParamType_Float, "spinningFriction"}, {gParamType_Float, "stiffness"}, {gParamType_Float, "damping"}},
+{{gParamType_Unknown, "collider"}},
 {{"enum true false", "frictionAnchor", "false"}},
 {"Robot"}
 });
@@ -175,8 +175,8 @@ struct RobotLoadURDF : zeno::INode {
 };
 
 ZENDEFNODE(RobotLoadURDF, {
-    {"path", {"float", "globalScaling", "1"}, "world"},
-    {"world", "object", "visualMap"},
+    {{gParamType_String, "path"}, {gParamType_Float, "globalScaling", "1"}, {gParamType_Unknown, "world"}},
+    {{gParamType_Unknown, "world"}, {gParamType_Unknown, "object"}, {gParamType_Dict, "visualMap"}},
     {{"enum true false", "fixedBase", "true"}},
     {"Robot"},
 });
@@ -190,7 +190,7 @@ struct RobotGetLinkName : zeno::INode{
 };
 
 ZENDEFNODE(RobotGetLinkName, {
-    {"object", "index"},
+    {{gParamType_Unknown, "object"}, {gParamType_Int, "index"}},
     {},
     {},
     {"Robot"},
@@ -205,7 +205,7 @@ struct RobotGetJointName : zeno::INode{
 };
 
 ZENDEFNODE(RobotGetJointName, {
-    {"object", "index"},
+    {{gParamType_Unknown, "object"}, {gParamType_Int, "index"}},
     {},
     {},
     {"Robot"},
@@ -237,8 +237,8 @@ struct RobotSetJointPoses : zeno::INode {
 };
 
 ZENDEFNODE(RobotSetJointPoses, {
-    {"object", "qDesiredList"},
-    {"object"},
+    {{gParamType_Unknown, "object"}, {gParamType_List, "qDesiredList"}},
+    {{gParamType_Unknown, "object"}},
     {},
     {"Robot"}
 });

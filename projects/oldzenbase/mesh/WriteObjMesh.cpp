@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/StringObject.h>
 #include <cstring>
 
@@ -46,8 +46,8 @@ struct WriteObjMesh : zeno::INode {
 
 static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     { /* inputs: */ {
-    "mesh",
-    {"string", "path", "", NoSocket, WritePathEdit}
+        {gParamType_Mesh, "mesh"},
+        {gParamType_String, "path", "", NoSocket, WritePathEdit}
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -65,8 +65,8 @@ struct ExportObjMesh : zeno::INode {
 
 static int defExportObjMesh = zeno::defNodeClass<ExportObjMesh>("ExportObjMesh",
     { /* inputs: */ {
-    "mesh",
-    "path",
+        {gParamType_Mesh, "mesh"},
+        {gParamType_Float, "path"},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

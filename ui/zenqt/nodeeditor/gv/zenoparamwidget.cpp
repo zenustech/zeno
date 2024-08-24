@@ -445,7 +445,7 @@ void ZenoVecEditItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene*
     {
         const QString& numText = QString::number(vec[i]);
         ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, zeno::Lineedit, m_param);
-        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::Param_Float : zeno::Param_Int));
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::types::gParamType_Float : zeno::types::gParamType_Int));
         pLayout->addItem(pLineEdit);
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));

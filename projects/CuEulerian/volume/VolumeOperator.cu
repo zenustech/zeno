@@ -19,7 +19,7 @@ struct ZSLevelSetBinaryOperator : INode {
     template <typename SplsT, typename Op, typename T = typename SplsT::value_type>
     void binaryOp(SplsT &lsa, const SplsT &lsb, T a, T b, Op op) {
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         const auto numInBlocks = lsb.numBlocks();
         const auto numPrevBlocks = lsa.numBlocks();
@@ -99,7 +99,7 @@ struct ZSLevelSetBinaryOperator : INode {
                     is_same_v<typename RM_CVREF_T(lsPtrB)::element_type, typename RM_CVREF_T(lsPtr)::element_type>> {
                 auto numBlocks = lsPtr->numBlocks();
                 auto numBlocksB = lsPtrB->numBlocks();
-                auto cudaPol = cuda_exec().device(0);
+                auto cudaPol = cuda_exec();
                 /// reserve enough memory
                 lsPtr->resize(cudaPol, numBlocks + numBlocksB);
                 /// assume sharing the same transformation
@@ -126,7 +126,7 @@ struct ZSLevelSetBinaryOperator : INode {
 
 ZENDEFNODE(ZSLevelSetBinaryOperator,
            {
-               {"ZSFieldA", "ZSFieldB", {"float", "a", "1"}, {"float", "b", "1"}},
+               {"ZSFieldA", "ZSFieldB", {gParamType_Float, "a", "1"}, {gParamType_Float, "b", "1"}},
                {"ZSFieldA"},
                {{"enum aX_plus_bY aX_minus_bY aX_mul_bY aX_div_bY", "operator", "aX_plus_bY"}},
                {"Volume"},
@@ -137,7 +137,7 @@ struct ResampleZSLevelSet : INode {
     void resample(SplsT &ls, const RefSplsT &refLs, const zs::PropertyTag &tag) {
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         ls.append_channels(cudaPol, {tag}); // would also check channel dimension
 
         fmt::print("tag: [{}, {}] at {} (out of {}) in dst, [{}] (out of {}) in ref.\n", tag.name, tag.numChannels,
@@ -226,7 +226,7 @@ struct ResampleZSLevelSet : INode {
 };
 
 ZENDEFNODE(ResampleZSLevelSet, {
-                                   {"ZSField", "RefZSField", {"string", "property", "sdf"}},
+                                   {"ZSField", "RefZSField", {gParamType_String, "property", "sdf"}},
                                    {"ZSField"},
                                    {},
                                    {"Volume"},
@@ -239,7 +239,7 @@ struct AdvectZSLevelSet : INode {
     int advect(SplsT &lsOut, const VelSplsT &velLs, const float dt) {
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         auto vm = get_level_set_max_speed(cudaPol, velLs);
         int nvoxels = (int)std::ceil(vm * dt / lsOut._grid.dx);
@@ -308,7 +308,7 @@ struct AdvectZSLevelSet : INode {
 };
 
 ZENDEFNODE(AdvectZSLevelSet, {
-                                 {"ZSField", "ZSVelField", {"float", "dt", "0.1"}},
+                                 {"ZSField", "ZSVelField", {gParamType_Float, "dt", "0.1"}},
                                  {"ZSField", "nvoxels"},
                                  {},
                                  {"Volume"},
@@ -319,7 +319,7 @@ struct ClampZSLevelSet : INode {
     void clamp(SplsT &ls, const RefSplsT &refLs, const VelSplsT &velLs, const float dt) {
         using namespace zs;
 
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         /// ls & refLs better be of same category
         cudaPol(Collapse{ls.numBlocks(), ls.block_size},
@@ -403,7 +403,7 @@ struct ClampZSLevelSet : INode {
 };
 
 ZENDEFNODE(ClampZSLevelSet, {
-                                {"ZSField", "RefZSField", "ZSVelField", {"float", "dt", "0.1"}},
+                                {"ZSField", "RefZSField", "ZSVelField", {gParamType_Float, "dt", "0.1"}},
                                 {"ZSField"},
                                 {},
                                 {"Volume"},

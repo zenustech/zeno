@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -48,19 +48,19 @@ struct G2P_Advector : zeno::INode {
 
 static int defG2P_Advector = zeno::defNodeClass<G2P_Advector>(
     "G2P_Advector", {/* inputs: */ {
-                         "dt","Dx",
-                         "Particles",
-                         "Velocity",
-                         "PostAdvVelocity",
-                         "SolidSDF",
-                         "SolidVelocity",
+                         {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                         {gParamType_VDBGrid, "Particles"},
+                         {gParamType_VDBGrid, "Velocity"},
+                         {gParamType_VDBGrid, "PostAdvVelocity"},
+                         {gParamType_VDBGrid, "SolidSDF"},
+                         {gParamType_VDBGrid, "SolidVelocity"},
                      },
                      /* outputs: */ {},
                      /* params: */
                      {
-                         {"float", "dx", "0.01 0.0"},
-                         {"int", "RK_ORDER", "1 1 4"},
-                         {"float", "pic_smoothness", "0.02 0.0 1.0"},
+                         {gParamType_Float, "dx", "0.01 0.0"},
+                         {gParamType_Int, "RK_ORDER", "1 1 4"},
+                         {gParamType_Float, "pic_smoothness", "0.02 0.0 1.0"},
                      },
 
                      /* category: */

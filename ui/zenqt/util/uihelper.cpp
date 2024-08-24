@@ -17,12 +17,13 @@
 #include "model/graphsmanager.h"
 #include "model/assetsmodel.h"
 #include <zeno/utils/helper.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
+#include <regex>
 
 
 const char* g_setKey = "setKey";
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
+using namespace zenoio::iotags::curve;
 
 VarToggleScope::VarToggleScope(bool* pbVar)
     : m_pbVar(pbVar)
@@ -67,6 +68,181 @@ QVariant UiHelper::parseTextValue(const zeno::ParamType& type, const QString& te
     return QVariant();
 }
 
+zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamType type)
+{
+    if (var.type() == QVariant::String)
+    {
+        return var.toString().toStdString();
+    }
+    else if (var.type() == QVariant::Double || var.type() == QMetaType::Float)
+    {
+        return var.toFloat();
+    }
+    else if (var.type() == QVariant::Int)
+    {
+        return var.toInt();
+    }
+    else if (var.type() == QVariant::Bool)
+    {
+        return var.toBool() ? 1 : 0;
+    }
+    else if (var.type() == QVariant::Invalid)
+    {
+        return zeno::reflect::Any();
+    }
+    else if (var.type() == QVariant::UserType)
+    {
+        if (var.userType() == QMetaTypeId<zeno::reflect::Any>::qt_metatype_id())
+        {
+            return var.value<zeno::reflect::Any>();
+        }
+        else if (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+        {
+            UI_VECTYPE vec = var.value<UI_VECTYPE>();
+            if (vec.isEmpty()) {
+                zeno::log_warn("unexpected qt variant {}", var.typeName());
+                return zeno::reflect::Any();
+            }
+            else {
+                if (vec.size() == 2) {
+                    if (type == zeno::types::gParamType_Vec2i) {
+                        return zeno::vec2i((int)vec[0], (int)vec[1]);
+                    }
+                    else {
+                        return zeno::vec2f(vec[0], vec[1]);
+                    }
+                }
+                if (vec.size() == 3) {
+                    if (type == zeno::types::gParamType_Vec3i) {
+                        return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
+                    }
+                    else {
+                        return zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f(vec[0], vec[1], vec[2]));
+                    }
+                }
+                if (vec.size() == 4) {
+                    if (type == zeno::types::gParamType_Vec4i) {
+                        return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
+                    }
+                    else {
+                        return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
+                    }
+                }
+            }
+        }
+        else if (var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
+            UI_VECSTRING vec = var.value<UI_VECSTRING>();
+            if (vec.size() == 2) {
+                return zeno::vec2s(vec[0].toStdString(), vec[1].toStdString());
+            }
+            else if (vec.size() == 3) {
+                return zeno::vec3s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString());
+            }
+            else if (vec.size() == 4) {
+                return zeno::vec4s(vec[0].toStdString(), vec[1].toStdString(),
+                    vec[2].toStdString(), vec[3].toStdString());
+            }
+            else {
+                return zeno::reflect::Any();
+            }
+        }
+    }
+    else
+    {
+        zeno::log_warn("bad qt variant {}", var.typeName());
+    }
+    return zeno::reflect::Any();
+}
+
+QVariant UiHelper::anyToQvar(zeno::reflect::Any var)
+{
+    if (!var.has_value())
+        return QVariant();
+    if (zeno::reflect::get_type<int>() == var.type()) {
+        return zeno::reflect::any_cast<int>(var);
+    }
+    else if (zeno::reflect::get_type<float>() == var.type()) {
+        return zeno::reflect::any_cast<float>(var);
+    }
+    else if (zeno::reflect::get_type<std::string>() == var.type()) {
+        return QString::fromStdString(zeno::reflect::any_cast<std::string>(var));
+    }
+    else if (zeno::reflect::get_type<zeno::vec2i>() == var.type()) {
+        zeno::vec2i vec2i = zeno::reflect::any_cast<zeno::vec2i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec2i[0]);
+        vec.push_back(vec2i[1]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3i>() == var.type()) {
+        zeno::vec3i vec3i = zeno::reflect::any_cast<zeno::vec3i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec3i[0]);
+        vec.push_back(vec3i[1]);
+        vec.push_back(vec3i[2]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4i>() == var.type()) {
+        zeno::vec4i vec4i = zeno::reflect::any_cast<zeno::vec4i>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec4i[0]);
+        vec.push_back(vec4i[1]);
+        vec.push_back(vec4i[2]);
+        vec.push_back(vec4i[3]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec2f>() == var.type()) {
+        zeno::vec2f vec2f = zeno::reflect::any_cast<zeno::vec2f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec2f[0]);
+        vec.push_back(vec2f[1]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3f>() == var.type()) {
+        zeno::vec3f vec3f = zeno::reflect::any_cast<zeno::vec3f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec3f[0]);
+        vec.push_back(vec3f[1]);
+        vec.push_back(vec3f[2]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4f>() == var.type()) {
+        zeno::vec4f vec4f = zeno::reflect::any_cast<zeno::vec4f>(var);
+        UI_VECTYPE vec;
+        vec.push_back(vec4f[0]);
+        vec.push_back(vec4f[1]);
+        vec.push_back(vec4f[2]);
+        vec.push_back(vec4f[3]);
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec2s>() == var.type()) {
+        zeno::vec2s vec2s = zeno::reflect::any_cast<zeno::vec2s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec2s[0]));
+        vec.push_back(QString::fromStdString(vec2s[1]));
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec3s>() == var.type()) {
+        zeno::vec3s vec3s = zeno::reflect::any_cast<zeno::vec3s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec3s[0]));
+        vec.push_back(QString::fromStdString(vec3s[1]));
+        vec.push_back(QString::fromStdString(vec3s[2]));
+        return QVariant::fromValue(vec);
+    }
+    else if (zeno::reflect::get_type<zeno::vec4s>() == var.type()) {
+        zeno::vec4s vec4s = zeno::reflect::any_cast<zeno::vec4s>(var);
+        UI_VECSTRING vec;
+        vec.push_back(QString::fromStdString(vec4s[0]));
+        vec.push_back(QString::fromStdString(vec4s[1]));
+        vec.push_back(QString::fromStdString(vec4s[2]));
+        vec.push_back(QString::fromStdString(vec4s[3]));
+        return QVariant::fromValue(vec);
+    }
+    return QVariant();
+}
+
 zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType type)
 {
     if (var.type() == QVariant::String)
@@ -100,26 +276,26 @@ zeno::zvariant UiHelper::qvarToZVar(const QVariant& var, const zeno::ParamType t
             }
             else {
                 if (vec.size() == 2) {
-                    if (type == zeno::Param_Vec2f) {
+                    if (type == zeno::types::gParamType_Vec2f) {
                         return zeno::vec2f(vec[0], vec[1]);
                     }
-                    else if (type == zeno::Param_Vec2i) {
+                    else if (type == zeno::types::gParamType_Vec2i) {
                         return zeno::vec2i((int)vec[0], (int)vec[1]);
                     }
                 }
                 if (vec.size() == 3) {
-                    if (type == zeno::Param_Vec3f) {
+                    if (type == zeno::types::gParamType_Vec3f) {
                         return zeno::vec3f(vec[0], vec[1], vec[2]);
                     }
-                    else if (type == zeno::Param_Vec3i) {
+                    else if (type == zeno::types::gParamType_Vec3i) {
                         return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
                     }
                 }
                 if (vec.size() == 4) {
-                    if (type == zeno::Param_Vec4f) {
+                    if (type == zeno::types::gParamType_Vec4f) {
                         return zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
                     }
-                    else if (type == zeno::Param_Vec4i) {
+                    else if (type == zeno::types::gParamType_Vec4i) {
                         return zeno::vec4i((int)vec[0], (int)vec[1], (int)vec[2], (int)vec[3]);
                     }
                 }
@@ -219,41 +395,43 @@ QVariant UiHelper::zvarToQVar(const zeno::zvariant& var)
 
 QVariant UiHelper::initDefaultValue(const zeno::ParamType& type)
 {
-    if (type == zeno::Param_String) {
+    if (type == zeno::types::gParamType_String) {
         return "";
     }
-    else if (type == zeno::Param_Float)
+    else if (type == zeno::types::gParamType_Float)
     {
         return QVariant((float)0.);
     }
-    else if (type == zeno::Param_Int)
+    else if (type == zeno::types::gParamType_Int)
     {
         return QVariant((int)0);
     }
-    else if (type == zeno::Param_Bool)
+    else if (type == zeno::types::gParamType_Bool)
     {
         return QVariant(false);
     }
-    else if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f)
+    else if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f)
     {
         UI_VECTYPE vec(2);
         return QVariant::fromValue(vec);
     }
-    else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f)
+    else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f)
     {
         UI_VECTYPE vec(3);
         return QVariant::fromValue(vec);
     }
-    else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f)
+    else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f)
     {
         UI_VECTYPE vec(4);
         return QVariant::fromValue(vec);
     }
-    else if (type == zeno::Param_Curve)
+    else if (type == zeno::types::gParamType_Curve)
     {
-        return JsonHelper::dumpCurves(curve_util::deflCurves());
+        zeno::CurvesData curves = curve_util::deflCurves();
+        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(curves);
+        return QVariant::fromValue(anyVal);
     }
-    else if (type == zeno::Param_Heatmap)
+    else if (type == zeno::types::gParamType_Heatmap)
     {
         return JsonHelper::dumpHeatmap(1024, "");
     }
@@ -374,9 +552,9 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
     case zeno::Lineedit:
     {
         switch (type) {
-        case zeno::Param_Float:   return "Float";
-        case zeno::Param_Int:     return "Integer";
-        case zeno::Param_String:  return "String";
+        case zeno::types::gParamType_Float:   return "Float";
+        case zeno::types::gParamType_Int:     return "Integer";
+        case zeno::types::gParamType_String:  return "String";
         }
         return "";
     }
@@ -391,15 +569,15 @@ QString UiHelper::getControlDesc(zeno::ParamControl ctrl, zeno::ParamType type)
     case zeno::Combobox:            return "Enum";
     case zeno::Vec4edit:
     {
-        return type == zeno::Param_Int ? "Integer Vector 4" : "Float Vector 4";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 4" : "Float Vector 4";
     }
     case zeno::Vec3edit:
     {
-        return type == zeno::Param_Int ? "Integer Vector 3" : "Float Vector 3";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 3" : "Float Vector 3";
     }
     case zeno::Vec2edit:
     {
-        return type == zeno::Param_Int ? "Integer Vector 2" : "Float Vector 2";
+        return type == zeno::types::gParamType_Int ? "Integer Vector 2" : "Float Vector 2";
     }
     case zeno::Heatmap:             return "Color";
     case zeno::ColorVec:            return "Color Vec3f";
@@ -531,7 +709,7 @@ zeno::ParamControl UiHelper::getControlByDesc(const QString& descName)
 
 bool UiHelper::isFloatType(zeno::ParamType type)
 {
-    return type == zeno::Param_Float || type == zeno::Param_Vec2f || type == zeno::Param_Vec3f || type == zeno::Param_Vec4f;
+    return type == zeno::types::gParamType_Float || type == zeno::types::gParamType_Vec2f || type == zeno::types::gParamType_Vec3f || type == zeno::types::gParamType_Vec4f;
 }
 
 bool UiHelper::qIndexSetData(const QModelIndex& index, const QVariant& value, int role)
@@ -573,56 +751,28 @@ QStringList UiHelper::getAllControls()
         "Integer Vector 2", "Color", "Curve", "SpinBox", "DoubleSpinBox", "Slider", "SpinBoxSlider" };
 }
 
-QList<zeno::ParamControl> UiHelper::getControlLists(const zeno::ParamType& type)
-{
-    QList<zeno::ParamControl> ctrls;
-    switch (type)
-    {
-    case zeno::Param_Int:
-        return { zeno::Lineedit, zeno::SpinBox, zeno::SpinBoxSlider, zeno::DoubleSpinBox };
-    case zeno::Param_Bool:
-        return { zeno::Checkbox };
-    case zeno::Param_Float:
-        return { zeno::Lineedit, zeno::DoubleSpinBox };
-    case zeno::Param_String:
-        return { zeno::Lineedit, zeno::Multiline, zeno::Combobox };
-    case zeno::Param_Vec2i:
-    case zeno::Param_Vec2f:
-        return { zeno::Vec2edit };
-    case zeno::Param_Vec3i:
-    case zeno::Param_Vec3f:
-        return { zeno::Vec3edit };
-    case zeno::Param_Vec4f:
-    case zeno::Param_Vec4i:
-        return { zeno::Vec4edit };
-    case zeno::Param_Curve:
-        return { zeno::CurveEditor };
-    case zeno::Param_Heatmap:
-        return { zeno::Heatmap };
-    default:
-        return {};
-    }
-}
-
 QString UiHelper::getTypeDesc(zeno::ParamType type)
 {
+    //这里如果能通过这些hash码，拿到对应的type_info，而type_info里记录了
+    //所有metadata，包括（1.是否为object 2.名称简称 ）等资源，那是最自然的方式了。
     switch (type)
     {
-    case zeno::Param_String:    return "string";
-    case zeno::Param_Bool:      return "bool";
-    case zeno::Param_Int:       return "int";
-    case zeno::Param_Float:     return "float";
-    case zeno::Param_Vec2i:     return "vec2i";
-    case zeno::Param_Vec3i:     return "vec3i";
-    case zeno::Param_Vec4i:     return "vec4i";
-    case zeno::Param_Vec2f:     return "vec2f";
-    case zeno::Param_Vec3f:     return "vec3f";
-    case zeno::Param_Vec4f:     return "vec4f";
-    case zeno::Param_Prim:      return "prim";
-    case zeno::Param_List:      return "list";
-    case zeno::Param_Dict:      return "dict";
-    case zeno::Param_Heatmap: return "color";
-    case zeno::Param_Null:
+    case zeno::types::gParamType_String:    return "string";
+    case zeno::types::gParamType_Bool:      return "bool";
+    case zeno::types::gParamType_Int:       return "int";
+    case zeno::types::gParamType_Float:     return "float";
+    case zeno::types::gParamType_Vec2i:     return "vec2i";
+    case zeno::types::gParamType_Vec3i:     return "vec3i";
+    case zeno::types::gParamType_Vec4i:     return "vec4i";
+    case zeno::types::gParamType_Vec2f:     return "vec2f";
+    case zeno::types::gParamType_Vec3f:     return "vec3f";
+    case zeno::types::gParamType_Vec4f:     return "vec4f";
+    case gParamType_List:      return "list";
+    case gParamType_Dict:      return "dict";
+    case zeno::types::gParamType_Heatmap:       return "color";
+    case gParamType_IObject: return "object";
+    case gParamType_Primitive:      return "prim";
+    case Param_Null:
     default:
         return "";
     }
@@ -688,33 +838,6 @@ zeno::ParamControl UiHelper::getControlByType(const QString &type)
     }
     else {
         zeno::log_trace("parse got undefined control type {}", type.toStdString());
-        return zeno::NullControl;
-    }
-}
-
-zeno::ParamControl UiHelper::getDefaultControl(const zeno::ParamType type)
-{
-    switch (type)
-    {
-    case zeno::Param_Null:      return zeno::NullControl;
-    case zeno::Param_Bool:      return zeno::Checkbox;
-    case zeno::Param_Int:       return zeno::Lineedit;
-    case zeno::Param_String:    return zeno::Lineedit;
-    case zeno::Param_Float:     return zeno::Lineedit;
-    case zeno::Param_Vec2i:     return zeno::Vec2edit;
-    case zeno::Param_Vec3i:     return zeno::Vec3edit;
-    case zeno::Param_Vec4i:     return zeno::Vec4edit;
-    case zeno::Param_Vec2f:     return zeno::Vec2edit;
-    case zeno::Param_Vec3f:     return zeno::Vec3edit;
-    case zeno::Param_Vec4f:     return zeno::Vec4edit;
-    case zeno::Param_Prim:
-    case zeno::Param_Dict:
-    case zeno::Param_List:      return zeno::NullControl;
-            //Param_Color:  //need this?
-    case zeno::Param_Curve:     return zeno::CurveEditor;
-    case zeno::Param_Heatmap: return zeno::Heatmap;
-    case zeno::Param_SrcDst:
-    default:
         return zeno::NullControl;
     }
 }
@@ -859,6 +982,23 @@ QString UiHelper::variantToString(const QVariant& var)
                     res.append(",");
             }
             return res;
+        }
+        else if (var.userType() == QMetaTypeId<zeno::reflect::Any>::qt_metatype_id())
+        {
+            const auto& anyVal = var.value<zeno::reflect::Any>();
+            if (zeno::reflect::get_type<int>() == anyVal.type()) {
+                value = QString::number(zeno::reflect::any_cast<int>(anyVal));
+            }
+            else if (zeno::reflect::get_type<float>() == anyVal.type()) {
+                value = QString::number(zeno::reflect::any_cast<float>(anyVal));
+            }
+            else if (zeno::reflect::get_type<std::string>() == anyVal.type()) {
+                value = QString::fromStdString(zeno::reflect::any_cast<std::string>(anyVal));
+            }
+            else if (zeno::reflect::get_type<bool>() == anyVal.type()) {
+                bool bVal = zeno::reflect::any_cast<float>(anyVal);
+                value = bVal ? "true" : "false";
+            }
         }
     }
 	else
@@ -1056,11 +1196,11 @@ QPainterPath UiHelper::getRoundPath(QRectF r, int lt_radius, int rt_radius, int 
 QVector<qreal> UiHelper::getSlideStep(const QString& name, zeno::ParamType type)
 {
     QVector<qreal> steps;
-    if (type == zeno::Param_Int)
+    if (type == zeno::types::gParamType_Int)
     {
         steps = { 1, 10, 100 };
     }
-    else if (type == zeno::Param_Float)
+    else if (type == zeno::types::gParamType_Float)
     {
         steps = { .0001, .001, .01, .1, 1, 10, 100 };
     }
@@ -1090,9 +1230,9 @@ QString UiHelper::nthSerialNumName(QString name)
 QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamType type)
 {
     switch (type) {
-    case zeno::Param_Null:  return QVariant();
-    case zeno::Param_Bool:  return (bool)defaultValue.toInt();
-    case zeno::Param_Int:
+    case Param_Null:  return QVariant();
+    case zeno::types::gParamType_Bool:  return (bool)defaultValue.toInt();
+    case zeno::types::gParamType_Int:
     {
         bool bOk = false;
         int val = defaultValue.toInt(&bOk);
@@ -1111,8 +1251,8 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
             return defaultValue;
         }
     }
-    case zeno::Param_String:    return defaultValue;
-    case zeno::Param_Float:
+    case zeno::types::gParamType_String:    return defaultValue;
+    case zeno::types::gParamType_Float:
     {
         bool bOk = false;
         float fVal = defaultValue.toFloat(&bOk);
@@ -1121,12 +1261,12 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
         else
             return defaultValue;
     }
-    case zeno::Param_Vec2i:
-    case zeno::Param_Vec3i:
-    case zeno::Param_Vec4i:
-    case zeno::Param_Vec2f:
-    case zeno::Param_Vec3f:
-    case zeno::Param_Vec4f:
+    case zeno::types::gParamType_Vec2i:
+    case zeno::types::gParamType_Vec3i:
+    case zeno::types::gParamType_Vec4i:
+    case zeno::types::gParamType_Vec2f:
+    case zeno::types::gParamType_Vec3f:
+    case zeno::types::gParamType_Vec4f:
     {
         UI_VECTYPE vec;
         if (!defaultValue.isEmpty())
@@ -1146,17 +1286,15 @@ QVariant UiHelper::parseStringByType(const QString& defaultValue, zeno::ParamTyp
         }
         return QVariant::fromValue(vec);
     }
-    case zeno::Param_Curve:
+    case zeno::types::gParamType_Curve:
     {
         //TODO
         break;
     }
-    case zeno::Param_Prim:
-    case zeno::Param_Dict:
-    case zeno::Param_List:
+    case gParamType_Primitive:
+    case gParamType_Dict:
+    case gParamType_List:
             //Param_Color,  //need this?
-    
-    case zeno::Param_SrcDst:
         break;
     }
     return QVariant();
@@ -1283,241 +1421,6 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     }
     //unregister type or unknown data, return itself.
     return var;
-}
-
-QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val, QObject* parentRef)
-{
-    QVariant res;
-    auto jsonType = val.GetType();
-    if (descType == "int")
-    {
-        bool bSucc = false;
-        int iVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc) {
-            if (val.IsString()) {
-                return val.GetString();
-            } else {
-                return QVariant(); //will not be serialized when return null variant.
-            }
-        }
-        res = iVal;
-    }
-    else if (descType == "float" ||
-             descType == "NumericObject")
-    {
-        bool bSucc = false;
-        float fVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc) {
-           if (val.IsString()) {
-                return val.GetString();
-           } else {
-                return QVariant();
-           }
-        }
-        res = fVal;
-    }
-    else if (descType == "string" ||
-             descType == "writepath"||
-             descType == "readpath" ||
-             descType == "multiline_string" ||
-             descType.startsWith("enum "))
-    {
-        if (val.IsString())
-            res = val.GetString();
-        else
-            return QVariant();
-    }
-    else if (descType == "bool")
-    {
-        if (val.IsBool())
-            res = val.GetBool();
-        else if (val.IsInt())
-            res = val.GetInt() != 0;
-        else if (val.IsFloat())
-            res = val.GetFloat() != 0;
-        else
-            return QVariant();
-    }
-    else if (descType.startsWith("vec"))
-    {
-        int dim = 0;
-        bool bFloat = false;
-        if (UiHelper::parseVecType(descType, dim, bFloat))
-        {
-            res = QVariant::fromValue(UI_VECTYPE(dim, 0));
-            UI_VECTYPE vec;
-            UI_VECSTRING strVec;
-            if (val.IsArray())
-            {
-                auto values = val.GetArray();
-                for (int i = 0; i < values.Size(); i++)
-                {
-                    if (values[i].IsFloat())
-                    {
-                        vec.append(values[i].GetFloat());
-                    }
-                    else if (values[i].IsDouble())
-                    {
-                        vec.append(values[i].GetDouble());
-                    }
-                    else if (values[i].IsInt())
-                    {
-                        vec.append(values[i].GetInt());
-                    }
-                    else if (values[i].IsString())
-                    {
-                        strVec.append(values[i].GetString());
-                    }
-                }
-            }
-            else if (val.IsString())
-            {
-                const QString& vecStr = val.GetString();
-                QStringList lst = vecStr.split(",");
-                for (int i = 0; i < lst.size(); i++)
-                {
-                    bool bSucc = false;
-                    if (lst[i].isEmpty()) {
-                        vec.append(0);
-                    }
-                    else {
-                        float fVal = lst[i].toFloat(&bSucc);
-                        if (!bSucc)
-                            return QVariant();
-                        vec.append(fVal);
-                    }
-                }
-            }
-            if (!vec.isEmpty())
-                res = QVariant::fromValue(vec);
-            else
-                res = QVariant::fromValue(strVec);
-        }
-        else
-        {
-            return QVariant();
-        }
-    } else if (descType == "curve") {
-        ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
-        QString type = val[key_objectType].GetString();
-        if (type != "curve") {
-            return QVariant();
-        }
-        CURVES_DATA curves;
-        if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-            CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
-            curves.insert("x", xCurve);
-        } else {
-            bool timeLine = false;
-            if (val.HasMember(key_timeline))
-            {
-                timeLine = val[key_timeline].GetBool();
-            }
-            for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
-                if (i->value.IsObject()) {
-                    CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
-                    curve.timeline = timeLine;
-                    curves.insert(i->name.GetString(), curve);
-                }
-            }
-        }
-        res = QVariant::fromValue(curves);
-    }
-    else if (descType == "color" && val.IsString()) 
-    {
-        if (QColor(val.GetString()).isValid())
-            res = QVariant::fromValue(QColor(val.GetString()));
-    }
-    else
-    {
-        // omitted or legacy type, need to parse by json value.
-        if (val.IsString() && val.GetStringLength() == 0)
-        {
-            // the default value of many types, for example primitive, are empty string,
-            // skip it and return a invalid variant.
-            return QVariant();
-        }
-        // unregisted or new type, convert by json value.
-        return parseJsonByValue(descType, val, parentRef);
-    }
-    return res;
-}
-
-QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
-{
-    if (val.GetType() == rapidjson::kStringType)
-    {
-        bool bSucc = false;
-        float fVal = parseJsonNumeric(val, true, bSucc);
-        if (bSucc)
-            return fVal;
-
-        if (type == "color")
-            return QVariant::fromValue(QColor(val.GetString()));
-
-        return val.GetString();
-    }
-    else if (val.GetType() == rapidjson::kNumberType)
-    {
-        if (val.IsDouble())
-            return val.GetDouble();
-        else if (val.IsInt())
-            return val.GetInt();
-        else {
-            zeno::log_warn("bad rapidjson number type {}", val.GetType());
-            return QVariant();
-        }
-    }
-    else if (val.GetType() == rapidjson::kTrueType)
-    {
-        return val.GetBool();
-    }
-    else if (val.GetType() == rapidjson::kFalseType)
-    {
-        return val.GetBool();
-    }
-    else if (val.GetType() == rapidjson::kNullType)
-    {
-        return QVariant();
-    }
-    else if (val.GetType() == rapidjson::kArrayType)
-    {
-        UI_VECTYPE vec;
-        auto values = val.GetArray();
-        for (int i = 0; i < values.Size(); i++)
-        {
-            vec.append(values[i].GetFloat());
-        }
-        return QVariant::fromValue(vec);
-    }
-    else if (val.GetType() == rapidjson::kObjectType)
-    {
-        if (type == "curve")
-        {
-            ZASSERT_EXIT(val.HasMember(key_objectType), QVariant());
-            QString type = val[key_objectType].GetString();
-            if (type != "curve") {
-                return QVariant();
-            }
-            CURVES_DATA curves;
-            if (!val.HasMember("x") && !val.HasMember("y") && !val.HasMember("z") && val.HasMember(key_range)) { //compatible old version zsg file
-                CURVE_DATA xCurve = JsonHelper::parseCurve("x", val);
-                curves.insert("x", xCurve);
-            } else {
-                for (auto i = val.MemberBegin(); i != val.MemberEnd(); i++) {
-                    if (i->value.IsObject()) {
-                        CURVE_DATA curve = JsonHelper::parseCurve(i->name.GetString(), i->value);
-                        //pModel->setTimeline(val[key_timeline].GetBool()); //todo: timeline
-                        curves.insert(i->name.GetString(), curve);
-                    }
-                }
-            }
-            return QVariant::fromValue(curves);
-        }
-    }
-
-    zeno::log_warn("bad rapidjson value type {}", val.GetType());
-    return QVariant();
 }
 
 QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
@@ -1679,6 +1582,23 @@ QVector<qreal> UiHelper::scaleFactors()
     return lst;
 }
 
+zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid) {
+    zeno::CurvesData curves;
+    if (qvar.canConvert<zeno::reflect::Any>()) {
+        const auto& anyVal = qvar.value<zeno::reflect::Any>();
+        if (anyVal.has_value() && zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+            if (bValid) *bValid = true;
+            return zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+        }
+    }
+    if (bValid) *bValid = false;
+    return curves;
+}
+
+QVariant UiHelper::getQVarFromCurves(const zeno::CurvesData& curves) {
+    return QVariant::fromValue(zeno::reflect::make_any<zeno::CurvesData>(curves));
+}
+
 QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
 {
     auto nodeIdx = param.data(ROLE_NODEIDX).toModelIndex();
@@ -1791,7 +1711,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamPrimit
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(info.defl), ROLE_PARAM_VALUE);
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(true, ROLE_ISINPUT);
@@ -1806,7 +1726,7 @@ QStandardItemModel* UiHelper::genParamsModel(const std::vector<zeno::ParamPrimit
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(info.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(info.defl), ROLE_PARAM_VALUE);
         paramItem->setData(info.control, ROLE_PARAM_CONTROL);
         paramItem->setData(info.type, ROLE_PARAM_TYPE);
         paramItem->setData(false, ROLE_ISINPUT);
@@ -1842,6 +1762,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         const QString& tabName = QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
         pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+        pTab->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
         pTab->setData(tabName, ROLE_PARAM_NAME);
 
         for (const zeno::ParamGroup& group : tab.groups)
@@ -1849,6 +1770,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
             const QString& groupName = QString::fromStdString(group.name);
             QStandardItem* pGroup = new QStandardItem(groupName);
             pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+            pGroup->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
             pGroup->setData(groupName, ROLE_PARAM_NAME);
 
             for (const zeno::ParamPrimitive& param : group.params)
@@ -1860,14 +1782,15 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
                 paramItem->setData(paramName, Qt::DisplayRole);
                 paramItem->setData(paramName, ROLE_PARAM_NAME);
                 paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-                paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
                 paramItem->setData(param.control, ROLE_PARAM_CONTROL);
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
                 paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
                 paramItem->setData(param.bVisible, ROLE_PARAM_VISIBLE);
                 if (param.ctrlProps.has_value())
-                    paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+                    paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
+                paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
                 pGroup->appendRow(paramItem);
             }
             pTab->appendRow(pGroup);
@@ -1884,15 +1807,16 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         paramItem->setData(paramName, Qt::DisplayRole);
         paramItem->setData(paramName, ROLE_PARAM_NAME);
         paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
-        paramItem->setData(UiHelper::zvarToQVar(param.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
         paramItem->setData(param.control, ROLE_PARAM_CONTROL);
         paramItem->setData(param.type, ROLE_PARAM_TYPE);
         paramItem->setData(false, ROLE_ISINPUT);
         paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
         if (param.ctrlProps.has_value())
-            paramItem->setData(QVariant::fromValue(param.ctrlProps.value()), ROLE_PARAM_CTRL_PROPERTIES);
+            paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
         pOutputs->appendRow(paramItem);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setData(zeno::Role_OutputPrimitive, ROLE_PARAM_GROUP);
         paramItem->setEditable(true);
     }
     //object params
@@ -1909,6 +1833,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         paramItem->setData(true, ROLE_ISINPUT);
         paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setData(zeno::Role_InputObject, ROLE_PARAM_GROUP);
         paramItem->setEditable(true);
         pObjInputs->appendRow(paramItem);
     }
@@ -1926,6 +1851,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
         paramItem->setData(false, ROLE_ISINPUT);
         paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
         paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        paramItem->setData(zeno::Role_OutputObject, ROLE_PARAM_GROUP);
         paramItem->setEditable(true);
         pObjOutputs->appendRow(paramItem);
     }
@@ -1935,59 +1861,224 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
     customParamsM->appendRow(pObjOutputs);
 }
 
-void UiHelper::parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos)
+void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, const zeno::params_change_info& changes, const zeno::CustomUI& customui)
 {
-    for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
-    {
-        for (const zeno::ParamGroup& group : tab.groups)
-        {
-            for (const zeno::ParamPrimitive& param : group.params)
-            {
-                zeno::ParamPrimitive info;
-                info.bInput = true;
-                info.control = param.control;
-                info.type = param.type;
-                info.defl = param.defl;
-                info.name = param.name;
-                info.tooltip = param.tooltip;
-                info.socketType = param.socketType;
-                info.ctrlProps = param.ctrlProps;
-                infos.push_back({ info, ""});
+    QStandardItem* pInputsRoot = customParamsM->item(0);
+    QStandardItem* pOutputsRoot = customParamsM->item(1);
+    QStandardItem* pObjInputsRoot = customParamsM->item(2);
+    QStandardItem* pObjOutputsRoot = customParamsM->item(3);
+    if (!pInputsRoot || !pOutputsRoot || !pObjInputsRoot || !pObjOutputsRoot)
+        return;
+    if (!pInputsRoot->hasChildren() || !pInputsRoot->child(0)->hasChildren())
+        return;
+    if (customui.inputPrims.tabs.empty() || customui.inputPrims.tabs[0].groups.empty())
+        return;
+    auto const& renameItem = [](QStandardItem* item, const std::string& name) {
+        item->setData(QString::fromStdString(name), Qt::DisplayRole);
+        item->setData(QString::fromStdString(name), ROLE_PARAM_NAME);
+        item->setData(QString::fromStdString(name), ROLE_MAP_TO_PARAMNAME);
+    };
+    auto const& makeInputPrimItem = [](zeno::ParamPrimitive const& param) -> QStandardItem* {
+        QStandardItem* paramItem = new QStandardItem(QString::fromStdString(param.name));
+        paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+        const QString& paramName = QString::fromStdString(param.name);
+        paramItem->setData(paramName, Qt::DisplayRole);
+        paramItem->setData(paramName, ROLE_PARAM_NAME);
+        paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+        paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
+        paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+        paramItem->setData(param.type, ROLE_PARAM_TYPE);
+        paramItem->setData(true, ROLE_ISINPUT);
+        paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+        paramItem->setData(param.bVisible, ROLE_PARAM_VISIBLE);
+        if (param.ctrlProps.has_value())
+            paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
+        paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
+        return paramItem;
+    };
+    auto const& updateGroup = [&changes, &renameItem, &makeInputPrimItem](QStandardItem* pItemGroup, zeno::PrimitiveParams const& inputPrims) {
+        for (int i = 0; i < inputPrims.size(); i++) {
+            bool defaultInitCase = i >= pItemGroup->rowCount();
+            auto const& param = inputPrims[i];
+            if (defaultInitCase || param.name != pItemGroup->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                if (defaultInitCase || changes.new_inputs.find(param.name) != changes.new_inputs.end()) {
+                    pItemGroup->insertRow(i, makeInputPrimItem(param));
+                    continue;
+                }
+                for (auto& pair : changes.rename_inputs) {
+                    if (pair.first == pItemGroup->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                        renameItem(pItemGroup->child(i), pair.second);
+                        break;
+                    }
+                }
+            }
+        }
+    };
+    //inputPrims
+    std::unordered_set<std::string> tabnames, groupnames;
+    for (int tabCount = 0; tabCount < customui.inputPrims.tabs.size(); tabCount++) {
+        for (int groupCount = 0; groupCount < customui.inputPrims.tabs[tabCount].groups.size(); groupCount++)
+            groupnames.insert(customui.inputPrims.tabs[tabCount].groups[groupCount].name);
+        tabnames.insert(customui.inputPrims.tabs[tabCount].name);
+    }
+    for (int tabCount = pInputsRoot->rowCount() - 1; tabCount >= 0; tabCount--) {
+        QStandardItem* tabitem = pInputsRoot->child(tabCount);
+        for (int groupCount = tabitem->rowCount() - 1; groupCount >= 0; groupCount--) {
+            QStandardItem* groupitem = tabitem->child(groupCount);
+            for (int paramCount = groupitem->rowCount() - 1; paramCount >= 0; paramCount--) {
+                if (changes.remove_inputs.find(groupitem->child(paramCount)->data(ROLE_PARAM_NAME).toString().toStdString()) != changes.remove_inputs.end())
+                    groupitem->removeRow(paramCount);
+            }
+            if (groupitem->rowCount() == 0 && !groupnames.count(groupitem->data(ROLE_PARAM_NAME).toString().toStdString()))
+                tabitem->removeRow(groupCount);
+        }
+        if (tabitem->rowCount() == 0 && !tabnames.count(tabitem->data(ROLE_PARAM_NAME).toString().toStdString()))
+            pInputsRoot->removeRow(tabCount);
+    }
+    for (int tabCount = 0; tabCount < customui.inputPrims.tabs.size(); tabCount++) {
+        const auto& tabItem = pInputsRoot->child(tabCount);
+        const auto& tabName = customui.inputPrims.tabs[tabCount].name;
+        if (pInputsRoot->rowCount() < tabCount + 1) {
+            QStandardItem* pTab = new QStandardItem(QString::fromStdString(tabName));
+            pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
+            pTab->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
+            pTab->setData(QString::fromStdString(tabName), ROLE_PARAM_NAME);
+            for (const zeno::ParamGroup& group : customui.inputPrims.tabs[tabCount].groups) {
+                const QString& groupName = QString::fromStdString(group.name);
+                QStandardItem* pGroup = new QStandardItem(groupName);
+                pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+                pGroup->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
+                pGroup->setData(groupName, ROLE_PARAM_NAME);
+                for (const zeno::ParamPrimitive& param : group.params) {
+                    pGroup->appendRow(makeInputPrimItem(param));
+                }
+                pTab->appendRow(pGroup);
+            }
+            pInputsRoot->appendRow(pTab);
+        }
+        else {
+            if (tabItem->data(ROLE_PARAM_NAME).toString().toStdString() != tabName)
+                renameItem(tabItem, tabName);
+            for (int groupCount = 0; groupCount < customui.inputPrims.tabs[tabCount].groups.size(); groupCount++) {
+                const auto& groupItem = tabItem->child(groupCount);
+                const auto& groupName = customui.inputPrims.tabs[tabCount].groups[groupCount].name;
+                if (tabItem->rowCount() < groupCount + 1) {
+                    QStandardItem* pGroup = new QStandardItem(QString::fromStdString(groupName));
+                    pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
+                    pGroup->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
+                    pGroup->setData(QString::fromStdString(groupName), ROLE_PARAM_NAME);
+                    for (const zeno::ParamPrimitive& param : customui.inputPrims.tabs[tabCount].groups[groupCount].params) {
+                        pGroup->appendRow(makeInputPrimItem(param));
+                    }
+                    tabItem->appendRow(pGroup);
+                }
+                else {
+                    if (groupItem->data(ROLE_PARAM_NAME).toString().toStdString() != groupName)
+                        renameItem(groupItem, groupName);
+                    updateGroup(groupItem, customui.inputPrims.tabs[tabCount].groups[groupCount].params);
+                }
             }
         }
     }
-    for (const zeno::ParamPrimitive& param : customui.outputPrims)
-    {
-        zeno::ParamPrimitive info;
-        info.bInput = false;
-        info.control = param.control;
-        info.type = param.type;
-        info.defl = param.defl;
-        info.name = param.name;
-        info.tooltip = param.tooltip;
-        info.socketType = param.socketType;
-        info.ctrlProps = param.ctrlProps;
-        infos.push_back({ info, ""});
+    //inputObjs
+    for (int i = pObjInputsRoot->rowCount() - 1; i >= 0; i--) {
+        if (changes.remove_inputs.find(pObjInputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) != changes.remove_inputs.end())
+            pObjInputsRoot->removeRow(i);
     }
-    for (const zeno::ParamObject& param : customui.inputObjs)
-    {
-        zeno::ParamObject info;
-        info.bInput = true;
-        info.type = param.type;
-        info.name = param.name;
-        info.tooltip = param.tooltip;
-        info.socketType = param.socketType;
-        infos.push_back({ info, "" });
+    for (int i = 0; i < customui.inputObjs.size(); i++) {
+        bool defaultInitCase = i >= pObjInputsRoot->rowCount();
+        auto const& param = customui.inputObjs[i];
+        if (defaultInitCase || param.name != pObjInputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (defaultInitCase || changes.new_inputs.find(param.name) != changes.new_inputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(true, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setData(zeno::Role_InputObject, ROLE_PARAM_GROUP);
+                paramItem->setEditable(true);
+                pObjInputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            for (auto& pair : changes.rename_inputs) {
+                if (pair.first == pObjInputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                    renameItem(pObjInputsRoot->child(i), pair.second);
+                    break;
+                }
+            }
+        }
     }
-    for (const zeno::ParamObject& param : customui.outputObjs)
-    {
-        zeno::ParamObject info;
-        info.bInput = false;
-        info.type = param.type;
-        info.name = param.name;
-        info.tooltip = param.tooltip;
-        info.socketType = param.socketType;
-        infos.push_back({ info, "" });
+    //outputPrims
+    for (int i = pOutputsRoot->rowCount() - 1; i >= 0; i--) {
+        if (changes.remove_outputs.find(pOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) != changes.remove_outputs.end())
+            pOutputsRoot->removeRow(i);
+    }
+    for (int i = 0; i < customui.outputPrims.size(); i++) {
+        bool defaultInitCase = i >= pOutputsRoot->rowCount();
+        auto const& param = customui.outputPrims[i];
+        if (defaultInitCase || param.name != pOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (defaultInitCase || changes.new_outputs.find(param.name) != changes.new_outputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
+                paramItem->setData(param.control, ROLE_PARAM_CONTROL);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(false, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                if (param.ctrlProps.has_value())
+                    paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setData(zeno::Role_OutputPrimitive, ROLE_PARAM_GROUP);
+                paramItem->setEditable(true);
+                pOutputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            for (auto& pair : changes.rename_outputs) {
+                if (pair.first == pOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                    renameItem(pOutputsRoot->child(i), pair.second);
+                    break;
+                }
+            }
+        }
+    }
+    //outputObjs
+    for (int i = pObjOutputsRoot->rowCount() - 1; i >= 0; i--) {
+        if (changes.remove_outputs.find(pObjOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) != changes.remove_outputs.end())
+            pObjOutputsRoot->removeRow(i);
+    }
+    for (int i = 0; i < customui.outputObjs.size(); i++) {
+        bool defaultInitCase = i >= pObjOutputsRoot->rowCount();
+        auto const& param = customui.outputObjs[i];
+        if (defaultInitCase || param.name != pObjOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+            if (defaultInitCase || changes.new_outputs.find(param.name) != changes.new_outputs.end()) {
+                const QString& paramName = QString::fromStdString(param.name);
+                QStandardItem* paramItem = new QStandardItem(paramName);
+                paramItem->setData(paramName, Qt::DisplayRole);
+                paramItem->setData(paramName, ROLE_PARAM_NAME);
+                paramItem->setData(paramName, ROLE_MAP_TO_PARAMNAME);
+                paramItem->setData(param.type, ROLE_PARAM_TYPE);
+                paramItem->setData(false, ROLE_ISINPUT);
+                paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
+                paramItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
+                paramItem->setData(zeno::Role_OutputObject, ROLE_PARAM_GROUP);
+                paramItem->setEditable(true);
+                pObjOutputsRoot->insertRow(i, paramItem);
+                continue;
+            }
+            for (auto& pair : changes.rename_outputs) {
+                if (pair.first == pObjOutputsRoot->child(i)->data(ROLE_PARAM_NAME).toString().toStdString()) {
+                    renameItem(pObjOutputsRoot->child(i), pair.second);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -2107,4 +2198,37 @@ PANEL_TYPE UiHelper::title2Type(const QString& title)
         type = PANEL_OPEN_PATH;
     }
     return type;
+}
+
+QString UiHelper::getTypeNameFromRtti(zeno::ParamType type)
+{
+    QString typeStr;
+    if (type == Param_Null) {
+        typeStr = "null";
+        return typeStr;
+    } else if (type == Param_Wildcard) {
+        typeStr = "paramWildcard";
+        return typeStr;
+    } else if (type == Obj_Wildcard) {
+        typeStr = "objWildcard";
+        return typeStr;
+    }
+    else {
+        const zeno::reflect::RTTITypeInfo& typeInfo = zeno::reflect::ReflectionRegistry::get().getRttiMap()->get(type);
+        std::vector<std::regex> patterns = {
+            std::regex(R"(std::shared_ptr\s*<\s*(?:const)?\s*struct\s*zeno::(.*?)\s*>)"),    //提取obj名
+            std::regex(R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))"),   //提取vec名
+            std::regex(R"(std::basic_(.*?)\s*<\s*char\s*>)")                    //提取string
+        };
+        std::string rttiname = typeInfo.name();
+        typeStr = QString::fromStdString(rttiname);
+        for (const auto& pattern : patterns) {
+            std::smatch match;
+            if (std::regex_search(rttiname, match, pattern)) {
+                typeStr = QString::fromStdString(match[1].str());
+                break;
+            }
+        }
+    }
+    return typeStr;
 }

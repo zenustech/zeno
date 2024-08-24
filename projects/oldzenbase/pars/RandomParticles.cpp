@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <cstring>
 
 #ifdef _MSC_VER
@@ -32,11 +32,11 @@ struct RandomParticles : zeno::INode {
 static int defRandomParticles = zeno::defNodeClass<RandomParticles>("RandomParticles",
     { /* inputs: */ {
     }, /* outputs: */ {
-    "pars",
+        {"object", "pars"},
     }, /* params: */ {
-    {"int", "count", "1 0"},
-    {"float", "Prange", "1 0"},
-    {"float", "Vrange", "1 0"},
+    {gParamType_Int, "count", "1 0"},
+    {gParamType_Float, "Prange", "1 0"},
+    {gParamType_Float, "Vrange", "1 0"},
     }, /* category: */ {
     "deprecated",
     }});

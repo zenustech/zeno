@@ -279,7 +279,7 @@ struct ZSParticleParticleWrangler : INode {
 ZENDEFNODE(ZSParticleParticleWrangler, {
                                            {{"ZenoParticles", "ZSParticles"},
                                             {"ZenoParticles", "ZSNeighborParticles"},
-                                            {"string", "zfxCode"},
+                                            {gParamType_String, "zfxCode"},
                                             {"DictObject:NumericObject", "params"}},
                                            {"ZSParticles"},
                                            {},

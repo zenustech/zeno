@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/MeshObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <omp.h>
 //#include <tl/function_ref.hpp>
 //openvdb::FloatGrid::Ptr grid = 
@@ -42,9 +42,9 @@ struct PolyDuplicate : zeno::INode{
 
 static int defPolyDuplicate = zeno::defNodeClass<PolyDuplicate>("PolyDuplicate",
     { /* inputs: */ {
-        "Mesh", "Particles", 
+        {"object", "Mesh"}, {"object", "Particles"},
     }, /* outputs: */ {
-        "Meshes",
+        {"object", "Meshes"},
     }, /* params: */ {
     
     }, /* category: */ {
@@ -70,8 +70,8 @@ struct MeshCopy : zeno::INode {
 static int defMeshCopy =
     zeno::defNodeClass<MeshCopy>("MeshCopy", {/* inputs: */
                                              {
-                                                 "copyFrom",
-                                                 "copyTo",
+                                                 {"object", "copyFrom"},
+                                                 {"object", "copyTo"},
                                              },
                                              /* outputs: */
                                              {},

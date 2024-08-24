@@ -90,9 +90,9 @@ struct QueryNearestPoints : INode {
                 gmin = vertices[i][d];
                 gmax = vertices[i][d];
             });
-            reduce(pol, std::begin(gmins), std::end(gmins), std::begin(ret), limits<float>::max(), getmin<float>{});
+            reduce(pol, std::begin(gmins), std::end(gmins), std::begin(ret), detail::deduce_numeric_max<float>(), getmin<float>{});
             gbv._min[d] = ret.getVal();
-            reduce(pol, std::begin(gmaxs), std::end(gmaxs), std::begin(ret), limits<float>::lowest(), getmax<float>{});
+            reduce(pol, std::begin(gmaxs), std::end(gmaxs), std::begin(ret), detail::deduce_numeric_lowest<float>(), getmax<float>{});
             gbv._max[d] = ret.getVal();
         }
         int axis = 0; // x-axis by default
@@ -130,8 +130,8 @@ struct QueryNearestPoints : INode {
         {
             int cnt = 0;
             for (int i = 0; i < vertices.size() - 1; ++i) {
-                if ((keys[i] >= limits<float>::epsilon() || keys[i] <= -limits<float>::epsilon()) &&
-                    (keys[i + 1] >= limits<float>::epsilon() || keys[i + 1] <= -limits<float>::epsilon()))
+                if ((keys[i] >= detail::deduce_numeric_epsilon<float>() || keys[i] <= -detail::deduce_numeric_epsilon<float>()) &&
+                    (keys[i + 1] >= detail::deduce_numeric_epsilon<float>() || keys[i + 1] <= -detail::deduce_numeric_epsilon<float>()))
                     if (keys[i] > keys[i + 1]) {
                         printf("order is wrong at [%d] ... %e, %e...\n", i, keys[i], keys[i + 1]);
                         cnt++;
@@ -172,7 +172,7 @@ struct QueryNearestPoints : INode {
         pol(enumerate(pos, locs, dists, ids, cps),
             [&xs, &indices, axis](int i, const auto &xi, const int loc, float &dist, int &id, vec3f &cp) {
                 int l = loc + 1;
-                float d2 = limits<float>::max();
+                float d2 = detail::deduce_numeric_max<float>();
                 int j = -1;
                 int cnt = 0;
                 while (l < xs.size() && cnt++ < 128) {
@@ -265,7 +265,7 @@ struct QueryNearestPoints : INode {
         pol(enumerate(pos, dists, ids, cps), [&pos, &vertices, &locs, &xs, &indices, bvh = proxy<space>(bvh), axis](
                                                  int i, const zeno::vec3f &p, float &dist, int &id, zeno::vec3f &cp) {
             auto target = vertices[id];
-            if (auto d = zeno::length(p - target); std::abs(d - dist) > limits<float>::epsilon())
+            if (auto d = zeno::length(p - target); std::abs(d - dist) > detail::deduce_numeric_epsilon<float>())
                 fmt::print("actual dist {}, cp ({}, {}, {}); calced dist {}, cp ({}, {}, {}). \n", d, target[0],
                            target[1], target[2], dist, cp[0], cp[1], cp[2]);
             const int loc = locs[i];
@@ -275,7 +275,7 @@ struct QueryNearestPoints : INode {
                 auto key = xi[axis];
                 int l = loc + 1;
                 while (l < xs.size() && zs::sqr(xs[l][axis] - key) < dist2) {
-                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + limits<float>::epsilon() < dist) {
+                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + detail::deduce_numeric_epsilon<float>() < dist) {
                         fmt::print("[{}] found nearer pair! real id should be {} ({}), not {} ({})\n", i, indices[l],
                                    std::sqrt(d2), id, std::sqrt(dist2));
                         return;
@@ -284,7 +284,7 @@ struct QueryNearestPoints : INode {
                 }
                 l = loc;
                 while (l >= 0 && zs::sqr(xs[l][axis] - key) < dist2) {
-                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + limits<float>::epsilon() < dist) {
+                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + detail::deduce_numeric_epsilon<float>() < dist) {
                         fmt::print("[{}] found nearer pair! real id should be {} ({}), not {} ({})\n", i, indices[l],
                                    std::sqrt(d2), id, dist);
                         return;
@@ -302,7 +302,7 @@ struct QueryNearestPoints : INode {
             timer.tick();
             pol(zip(range(pos.size()), locs),
                 [&locs, &xs, &vertices, &indices, &pos, &ids, &dists, &cps, axis](int i, const int loc) {
-                    float dist2 = limits<float>::max();
+                    float dist2 = detail::deduce_numeric_max<float>();
                     int id = -1;
                     auto xi = pos[i];
                     auto key = xi[axis];
@@ -338,14 +338,14 @@ struct QueryNearestPoints : INode {
 
 ZENDEFNODE(QueryNearestPoints, {/* inputs: */
                                 {
-                                    {"PrimitiveObject", "points", ""},
-                                    {"PrimitiveObject", "target_prim", ""},
-                                    {"string", "idTag", "bvh_id"},
-                                    {"string", "distTag", "bvh_dist"},
-                                    {"string", "closestPointTag", "cp"},
+                                    {gParamType_Primitive, "points", ""},
+                                    {gParamType_Primitive, "target_prim", ""},
+                                    {gParamType_String, "idTag", "bvh_id"},
+                                    {gParamType_String, "distTag", "bvh_dist"},
+                                    {gParamType_String, "closestPointTag", "cp"},
                                 },
                                 /* outputs: */
-                                {{"PrimitiveObject", "points", ""}},
+                                {{gParamType_Primitive, "points", ""}},
                                 /* params: */
                                 {},
                                 /* category: */

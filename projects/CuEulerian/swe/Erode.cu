@@ -29,7 +29,7 @@ namespace zs {
     }
 
     __forceinline__ __device__ zs::vec<float, 3> normalizeSafe(const zs::vec<float, 3> &a,
-                                                               float b = zs::limits<float>::epsilon()) {
+                                                               float b = zs::detail::deduce_numeric_epsilon<float>()) {
         return a * (1 / zs::max(b, a.length()));
     }
 
@@ -161,8 +161,8 @@ namespace zeno {
         /* inputs: */
         {
             "prim_2DGrid",
-            {"float", "value", "1.0"}, // 0.0 ~ 1.0
-            {"float", "seed", "0.0"},
+            {gParamType_Float, "value", "1.0"}, // 0.0 ~ 1.0
+            {gParamType_Float, "seed", "0.0"},
         },
         /* outputs: */
         {
@@ -254,8 +254,8 @@ namespace zeno {
         /* inputs: */
         {
             "prim_2DGrid",
-            {"float", "smoothRate", "1.0"},
-            {"string", "flowName", "flow"},
+            {gParamType_Float, "smoothRate", "1.0"},
+            {gParamType_String, "flowName", "flow"},
         },
         /* outputs: */
         {
@@ -529,20 +529,20 @@ namespace zeno {
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "9676.79"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "9676.79"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
-            {"float", "gridbias", "0.0"},
+            {gParamType_Int, "openborder", "0"},
+            {gParamType_Float, "gridbias", "0.0"},
 
-            {"float", "cut_angle", "35"},
-            {"float", "global_erosionrate", "1.0"},
-            {"float", "erosionrate", "0.03"},
-            {"float", "erodability", "0.4"},
-            {"float", "removalrate", "0.7"},
-            {"float", "maxdepth", "5.0"},
+            {gParamType_Float, "cut_angle", "35"},
+            {gParamType_Float, "global_erosionrate", "1.0"},
+            {gParamType_Float, "erosionrate", "0.03"},
+            {gParamType_Float, "erodability", "0.4"},
+            {gParamType_Float, "removalrate", "0.7"},
+            {gParamType_Float, "maxdepth", "5.0"},
         },
         /* outputs: */
         {
@@ -827,23 +827,23 @@ namespace zeno {
         {
             "prim_2DGrid",
 
-            {"string", "stabilitymask", "_stability"},
+            {gParamType_String, "stabilitymask", "_stability"},
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "15231.3"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "15231.3"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
-            {"float", "gridbias", "0.0"},
+            {gParamType_Int, "openborder", "0"},
+            {gParamType_Float, "gridbias", "0.0"},
 
             // 崩塌流淌相关
-            {"float", "repose_angle", "15.0"},
-            {"float", "quant_amt", "0.25"},
-            {"float", "flow_rate", "1.0"},
+            {gParamType_Float, "repose_angle", "15.0"},
+            {gParamType_Float, "quant_amt", "0.25"},
+            {gParamType_Float, "flow_rate", "1.0"},
         },
         /* outputs: */
         {
@@ -851,7 +851,7 @@ namespace zeno {
         },
         /* params: */
         {
-            //{"string", "stabilitymask", "_stability"},
+            //{gParamType_String, "stabilitymask", "_stability"},
         },
         /* category: */
         {
@@ -1156,23 +1156,23 @@ namespace zeno {
         {
             "prim_2DGrid",
 
-            {"string", "stabilitymask", "_stability"},
+            {gParamType_String, "stabilitymask", "_stability"},
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "15231.3"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "15231.3"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
-            {"float", "gridbias", "0.0"},
+            {gParamType_Int, "openborder", "0"},
+            {gParamType_Float, "gridbias", "0.0"},
 
             // 崩塌流淌相关
-            {"float", "repose_angle", "0.0"},
-            {"float", "quant_amt", "0.0"},
-            {"float", "flow_rate", "1.0"},
+            {gParamType_Float, "repose_angle", "0.0"},
+            {gParamType_Float, "quant_amt", "0.0"},
+            {gParamType_Float, "flow_rate", "1.0"},
         },
         /* outputs: */
         {
@@ -1180,7 +1180,7 @@ namespace zeno {
         },
         /* params: */
         {
-            //{"string", "stabilitymask", "_stability"},
+            //{gParamType_String, "stabilitymask", "_stability"},
         },
         /* category: */
         {
@@ -1642,41 +1642,41 @@ namespace zeno {
                        {"ListObject", "p_dirs"},
                        {"ListObject", "x_dirs"},
 
-                       {"float", "seed", "12.34"},
-                       {"int", "iterations", "40"}, // 流淌的总迭代次数
-                       {"int", "iter", "0"},
-                       {"int", "i", "0"},
+                       {gParamType_Float, "seed", "12.34"},
+                       {gParamType_Int, "iterations", "40"}, // 流淌的总迭代次数
+                       {gParamType_Int, "iter", "0"},
+                       {gParamType_Int, "i", "0"},
 
-                       {"int", "openborder", "0"},
-                       {"float", "gridbias", "0.0"},
+                       {gParamType_Int, "openborder", "0"},
+                       {gParamType_Float, "gridbias", "0.0"},
 
                        // 侵蚀主参数
-                       {"float", "global_erosionrate", "1.0"}, // 全局侵蚀率
-                       {"float", "erodability", "1.0"},        // 侵蚀能力
-                       {"float", "erosionrate", "0.4"},        // 侵蚀率
-                       {"float", "bank_angle", "70.0"},        // 河堤侵蚀角度
+                       {gParamType_Float, "global_erosionrate", "1.0"}, // 全局侵蚀率
+                       {gParamType_Float, "erodability", "1.0"},        // 侵蚀能力
+                       {gParamType_Float, "erosionrate", "0.4"},        // 侵蚀率
+                       {gParamType_Float, "bank_angle", "70.0"},        // 河堤侵蚀角度
 
                        // 高级参数
-                       {"float", "removalrate", "0.1"},      // 风化率/水吸收率
-                       {"float", "max_debris_depth", "5.0"}, // 碎屑最大深度
+                       {gParamType_Float, "removalrate", "0.1"},      // 风化率/水吸收率
+                       {gParamType_Float, "max_debris_depth", "5.0"}, // 碎屑最大深度
 
                        // 侵蚀能力调整
-                       {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
-                       {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
-                       {"float", "slope_contribution_factor",
+                       {gParamType_Int, "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
+                       {gParamType_Float, "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
+                       {gParamType_Float, "slope_contribution_factor",
                            "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
 
                        // 河床参数
-                       {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
-                       {"float", "depositionrate", "0.01"},        // 沉积率
-                       {"float", "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
+                       {gParamType_Float, "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
+                       {gParamType_Float, "depositionrate", "0.01"},        // 沉积率
+                       {gParamType_Float, "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
                        // 河堤参数
-                       {"float", "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
-                       {"float", "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
+                       {gParamType_Float, "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
+                       {gParamType_Float, "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
 
                        // 河网控制
-                       {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
+                       {gParamType_Float, "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
                    },
                    /* outputs: */
                    {
@@ -1694,7 +1694,7 @@ namespace zeno {
 
 
     __forceinline__ __device__ float fit(const float data, const float ss, const float se, const float ds, const float de) {
-        float b = zs::limits<float>::epsilon();
+        float b = zs::detail::deduce_numeric_epsilon<float>();
         b = zs::max(zs::abs(se - ss), b);
         b = se - ss >= 0 ? b : -b;
         float alpha = (data - ss) / b;
@@ -1865,20 +1865,20 @@ namespace zeno {
 //    };
 //    ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
 //            "HeightField",
-//            {"string", "height_layer", "height"},
-//            {"string", "mask_layer", "mask"},
-//            {"int", "smooth_radius", "1"},
-//            {"bool", "use_slope", "0"},
-//            {"float", "min_slopeangle", "0"},
-//            {"float", "max_slopeangle", "90"},
+//            {gParamType_String, "height_layer", "height"},
+//            {gParamType_String, "mask_layer", "mask"},
+//            {gParamType_Int, "smooth_radius", "1"},
+//            {gParamType_Bool, "use_slope", "0"},
+//            {gParamType_Float, "min_slopeangle", "0"},
+//            {gParamType_Float, "max_slopeangle", "90"},
 //            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//            {"bool", "use_direction", "0"},
-//            {"float", "goal_angle", "0"},
-//            {"float", "angle_spread", "30"},
+//            {gParamType_Bool, "use_direction", "0"},
+//            {gParamType_Float, "goal_angle", "0"},
+//            {gParamType_Float, "angle_spread", "30"},
 //            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//            {"bool", "use_height", "0"},
-//            {"float", "min_height", "0"},
-//            {"float", "max_height", "1"},
+//            {gParamType_Bool, "use_height", "0"},
+//            {gParamType_Float, "min_height", "0"},
+//            {gParamType_Float, "max_height", "1"},
 //        },
 //        /* outputs: */
 //        {
@@ -2169,27 +2169,27 @@ namespace zeno {
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "9676.79"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "9676.79"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
-            {"float", "maxdepth", "5.0"},
-            {"float", "global_erosionrate", "1.0"},
-            {"float", "erosionrate", "0.03"},
+            {gParamType_Int, "openborder", "0"},
+            {gParamType_Float, "maxdepth", "5.0"},
+            {gParamType_Float, "global_erosionrate", "1.0"},
+            {gParamType_Float, "erosionrate", "0.03"},
 
-            {"float", "cutangle", "35"},
-            {"string", "cutangle_mask_layer", "_cutangle_mask"},
+            {gParamType_Float, "cutangle", "35"},
+            {gParamType_String, "cutangle_mask_layer", "_cutangle_mask"},
 
-            {"float", "erodability", "0.4"},
-            {"string", "erodability_mask_layer", "_erodability_mask"},
+            {gParamType_Float, "erodability", "0.4"},
+            {gParamType_String, "erodability_mask_layer", "_erodability_mask"},
 
-            {"float", "removalrate", "0.7"},
-            {"string", "removalrate_mask_layer", "_removalrate_mask"},
+            {gParamType_Float, "removalrate", "0.7"},
+            {gParamType_String, "removalrate_mask_layer", "_removalrate_mask"},
 
-            {"float", "gridbias", "0.0"},
-            {"string", "gridbias_mask_layer", "_gridbias_mask"},
+            {gParamType_Float, "gridbias", "0.0"},
+            {gParamType_String, "gridbias_mask_layer", "_gridbias_mask"},
         },
         /* outputs: */
         {
@@ -2378,12 +2378,12 @@ namespace zeno {
         /* inputs: */
         {
             "zs_HeightField",
-            {"string", "write_back_material_layer", "_write_back_material"},
-            {"int", "openborder", "0"},
-            {"float", "repose_angle", "15.0"},
-            {"float", "flow_rate", "1.0"},
-            {"float", "height_factor", "1.0"},
-            {"float", "entrainmentrate", "0.0"},
+            {gParamType_String, "write_back_material_layer", "_write_back_material"},
+            {gParamType_Int, "openborder", "0"},
+            {gParamType_Float, "repose_angle", "15.0"},
+            {gParamType_Float, "flow_rate", "1.0"},
+            {gParamType_Float, "height_factor", "1.0"},
+            {gParamType_Float, "entrainmentrate", "0.0"},
         },
         /* outputs: */
         {
@@ -2678,27 +2678,27 @@ namespace zeno {
         {
             "zs_HeightField",
 
-            {"string", "stability_mask_layer", "_stability_mask"},      //~~~~~mask
+            {gParamType_String, "stability_mask_layer", "_stability_mask"},      //~~~~~mask
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "15231.3"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "15231.3"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
+            {gParamType_Int, "openborder", "0"},
 
-            {"float", "gridbias", "0.0"},
-            {"string", "gridbias_mask_layer", "_gridbias_mask"},        //~~~~~mask
+            {gParamType_Float, "gridbias", "0.0"},
+            {gParamType_String, "gridbias_mask_layer", "_gridbias_mask"},        //~~~~~mask
 
             // 崩塌流淌相关
-            {"float", "repose_angle", "15.0"},
-            {"string", "reposeangle_mask_layer", "_reposeangle_mask"},  //~~~~~mask
+            {gParamType_Float, "repose_angle", "15.0"},
+            {gParamType_String, "reposeangle_mask_layer", "_reposeangle_mask"},  //~~~~~mask
 
-            {"float", "quant_amt", "0.25"},
-            {"float", "flow_rate", "1.0"},
+            {gParamType_Float, "quant_amt", "0.25"},
+            {gParamType_Float, "flow_rate", "1.0"},
         },
         /* outputs: */
         {
@@ -3006,27 +3006,27 @@ namespace zeno {
         {
             "zs_HeightField",
 
-            {"string", "stability_mask_layer", "_stability_mask"},  //~~~~~mask
+            {gParamType_String, "stability_mask_layer", "_stability_mask"},  //~~~~~mask
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "15231.3"},
-            {"int", "iterations", "0"},
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "15231.3"},
+            {gParamType_Int, "iterations", "0"},
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
+            {gParamType_Int, "openborder", "0"},
 
-            {"float", "gridbias", "0.0"},
-            {"string", "gridbias_mask_layer", "_gridbias_mask"},        //~~~~~mask
+            {gParamType_Float, "gridbias", "0.0"},
+            {gParamType_String, "gridbias_mask_layer", "_gridbias_mask"},        //~~~~~mask
 
             // 崩塌流淌相关
-            {"float", "repose_angle", "0.0"},
-            {"string", "reposeangle_mask_layer", "_reposeangle_mask"},  //~~~~~mask
+            {gParamType_Float, "repose_angle", "0.0"},
+            {gParamType_String, "reposeangle_mask_layer", "_reposeangle_mask"},  //~~~~~mask
 
-            {"float", "quant_amt", "0.0"},
-            {"float", "flow_rate", "1.0"},
+            {gParamType_Float, "quant_amt", "0.0"},
+            {gParamType_Float, "flow_rate", "1.0"},
         },
         /* outputs: */
         {
@@ -3500,52 +3500,52 @@ namespace zeno {
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
 
-            {"float", "seed", "12.34"},
-            {"int", "iterations", "40"}, // 流淌的总迭代次数
-            {"int", "iter", "0"},
-            {"int", "i", "0"},
+            {gParamType_Float, "seed", "12.34"},
+            {gParamType_Int, "iterations", "40"}, // 流淌的总迭代次数
+            {gParamType_Int, "iter", "0"},
+            {gParamType_Int, "i", "0"},
 
-            {"int", "openborder", "0"},
+            {gParamType_Int, "openborder", "0"},
 
-            {"float", "gridbias", "0.0"},
-            {"string", "gridbias_mask_layer", "_gridbias_mask"},                //~~~~~mask
+            {gParamType_Float, "gridbias", "0.0"},
+            {gParamType_String, "gridbias_mask_layer", "_gridbias_mask"},                //~~~~~mask
 
             // 侵蚀主参数
-            {"float", "global_erosionrate", "1.0"}, // 全局侵蚀率
-            {"float", "erosionrate", "0.4"},        // 侵蚀率
+            {gParamType_Float, "global_erosionrate", "1.0"}, // 全局侵蚀率
+            {gParamType_Float, "erosionrate", "0.4"},        // 侵蚀率
 
 
-            {"float", "erodability", "1.0"},        // 侵蚀能力
-            {"string", "erodability_mask_layer", "_erodability_mask"},          //~~~~~mask
+            {gParamType_Float, "erodability", "1.0"},        // 侵蚀能力
+            {gParamType_String, "erodability_mask_layer", "_erodability_mask"},          //~~~~~mask
 
-            {"float", "bank_angle", "70.0"},        // 河堤侵蚀角度
-            {"string", "bankangle_mask_layer", "_bankangle_mask"},              //~~~~~mask
+            {gParamType_Float, "bank_angle", "70.0"},        // 河堤侵蚀角度
+            {gParamType_String, "bankangle_mask_layer", "_bankangle_mask"},              //~~~~~mask
 
             // 高级参数
-            {"float", "removalrate", "0.1"},      // 风化率/水吸收率
-            {"string", "removalrate_mask_layer", "_removalrate_mask"},          //~~~~~mask
+            {gParamType_Float, "removalrate", "0.1"},      // 风化率/水吸收率
+            {gParamType_String, "removalrate_mask_layer", "_removalrate_mask"},          //~~~~~mask
 
-            {"float", "max_debris_depth", "5.0"}, // 碎屑最大深度
+            {gParamType_Float, "max_debris_depth", "5.0"}, // 碎屑最大深度
 
             // 侵蚀能力调整
-            {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
-            {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
-            {"float", "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
+            {gParamType_Int, "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
+            {gParamType_Float, "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
+            {gParamType_Float, "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
 
             // 河床参数
-            {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
+            {gParamType_Float, "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
 
-            {"float", "depositionrate", "0.01"},        // 沉积率
-            {"string", "depositionrate_mask_layer", "_depositionrate_mask"},    //~~~~~mask
+            {gParamType_Float, "depositionrate", "0.01"},        // 沉积率
+            {gParamType_String, "depositionrate_mask_layer", "_depositionrate_mask"},    //~~~~~mask
 
-            {"float", "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
+            {gParamType_Float, "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
             // 河堤参数
-            {"float", "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
-            {"float", "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
+            {gParamType_Float, "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
+            {gParamType_Float, "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
 
             // 河网控制
-            {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
+            {gParamType_Float, "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
         },
         /* outputs: */
         {
@@ -3706,11 +3706,11 @@ namespace zeno {
     ZENDEFNODE(zs_HF_maskbyOcclusion,
                { /* inputs: */ {
                        "prim",
-                       {"bool", "invert mask", "0"},
-                       {"int", "view distance", "200"},
-                       {"float", "step scale", "1"},
-                       {"int", "num of searches", "16"},
-                       {"bool", "dohemisphere", "0"},
+                       {gParamType_Bool, "invert mask", "0"},
+                       {gParamType_Int, "view distance", "200"},
+                       {gParamType_Float, "step scale", "1"},
+                       {gParamType_Int, "num of searches", "16"},
+                       {gParamType_Bool, "dohemisphere", "0"},
                    }, /* outputs: */ {
                        "prim",
                    }, /* params: */ {
@@ -3802,13 +3802,13 @@ namespace zeno {
         /* inputs: */
         {
             "HeightField",
-            {"bool", "MinClip", "0"},
-            {"float", "Minclipheight", "0"},
-            {"bool", "MaxClip", "1"},
-            {"float", "Maxclipheight", "100"},
-            {"bool", "SoftClip", "1"},
-            {"float", "SoftClip Strength", "0.1"},
-            {"float", "SoftClip Scale", "1"},
+            {gParamType_Bool, "MinClip", "0"},
+            {gParamType_Float, "Minclipheight", "0"},
+            {gParamType_Bool, "MaxClip", "1"},
+            {gParamType_Float, "Maxclipheight", "100"},
+            {gParamType_Bool, "SoftClip", "1"},
+            {gParamType_Float, "SoftClip Strength", "0.1"},
+            {gParamType_Float, "SoftClip Scale", "1"},
         },
         /* outputs: */
         {

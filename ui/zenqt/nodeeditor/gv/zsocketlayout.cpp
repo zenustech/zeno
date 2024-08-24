@@ -11,6 +11,7 @@
 #include "nodeeditor/gv/zenoparamwidget.h"
 #include "zitemfactory.h"
 #include "util/uihelper.h"
+#include "model/parammodel.h"
 
 
 ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInput, SocketBackgroud* parentItem)
@@ -78,6 +79,9 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
         QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput) {
             cbSock.cbOnSockClicked(m_socket);
         });
+        if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_paramIdx.data(ROLE_NODE_IDX).value<QModelIndex>().data(ROLE_PARAMS))) {
+            QObject::connect(paramsM, &QStandardItemModel::dataChanged, m_socket, &ZenoSocketItem::onCustomParamDataChanged);
+        }
     }
 
     if (m_bEditable && bEnableNode)

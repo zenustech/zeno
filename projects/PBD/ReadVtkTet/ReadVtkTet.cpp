@@ -52,11 +52,11 @@ public:
 
 ZENDEFNODE(ReadVtkTet, {/* inputs: */ 
                          {
-                            {"readpath", "path"},
+                            {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
                          },
                          /* outputs: */
                          {
-                             {"primitive", "outPrim"},
+                             {gParamType_Primitive, "outPrim"},
                          },
                          /* params: */
                          {},

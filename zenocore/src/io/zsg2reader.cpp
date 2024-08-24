@@ -8,9 +8,6 @@
 #include <zeno/utils/helper.h>
 
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
-
 namespace zenoio {
 
 ZENO_API Zsg2Reader::Zsg2Reader() {}
@@ -272,8 +269,8 @@ void Zsg2Reader::_parseSocket(
         prop = zeno::SocketProperty::Socket_Normal;    //deprecated
 
     zeno::SocketType socketType = zeno::NoSocket;
-    zeno::ParamType paramType = zeno::Param_Null;
-    zeno::zvariant defl;
+    zeno::ParamType paramType = Param_Null;
+    zeno::reflect::Any defl;
     std::string tooltip;
 
     if (m_bDiskReading &&
@@ -282,17 +279,17 @@ void Zsg2Reader::_parseSocket(
     {
         if (prop == zeno::SocketProperty::Socket_Editable) {
             //like extract dict.
-            paramType = zeno::Param_String;
+            paramType = zeno::types::gParamType_String;
         } else {
-            paramType = zeno::Param_Null;
+            paramType = Param_Null;
         }
     }
 
     if (sockObj.HasMember("type") && sockObj.HasMember("default-value")) {
         paramType = zeno::convertToType(sockObj["type"].GetString());
-        defl = zenoio::jsonValueToZVar(sockObj["default-value"], paramType);
+        defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType);
     }
-    if (!bInput && paramType == zeno::Param_Null)
+    if (!bInput && paramType == Param_Null)
     {
         auto& nodeClass = zeno::getSession().nodeClasses;
         auto it = nodeClass.find(nodeCls);
@@ -308,7 +305,7 @@ void Zsg2Reader::_parseSocket(
             }
         }
     }
-    bool bPrimType = isPrimitiveType(paramType);
+    bool bPrimType = zeno::isPrimitiveType(paramType);
     if (bPrimType) {
         socketType = zeno::Socket_Primitve;
     }
@@ -352,16 +349,11 @@ void Zsg2Reader::_parseSocket(
         _parseDictPanel(bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, links);
     }
 
-    std::optional<zeno::ControlProperty> ctrlProps;
+    zeno::reflect::Any ctrlProps;
 
     if (sockObj.HasMember("control"))
-	{
-        zeno::ControlProperty props;
-        bool bret = zenoio::importControl(sockObj["control"], ctrl, props);
-        if (bret) {
-            if (props.items || props.ranges)
-                ctrlProps = props;
-        }
+    {
+        zenoio::importControl(sockObj["control"], ctrl, ctrlProps);
     }
 
     if (sockObj.HasMember("tooltip")) 
@@ -487,19 +479,13 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
             }
 
             //它不知道会不会和SubInput的type参数冲突，这个很讨厌，这里直接解析算了，放弃历史包袱
-            param.defl = zenoio::jsonValueToZVar(valueObj[iotags::params::params_valueKey], param.type);
+            param.defl = zenoio::jsonValueToAny(valueObj[iotags::params::params_valueKey], param.type);
             param.socketType = zeno::NoSocket; //以前的定义是不包含这个的。
 
             if (valueObj.HasMember("control"))
             {
                 zeno::ParamControl ctrl;
-                zeno::ControlProperty props;
-                bool bret = zenoio::importControl(valueObj["control"], ctrl, props);
-                if (bret) {
-                    param.control = ctrl;
-                    if (props.items || props.ranges)
-                        param.ctrlProps = props;
-                }
+                zenoio::importControl(valueObj["control"], ctrl, param.ctrlProps);
             }
 
             if (valueObj.HasMember("tooltip"))

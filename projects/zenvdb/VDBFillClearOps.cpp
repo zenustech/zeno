@@ -36,7 +36,7 @@ struct VDBFillActiveVoxels : INode {
     } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
-        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<vec3f>(value))));
+        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<zeno::vec3f>(value))));
     }
 
     set_output("grid", get_input("grid"));
@@ -45,10 +45,10 @@ struct VDBFillActiveVoxels : INode {
 
 ZENO_DEFNODE(VDBFillActiveVoxels)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
-     {"NumericObject", "fillValue", "0.0"},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Float, "fillValue", "0.0"},
      }, /* outputs: */ {
-       "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -79,7 +79,7 @@ struct VDBMultiplyOperation : INode {
     } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
-        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<vec3f>(value))));
+        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<zeno::vec3f>(value))));
     }
 
     set_output("grid", get_input("grid"));
@@ -89,7 +89,7 @@ struct VDBMultiplyOperation : INode {
 ZENO_DEFNODE(VDBMultiplyOperation)(
      { /* inputs: */ {
      "grid",
-     {"NumericObject", "fillValue", "0.0"},
+     {gParamType_Float, "fillValue", "0.0"},
      }, /* outputs: */ {
        "grid",
      }, /* params: */ {
@@ -100,7 +100,7 @@ ZENO_DEFNODE(VDBMultiplyOperation)(
 
 
 template <class GridPtr>
-void touch_aabb_region(GridPtr const &grid, vec3f const &bmin, vec3f const &bmax) {
+void touch_aabb_region(GridPtr const &grid, zeno::vec3f const &bmin, zeno::vec3f const &bmax) {
     auto cmin = grid->transform().worldToIndex(openvdb::Vec3R(bmin[0], bmin[1], bmin[2]));
     auto cmax = grid->transform().worldToIndex(openvdb::Vec3R(bmax[0], bmax[1], bmax[2]));
     using size_type = std::decay_t<decltype(std::declval<openvdb::Coord>()[0])>;
@@ -124,8 +124,8 @@ void touch_aabb_region(GridPtr const &grid, vec3f const &bmin, vec3f const &bmax
 struct VDBTouchAABBRegion : INode {
   virtual void apply() override {
     auto grid = get_input<VDBGrid>("grid");
-    auto bmin = get_input<NumericObject>("bmin")->get<vec3f>();
-    auto bmax = get_input<NumericObject>("bmax")->get<vec3f>();
+    auto bmin = get_input<NumericObject>("bmin")->get<zeno::vec3f>();
+    auto bmax = get_input<NumericObject>("bmax")->get<zeno::vec3f>();
     if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
         touch_aabb_region(p->m_grid, bmin, bmax);
     } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
@@ -138,11 +138,11 @@ struct VDBTouchAABBRegion : INode {
 
 ZENO_DEFNODE(VDBTouchAABBRegion)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
-     {"vec3f", "bmin", "-1,-1,-1"},
-     {"vec3f", "bmax", "1,1,1"},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Vec3f, "bmin", "-1,-1,-1"},
+     {gParamType_Vec3f, "bmax", "1,1,1"},
      }, /* outputs: */ {
-       "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -191,10 +191,10 @@ struct VDBTopoCopy : INode{
 };
 ZENO_DEFNODE(VDBTopoCopy)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
-     {"", "topo", "", zeno::Socket_ReadOnly}
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_VDBGrid, "topo", "", zeno::Socket_ReadOnly}
      }, /* outputs: */ {
-       "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

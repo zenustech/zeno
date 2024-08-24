@@ -100,13 +100,14 @@ struct MakeFEMPrimitive : zeno::INode {
 };
 
 ZENDEFNODE(MakeFEMPrimitive, {
-    {"prim",
-        {"float","Stiffness","1000000"},
-        {"float","VolumePreserve","0.49"},
-        {"float","ExamShapeCoeff","0.0"},
-        {"float","EmbedShapeCoeff","0.0"}
+    {
+        {gParamType_Primitive, "prim"},
+        {gParamType_Float,"Stiffness","1000000"},
+        {gParamType_Float,"VolumePreserve","0.49"},
+        {gParamType_Float,"ExamShapeCoeff","0.0"},
+        {gParamType_Float,"EmbedShapeCoeff","0.0"}
     },
-    {"femmesh"},
+    {{gParamType_Primitive, "femmesh"}},
     {},
     {"FEM"},
 });
@@ -145,9 +146,9 @@ struct ParticlesToSegments : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesToSegments, {
-    {"particles",{"float","dt","1.0"}},
-    {"seg"},
-    {{"string","dir_chanel",""}},
+    {{gParamType_Primitive, "particles"},{gParamType_Float,"dt","1.0"}},
+    {{gParamType_Primitive, "seg"}},
+    {{gParamType_String,"dir_chanel",""}},
     {"FEM"},
 });
 
@@ -218,8 +219,8 @@ struct RetrieveRigidTransform : zeno::INode {
 };
 
 ZENDEFNODE(RetrieveRigidTransform,{
-    {{"refObj"},{"newObj"}},
-    {"quat","trans","mat"},
+    {{gParamType_Primitive, "refObj"},{gParamType_Primitive, "newObj"}},
+    {{gParamType_Vec4f, "quat"},{gParamType_Vec3f, "trans"},{gParamType_Matrix4, "mat"}},
     {},
     {"FEM"},
 });
@@ -255,8 +256,8 @@ struct AssignUniformAffineToPrim : zeno::INode {
 };
 
 ZENDEFNODE(AssignUniformAffineToPrim,{
-    {{"quat"},{"trans"},{"prim"}},
-    {"prim"},
+    {{gParamType_Vec4f, "quat"},{gParamType_Vec3f, "trans"},{gParamType_Primitive, "prim"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"FEM"},
 });
@@ -460,8 +461,8 @@ struct EmbedPrimitiveToVolumeMesh : zeno::INode {
 };
 
 ZENDEFNODE(EmbedPrimitiveToVolumeMesh, {
-    {"prim","vmesh","fitting_in"},
-    {"prim"},
+    {{gParamType_Primitive, "prim"},{gParamType_Primitive, "vmesh"},{gParamType_Float, "fitting_in"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"FEM"},
 });
@@ -520,8 +521,8 @@ struct InterpolateEmbedPrimitive : zeno::INode {
 };
 
 ZENDEFNODE(InterpolateEmbedPrimitive, {
-    {"skin","volume"},
-    {"res"},
+    {{gParamType_Primitive, "skin"},{gParamType_Primitive, "volume"}},
+    {{gParamType_Primitive, "res"}},
     {},
     {"FEM"},
 });
@@ -556,8 +557,8 @@ struct GetTetMeshElementView : zeno::INode {
 };
 
 ZENDEFNODE(GetTetMeshElementView, {
-    {"prim"},
-    {"elmView"},
+    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Primitive, "elmView"}},
     {},
     {"FEM"},
 });
@@ -611,9 +612,9 @@ struct InterpolateElmAttrib : zeno::INode {
 };
 
 ZENDEFNODE(InterpolateElmAttrib, {
-    {"prim","elmView"},
-    {"elmView"},
-    {{"string","attrName","RENAME ME"},{"enum float vec3f","attrType","float"}},
+    {{gParamType_Primitive, "prim"},{gParamType_Primitive, "elmView"}},
+    {{gParamType_Primitive, "elmView"}},
+    {{gParamType_String,"attrName","RENAME ME"},{"enum float vec3f","attrType","float"}},
     {"FEM"},
 });
 
@@ -677,8 +678,8 @@ struct EvalElmDeformationField : zeno::INode {
 };
 
 ZENDEFNODE(EvalElmDeformationField, {
-    {"shape","shapeElmView"},
-    {"shapeElmView"},
+    {{gParamType_Primitive, "shape"},{gParamType_Primitive, "shapeElmView"}},
+    {{gParamType_Primitive, "shapeElmView"}},
     {},
     {"FEM"},
 });
@@ -706,8 +707,8 @@ struct ExtractSurfaceMeshByTag : zeno::INode {
 };
 
 ZENDEFNODE(ExtractSurfaceMeshByTag, {
-    {"volume"},
-    {"primSurf"},
+    {{gParamType_Primitive, "volume"}},
+    {{gParamType_Primitive, "primSurf"}},
     {},
     {"FEM"},
 });
@@ -724,8 +725,8 @@ struct AddVertID : zeno::INode {
 };
 
 ZENDEFNODE(AddVertID, {
-    {"prim"},
-    {"primOut"},
+    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Primitive, "primOut"}},
     {},
     {"FEM"},
 });
@@ -829,9 +830,9 @@ struct ComputeNodalRotationCenter : zeno::INode {
 
 
 ZENDEFNODE(ComputeNodalRotationCenter, {
-    {"prim","primNei","lbvh"},
-    {"prim"},
-    {{"string","attr_prefix","sw"},{"float","sigma","10"}},
+    {{gParamType_Primitive, "prim"},{gParamType_Primitive, "primNei"},{gParamType_Unknown, "lbvh"}},
+    {{gParamType_Primitive, "prim"}},
+    {{gParamType_String,"attr_prefix","sw"},{gParamType_Float,"sigma","10"}},
     {"FEM"},
 });
 
@@ -859,8 +860,8 @@ struct ComputeNodalVolume : zeno::INode {
 };
 
 ZENDEFNODE(ComputeNodalVolume, {
-    {"prim"},
-    {"primOut"},
+    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Primitive, "primOut"}},
     {},
     {"FEM"},
 });
@@ -928,8 +929,8 @@ struct RigidTransformPrimitve : zeno::INode {
 };
 
 ZENDEFNODE(RigidTransformPrimitve, {
-    {"prim","quat","trans"},
-    {"primOut"},
+    {{gParamType_Primitive, "prim"},{gParamType_Vec4f, "quat"},{gParamType_Vec3f, "trans"}},
+    {{gParamType_Primitive, "primOut"}},
     {},
     {"FEM"},
 });
@@ -956,7 +957,7 @@ ZENDEFNODE(RigidTransformPrimitve, {
 // };
 
 // ZENDEFNODE{ComputeExponentialWeightSimilarity,{
-//     {"prim"},
+//     {gParamType_Primitive, "prim"},
 //     {"prim"}
 // }};
 

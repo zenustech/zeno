@@ -145,7 +145,7 @@ struct NumericOperator : zeno::INode {
 
     virtual void apply() override {
         auto op = get_param<std::string>("op_type");
-        auto ret = std::make_unique<zeno::NumericObject>();
+        zeno::reflect::Any ret;
         auto lhs = get_input<zeno::NumericObject>("lhs");
         auto rhs = has_input("rhs") ?
             get_input<zeno::NumericObject>("rhs")
@@ -154,9 +154,9 @@ struct NumericOperator : zeno::INode {
         // todo: no ternary ops..
         std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
-            if (op == "copy") ret->value = remove_bool(lhs);
-            if (op == "copyr") ret->value = remove_bool(rhs);
-#define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs));
+            if (op == "copy") ret = remove_bool(lhs);
+            if (op == "copyr") ret = remove_bool(rhs);
+#define _PER_OP(name) else if (op == #name) ret = remove_bool(op_##name(lhs));
 _PER_OP(pos)
 _PER_OP(neg)
 _PER_OP(inv)
@@ -181,7 +181,7 @@ _PER_OP(tofloat)
 _PER_OP(anytrue)
 _PER_OP(alltrue)
 #undef _PER_OP
-#define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs, rhs));
+#define _PER_OP(name) else if (op == #name) ret = remove_bool(op_##name(lhs, rhs));
 _PER_OP(add)
 _PER_OP(sub)
 _PER_OP(mul)
@@ -213,13 +213,13 @@ _PER_OP(distance)
 
         }, lhs->value, rhs->value);
 
-        set_output("ret", std::move(ret));
+        set_primitive_output("ret", ret);
     }
 };
 
 ZENO_DEFNODE(NumericOperator)({
-    {{"NumericObject", "lhs"}, {"NumericObject", "rhs"}},
-    {{"NumericObject", "ret"}},
+    {{gParamType_Float, "lhs", "", zeno::Socket_WildCard}, {gParamType_Float, "rhs", "", zeno::Socket_WildCard}},
+    {{gParamType_Float, "ret", "", zeno::Socket_WildCard}},
     {{"enum"
 #define _PER_FN(x) " " #x
     _PER_FN(add)

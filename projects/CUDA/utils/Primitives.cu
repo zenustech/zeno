@@ -14,6 +14,8 @@
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
+#include "Noise.cuh"
+
 namespace zeno {
 
 /// utilities
@@ -74,6 +76,98 @@ float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp t
     return ret.getVal();
 }
 
+struct ZSParticlePerlinNoise : INode {
+    virtual void apply() override {
+        auto zspars = get_input<ZenoParticles>("zspars");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto opType = get_input2<std::string>("OpType");
+        auto frequency = get_input2<zeno::vec3f>("Frequency");
+        auto offset = get_input2<zeno::vec3f>("Offset");
+        auto roughness = get_input2<float>("Roughness");
+        auto turbulence = get_input2<int>("Turbulence");
+        auto amplitude = get_input2<float>("Amplitude");
+        auto attenuation = get_input2<float>("Attenuation");
+        auto mean = get_input2<zeno::vec3f>("MeanNoise");
+
+        bool isAccumulate = opType == "accumulate" ? true : false;
+
+        zs::SmallString tag = attrTag;
+
+        auto &tv = zspars->getParticles();
+
+        if (!tv.hasProperty(tag))
+            throw std::runtime_error(fmt::format("Attribute [{}] doesn't exist!", tag));
+        const int nchns = tv.getPropertySize(tag);
+
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        pol(zs::range(tv.size()),
+            [tvv = zs::proxy<space>({}, tv), tag, nchns, isAccumulate,
+             frequency = zs::vec<float, 3>::from_array(frequency), offset = zs::vec<float, 3>::from_array(offset),
+             roughness, turbulence, amplitude, attenuation,
+             mean = zs::vec<float, 3>::from_array(mean)] __device__(int no) mutable {
+                auto wcoord = tvv.pack(zs::dim_c<3>, "x", no);
+                auto pp = frequency * wcoord - offset;
+
+                float scale = amplitude;
+
+                if (nchns == 3) {
+                    // fractal Brownian motion
+                    auto fbm = zs::vec<float, 3>::uniform(0);
+                    for (int i = 0; i < turbulence; ++i, pp *= 2.f, scale *= roughness) {
+                        zs::vec<float, 3> pln{ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]),
+                                              ZSPerlinNoise1::perlin(pp[1], pp[2], pp[0]),
+                                              ZSPerlinNoise1::perlin(pp[2], pp[0], pp[1])};
+                        fbm += scale * pln;
+                    }
+                    auto noise = zs::vec<float, 3>{zs::pow(fbm[0], attenuation), zs::pow(fbm[1], attenuation),
+                                                   zs::pow(fbm[2], attenuation)} +
+                                 mean;
+
+                    if (isAccumulate)
+                        tvv.tuple(zs::dim_c<3>, tag, no) =
+                            tvv.pack(zs::dim_c<3>, tag, no) + noise;
+                    else
+                        tvv.tuple(zs::dim_c<3>, tag, no) = noise;
+
+                } else if (nchns == 1) {
+                    float fbm = 0;
+                    for (int i = 0; i < turbulence; ++i, pp *= 2.f, scale *= roughness) {
+                        float pln = ZSPerlinNoise1::perlin(pp[0], pp[1], pp[2]);
+                        fbm += scale * pln;
+                    }
+                    auto noise = zs::pow(fbm, attenuation) + mean[0];
+
+                    if (isAccumulate)
+                        tvv(tag, no) += noise;
+                    else
+                        tvv(tag, no) = noise;
+                }
+            });
+
+        set_output("zspars", zspars);
+    }
+};
+
+ZENDEFNODE(ZSParticlePerlinNoise, {/* inputs: */
+                               {"zspars",
+                                {"string", "Attribute", "v"},
+                                {"enum replace accumulate", "OpType", "accumulate"},
+                                {"vec3f", "Frequency", "1, 1, 1"},
+                                {"vec3f", "Offset", "0, 0, 0"},
+                                {"float", "Roughness", "0.5"},
+                                {"int", "Turbulence", "4"},
+                                {"float", "Amplitude", "1.0"},
+                                {"float", "Attenuation", "1.0"},
+                                {"vec3f", "MeanNoise", "0, 0, 0"}},
+                               /* outputs: */
+                               {"zspars"},
+                               /* params: */
+                               {},
+                               /* category: */
+                               {"Eulerian"}});
+
 struct ZSPrimitiveReduction : zeno::INode {
     struct pass_on {
         template <typename T>
@@ -105,9 +199,9 @@ struct ZSPrimitiveReduction : zeno::INode {
         if (opStr == "avg") {
             result = prim_reduce(verts, 0, pass_on{}, std::plus<float>{}, attrToReduce) / verts.size();
         } else if (opStr == "max") {
-            result = prim_reduce(verts, limits<float>::lowest(), pass_on{}, getmax<float>{}, attrToReduce);
+            result = prim_reduce(verts, detail::deduce_numeric_lowest<float>(), pass_on{}, getmax<float>{}, attrToReduce);
         } else if (opStr == "min") {
-            result = prim_reduce(verts, limits<float>::max(), pass_on{}, getmin<float>{}, attrToReduce);
+            result = prim_reduce(verts, detail::deduce_numeric_max<float>(), pass_on{}, getmin<float>{}, attrToReduce);
         } else if (opStr == "absmax") {
             result = prim_reduce(verts, 0, getabs{}, getmax<float>{}, attrToReduce);
         }
@@ -119,7 +213,7 @@ struct ZSPrimitiveReduction : zeno::INode {
 };
 ZENDEFNODE(ZSPrimitiveReduction, {/* inputs: */ {
                                       "ZSParticles",
-                                      {"string", "attr", "pos"},
+                                      {gParamType_String, "attr", "pos"},
                                       {"enum avg max min absmax", "op", "avg"},
                                   },
                                   /* outputs: */
@@ -146,8 +240,8 @@ struct ZSGetUserData : zeno::INode {
 
 ZENDEFNODE(ZSGetUserData, {
                               {"object"},
-                              {"data", {"bool", "hasValue"}},
-                              {{"string", "key", ""}},
+                              {"data", {gParamType_Bool, "hasValue"}},
+                              {{gParamType_String, "key", ""}},
                               {"lifecycle"},
                           });
 
@@ -237,8 +331,8 @@ struct ColoringSelected : INode {
 ZENDEFNODE(ColoringSelected, {{
                                   "ZSParticles",
                                   "ZSLevelSet",
-                                  {"bool", "boundary_wise", "0"},
-                                  {"string", "markTag", "selected"},
+                                  {gParamType_Bool, "boundary_wise", "0"},
+                                  {gParamType_String, "markTag", "selected"},
                               },
                               {"ZSParticles"},
                               {},

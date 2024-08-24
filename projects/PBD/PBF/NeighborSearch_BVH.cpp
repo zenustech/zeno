@@ -55,9 +55,9 @@ struct NeighborSearch_BVH: INode
 ZENDEFNODE(NeighborSearch_BVH,
     {
         {
-            {"prim"},
+            {gParamType_Primitive, "prim"},
             {"LBvh","lbvh"},
-            {"float", "searchRadius","1.155"},
+            {gParamType_Float, "searchRadius","1.155"},
         },
         {"neighborList"},
         {},

@@ -224,14 +224,14 @@ struct ImageEdgeDetect : INode {
 
 ZENDEFNODE(ImageEdgeDetect, {
     {
-        { "image" },
+        { gParamType_Primitive, "image" },
         { "enum Sobel Roberts Prewitt", "mode", "Sobel" },
-        //{ "float", "threshold", "50" },
-        //{ "float", "maxThreshold", "9999" },
-        { "float", "KernelSize", "3"}
+        //{ gParamType_Float, "threshold", "50" },
+        //{ gParamType_Float, "maxThreshold", "9999" },
+        { gParamType_Float, "KernelSize", "3"}
     },
     {
-        { "image" }
+        { gParamType_Primitive, "image" }
     },
     {},
     { "image" },
@@ -304,13 +304,13 @@ struct ImageEdgeDetectMarr : INode {//TODO::not finished?
 
 ZENDEFNODE(ImageEdgeDetectMarr, {
     {
-        { "image" },
-        { "float", "kernelDiameter", "5" },
-        { "float", "Gaussian Standard deviation", "0.8" },
-        { "float", "threshold", "0" },
+        { gParamType_Primitive, "image" },
+        { gParamType_Float, "kernelDiameter", "5" },
+        { gParamType_Float, "Gaussian Standard deviation", "0.8" },
+        { gParamType_Float, "threshold", "0" },
     },
     {
-        { "image" }
+        { gParamType_Primitive, "image" }
     },
     {},
     { "image" },
@@ -462,10 +462,10 @@ ZENDEFNODE(ImageFeatureDetectORB, {
     {
         { "image" },
         { "bool", "visualize", "1" },
-        { "float", "nFeatures", "100" },
-        { "float", "scaleFactor", "1.2" },
-        { "float", "edgeThreshold", "20" },
-        { "float", "patchSize", "10" },
+        { gParamType_Float, "nFeatures", "100" },
+        { gParamType_Float, "scaleFactor", "1.2" },
+        { gParamType_Float, "edgeThreshold", "20" },
+        { gParamType_Float, "patchSize", "10" },
     },
     {
         { "image" },
@@ -548,11 +548,11 @@ ZENDEFNODE(ImageFeatureDetectSIFT, {
     {
         { "image" },
         { "bool", "visualize", "1" },
-        { "float", "nFeatures", "0" }, //所需的关键点数量
-        { "float", "nOctaveLayers", "3" }, //每组尺度层级的层数
-        { "float", "contrastThreshold", "0.04" }, //关键点提取的对比度阈值
-        { "float", "edgeThreshold", "10" }, //关键点提取的边缘阈值
-        { "float", "sigma", "1.0" }, //高斯滤波器的初始尺度
+        { gParamType_Float, "nFeatures", "0" }, //所需的关键点数量
+        { gParamType_Float, "nOctaveLayers", "3" }, //每组尺度层级的层数
+        { gParamType_Float, "contrastThreshold", "0.04" }, //关键点提取的对比度阈值
+        { gParamType_Float, "edgeThreshold", "10" }, //关键点提取的边缘阈值
+        { gParamType_Float, "sigma", "1.0" }, //高斯滤波器的初始尺度
     },
     {
         { "PrimitiveObject", "image" },
@@ -949,7 +949,7 @@ ZENDEFNODE(ImageFeatureMatch, {
     {
         { "image1" },
         { "image2" },
-        { "float", "maxMatchDistance", "0.7" },
+        { gParamType_Float, "maxMatchDistance", "0.7" },
         { "bool", "perspectiveMatrix", "1" },
         { "bool", "fundamentalMatrix", "0" },
         { "bool", "essentialMatrix", "1" },
@@ -1298,9 +1298,9 @@ ZENDEFNODE(Image3DAnalyze, {
 */
 struct CreateCameraMatrix : INode {
     void apply() override {
-        auto top = get_input2<vec3f>("top");
-        auto mid = get_input2<vec3f>("mid");
-        auto bot = get_input2<vec3f>("bot");
+        auto top = get_input2<zeno::vec3f>("top");
+        auto mid = get_input2<zeno::vec3f>("mid");
+        auto bot = get_input2<zeno::vec3f>("bot");
 
         cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_32F);
         cameraMatrix.at<float>(0, 0) = top[0];
@@ -1324,12 +1324,12 @@ struct CreateCameraMatrix : INode {
 
 ZENDEFNODE(CreateCameraMatrix, {
     {
-        {"vec3f", "top", "1000,0,640"},
-        {"vec3f", "mid", "0,800,480"},
-        {"vec3f", "bot", "0,0,1"},
+        {gParamType_Vec3f, "top", "1000,0,640"},
+        {gParamType_Vec3f, "mid", "0,800,480"},
+        {gParamType_Vec3f, "bot", "0,0,1"},
     },
     {
-        { "matrix" },
+        { gParamType_Unknown, "matrix" },
     },
     {},
     { "image" },
@@ -1464,12 +1464,12 @@ struct EstimateCameraMatrix : INode {
 
 ZENDEFNODE(EstimateCameraMatrix, {
     {
-        {"image1" },
-        {"image2" },
-        { "float", "depth", "0" },
+        {gParamType_Primitive, "image1" },
+        {gParamType_Primitive, "image2" },
+        { gParamType_Float, "depth", "0" },
     },
     {
-        { "image" },
+        { gParamType_Primitive, "image" },
     },
     {},
     { "deprecated" },

@@ -24,10 +24,10 @@ struct MakePrimitiveFromList : zeno::INode {
 
 ZENDEFNODE(MakePrimitiveFromList,
     { /* inputs: */ {
-    {"ListObject", "list", "", zeno::Socket_ReadOnly},
+    {gParamType_List, "list", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
     }, /* category: */ {
     "primitive",
     }});

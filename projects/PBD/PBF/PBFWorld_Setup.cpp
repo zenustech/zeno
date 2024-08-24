@@ -30,9 +30,9 @@ struct PBFWorld_Setup : INode
         //用户自定义参数
         data->dt = get_input<zeno::NumericObject>("dt")->get<float>();
         data->radius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
-        data->bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
-        data->bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
-        data->externForce = get_input<zeno::NumericObject>("externForce")->get<vec3f>();
+        data->bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<zeno::vec3f>();
+        data->bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<zeno::vec3f>();
+        data->externForce = get_input<zeno::NumericObject>("externForce")->get<zeno::vec3f>();
         data->rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
         data->lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
         data->coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
@@ -56,19 +56,19 @@ struct PBFWorld_Setup : INode
 
 ZENDEFNODE(PBFWorld_Setup, {
     {
-        {"PrimitiveObject","prim"},
-        {"float","dt"," 0.0025"},
-        {"float","particle_radius","0.025"},
-        {"vec3f","bounds_min","-10.0, 0.0, -10.0"},
-        {"vec3f","bounds_max","10.0, 10.0, 10.0"},
-        {"vec3f","externForce", "0.0, -10.0, 0.0"},
-        {"float","rho0","1000.0"},
-        {"float","lambdaEpsilon","1e-6"},
-        {"float","coeffDq","0.3"},
-        {"float","coeffK","0.1"},
-        {"int","numSubsteps","5"}
+        {gParamType_Primitive,"prim"},
+        {gParamType_Float,"dt"," 0.0025"},
+        {gParamType_Float,"particle_radius","0.025"},
+        {gParamType_Vec3f,"bounds_min","-10.0, 0.0, -10.0"},
+        {gParamType_Vec3f,"bounds_max","10.0, 10.0, 10.0"},
+        {gParamType_Vec3f,"externForce", "0.0, -10.0, 0.0"},
+        {gParamType_Float,"rho0","1000.0"},
+        {gParamType_Float,"lambdaEpsilon","1e-6"},
+        {gParamType_Float,"coeffDq","0.3"},
+        {gParamType_Float,"coeffK","0.1"},
+        {gParamType_Int,"numSubsteps","5"}
     },
-    {"prim","PBFWorld"},
+    {gParamType_Primitive,"PBFWorld"},
     {},
     {"PBD"},
 });

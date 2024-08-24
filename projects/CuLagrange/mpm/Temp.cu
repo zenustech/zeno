@@ -57,12 +57,12 @@ struct AdjustParticleMaterial : INode {
 
 ZENDEFNODE(AdjustParticleMaterial, {
                                        {"ZSParticles",
-                                        {"float", "E_hard", "100"},
-                                        {"float", "E_soft", "50"},
-                                        {"float", "nu_hard", "0.4"},
-                                        {"float", "nu_soft", "0.2"},
-                                        {"float", "end_hard", "1"},
-                                        {"float", "end_soft", "-0.5"}},
+                                        {gParamType_Float, "E_hard", "100"},
+                                        {gParamType_Float, "E_soft", "50"},
+                                        {gParamType_Float, "nu_hard", "0.4"},
+                                        {gParamType_Float, "nu_soft", "0.2"},
+                                        {gParamType_Float, "end_hard", "1"},
+                                        {gParamType_Float, "end_soft", "-0.5"}},
                                        {"ZSParticles"},
                                        {{"enum x y z", "orientation", "y"}},
                                        {"MPM"},

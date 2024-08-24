@@ -110,7 +110,7 @@ struct PBFWorld_Solve : zeno::INode {
 ZENDEFNODE(
     PBFWorld_Solve,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"}

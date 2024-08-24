@@ -53,9 +53,9 @@ struct ScalarFieldAnalyzer : zeno::INode {
 
 ZENO_DEFNODE(ScalarFieldAnalyzer)(
     { /* inputs: */ {
-        {"", "InVDB", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"InVDB", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        "OutVDB"
+        {gParamType_VDBGrid,"OutVDB"}
     }, /* params: */ {
         {"enum Gradient Curvature Laplacian ClosestPoint", "Operator", "Gradient"},
     }, /* category: */ {
@@ -92,9 +92,9 @@ struct VectorFieldAnalyzer : zeno::INode {
 
 ZENO_DEFNODE(VectorFieldAnalyzer)(
     { /* inputs: */ {
-        {"", "InVDB", "", zeno::Socket_ReadOnly},
+        {gParamType_VDBGrid,"InVDB", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {
-        "OutVDB"
+        {gParamType_VDBGrid,"OutVDB"}
     }, /* params: */ {
         {"enum Divergence Curl Magnitude Normalize", "Operator", "Divergence"},
     }, /* category: */ {

@@ -10,9 +10,9 @@ struct PrimitiveVoronoi : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(PrimitiveVoronoi, {
-    {{"", "prim", ""}, {"", "particlesPrim", ""}, {"int", "numParticles", "64"}},
-    {{"", "primList", ""}, {"", "neighList", ""}},
-    {{"string", "DEPRECATED", "use VoronoiFracture instead!"}},
+    {{gParamType_Primitive, "prim", ""}, {gParamType_Primitive, "particlesPrim", ""}, {gParamType_Int, "numParticles", "64"}},
+    {{gParamType_List, "primList", ""}, {gParamType_List, "neighList" ""}},
+    {{gParamType_String, "DEPRECATED", "use VoronoiFracture instead!"}},
     {"deprecated"},
 });
 }

@@ -16,9 +16,9 @@ struct ProceduralSky : INode {
 
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("ProceduralSky", std::move(1));
-        prim->userData().set2("sunLightDir", std::move(get_input2<vec2f>("sunLightDir")));
+        prim->userData().set2("sunLightDir", std::move(get_input2<zeno::vec2f>("sunLightDir")));
         prim->userData().set2("sunLightSoftness", std::move(get_input2<float>("sunLightSoftness")));
-        prim->userData().set2("windDir", std::move(get_input2<vec2f>("windDir")));
+        prim->userData().set2("windDir", std::move(get_input2<zeno::vec2f>("windDir")));
         prim->userData().set2("timeStart", std::move(get_input2<float>("timeStart")));
         prim->userData().set2("timeSpeed", std::move(get_input2<float>("timeSpeed")));
         prim->userData().set2("sunLightIntensity", std::move(get_input2<float>("sunLightIntensity")));
@@ -30,17 +30,17 @@ struct ProceduralSky : INode {
 
 ZENDEFNODE(ProceduralSky, {
         {
-                {"vec2f", "sunLightDir", "-60,45"},
-                {"float", "sunLightSoftness", "1"},
-                {"float", "sunLightIntensity", "1"},
-                {"float", "colorTemperatureMix", "0"},
-                {"float", "colorTemperature", "6500"},
-                {"vec2f", "windDir", "0,0"},
-                {"float", "timeStart", "0"},
-                {"float", "timeSpeed", "0.1"},
+                {gParamType_Vec2f, "sunLightDir", "-60,45"},
+                {gParamType_Float, "sunLightSoftness", "1"},
+                {gParamType_Float, "sunLightIntensity", "1"},
+                {gParamType_Float, "colorTemperatureMix", "0"},
+                {gParamType_Float, "colorTemperature", "6500"},
+                {gParamType_Vec2f, "windDir", "0,0"},
+                {gParamType_Float, "timeStart", "0"},
+                {gParamType_Float, "timeSpeed", "0.1"},
         },
         {
-                {"ProceduralSky"},
+                {gParamType_Primitive, "ProceduralSky"},
         },
         {
         },
@@ -61,7 +61,7 @@ struct HDRSky : INode {
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("HDRSky", std::move(path));
         prim->userData().set2("evnTexRotation", std::move(get_input2<float>("rotation")));
-        prim->userData().set2("evnTex3DRotation", std::move(get_input2<vec3f>("rotation3d")));
+        prim->userData().set2("evnTex3DRotation", std::move(get_input2<zeno::vec3f>("rotation3d")));
         prim->userData().set2("evnTexStrength", std::move(get_input2<float>("strength")));
         prim->userData().set2("enable", std::move(get_input2<bool>("enable")));
         set_output("HDRSky", std::move(prim));
@@ -70,14 +70,14 @@ struct HDRSky : INode {
 
 ZENDEFNODE(HDRSky, {
     {
-        {"bool", "enable", "1"},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"float", "rotation", "0"},
-        {"vec3f", "rotation3d", "0,0,0"},
-        {"float", "strength", "1"},
+        {gParamType_Bool, "enable", "1"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Float, "rotation", "0"},
+        {gParamType_Vec3f, "rotation3d", "0,0,0"},
+        {gParamType_Float, "strength", "1"},
     },
     {
-        {"HDRSky"},
+        {gParamType_Primitive, "HDRSky"},
     },
     {
     },
@@ -124,13 +124,13 @@ struct DistantLight : INode {
 
 ZENDEFNODE(DistantLight, {
     {
-        {"vec2f", "Lat-Lon", "45, 90"},
-        {"float", "angleExtent", "0.5"},
-        {"colorvec3f", "color", "1,1,1"},
-        {"float", "intensity", "1"}
+        {gParamType_Vec2f, "Lat-Lon", "45, 90"},
+        {gParamType_Float, "angleExtent", "0.5"},
+        {gParamType_Vec3f, "color", "1,1,1"},
+        {gParamType_Float, "intensity", "1"}
     },
     {
-        {"out"},
+        {"object", "out"},
     },
     {
     },
@@ -212,13 +212,13 @@ struct PortalLight : INode {
 
 ZENDEFNODE(PortalLight, {
     {
-        {"vec3f", "pos", "0,0,0"},
-        {"vec2f", "scale", "1, 1"},
-        {"vec3f", "rotate", "0,0,0"},
-        {"int", "size", "180"}
+        {gParamType_Vec3f, "pos", "0,0,0"},
+        {gParamType_Vec2f, "scale", "1, 1"},
+        {gParamType_Vec3f, "rotate", "0,0,0"},
+        {gParamType_Int, "size", "180"}
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
@@ -302,11 +302,11 @@ struct SkyComposer : INode {
 ZENDEFNODE(SkyComposer, {
     {
 
-        {"list", "dlights"},
-        {"list", "portals"}
+        {gParamType_List, "dlights"},
+        {gParamType_List, "portals"}
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {
         {"enum SphereUnbounded", "proxy", "SphereUnbounded"},
@@ -353,10 +353,10 @@ struct Blackbody : INode {
 
 ZENDEFNODE(Blackbody, {
     {
-        {"float", "temperature", "6500"},
+        {gParamType_Float, "temperature", "6500"},
     },
     {
-        {"vec3f","color"},
+        {gParamType_Vec3f,"color"},
     },
     {
     },

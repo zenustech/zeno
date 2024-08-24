@@ -63,7 +63,7 @@ struct BunnyMesh : zeno::INode
 
 ZENDEFNODE(BunnyMesh, {
     {},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"PBD"},
 });

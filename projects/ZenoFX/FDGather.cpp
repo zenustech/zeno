@@ -144,11 +144,11 @@ struct Gather2DFiniteDifference : zeno::INode {
 };
 
 ZENDEFNODE(Gather2DFiniteDifference, {
-                                         {{"PrimitiveObject", "grid"},
-                                          {"int", "nx","1"},
-                                          {"int", "ny", "1"},
-                                          {"string", "channel", "pos"}},
-                                         {{"PrimitiveObject", "prim"}},
+                                         {{gParamType_Primitive, "grid"},
+                                          {gParamType_Int, "nx","1"},
+                                          {gParamType_Int, "ny", "1"},
+                                          {gParamType_String, "channel", "pos"}},
+                                         {{gParamType_Primitive, "prim"}},
                                          {{"enum vec3 float", "attrT", "float"},
                                           {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                          {"zenofx"},
@@ -203,12 +203,12 @@ struct MomentumTransfer2DFiniteDifference : zeno::INode {
     }
 };
 ZENDEFNODE(MomentumTransfer2DFiniteDifference, {
-                                         {{"PrimitiveObject", "grid"},
-                                          {"int", "nx","1"},
-                                          {"int", "ny", "1"},
-                                          {"string", "channel", "d"},
-                                          {"string", "add_channel", "d"}},
-                                         {{"PrimitiveObject", "prim"}},
+                                         {{gParamType_Primitive, "grid"},
+                                          {gParamType_Int, "nx","1"},
+                                          {gParamType_Int, "ny", "1"},
+                                          {gParamType_String, "channel", "d"},
+                                          {gParamType_String, "add_channel", "d"}},
+                                         {{gParamType_Primitive, "prim"}},
                                          {{"enum vec3 float", "attrT", "float"},
                                           {"enum FIVE_STENCIL NINE_STENCIL", "OpType", "FIVE_STENCIL"}},
                                          {"zenofx"},
@@ -299,16 +299,16 @@ struct Grid2DSample : zeno::INode {
     }
 };
 ZENDEFNODE(Grid2DSample, {
-                             {{"PrimitiveObject", "prim"},
-                              {"PrimitiveObject", "sampleGrid"},
-                              {"int", "nx", "1"},
-                              {"int", "ny", "1"},
-                              {"float", "h", "1"},
-                              {"vec3f", "bmin", "0,0,0"},
-                              {"string", "channel", "*"},
-                              {"string", "sampleBy", "pos"},
+                             {{gParamType_Primitive, "prim"},
+                              {gParamType_Primitive, "sampleGrid"},
+                              {gParamType_Int, "nx", "1"},
+                              {gParamType_Int, "ny", "1"},
+                              {gParamType_Float, "h", "1"},
+                              {gParamType_Vec3f, "bmin", "0,0,0"},
+                              {gParamType_String, "channel", "*"},
+                              {gParamType_String, "sampleBy", "pos"},
                               {"enum Clamp Periodic", "sampleType", "Clamp"}},
-                             {{"PrimitiveObject", "prim"}},
+                             {{gParamType_Primitive, "prim"}},
                              {},
                              {"zenofx"},
                          });

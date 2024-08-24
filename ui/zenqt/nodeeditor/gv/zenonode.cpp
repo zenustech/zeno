@@ -417,6 +417,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
 
     const NodeState& state = m_index.data(ROLE_NODE_RUN_STATE).value<NodeState>();
 
+#if 0
     m_statusMarker = new QGraphicsPolygonItem(headerWidget);
     QPolygonF points;
     points.append(QPointF(0, 0));
@@ -426,6 +427,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget()
     m_statusMarker->setPen(Qt::NoPen);
     m_statusMarker->setPos(QPointF(0, 0));
     markNodeStatus(state.runstatus);
+#endif
 
     return headerWidget;
 }
@@ -729,7 +731,7 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
         const auto paramCtrl = paramIdx.data(ROLE_PARAM_CONTROL).toInt();
-        const zeno::ParamType paramType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+        const zeno::ParamType paramType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
         if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP)
         {
@@ -781,10 +783,10 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
             {
                 const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
                 ZenoGvHelper::setValue(pControl, paramType, deflValue, pScene);
-                if (zeno::Param_Vec4f == paramType ||
-                    zeno::Param_Vec3f == paramType ||
-                    zeno::Param_Vec2f == paramType ||
-                    zeno::Param_Float == paramType)
+                if (zeno::types::gParamType_Vec4f == paramType ||
+                    zeno::types::gParamType_Vec3f == paramType ||
+                    zeno::types::gParamType_Vec2f == paramType ||
+                    zeno::types::gParamType_Float == paramType)
                 {
                     if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl))
                     {
@@ -948,7 +950,7 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput)
 
     const QString& sockName = paramIdx.data(ROLE_PARAM_NAME).toString();
     const zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
-    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    const zeno::ParamType type = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
     const PARAM_LINKS& links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
     int sockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -963,7 +965,7 @@ SocketBackgroud* ZenoNode::addSocket(const QModelIndex& paramIdx, bool bInput)
 
     SocketBackgroud* pBackground = nullptr;
     ZSocketLayout* pMiniLayout = nullptr;
-    if ((type == zeno::Param_Dict || type == zeno::Param_List) && 
+    if ((type == gParamType_Dict || type == gParamType_List) && 
         ctrl != zeno::NoMultiSockPanel) {
         pBackground = new SocketBackgroud(bInput, true);
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);
@@ -1004,7 +1006,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
 {
     const QPersistentModelIndex perIdx(paramIdx);
 
-    zeno::ParamType sockType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    zeno::ParamType sockType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
     zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
     bool bFloat = UiHelper::isFloatType(sockType);
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
@@ -1034,7 +1036,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
     };
 
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
-    zeno::ControlProperty ctrlProps = paramIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+    zeno::reflect::Any ctrlProps = paramIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
     auto cbGetIndexData = [=]() -> QVariant { 
         return perIdx.data(ROLE_PARAM_VALUE);
@@ -1147,26 +1149,28 @@ void ZenoNode::markNodeStatus(zeno::NodeRunStatus status)
         if (m_errorTip)
             m_errorTip->hide();
 
-        switch (m_nodeStatus)
-        {
-        case zeno::Node_RunSucceed: {
-            m_statusMarker->setBrush(QBrush(QColor("#319E36")));
-            break;
+        if (m_statusMarker) {
+            switch (m_nodeStatus)
+            {
+            case zeno::Node_RunSucceed: {
+                m_statusMarker->setBrush(QBrush(QColor("#319E36")));
+                break;
+            }
+            case zeno::Node_Pending: {
+                m_statusMarker->setBrush(QBrush(QColor("#868686")));
+                break;
+            }
+            case zeno::Node_DirtyReadyToRun: {
+                m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
+                break;
+            }
+            case zeno::Node_Running: {
+                m_statusMarker->setBrush(QBrush(QColor("#02F8F8")));
+                break;
+            }
+            }
+            m_statusMarker->update();
         }
-        case zeno::Node_Pending: {
-            m_statusMarker->setBrush(QBrush(QColor("#868686")));
-            break;
-        }
-        case zeno::Node_DirtyReadyToRun: {
-            m_statusMarker->setBrush(QBrush(QColor("#EAED4B")));
-            break;
-        }
-        case zeno::Node_Running: {
-            m_statusMarker->setBrush(QBrush(QColor("#02F8F8")));
-            break;
-        }
-        }
-        m_statusMarker->update();
     }
     update();
 }

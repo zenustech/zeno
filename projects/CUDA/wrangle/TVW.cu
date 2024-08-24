@@ -283,7 +283,7 @@ struct ZSTileVectorWrangler : zeno::INode {
 
 ZENDEFNODE(ZSTileVectorWrangler, {
                                      {"ZSParticles",
-                                      {"string", "zfxCode"},
+                                      {gParamType_String, "zfxCode"},
                                       {"DictObject:NumericObject", "params"},
                                       {"enum vert element auto", "target", "auto"}},
                                      {"ZSParticles"},

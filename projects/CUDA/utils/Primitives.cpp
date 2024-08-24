@@ -187,9 +187,9 @@ struct PrimitiveConnectedComponents : INode {
 };
 
 ZENDEFNODE(PrimitiveConnectedComponents, {
-                                             {{"PrimitiveObject", "prim"}, {"int", "set_index", "0"}},
+                                             {{gParamType_Primitive, "prim"}, {gParamType_Int, "set_index", "0"}},
                                              {
-                                                 {"PrimitiveObject", "prim"},
+                                                 {gParamType_Primitive, "prim"},
                                              },
                                              {},
                                              {"zs_query"},
@@ -482,9 +482,9 @@ struct PrimitiveConnectedComponents : INode {
 };
 
 ZENDEFNODE(PrimitiveConnectedComponents, {
-                                             {{"PrimitiveObject", "prim"}},
+                                             {{gParamType_Primitive, "prim"}},
                                              {
-                                                 {"ListObject", "prim_islands"},
+                                                 {gParamType_List, "prim_islands"},
                                              },
                                              {},
                                              {"zs_geom"},
@@ -583,9 +583,9 @@ struct PrimitiveMarkIslands : INode {
 };
 
 ZENDEFNODE(PrimitiveMarkIslands, {
-                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}},
+                                     {{gParamType_Primitive, "prim"}, {gParamType_String, "island_tag", "island_index"}},
                                      {
-                                         {"PrimitiveObject", "prim"},
+                                         {gParamType_Primitive, "prim"},
                                      },
                                      {},
                                      {"zs_geom"},
@@ -611,7 +611,7 @@ struct PrimitiveReorder : INode {
 
         /// @note bv
         constexpr auto defaultBv =
-            bv_t{zsvec3::constant(zs::limits<zs::f32>::max()), zsvec3::constant(zs::limits<zs::f32>::lowest())};
+            bv_t{zsvec3::constant(zs::detail::deduce_numeric_max<zs::f32>()), zsvec3::constant(zs::detail::deduce_numeric_lowest<zs::f32>())};
         bv_t gbv;
         if (orderVerts || orderTris) {
 
@@ -626,21 +626,21 @@ struct PrimitiveReorder : INode {
                 y = xn[1];
                 z = xn[2];
             });
-            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::limits<zs::f32>::max(), getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::detail::deduce_numeric_max<zs::f32>(), getmin<zs::f32>{});
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
-            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::limits<zs::f32>::max(),
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::detail::deduce_numeric_max<zs::f32>(),
                        getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
-            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::limits<zs::f32>::max(),
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::detail::deduce_numeric_max<zs::f32>(),
                        getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
             gbv = bv_t{zsvec3{res[0], res[1], res[2]}, zsvec3{res[3], res[4], res[5]}};
         }
-        gbv._min -= limits<float>::epsilon() * 16;
-        gbv._max += limits<float>::epsilon() * 16;
+        gbv._min -= detail::deduce_numeric_epsilon<float>() * 16;
+        gbv._max += detail::deduce_numeric_epsilon<float>() * 16;
 
         /// @note reorder
         struct Mapping {
@@ -763,9 +763,9 @@ struct PrimitiveReorder : INode {
 
 ZENDEFNODE(PrimitiveReorder,
            {
-               {{"PrimitiveObject", "prim"}, {"bool", "order_vertices", "0"}, {"bool", "order_tris", "1"}},
+               {{gParamType_Primitive, "prim"}, {gParamType_Bool, "order_vertices", "0"}, {gParamType_Bool, "order_tris", "1"}},
                {
-                   {"PrimitiveObject", "prim"},
+                   {gParamType_Primitive, "prim"},
                },
                {},
                {"zs_geom"},
@@ -1015,11 +1015,11 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                              {{"PrimitiveObject", "prim"},
-                               {"float", "proximity_theshold", "0.00001"},
-                               {"string", "preserved_vert_attribs", ""}},
+                              {{gParamType_Primitive, "prim"},
+                               {gParamType_Float, "proximity_theshold", "0.00001"},
+                               {gParamType_String, "preserved_vert_attribs", ""}},
                               {
-                                  {"PrimitiveObject", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               {},
                               {"zs_geom"},
@@ -1284,13 +1284,13 @@ struct PrimitiveFuse2 : INode {
 
 ZENDEFNODE(PrimitiveFuse2, {
                                {
-                                   {"PrimitiveObject", "prim"},
-                                   {"float", "proximity_theshold", "0.00001"},
-                                   {"string", "preserved_vert_attribs", ""},
-                                   {"bool", "promote_rest_attribs", "true"},
+                                   {gParamType_Primitive, "prim"},
+                                   {gParamType_Float, "proximity_theshold", "0.00001"},
+                                   {gParamType_String, "preserved_vert_attribs", ""},
+                                   {gParamType_Bool, "promote_rest_attribs", "true"},
                                },
                                {
-                                   {"PrimitiveObject", "prim"},
+                                   {gParamType_Primitive, "prim"},
                                },
                                {},
                                {"zs_geom"},
@@ -1523,14 +1523,14 @@ struct PointFuse : INode {
 };
 
 ZENDEFNODE(PointFuse, {
-                              {{"PrimitiveObject", "points"},
-                               {"float", "proximity_theshold", "0.00001"},
-                               {"string", "sum_vert_attribs", ""},
-                               {"string", "min_vert_attribs", ""},
-                               {"string", "max_vert_attribs", ""},
+                              {{gParamType_Primitive, "points"},
+                               {gParamType_Float, "proximity_theshold", "0.00001"},
+                               {gParamType_String, "sum_vert_attribs", ""},
+                               {gParamType_String, "min_vert_attribs", ""},
+                               {gParamType_String, "max_vert_attribs", ""},
                                },
                               {
-                                  {"PrimitiveObject", "points"},
+                                  {gParamType_Primitive, "points"},
                               },
                               {},
                               {"zs_geom"},
@@ -1805,11 +1805,11 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                              {{"PrimitiveObject", "prim"},
-                               {"float", "proximity_theshold", "0.00001"},
-                               {"string", "preserved_vert_attribs", ""}},
+                              {{gParamType_Primitive, "prim"},
+                               {gParamType_Float, "proximity_theshold", "0.00001"},
+                               {gParamType_String, "preserved_vert_attribs", ""}},
                               {
-                                  {"PrimitiveObject", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               {},
                               {"zs_geom"},
@@ -1914,9 +1914,9 @@ struct PrimPromotePointAttribs : INode {
 };
 
 ZENDEFNODE(PrimPromotePointAttribs, {
-                                        {{"PrimitiveObject", "prim"}, {"string", "promote_vert_attribs", ""}},
+                                        {{gParamType_Primitive, "prim"}, {gParamType_String, "promote_vert_attribs", ""}},
                                         {
-                                            {"PrimitiveObject", "prim"},
+                                            {gParamType_Primitive, "prim"},
                                         },
                                         {},
                                         {"zs_geom"},
@@ -1998,9 +1998,9 @@ struct PrimDemoteVertAttribs : INode {
 };
 
 ZENDEFNODE(PrimDemoteVertAttribs, {
-                                      {{"PrimitiveObject", "prim"}, {"string", "demote_vert_attribs", ""}},
+                                      {{gParamType_Primitive, "prim"}, {gParamType_String, "demote_vert_attribs", ""}},
                                       {
-                                          {"PrimitiveObject", "prim"},
+                                          {gParamType_Primitive, "prim"},
                                       },
                                       {},
                                       {"zs_geom"},
@@ -2421,13 +2421,13 @@ struct PrimAttributePromote : INode {
 
 ZENDEFNODE(PrimAttributePromote, {
                                      {
-                                         {"PrimitiveObject", "prim"},
-                                         {"string", "promote_attribs", ""},
+                                         {gParamType_Primitive, "prim"},
+                                         {gParamType_String, "promote_attribs", ""},
                                          {"enum point_to_vert vert_to_point", "direction", "point_to_vert"},
                                          {"enum average min max", "merge_strategy", "average"},
                                      },
                                      {
-                                         {"PrimitiveObject", "prim"},
+                                         {gParamType_Primitive, "prim"},
                                      },
                                      {},
                                      {"zs_geom"},
@@ -2648,11 +2648,11 @@ struct PrimitiveUnfuse : INode {
     }
 };
 ZENDEFNODE(PrimitiveUnfuse, {
-                                {{"PrimitiveObject", "prim"},
-                                 {"string", "partition_tag", "triangle_index"},
-                                 {"bool", "to_list", "false"}},
+                                {{gParamType_Primitive, "prim"},
+                                 {gParamType_String, "partition_tag", "triangle_index"},
+                                 {gParamType_Bool, "to_list", "false"}},
                                 {
-                                    {"PrimitiveObject", "partitioned_prim"},
+                                    {gParamType_Primitive, "partitioned_prim"},
                                 },
                                 {},
                                 {"zs_geom"},
@@ -2682,13 +2682,13 @@ struct PrimitiveUnmerge : INode {
 
 ZENDEFNODE(PrimitiveUnmerge, {
                                  {
-                                     {"primitive", "prim"},
-                                     {"string", "tagAttr", "tag"},
-                                     {"bool", "preSimplify", "0"},
+                                     {gParamType_Primitive, "prim"},
+                                     {gParamType_String, "tagAttr", "tag"},
+                                     {gParamType_Bool, "preSimplify", "0"},
                                      {"enum verts faces", "method", "verts"},
                                  },
                                  {
-                                     {"list", "listPrim"},
+                                     {gParamType_List, "listPrim"},
                                  },
                                  {},
                                  {"primitive"},
@@ -2715,13 +2715,13 @@ struct GatherPrimIds : INode {
 
 ZENDEFNODE(GatherPrimIds, {
                               {
-                                  {"primitive", "prim"},
-                                  {"primitive", "refPrim"},
-                                  {"string", "tagAttr", "id"},
-                                  {"string", "refIndexTagAttr", "target_index"},
+                                  {gParamType_Primitive, "prim"},
+                                  {gParamType_Primitive, "refPrim"},
+                                  {gParamType_String, "tagAttr", "id"},
+                                  {gParamType_String, "refIndexTagAttr", "target_index"},
                               },
                               {
-                                  {"primitive", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               {},
                               {"primitive"},
@@ -2748,11 +2748,11 @@ struct MarkSelectedVerts : INode {
 };
 ZENDEFNODE(MarkSelectedVerts, {
 
-                                  {{"PrimitiveObject", "prim"},
-                                   {"string", "selection_tag", "selected"},
-                                   {"PrimitiveObject", "marked_lines"}},
+                                  {{gParamType_Primitive, "prim"},
+                                   {gParamType_String, "selection_tag", "selected"},
+                                   {gParamType_Primitive, "marked_lines"}},
                                   {
-                                      {"PrimitiveObject", "prim"},
+                                      {gParamType_Primitive, "prim"},
                                   },
                                   {},
                                   {"zs_geom"},
@@ -2820,9 +2820,9 @@ struct ComputeAverageEdgeLength : INode {
         fmt::print("sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
 #endif
         zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
-        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::limits<float>::max(),
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::detail::deduce_numeric_max<float>(),
                    zs::getmin<float>{});
-        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::limits<float>::min(),
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::detail::deduce_numeric_min<float>(),
                    zs::getmax<float>{});
 
         set_output("prim", prim);
@@ -2834,13 +2834,13 @@ struct ComputeAverageEdgeLength : INode {
 
 ZENDEFNODE(ComputeAverageEdgeLength, {
                                          {
-                                             {"PrimitiveObject", "prim"},
+                                             {gParamType_Primitive, "prim"},
                                          },
                                          {
-                                             {"PrimitiveObject", "prim"},
-                                             {"NumericObject", "average_edge_length"},
-                                             {"NumericObject", "minimum_edge_length"},
-                                             {"NumericObject", "maximum_edge_length"},
+                                             {gParamType_Primitive, "prim"},
+                                             {gParamType_Float, "average_edge_length"},
+                                             {gParamType_Float, "minimum_edge_length"},
+                                             {gParamType_Float, "maximum_edge_length"},
                                          },
                                          {},
                                          {"zs_query"},
@@ -2879,11 +2879,11 @@ struct PrimitiveHasUV : INode {
 };
 ZENDEFNODE(PrimitiveHasUV, {
                                {
-                                   {"PrimitiveObject", "prim"},
+                                   {gParamType_Primitive, "prim"},
                                },
                                {
-                                   {"PrimitiveObject", "prim"},
-                                   {"NumericObject", "has_uv"},
+                                   {gParamType_Primitive, "prim"},
+                                   {gParamType_Bool, "has_uv"},
                                },
                                {},
                                {"zs_query"},
@@ -2938,16 +2938,16 @@ struct SurfacePointsInterpolation : INode {
 
 ZENDEFNODE(SurfacePointsInterpolation, {
                                            {
-                                               {"PrimitiveObject", "prim"},
-                                               {"string", "attrTag", "pos"},
-                                               {"string", "weightTag"},
-                                               {"string", "indexTag"},
-                                               {"PrimitiveObject", "ref_prim"},
-                                               {"string", "refAttrTag", "pos"},
-                                               {"bool", "vert_exclusion", "false"},
+                                               {gParamType_Primitive, "prim"},
+                                               {gParamType_String, "attrTag", "pos"},
+                                               {gParamType_String, "weightTag"},
+                                               {gParamType_String, "indexTag"},
+                                               {gParamType_Primitive, "ref_prim"},
+                                               {gParamType_String, "refAttrTag", "pos"},
+                                               {gParamType_Bool, "vert_exclusion", "false"},
                                            },
                                            {
-                                               {"PrimitiveObject", "prim"},
+                                               {gParamType_Primitive, "prim"},
                                            },
                                            {},
                                            {"zs_geom"},
@@ -2988,7 +2988,7 @@ struct ParticleCluster : zeno::INode {
         });
 
         /// @brief uv
-        if (pars->has_attr("uv") && uvDist > zs::limits<float>::epsilon() * 10) {
+        if (pars->has_attr("uv") && uvDist > zs::detail::deduce_numeric_epsilon<float>() * 10) {
             const auto &uv = pars->attr<vec2f>("uv");
             pol(range(pos.size()), [&neighbors, &uv, uvDist2 = uvDist * uvDist](int vi) mutable {
                 int n = neighbors[vi].size();
@@ -3050,12 +3050,12 @@ struct ParticleCluster : zeno::INode {
 
 ZENDEFNODE(ParticleCluster, {
                                 {
-                                    {"PrimitiveObject", "pars"},
-                                    {"float", "dist", "1"},
-                                    {"float", "uv_dist", "0"},
-                                    {"string", "cluster_tag", "cluster_index"},
+                                    {gParamType_Primitive, "pars"},
+                                    {gParamType_Float, "dist", "1"},
+                                    {gParamType_Float, "uv_dist", "0"},
+                                    {gParamType_String, "cluster_tag", "cluster_index"},
                                 },
-                                {{"PrimitiveObject", "pars"}, {"NumericObject", "num_clusters"}},
+                                {{gParamType_Primitive, "pars"}, {gParamType_Int, "num_clusters"}},
                                 {},
                                 {"zs_geom"},
                             });
@@ -3071,7 +3071,7 @@ struct ParticleSegmentation : zeno::INode {
         float uvDist2 = zs::sqr(get_input2<float>("uv_dist"));
         const vec2f *uvPtr = nullptr;
 
-        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::limits<float>::epsilon() * 10)
+        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::detail::deduce_numeric_epsilon<float>() * 10)
             uvPtr = pars->attr<vec2f>("uv").data();
 
         using namespace zs;
@@ -3267,14 +3267,14 @@ struct ParticleSegmentation : zeno::INode {
 
 ZENDEFNODE(ParticleSegmentation, {
                                      {
-                                         {"PrimitiveObject", "pars"},
-                                         {"float", "dist", "1"},
-                                         {"float", "uv_dist", "0"},
-                                         {"string", "segment_tag", "segment_index"},
-                                         {"int", "post_process_cnt", "0"},
-                                         {"bool", "paint_color", "1"},
+                                         {gParamType_Primitive, "pars"},
+                                         {gParamType_Float, "dist", "1"},
+                                         {gParamType_Float, "uv_dist", "0"},
+                                         {gParamType_String, "segment_tag", "segment_index"},
+                                         {gParamType_Int, "post_process_cnt", "0"},
+                                         {gParamType_Bool, "paint_color", "1"},
                                      },
-                                     {{"PrimitiveObject", "pars"}, {"NumericObject", "num_segments"}},
+                                     {{gParamType_Primitive, "pars"}, {"NumericObject", "num_segments"}},
                                      {},
                                      {"zs_geom"},
                                  });
@@ -3315,11 +3315,11 @@ struct CollapseClusters : INode {
 };
 ZENDEFNODE(CollapseClusters, {
                                  {
-                                     {"PrimitiveObject", "clusters"},
-                                     {"NumericObject", "num_segments"},
-                                     {"string", "segment_tag", "segment_index"},
+                                     {gParamType_Primitive, "clusters"},
+                                     {gParamType_Int, "num_segments"},
+                                     {gParamType_String, "segment_tag", "segment_index"},
                                  },
-                                 {{"PrimitiveObject", "pars"}},
+                                 {{gParamType_Primitive, "pars"}},
                                  {},
                                  {"zs_geom"},
                              });
@@ -3427,9 +3427,9 @@ struct PrimitiveBFS : INode {
 };
 
 ZENDEFNODE(PrimitiveBFS, {
-                             {{"PrimitiveObject", "prim"}, {"int", "vert_index", "0"}, {"int", "level_index", "0"}},
+                             {{gParamType_Primitive, "prim"}, {gParamType_Int, "vert_index", "0"}, {gParamType_Int, "level_index", "0"}},
                              {
-                                 {"PrimitiveObject", "prim"},
+                                 {gParamType_Primitive, "prim"},
                              },
                              {},
                              {"zs_query"},
@@ -3528,7 +3528,7 @@ struct PrimitiveColoring : INode {
             pol(range(spmat.outerSize()),
                 [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
                     auto color = colors[i];
-                    if (color == limits<T>::max()) {
+                    if (color == detail::deduce_numeric_max<T>()) {
                         correct[0] = 0;
                         printf("node [%d]: %f. not colored!\n", i, (float)color);
                         return;
@@ -3560,7 +3560,7 @@ struct PrimitiveColoring : INode {
             pol(range(spmat.outerSize()),
                 [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
                     auto color = colors[i];
-                    if (color == limits<T>::max()) {
+                    if (color == detail::deduce_numeric_max<T>()) {
                         correct[0] = 0;
                         printf("node [%d]: %f. not colored!\n", i, (float)color);
                         return;
@@ -3591,11 +3591,11 @@ struct PrimitiveColoring : INode {
             bool done = true;
             pol(zip(weights, minWeights, maskOut, colors), [&](u32 &w, u32 &mw, int &mask, float &color) {
                 //if (w < mw && mask == 0)
-                if (w < mw && mw != limits<u32>::max()) {
+                if (w < mw && mw != detail::deduce_numeric_max<u32>()) {
                     done = false;
                     mask = 1;
                     color = iter;
-                    w = limits<u32>::max();
+                    w = detail::deduce_numeric_max<u32>();
                 }
             });
             return done;
@@ -3614,9 +3614,9 @@ struct PrimitiveColoring : INode {
 };
 
 ZENDEFNODE(PrimitiveColoring, {
-                                  {{"PrimitiveObject", "prim"}},
+                                  {{gParamType_Primitive, "prim"}},
                                   {
-                                      {"PrimitiveObject", "prim"},
+                                      {gParamType_Primitive, "prim"},
                                   },
                                   {},
                                   {"zs_query"},
@@ -3728,16 +3728,16 @@ struct PrimitiveProject : INode {
 
 ZENDEFNODE(PrimitiveProject, {
                                  {
-                                     {"PrimitiveObject", "prim"},
-                                     {"PrimitiveObject", "targetPrim"},
-                                     {"string", "nrmAttr", "nrm"},
-                                     {"float", "limit", "0"},
-                                     {"string", "distTag", "dist"},
-                                     {"float", "threshold", "5e-6"},
+                                     {gParamType_Primitive, "prim"},
+                                     {gParamType_Primitive, "targetPrim"},
+                                     {gParamType_String, "nrmAttr", "nrm"},
+                                     {gParamType_Float, "limit", "0"},
+                                     {gParamType_String, "distTag", "dist"},
+                                     {gParamType_Float, "threshold", "5e-6"},
                                      {"enum closest farthest", "side", "farthest"},
                                  },
                                  {
-                                     {"PrimitiveObject", "prim"},
+                                     {gParamType_Primitive, "prim"},
                                  },
                                  {},
                                  {"zs_query"},
@@ -3786,16 +3786,16 @@ struct QueryClosestPrimitive : zeno::INode {
             std::vector<Ti> ids(prim->size(), -1);
             pol(zs::range(prim->size()), [&, lbvh = zs::proxy<zs::execspace_e::openmp>(lbvh), et = zsbvh->et](int i) {
                 using vec3 = zs::vec<float, 3>;
-                kvs[i].dist = zs::limits<float>::max();
+                kvs[i].dist = zs::detail::deduce_numeric_max<float>();
                 kvs[i].pid = i;
                 auto pi = vec3::from_array(prim->verts[i]);
-                float radius = zs::limits<float>::max();
+                float radius = zs::detail::deduce_numeric_max<float>();
                 if (prim->has_attr(radiusTag))
                     radius = prim->attr<float>(radiusTag)[i];
                 lbvh.find_nearest(
                     pi,
                     [&ids, &kvs, &pi, &targetPrim, i, et](int j, float &dist, int &idx) {
-                        float d = zs::limits<float>::max();
+                        float d = zs::detail::deduce_numeric_max<float>();
                         if (et == ZenoLinearBvh::point) {
                             d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
                         } else if (et == ZenoLinearBvh::curve) {
@@ -3859,13 +3859,13 @@ struct QueryClosestPrimitive : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
         } else if (has_input<NumericObject>("prim")) {
-            auto p = get_input<NumericObject>("prim")->get<vec3f>();
+            auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
             using vec3 = zs::vec<float, 3>;
             auto pi = vec3::from_array(p);
             auto lbvhv = zs::proxy<zs::execspace_e::host>(lbvh);
             lbvhv.find_nearest(pi, [&, et = zsbvh->et](int j, float &dist_, int &idx) {
                 using vec3 = zs::vec<float, 3>;
-                float d = zs::limits<float>::max();
+                float d = zs::detail::deduce_numeric_max<float>();
                 if (et == ZenoLinearBvh::point) {
                     d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
                 } else if (et == ZenoLinearBvh::curve) {
@@ -3905,18 +3905,18 @@ struct QueryClosestPrimitive : zeno::INode {
 };
 
 ZENDEFNODE(QueryClosestPrimitive, {
-                                      {{"prim"},
-                                       {"prim", "targetPrim"},
-                                       {"string", "idTag", "bvh_id"},
-                                       {"string", "radiusTag", "query_radius"},
-                                       {"string", "distTag", "bvh_dist"},
-                                       {"string", "weightTag", "bvh_ws"},
-                                       {"string", "bvh_tag", "bvh"}},
-                                      {{"NumericObject", "primid"},
-                                       {"NumericObject", "bvh_primid"},
-                                       {"NumericObject", "dist"},
-                                       {"PrimitiveObject", "bvh_prim"},
-                                       {"PrimitiveObject", "segment"}},
+                                      {{gParamType_Primitive, "prim"},
+                                       {gParamType_Primitive, "targetPrim"},
+                                       {gParamType_String, "idTag", "bvh_id"},
+                                       {gParamType_String, "radiusTag", "query_radius"},
+                                       {gParamType_String, "distTag", "bvh_dist"},
+                                       {gParamType_String, "weightTag", "bvh_ws"},
+                                       {gParamType_String, "bvh_tag", "bvh"}},
+                                      {{gParamType_Int, "primid"},
+                                       {gParamType_Int, "bvh_primid"},
+                                       {gParamType_Float, "dist"},
+                                       {gParamType_Primitive, "bvh_prim"},
+                                       {gParamType_Primitive, "segment"}},
                                       {},
                                       {"zs_query"},
                                   });
@@ -3944,11 +3944,11 @@ struct FollowUpReferencePrimitive : INode {
     }
 };
 ZENDEFNODE(FollowUpReferencePrimitive, {
-                                           {{"PrimitiveObject", "prim"},
-                                            {"PrimitiveObject", "ref_surf_prim"},
-                                            {"string", "idTag", "bvh_id"},
-                                            {"string", "weightTag", "bvh_ws"}},
-                                           {{"PrimitiveObject", "prim"}},
+                                           {{gParamType_Primitive, "prim"},
+                                            {gParamType_Primitive, "ref_surf_prim"},
+                                            {gParamType_String, "idTag", "bvh_id"},
+                                            {gParamType_String, "weightTag", "bvh_ws"}},
+                                           {{gParamType_Primitive, "prim"}},
                                            {},
                                            {"zs_geom"},
                                        });
@@ -4078,8 +4078,8 @@ struct ComputeParticlesCenter : INode {
     }
 };
 ZENDEFNODE(ComputeParticlesCenter, {
-                                       {{"PrimitiveObject", "prim"}},
-                                       {{"PrimitiveObject", "prim"}, {"vec3f", "center"}},
+                                       {{gParamType_Primitive, "prim"}},
+                                       {{gParamType_Primitive, "prim"}, {gParamType_Vec3f, "center"}},
                                        {},
                                        {"zs_geom"},
                                    });
@@ -4099,9 +4099,9 @@ static zeno::vec3f compute_dimensions(const PrimitiveObject &primA, const Primit
             pol(zs::enumerate(posB), [&, offset = posA.size()](int col, const auto &p) { locs[col + offset] = p[d]; });
 
             std::vector<float> ret(2);
-            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret), zs::limits<float>::max(),
+            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret), zs::detail::deduce_numeric_max<float>(),
                        zs::getmin<float>());
-            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret) + 1, zs::limits<float>::lowest(),
+            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret) + 1, zs::detail::deduce_numeric_lowest<float>(),
                        zs::getmax<float>());
             dims[d] = ret[1] - ret[0];
         };
@@ -4122,7 +4122,7 @@ struct ComputeParticlesDirection : INode {
         zeno::vec3f trans{0, 0, 0};
 
         if (has_input("origin")) {
-            trans = get_input2<vec3f>("origin");
+            trans = get_input2<zeno::vec3f>("origin");
         } else {
             std::vector<float> locs[3];
             for (int d = 0; d != 3; ++d) {
@@ -4171,8 +4171,8 @@ struct ComputeParticlesDirection : INode {
     }
 };
 ZENDEFNODE(ComputeParticlesDirection, {
-                                          {{"PrimitiveObject", "prim"}, {"vec3f", "origin"}},
-                                          {{"PrimitiveObject", "prim"}, {"vec3f", "principal_direction"}},
+                                          {{gParamType_Primitive, "prim"}, {gParamType_Vec3f, "origin"}},
+                                          {{gParamType_Primitive, "prim"}, {gParamType_Vec3f, "principal_direction"}},
                                           {},
                                           {"zs_geom"},
                                       });
@@ -4231,11 +4231,11 @@ struct AssociateParticles : INode {
     }
 };
 ZENDEFNODE(AssociateParticles, {
-                                   {{"PrimitiveObject", "srcPrim"},
-                                    {"string", "target_pos_tag", "target_pos"},
-                                    {"string", "target_index_tag", "target_index"},
-                                    {"PrimitiveObject", "dstPrim"}},
-                                   {{"PrimitiveObject", "srcPrim"}},
+                                   {{gParamType_Primitive, "srcPrim"},
+                                    {gParamType_String, "target_pos_tag", "target_pos"},
+                                    {gParamType_String, "target_index_tag", "target_index"},
+                                    {gParamType_Primitive, "dstPrim"}},
+                                   {{gParamType_Primitive, "srcPrim"}},
                                    {},
                                    {"zs_geom"},
                                });
@@ -4421,18 +4421,18 @@ struct SetupParticleTransition : INode {
 };
 ZENDEFNODE(SetupParticleTransition, {
                                         {
-                                            {"PrimitiveObject", "src_particles"},
-                                            {"PrimitiveObject", "src_clusters"},
-                                            {"PrimitiveObject", "dst_particles"},
-                                            {"PrimitiveObject", "dst_clusters"},
-                                            {"string", "particle_cluster_index_tag", "segment_index"}, // for pars
-                                            {"string", "cluster_target_index_tag", "target_index"},    // for clusters
-                                            {"string", "per_frame_translation_tag", "frame_translation"},
-                                            {"int", "num_transition_frames", "20"},
-                                            {"int", "num_animating_frames", "100"},
-                                            {"PrimitiveObject", "anim_particles"},
+                                            {gParamType_Primitive, "src_particles"},
+                                            {gParamType_Primitive, "src_clusters"},
+                                            {gParamType_Primitive, "dst_particles"},
+                                            {gParamType_Primitive, "dst_clusters"},
+                                            {gParamType_String, "particle_cluster_index_tag", "segment_index"}, // for pars
+                                            {gParamType_String, "cluster_target_index_tag", "target_index"},    // for clusters
+                                            {gParamType_String, "per_frame_translation_tag", "frame_translation"},
+                                            {gParamType_Int, "num_transition_frames", "20"},
+                                            {gParamType_Int, "num_animating_frames", "100"},
+                                            {gParamType_Primitive, "anim_particles"},
                                         },
-                                        {{"PrimitiveObject", "anim_particles"}},
+                                        {{gParamType_Primitive, "anim_particles"}},
                                         {},
                                         {"zs_geom"},
                                     });
@@ -4518,16 +4518,16 @@ struct SetupParticleTransitionDirect : INode {
 };
 ZENDEFNODE(SetupParticleTransitionDirect, {
                                               {
-                                                  {"PrimitiveObject", "src_particles"},
-                                                  {"PrimitiveObject", "dst_particles"},
-                                                  {"string", "target_index_tag", "target_index"},
-                                                  {"string", "per_frame_translation_tag", "frame_translation"},
-                                                  {"string", "per_frame_clr_trans_tag", "trans_clr"},
-                                                  {"float", "rad", "2"},
-                                                  {"int", "num_transition_frames", "20"},
-                                                  {"PrimitiveObject", "anim_particles"},
+                                                  {gParamType_Primitive, "src_particles"},
+                                                  {gParamType_Primitive, "dst_particles"},
+                                                  {gParamType_String, "target_index_tag", "target_index"},
+                                                  {gParamType_String, "per_frame_translation_tag", "frame_translation"},
+                                                  {gParamType_String, "per_frame_clr_trans_tag", "trans_clr"},
+                                                  {gParamType_Float, "rad", "2"},
+                                                  {gParamType_Int, "num_transition_frames", "20"},
+                                                  {gParamType_Primitive, "anim_particles"},
                                               },
-                                              {{"PrimitiveObject", "anim_particles"}},
+                                              {{gParamType_Primitive, "anim_particles"}},
                                               {},
                                               {"zs_geom"},
                                           });
@@ -4580,12 +4580,12 @@ struct AssociateParticlesFast : INode {
     }
 };
 ZENDEFNODE(AssociateParticlesFast, {
-                                       {{"PrimitiveObject", "srcPrim"},
-                                        {"string", "target_pos_tag", "target_pos"},
-                                        {"string", "target_index_tag", "target_index"},
-                                        {"vec3f", "principal_direction", "1, 0, 0"},
-                                        {"PrimitiveObject", "dstPrim"}},
-                                       {{"PrimitiveObject", "srcPrim"}},
+                                       {{gParamType_Primitive, "srcPrim"},
+                                        {gParamType_String, "target_pos_tag", "target_pos"},
+                                        {gParamType_String, "target_index_tag", "target_index"},
+                                        {gParamType_Vec3f, "principal_direction", "1, 0, 0"},
+                                        {gParamType_Primitive, "dstPrim"}},
+                                       {{gParamType_Primitive, "srcPrim"}},
                                        {},
                                        {"zs_geom"},
                                    });
@@ -4623,12 +4623,12 @@ struct AdvanceFrame : INode {
     }
 };
 ZENDEFNODE(AdvanceFrame, {
-                             {{"int", "segment_no"},
-                              {"int", "local_offset"},
-                              {"int", "num_local_frames"},
-                              {"int", "num_total_segments"},
-                              {"bool", "enter_new_segment"}},
-                             {{"int", "segment_no"}, {"int", "local_offset"}, {"bool", "enter_new_segment"}},
+                             {{gParamType_Int, "segment_no"},
+                              {gParamType_Int, "local_offset"},
+                              {gParamType_Int, "num_local_frames"},
+                              {gParamType_Int, "num_total_segments"},
+                              {gParamType_Bool, "enter_new_segment"}},
+                             {{gParamType_Int, "segment_no"}, {gParamType_Int, "local_offset"}, {gParamType_Bool, "enter_new_segment"}},
                              {},
                              {"zs_geom"},
                          });
@@ -4673,10 +4673,10 @@ ZENDEFNODE(PrimAssignRefAttrib, {
                                       {
                                           "prim",
                                           "ref_prim",
-                                          {"string", "pointIdTag", "bvh_id"},
-                                          {"string", "attribTag"},
+                                          {gParamType_String, "pointIdTag", "bvh_id"},
+                                          {gParamType_String, "attribTag"},
                                       },
-                                      {"prim"},
+                                      {gParamType_Primitive, "prim"},
                                       {},
                                       {"primitive"},
                                   });
@@ -4710,10 +4710,10 @@ struct RemovePrimitiveTopo : INode {
 };
 ZENDEFNODE(RemovePrimitiveTopo, {
                                     {
-                                        {"PrimitiveObject", "prim"},
-                                        {"string", "topo_strings", ""},
+                                        {gParamType_Primitive, "prim"},
+                                        {gParamType_String, "topo_strings", ""},
                                     },
-                                    {{"PrimitiveObject", "prim"}},
+                                    {{gParamType_Primitive, "prim"}},
                                     {},
                                     {"zs_geom"},
                                 });
@@ -4748,9 +4748,9 @@ struct ShuffleParticles : INode {
 };
 ZENDEFNODE(ShuffleParticles, {
                                  {
-                                     {"PrimitiveObject", "prim"},
+                                     {gParamType_Primitive, "prim"},
                                  },
-                                 {{"PrimitiveObject", "prim"}},
+                                 {{gParamType_Primitive, "prim"}},
                                  {},
                                  {"zs_geom"},
                              });
@@ -4802,11 +4802,11 @@ struct EmbedPrimitiveBvh : zeno::INode {
 };
 
 ZENDEFNODE(EmbedPrimitiveBvh, {
-                                  {{"PrimitiveObject", "prim"},
-                                   {"float", "thickness", "0"},
+                                  {{gParamType_Primitive, "prim"},
+                                   {gParamType_Float, "thickness", "0"},
                                    {"enum point line tri quad", "prim_type", "auto"},
-                                   {"string", "bvh_tag", "bvh"}},
-                                  {{"PrimitiveObject", "prim"}},
+                                   {gParamType_String, "bvh_tag", "bvh"}},
+                                  {{gParamType_Primitive, "prim"}},
                                   {},
                                   {"zs_accel"},
                               });
@@ -4859,12 +4859,12 @@ struct EmbedPrimitiveSpatialHash : zeno::INode {
 };
 
 ZENDEFNODE(EmbedPrimitiveSpatialHash, {
-                                          {{"PrimitiveObject", "prim"},
-                                           {"float", "side_length", "1"},
-                                           {"float", "thickness", "0"},
+                                          {{gParamType_Primitive, "prim"},
+                                           {gParamType_Float, "side_length", "1"},
+                                           {gParamType_Float, "thickness", "0"},
                                            {"enum point line tri quad", "prim_type", "auto"},
-                                           {"string", "spatial_hash_tag", "sh"}},
-                                          {{"PrimitiveObject", "prim"}},
+                                           {gParamType_String, "spatial_hash_tag", "sh"}},
+                                          {{gParamType_Primitive, "prim"}},
                                           {},
                                           {"zs_accel"},
                                       });

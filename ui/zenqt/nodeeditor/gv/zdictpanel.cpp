@@ -68,7 +68,7 @@ public:
         CallbackCollection cbSet;
         cbSet.cbEditFinished = cbEditFinished;
 
-        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::Param_String, cbSet, nullptr, zeno::ControlProperty());
+        m_editText = zenoui::createItemWidget(key, zeno::Lineedit, zeno::types::gParamType_String, cbSet, nullptr, zeno::reflect::Any());
         m_editText->setEnabled(m_bDict);
         m_editText->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
@@ -106,7 +106,7 @@ public:
 
     void updateName(const QString& newKeyName)
     {
-        ZenoGvHelper::setValue(m_editText, zeno::Param_String, newKeyName, nullptr);
+        ZenoGvHelper::setValue(m_editText, zeno::types::gParamType_String, newKeyName, nullptr);
     }
 
     void setEnable(bool bEnable)
@@ -146,10 +146,10 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     pVLayout->setContentsMargin(8, 0, 8, 8);
     pVLayout->setSpacing(ZenoStyle::dpiScaled(8));
 
-    const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toInt();
+    const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
     const QString& coreType = m_paramIdx.data(ROLE_PARAM_TYPE).toString();
-    m_bDict = type == zeno::Param_Dict;
+    m_bDict = type == gParamType_Dict;
 
     bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
 

@@ -8,10 +8,9 @@
 #include <zeno/utils/helper.h>
 
 
-using namespace zeno::iotags;
-using namespace zeno::iotags::curve;
-
 namespace zenoio {
+
+    using namespace zenoio::iotags;
 
     ZsgReader::ZsgReader() : m_bDiskReading(true), m_ioVer(zeno::VER_3) {}
 

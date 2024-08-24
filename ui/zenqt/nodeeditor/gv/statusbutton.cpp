@@ -1,7 +1,6 @@
 #include "statusbutton.h"
 #include "util/uihelper.h"
 
-
 StatusButton::StatusButton(RoundRectInfo info, QGraphicsItem* parent)
     : QGraphicsObject(parent)
     , m_bOn(false)
@@ -28,12 +27,27 @@ QRectF StatusButton::boundingRect() const
 void StatusButton::initPath()
 {
     QRectF rc(0, 0, m_info.W, m_info.H);
+    //节点header添加dirty标志,需增加button高度填补空白
+    rc.setHeight(rc.height() + dirtyLayoutHeight);
     m_path = UiHelper::getRoundPath(rc, m_info.ltradius, m_info.rtradius, m_info.lbradius, m_info.rbradius, true);
 }
 
 QPainterPath StatusButton::shape() const
 {
     return m_path;
+}
+
+void StatusButton::updateRightButtomRadius(bool bHasRadius)
+{
+    if (bHasRadius) {
+        m_info.rbradius = 10;
+        initPath();
+    }
+    else {
+        m_info.rbradius = 0;
+        initPath();
+    }
+    update();
 }
 
 void StatusButton::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

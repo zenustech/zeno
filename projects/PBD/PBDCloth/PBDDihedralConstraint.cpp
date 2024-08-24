@@ -71,10 +71,10 @@ public:
         auto dihedralCompliance = get_input<zeno::NumericObject>("dihedralCompliance")->get<float>();
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
 
-        auto p1 = get_input<zeno::NumericObject>("p1")->get<vec3f>();
-        auto p2 = get_input<zeno::NumericObject>("p2")->get<vec3f>();
-        auto p3 = get_input<zeno::NumericObject>("p3")->get<vec3f>();
-        auto p4 = get_input<zeno::NumericObject>("p4")->get<vec3f>();
+        auto p1 = get_input<zeno::NumericObject>("p1")->get<zeno::vec3f>();
+        auto p2 = get_input<zeno::NumericObject>("p2")->get<zeno::vec3f>();
+        auto p3 = get_input<zeno::NumericObject>("p3")->get<zeno::vec3f>();
+        auto p4 = get_input<zeno::NumericObject>("p4")->get<zeno::vec3f>();
         auto invMass1 = get_input<zeno::NumericObject>("invMass1")->get<float>();
         auto invMass2 = get_input<zeno::NumericObject>("invMass2")->get<float>();
         auto invMass3 = get_input<zeno::NumericObject>("invMass3")->get<float>();
@@ -103,24 +103,24 @@ public:
 
 ZENDEFNODE(PBDDihedralConstraint, {// inputs:
                  {
-                    {"float", "dihedralCompliance", "0.0"},
-                    {"float", "dt", "0.0016667"},
-                    {"vec3f", "p1", ""},
-                    {"vec3f", "p2", ""},
-                    {"vec3f", "p3", ""},
-                    {"vec3f", "p4", ""},
-                    {"float", "invMass1", ""},
-                    {"float", "invMass2", ""},
-                    {"float", "invMass3", ""},
-                    {"float", "invMass4", ""},
-                    {"float", "restAng4p", ""},
+                    {gParamType_Float, "dihedralCompliance", "0.0"},
+                    {gParamType_Float, "dt", "0.0016667"},
+                    {gParamType_Vec3f, "p1", ""},
+                    {gParamType_Vec3f, "p2", ""},
+                    {gParamType_Vec3f, "p3", ""},
+                    {gParamType_Vec3f, "p4", ""},
+                    {gParamType_Float, "invMass1", ""},
+                    {gParamType_Float, "invMass2", ""},
+                    {gParamType_Float, "invMass3", ""},
+                    {gParamType_Float, "invMass4", ""},
+                    {gParamType_Float, "restAng4p", ""},
                 },
                  // outputs:
                  {
-                    {"vec3f", "dpos1"},
-                    {"vec3f", "dpos2"},
-                    {"vec3f", "dpos3"},
-                    {"vec3f", "dpos4"},
+                    {gParamType_Vec3f, "dpos1"},
+                    {gParamType_Vec3f, "dpos2"},
+                    {gParamType_Vec3f, "dpos3"},
+                    {gParamType_Vec3f, "dpos4"},
                  },
                  // params:
                  {},

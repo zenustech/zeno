@@ -149,7 +149,7 @@ struct RasterizeParticleToVDB : zeno::INode{
     }
 };
 ZENDEFNODE(RasterizeParticleToVDB, {
-    {"Particles", {"float","Radius"}, {"float","Dx"}},
+    {"Particles", {gParamType_Float,"Radius"}, {gParamType_Float,"Dx"}},
     {"SurfaceSDF"},
     {},
     {"openvdb"},

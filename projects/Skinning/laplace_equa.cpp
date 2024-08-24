@@ -99,9 +99,9 @@ struct SolveLaplaceEquaOnAttr : zeno::INode {
 };
 
 ZENDEFNODE(SolveLaplaceEquaOnAttr, {
-    {"primIn"},
-    {"primOut"},
-    {{"string","attr_name","RENAME_ME"}},
+    {{gParamType_Primitive, "primIn"}},
+    {{gParamType_Primitive, "primOut"}},
+    {{gParamType_String,"attr_name","RENAME_ME"}},
     {"Skinning"},
 });
 
@@ -180,9 +180,9 @@ struct SolveLaplaceEquation : zeno::INode {
 };
 
 ZENDEFNODE(SolveLaplaceEquation, {
-    {"primIn"},
-    {"primOut"},
-    {{"string","attr_name","RENAME_ME"}},
+    {{gParamType_Primitive, "primIn"}},
+    {{gParamType_Primitive, "primOut"}},
+    {{gParamType_String,"attr_name","RENAME_ME"}},
     {"Skinning"},
 });
 

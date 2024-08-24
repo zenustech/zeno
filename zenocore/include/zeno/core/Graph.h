@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <string>
 #include <set>
-#include <any>
 #include <map>
 #include <zeno/core/data.h>
 #include <zeno/utils/uuid.h>
@@ -136,12 +135,19 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void viewNodeUpdated(const std::string node, bool bView);
     void markDirtyWhenFrameChanged();
     void markDirtyAll();
-    void onNodeParamUpdated(PrimitiveParam* spParam, zvariant old_value, zvariant new_value);
+    void onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value);
+    void parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any& new_value);
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
+    //增/删边之后更新wildCard端口的类型
+    void updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
+    void removeLinkWhenUpdateWildCardParam(const std::string& outNode, const std::string& inNode, EdgeInfo& edge);
+    void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
     bool isLinkVaild(const EdgeInfo& edge);
+
+    bool isLinkValid(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;

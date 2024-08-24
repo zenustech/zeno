@@ -40,14 +40,14 @@ public:
     static uint generateUuidInt();
     static QVariant zvarToQVar(const zeno::zvariant& var);
     static zeno::zvariant qvarToZVar(const QVariant& var, const zeno::ParamType type);
+    static zeno::reflect::Any qvarToAny(const QVariant& var, const zeno::ParamType type = Param_Null);
+    static QVariant anyToQvar(zeno::reflect::Any any);
     static QVariant initDefaultValue(const zeno::ParamType& type);
     static QVariant parseTextValue(const zeno::ParamType& type, const QString& textValue);
     static QSizeF viewItemTextLayout(QTextLayout& textLayout, int lineWidth, int maxHeight = -1, int* lastVisibleLine = nullptr);
     static zeno::ParamControl getControlByType(const QString& type);
-    static zeno::ParamControl getDefaultControl(const zeno::ParamType type);
     static CONTROL_INFO getControlByType(const QString &nodeCls, bool bInput, const QString &socketName,const QString &socketType);    
     static void getSocketInfo(const QString& objPath, QString& subgName, QString& nodeIdent, QString& paramPath);
-    static QList<zeno::ParamControl> getControlLists(const zeno::ParamType& type);
     static QStringList getAllControls();
     //there is no description on control, for example,  lineedit may be a integer, string or float.
     static zeno::ParamControl getControlByDesc(const QString& descName);
@@ -73,10 +73,8 @@ public:
     static QVector<qreal> getSlideStep(const QString& name, zeno::ParamType type);
     static QString nthSerialNumName(QString name);
 
-    static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
     static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
     static QVariant parseStringByType(const QString& defaultValue, zeno::ParamType type);
-    static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val, QObject *parentRef);
     static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
 
     static QString gradient2colorString(const QLinearGradient& grad);
@@ -90,6 +88,8 @@ public:
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
     static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
+    static zeno::CurvesData getCurvesFromQVar(const QVariant& qvar, bool* bValid = nullptr);
+    static QVariant getQVarFromCurves(const zeno::CurvesData& curves);
 
     static zeno::NodesData dumpNodes(const QModelIndexList& nodeIndice);
     static void reAllocIdents(const QString& targetSubgraph,
@@ -99,7 +99,7 @@ public:
                                zeno::LinksData& outLinks);
     static QStandardItemModel* genParamsModel(const std::vector<zeno::ParamPrimitive>& inputs, const std::vector<zeno::ParamPrimitive>& outputs);
     static void newCustomModel(QStandardItemModel* customParamsM, const zeno::CustomUI& customui);
-    static void parseUpdateInfo(const zeno::CustomUI& customui, zeno::ParamsUpdateInfo& infos);
+    static void udpateCustomModelIncremental(QStandardItemModel* customParamsM, const zeno::params_change_info& changes, const zeno::CustomUI& customui);
 
     static void saveProject(const QString& name);
     static QStringList stdlistToQStringList(const zeno::ObjPath& objpath);
@@ -107,6 +107,8 @@ public:
     static QStringList findSuccessorNode(GraphModel* pModel, const QString& node);
     static int getIndegree(const QModelIndex& nodeIdx);
     static PANEL_TYPE title2Type(const QString& title);
+
+    static QString getTypeNameFromRtti(zeno::ParamType type);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

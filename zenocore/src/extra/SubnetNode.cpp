@@ -6,6 +6,9 @@
 #include <zeno/utils/log.h>
 #include <zeno/core/CoreParam.h>
 #include <zeno/core/Assets.h>
+#include <zeno/utils/helper.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -38,222 +41,43 @@ ZENO_API bool SubnetNode::isAssetsNode() const {
 
 ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo& params)
 {
-    //TODO: 这里只有primitive参数类型的情况，还需要整合obj参数的情况。
-    std::set<std::string> inputs_old, outputs_old, obj_inputs_old, obj_outputs_old;
-    for (const auto& param_name : m_input_names) {
-        inputs_old.insert(param_name);
-    }
-    for (const auto& param_name : m_output_names) {
-        outputs_old.insert(param_name);
-    }
-    for (const auto& param_name : m_obj_input_names) {
-        obj_inputs_old.insert(param_name);
-    }
-    for (const auto& param_name : m_obj_output_names) {
-        obj_outputs_old.insert(param_name);
-    }
-
-    params_change_info changes;
-    std::set<std::pair<std::string, zeno::ParamType>> paramTypeChanges;
-
-    for (auto _pair : params) {
-        if (const auto& pParam = std::get_if<ParamObject>(&_pair.param))
-        {
-            const ParamObject& param = *pParam;
-            const std::string oldname = _pair.oldName;
-            const std::string newname = param.name;
-
-            auto& in_outputs = param.bInput ? m_inputObjs : m_outputObjs;
-            auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
-            auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
-            auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
-
-            if (oldname.empty()) {
-                //new added name.
-                if (in_outputs.find(newname) != in_outputs.end()) {
-                    // the new name happen to have the same name with the old name, but they are not the same param.
-                    in_outputs.erase(newname);
-                    if (param.bInput)
-                        obj_inputs_old.erase(newname);
-                    else
-                        obj_outputs_old.erase(newname);
-
-                    remove_params.insert(newname);
-                }
-
-                std::unique_ptr<ObjectParam> sparam = std::make_unique<ObjectParam>();
-                sparam->name = newname;
-                sparam->type = param.type;
-                sparam->socketType = param.socketType;
-                sparam->m_wpNode = shared_from_this();
-                in_outputs[newname] = std::move(sparam);
-
-                new_params.insert(newname);
-            }
-            else if (in_outputs.find(oldname) != in_outputs.end()) {
-                if (oldname != newname) {
-                    //exist name changed.
-                    in_outputs[newname] = std::move(in_outputs[oldname]);
-                    in_outputs.erase(oldname);
-
-                    rename_params.insert({ oldname, newname });
-                }
-                else {
-                    //name stays.
-                }
-
-                if (param.bInput)
-                    obj_inputs_old.erase(oldname);
-                else
-                    obj_outputs_old.erase(oldname);
-
-                auto& spParam = in_outputs[newname];
-                spParam->type = param.type;
-                spParam->name = newname;
-                if (param.bInput)
-                {
-                    update_param_socket_type(spParam->name, param.socketType);
-                }
-            }
-            else {
-                throw makeError<KeyError>(oldname, "the name does not exist on the node");
-            }
-        }
-        else if (const auto& pParam = std::get_if<ParamPrimitive>(&_pair.param))
-        {
-            const ParamPrimitive& param = *pParam;
-            const std::string oldname = _pair.oldName;
-            const std::string newname = param.name;
-
-            auto& in_outputs = param.bInput ? m_inputPrims : m_outputPrims;
-            auto& new_params = param.bInput ? changes.new_inputs : changes.new_outputs;
-            auto& remove_params = param.bInput ? changes.remove_inputs : changes.remove_outputs;
-            auto& rename_params = param.bInput ? changes.rename_inputs : changes.rename_outputs;
-
-            if (oldname.empty()) {
-                //new added name.
-                if (in_outputs.find(newname) != in_outputs.end()) {
-                    // the new name happen to have the same name with the old name, but they are not the same param.
-                    in_outputs.erase(newname);
-                    if (param.bInput)
-                        inputs_old.erase(newname);
-                    else
-                        outputs_old.erase(newname);
-
-                    remove_params.insert(newname);
-                }
-
-                std::unique_ptr<PrimitiveParam> sparam = std::make_unique<PrimitiveParam>();
-                sparam->defl = param.defl;
-                sparam->name = newname;
-                sparam->type = param.type;
-                sparam->control = param.control;
-                sparam->optCtrlprops = param.ctrlProps;
-                sparam->socketType = param.socketType;
-                sparam->m_wpNode = shared_from_this();
-                in_outputs[newname] = std::move(sparam);
-
-                new_params.insert(newname);
-            }
-            else if (in_outputs.find(oldname) != in_outputs.end()) {
-                if (oldname != newname) {
-                    //exist name changed.
-                    in_outputs[newname] = std::move(in_outputs[oldname]);
-                    in_outputs.erase(oldname);
-
-                    rename_params.insert({ oldname, newname });
-                }
-                else {
-                    //name stays.
-                }
-
-                if (param.bInput)
-                    inputs_old.erase(oldname);
-                else
-                    outputs_old.erase(oldname);
-
-                auto& spParam = in_outputs[newname];
-                spParam->defl = param.defl;
-                spParam->name = newname;
-                spParam->socketType = param.socketType;
-                if (param.bInput)
-                {
-                    if (param.type != spParam->type)
-                    {
-                        paramTypeChanges.insert({ newname, param.type});
-                        //update_param_type(spParam->name, param.type);
-                        //if (auto spNode = subgraph->getNode(oldname))
-                        //    spNode->update_param_type("port", param.type);
-                    }
-                    update_param_control(spParam->name, param.control);
-                    update_param_control_prop(spParam->name, param.ctrlProps.value());
-                }
-            }
-            else {
-                throw makeError<KeyError>(oldname, "the name does not exist on the node");
-            }
-        }
-    }
-
-    //the left names are the names of params which will be removed.
-    for (auto rem_name : inputs_old) {
-        m_inputPrims.erase(rem_name);
-        changes.remove_inputs.insert(rem_name);
-    }
-
-    for (auto rem_name : outputs_old) {
-        m_outputPrims.erase(rem_name);
-        changes.remove_outputs.insert(rem_name);
-    }
-    
-    for (auto rem_name : obj_inputs_old) {
-        m_inputObjs.erase(rem_name);
-        changes.remove_inputs.insert(rem_name);
-    }
-
-    for (auto rem_name : obj_outputs_old) {
-        m_outputObjs.erase(rem_name);
-        changes.remove_outputs.insert(rem_name);
-    }
-    //update the names.
-    m_input_names.clear();
-    m_output_names.clear();
-    m_obj_input_names.clear();
-    m_obj_output_names.clear();
-    changes.inputs.clear();
-    changes.outputs.clear();
-    for (const auto& [param, _] : params) {
-        if (auto paramPrim = std::get_if<ParamPrimitive>(&param))
-        {
-            if (paramPrim->bInput)
-            {
-                m_input_names.push_back(paramPrim->name);
-                changes.inputs.push_back(paramPrim->name);
-            }
-            else
-            {
-                m_output_names.push_back(paramPrim->name);
-                changes.outputs.push_back(paramPrim->name);
-            }
-        }
-        else if (auto paramPrim = std::get_if<ParamObject>(&param))
-        {
-            if (paramPrim->bInput)
-            {
-                m_obj_input_names.push_back(paramPrim->name);
-                changes.inputs.push_back(paramPrim->name);
-            }
-            else
-            {
-                m_obj_output_names.push_back(paramPrim->name);
-                changes.outputs.push_back(paramPrim->name);
-            }
-        }
-    }
+    params_change_info changes = INode::update_editparams(params);
     //update subnetnode.
     if (!subgraph->isAssets()) {
         for (auto name : changes.new_inputs) {
-            subgraph->createNode("SubInput", name);
+            std::shared_ptr<INode> newNode = subgraph->createNode("SubInput", name);
+
+            bool exist;     //subnet通过自定义参数面板创建SubInput节点时，根据实际情况添加primitive/obj类型的port端口
+            bool isprim = isPrimitiveType(true, name, exist);
+            if (isprim) {
+                zeno::ParamPrimitive primitive;
+                primitive.bInput = false;
+                primitive.name = "port";
+                primitive.socketType = Socket_Output;
+                newNode->add_output_prim_param(primitive);
+                }
+            else if (!isprim && exist) {
+                zeno::ParamObject paramObj;
+                paramObj.bInput = false;
+                paramObj.name = "port";
+                paramObj.type = Obj_Wildcard;
+                paramObj.socketType = zeno::Socket_WildCard;
+                newNode->add_output_obj_param(paramObj);
+            }
+
+            for (const auto& [param, _] : params) {     //创建Subinput时,更新Subinput的port接口类型
+                if (auto paramPrim = std::get_if<ParamPrimitive>(&param)) {
+                    if (name == paramPrim->name) {
+                        newNode->update_param_type("port", true, false, paramPrim->type);
+                        break;
+                    }
+                }
+            }
+            params_change_info changes;
+            changes.new_outputs.insert("port");
+            changes.outputs.push_back("port");
+            changes.outputs.push_back("hasValue");
+            newNode->update_layout(changes);
         }
         for (const auto& [old_name, new_name] : changes.rename_inputs) {
             subgraph->updateNodeName(old_name, new_name);
@@ -263,7 +87,30 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         }
 
         for (auto name : changes.new_outputs) {
-            subgraph->createNode("SubOutput", name);
+            std::shared_ptr<INode> newNode = subgraph->createNode("SubOutput", name);
+
+            bool exist;
+            bool isprim = isPrimitiveType(false, name, exist);
+            if (isprim) {
+                zeno::ParamPrimitive primitive;
+                primitive.bInput = true;
+                primitive.name = "port";
+                primitive.type = Param_Wildcard;
+                primitive.socketType = Socket_WildCard;
+                newNode->add_input_prim_param(primitive);
+        }
+            else if (!isprim && exist) {
+                zeno::ParamObject paramObj;
+                paramObj.bInput = true;
+                paramObj.name = "port";
+                paramObj.type = Obj_Wildcard;
+                paramObj.socketType = zeno::Socket_WildCard;
+                newNode->add_input_obj_param(paramObj);
+            }
+            params_change_info changes;
+            changes.new_inputs.insert("port");
+            changes.inputs.push_back("port");
+            newNode->update_layout(changes);
         }
         for (const auto& [old_name, new_name] : changes.rename_outputs) {
             subgraph->updateNodeName(old_name, new_name);
@@ -271,12 +118,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         for (auto name : changes.remove_outputs) {
             subgraph->removeNode(name);
         }
-
-        for (const auto& [name, type] : paramTypeChanges)
-        {
-            update_param_type(name, true, type);
         }
-    }
     return changes;
 }
 
@@ -293,7 +135,8 @@ ZENO_API void SubnetNode::apply() {
         auto iter = m_inputObjs.find(subinput_node);
         if (iter != m_inputObjs.end()) {
             //object type.
-            bool ret = subinput->set_output("port", iter->second->spObject);
+            zany spObject = iter->second.spObject;
+            bool ret = subinput->set_output("port", spObject);
             assert(ret);
             ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
             assert(ret);
@@ -302,7 +145,7 @@ ZENO_API void SubnetNode::apply() {
             //primitive type
             auto iter2 = m_inputPrims.find(subinput_node);
             if (iter2 != m_inputPrims.end()) {
-                bool ret = subinput->set_primitive_output("port", iter2->second->result);
+                bool ret = subinput->set_primitive_output("port", iter2->second.result);
                 assert(ret);
                 ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));
                 assert(ret);

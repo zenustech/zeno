@@ -470,7 +470,7 @@ virtual void apply() override {
             rest_scale = rest_scale,
             eles = proxy<space>({},eles),
             verts = proxy<space>({},verts)] ZS_LAMBDA(auto ai,const auto& pair) mutable {
-                eles.tuple(dim_c<2>,"inds",ai) = pair.reinterpret_bits<float>();
+                eles.tuple(dim_c<2>,"inds",ai) = pair.template reinterpret_bits<float>();
                 auto v0 = verts.pack(dim_c<3>,"x",pair[0]);
                 auto v1 = verts.pack(dim_c<3>,"x",pair[1]);
                 eles("r",ai) = (v0 - v1).norm() * rest_scale;
@@ -1732,32 +1732,32 @@ virtual void apply() override {
 ZENDEFNODE(MakeSurfaceConstraintTopology, {{
                             {"source"},
                             {"target"},
-                            {"string","dcd_source_xtag","px"},
-                            {"string","dcd_collider_xtag","x"},
-                            {"string","dcd_collider_pxtag","px"},
-                            {"float","search_radii","0.0"},
-                            {"float","toc","0"},
-                            {"bool","add_dcd_repulsion_force","1"},
-                            {"float","relative_stiffness","1.0"},
-                            {"float","xpbd_affiliation","1.0"},
-                            {"string","topo_type","stretch"},
-                            {"float","rest_scale","1.0"},
-                            {"string","group_name","groupName"},
-                            {"float","thickness","0.1"},
-                            {"int","substep_id","0"},
-                            {"int","nm_substeps","1"},
-                            {"int","max_constraint_pairs","1"},
-                            {"bool","make_empty_constraint","0"},
-                            {"bool","do_constraint_topological_coloring","1"},
-                            {"float","damping_coeff","0.0"},
-                            {"bool","enable_sliding","0"},
-                            {"bool","use_hard_constraint","0"},
-                            {"bool","among_same_group","1"},
-                            {"bool","among_different_groups","1"}
+                            {gParamType_String,"dcd_source_xtag","px"},
+                            {gParamType_String,"dcd_collider_xtag","x"},
+                            {gParamType_String,"dcd_collider_pxtag","px"},
+                            {gParamType_Float,"search_radii","0.0"},
+                            {gParamType_Float,"toc","0"},
+                            {gParamType_Bool,"add_dcd_repulsion_force","1"},
+                            {gParamType_Float,"relative_stiffness","1.0"},
+                            {gParamType_Float,"xpbd_affiliation","1.0"},
+                            {gParamType_String,"topo_type","stretch"},
+                            {gParamType_Float,"rest_scale","1.0"},
+                            {gParamType_String,"group_name","groupName"},
+                            {gParamType_Float,"thickness","0.1"},
+                            {gParamType_Int,"substep_id","0"},
+                            {gParamType_Int,"nm_substeps","1"},
+                            {gParamType_Int,"max_constraint_pairs","1"},
+                            {gParamType_Bool,"make_empty_constraint","0"},
+                            {gParamType_Bool,"do_constraint_topological_coloring","1"},
+                            {gParamType_Float,"damping_coeff","0.0"},
+                            {gParamType_Bool,"enable_sliding","0"},
+                            {gParamType_Bool,"use_hard_constraint","0"},
+                            {gParamType_Bool,"among_same_group","1"},
+                            {gParamType_Bool,"among_different_groups","1"}
                         },
                         {{"constraint"}},
                         { 
-                            // {"string","groupID",""},
+                            // {gParamType_String,"groupID",""},
                         },
                         {"PBD"}});
 
@@ -1828,7 +1828,7 @@ ZENDEFNODE(ZSSampleVertAttr2Constraints, {
     {
         {"source"},
         {"constraint"},
-        {"string","source_attr_name","attr"}
+        {gParamType_String,"source_attr_name","attr"}
     },
     {
         {"source"},

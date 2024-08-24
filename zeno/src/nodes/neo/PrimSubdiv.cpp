@@ -101,15 +101,15 @@ struct PrimSubdiv : INode {
 
 ZENO_DEFNODE(PrimSubdiv)({
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
         {"enum faces lines", "type", "faces"},
         {"enum catmull simple", "method", "catmull"},
-        {"int", "iterations", "1"},
-        {"bool", "interpAttrs", "1"},
+        {gParamType_Int, "iterations", "1"},
+        {gParamType_Bool, "interpAttrs", "1"},
         {"enum tris quads polys", "resFaceType", "tris"},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},

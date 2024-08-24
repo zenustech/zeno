@@ -20,7 +20,7 @@ struct PrimExtrude : INode {
         auto maskAttr = get_input2<std::string>("maskAttr");
         auto extrude = get_input2<float>("extrude");
         auto inset = get_input2<float>("inset");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         //auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
         auto delOldFaces = get_input2<bool>("delOldFaces");
@@ -66,7 +66,7 @@ struct PrimExtrude : INode {
         if (extrude != 0 || inset != 0) {
             std::string tmpNormAttr = "%%extrude2";
             primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
-            p2norms = std::move(prim2->verts.attr<vec3f>(tmpNormAttr));
+            p2norms = std::move(prim2->verts.attr<zeno::vec3f>(tmpNormAttr));
             prim2->verts.erase_attr(tmpNormAttr);
         }
 
@@ -122,7 +122,7 @@ struct PrimExtrude : INode {
                 insd -= dot(insd, norm) * norm;
                 out[i] = normalizeSafe(insd);
             }
-            //p2inset = std::move(prim2->verts.attr<vec3f>(tmpInsetAttr));
+            //p2inset = std::move(prim2->verts.attr<zeno::vec3f>(tmpInsetAttr));
             //prim2->verts.erase_attr(tmpInsetAttr);
 
             if (!(extrude != 0))
@@ -257,20 +257,20 @@ struct PrimExtrude : INode {
 
 ZENDEFNODE(PrimExtrude, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "maskAttr", ""},
-    {"float", "extrude", "0.1"},
-    {"float", "inset", "0"},
-    {"vec3f", "offset", "0,0,0"},
-    //{"string", "bridgeMaskAttrO", ""},
-    {"string", "sourceMaskAttrO", ""},
-    {"bool", "delOldFaces", "1"},
-    {"bool", "autoFindEdges", "1"},
-    {"bool", "averagedExtrude", "1"},
-    {"bool", "flipOldFaces", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "maskAttr", ""},
+    {gParamType_Float, "extrude", "0.1"},
+    {gParamType_Float, "inset", "0"},
+    {gParamType_Vec3f, "offset", "0,0,0"},
+    //{gParamType_String, "bridgeMaskAttrO", ""},
+    {gParamType_String, "sourceMaskAttrO", ""},
+    {gParamType_Bool, "delOldFaces", "1"},
+    {gParamType_Bool, "autoFindEdges", "1"},
+    {gParamType_Bool, "averagedExtrude", "1"},
+    {gParamType_Bool, "flipOldFaces", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

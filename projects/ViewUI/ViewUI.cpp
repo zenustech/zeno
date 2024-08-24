@@ -68,14 +68,14 @@ ZENDEFNODE(MakeViewCompnent,
     /*参数*/
     {
         {"enum Button Slide", "component", "Button"},
-        {"string", "name", ""},
-        {"string", "tips", ""},
-        {"string", "id", ""},
-        {"int", "length", "100"},
-        {"int", "width", "20"},
-        {"int", "layoutIndex", "0"},
-                                  {"float", "maxValue", "100.0"},
-                                  {"float", "minValue", "0"},
+        {gParamType_String, "name", ""},
+        {gParamType_String, "tips", ""},
+        {gParamType_String, "id", ""},
+        {gParamType_Int, "length", "100"},
+        {gParamType_Int, "width", "20"},
+        {gParamType_Int, "layoutIndex", "0"},
+                                  {gParamType_Float, "maxValue", "100.0"},
+                                  {gParamType_Float, "minValue", "0"},
     },
     /*类别*/
     {"ViewUI"}
@@ -160,12 +160,12 @@ ZENDEFNODE(MakeViewUILayout,
     /*参数*/
     {
         {"enum HLayout VLayout","component", "HLayout"},
-                                  {"int", "margin", "10"},
-                                  {"int", "layoutSpacing", "10"},
-                                  {"int", "spacing", "0"},
-                                  {"int", "spacingIndex", "0"},
-                                  {"int", "stretch", "0"},
-                                  {"int", "stretchIndex", "0"},
+                                  {gParamType_Int, "margin", "10"},
+                                  {gParamType_Int, "layoutSpacing", "10"},
+                                  {gParamType_Int, "spacing", "0"},
+                                  {gParamType_Int, "spacingIndex", "0"},
+                                  {gParamType_Int, "stretch", "0"},
+                                  {gParamType_Int, "stretchIndex", "0"},
     },
     /*类别*/
     {"ViewUI"}

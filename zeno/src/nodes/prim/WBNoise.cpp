@@ -136,7 +136,7 @@ struct erode_noise_perlin : INode {
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -145,7 +145,7 @@ struct erode_noise_perlin : INode {
         {
             zeno::log_error("no such data named '{}'.", vec3fAttrName);
         }
-        auto& vec3fAttr = terrain->verts.attr<vec3f>(vec3fAttrName);
+        auto& vec3fAttr = terrain->verts.attr<zeno::vec3f>(vec3fAttrName);
 
 
         terrain->attr_visit(attrName, [&](auto& arr) {
@@ -171,12 +171,12 @@ struct erode_noise_perlin : INode {
 };
 ZENDEFNODE(erode_noise_perlin,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "vec3fAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "vec3fAttrName", "pos"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "noise"},
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -536,7 +536,7 @@ struct erode_noise_simplex : INode {
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -545,7 +545,7 @@ struct erode_noise_simplex : INode {
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
         terrain->attr_visit(attrName, [&](auto& arr) {
 #pragma omp parallel for
@@ -569,12 +569,12 @@ struct erode_noise_simplex : INode {
 };
 ZENDEFNODE(erode_noise_simplex,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "posLikeAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "posLikeAttrName", "pos"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "noise"},
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -740,16 +740,16 @@ struct erode_noise_analytic_simplex_2d : INode {
 
         auto attrName = get_param<std::string>("attrName");
         if (!terrain->has_attr(attrName)) {
-            terrain->add_attr<vec3f>(attrName);
+            terrain->add_attr<zeno::vec3f>(attrName);
         }
-        auto& noise = terrain->verts.attr<vec3f>(attrName);
+        auto& noise = terrain->verts.attr<zeno::vec3f>(attrName);
 
         auto posLikeAttrName = get_input<StringObject>("posLikeAttrName")->get();
         if (!terrain->verts.has_attr(posLikeAttrName))
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
 #pragma omp parallel for
         for (int i = 0; i < terrain->verts.size(); i++)
@@ -764,12 +764,12 @@ struct erode_noise_analytic_simplex_2d : INode {
 };
 ZENDEFNODE(erode_noise_analytic_simplex_2d,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"string", "posLikeAttrName", "pos"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_String, "posLikeAttrName", "pos"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "analyticNoise"},
+            {gParamType_String, "attrName", "analyticNoise"},
         }, /* category: */ {
             "erode",
         } });
@@ -872,13 +872,13 @@ struct NoiseImageGen2 : INode {//todo::image shape should same when pixel aspect
 
     virtual void apply() override {
         auto perC = get_input2<bool>("noise per component");
-        auto image_size = get_input2<vec2i>("image size");
+        auto image_size = get_input2<zeno::vec2i>("image size");
         auto seed = get_input2<int>("seed");
         auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
         auto roughness = get_input2<float>("roughness");
         auto exponent = get_input2<float>("exponent");
-        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
-        auto amplitude = get_input2<vec4f>("amplitude");
+        auto frequency = get_input2<zeno::vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<zeno::vec4f>("amplitude");
         auto pulsenum = get_input2<int>("pulsenum");
 
         auto image = std::make_shared<PrimitiveObject>();
@@ -943,18 +943,18 @@ ZENDEFNODE(NoiseImageGen2, {
     {
         {"vec2i", "image size", "1920,1080"},
 //        {"enum sparse_convolution", "type", "sparse_convolution"},
-        {"int", "seed", "1"},
-        {"bool", "noise per component", "1"},
-        {"int", "turbulence", "1"},
-        {"float", "roughness", "0.5"},
-        {"float", "exponent", "1"},
-        {"vec2f", "spatial frequency", "10,10"},
-        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
-        {"int", "pulsenum", "1"}
+        {gParamType_Int, "seed", "1"},
+        {gParamType_Bool, "noise per component", "1"},
+        {gParamType_Int, "turbulence", "1"},
+        {gParamType_Float, "roughness", "0.5"},
+        {gParamType_Float, "exponent", "1"},
+        {gParamType_Vec2f, "spatial frequency", "10,10"},
+        {gParamType_Vec4f, "amplitude", "1.0,1.0,1.0,1.0"},
+        {gParamType_Int, "pulsenum", "1"}
         // image planes?
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1037,13 +1037,13 @@ struct NoiseImageGen : INode {
 
     virtual void apply() override {
         auto perC = get_input2<bool>("noise per component");
-        auto image_size = get_input2<vec2i>("image size");
+        auto image_size = get_input2<zeno::vec2i>("image size");
         auto seed = get_input2<int>("seed");
         auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
         auto roughness = get_input2<float>("roughness");
         auto exponent = get_input2<float>("exponent");
-        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
-        auto amplitude = get_input2<vec4f>("amplitude");
+        auto frequency = get_input2<zeno::vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<zeno::vec4f>("amplitude");
 
         auto image = std::make_shared<PrimitiveObject>();
         image->verts.resize(image_size[0] * image_size[1]);
@@ -1111,17 +1111,17 @@ ZENDEFNODE(NoiseImageGen, {
     {
         {"vec2i", "image size", "1920,1080"},
 //        {"enum sparse_convolution", "type", "sparse_convolution"},
-        {"int", "seed", "1"},
-        {"bool", "noise per component", "1"},
-        {"int", "turbulence", "1"},
-        {"float", "roughness", "0.5"},
-        {"float", "exponent", "1"},
-        {"vec2f", "spatial frequency", "10,10"},
-        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
+        {gParamType_Int, "seed", "1"},
+        {gParamType_Bool, "noise per component", "1"},
+        {gParamType_Int, "turbulence", "1"},
+        {gParamType_Float, "roughness", "0.5"},
+        {gParamType_Float, "exponent", "1"},
+        {gParamType_Vec2f, "spatial frequency", "10,10"},
+        {gParamType_Vec4f, "amplitude", "1.0,1.0,1.0,1.0"},
         // image planes?
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"deprecated"},
@@ -1139,7 +1139,7 @@ struct erode_noise_sparse_convolution : INode {
 
         if (!terrain->has_attr(attrName)) {
             if (attrType == "float3")
-                terrain->add_attr<vec3f>(attrName);
+                terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float")
                 terrain->add_attr<float>(attrName);
         }
@@ -1149,7 +1149,7 @@ struct erode_noise_sparse_convolution : INode {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
 
-        auto &pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto &pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
         terrain->attr_visit(attrName, [&](auto &arr) {
 #pragma omp parallel for
@@ -1169,18 +1169,18 @@ struct erode_noise_sparse_convolution : INode {
     }
 };
 ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
-                                                {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                                                {"string", "posLikeAttrName", "pos"},
-                                                {"int", "pulsenum", "3"},
-                                                {"int", "seed", "1"},
+                                                {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                                                {gParamType_String, "posLikeAttrName", "pos"},
+                                                {gParamType_Int, "pulsenum", "3"},
+                                                {gParamType_Int, "seed", "1"},
                                             },
                                             /* outputs: */
                                             {
-                                                "prim_2DGrid",
+                                                {gParamType_Primitive, "prim_2DGrid"},
                                             },
                                             /* params: */
                                             {
-                                                {"string", "attrName", "noise"},
+                                                {gParamType_String, "attrName", "noise"},
                                                 {"enum float float3", "attrType", "float"},
                                             },
                                             /* category: */
@@ -1327,7 +1327,7 @@ struct Noise_gabor_2d : INode {
         if (!terrain->verts.has_attr(posLikeAttrName)) {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto &pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto &pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
         
         glm::vec3 ret{};
         auto K_ = 2.5f;  // act on spectrum
@@ -1347,22 +1347,22 @@ struct Noise_gabor_2d : INode {
 };
 
 ZENDEFNODE(Noise_gabor_2d, {/* inputs: */ {
-                                      {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-                                      {"string", "posLikeAttrName", "pos"},
-                                      {"float", "a_", "0.07"},
-                                      {"float", "frequency", "0.2"},
-                                      {"float", "Orientation", "0.8"},
-                                      {"int", "impulses_per_kernel", "64"},
-                                      {"bool", "isotropic", "0"},
-                                      {"float", "offset", "15"},
+                                      {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+                                      {gParamType_String, "posLikeAttrName", "pos"},
+                                      {gParamType_Float, "a_", "0.07"},
+                                      {gParamType_Float, "frequency", "0.2"},
+                                      {gParamType_Float, "Orientation", "0.8"},
+                                      {gParamType_Int, "impulses_per_kernel", "64"},
+                                      {gParamType_Bool, "isotropic", "0"},
+                                      {gParamType_Float, "offset", "15"},
                                   },
                                   /* outputs: */
                                   {
-                                      "prim_2DGrid",
+                                      {gParamType_Primitive, "prim_2DGrid"},
                                   },
                                   /* params: */
                                   {
-                                      {"string", "attrName", "noise"},
+                                      {gParamType_String, "attrName", "noise"},
                                   },
                                   /* category: */
                                   {
@@ -1444,7 +1444,7 @@ struct erode_noise_worley : INode {
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
         auto jitter = get_input2<float>("celljitter");
         vec3f offset;
         if (!has_input("seed")) {
@@ -1453,7 +1453,7 @@ struct erode_noise_worley : INode {
             offset = vec3f(unif(gen), unif(gen), unif(gen));
         }
         else {
-            offset = get_input<NumericObject>("seed")->get<vec3f>();
+            offset = get_input<NumericObject>("seed")->get<zeno::vec3f>();
         }
 
         int fType = 0;
@@ -1471,7 +1471,7 @@ struct erode_noise_worley : INode {
         auto attrType = get_param<std::string>("attrType");
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1498,16 +1498,16 @@ struct erode_noise_worley : INode {
 };
 ZENDEFNODE(erode_noise_worley,
     { /* inputs: */ {
-        {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-        {"vec3f", "seed", "0,0,0"},
-        {"string", "posLikeAttrName", "pos"},
-        {"float", "celljitter", "1"},
+        {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+        {gParamType_Vec3f, "seed", "0,0,0"},
+        {gParamType_String, "posLikeAttrName", "pos"},
+        {gParamType_Float, "celljitter", "1"},
         {"enum Euclidean Chebyshev Manhattan", "distType", "Euclidean"},
         {"enum F1 F2-F1", "fType", "F1"},
     }, /* outputs: */ {
-        "prim_2DGrid",
+        {gParamType_Primitive, "prim_2DGrid"},
     }, /* params: */ {
-        {"string", "attrName", "noise"},
+        {gParamType_String, "attrName", "noise"},
         {"enum float float3", "attrType", "float"},
     }, /* category: */ {
         "erode",
@@ -1565,7 +1565,7 @@ struct erode_hybridMultifractal_v1 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1590,17 +1590,17 @@ struct erode_hybridMultifractal_v1 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v1,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1650,7 +1650,7 @@ struct erode_hybridMultifractal_v2 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1673,17 +1673,17 @@ struct erode_hybridMultifractal_v2 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v2,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1733,7 +1733,7 @@ struct erode_hybridMultifractal_v3 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1755,17 +1755,17 @@ struct erode_hybridMultifractal_v3 : INode {
 };
 ZENDEFNODE(erode_hybridMultifractal_v3,
     { /* inputs: */ {
-            {"", "prim_2DGrid", "", zeno::Socket_ReadOnly},
-            {"float", "H", "1.0"},
-            {"float", "lacunarity", "1.841"},
-            {"float", "octaves", "8.0"},
-            {"float", "offset", "0.8"},
-            {"float", "scale", "0.002"},
-            {"float", "persistence", "1.0"},
+            {gParamType_Primitive, "prim_2DGrid", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "H", "1.0"},
+            {gParamType_Float, "lacunarity", "1.841"},
+            {gParamType_Float, "octaves", "8.0"},
+            {gParamType_Float, "offset", "0.8"},
+            {gParamType_Float, "scale", "0.002"},
+            {gParamType_Float, "persistence", "1.0"},
         }, /* outputs: */ {
-            "prim_2DGrid",
+            {gParamType_Primitive, "prim_2DGrid"},
         }, /* params: */ {
-            {"string", "attrName", "hybrid"},
+            {gParamType_String, "attrName", "hybrid"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1811,7 +1811,7 @@ struct erode_domainWarping_v1 : INode {
         auto attrType = get_param<std::string>("attrType");
         auto& pos = prim->verts;
         if (!prim->has_attr(attrName)) {
-            if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+            if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") prim->add_attr<float>(attrName);
         }
 
@@ -1835,15 +1835,15 @@ struct erode_domainWarping_v1 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v1,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"float", "fbmH", "1.0"},
-            {"float", "fbmFrequence", "1.0"},
-            {"float", "fbmAmplitude", "1.0"},
-            {"int", "fbmNumOctaves", "4"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "fbmH", "1.0"},
+            {gParamType_Float, "fbmFrequence", "1.0"},
+            {gParamType_Float, "fbmAmplitude", "1.0"},
+            {gParamType_Int, "fbmNumOctaves", "4"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "noise"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1877,7 +1877,7 @@ struct erode_domainWarping_v2 : INode {
         auto attrType = get_param<std::string>("attrType");
         auto& pos = prim->verts;
         if (!prim->has_attr(attrName)) {
-            if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+            if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") prim->add_attr<float>(attrName);
         }
 
@@ -1901,15 +1901,15 @@ struct erode_domainWarping_v2 : INode {
 };
 ZENDEFNODE(erode_domainWarping_v2,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"float", "fbmH", "1.0"},
-            {"float", "fbmFrequence", "1.0"},
-            {"float", "fbmAmplitude", "1.0"},
-            {"int", "fbmNumOctaves", "4"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Float, "fbmH", "1.0"},
+            {gParamType_Float, "fbmFrequence", "1.0"},
+            {gParamType_Float, "fbmAmplitude", "1.0"},
+            {gParamType_Int, "fbmNumOctaves", "4"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "noise"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "noise"},
             {"enum float float3", "attrType", "float"},
         }, /* category: */ {
             "erode",
@@ -1939,10 +1939,10 @@ struct erode_voronoi : INode {
 
         auto attrName = get_param<std::string>("attrName");
         if (!prim->has_attr(attrName)) { prim->add_attr<float>(attrName); }
-        if (!prim->has_attr("minFeaturePointPos")) { prim->add_attr<vec3f>("minFeaturePointPos"); }
+        if (!prim->has_attr("minFeaturePointPos")) { prim->add_attr<zeno::vec3f>("minFeaturePointPos"); }
 
         auto& attr_voro = prim->attr<float>(attrName);
-        auto& attr_mFPP = prim->attr<vec3f>("minFeaturePointPos");
+        auto& attr_mFPP = prim->attr<zeno::vec3f>("minFeaturePointPos");
 
         auto& samplePoints = prim->verts;
         auto& featurePoints = featurePrim->verts;
@@ -1956,12 +1956,12 @@ struct erode_voronoi : INode {
 };
 ZENDEFNODE(erode_voronoi,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"", "featurePrim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "featurePrim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"string", "attrName", "voronoi"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+            {gParamType_String, "attrName", "voronoi"},
         }, /* category: */ {
             "erode",
         } });
@@ -1983,7 +1983,7 @@ void assign_clusters(std::vector<clusterPointset>& cpoints, const std::vector<cl
         cpoints[i].pointnumber = i;
         cpoints[i].clusterid = -1;
         for (const auto& c : clusters) {
-            float dist = zeno::distance(c.center, prim->verts.attr<vec3f>(attrName)[i]);
+            float dist = zeno::distance(c.center, prim->verts.attr<zeno::vec3f>(attrName)[i]);
             if (dist < smallest_dist) {
                 smallest_dist = dist;
                 cpoints[i].clusterid = c.id;
@@ -2004,7 +2004,7 @@ struct Primcluster : INode {//todo:: just for color ramp now
 
         std::default_random_engine generator(seed);
         std::uniform_real_distribution<float> distribution(0.0, 1.0);
-        auto &attr = prim->verts.attr<vec3f>(attrName);//only test with vec3f now
+        auto &attr = prim->verts.attr<zeno::vec3f>(attrName);//only test with vec3f now
         
 
         std::vector<clusterset> old_clusters;
@@ -2051,7 +2051,7 @@ struct Primcluster : INode {//todo:: just for color ramp now
             _iter++;
         }
         for(int i = 0; i < old_clusters.size(); i++){
-            prim->verts.add_attr<vec3f>(outputattr)[i] = old_clusters[i].center;
+            prim->verts.add_attr<zeno::vec3f>(outputattr)[i] = old_clusters[i].center;
         }
         
             set_output("prim", get_input("prim"));
@@ -2059,16 +2059,16 @@ struct Primcluster : INode {//todo:: just for color ramp now
 };
 ZENDEFNODE(Primcluster,
     { /* inputs: */ {
-            {"", "prim", "", zeno::Socket_ReadOnly},
-            {"int", "numberofcluster", "10"},
-            {"int", "seed", "9"},
-            {"int", "cutoff", "5"},
-            {"int", "maxiter", "20"},
-            {"string", "ControlAttr", "pos"},
-            {"string", "ClusterAttr", "cluster"},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Int, "numberofcluster", "10"},
+            {gParamType_Int, "seed", "9"},
+            {gParamType_Int, "cutoff", "5"},
+            {gParamType_Int, "maxiter", "20"},
+            {gParamType_String, "ControlAttr", "pos"},
+            {gParamType_String, "ClusterAttr", "cluster"},
         }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
         }, /* category: */ {
             "deprecated",
         } });

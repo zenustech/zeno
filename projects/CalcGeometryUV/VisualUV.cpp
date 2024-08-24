@@ -67,11 +67,11 @@ struct VisualUVObj :  zeno::INode  {
 ZENDEFNODE(VisualUVObj,
 {   /* inputs: */ 
     {
-        "prim",
-    }, 
+{gParamType_Primitive, "prim"},
+}, 
     /* outputs: */ 
     {
-        "prim"
+        {gParamType_Primitive, "prim"}
     }, 
     /* params: */ 
     {}, 

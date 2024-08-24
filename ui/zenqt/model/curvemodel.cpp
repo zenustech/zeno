@@ -2,9 +2,10 @@
 #include <QVector2D>
 #include <zeno/utils/pybjson.h>
 #include <zeno/utils/log.h>
+#include "zassert.h"
 
 
-CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent)
+CurveModel::CurveModel(const QString& id, const zeno::CurveData::Range& rg, QObject* parent)
     : QStandardItemModel(parent)
     , m_range(rg)
     , m_id(id)
@@ -12,7 +13,7 @@ CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, QObject* parent
 {
 }
 
-CurveModel::CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int columns, QObject *parent)
+CurveModel::CurveModel(const QString& id, const zeno::CurveData::Range& rg, int rows, int columns, QObject *parent)
     : QStandardItemModel(rows, columns, parent)
     , m_range(rg)
     , m_id(id)
@@ -24,47 +25,57 @@ CurveModel::~CurveModel()
 {
 }
 
-CURVE_DATA CurveModel::getItems() const {
-    CURVE_DATA dat;
+zeno::CurveData CurveModel::getItems() const {
+    zeno::CurveData dat;
     dat.rg = m_range;
     int count = rowCount();
-    dat.points.resize(count);
+    dat.cpbases.resize(count);
+    dat.cpoints.resize(count);
     for (int i = 0; i < count; i++) {
         auto pItem = item(i);
-        auto &pt = dat.points[i];
+        //auto &pt = dat.points[i];
+        CURVE_POINT pt;
         pt.point = pItem->data(ROLE_NODEPOS).value<QPointF>();
         pt.leftHandler = pItem->data(ROLE_LEFTPOS).value<QPointF>();
         pt.rightHandler = pItem->data(ROLE_RIGHTPOS).value<QPointF>();
         pt.controlType = pItem->data(ROLE_TYPE).toInt();
         pt.bLockX = pItem->data(ROLE_LOCKX).toBool();
         pt.bLockY = pItem->data(ROLE_LOCKY).toBool();
+
+        dat.cpbases[i] = pt.point.x();
+        dat.cpoints[i].controlType = (zeno::CurveData::HANDLE_TYPE)pt.controlType;
+        //TODO: dat.cpoints[i].cp_type = ?
+        dat.cpoints[i].v = pt.point.y();
+        dat.cpoints[i].left_handler = {(float)pt.leftHandler.x(), (float)pt.leftHandler.y()};
+        dat.cpoints[i].right_handler = { (float)pt.rightHandler.x(), (float)pt.rightHandler.y() };
     }
-    dat.cycleType = 0;
-    dat.key = m_id;
+    dat.cycleType = zeno::CurveData::kClamp;
     return dat;
 }
 
-void CurveModel::initItems(CURVE_DATA const &curvedat)
+void CurveModel::initItems(zeno::CurveData const& curvedat)
 {
     m_range = curvedat.rg;
-    auto &pts = curvedat.points;
-    int N = pts.size();
+    //auto &pts = curvedat.points;
+    int N = curvedat.cpbases.size();
+    ZASSERT_EXIT(curvedat.cpoints.size() == N);
     for (int i = 0; i < N; i++)
     {
-        QPointF logicPos = pts[i].point;
-        QPointF leftOffset = pts[i].leftHandler;
-        QPointF rightOffset = pts[i].rightHandler;
+        QPointF logicPos = { curvedat.cpbases[i], curvedat.cpoints[i].v };
+        QPointF leftOffset = { curvedat.cpoints[i].left_handler[0], curvedat.cpoints[i].left_handler[1] };
+        QPointF rightOffset = { curvedat.cpoints[i].right_handler[0], curvedat.cpoints[i].right_handler[1] };
+        int handleType = curvedat.cpoints[i].controlType;
 
         QStandardItem* pItem = new QStandardItem;
         pItem->setData(logicPos, ROLE_NODEPOS);
         pItem->setData(leftOffset, ROLE_LEFTPOS);
         pItem->setData(rightOffset, ROLE_RIGHTPOS);
-        pItem->setData(HDL_ASYM, ROLE_TYPE);
+        pItem->setData(handleType, ROLE_TYPE);
         appendRow(pItem);
     }
      }
 
-void CurveModel::resetRange(const CURVE_RANGE& rg)
+void CurveModel::resetRange(const zeno::CurveData::Range& rg)
 {
     //todo: map every pos from m_range to rg;
     QPolygonF polygonIn;
@@ -106,7 +117,7 @@ void CurveModel::resetRange(const CURVE_RANGE& rg)
     }
 }
 
-CURVE_RANGE CurveModel::range() const
+zeno::CurveData::Range CurveModel::range() const
 {
     return m_range;
 }
@@ -176,7 +187,7 @@ QPointF CurveModel::clipNodePos(const QModelIndex& index, const QPointF& currPos
     }
     else
     {
-        newNodePos.setY(qMin(qMax(newNodePos.y(), m_range.yFrom), m_range.yTo));
+        newNodePos.setY(qMin(qMax((float)newNodePos.y(), m_range.yFrom), m_range.yTo));
     }
     return newNodePos;
 }
@@ -404,7 +415,7 @@ bool CurveModel::setData(const QModelIndex& index, const QVariant& value, int ro
         case ROLE_TYPE:
         {
             //todo:
-            CURVE_RANGE rg = range();
+            zeno::CurveData::Range rg = range();
             qreal xscale = (rg.xTo - rg.xFrom) / 10.;
 
             HANDLE_TYPE oldType = (HANDLE_TYPE)this->data(index, ROLE_TYPE).toInt();

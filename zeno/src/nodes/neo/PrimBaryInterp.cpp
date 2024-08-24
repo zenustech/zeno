@@ -63,12 +63,12 @@ struct PrimBarycentricInterp : INode {
 
 ZENDEFNODE(PrimBarycentricInterp, {
                                       {
-                                          {"", "Particles", "", zeno::Socket_ReadOnly},
-                                          {"", "MeshPrim", "", zeno::Socket_ReadOnly},
-                                          {"string", "triIdTag", "bvh_id"},
-                                          {"string", "weightTag", "bvh_ws"},
+                                          {gParamType_Primitive, "Particles", "", zeno::Socket_ReadOnly},
+                                          {gParamType_Primitive, "MeshPrim", "", zeno::Socket_ReadOnly},
+                                          {gParamType_String, "triIdTag", "bvh_id"},
+                                          {gParamType_String, "weightTag", "bvh_ws"},
                                       },
-                                      {"Particles"},
+                                      {{gParamType_Primitive, "Particles"}},
                                       {},
                                       {"primitive"},
                                   });

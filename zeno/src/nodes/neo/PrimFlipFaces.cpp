@@ -20,8 +20,8 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim) {
             std::swap(tri[2], tri[0]);
         });
         if (prim->tris.attr_is<vec3f>("uv0")) {
-            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+            auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+            auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
             for (auto i = 0; i < prim->tris.size(); i++) {
                 std::swap(uv0[i], uv2[i]);
             }
@@ -53,8 +53,8 @@ struct PrimFlipFaces : zeno::INode {
 };
 
 ZENDEFNODE(PrimFlipFaces, {
-    {{"", "prim", "", zeno::Socket_ReadOnly}},
-    {"prim"},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });

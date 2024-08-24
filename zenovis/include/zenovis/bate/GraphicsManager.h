@@ -130,6 +130,7 @@ struct GraphicsManager {
         }
     }
 
+    //deprecated
     bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
         auto ins = graphics.insertPass();
         realtime_graphics.clear();

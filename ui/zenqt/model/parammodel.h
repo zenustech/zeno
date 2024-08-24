@@ -15,7 +15,7 @@ struct ParamItem
 {
     //BEGIN: temp cache on ui model, the actual value has been stored in m_wpParam.
     QString name;
-    zeno::ParamType type = zeno::Param_Null;
+    zeno::ParamType type = Param_Null;
     QVariant value;
     //END
     //std::weak_ptr<zeno::CoreParam> m_wpParam;
@@ -24,7 +24,7 @@ struct ParamItem
     zeno::ParamControl control = zeno::NullControl;
     zeno::SocketType connectProp = zeno::NoSocket;
     zeno::NodeDataGroup group;
-    std::optional<zeno::ControlProperty> optCtrlprops;
+    zeno::reflect::Any optCtrlprops;
     QList<QPersistentModelIndex> links;
     bool bVisible = true;
 };
@@ -45,6 +45,7 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     void getDegrees(int& inDegrees, int& outDegrees);
+    bool hasVisiblePrimParam() const;
 
     //api:
     void setNodeIdx(const QModelIndex& nodeIdx);
@@ -62,6 +63,7 @@ public:
     //temp:
     QStandardItemModel* customParamModel();
     void batchModifyParams(const zeno::ParamsUpdateInfo& params);
+    void updateUiLinksSockets(zeno::params_change_info& changes);
     void resetCustomUi(const zeno::CustomUI& customui);
 
     int getParamlinkCount(const QModelIndex& paramIdx);
@@ -78,9 +80,10 @@ private slots:
 private:
     void initParamItems();
     void initCustomUI(const zeno::CustomUI& customui);
+    void updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui); //增量更新m_customParamsM，防止zenoproppanl接收不到数据
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
-    void updateParamData(const QString& name, const QVariant& val, int role);
+    void updateParamData(const QString& name, const QVariant& val, int role, bool bInput = true);
 
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;

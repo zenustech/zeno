@@ -47,6 +47,7 @@ struct RenderEngineBate : RenderEngine {
         graphicsMan->load_objects2(objs);
     }
 
+    //deprecated
     void update() override {
         graphicsMan->load_objects(scene->objectsMan->pairsShared());
     }
@@ -74,6 +75,7 @@ struct RenderEngineBate : RenderEngine {
 //        }
         primHighlight->draw();
         if (scene->drawOptions->show_grid) {
+            glDepthMask(GL_FALSE);
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
@@ -91,6 +93,7 @@ struct RenderEngineBate : RenderEngine {
                     *scene->camera = backup;
                 }
             }
+            glDepthMask(GL_TRUE);
         }
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
@@ -99,8 +102,11 @@ struct RenderEngineBate : RenderEngine {
         if (!record) {
             fbr->unbind();
             fbr->draw_to_screen();
-            fbr->destroy_buffers();
         }
+    }
+
+    void cleanupScene() override {
+        graphicsMan->graphics.m_curr.clear();
     }
 
     void cleanupAssets() override {
@@ -116,6 +122,30 @@ struct RenderEngineBate : RenderEngine {
         hudGraphics.clear();
         primHighlight = nullptr;
         fbr = nullptr;
+    }
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        auto depth = fbr->getDepth(x, y);
+        if (depth == 0) {
+            return {};
+        }
+//        zeno::log_info("depth: {}", depth);
+
+        auto fov = scene->camera->m_fov;
+        float cz = scene->camera->inf_z_near / depth;
+        auto w = scene->camera->m_nx;
+        auto h = scene->camera->m_ny;
+//        zeno::log_info("{} {} {} {}", x, y, w, h);
+//        zeno::log_info("fov: {}", fov);
+//        zeno::log_info("w: {}, h: {}", w, h);
+        auto u = (2.0 * x / w) - 1;
+        auto v = 1 - (2.0 * y / h);
+//        zeno::log_info("u: {}, v: {}", u, v);
+        auto cy = v * tan(glm::radians(fov) / 2) * cz;
+        auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+        glm::vec4 cc = {cx, cy, -cz, 1};
+        auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
+        wc /= wc.w;
+        return glm::vec3(wc);
     }
 };
 

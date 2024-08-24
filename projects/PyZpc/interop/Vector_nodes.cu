@@ -1,6 +1,7 @@
 #include "Vector.hpp"
 #include "zensim/ZpcFunctional.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <fmt/core.h>
 #include <tuple>
 #include <variant>
@@ -27,7 +28,8 @@ struct MakeZsVector : INode {
 
 #define MAKE_VECTOR_OBJ_T(T)                                                                   \
     if (intput_elem_type == #T) {                                                              \
-        auto allocator = zs::get_memory_source(memsrc, static_cast<zs::ProcID>(intput_devid)); \
+    auto allocator =                                                           \
+        zs::get_memory_source(memsrc, static_cast<zs::ProcID>(intput_devid));  \
         vectorObj->set(zs::Vector<T, zs::ZSPmrAllocator<false>>{allocator, 0});                \
     }
 
@@ -35,7 +37,8 @@ struct MakeZsVector : INode {
         MAKE_VECTOR_OBJ_T(int)
         MAKE_VECTOR_OBJ_T(float)
         MAKE_VECTOR_OBJ_T(double)
-        std::visit([input_size](auto &vec) { vec.resize(input_size); }, vectorObj->value);
+    std::visit([input_size](auto &vec) { vec.resize(input_size); },
+               vectorObj->value);
 
         set_output("ZsVector", std::move(vectorObj));
     }
@@ -43,10 +46,10 @@ struct MakeZsVector : INode {
 
 //  memsrc, size, elem_type, dev_id, virtual
 ZENDEFNODE(MakeZsVector, {
-                             {{"int", "size", "0"},
+                             {{gParamType_Int, "size", "0"},
                               {"enum host device um", "memsrc", "device"},
-                              {"int", "dev_id", "0"},
-                              //   {"bool", "virtual", "false"},
+                              {gParamType_Int, "dev_id", "0"},
+                              //   {gParamType_Bool, "virtual", "false"},
                               {"enum float int double", "elem_type", "float"}},
                              {"ZsVector"},
                              {},
@@ -67,13 +70,16 @@ struct ReduceZsVector : INode {
                 using val_t = typename vector_t::value_type;
                 zs::Vector<val_t> res{1, zs::memsrc_e::device};
                 if (opStr == "add")
-                    zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), static_cast<val_t>(0),
+            zs::reduce(pol, std::begin(vector), std::end(vector),
+                       std::begin(res), static_cast<val_t>(0),
                                zs::plus<val_t>{});
                 else if (opStr == "max")
-                    zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), zs::limits<val_t>::min(),
+            zs::reduce(pol, std::begin(vector), std::end(vector),
+                       std::begin(res), zs::detail::deduce_numeric_min<val_t>(),
                                zs::getmax<val_t>{});
                 else
-                    zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), zs::limits<val_t>::max(),
+            zs::reduce(pol, std::begin(vector), std::end(vector),
+                       std::begin(res), zs::detail::deduce_numeric_max<val_t>(),
                                zs::getmin<val_t>{});
                 result = static_cast<float>(res.getVal());
             },
@@ -89,6 +95,12 @@ ZENDEFNODE(ReduceZsVector, {
                                {"PyZFX"},
                            });
 
+template <typename T>
+struct _is_float : std::bool_constant<zs::is_floating_point_v<T>> {};
+template <size_t N, typename T>
+struct _is_float<zeno::vec<N, T>>
+    : std::bool_constant<zs::is_floating_point_v<T>> {};
+
 struct CopyZsVectorTo : INode {
     void apply() override {
         auto vectorObj = get_input<ZsVectorObject>("ZsVector");
@@ -96,21 +108,101 @@ struct CopyZsVectorTo : INode {
         auto attr = get_input2<std::string>("attr");
         auto &vector = vectorObj->value;
 
-        float result;
         std::visit(
             [&prim, &attr](auto &vector) {
                 using vector_t = RM_CVREF_T(vector);
                 using val_t = typename vector_t::value_type;
-                if constexpr (zs::is_same_v<val_t, float> || zs::is_same_v<val_t, int>) {
-                    if (prim->size() != vector.size()) {
+          if constexpr (zs::is_same_v<val_t, float> ||
+                        zs::is_same_v<val_t, int>) {
+
+            auto process = [&prim = prim, &vector = vector,
+                            &attr](auto &primAttr) {
+              using T = RM_CVREF_T(primAttr[0]);
+              constexpr bool sameType =
+                  _is_float<T>::value == zs::is_same_v<val_t, float>;
+
+              constexpr auto nbytes = sizeof(T);
+              if (prim->size() * (nbytes / sizeof(float)) < vector.size()) {
                         fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
-                        prim->resize(vector.size());
+                if (vector.size() % (nbytes / sizeof(float)) != 0) {
+                  throw std::runtime_error(fmt::format(
+                      "vector of type {} copied to primattr [{}] "
+                      "containing {} "
+                      "elements of type {}, yet vector size is {}\n",
+                      zs::get_type_str<val_t>().asChars(), attr, prim->size(),
+                      zs::get_type_str<T>().asChars(), vector.size()));
                     }
-
-                    auto &dst = prim->attr<val_t>(attr);
-
-                    std::memcpy(dst.data(), vector.data(), sizeof(val_t) * vector.size());
+                /// @note this does not invalidate primAttr
+                prim->resize(vector.size() / (nbytes / sizeof(float)));
+              }
+              if constexpr (sameType)
+                zs::Resource::copy(
+                    zs::MemoryEntity{zs::MemoryLocation{zs::memsrc_e::host, -1},
+                                     (void *)primAttr.data()},
+                    zs::MemoryEntity{vector.memoryLocation(),
+                                     (void *)vector.data()},
+                    sizeof(val_t) * vector.size());
+              else {
+                if constexpr (zs::is_same_v<val_t, float>) {
+                  // float -> int
+                  zs::omp_exec()(
+                      zs::range(vector.size()),
+                      [&vector, primAttrAddr = (int *)primAttr.data()](
+                          size_t i) { primAttrAddr[i] = (int)vector[i]; });
+                } else {
+                  // int -> float
+                  zs::omp_exec()(
+                      zs::range(vector.size()),
+                      [&vector, primAttrAddr = (float *)primAttr.data()](
+                          size_t i) { primAttrAddr[i] = (float)vector[i]; });
                 }
+              }
+            };
+            if (attr == "pos")
+              process(prim->verts.values);
+            else
+              std::visit(process, prim->attr(attr));
+
+          } else if constexpr (zs::is_same_v<val_t, double>) {
+            auto process = [&prim = prim, &vector = vector,
+                            &attr](auto &primAttr) {
+              using T = RM_CVREF_T(primAttr[0]);
+              constexpr auto nbytes = sizeof(T);
+              if (prim->size() * (nbytes / sizeof(float)) < vector.size()) {
+                fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
+                if (vector.size() % (nbytes / sizeof(float)) != 0) {
+                  throw std::runtime_error(fmt::format(
+                      "vector of type {} copied to primattr [{}] "
+                      "containing {} "
+                      "elements of type {}, yet vector size is {}\n",
+                      zs::get_type_str<val_t>().asChars(), attr, prim->size(),
+                      zs::get_type_str<T>().asChars(), vector.size()));
+                }
+                /// @note this does not invalidate primAttr
+                prim->resize(vector.size() / (nbytes / sizeof(float)));
+              }
+
+              if constexpr (!_is_float<T>::value) {
+                // double -> int
+                zs::omp_exec()(
+                    zs::range(vector.size()),
+                    [&vector, primAttrAddr = (int *)primAttr.data()](size_t i) {
+                      primAttrAddr[i] = (int)vector[i];
+                    });
+              } else {
+                // double -> float
+                zs::omp_exec()(
+                    zs::range(vector.size()),
+                    [&vector, primAttrAddr = (float *)primAttr.data()](
+                        size_t i) { primAttrAddr[i] = (float)vector[i]; });
+                }
+            };
+
+            if (attr == "pos")
+              process(prim->verts.values);
+            else
+              std::visit(process, prim->attr(attr));
+          }
             },
             vector);
 
@@ -119,8 +211,8 @@ struct CopyZsVectorTo : INode {
 };
 
 ZENDEFNODE(CopyZsVectorTo, {
-                               {"ZsVector", "prim", {"string", "attr", "clr"}},
-                               {"prim"},
+                               {{gParamType_Unknown, "ZsVector"}, {gParamType_Primitive, "prim"}, {gParamType_String, "attr", "clr"}},
+                               {{gParamType_Primitive, "prim"}},
                                {},
                                {"PyZFX"},
                            });
@@ -132,21 +224,84 @@ struct CopyZsVectorFrom : INode {
         auto attr = get_input2<std::string>("attr");
         auto &vector = vectorObj->value;
 
-        float result;
         std::visit(
             [&prim, &attr](auto &vector) {
                 using vector_t = RM_CVREF_T(vector);
                 using val_t = typename vector_t::value_type;
-                if constexpr (zs::is_same_v<val_t, float> || zs::is_same_v<val_t, int>) {
-                    if (prim->size() != vector.size()) {
+          if constexpr (zs::is_same_v<val_t, float> ||
+                        zs::is_same_v<val_t, int>) {
+
+            auto process = [&prim = prim, &vector = vector,
+                            &attr](auto &primAttr) {
+              using T = RM_CVREF_T(primAttr[0]);
+              constexpr bool sameType =
+                  _is_float<T>::value == zs::is_same_v<val_t, float>;
+
+              constexpr auto nbytes = sizeof(T);
+              if (prim->size() * (nbytes / sizeof(float)) > vector.size()) {
                         fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
-                        vector.resize(prim->size());
+                vector.resize(prim->size() * (nbytes / sizeof(float)));
                     }
-
-                    const auto &src = prim->attr<val_t>(attr);
-
-                    std::memcpy(vector.data(), src.data(), sizeof(val_t) * vector.size());
+              if constexpr (sameType)
+                zs::Resource::copy(
+                    zs::MemoryEntity{vector.memoryLocation(),
+                                     (void *)vector.data()},
+                    zs::MemoryEntity{zs::MemoryLocation{zs::memsrc_e::host, -1},
+                                     (void *)primAttr.data()},
+                    nbytes * prim->size());
+              else {
+                if constexpr (zs::is_same_v<val_t, float>) {
+                  // float <- int
+                  zs::omp_exec()(
+                      zs::range(prim->size() * (nbytes / sizeof(float))),
+                      [&vector, primAttrAddr = (int *)primAttr.data()](
+                          size_t i) { vector[i] = (float)primAttrAddr[i]; });
+                } else {
+                  // int <- float
+                  zs::omp_exec()(
+                      zs::range(prim->size() * (nbytes / sizeof(float))),
+                      [&vector, primAttrAddr = (float *)primAttr.data()](
+                          size_t i) { vector[i] = (int)primAttrAddr[i]; });
                 }
+              }
+            };
+
+            if (attr == "pos")
+              process(prim->verts.values);
+            else
+              std::visit(process, prim->attr(attr));
+
+          } else if constexpr (zs::is_same_v<val_t, double>) {
+            auto process = [&prim = prim, &vector = vector,
+                            &attr](auto &primAttr) {
+              using T = RM_CVREF_T(primAttr[0]);
+              constexpr auto nbytes = sizeof(T);
+              if (prim->size() * (nbytes / sizeof(float)) > vector.size()) {
+                fmt::print("BEWARE! copy sizes mismatch! resize to match.\n");
+                vector.resize(prim->size() * (nbytes / sizeof(float)));
+                }
+
+              if constexpr (!_is_float<T>::value) {
+                // double <- int
+                zs::omp_exec()(
+                    zs::range(prim->size() * (nbytes / sizeof(float))),
+                    [&vector, primAttrAddr = (int *)primAttr.data()](size_t i) {
+                      vector[i] = (double)primAttrAddr[i];
+                    });
+              } else {
+                // double <- float
+                zs::omp_exec()(
+                    zs::range(prim->size() * (nbytes / sizeof(float))),
+                    [&vector, primAttrAddr = (float *)primAttr.data()](
+                        size_t i) { vector[i] = (double)primAttrAddr[i]; });
+              }
+            };
+
+            if (attr == "pos")
+              process(prim->verts.values);
+            else
+              std::visit(process, prim->attr(attr));
+          }
             },
             vector);
 
@@ -154,9 +309,10 @@ struct CopyZsVectorFrom : INode {
     }
 };
 
-ZENDEFNODE(CopyZsVectorFrom, {
-                                 {"ZsVector", "prim", {"string", "attr", "clr"}},
-                                 {"ZsVector"},
+ZENDEFNODE(CopyZsVectorFrom,
+           {
+                                 {{gParamType_Unknown, "ZsVector"}, {gParamType_Primitive, "prim"}, {gParamType_String, "attr", "clr"}},
+                                 {{gParamType_Unknown, "ZsVector"}},
                                  {},
                                  {"PyZFX"},
                              });

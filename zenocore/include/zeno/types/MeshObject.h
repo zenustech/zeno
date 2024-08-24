@@ -1,9 +1,8 @@
 #pragma once
 
-
 #include <cstddef>
 #include <memory>
-#include <zeno/zeno.h>
+#include <zeno/core/IObject.h>
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <vector>
@@ -44,3 +43,5 @@ struct MeshObject : zeno::IObjectClone<MeshObject> {
 };
 
 }
+
+

@@ -58,11 +58,11 @@ namespace zeno {
                     });
                     });
                 } else {
-                    const auto &srcs = src->attr<vec3f>(key);
+                    const auto &srcs = src->attr<zeno::vec3f>(key);
                     auto val1 = srcs[i];
                     auto val2 = srcs[j];
                     auto val = (1.0-c)*val1 + c * val2;
-                    dst->attr<vec3f>(key).emplace_back(val);
+                    dst->attr<zeno::vec3f>(key).emplace_back(val);
                 }
             }
             dst->resize(dst->attr<zeno::vec3f>("pos").size());
@@ -278,7 +278,7 @@ namespace zeno {
             auto refprim = get_input<PrimitiveObject>("prim");
             auto& ref_pos_attr = refprim->attr<zeno::vec3f>("pos");
 
-            auto outprim = std::make_unique<PrimitiveObject>();
+            auto outprim = std::make_shared<PrimitiveObject>();
             std::vector<zeno::vec3f> new_pos_attr;
             std::unordered_map<int32_t, int32_t> point_map;
             for(auto key:refprim->attr_keys())
@@ -330,9 +330,9 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {{"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"float", "distance", "0"}},
-    {{"PrimitiveObject", "outPrim"}},
-    {{"bool", "reverse", "0"}},
+    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly}, {gParamType_Vec3f, "origin", "0,0,0"}, {gParamType_Vec3f, "direction", "0,0,1"}, {gParamType_Float, "distance", "0"}},
+    {{gParamType_Primitive, "outPrim"}},
+    {{gParamType_Bool, "reverse", "0"}},
     {"primitive"},
     });
 }

@@ -96,11 +96,11 @@ namespace zeno
         MakeInstancing,
         {
             {
-                {"int", "amount", "1"},
-                {"list", "modelMatrices"},
-                {"float", "deltaTime", "0.0"},
-                {"list", "timeList"},
-                {"list", "framePrims"},
+                {gParamType_Int, "amount", "1"},
+                {gParamType_List, "modelMatrices"},
+                {gParamType_Float, "deltaTime", "0.0"},
+                {gParamType_List, "timeList"},
+                {gParamType_List, "framePrims"},
             },
             {
                 {"instancing", "inst"},
@@ -128,11 +128,11 @@ namespace zeno
         SetInstancing,
         {
             {
-                {"primitive", "prim", "", zeno::Socket_ReadOnly},
-                {"instancing", "inst", "", zeno::Socket_ReadOnly},
+                {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                {gParamType_Instance, "inst", "", zeno::Socket_ReadOnly},
             },
             {
-                {"primitive", "prim"},
+                {gParamType_Primitive, "prim"},
             },
             {},
             {
@@ -178,13 +178,13 @@ namespace zeno
         BecomeRtInst,
         {
             {
-                {"", "object", "", zeno::Socket_ReadOnly},
-                {"bool", "isInst", "1"},
-                {"string", "instID", "Inst1"},
+                {gParamType_IObject, "object", "", zeno::Socket_ReadOnly},
+                {gParamType_Bool, "isInst", "1"},
+                {gParamType_String, "instID", "Inst1"},
                 {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
             },
             {
-                {"object"},
+                {gParamType_IObject, "object"},
             },
             {},
             {
@@ -211,11 +211,11 @@ namespace zeno
         BindRtInst,
         {
             {
-                {"", "object", "", zeno::Socket_ReadOnly},
-                {"string", "instID", "Inst1"},
+                {gParamType_IObject, "object", "", zeno::Socket_ReadOnly},
+                {gParamType_String, "instID", "Inst1"},
             },
             {
-                {"object"},
+                {gParamType_IObject, "object"},
             },
             {},
             {

@@ -19,10 +19,10 @@ ZENDEFNODE(ExtractAxis, {
     {"AxisObject", "math"},
     },
     {
-    {"vec3f", "origin"},
-    {"vec3f", "axisX"},
-    {"vec3f", "axisY"},
-    {"vec3f", "axisZ"},
+    {gParamType_Vec3f, "origin"},
+    {gParamType_Vec3f, "axisX"},
+    {gParamType_Vec3f, "axisY"},
+    {gParamType_Vec3f, "axisZ"},
     },
     {},
     {"math"},
@@ -30,10 +30,10 @@ ZENDEFNODE(ExtractAxis, {
 
 struct MakeAxis : zeno::INode {
     virtual void apply() override {
-        auto origin = get_input2<vec3f>("origin");
-        auto axisX = get_input2<vec3f>("axisX");
-        auto axisY = get_input2<vec3f>("axisY");
-        auto axisZ = get_input2<vec3f>("axisZ");
+        auto origin = get_input2<zeno::vec3f>("origin");
+        auto axisX = get_input2<zeno::vec3f>("axisX");
+        auto axisY = get_input2<zeno::vec3f>("axisY");
+        auto axisZ = get_input2<zeno::vec3f>("axisZ");
         auto p = std::make_shared<AxisObject>(origin, axisX, axisY, axisZ);
         auto by = get_param<std::string>("normalize");
         if (by == "X")
@@ -48,10 +48,10 @@ struct MakeAxis : zeno::INode {
 
 ZENDEFNODE(MakeAxis, {
     {
-    {"vec3f", "origin"},
-    {"vec3f", "axisX"},
-    {"vec3f", "axisY"},
-    {"vec3f", "axisZ"},
+    {gParamType_Vec3f, "origin"},
+    {gParamType_Vec3f, "axisX"},
+    {gParamType_Vec3f, "axisY"},
+    {gParamType_Vec3f, "axisZ"},
     },
     {
     {"AxisObject", "math"},

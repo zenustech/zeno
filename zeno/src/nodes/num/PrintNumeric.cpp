@@ -43,9 +43,9 @@ struct PrintNumeric : zeno::INode {
 };
 
 ZENDEFNODE(PrintNumeric, {
-    {{"NumericObject", "value", "0", zeno::Socket_ReadOnly}},
-    {{"NumericObject", "value"}},
-    {{"string", "hint", "PrintNumeric"}},
+    {{gParamType_Unknown, "value", "0", zeno::Socket_WildCard}},
+    {{gParamType_Unknown, "value"}},
+    {{gParamType_String, "hint", "PrintNumeric"}},
     {"numeric"},
 });
 
@@ -60,7 +60,7 @@ ZENDEFNODE(PrintNumeric, {
 //ZENO_DEFOVERLOADNODE(ToVisualize, _NumericObject, typeid(zeno::NumericObject).name())({
         //{"value"},
         //{},
-        //{{"string", "path", ""}},
+        //{{gParamType_String, "path", ""}},
         //{"numeric"},
 //});
 

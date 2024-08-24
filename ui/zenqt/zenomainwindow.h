@@ -58,6 +58,7 @@ public:
     void sortRecentFile(QStringList &lst);
     bool isOnlyOptixWindow() const;
     bool isRecordByCommandLine() const;
+    void statusbarShowMessage(const std::string& text, int timeout = 0) const;
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;

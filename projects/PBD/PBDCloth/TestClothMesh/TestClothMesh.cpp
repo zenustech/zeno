@@ -37,7 +37,7 @@ struct TestClothMesh : zeno::INode
 
 ZENDEFNODE(TestClothMesh, {
     {},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"PBD"},
 });

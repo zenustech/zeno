@@ -109,9 +109,9 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
           !prim->tris.has_attr("uv2") || !with_uv)) {
         auto old_uvs_base = prim->uvs.size();
         prim->loops.add_attr<int>("uvs");
-        auto &uv0 = prim->tris.attr<vec3f>("uv0");
-        auto &uv1 = prim->tris.attr<vec3f>("uv1");
-        auto &uv2 = prim->tris.attr<vec3f>("uv2");
+        auto &uv0 = prim->tris.attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.attr<zeno::vec3f>("uv2");
         for (int i = 0; i < prim->tris.size(); i++) {
             prim->loops.attr<int>("uvs")[old_loop_base + i * 3 + 0] = old_uvs_base + i * 3 + 0;
             prim->loops.attr<int>("uvs")[old_loop_base + i * 3 + 1] = old_uvs_base + i * 3 + 1;
@@ -157,11 +157,11 @@ struct PrimitivePolygonate : INode {
 
 ZENDEFNODE(PrimitivePolygonate,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
-        {"bool", "with_uv", "1"},
+        {gParamType_Bool, "with_uv", "1"},
         }, /* category: */ {
         "primitive",
         }});

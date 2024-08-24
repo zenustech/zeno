@@ -61,7 +61,7 @@ struct ZSParticleToZSLevelSet : INode {
         auto &field = zslevelset->getBasicLevelSet()._ls;
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         for (auto &&parObjPtr : parObjPtrs) {
             auto &pars = parObjPtr->getParticles();
@@ -131,7 +131,7 @@ struct PrimitiveToZSLevelSet : INode {
                 auto block = ls._grid.block(ls._table.query(c - cellcoord));
                 auto cellno = lsv_t::grid_view_t::coord_to_cellid(cellcoord);
                 auto nodePos = ls.indexToWorld(c);
-                constexpr float eps = limits<float>::epsilon();
+                constexpr float eps = detail::deduce_numeric_epsilon<float>();
                 auto dis = zs::sqrt((x - nodePos).l2NormSqr() + eps);
 
                 atomic_min(exec_cuda, &block("sdf", cellno), dis);
@@ -160,7 +160,7 @@ struct PrimitiveToZSLevelSet : INode {
         const auto dx = get_input2<float>("dx");
         Vector<TV> xs{pos.size(), memsrc_e::device}, elePos{numEles, memsrc_e::device};
         copy(zs::mem_device, (void *)xs.data(), (void *)pos.data(), sizeof(zeno::vec3f) * pos.size());
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
         {
             if (quads.size()) {
                 Vector<zs::vec<int, 4>> inds{numEles, memsrc_e::device};
@@ -205,8 +205,8 @@ struct PrimitiveToZSLevelSet : INode {
         ls._table.reset(true);
 
         Vector<IV> mi{1, memsrc_e::device}, ma{1, memsrc_e::device};
-        mi.setVal(IV::uniform(limits<int>::max()));
-        ma.setVal(IV::uniform(limits<int>::lowest()));
+        mi.setVal(IV::uniform(detail::deduce_numeric_max<int>()));
+        ma.setVal(IV::uniform(detail::deduce_numeric_lowest<int>()));
         iterate(cudaPol, nvoxels, xs, ls, mi, ma);
         if (numEles)
             iterate(cudaPol, nvoxels, elePos, ls, mi, ma);
@@ -257,7 +257,7 @@ struct PrimitiveToZSLevelSet : INode {
 };
 
 ZENDEFNODE(PrimitiveToZSLevelSet, {
-                                      {"prim", {"float", "dx", "0.1"}, {"float", "thickness", "0.1"}},
+                                      {"prim", {gParamType_Float, "dx", "0.1"}, {gParamType_Float, "thickness", "0.1"}},
                                       {"ZSLevelSet"},
                                       {},
                                       {"Volume"},

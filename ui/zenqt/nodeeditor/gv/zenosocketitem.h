@@ -44,6 +44,9 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
     QString netLabel() const;
 
+public slots:
+    void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
+
 signals:
     void clicked(bool);
     void netLabelClicked();
@@ -60,6 +63,7 @@ protected:
 protected:
     QBrush m_brush;
     QBrush m_brushOn;
+    QColor m_color;
     bool m_bInput;
     bool m_bHovered;
 private:
@@ -85,5 +89,8 @@ public:
     ~ZenoObjSocketItem();
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0) override;
+
+private:
+    bool m_bInput;
 };
 #endif

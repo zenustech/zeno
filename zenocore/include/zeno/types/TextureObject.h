@@ -35,6 +35,8 @@ namespace zeno
         TexFilterEnum minFilter;
         TexFilterEnum magFilter;
 
+        bool blockCompression;
+
         size_t serializeSize()
         {
             size_t size{0};
@@ -49,6 +51,7 @@ namespace zeno
             size += sizeof(minFilter);
             size += sizeof(magFilter);
 
+            size += sizeof(blockCompression);
             return size;
         }
 
@@ -74,6 +77,9 @@ namespace zeno
             i += sizeof(minFilter);
             memcpy(str.data() + i, &magFilter, sizeof(magFilter));
             i += sizeof(magFilter);
+
+            memcpy(str.data() + i, &blockCompression, sizeof(blockCompression));
+            i += sizeof(blockCompression);
 
             return str;
         }
@@ -102,6 +108,9 @@ namespace zeno
 
             memcpy(&(tex.magFilter), str.data() + i, sizeof(magFilter));
             i += sizeof(magFilter);
+
+            memcpy(&(tex.blockCompression), str.data() + i, sizeof(blockCompression));
+            i += sizeof(blockCompression);
 
             return tex;
         }

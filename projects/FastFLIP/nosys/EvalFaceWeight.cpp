@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 
@@ -25,9 +25,9 @@ struct CutCellWeightEval : zeno::INode {
 
 static int defCutCellWeightEval =
     zeno::defNodeClass<CutCellWeightEval>("CutCellWeight", {/* inputs: */ {
-                                                                "LiquidSDF",
-                                                                "SolidSDF",
-                                                                "FaceWeight",
+                                                                {gParamType_VDBGrid,"LiquidSDF"},
+                                                                {gParamType_VDBGrid,"SolidSDF"},
+                                                                {gParamType_VDBGrid,"FaceWeight"},
                                                             },
                                                             /* outputs: */ {},
                                                             /* params: */

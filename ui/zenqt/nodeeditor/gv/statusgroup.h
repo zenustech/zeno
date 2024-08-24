@@ -21,6 +21,7 @@ public:
     void setChecked(STATUS_BTN btn, bool bChecked);
     void setOptions(int options);
     void setView(bool isView);
+    void updateRightButtomRadius(bool bHasRadius);
     void onZoomed();
 
 protected:

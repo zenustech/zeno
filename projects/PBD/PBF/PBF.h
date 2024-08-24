@@ -77,9 +77,9 @@ public:
         //用户自定义参数
         dt = get_input<zeno::NumericObject>("dt")->get<float>();
         pRadius = get_input<zeno::NumericObject>("particle_radius")->get<float>();
-        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<vec3f>();
-        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<vec3f>();
-        gravity = get_input<zeno::NumericObject>("gravity")->get<vec3f>();
+        bounds_min = get_input<zeno::NumericObject>("bounds_min")->get<zeno::vec3f>();
+        bounds_max = get_input<zeno::NumericObject>("bounds_max")->get<zeno::vec3f>();
+        gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
         rho0 = get_input<zeno::NumericObject>("rho0")->get<float>();
         lambdaEpsilon = get_input<zeno::NumericObject>("lambdaEpsilon")->get<float>();
         coeffDq = get_input<zeno::NumericObject>("coeffDq")->get<float>();
@@ -128,21 +128,21 @@ public:
 
 ZENDEFNODE(PBF, {   
                     {
-                        {"PrimitiveObject", "prim"},
-                        {"float", "dx", "2.51"},
-                        {"vec3f", "bounds_max", "40, 40, 40"},
-                        {"vec3f", "bounds_min", "0,0,0"},
-                        {"int", "numSubsteps", "5"},
-                        {"float", "particle_radius", "3.0"},
-                        {"float", "dt", "0.05"},
-                        {"vec3f", "gravity", "0, -10, 0"},
-                        {"float", "mass", "1.0"},
-                        {"float", "rho0", "1.0"},
-                        {"float", "coeffDq", "0.3"},
-                        {"float", "coeffK", "0.001"},
-                        {"float", "lambdaEpsilon", "100.0"}
+                        {gParamType_Primitive, "prim"},
+                        {gParamType_Float, "dx", "2.51"},
+                        {gParamType_Vec3f, "bounds_max", "40, 40, 40"},
+                        {gParamType_Vec3f, "bounds_min", "0,0,0"},
+                        {gParamType_Int, "numSubsteps", "5"},
+                        {gParamType_Float, "particle_radius", "3.0"},
+                        {gParamType_Float, "dt", "0.05"},
+                        {gParamType_Vec3f, "gravity", "0, -10, 0"},
+                        {gParamType_Float, "mass", "1.0"},
+                        {gParamType_Float, "rho0", "1.0"},
+                        {gParamType_Float, "coeffDq", "0.3"},
+                        {gParamType_Float, "coeffK", "0.001"},
+                        {gParamType_Float, "lambdaEpsilon", "100.0"}
                     },
-                    {   {"PrimitiveObject", "outPrim"} },
+                    {   {gParamType_Primitive, "outPrim"} },
                     {},
                     {"PBD"},
                 });

@@ -121,7 +121,7 @@ struct MarkSelfIntersectionRegion : zeno::INode {
 
 };
 
-ZENDEFNODE(MarkSelfIntersectionRegion, {{{"zsparticles"},{"string","markTag","markTag"}},
+ZENDEFNODE(MarkSelfIntersectionRegion, {{{"zsparticles"},{gParamType_String,"markTag","markTag"}},
                             {{"zsparticles"}},
                             {
                                 

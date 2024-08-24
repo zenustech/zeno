@@ -3,10 +3,10 @@
 // Created by zhouhang on 2022/12/14.
 //
 
-#include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
+#include <reflect/core.hpp>
 
 namespace zeno {
     struct HeatmapObject : IObjectClone<HeatmapObject> {
@@ -56,4 +56,14 @@ namespace zeno {
         float remapMin,
         float remapMax
     );
+
+    struct HeatmapData {
+        //TODO
+        std::vector<zeno::vec3f> colors;
+    };
+
+    struct ZPRIMITIVE() HeatmapData2 {
+        //TODO
+        std::vector<zeno::vec3f> colors;
+    };
 }

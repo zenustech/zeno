@@ -6,8 +6,6 @@
 #include <zeno/io/iotags.h>
 #include <format>
 
-using namespace zeno::iotags;
-
 
 namespace zenoio
 {

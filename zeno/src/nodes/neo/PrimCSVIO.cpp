@@ -67,11 +67,11 @@ struct WritePrimToCSV : INode {
 
 ZENDEFNODE(WritePrimToCSV,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::WritePathEdit},
         {"enum verts points lines tris quads loops polys", "type", "verts"},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
         }, /* category: */ {
         "primitive",

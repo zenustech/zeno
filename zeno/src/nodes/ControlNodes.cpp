@@ -6,6 +6,8 @@
 #include <zeno/extra/ContextManaged.h>
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/utils/safe_at.h>
+#include <zeno/core/GlobalVariable.h>
+
 
 namespace zeno {
 
@@ -46,9 +48,9 @@ struct BeginFor : IBeginFor {
 };
 
 ZENDEFNODE(BeginFor, {
-    {{"int", "count"}},
-    {{"int", "index"}},
-    {{"string", "For End", ""}},
+    {{gParamType_Int, "count"}},
+    {{gParamType_Int, "index"}},
+    {{gParamType_String, "For End", ""}},
     {"control"},
 });
 
@@ -89,10 +91,10 @@ struct BeginForEach : IBeginFor {
 
 ZENDEFNODE(BeginForEach, {
     {
-        {"list", "objects", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "objects", "", zeno::Socket_ReadOnly},
     },
-    {"object", {"int", "index"}},
-    {{"string", "For End", ""}},
+    {{gParamType_IObject, "object"}, {gParamType_Int, "index"}},
+    {{gParamType_String, "For End", ""}},
     {"control"},
 });
 
@@ -129,9 +131,9 @@ struct EndFor : INode {
 };
 
 ZENDEFNODE(EndFor, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_FOR, "object", "", zeno::Socket_ReadOnly}},
     {},
-    {{"string", "For Begin", ""}},
+    {{gParamType_String, "For Begin", ""}},
     {"control"},
 });
 
@@ -159,7 +161,7 @@ struct BreakFor : zeno::INode {
 };
 
 ZENDEFNODE(BreakFor, {
-    {{"", "FOR", "", zeno::Socket_ReadOnly}, {"bool", "breaks", "1"}},
+    {{gParamType_FOR, "FOR", "", zeno::Socket_ReadOnly}, {gParamType_Bool, "breaks", "1"}},
     {},
     {},
     {"control"},
@@ -229,13 +231,13 @@ struct EndForEach : INode {
 
 ZENDEFNODE(EndForEach, {
     {
-        {"", "object", "", zeno::Socket_ReadOnly},
-        {"list", "objects", "", zeno::Socket_ReadOnly},
-        {"bool", "accept", "1"}
+        {gParamType_IObject, "object", "", zeno::Socket_ReadOnly},
+        {gParamType_List, "objects", "", zeno::Socket_ReadOnly},
+        {gParamType_Bool, "accept", "1"}
     },
-    {"list", "droppedList"},
-    {{"bool", "doConcat", "0"},
-     {"string", "For Begin", ""}},
+    {{gParamType_List, "droppedList"}},
+    {{gParamType_Bool, "doConcat", "0"},
+     {gParamType_String, "For Begin", ""}},
     {"control"},
 });
 
@@ -272,8 +274,8 @@ struct BeginSubstep : INode {
 };
 
 ZENDEFNODE(BeginSubstep, {
-    {{"float", "total_dt"}, {"float", "min_scale", "0.05"}},
-    {"FOR", {"float", "elapsed_time"}},
+    {{gParamType_Float, "total_dt"}, {gParamType_Float, "min_scale", "0.05"}},
+    {{gParamType_FOR, "FOR"}, {gParamType_Float, "elapsed_time"}},
     {},
     {"control"},
 });
@@ -316,8 +318,8 @@ struct SubstepDt : zeno::INode {
 };
 
 ZENDEFNODE(SubstepDt, {
-    {{"", "FOR", "", zeno::Socket_ReadOnly}, {"float", "desired_dt", "0.04"}},
-    {{"float", "actual_dt"}, {"float", "portion"}},
+    {{gParamType_FOR, "FOR", "", zeno::Socket_ReadOnly}, {gParamType_Float, "desired_dt", "0.04"}},
+    {{gParamType_Float, "actual_dt"}, {gParamType_Float, "portion"}},
     {},
     {"control"},
 });
@@ -353,11 +355,11 @@ struct IfElse : zeno::INode {
 
 ZENDEFNODE(IfElse, {
     {
-        {"", "true", "", Socket_WildCard, NullControl, "wildCard"},
-        {"", "false", "", Socket_WildCard, NullControl, "wildCard"},
-        {"bool", "cond"},
+        {gParamType_IObject, "true", "", Socket_WildCard, NullControl, "wildCard"},
+        {gParamType_IObject, "false", "", Socket_WildCard, NullControl, "wildCard"},
+        {gParamType_Bool, "cond"},
     },
-    {{"","result","",Socket_WildCard, NullControl, "wildCard"}},
+    {{gParamType_IObject, "result","",Socket_WildCard, NullControl, "wildCard"}},
     {},
     {"control"},
 });
@@ -366,11 +368,11 @@ ZENDEFNODE(IfElse, {
 struct TimeShift : zeno::INode {
     virtual void preApply() override {
         ParamPrimitive param = get_input_prim_param("offset");
-        int offset = std::get<int>(param.defl);
+        int offset = zeno_get<int>(param.defl);
         //∏≤∏«$F
-        zvariant frame = getSession().getGlobalVarialbe("$F");
-        int currFrame = (std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", currFrame >= 0 ? currFrame : 0);
+        zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
+        float currFrame = (frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0) + offset;
+        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<float>(currFrame));
         //º∆À„…œ”Œ
         INode::preApply();
     }
@@ -381,13 +383,88 @@ struct TimeShift : zeno::INode {
 };
 ZENDEFNODE(TimeShift, {
     {
-        {"", "prim", "", Socket_ReadOnly},
-        {"int", "offset", "0", Socket_Primitve, Lineedit},
+        {gParamType_Primitive, "prim", "", Socket_ReadOnly},
+        {gParamType_Int, "offset", "0", Socket_Primitve, Lineedit},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"control"},
     });
+
+struct Duplicate : INode {
+    virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changinfo) {
+        if (param == "duplicate") {
+            ParamsUpdateInfo params;
+            auto const& duplicatePrimitiveParam = get_input_prim_param("duplicate");
+            params.push_back({ duplicatePrimitiveParam , "duplicate" });
+            auto const& inputObjParam = get_input_obj_param("input");
+            params.push_back({ inputObjParam , "input" });
+            auto const& outputObjParam = get_output_obj_param("owning");
+            params.push_back({ outputObjParam , "owning" });
+
+            int val = 0;
+            zeno_get_if(duplicatePrimitiveParam.defl, val);
+            if (val) {
+                zeno::ParamObject objOutput;
+                objOutput.bInput = false;
+                objOutput.name = "duplicateObj";
+                objOutput.socketType = zeno::Socket_Output;
+                objOutput.type = gParamType_IObject;
+                params.push_back({ objOutput , "" });
+            }
+            params_change_info changes = update_editparams(params);
+            INode::trigger_update_params(param, true, changes);
+        }
+    }
+    virtual void apply() override {
+        auto inputObj = get_input2<zeno::IObject>("input");
+
+        bool hasDuplicateOutput;
+        get_output_obj_param("duplicateObj", &hasDuplicateOutput);
+        if (hasDuplicateOutput) {
+            auto objClone = inputObj->clone();
+            objClone->update_key(get_uuid() + "_clone");
+            set_output("duplicateObj", objClone);
+        }
+        set_output("owning", inputObj->move_clone());
+    }
+};
+ZENDEFNODE(Duplicate,
+    {
+        {
+            {gParamType_IObject, "input", "", Socket_Owning},
+        },
+        {
+            {gParamType_IObject, "owning", "", Socket_Output},
+        },
+        {
+            {gParamType_Bool, "duplicate", "0"},
+        },
+        {"control"}
+    }
+)
+
+struct TestWildCard : INode {};
+
+ZENDEFNODE(TestWildCard,
+    {
+        {
+            {Param_Wildcard, "wilcard1", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {Param_Wildcard, "wilcard2", "", Socket_WildCard, Lineedit, "wildCardGroup1"},
+            {Obj_Wildcard, "wilcardObj1", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {Obj_Wildcard, "wilcardObj2", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            {gParamType_Int, "int1", "0", Socket_Primitve},
+        },
+        {
+            {Param_Wildcard, "wilcard3", "", Socket_WildCard, NullControl, "wildCardGroup1"},
+            {Obj_Wildcard, "wilcardObj3", "", Socket_WildCard, NullControl, "wildCardGroup2"},
+            //{"object", "owning", "", Socket_Output},
+        },
+        {
+        },
+        {"control"}
+    }
+)
 
 /*** Start Of - ZHXX Control Flow ***
 

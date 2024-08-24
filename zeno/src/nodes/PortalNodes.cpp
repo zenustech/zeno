@@ -26,9 +26,9 @@ struct PortalIn : zeno::INode {
 };
 
 ZENDEFNODE(PortalIn, {
-    {{"", "port", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "port", "", zeno::Socket_ReadOnly}},
     {},
-    {{"string", "name", "RenameMe!"}},
+    {{gParamType_String, "name", "RenameMe!"}},
     {"layout"},
 });
 
@@ -46,8 +46,8 @@ struct PortalOut : zeno::INode {
 
 ZENDEFNODE(PortalOut, {
     {},
-    {"port"},
-    {{"string", "name", "RenameMe!"}},
+    {{gParamType_IObject, "port"}},
+    {{gParamType_String, "name", "RenameMe!"}},
     {"layout"},
 });
 
@@ -64,8 +64,8 @@ struct Route : zeno::INode {
 };
 
 ZENDEFNODE(Route, {
-    {{"", "input", "", zeno::Socket_ReadOnly}},
-    {"output"},
+    {{gParamType_IObject, "input", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "output"}},
     {},
     {"layout"},
 });
@@ -85,10 +85,10 @@ struct Clone : zeno::INode {
 };
 
 ZENDEFNODE(Clone, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
     {
-        "newObject",
-        "origin",
+        {"object", "newObject"},
+        {"object", "origin"},
     },
     {},
     {"lifecycle"},
@@ -109,8 +109,8 @@ struct Assign : zeno::INode {
 };
 
 ZENDEFNODE(Assign, {
-    {"dst", "src"},
-    {"dst"},
+    {{"object", "dst"}, {"object", "src"} },
+    {{"object", "dst"}},
     {},
     {"lifecycle"},
 });
@@ -129,8 +129,8 @@ struct MoveClone : zeno::INode {
 };
 
 ZENDEFNODE(MoveClone, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
-    {"newObject"},
+    {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
+    {{"object", "newObject"}},
     {},
     {"lifecycle"},
 });
@@ -149,7 +149,7 @@ struct MoveDelete : zeno::INode {
 };
 
 ZENDEFNODE(MoveDelete, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
     {},
     {},
     {"lifecycle"},
@@ -170,8 +170,8 @@ struct MoveAssign : zeno::INode {
 };
 
 ZENDEFNODE(MoveAssign, {
-    {"dst", "src"},
-    {"dst"},
+    {{"object", "dst"}, {"object", "src"} },
+    {{"object", "dst"}},
     {},
     {"lifecycle"},
 });
@@ -188,11 +188,11 @@ struct SetUserData : zeno::INode {
 
 ZENDEFNODE(SetUserData, {
     {
-        {"", "object", "", zeno::Socket_ReadOnly},
-        {"", "data", "", zeno::Socket_ReadOnly},
+        {gParamType_IObject, "object", "", zeno::Socket_ReadOnly},
+        {gParamType_IObject, "data", "", zeno::Socket_ReadOnly},
     },
-    {"object"},
-    {{"string", "key", ""}},
+    {{gParamType_IObject, "object"}},
+    {{gParamType_String, "key", ""}},
     {"deprecated"},
 });
 
@@ -206,8 +206,8 @@ struct SetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(SetUserData2, {
-    {"object", {"string", "key", ""}, {"string","data",""}},
-    {"object"},
+    {{gParamType_IObject, "object"}, {gParamType_String, "key", ""}, {gParamType_String,"data",""}},
+    {{gParamType_IObject, "object"}},
     {},
     {"lifecycle"},
 });
@@ -224,9 +224,9 @@ struct GetUserData : zeno::INode {
 };
 
 ZENDEFNODE(GetUserData, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
-    {"data", {"bool", "hasValue"}},
-    {{"string", "key", ""}},
+    {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "data"}, {gParamType_Bool, "hasValue"}},
+    {{gParamType_String, "key", ""}},
     {"deprecated"},
 });
 
@@ -242,9 +242,9 @@ struct GetUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(GetUserData2, {
-                            {{"", "object", "", zeno::Socket_ReadOnly},
-                             {"string", "key", ""}},
-                            {"data", {"bool", "hasValue"}},
+                            {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly},
+                             {gParamType_String, "key", ""}},
+                            {{gParamType_IObject, "data"}, {gParamType_Bool, "hasValue"}},
                             {},
                             {"lifecycle"},
                         });
@@ -259,9 +259,9 @@ struct DelUserData : zeno::INode {
 };
 
 ZENDEFNODE(DelUserData, {
-    {{"", "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
     {},
-    {{"string", "key", ""}},
+    {{gParamType_String, "key", ""}},
     {"deprecated"},
 });
 
@@ -275,8 +275,8 @@ struct DelUserData2 : zeno::INode {
 };
 
 ZENDEFNODE(DelUserData2, {
-    {{"string", "key", ""}, {"", "object", "", zeno::Socket_ReadOnly}},
-    {"object"},
+    {{gParamType_String, "key", ""}, {gParamType_IObject, "object", "", zeno::Socket_ReadOnly}},
+    {{gParamType_IObject, "object"}},
     {},
     {"lifecycle"},
 });
@@ -292,10 +292,10 @@ struct CopyAllUserData : zeno::INode {
 
 ZENDEFNODE(CopyAllUserData, {
     {
-        {"", "dst", "", zeno::Socket_ReadOnly},
-        {"", "src", "", zeno::Socket_ReadOnly},
+        {gParamType_IObject,  "dst", "", zeno::Socket_ReadOnly},
+        {gParamType_IObject,  "src", "", zeno::Socket_ReadOnly},
     },
-    {"dst"},
+    {{gParamType_IObject, "dst"}},
     {},
     {"lifecycle"},
 });

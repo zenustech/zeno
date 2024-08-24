@@ -20,7 +20,6 @@
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/core/Session.h>
-#include <zeno/core/GlobalVariable.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/io/zsg2reader.h>
 #include <zeno/io/zenwriter.h>
@@ -61,6 +60,8 @@
 #include "DockManager.h"
 #include <zeno/io/zdareader.h>
 #include <QFileSystemWatcher> 
+#include <zeno/core/GlobalVariable.h>
+
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -1697,9 +1698,8 @@ bool ZenoMainWindow::openFile(QString filePath)
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
 
-
     //init $F globalVariable
-    zeno::getSession().overrideGlobalVariable("$F", pGraphs->timeInfo().currFrame);
+    zeno::getSession().globalVariableManager->overrideVariable(zeno::GVariable("$F", zeno::reflect::make_any<float>(pGraphs->timeInfo().currFrame)));
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
@@ -2328,6 +2328,10 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
         else {
         }
     }
+}
+
+void ZenoMainWindow::statusbarShowMessage(const std::string& text, int timeout) const {
+    m_ui->statusbar->showMessage(text.c_str(), timeout);
 }
 
 static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {

@@ -26,7 +26,7 @@ struct PBFWorld_PostSolve : zeno::INode {
 
 ZENDEFNODE(PBFWorld_PostSolve,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"}

@@ -29,8 +29,8 @@ struct SetMatrix : zeno::INode{//ZHXX: use Assign instead!
 };
 ZENDEFNODE(SetMatrix, {
     {
-    {"dst" },
-    {"src" },
+    {gParamType_Matrix4, "dst" },
+    {gParamType_Matrix4, "src" },
     },
     {},
     {},
@@ -58,11 +58,11 @@ struct MakeLocalSys : zeno::INode{
 };
 ZENDEFNODE(MakeLocalSys, {
     {
-    {"vec3f", "front", "1,0,0"},
-    {"vec3f", "up", "0,1,0"},
-    {"vec3f", "right", "0,0,1"},
+    {gParamType_Vec3f, "front", "1,0,0"},
+    {gParamType_Vec3f, "up", "0,1,0"},
+    {gParamType_Vec3f, "right", "0,0,1"},
     },
-    {{"LocalSys"}},
+    {{gParamType_Matrix4, "LocalSys"}},
     {},
     {"math"},
 });
@@ -143,7 +143,7 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
         auto matrix = pre_mat*local*matTrans*matRotate*matQuat*matScal*matShearZ*matShearY*matShearX*glm::translate(glm::vec3(offset[0], offset[1], offset[2]))*glm::inverse(local)*pre_apply;
 
         auto prim = get_input<PrimitiveObject>("prim");
-        auto outprim = std::make_unique<PrimitiveObject>(*prim);
+        auto outprim = std::make_shared<PrimitiveObject>(*prim);
 
         if (prim->has_attr("pos")) {
             auto &pos = outprim->attr<zeno::vec3f>("pos");
@@ -178,18 +178,18 @@ struct TransformPrimitive : zeno::INode {//zhxx happy node
 
 ZENDEFNODE(TransformPrimitive, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "translation", "0,0,0"},
-    {"vec3f", "eulerXYZ", "0,0,0"},
-    {"vec4f", "quatRotation", "0,0,0,1"},
-    {"vec3f", "scaling", "1,1,1"},
-    {"vec3f", "shear", "0,0,0"},
-    {"Matrix"},
-    {"preTransform"},
-    {"local"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "translation", "0,0,0"},
+    {gParamType_Vec3f, "eulerXYZ", "0,0,0"},
+    {gParamType_Vec4f, "quatRotation", "0,0,0,1"},
+    {gParamType_Vec3f, "scaling", "1,1,1"},
+    {gParamType_Vec3f, "shear", "0,0,0"},
+    {gParamType_Matrix4, "Matrix"},
+    {gParamType_Matrix4, "preTransform"},
+    {gParamType_Matrix4, "local"},
     },
     {
-    {"PrimitiveObject", "outPrim"}
+    {gParamType_Primitive, "outPrim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
@@ -382,7 +382,7 @@ struct PrimitiveTransform : zeno::INode {
         auto path = get_input2<std::string>("path");
 
         std::string pivotType = get_input2<std::string>("pivot");
-        auto pivotPos = get_input2<vec3f>("pivotPos");
+        auto pivotPos = get_input2<zeno::vec3f>("pivotPos");
 
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
             //iObject = iObject->clone();
@@ -433,29 +433,30 @@ struct PrimitiveTransform : zeno::INode {
 
 ZENDEFNODE(PrimitiveTransform, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "path"},
-        {"vec3f", "translation", "0,0,0"},
-        {"vec3f", "eulerXYZ", "0,0,0"},
-        {"vec4f", "quatRotation", "0,0,0,1"},
-        {"vec3f", "scaling", "1,1,1"},
-        {"vec3f", "shear", "0,0,0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_Clone},
+        {gParamType_String, "path"},
+        {gParamType_Vec3f, "translation", "0,0,0"},
+        {gParamType_Vec3f, "eulerXYZ", "0,0,0"},
+        {gParamType_Vec4f, "quatRotation", "0,0,0,1"},
+        {gParamType_Vec3f, "scaling", "1,1,1"},
+        {gParamType_Vec3f, "shear", "0,0,0"},
         {"enum world bboxCenter custom", "pivot", "bboxCenter"},
-        {"vec3f", "pivotPos", "0,0,0"},
-        {"vec3f", "localX", "1,0,0"},
-        {"vec3f", "localY", "0,1,0"},
-        {"Matrix"},
-        {"preTransform"},
-        {"local"},
+        {gParamType_Vec3f, "pivotPos", "0,0,0"},
+        {gParamType_Vec3f, "localX", "1,0,0"},
+        {gParamType_Vec3f, "localY", "0,1,0"},
+        {gParamType_Matrix4, "Matrix", "", zeno::Socket_ReadOnly},
+        {gParamType_Matrix4, "preTransform"},
+        {gParamType_Matrix4, "local"},
     },
     {
-        {"PrimitiveObject", "outPrim"}
+        {gParamType_Primitive, "outPrim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
     },
     {"primitive"},
+    {"Transform"},
     });
 
 }

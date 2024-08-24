@@ -181,7 +181,7 @@ ZENO_API void primRandomize(PrimitiveObject *prim, std::string attr, std::string
     std::visit([&] (auto const &randty, auto const &seedSel, auto hasDirArr) {
         using T = std::invoke_result_t<std::decay_t<decltype(randty)>, wangsrng &>;
         auto &arr = prim->verts.add_attr<T>(attr);
-        auto const &dirArr = hasDirArr ? prim->attr<vec3f>(dirAttr) : std::vector<vec3f>();
+        auto const &dirArr = hasDirArr ? prim->attr<zeno::vec3f>(dirAttr) : std::vector<vec3f>();
         parallel_for((size_t)0, arr.size(), [&] (size_t i) {
             wangsrng rng(seed, seedSel(i));
             T offs = base + randty(rng) * scale;
@@ -216,17 +216,17 @@ struct PrimRandomize : INode {
 
 ZENDEFNODE(PrimRandomize, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "attr", "tmp"},
-    {"string", "dirAttr", ""},
-    {"string", "seedAttr", ""},
-    {"float", "base", "0"},
-    {"float", "scale", "1"},
-    {"int", "seed", "-1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "attr", "tmp"},
+    {gParamType_String, "dirAttr", ""},
+    {gParamType_String, "seedAttr", ""},
+    {gParamType_Float, "base", "0"},
+    {gParamType_Float, "scale", "1"},
+    {gParamType_Int, "seed", "-1"},
     {"enum scalar01 scalar11 cube01 cube11 plane01 plane11 disk cylinder ball semiball sphere semisphere", "randType", "scalar01"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

@@ -1,11 +1,12 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+
 
 namespace zeno {
 
@@ -44,9 +45,9 @@ struct MeshToPrimitive : zeno::INode{
 
 static int defMeshToPrimitive = zeno::defNodeClass<MeshToPrimitive>("MeshToPrimitive",
     { /* inputs: */ {
-        "mesh",
+        {gParamType_Mesh, "mesh"},
     }, /* outputs: */ {
-        "prim",
+        {gParamType_Primitive, "prim"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",
@@ -86,9 +87,9 @@ struct PrimitiveToMesh : zeno::INode{
 
 static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveToMesh",
     { /* inputs: */ {
-        "prim",
-    }, /* outputs: */ {
-        "mesh",
+    {gParamType_Primitive, "prim"},
+}, /* outputs: */ {
+        {gParamType_Mesh, "mesh"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",
@@ -98,12 +99,12 @@ static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveTo
 struct ConvertTo_MeshObject_PrimitiveObject : MeshToPrimitive {
     virtual void apply() override {
         MeshToPrimitive::apply();
-        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("param"))).get());
+        //get_input<PrimitiveObject>("prim")->move_assign(zeno::reflect::any_cast<zany>(get_output_obj("param")));
     }
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).name(), typeid(PrimitiveObject).name())({
-        {"mesh", "prim"},
+        {{gParamType_Primitive, "mesh"}, {gParamType_Primitive, "prim"}},
         {},
         {},
         {"deprecated"},
@@ -113,12 +114,12 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).
 struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
     virtual void apply() override {
         PrimitiveToMesh::apply();
-        get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(get_output_obj("mesh"))).get());
+        //get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("mesh"), gParamType_IObject))).get());
     }
 };
 
 ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_MeshObject, typeid(PrimitiveObject).name(), typeid(MeshObject).name())({
-        {"prim", "mesh"},
+        {{gParamType_Primitive, "prim"}, {gParamType_Mesh, "mesh"}},
         {},
         {},
         {"deprecated"},

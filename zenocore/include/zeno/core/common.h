@@ -27,27 +27,12 @@ constexpr enum_class operator^(enum_class X, enum_class Y) {\
 
 namespace zeno {
 
-    enum ParamType
-    {
-        Param_Null,
-        Param_Bool,
-        Param_Int,
-        Param_String,
-        Param_Float,
-        Param_Vec2i,
-        Param_Vec3i,
-        Param_Vec4i,
-        Param_Vec2f,
-        Param_Vec3f,
-        Param_Vec4f,
-        Param_Prim,
-        Param_Dict,
-        Param_List,
-        //Param_Color,  //need this?
-        Param_Curve,
-        Param_Heatmap,
-        Param_SrcDst,
-    };
+    using ParamType = size_t;
+
+    #define Param_Null 0
+    #define Param_Wildcard 1
+    #define Obj_Wildcard 2
+    #define gParamType_Unknown 233
 
     enum NodeStatus : unsigned int
     {
@@ -112,10 +97,10 @@ namespace zeno {
 
     enum NodeDataGroup
     {
-        Group_InputObject,
-        Group_InputPrimitive,
-        Group_OutputObject,
-        Group_OutputPrimitive
+        Role_InputObject,
+        Role_InputPrimitive,
+        Role_OutputObject,
+        Role_OutputPrimitive
     };
 
     //ui issues:

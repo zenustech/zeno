@@ -7,9 +7,11 @@
 #include "recordvideomgr.h"
 #include "layout/docktabcontent.h"
 #include "layout/winlayoutrw.h"
-#include <viewport/transform.h>
-#include <viewport/picker.h>
 #include <zeno/core/ObjectManager.h>
+
+#include "transform.h"
+#include "picker.h"
+#include "zenovis/Camera.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -26,6 +28,7 @@ public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
     void testCleanUp();
+    void cleanUpView();
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
@@ -40,7 +43,7 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
-    void cameraLookTo(int dir);
+    void cameraLookTo(zenovis::CameraLookToDir dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);

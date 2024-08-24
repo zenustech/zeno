@@ -152,7 +152,7 @@ struct ZSGridAssignAttribute : INode {
 };
 
 ZENDEFNODE(ZSGridAssignAttribute, {/* inputs: */
-                                   {"Grid", "SourceGrid", {"string", "Attribute", ""}, {"bool", "Staggered", "0"}},
+                                   {"Grid", "SourceGrid", {gParamType_String, "Attribute", ""}, {gParamType_Bool, "Staggered", "0"}},
                                    /* outputs: */
                                    {"Grid"},
                                    /* params: */
@@ -211,7 +211,7 @@ struct ZSNavierStokesDt : INode {
 };
 
 ZENDEFNODE(ZSNavierStokesDt, {/* inputs: */
-                              {"NSGrid", {"float", "Density", "1.0"}, {"float", "Viscosity", "0.0"}},
+                              {"NSGrid", {gParamType_Float, "Density", "1.0"}, {gParamType_Float, "Viscosity", "0.0"}},
                               /* outputs: */
                               {"dt"},
                               /* params: */
@@ -631,11 +631,11 @@ struct ZSNSAdvectDiffuse : INode {
 ZENDEFNODE(ZSNSAdvectDiffuse, {/* inputs: */
                                {"NSGrid",
                                 "dt",
-                                {"float", "Density", "1.0"},
-                                {"float", "Viscosity", "0.0"},
+                                {gParamType_Float, "Density", "1.0"},
+                                {gParamType_Float, "Viscosity", "0.0"},
                                 {"enum Stencil Semi-Lagrangian MacCormack BFECC", "Scheme", "MacCormack"},
-                                {"bool", "Reflection", "0"},
-                                {"vec3f", "WindVelocity", "0, 0, 0"}},
+                                {gParamType_Bool, "Reflection", "0"},
+                                {gParamType_Vec3f, "WindVelocity", "0, 0, 0"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */
@@ -672,7 +672,7 @@ struct ZSNSExternalForce : INode {
 };
 
 ZENDEFNODE(ZSNSExternalForce, {/* inputs: */
-                               {"NSGrid", "dt", {"string", "ForceAttribute", ""}, {"vec3f", "Gravity", "0, 0, 0"}},
+                               {"NSGrid", "dt", {gParamType_String, "ForceAttribute", ""}, {gParamType_Vec3f, "Gravity", "0, 0, 0"}},
                                /* outputs: */
                                {"NSGrid"},
                                /* params: */

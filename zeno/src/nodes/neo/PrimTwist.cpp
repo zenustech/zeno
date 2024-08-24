@@ -25,11 +25,11 @@ struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and Primitiv
         limitMin -= 0.5f;
         limitMax -= 0.5f;
 
-        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
-        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<vec3f>() : vec3f(0, 1, 0);
+        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>() : vec3f(0, 1, 0);
 
         auto orb = has_input("tangent")
-            ? orthonormal(direction, get_input<zeno::NumericObject>("tangent")->get<vec3f>())
+            ? orthonormal(direction, get_input<zeno::NumericObject>("tangent")->get<zeno::vec3f>())
             : orthonormal(direction);
         direction = orb.normal;
         auto tangent = orb.tangent;
@@ -78,16 +78,16 @@ struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and Primitiv
 
 ZENDEFNODE(PrimTwist, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "origin", "0,0,0"},
-    {"vec3f", "direction", "0,1,0"},
-    {"tangent"},
-    {"float", "angle", "45"},
-    {"float", "limitMin", "0"},
-    {"float", "limitMax", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "origin", "0,0,0"},
+    {gParamType_Vec3f, "direction", "0,1,0"},
+    {gParamType_Vec3f, "tangent"},
+    {gParamType_Float, "angle", "45"},
+    {gParamType_Float, "limitMin", "0"},
+    {gParamType_Float, "limitMax", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

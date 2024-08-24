@@ -7,11 +7,10 @@
 #include <memory>
 #include "common.h"
 #include <zeno/utils/api.h>
+#include <zeno/core/Graph.h>
 
 namespace zeno {
-    struct INode;
-    struct IParam;
-    struct Graph;
+    //struct Graph;
 
     struct ReferManager
     {

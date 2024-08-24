@@ -97,15 +97,15 @@ struct VisPrimAttrValue : INode {
 
 ZENO_DEFNODE(VisPrimAttrValue)({
     {
-        {"prim"},
-        {"string", "attrName", "pos"},
-        {"float", "scale", "0.05"},
-        {"int", "precision", "3"},
-        {"bool", "includeSelf", "0"},
-        {"bool", "dotDecoration", "1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "attrName", "pos"},
+        {gParamType_Float, "scale", "0.05"},
+        {gParamType_Int, "precision", "3"},
+        {gParamType_Bool, "includeSelf", "0"},
+        {gParamType_Bool, "dotDecoration", "1"},
     },
     {
-        {"outPrim"},
+        {gParamType_Primitive, "outPrim"},
     },
     {},
     {"visualize"},

@@ -696,7 +696,7 @@ struct GraphicsManager {
                 if (!path.empty()) {
                     if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path
                         && OptixUtil::sky_tex.value() != OptixUtil::default_sky_tex ) {
-                        OptixUtil::removeTexture(OptixUtil::sky_tex.value());
+                        OptixUtil::removeTexture( {OptixUtil::sky_tex.value(), false} );
                     }
 
                     OptixUtil::sky_tex = path;
@@ -964,6 +964,48 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
+    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+        glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
+        if (posWS == glm::vec3()) {
+            return {};
+        }
+        auto const &cam = *scene->camera;
+        posWS += cam.m_pos;
+        return posWS;
+    }
+
+    std::map<std::string, int> objsType;
+    void setUpdateLightCameraMaterialOnly(std::map<std::string, std::shared_ptr<zeno::IObject>>& addObjs, std::vector<std::string>& removeList) {
+        if (!addObjs.empty() || !removeList.empty()) {
+            int lightCameraCount = 0, materialCount = 0, normalCount = 0;
+            for (auto& key : removeList) {
+                int type = objsType[key];
+                type == 0 ? lightCameraCount++ : type == 1 ? materialCount++ : normalCount++;
+            }
+            for (auto [key, spObj] : addObjs) {
+                if (spObj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<zeno::CameraObject>(spObj)) {
+                    objsType[key] = 0;
+                    lightCameraCount++;
+                }
+                else if (std::dynamic_pointer_cast<zeno::MaterialObject>(spObj)) {
+                    objsType[key] = 1;
+                    materialCount++;
+                }
+                else {
+                    objsType[key] = 2;
+                    normalCount++;
+                }
+            }
+            for (auto& key : removeList) {
+                objsType.erase(key);
+            }
+            lightNeedUpdate = lightCameraCount > 0 || normalCount > 0;
+            scene->drawOptions->needRefresh = lightCameraCount > 0 || normalCount > 0;
+            matNeedUpdate = materialCount > 0 || normalCount > 0;
+            meshNeedUpdate = normalCount > 0;
+            scene->drawOptions->updateMatlOnly = !lightNeedUpdate && !meshNeedUpdate;
+        }
+    }
 
     auto setupState() {
         return std::tuple{
@@ -992,12 +1034,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void load_objects(const zeno::RenderObjsInfo& objs) override {
 
         //light update condition
-        bool bUpdateLight = !objs.empty();
-        if (bUpdateLight) {
-            graphicsMan->load_light_objects(objs.lightObjs);
-            lightNeedUpdate = true;
-            scene->drawOptions->needRefresh = true;
-        }
+        graphicsMan->load_light_objects(objs.lightObjs);
 
         //增删对象无法沿用viewport逻辑，否则always模式移动数值滑块会有拖影
         graphicsMan->objOrder.clear();
@@ -1024,11 +1061,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         for (auto& key : removeList)
             graphicsMan->remove_object(key);
 
-        bool bUpdateMesh = !objs.empty();
-        if (bUpdateMesh) {
-            meshNeedUpdate = matNeedUpdate = true;
-        }
-
+        //设置仅更新灯光相机材质
+        setUpdateLightCameraMaterialOnly(addObjs, removeList);
 
         if (!objs.allObjects.empty()) {
             std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> vecObjs;
@@ -1039,6 +1073,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
     }
 
+    //deprecated
     void update() override {
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
@@ -1070,7 +1105,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairsShared());
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_lodup, cam.m_lodfront, cam.m_lodcenter, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
 #define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
@@ -1203,9 +1238,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate || camNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating camera");
-
-            auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
-            auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+            auto lodright = cam.m_rotation * glm::vec3(1, 0, 0);
+            auto lodup = cam.m_rotation * glm::vec3(0, 1, 0);
+            auto lodfront = cam.m_rotation * glm::vec3(0, 0, -1);
 
             std::random_device rd;
             std::mt19937 gen(rd());
@@ -1214,7 +1249,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::set_outside_random_number(dis(gen));
         
             xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
-                                        glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                        glm::value_ptr(lodfront), glm::value_ptr(cam.m_pos),
                                         cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
             xinxinoptix::set_physical_camera_param(
                 cam.zOptixCameraSettingInfo.aperture,
@@ -1301,14 +1336,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             // Auto unload unused texure
             {
-                std::set<std::string> realNeedTexPaths;
+                std::set<OptixUtil::TexKey> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (mtldet->parameters.find("vol") != std::string::npos
                         || cachedMeshesMaterials.count(mtldet->mtlidkey) > 0
                         || cachedSphereMaterials.count(mtldet->mtlidkey) > 0) 
                     {
                         for(auto& tex: mtldet->tex2Ds) {
-                            realNeedTexPaths.insert(tex->path);
+                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
                         }
                     }
                     
@@ -1319,27 +1354,29 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     //     realNeedTexPaths.emplace_back(ld.profileKey);
                     // }
                     if (ld.textureKey.size()) {
-                        realNeedTexPaths.insert(ld.textureKey);
+                        realNeedTexPaths.insert( {ld.textureKey, false});
                     }
                 }
-                std::vector<std::string> needToRemoveTexPaths;
-                for(auto const &[tex, _]: OptixUtil::g_tex) {
-                    if (realNeedTexPaths.count(tex) > 0) {
+                std::vector<OptixUtil::TexKey> needToRemoveTexPaths;
+                for(auto const &[key, _]: OptixUtil::tex_lut) {
+
+                    if (realNeedTexPaths.count(key) > 0) {
                         continue; 
                     }
-                    if (OptixUtil::sky_tex.has_value() && tex == OptixUtil::sky_tex.value()) {
+                    if (OptixUtil::sky_tex.has_value() && key.path == OptixUtil::sky_tex.value()) {
                         continue;
                     }
-                    if (tex == OptixUtil::default_sky_tex) {
+                    if (key.path == OptixUtil::default_sky_tex) {
                         continue;
                     }
-                    needToRemoveTexPaths.emplace_back(tex);
+                    needToRemoveTexPaths.emplace_back(key);
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
-                for (const auto& realNeedTexPath: realNeedTexPaths) {
-                    OptixUtil::addTexture(realNeedTexPath);
+                for (const auto& realNeedTexKey: realNeedTexPaths) {
+
+                    OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
             }
             }
             for(auto const &[matkey, mtldet] : matMap)
@@ -1397,12 +1434,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     callable.append(shadtpl2.second);
                     //std::cout<<callable<<std::endl;
 
-                    std::vector<std::string> shaderTex;
-                    for(auto tex:mtldet->tex2Ds)
-                    {
-                        shaderTex.emplace_back(tex->path);
-                    }
-
                     ShaderPrepared shaderP; 
 
                         shaderP.callable = callable;
@@ -1410,7 +1441,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.parameters = mtldet->parameters;
 
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.tex_names = shaderTex;
+                        for(auto tex:mtldet->tex2Ds)
+                        {
+                            shaderP.tex_keys.push_back( {tex->path, tex->blockCompression} );
+                        }
 
                     if (isVol) {
                         
@@ -1561,6 +1595,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     ~RenderEngineOptx() override {
         xinxinoptix::optixDestroy();
+    }
+
+    void cleanupScene() override {
+        graphicsMan->objOrder.clear();
+        std::map<std::string, std::shared_ptr<zeno::IObject>> allviews;
+        zeno::getSession().objsMan->export_all_view_objs(allviews);
+        for (auto& [key, obj]: allviews) {
+            graphicsMan->remove_object(key);
+        }
+
+        lightNeedUpdate = true;
+        meshNeedUpdate = true;
+        matNeedUpdate = true;
+        scene->drawOptions->needRefresh = true;
     }
 
     void cleanupAssets() override {

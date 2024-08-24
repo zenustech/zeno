@@ -1,7 +1,12 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
-#include <zeno/core/GlobalVariable.h>
 #include <zeno/utils/logger.h>
+#include <zeno/core/GlobalVariable.h>
+#include "reflect/core.hpp"
+#include "reflect/type.hpp"
+#include "reflect/container/any"
+#include "zeno_types/reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -49,15 +54,15 @@ ZENO_API void GlobalState::clearState() {
     log_debug("entering session id={}", sessionid);
 }
 
-ZENO_API int GlobalState::getFrameId() const {
-    auto frame = getSession().getGlobalVarialbe("$F");
-    return std::holds_alternative<int>(frame) ? std::get<int>(frame) : 0;
+ZENO_API float GlobalState::getFrameId() const {
+    zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
+    return frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0;
     //return frameid;
 }
 
-ZENO_API void GlobalState::updateFrameId(int frame) {
+ZENO_API void GlobalState::updateFrameId(float frame) {
     //todo: mutex
-    getSession().updateGlobalVariable("$F", frame);
+    getSession().globalVariableManager->updateVariable(GVariable("$F", zeno::reflect::make_any<float>(frame)));
     //frameid = frame;
 }
 

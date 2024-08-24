@@ -5,6 +5,8 @@
 #include "util/curveutil.h"
 #include <zeno/utils/log.h>
 #include "panel/zenoproppanel.h"
+#include "zassert.h"
+#include <zeno/core/IObject.h>
 
 
 ZVecEditor::ZVecEditor(const QVariant& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent)
@@ -100,16 +102,67 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     return QWidget::eventFilter(watched, event);
 }
 
-void ZVecEditor::initUI(const QVariant &vec) {
+void ZVecEditor::initUI(const QVariant &varvec) {
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
     pLayout->setSpacing(5);
-    int n = m_deflSize;
-    if (vec.canConvert<UI_VECTYPE>())
-        n = vec.value<UI_VECTYPE>().size();
-    else if (vec.canConvert<UI_VECSTRING>())
-        n = vec.value<UI_VECSTRING>().size();
 
+    QStringList vecLiteral;
+    int n = m_deflSize;
+    if (varvec.canConvert<UI_VECTYPE>()) {
+        const auto& vec = varvec.value<UI_VECTYPE>();
+        n = vec.size();
+        for (auto item : vec) {
+            vecLiteral.append(QString::number(item));
+        }
+    }
+    else if (varvec.canConvert<UI_VECSTRING>()) {
+        const auto& vec = varvec.value<UI_VECSTRING>();
+        n = vec.size();
+        for (auto item : vec) {
+            vecLiteral.append(item);
+        }
+    }
+    else if (varvec.canConvert<zeno::reflect::Any>()) {
+        const auto& anyVal = varvec.value<zeno::reflect::Any>();
+        if (zeno::reflect::get_type<zeno::vec3f>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec3f>(anyVal);
+            vecLiteral = QStringList({QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2])});
+        }
+        else if (zeno::reflect::get_type<zeno::vec3i>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec3i>(anyVal);
+            vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec3s>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec3s>(anyVal);
+            vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]), QString::fromStdString(vec[2]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec2f>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec2f>(anyVal);
+            vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec2i>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec2i>(anyVal);
+            vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec2s>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec2s>(anyVal);
+            vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec4f>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec4f>(anyVal);
+            vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]), QString::number(vec[3]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec4i>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec4i>(anyVal);
+            vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]), QString::number(vec[3]) });
+        }
+        else if (zeno::reflect::get_type<zeno::vec4s>() == anyVal.type()) {
+            const auto& vec = zeno::reflect::any_cast<zeno::vec4s>(anyVal);
+            vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]), QString::fromStdString(vec[2]), QString::fromStdString(vec[3]) });
+        }
+    }
+    ZASSERT_EXIT(vecLiteral.size() == n);
     m_editors.resize(n);
     for (int i = 0; i < m_editors.size(); i++)
     {
@@ -118,16 +171,10 @@ void ZVecEditor::initUI(const QVariant &vec) {
             m_editors[i]->installEventFilter(this);
         }
 
-        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::Param_Float : zeno::Param_Int));
+        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::types::gParamType_Float : zeno::types::gParamType_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
-        if (m_nodeIdx.isValid())
-            m_editors[i]->setNodeIdx(m_nodeIdx);
-
-        if (vec.canConvert<UI_VECTYPE>())
-            setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
-        else if (vec.canConvert<UI_VECSTRING>())
-            setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
+        setText(vecLiteral.at(i), m_editors[i]);
 
         pLayout->addWidget(m_editors[i]);
         connect(m_editors[i], &ZLineEdit::editingFinished, this, &ZVecEditor::editingFinished);

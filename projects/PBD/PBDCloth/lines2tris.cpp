@@ -55,7 +55,7 @@ public:
 
 ZENDEFNODE(lines2tris, {// inputs:
                  {
-                    {"PrimitiveObject", "prim"},
+                    {gParamType_Primitive, "prim"},
                 },
                  // outputs:
                  {"outPrim"},

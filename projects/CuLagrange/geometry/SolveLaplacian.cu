@@ -132,7 +132,7 @@ ZENDEFNODE(ZSSolveLaplacian, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
-                                        {"string","tag","T"},{"string","btag","btag"},{"float","accuracy","1e-6"},{"int","degree","1"}
+                                        {gParamType_String,"tag","T"},{gParamType_String,"btag","btag"},{gParamType_Float,"accuracy","1e-6"},{gParamType_Int,"degree","1"}
                                     },
                                     {"ZSGeometry"}
 });
@@ -480,7 +480,7 @@ ZENDEFNODE(ZSSolveBiHarmonicEqua, {
                                     {"ZSParticles"},
                                     {"ZSParticles"},
                                     {
-                                        {"string","tag","T"}
+                                        {gParamType_String,"tag","T"}
                                     },
                                     {"ZSGeometry"}
 });

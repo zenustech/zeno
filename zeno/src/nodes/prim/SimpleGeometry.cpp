@@ -23,6 +23,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <zeno/utils/reflectutil.h>
+
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -72,18 +74,7 @@ namespace {
 
 struct CreateCube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::dynamic_pointer_cast<zeno::PrimitiveObject>(get_output_obj("prim"));
-        if (prim) {
-            prim->verts.clear();
-            prim->verts.clear_attrs();
-            prim->tris.clear();
-            prim->tris.clear_attrs();
-            prim->polys.clear();
-            prim->loops.clear();
-        }
-        else {
-            prim = std::make_shared<zeno::PrimitiveObject>();
-        }
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
 
         auto size = get_input2<float>("size");
         auto div_w = get_input2<int>("div_w");
@@ -102,9 +93,9 @@ struct CreateCube : zeno::INode {
         auto &loops = prim->loops;
 
         std::vector<zeno::vec3f> dummy;
-        auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
-        auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
-        auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
+        auto &uv1 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv0") : dummy;
+        auto &uv2 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv1") : dummy;
+        auto &uv3 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv2") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -472,20 +463,20 @@ struct CreateCube : zeno::INode {
 
 ZENDEFNODE(CreateCube, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"bool", "isFlipFace", "0"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Bool, "isFlipFace", "0"},
 
-        {"int", "div_w", "2", Socket_Primitve, Lineedit},
-        {"int", "div_h", "2", Socket_Primitve, Lineedit},
-        {"int", "div_d", "2", Socket_Primitve, Lineedit},
-        {"float", "size", "1", Socket_Primitve, Lineedit},
-        {"bool", "quads", "0", Socket_Primitve, Lineedit},
+        {gParamType_Int, "div_w", "2", Socket_Primitve, Lineedit},
+        {gParamType_Int, "div_h", "2", Socket_Primitve, Lineedit},
+        {gParamType_Int, "div_d", "2", Socket_Primitve, Lineedit},
+        {gParamType_Float, "size", "1", Socket_Primitve, Lineedit},
+        {gParamType_Bool, "quads", "0", Socket_Primitve, Lineedit},
     },
-    {{"prim", "prim"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
     {"Cube"},
@@ -543,16 +534,16 @@ struct CreateDisk : zeno::INode {
 
 ZENDEFNODE(CreateDisk, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"bool", "isFlipFace", "0"},
-        {"float", "radius", "1"},
-        {"int", "divisions", "32"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Bool, "isFlipFace", "0"},
+        {gParamType_Float, "radius", "1"},
+        {gParamType_Int, "divisions", "32"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -705,18 +696,18 @@ struct CreatePlane : zeno::INode {
 
 ZENDEFNODE(CreatePlane, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"bool", "isFlipFace", "0"},
-        {"float", "size", "1"},
-        {"int", "rows", "1"},
-        {"int", "columns", "1"},
-        {"bool", "quads", "0"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Bool, "isFlipFace", "0"},
+        {gParamType_Float, "size", "1"},
+        {gParamType_Int, "rows", "1"},
+        {gParamType_Int, "columns", "1"},
+        {gParamType_Bool, "quads", "0"},
     },
-    {"prim"},
+   { {gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -947,19 +938,19 @@ struct CreateTube : zeno::INode {
 
 ZENDEFNODE(CreateTube, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"bool", "isFlipFace", "0"},
-        {"float", "radius1", "1"},
-        {"float", "radius2", "1"},
-        {"float", "height", "2"},
-        {"int", "rows", "3"},
-        {"int", "columns", "12"}
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Bool, "isFlipFace", "0"},
+        {gParamType_Float, "radius1", "1"},
+        {gParamType_Float, "radius2", "1"},
+        {gParamType_Float, "height", "2"},
+        {gParamType_Int, "rows", "3"},
+        {gParamType_Int, "columns", "12"}
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -980,7 +971,7 @@ struct CreateTorus : zeno::INode {
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         prim->verts.resize(majorSegment * minorSegment);
-        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for (auto j = 0; j < minorSegment; j++) {
             float theta = M_PI * 2.0 * j / minorSegment - M_PI;
             float y = sin(theta) * minorRadius;
@@ -1067,17 +1058,17 @@ struct CreateTorus : zeno::INode {
 
 ZENDEFNODE(CreateTorus, {
 {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"float", "MajorRadius", "1"},
-        {"float", "MinorRadius", "0.25"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"int", "MajorSegment", "48"},
-        {"int", "MinorSegment", "12"},
-        {"bool", "quads", "0"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Float, "MajorRadius", "1"},
+        {gParamType_Float, "MinorRadius", "0.25"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Int, "MajorSegment", "48"},
+        {gParamType_Int, "MinorSegment", "12"},
+        {gParamType_Bool, "quads", "0"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1312,19 +1303,19 @@ struct CreateSphere : zeno::INode {
 
 ZENDEFNODE(CreateSphere, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"bool", "hasNormal", "0"},
-        {"bool", "hasVertUV", "0"},
-        {"bool", "isFlipFace", "0"},
-        {"int", "rows", "12"},
-        {"int", "columns", "24"},
-        {"bool", "quads", "0"},
-        {"bool", "SphereRT", "0"}
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Float, "radius", "1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Bool, "hasNormal", "0"},
+        {gParamType_Bool, "hasVertUV", "0"},
+        {gParamType_Bool, "isFlipFace", "0"},
+        {gParamType_Int, "rows", "12"},
+        {gParamType_Int, "columns", "24"},
+        {gParamType_Bool, "quads", "0"},
+        {gParamType_Bool, "SphereRT", "0"}
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1362,13 +1353,13 @@ struct CreateCone : zeno::INode {
 
 ZENDEFNODE(CreateCone, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"float", "height", "2"},
-        {"int", "lons", "32"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Float, "radius", "1"},
+        {gParamType_Float, "height", "2"},
+        {gParamType_Int, "lons", "32"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -1419,13 +1410,13 @@ struct CreateCylinder : zeno::INode {
 
 ZENDEFNODE(CreateCylinder, {
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scaleSize", "1, 1, 1"},
-        {"float", "radius", "1"},
-        {"float", "height", "2"},
-        {"int", "lons", "32"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scaleSize", "1, 1, 1"},
+        {gParamType_Float, "radius", "1"},
+        {gParamType_Float, "height", "2"},
+        {gParamType_Int, "lons", "32"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });

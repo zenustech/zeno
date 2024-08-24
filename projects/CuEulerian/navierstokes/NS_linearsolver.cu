@@ -198,7 +198,7 @@ struct ZSNSPressureProject : INode {
 
                         auto stclSum = tile.shfl(stclVal, 1);
                         auto cutSum = tile.shfl(cutVal, 1);
-                        cutSum = zs::max(cutSum, zs::limits<float>::epsilon() * 10);
+                        cutSum = zs::max(cutSum, zs::detail::deduce_numeric_epsilon<float>() * 10);
                         if (lane_id == 0) {
                             spgv(pOffset, blockno, 0) = stclVal + sor * (stclSum * dx - div * rho) / (cutSum * dx);
                         }
@@ -528,7 +528,7 @@ struct ZSNSPressureProject : INode {
                             cut_z[1] = cut2shmem[idx + 1];
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
-                            cut_sum = zs::max(cut_sum, zs::limits<float>::epsilon() * 10);
+                            cut_sum = zs::max(cut_sum, zs::detail::deduce_numeric_epsilon<float>() * 10);
 
                             p_self = (1.f - sor) * p_self +
                                      sor *
@@ -1582,7 +1582,7 @@ void ZSNSPressureProject::coloredSOR<0>(zs::CudaExecutionPolicy &pol, ZenoSparse
                         cut_z[1] = spgv.value(cutOffset + 2, icoord + vec3i(0, 0, 1), 1.f);
 
                         float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
-                        cut_sum = zs::max(cut_sum, zs::limits<float>::epsilon() * 10);
+                        cut_sum = zs::max(cut_sum, zs::detail::deduce_numeric_epsilon<float>() * 10);
 
                         p_self =
                             (1.f - sor) * p_self + sor *
@@ -1605,10 +1605,10 @@ ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
                                  {"NSGrid",
                                   "SolidSDF",
                                   "dt",
-                                  {"float", "Density", "1.0"},
-                                  {"float", "Tolerance", "1e-4"},
-                                  {"int", "MaxIterations", "10"},
-                                  {"bool", "hasDivergence", "0"}},
+                                  {gParamType_Float, "Density", "1.0"},
+                                  {gParamType_Float, "Tolerance", "1e-4"},
+                                  {gParamType_Int, "MaxIterations", "10"},
+                                  {gParamType_Bool, "hasDivergence", "0"}},
                                  /* outputs: */
                                  {"NSGrid"},
                                  /* params: */

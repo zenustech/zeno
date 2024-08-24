@@ -88,14 +88,14 @@ struct ConfigConstitutiveModel : INode {
 };
 
 ZENDEFNODE(ConfigConstitutiveModel, {
-                                        {{"float", "dx", "0.1"},
-                                         {"float", "ppc", "8"},
-                                         {"float", "density", "1000"},
+                                        {{gParamType_Float, "dx", "0.1"},
+                                         {gParamType_Float, "ppc", "8"},
+                                         {gParamType_Float, "density", "1000"},
                                          {"enum fcr nhk stvk snhk", "type", "fcr"},
                                          {"enum none arap", "aniso", "none"},
                                          {"enum none nadp navm nacc", "plasticity", "none"},
-                                         {"float", "E", "10000"},
-                                         {"float", "nu", "0.4"},
+                                         {gParamType_Float, "E", "10000"},
+                                         {gParamType_Float, "nu", "0.4"},
                                          {"DictObject:NumericObject", "params"}},
                                         {"ZSModel"},
                                         {},
@@ -994,7 +994,7 @@ struct ConstructBendingSprings : INode {
 };
 
 ZENDEFNODE(ConstructBendingSprings, {
-                                        {"ZSSurfPrim", {"float", "bending_stiffness", "0.01"}},
+                                        {"ZSSurfPrim", {gParamType_Float, "bending_stiffness", "0.01"}},
                                         {"ZSSpringPrim"},
                                         {{"enum vertex element angle", "type", "element"}},
                                         {"MPM"},
@@ -1078,7 +1078,7 @@ struct BuildPrimitiveSequence : INode {
     }
 };
 ZENDEFNODE(BuildPrimitiveSequence, {
-                                       {"ZSPrimitiveSequence", {"float", "framedt", "0.1"}, "ZSParticles"},
+                                       {"ZSPrimitiveSequence", {gParamType_Float, "framedt", "0.1"}, "ZSParticles"},
                                        {"ZSPrimitiveSequence"},
                                        {},
                                        {"MPM"},
@@ -1277,7 +1277,7 @@ struct UpdatePrimitiveAttributesFromZSParticles : INode {
 
 ZENDEFNODE(UpdatePrimitiveAttributesFromZSParticles,
         {
-            {"ZSParticles",{"string", "attrs", ""}},
+            {"ZSParticles",{gParamType_String, "attrs", ""}},
             {"ZSParticles","prim"},
             {
                 {"enum vert quad", "location", "vert"}
@@ -1461,7 +1461,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
 
 ZENDEFNODE(UpdatePrimitiveAttrFromZSParticles,
            {
-               {"ZSParticles",{"string", "attr", "x"}},
+               {"ZSParticles",{gParamType_String, "attr", "x"}},
                {"ZSParticles"},
                {{"enum float vec3f", "type", "vec3f"}, {"enum vert quad", "location", "vert"}},
                {"MPM"},
@@ -1512,7 +1512,7 @@ struct MakeZSGrid : INode {
     }
 };
 ZENDEFNODE(MakeZSGrid, {
-                           {{"float", "dx", "0.1"}, {"string", "transfer", "apic"}},
+                           {{gParamType_Float, "dx", "0.1"}, {gParamType_String, "transfer", "apic"}},
                            {"ZSGrid"},
                            {},
                            {"MPM"},
@@ -1585,7 +1585,7 @@ struct MakeZSLevelSet : INode {
     }
 };
 ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"},
+                               {{gParamType_Float, "dx", "0.1"},
                                 "aux",
                                 {"enum unknown apic flip aflip boundary", "transfer", "unknown"},
                                 {"enum cellcentered collocated staggered const_velocity", "category", "cellcentered"}},
@@ -1616,11 +1616,11 @@ struct ToZSBoundary : INode {
 
         // translation
         if (has_input("translation")) {
-            auto b = get_input<NumericObject>("translation")->get<vec3f>();
+            auto b = get_input<NumericObject>("translation")->get<zeno::vec3f>();
             boundary->b = zs::vec<float, 3>{b[0], b[1], b[2]};
         }
         if (has_input("translation_rate")) {
-            auto dbdt = get_input<NumericObject>("translation_rate")->get<vec3f>();
+            auto dbdt = get_input<NumericObject>("translation_rate")->get<zeno::vec3f>();
             boundary->dbdt = zs::vec<float, 3>{dbdt[0], dbdt[1], dbdt[2]};
             // fmt::print("dbdt assigned as {}, {}, {}\n", boundary->dbdt[0],
             //            boundary->dbdt[1], boundary->dbdt[2]);
@@ -1636,7 +1636,7 @@ struct ToZSBoundary : INode {
         }
         // rotation
         if (has_input("ypr_angles")) {
-            auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
+            auto yprAngles = get_input<NumericObject>("ypr_angles")->get<zeno::vec3f>();
             auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1], yprAngles[2], zs::degree_c, zs::ypr_c};
             boundary->R = rot;
         }
@@ -1653,7 +1653,7 @@ ZENDEFNODE(ToZSBoundary, {
                               "scale",
                               "scale_rate",
                               "ypr_angles",
-                              {"string", "type", "sticky"}},
+                              {gParamType_String, "type", "sticky"}},
                              {"ZSBoundary"},
                              {},
                              {"MPM"},
@@ -1685,7 +1685,7 @@ struct StepZSBoundary : INode {
     }
 };
 ZENDEFNODE(StepZSBoundary, {
-                               {"ZSBoundary", {"float", "dt", "0"}},
+                               {"ZSBoundary", {gParamType_Float, "dt", "0"}},
                                {"ZSBoundary"},
                                {},
                                {"MPM"},
@@ -1864,7 +1864,7 @@ struct WriteZSParticles : zeno::INode {
 };
 
 ZENDEFNODE(WriteZSParticles, {
-                                 {"ZSParticles", {"string", "path", ""}},
+                                 {"ZSParticles", {gParamType_String, "path", ""}},
                                  {},
                                  {},
                                  {"MPM"},
@@ -1912,7 +1912,7 @@ struct ComputeVonMises : INode {
 ZENDEFNODE(ComputeVonMises, {
                                 {"ZSParticles"},
                                 {"ZSParticles"},
-                                {{"int", "by_log1p(base10)", "1"}},
+                                {{gParamType_Int, "by_log1p(base10)", "1"}},
                                 {"MPM"},
                             });
 

@@ -3,13 +3,13 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/core/INode.h>
 #include <zeno/zeno.h>
 #include <limits>
+
 
 namespace zeno {
 namespace {
@@ -54,7 +54,7 @@ struct PrimForceTrail : INode {
                 return x;
             };
         }, [&] {
-            auto curve = get_input<CurveObject>("attractUDFCurve");
+            auto curve = get_input_prim<CurvesData>("attractUDFCurve");
             return [=] (float x) -> float {
                 return curve->eval(x);
             };
@@ -64,14 +64,14 @@ struct PrimForceTrail : INode {
                 return 1.f;
             };
         }, [&] {
-            auto curve = get_input<CurveObject>("driftCoordCurve");
+            auto curve = get_input_prim<CurvesData>("driftCoordCurve");
             return [=] (float x) -> float {
                 return curve->eval(x);
             };
         });
 
         std::visit([&] (auto const &attractUDFCurve, auto const &driftCoordCurve) {
-            auto &forceArr = prim->verts.add_attr<vec3f>(forceAttr);
+            auto &forceArr = prim->verts.add_attr<zeno::vec3f>(forceAttr);
             parallel_for(prim->verts.size(), [&] (size_t i) {
                 auto pos = prim->verts[i];
 
@@ -110,16 +110,16 @@ struct PrimForceTrail : INode {
 
 ZENDEFNODE(PrimForceTrail, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "trailPrim", "", zeno::Socket_ReadOnly},
-    {"string", "forceAttr", "force"},
-    {"float", "attractForce", "0.5"},
-    {"float", "driftForce", "1"},
-    {"", "attractUDFCurve", ""},
-    {"", "driftCoordCurve", ""},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "trailPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "forceAttr", "force"},
+    {gParamType_Float, "attractForce", "0.5"},
+    {gParamType_Float, "driftForce", "1"},
+    {gParamType_Curve, "attractUDFCurve", ""},
+    {gParamType_Curve, "driftCoordCurve", ""},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

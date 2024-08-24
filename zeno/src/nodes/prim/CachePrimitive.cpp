@@ -49,17 +49,24 @@ struct CachePrimitive : zeno::INode {
 };
 
 ZENDEFNODE(CachePrimitive,
-    { /* inputs: */ {
-    "inPrim", "frameNum",
-    }, /* outputs: */ {
-    "outPrim",
-    }, /* params: */ {
-    {"string", "dir", "/tmp/cache"},
-    {"string", "prefix", ""},
-    {"bool", "ignore", "0"},
-    }, /* category: */ {
-    "deprecated",
-    }});
+    {
+        {
+            {gParamType_Primitive, "inPrim"},
+            {gParamType_Int, "frameNum"},
+        },
+        {
+            {gParamType_Primitive, "outPrim"},
+        },
+        {
+            {gParamType_String, "dir", "/tmp/cache"},
+            {gParamType_String, "prefix", ""},
+            {gParamType_Bool, "ignore", "0"},
+        }, 
+        {
+            "deprecated",
+        }
+    }
+);
 
 
 }

@@ -242,15 +242,15 @@ struct PrimitiveFilterByAttr : INode {
 
 ZENDEFNODE(PrimitiveFilterByAttr,
     { /* inputs: */ {
-    {"", "prim", "", zeno::Socket_ReadOnly},
-    {"NumericObject", "value", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "value", "0", zeno::Socket_WildCard},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "rad"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+    {gParamType_String, "attrName", "rad"},
     {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
     {"enum any all", "vecSelType", "all"},
-    {"bool", "mockTopos", "1"},
+    {gParamType_Bool, "mockTopos", "1"},
     }, /* category: */ {
     "primitive",
     }});
@@ -299,12 +299,12 @@ struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already aut
 };
 ZENDEFNODE(SubLine,
     { /* inputs: */ {
-    {"", "line", "", zeno::Socket_ReadOnly},
-    {"NumericObject", "value", "0"},
+    {gParamType_Primitive, "line", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "value", "0", zeno::Socket_WildCard},
     }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    {"string", "attrName", "rad"},
+{gParamType_Primitive, "prim"},
+}, /* params: */ {
+    {gParamType_String, "attrName", "rad"},
     {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
     {"enum any all", "vecSelType", "all"},
     }, /* category: */ {

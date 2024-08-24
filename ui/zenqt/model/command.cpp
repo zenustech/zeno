@@ -15,30 +15,39 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         zeno::ParamTab tab;
         zeno::ParamGroup default;
 
-        zeno::ParamsUpdateInfo updateInfo;
         zeno::ParamUpdateInfo info;
         zeno::ParamPrimitive param;
         param.bInput = true;
-        param.name = "input1";
-        param.socketType = zeno::Socket_Primitve;
+        param.name = "int1";
+        param.defl = zeno::reflect::make_any<int>(0);
+        param.type = zeno::types::gParamType_Int;
+        param.bVisible = false;
         info.param = param;
-        updateInfo.push_back(info);
         default.params.push_back(param);
-        param.bInput = true;
-        param.name = "input2";
-        param.socketType = zeno::Socket_Primitve;
-        info.param = param;
-        updateInfo.push_back(info);
-        default.params.push_back(param);
-        param.bInput = false;
-        param.name = "output1";
-        param.socketType = zeno::Socket_Output;
-        info.param = param;
-        updateInfo.push_back(info);
+        zeno::ParamPrimitive outputparam;
+        outputparam.bInput = false;
+        outputparam.name = "output1";
+        outputparam.defl = zeno::reflect::Any();
+        outputparam.type = Param_Wildcard;
+        outputparam.socketType = zeno::Socket_WildCard;
+        outputparam.bVisible = false;
+        info.param = outputparam;
+        zeno::ParamObject objInput;
+        objInput.bInput = true;
+        objInput.name = "objInput1";
+        objInput.type = Obj_Wildcard;
+        objInput.socketType = zeno::Socket_WildCard;
+        zeno::ParamObject objOutput;
+        objOutput.bInput = false;
+        objOutput.name = "objOutput1";
+        objOutput.type = Obj_Wildcard;
+        objOutput.socketType = zeno::Socket_WildCard;
 
         tab.groups.emplace_back(std::move(default));
         m_nodeData.customUi.inputPrims.tabs.emplace_back(std::move(tab));
-        m_nodeData.customUi.outputPrims.push_back(param);
+        m_nodeData.customUi.inputObjs.push_back(objInput);
+        m_nodeData.customUi.outputPrims.push_back(outputparam);
+        m_nodeData.customUi.outputObjs.push_back(objOutput);
     }
 }
 

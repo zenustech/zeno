@@ -83,10 +83,10 @@ struct LightNode : INode {
             }
         } else {
 
-            auto order = get_input2<std::string>("EulerRotationOrder:");
+            auto order = get_input2<std::string>("EulerRotationOrder");
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure:");
+            auto measure = get_input2<std::string>("EulerAngleMeasure");
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
@@ -422,35 +422,35 @@ struct LightNode : INode {
 
 ZENO_DEFNODE(LightNode)({
     {
-        {"vec3f", "position", "0, 0, 0"},
-        {"vec3f", "scale", "1, 1, 1"},
-        {"vec3f", "rotate", "0, 0, 0"},
-        {"vec4f", "quaternion", "1, 0, 0, 0"},
+        {gParamType_Vec3f, "position", "0, 0, 0"},
+        {gParamType_Vec3f, "scale", "1, 1, 1"},
+        {gParamType_Vec3f, "rotate", "0, 0, 0"},
+        {gParamType_Vec4f, "quaternion", "1, 0, 0, 0"},
 
-        {"colorvec3f", "color", "1, 1, 1"},
-        {"float", "exposure", "0"},
-        {"float", "intensity", "1"},
-        {"float", "fluxFixed", "-1.0"},
+        {gParamType_Vec3f, "color", "1, 1, 1"},
+        {gParamType_Float, "exposure", "0"},
+        {gParamType_Float, "intensity", "1"},
+        {gParamType_Float, "fluxFixed", "-1.0"},
 
-        {"vec2f", "spread", "1.0, 0.0"},
-        {"float", "maxDistance", "-1.0" },
-        {"float", "falloffExponent", "2.0"},
-        {"int", "mask", "255"},
-        {"bool", "visible", "0"},
-        {"bool", "invertdir", "0"},
-        {"bool", "doubleside", "0"},
+        {gParamType_Vec2f, "spread", "1.0, 0.0"},
+        {gParamType_Float, "maxDistance", "-1.0" },
+        {gParamType_Float, "falloffExponent", "2.0"},
+        {gParamType_Int, "mask", "255"},
+        {gParamType_Bool, "visible", "0"},
+        {gParamType_Bool, "invertdir", "0"},
+        {gParamType_Bool, "doubleside", "0"},
 
-        {"readpath", "profile"},
-        {"readpath", "texturePath"},
-        {"float",  "textureGamma", "1.0"},
-        {"float", "visibleIntensity", "-1.0"},
+        {gParamType_String,"profile", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_String,"texturePath", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Float,  "textureGamma", "1.0"},
+        {gParamType_Float, "visibleIntensity", "-1.0"},
 
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()},
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
     },
     {
-        "prim"
+        {gParamType_Primitive, "prim"}
     },
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", EulerAngle::RotationOrderDefaultString()},

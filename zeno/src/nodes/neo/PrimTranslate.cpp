@@ -27,7 +27,7 @@ namespace {
 struct PrimTranslate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         primTranslate(prim.get(), offset);
         set_output("prim", get_input("prim"));
     }
@@ -35,11 +35,11 @@ struct PrimTranslate : INode {
 
 ZENDEFNODE(PrimTranslate, {
                               {
-                                  {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                                  {"vec3f", "offset", "0,0,0"},
+                                  {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                                  {gParamType_Vec3f, "offset", "0,0,0"},
                               },
                               {
-                                  {"PrimitiveObject", "prim"},
+                                  {gParamType_Primitive, "prim"},
                               },
                               {},
                               {"primitive"},
@@ -48,7 +48,7 @@ ZENDEFNODE(PrimTranslate, {
 struct PrimScale : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto scale = get_input2<vec3f>("scale");
+        auto scale = get_input2<zeno::vec3f>("scale");
         primScale(prim.get(), scale);
         set_output("prim", get_input("prim"));
     }
@@ -56,11 +56,11 @@ struct PrimScale : INode {
 
 ZENDEFNODE(PrimScale, {
                           {
-                              {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                              {"vec3f", "scale", "1,1,1"},
+                              {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                              {gParamType_Vec3f, "scale", "1,1,1"},
                           },
                           {
-                              {"PrimitiveObject", "prim"},
+                              {gParamType_Primitive, "prim"},
                           },
                           {},
                           {"primitive"},

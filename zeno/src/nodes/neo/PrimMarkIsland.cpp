@@ -75,11 +75,11 @@ struct PrimMarkIsland : INode {
 
 ZENDEFNODE(PrimMarkIsland, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttr", "tag"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttr", "tag"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

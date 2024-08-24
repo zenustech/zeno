@@ -51,9 +51,9 @@ struct ZSMakeSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
-                              {{"string", "Attribute", ""},
-                               {"float", "Dx", "1.0"},
-                               {"float", "background", "0"},
+                              {{gParamType_String, "Attribute", ""},
+                               {gParamType_Float, "Dx", "1.0"},
+                               {gParamType_Float, "background", "0"},
                                {"enum scalar vector3", "type", "scalar"},
                                {"enum cell-centered vertex-centered", "structure", "cell-centered"}},
                               /* outputs: */
@@ -128,7 +128,7 @@ struct ZSGridTopoCopy : INode {
 };
 
 ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
-                            {"Grid", "TopologyGrid", {"bool", "multigrid", "0"}},
+                            {"Grid", "TopologyGrid", {gParamType_Bool, "multigrid", "0"}},
                             /* outputs: */
                             {"Grid"},
                             /* params: */
@@ -181,9 +181,9 @@ struct ZSSparseGridToVDB : INode {
 
 ZENDEFNODE(ZSSparseGridToVDB, {/* inputs: */
                                {"SparseGrid",
-                                {"string", "Attribute", ""},
+                                {gParamType_String, "Attribute", ""},
                                 {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"},
-                                {"string", "VDBGridName", "SparseGrid"}},
+                                {gParamType_String, "VDBGridName", "SparseGrid"}},
                                /* outputs: */
                                {"VDB"},
                                /* params: */
@@ -253,7 +253,7 @@ struct ZSVDBToSparseGrid : INode {
 };
 
 ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
-                               {"VDB", "SparseGrid", {"string", "Attribute", ""}},
+                               {"VDB", "SparseGrid", {gParamType_String, "Attribute", ""}},
                                /* outputs: */
                                {"SparseGrid"},
                                /* params: */
@@ -303,7 +303,7 @@ struct ZSGridAppendAttribute : INode {
 };
 
 ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
-                                   {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                   {"SparseGrid", {gParamType_String, "Attribute", ""}, {gParamType_Int, "ChannelNumber", "1"}},
                                    /* outputs: */
                                    {"SparseGrid"},
                                    /* params: */
@@ -338,7 +338,7 @@ struct ZSMultiGridAppendAttribute : INode {
 };
 
 ZENDEFNODE(ZSMultiGridAppendAttribute, {/* inputs: */
-                                        {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                        {"SparseGrid", {gParamType_String, "Attribute", ""}, {gParamType_Int, "ChannelNumber", "1"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */
@@ -468,9 +468,9 @@ struct ZSCombineSparseGrid : INode {
 ZENDEFNODE(ZSCombineSparseGrid, {/* inputs: */
                                  {"GridA",
                                   "GridB",
-                                  {"string", "SDFAttribute", "sdf"},
+                                  {gParamType_String, "SDFAttribute", "sdf"},
                                   {"enum CSGUnion CSGIntersection CSGSubtract", "OpType", "CSGUnion"},
-                                  {"bool", "WriteBack", "0"}},
+                                  {gParamType_Bool, "WriteBack", "0"}},
                                  /* outputs: */
                                  {"Grid"},
                                  /* params: */
@@ -552,7 +552,7 @@ struct ZSGridTopoUnion : INode {
 };
 
 ZENDEFNODE(ZSGridTopoUnion, {/* inputs: */
-                             {"Grid", "TopologyGrid", {"bool", "multigrid", "0"}},
+                             {"Grid", "TopologyGrid", {gParamType_Bool, "multigrid", "0"}},
                              /* outputs: */
                              {"Grid"},
                              /* params: */
@@ -618,7 +618,7 @@ struct ZSGridReduction : INode {
 };
 
 ZENDEFNODE(ZSGridReduction, {/* inputs: */
-                             {"SparseGrid", {"string", "Attribute", ""}, {"enum max min average", "Operation", "max"}},
+                             {"SparseGrid", {gParamType_String, "Attribute", ""}, {"enum max min average", "Operation", "max"}},
                              /* outputs: */
                              {"Value"},
                              /* params: */
@@ -655,7 +655,7 @@ struct ZSGridVoxelPos : INode {
 };
 
 ZENDEFNODE(ZSGridVoxelPos, {/* inputs: */
-                            {"SparseGrid", {"string", "PosAttr", "wPos"}},
+                            {"SparseGrid", {gParamType_String, "PosAttr", "wPos"}},
                             /* outputs: */
                             {"SparseGrid"},
                             /* params: */
@@ -733,7 +733,7 @@ struct ZSMakeDenseSDF : INode {
 };
 
 ZENDEFNODE(ZSMakeDenseSDF, {/* inputs: */
-                            {{"float", "dx", "1.0"}, {"int", "nx", "128"}, {"int", "ny", "128"}, {"int", "nz", "128"}},
+                            {{gParamType_Float, "dx", "1.0"}, {gParamType_Int, "nx", "128"}, {gParamType_Int, "ny", "128"}, {gParamType_Int, "nz", "128"}},
                             /* outputs: */
                             {"Grid"},
                             /* params: */

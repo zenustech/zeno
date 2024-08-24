@@ -32,7 +32,7 @@ struct MakeVDBGrid : zeno::INode {
       auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloat3Grid>()
           : std::make_shared<VDBFloat3Grid>(openvdb::Vec3fGrid::create(
                   zeno::vec_to_other<openvdb::Vec3f>(get_input("background")
-                                                     ->as<NumericObject>()->get<vec3f>())));
+                                                     ->as<NumericObject>()->get<zeno::vec3f>())));
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       if (structure == "Staggered") {
@@ -63,16 +63,16 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {{"float","Dx","0.08"},{"float","background","0"}}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {{gParamType_Float,"Dx","0.08"},{gParamType_Float,"background","0"}}, /* outputs: */
                     {
-                        "data",
+                        {gParamType_VDBGrid, "data"},
                     },
                     /* params: */
                     {
-                        //{"float", "dx", "0.08"},
+                        //{gParamType_Float, "dx", "0.08"},
                         {"enum float float3 int int3 points", "type", "float"},
                         {"enum vertex Centered Staggered", "structure", "Centered"},
-                        {"string", "name", ""},
+                        {gParamType_String, "name", ""},
                     },
                     /* category: */
                     {
@@ -89,15 +89,15 @@ struct SetVDBGridName : zeno::INode {
 };
 
 static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridName", {/* inputs: */ {
-                                                                                         "grid",
+                                                                                         {"VDBGrid","grid"},
                                                                                      }, /* outputs: */
                                                                                      {
-                                                                                         "grid",
+                                                                                         {"VDBGrid","grid"},
                                                                                      },
                                                                                      /* params: */
                                                                                      {
-                                                                                         //{"float", "dx", "0.08"},
-                                                                                         {"string", "name", "density"},
+                                                                                         //{gParamType_Float, "dx", "0.08"},
+                                                                                         {gParamType_String, "name", "density"},
                                                                                      },
                                                                                      /* category: */
                                                                                      {
@@ -115,10 +115,10 @@ struct SetVDBGridClass : zeno::INode {
 };
 
 ZENDEFNODE(SetVDBGridClass,
-           {/* inputs: */ {"grid", {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
+           {/* inputs: */ {{"VDBGrid","grid"}, {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
             /* outputs: */
             {
-                "grid",
+                {"VDBGrid","grid"},
             },
             /* params: */
             {},

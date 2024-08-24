@@ -116,8 +116,8 @@ namespace {
 
     ZENDEFNODE(StringEval, {
                                /*input*/
-                            {{"string", "zfxCode", "", Socket_Primitve, CodeEditor}},
-                            {{"string", "result"}},
+                            {{gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor}},
+                            {{gParamType_String, "result"}},
                             {},
                             {"zenofx"}
                            });

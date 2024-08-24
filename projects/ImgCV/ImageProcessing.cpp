@@ -237,8 +237,8 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
 ZENDEFNODE(ImageResize, {
     {
         {"image"},
-        {"int", "width", "1024"},
-        {"int", "height", "1024"},
+        {gParamType_Int, "width", "1024"},
+        {gParamType_Int, "height", "1024"},
     },
     {
         {"image"},
@@ -342,12 +342,12 @@ struct ImageRotate: INode {//TODO::transform and rorate
 };
 ZENDEFNODE(ImageRotate, {
     {
-        {"image"},
-        {"float", "rotate", "0.0"},
-        {"bool", "alpha", "0"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Float, "rotate", "0.0"},
+        {gParamType_Bool, "alpha", "0"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -392,12 +392,12 @@ struct ImageFlip: INode {
 
 ZENDEFNODE(ImageFlip, {
     {
-        {"image"},
-        {"bool", "Flip Horizontally", "0"},
-        {"bool", "Flip Vertically", "0"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Bool, "Flip Horizontally", "0"},
+        {gParamType_Bool, "Flip Vertically", "0"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -422,10 +422,10 @@ struct ImageRGB2HSV : INode {
 
 ZENDEFNODE(ImageRGB2HSV, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     { "image" },
@@ -450,10 +450,10 @@ struct ImageHSV2RGB : INode {
 
 ZENDEFNODE(ImageHSV2RGB, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     { "image" },
@@ -489,13 +489,13 @@ struct ImageEditHSV : INode {//TODO::FIX BUG
 
 ZENDEFNODE(ImageEditHSV, {
     {
-        {"image"},
-        {"float", "H", "0"},
-        {"float", "S", "1"},
-        {"float", "V", "1"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Float, "H", "0"},
+        {gParamType_Float, "S", "1"},
+        {gParamType_Float, "V", "1"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -645,8 +645,8 @@ struct ImageBlur : INode {
         auto type = get_input2<std::string>("type");
         auto fastgaussian = get_input2<bool>("Fast Blur(Gaussian)");
         auto sigmaX = get_input2<float>("GaussianSigma");
-        auto sigmaColor = get_input2<vec2f>("BilateralSigma")[0];
-        auto sigmaSpace = get_input2<vec2f>("BilateralSigma")[1];
+        auto sigmaColor = get_input2<zeno::vec2f>("BilateralSigma")[0];
+        auto sigmaSpace = get_input2<zeno::vec2f>("BilateralSigma")[1];
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -704,15 +704,15 @@ struct ImageBlur : INode {
 
 ZENDEFNODE(ImageBlur, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
         {"enum Gaussian Box Median Bilateral Stack", "type", "Gaussian"},
-        {"int", "kernelSize", "5"},
-        {"float", "GaussianSigma", "3"},//fast gaussian only effect by sigma  等参数分开显示再移开
-        {"vec2f", "BilateralSigma", "50,50"},
-        {"bool", "Fast Blur(Gaussian)", "1"},
+        {gParamType_Int, "kernelSize", "5"},
+        {gParamType_Float, "GaussianSigma", "3"},//fast gaussian only effect by sigma  等参数分开显示再移开
+        {gParamType_Vec2f, "BilateralSigma", "50,50"},
+        {gParamType_Bool, "Fast Blur(Gaussian)", "1"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -735,11 +735,11 @@ struct ImageEditContrast : INode {
 
 ZENDEFNODE(ImageEditContrast, {
     {
-        {"image"},
-        {"float", "ContrastRatio", "1"},
-        {"float", "ContrastCenter", "0.5"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Float, "ContrastRatio", "1"},
+        {gParamType_Float, "ContrastCenter", "0.5"},
     },
-    {"image"},
+    {{gParamType_Primitive, "image"}},
     {},
     { "image" },
 });
@@ -756,10 +756,10 @@ struct ImageEditInvert : INode{
 };
 ZENDEFNODE(ImageEditInvert, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {
-        "image",
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -823,13 +823,13 @@ struct ImageToNormalMap : INode {
 
 ZENDEFNODE(ImageToNormalMap, {
     {
-        {"image"},
-        {"float", "strength", "10"},
-        {"bool", "InvertR", "0"},
-        {"bool", "InvertG", "0"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Float, "strength", "10"},
+        {gParamType_Bool, "InvertR", "0"},
+        {gParamType_Bool, "InvertG", "0"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -875,11 +875,11 @@ struct ImageGray : INode {
 };
 ZENDEFNODE(ImageGray, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
         {"enum Average Luminance Red Green Blue MaxComponent MinComponent", "mode", "Average"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -964,13 +964,13 @@ struct ImageTile: INode {
 };
 ZENDEFNODE(ImageTile, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
         {"enum normal mirror", "tilemode", "normal"},
-        {"int", "rows", "2"},
-        {"int", "cols", "2"},
+        {gParamType_Int, "rows", "2"},
+        {gParamType_Int, "cols", "2"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1053,13 +1053,13 @@ struct ImageDilate: INode {
 };
 ZENDEFNODE(ImageDilate, {
     {
-        {"image"},
-        {"int", "strength", "1"},
-        {"int", "kernel_width", "3"},
-        {"int", "kernel_height", "3"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Int, "strength", "1"},
+        {gParamType_Int, "kernel_width", "3"},
+        {gParamType_Int, "kernel_height", "3"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1135,14 +1135,14 @@ struct ImageErode: INode {
 };
 ZENDEFNODE(ImageErode, {
     {
-        {"image"},
-        {"int", "strength", "1"},
-        {"int", "kernel_width", "3"},
-        {"int", "kernel_height", "3"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Int, "strength", "1"},
+        {gParamType_Int, "kernel_width", "3"},
+        {gParamType_Int, "kernel_height", "3"},
 
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1152,8 +1152,8 @@ ZENDEFNODE(ImageErode, {
 struct ImageColor : INode {
     virtual void apply() override {
         auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<vec4f>("Color");
-        auto size = get_input2<vec2i>("Size");
+        auto color = get_input2<zeno::vec4f>("Color");
+        auto size = get_input2<zeno::vec2i>("Size");
         auto balpha = get_input2<bool>("alpha");
         auto vertsize = size[0] * size[1];
         image->verts.resize(vertsize);
@@ -1179,12 +1179,12 @@ struct ImageColor : INode {
 
 ZENDEFNODE(ImageColor, {
     {
-        {"vec4f", "Color", "1,1,1,1"},
+        {gParamType_Vec4f, "Color", "1,1,1,1"},
         {"vec2i", "Size", "1024,1024"},
-        {"bool", "alpha", "1"},
+        {gParamType_Bool, "alpha", "1"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     { "deprecated" },
@@ -1192,9 +1192,9 @@ ZENDEFNODE(ImageColor, {
 struct ImageColor2 : INode {
     virtual void apply() override {
         auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<vec3f>("Color");
+        auto color = get_input2<zeno::vec3f>("Color");
         auto alpha = get_input2<float>("Alpha");
-        auto size = get_input2<vec2i>("Size");
+        auto size = get_input2<zeno::vec2i>("Size");
         auto balpha = get_input2<bool>("alpha");
         auto vertsize = size[0] * size[1];
         image->verts.resize(vertsize);
@@ -1219,13 +1219,13 @@ struct ImageColor2 : INode {
 
 ZENDEFNODE(ImageColor2, {
     {
-        {"vec3f", "Color", "1,1,1"},
-        {"float", "Alpha", "1"},
+        {gParamType_Vec3f, "Color", "1,1,1"},
+        {gParamType_Float, "Alpha", "1"},
         {"vec2i", "Size", "1024,1024"},
-        {"bool", "alpha", "1"},
+        {gParamType_Bool, "alpha", "1"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     { "image" },
@@ -1272,13 +1272,13 @@ struct ImageClamp: INode {//Add Unpremultiplied Space Option?
 
 ZENDEFNODE(ImageClamp, {
     {
-        {"image"},
-        {"float", "Max", "1"},
-        {"float", "Min", "0"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Float, "Max", "1"},
+        {gParamType_Float, "Min", "0"},
         {"enum LimitValue Black White", "ClampedValue", "LimitValue"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1472,13 +1472,13 @@ struct ImageMatting: INode {
 
 ZENDEFNODE(ImageMatting, {
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
         {"mask"},
         {"enum origin deleteblack deletewhite", "imagemode", "origin"},
         {"enum gray_black gray_white black white alpha", "maskmode", "gray_black"},
     },
     {
-        {"image"}
+        {gParamType_Primitive, "image"}
     },
     {},
     { "image" },
@@ -1487,8 +1487,8 @@ ZENDEFNODE(ImageMatting, {
 struct ImageLevels: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto inputLevels = get_input2<vec2f>("Input Levels");
-        auto outputLevels = get_input2<vec2f>("Output Levels");
+        auto inputLevels = get_input2<zeno::vec2f>("Input Levels");
+        auto outputLevels = get_input2<zeno::vec2f>("Output Levels");
         auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
         auto channel = get_input2<std::string>("channel");
         auto clamp = get_input2<bool>("Clamp Output");
@@ -1661,16 +1661,16 @@ struct ImageLevels: INode {
 };
 ZENDEFNODE(ImageLevels, {
     {
-        {"image"},
-        {"vec2f", "Input Levels", "0, 1"},
-        {"float", "gamma", "1"},
-        {"vec2f", "Output Levels", "0, 1"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Vec2f, "Input Levels", "0, 1"},
+        {gParamType_Float, "gamma", "1"},
+        {gParamType_Vec2f, "Output Levels", "0, 1"},
         {"enum All R G B A", "channel", "All"},
-        {"bool", "Auto Level", "0"},
-        {"bool", "Clamp Output", "1"},
+        {gParamType_Bool, "Auto Level", "0"},
+        {gParamType_Bool, "Clamp Output", "1"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},
@@ -1815,13 +1815,13 @@ struct ImageQuantization: INode {
 };
 ZENDEFNODE(ImageQuantization, {
     {
-        {"image"},
-        {"int", "Number of Color", "5"},
-        {"bool", "Output Cluster Centers", "1"},
-        {"string", "Cluster Attribute", "cluster"},
+        {gParamType_Primitive, "image"},
+        {gParamType_Int, "Number of Color", "5"},
+        {gParamType_Bool, "Output Cluster Centers", "1"},
+        {gParamType_String, "Cluster Attribute", "cluster"},
     },
     {
-        {"image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"image"},

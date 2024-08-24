@@ -16,6 +16,7 @@
 #include <vector>
 #include <tuple>
 
+
 namespace {
 using namespace zeno;
 
@@ -27,9 +28,9 @@ struct AABBVoronoi : INode {
         auto triangulate = get_param<bool>("triangulate");
 
         auto bmin = has_input("bboxMin") ?
-            get_input<NumericObject>("bboxMin")->get<vec3f>() : vec3f(-1);
+            get_input<NumericObject>("bboxMin")->get<zeno::vec3f>() : zeno::vec3f(-1);
         auto bmax = has_input("bboxMax") ?
-            get_input<NumericObject>("bboxMax")->get<vec3f>() : vec3f(1);
+            get_input<NumericObject>("bboxMax")->get<zeno::vec3f>() : zeno::vec3f(1);
         auto minx = bmin[0];
         auto miny = bmin[1];
         auto minz = bmin[2];
@@ -45,7 +46,7 @@ struct AABBVoronoi : INode {
 
             if (has_input("particlesPrim")) {
                 auto particlesPrim = get_input<PrimitiveObject>("particlesPrim");
-                auto &parspos = particlesPrim->attr<vec3f>("pos");
+                auto &parspos = particlesPrim->attr<zeno::vec3f>("pos");
                 for (int i = 0; i < parspos.size(); i++) {
                     auto p = parspos[i];
                     pcon.put(i + 1, p[0], p[1], p[2]);
@@ -54,7 +55,7 @@ struct AABBVoronoi : INode {
                 auto numParticles = get_param<int>("numRandPoints");
                 wangsrng rng(numParticles);
                 for (int i = 0; i < numParticles; i++) {
-                    vec3f p(rng.next_float(),rng.next_float(),rng.next_float());
+                    zeno::vec3f p(rng.next_float(),rng.next_float(),rng.next_float());
                     p = p * (bmax - bmin) + bmin;
                     pcon.put(i + 1, p[0], p[1], p[2]);
                 }
@@ -96,7 +97,7 @@ struct AABBVoronoi : INode {
 
                 auto prim = std::make_shared<PrimitiveObject>();
 
-                auto &pos = prim->add_attr<vec3f>("pos");
+                auto &pos = prim->add_attr<zeno::vec3f>("pos");
                 for (int i = 0; i < (int)v.size(); i += 3) {
                     pos.emplace_back(v[i], v[i+1], v[i+2]);
                 }
@@ -108,7 +109,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->push_back(objectFromLiterial(vec2i(cid, ncid)));
+                            neighs->push_back(objectFromLiterial(zeno::vec2i(cid, ncid)));
                         }
                     }
                     int len = f_vert[j];
@@ -142,20 +143,20 @@ struct AABBVoronoi : INode {
 
 ZENO_DEFNODE(AABBVoronoi)({
         { // inputs:
-        {"PrimitiveObject", "particlesPrim"},
-        {"vec3f", "bboxMin", "-1,-1,-1"},
-        {"vec3f", "bboxMax", "1,1,1"},
+        {gParamType_Primitive, "particlesPrim"},
+        {gParamType_Vec3f, "bboxMin", "-1,-1,-1"},
+        {gParamType_Vec3f, "bboxMax", "1,1,1"},
         },
         { // outputs:
-        {"ListObject", "primList"},
-        {"ListObject", "neighList"},
+        {gParamType_List, "primList"},
+        {gParamType_List, "neighList"},
         },
         { // params:
-        {"bool", "triangulate", "1"},
-        {"int", "numRandPoints", "64"},
-        {"bool", "periodicX", "0"},
-        {"bool", "periodicY", "0"},
-        {"bool", "periodicZ", "0"},
+        {gParamType_Bool, "triangulate", "1"},
+        {gParamType_Int, "numRandPoints", "64"},
+        {gParamType_Bool, "periodicX", "0"},
+        {gParamType_Bool, "periodicY", "0"},
+        {gParamType_Bool, "periodicZ", "0"},
         },
         {"cgmesh"},
 });
@@ -166,7 +167,7 @@ struct VoronoiFracture : AABBVoronoi {
         auto primA = get_input<PrimitiveObject>("meshPrim");
         auto VFA = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
-        auto bmin = primA->verts.size() ? primA->verts[0] : vec3f(0);
+        auto bmin = primA->verts.size() ? primA->verts[0] : zeno::vec3f(0);
         auto bmax = bmin;
         for (int i = 1; i < primA->verts.size(); i++) {
             bmin = zeno::min(primA->verts[i], bmin);
@@ -180,8 +181,12 @@ struct VoronoiFracture : AABBVoronoi {
 
         AABBVoronoi::apply();
 
-        auto primListB = std::dynamic_pointer_cast<ListObject>(get_output_obj("primList"));
-        auto neighListB = std::dynamic_pointer_cast<ListObject>(get_output_obj("neighList"));
+        auto outputObjPrimList = get_output_obj("primList");
+        auto outputObjNeightList = get_output_obj("neighList");
+        if (!outputObjPrimList.has_value() || !outputObjNeightList.has_value())
+            return;
+        auto primListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(outputObjPrimList);
+        auto neighListB = zeno::reflect::any_cast<std::shared_ptr<ListObject>>(outputObjNeightList);
         auto listB = primListB->get<PrimitiveObject>();
         std::map<int, std::shared_ptr<PrimitiveObject>> dictC;
         std::mutex mtx;
@@ -241,20 +246,20 @@ struct VoronoiFracture : AABBVoronoi {
 
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
-        {"PrimitiveObject", "meshPrim"},
-        {"PrimitiveObject", "particlesPrim"},
+        {gParamType_Primitive, "meshPrim"},
+        {gParamType_Primitive, "particlesPrim"},
         },
         { // outputs:
-        {"ListObject", "primList"},
-        {"ListObject", "neighList"},
+        {gParamType_List, "primList"},
+        {gParamType_List, "neighList"},
         },
         { // params:
-        {"bool", "doMeshFix", "0"},
-        {"bool", "doMeshFix2", "1"},
-        {"int", "numRandPoints", "256"},
-        {"bool", "periodicX", "0"},
-        {"bool", "periodicY", "0"},
-        {"bool", "periodicZ", "0"},
+        {gParamType_Bool, "doMeshFix", "0"},
+        {gParamType_Bool, "doMeshFix2", "1"},
+        {gParamType_Int, "numRandPoints", "256"},
+        {gParamType_Bool, "periodicX", "0"},
+        {gParamType_Bool, "periodicY", "0"},
+        {gParamType_Bool, "periodicZ", "0"},
         },
         {"cgmesh"},
 });
@@ -297,21 +302,21 @@ ZENO_DEFNODE(VoronoiFracture)({
 
 //ZENO_DEFNODE(VoronoiFracture)({
         //{ // inputs:
-        //{"PrimitiveObject", "meshPrim"},
-        //{"PrimitiveObject", "particlesPrim"},
+        //{gParamType_Primitive, "meshPrim"},
+        //{gParamType_Primitive, "particlesPrim"},
         //},
         //{ // outputs:
-        //{"ListObject", "primList"},
-        //{"ListObject", "neighList"},
+        //{gParamType_List, "primList"},
+        //{gParamType_List, "neighList"},
         //},
         //{ // params:
-        //{"bool", "splitIsland", "0"},
-        //{"bool", "doMeshFix", "0"},
-        //{"bool", "doMeshFix2", "1"},
-        //{"int", "numRandPoints", "256"},
-        //{"bool", "periodicX", "0"},
-        //{"bool", "periodicY", "0"},
-        //{"bool", "periodicZ", "0"},
+        //{gParamType_Bool, "splitIsland", "0"},
+        //{gParamType_Bool, "doMeshFix", "0"},
+        //{gParamType_Bool, "doMeshFix2", "1"},
+        //{gParamType_Int, "numRandPoints", "256"},
+        //{gParamType_Bool, "periodicX", "0"},
+        //{gParamType_Bool, "periodicY", "0"},
+        //{gParamType_Bool, "periodicZ", "0"},
         //},
         //{"cgmesh"},
 //});
@@ -323,7 +328,7 @@ struct SimplifyVoroNeighborList : INode {
         auto newNeighList = std::make_shared<ListObject>();
 
         std::map<int, std::vector<int>> lut;
-        for (auto const &ind: neighList->getLiterial<vec2i>()) {
+        for (auto const &ind: neighList->getLiterial<zeno::vec2i>()) {
             auto x = ind[0], y = ind[1];
             lut[x].push_back(y);
             lut[y].push_back(x);
@@ -345,7 +350,7 @@ struct SimplifyVoroNeighborList : INode {
         }
 
         for (auto const &[x, y]: edges) {
-            newNeighList->push_back(objectFromLiterial(vec2i(x, y)));
+            newNeighList->push_back(objectFromLiterial(zeno::vec2i(x, y)));
         }
         set_output("newNeighList", std::move(newNeighList));
     }
@@ -353,10 +358,10 @@ struct SimplifyVoroNeighborList : INode {
 
 ZENO_DEFNODE(SimplifyVoroNeighborList)({
         { // inputs:
-        {"ListObject", "neighList"},
+        {gParamType_List, "neighList"},
         },
         { // outputs:
-        {"ListObject", "newNeighList"},
+        {gParamType_List, "newNeighList"},
         },
         { // params:
         },

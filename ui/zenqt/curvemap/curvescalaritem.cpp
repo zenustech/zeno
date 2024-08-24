@@ -65,7 +65,7 @@ QVariant CurveSliderItem::itemChange(GraphicsItemChange change, const QVariant& 
 
 qreal CurveSliderItem::clipPos(qreal x)
 {
-    CURVE_RANGE rg = m_scalar->range();
+    auto rg = m_scalar->range();
     int nFrames = m_scalar->nFrames();
     int nGrids = nFrames * 5;
     qreal w = m_scalar->boundingRect().width();
@@ -77,7 +77,7 @@ qreal CurveSliderItem::clipPos(qreal x)
 
 qreal CurveSliderItem::pos2val(qreal x)
 {
-    CURVE_RANGE rg = m_scalar->range();
+    auto rg = m_scalar->range();
     int nFrames = m_scalar->nFrames();
     int nGrids = nFrames * 5;
     qreal w = m_scalar->boundingRect().width();
@@ -95,7 +95,7 @@ void CurveSliderItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void CurveSliderItem::resetPosition()
 {
     qreal w = m_scalar->boundingRect().width();
-    CURVE_RANGE rg = m_scalar->range();
+    auto rg = m_scalar->range();
     int nFrames = m_scalar->nFrames();
     if (nFrames > 0)
     {
@@ -124,7 +124,7 @@ CurveScalarItem::CurveScalarItem(bool bHorizontal, bool bFrame, CurveMapView* pV
     }
 }
 
-CURVE_RANGE CurveScalarItem::range() const
+zeno::CurveData::Range CurveScalarItem::range() const
 {
     return m_view->range();
 }
@@ -253,7 +253,7 @@ void CurveScalarItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     auto frames = curve_util::numframes(trans.m11(), trans.m22());
     m_nFrames = m_bHorizontal ? frames.first : frames.second;
 
-    CURVE_RANGE rg = m_view->range();
+    auto rg = m_view->range();
 
     QFont font = QApplication::font();
     QFontMetrics metrics(font);

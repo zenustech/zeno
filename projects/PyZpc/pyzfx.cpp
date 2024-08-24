@@ -50,9 +50,36 @@ static callback_t zpc_init_callback = [] (auto _) {
 #endif
     auto zeno_lib_path = exe_dir + "/" + ZENO_PYZPC_DLL_FILE; 
     auto py_libs_dir = exe_dir + "/resource/py_libs"; 
-    if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + 
-        py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path + 
+    if (PyRun_SimpleString(("import os; os.environ['PYTHONPATH'] = '" + exe_dir + "/DLLs';").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("os.environ['PYTHONHOME'] = '" + exe_dir + "';").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+#if 0
+    if (PyRun_SimpleString(("import sys; import os; sys.path.append(os.path.join('" +
+        exe_dir + "', 'DLLs')); ").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+#endif
+    if (PyRun_SimpleString(("import sys; sys.path.append('" +
+        py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path +
         "'); zpy.zeno_lib_path = '" + zeno_lib_path + "'").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("import zpcjit; zpcjit.init_zpc_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_CAPIS + "');").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("zpcjit.init_zpc_nvrtc_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_NVRTC + "');").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    if (PyRun_SimpleString(("zpcjit.init_zpc_clang_lib('" + exe_dir + "/" + ZENO_OUTPUT_BINARY_CLANG + "');").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
         return;
     }
@@ -210,13 +237,13 @@ struct PyZfx : INode {
 };
 ZENO_DEFNODE(PyZfx)({/* inputs: */ 
     {
-        {"string", "code", ""},
-        {"readpath", "path", ""},
-        {"DictObject", "args"},
+        {gParamType_String, "code", ""},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Dict,"args"},
     },
     /* outputs: */
     {
-        {"DictObject", "rets"},
+        {gParamType_Dict,"rets"},
     },
     /* params: */
     {},

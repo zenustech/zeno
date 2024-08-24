@@ -183,7 +183,7 @@ struct PBFWorld_Step : zeno::INode {
 ZENDEFNODE(
     PBFWorld_Step,
     {
-        {"prim","PBFWorld"},
+        {gParamType_Primitive,"PBFWorld"},
         {"outPrim","PBFWorld"},
         {},
         {"PBD"}

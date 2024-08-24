@@ -88,6 +88,7 @@ namespace zeno
 
 #undef SET_TEX_FILTER
 
+			tex->blockCompression = get_input2<bool>("blockCompression");
 			set_output("tex", std::move(tex));
 		}
 	};
@@ -96,15 +97,16 @@ namespace zeno
 		MakeTexture2D,
 		{
 			{
-				{"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-				{"heatmap"},
+				{gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+				{gParamType_Heatmap, "heatmap"},
 				{(std::string) "enum " + texWrapping, "wrapS", "REPEAT"},
 				{(std::string) "enum " + texWrapping, "wrapT", "REPEAT"},
 				{(std::string) "enum " + texFiltering, "minFilter", "LINEAR"},
 				{(std::string) "enum " + texFiltering, "magFilter", "LINEAR"},
+				{"bool", "blockCompression", "false"}
 			},
 			{
-				{"texture", "tex"},
+				{gParamType_String, "tex"},
 			},
 			{},
 			{
@@ -151,12 +153,12 @@ namespace zeno
 		MakeTextureVDB,
 		{
 			{
-				{"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-				{"string", "channel", "0"},
+				{gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+				{gParamType_String, "channel", "0"},
 				{"enum " + MakeTextureVDB::dataTypeListString(), MakeTextureVDB::dataTypeKey, MakeTextureVDB::dataTypeDefaultString()},
 			},
 			{
-				{"texture", "tex"},
+				{gParamType_String, "tex"},
 			},
 			{},
 			{

@@ -10,8 +10,8 @@ struct AutoGenMuscleFibers : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(AutoGenMuscleFibers, {
-    {{"", "Orient", ""}, {"", "Muscle", ""}},
-    {{"", "primOut", ""}},
+    {{gParamType_Unknown, "Orient", ""}, {gParamType_Unknown, "Muscle", ""}},
+    {{gParamType_Unknown, "primOut", ""}},
     {},
     {"Hercules"},
 });
@@ -23,8 +23,8 @@ struct VolumeToFEMMesh : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(VolumeToFEMMesh, {
-    {{"", "CV_MESH", ""}, {"", "MS_MESH", ""}, {"float", "Stiffness", ""}, {"float", "SkinDrivenCoeff", ""}, {"float", "VolumePreserve", ""}, {"float", "ExamShapeCoeff", ""}, {"", "ElasticModel", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "CV_MESH", ""}, {gParamType_Unknown, "MS_MESH", ""}, {gParamType_Float, "Stiffness", ""}, {gParamType_Float, "SkinDrivenCoeff", ""}, {gParamType_Float, "VolumePreserve", ""}, {gParamType_Float, "ExamShapeCoeff", ""}, {gParamType_Unknown, "ElasticModel", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });
@@ -36,8 +36,8 @@ struct BindMSToCV : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(BindMSToCV, {
-    {{"", "MS_MESH", ""}, {"", "CV", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "MS_MESH", ""}, {gParamType_Unknown, "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });
@@ -49,8 +49,8 @@ struct DeformCVByInterpolator : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(DeformCVByInterpolator, {
-    {{"", "CV", ""}, {"", "CUR_SKIN", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Unknown, "CUR_SKIN", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });
@@ -62,8 +62,8 @@ struct MakeCVInterpolator : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(MakeCVInterpolator, {
-    {{"", "EmbedPrim", ""}, {"", "CV", ""}},
-    {{"", "CV", ""}, {"", "EmbedPrim", ""}},
+    {{gParamType_Unknown, "EmbedPrim", ""}, {gParamType_Unknown, "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Unknown, "EmbedPrim", ""}},
     {},
     {"Hercules"},
 });
@@ -75,8 +75,8 @@ struct InterpolateEmbedPrimByCV : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(InterpolateEmbedPrimByCV, {
-    {{"", "CV", ""}, {"", "embedPrim", ""}},
-    {{"", "embedPrim", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Unknown, "embedPrim", ""}},
+    {{gParamType_Unknown, "embedPrim", ""}},
     {},
     {"Hercules"},
 });
@@ -88,8 +88,8 @@ struct AssignActByMSTag : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(AssignActByMSTag, {
-    {{"", "CV", ""}, {"", "ACT_LIST", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Unknown, "ACT_LIST", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });
@@ -101,8 +101,8 @@ struct CVDoOneStep : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(CVDoOneStep, {
-    {{"", "CV", ""}, {"", "CUR_SKIN", ""}, {"", "MS_SIGNAL", ""}, {"int", "MaxNewtonIters", "10"}, {"int", "MaxLineSearch", "10"}, {"float", "accuracy", "1e-6"}, {"", "FrameNum", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Unknown, "CUR_SKIN", ""}, {gParamType_Unknown, "MS_SIGNAL", ""}, {gParamType_Int, "MaxNewtonIters", "10"}, {gParamType_Int, "MaxLineSearch", "10"}, {gParamType_Float, "accuracy", "1e-6"}, {gParamType_Unknown, "FrameNum", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });
@@ -114,8 +114,8 @@ struct ViewCurrentParticles : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(ViewCurrentParticles, {
-    {{"", "prim", ""}, {"float", "radius", ""}, {"vec3", "color", ""}, {"vec3", "scale", ""}, {"vec3", "trans", ""}},
-    {{"", "nodes", ""}},
+    {{gParamType_Primitive, "prim", ""}, {gParamType_Float, "radius", ""}, {"vec3", "color", ""}, {"vec3", "scale", ""}, {"vec3", "trans", ""}},
+    {{gParamType_Unknown, "nodes", ""}},
     {},
     {"Hercules"},
 });
@@ -127,8 +127,8 @@ struct ViewCurrentMesh : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(ViewCurrentMesh, {
-    {{"", "prim", ""}, {"vec3", "trans", ""}, {"vec3", "scale", ""}},
-    {{"", "mesh", ""}},
+    {{gParamType_Primitive, "prim", ""}, {"vec3", "trans", ""}, {"vec3", "scale", ""}},
+    {{gParamType_Unknown, "mesh", ""}},
     {},
     {"Hercules"},
 });
@@ -140,8 +140,8 @@ struct DefineMS : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(DefineMS, {
-    {{"", "SCALE", ""}, {"", "TRANS", ""}},
-    {{"", "MS", ""}},
+    {{gParamType_Unknown, "SCALE", ""}, {gParamType_Unknown, "TRANS", ""}},
+    {{gParamType_Unknown, "MS", ""}},
     {},
     {"Hercules"},
 });
@@ -153,8 +153,8 @@ struct ViewMuscleFiber : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(ViewMuscleFiber, {
-    {{"", "Muscle", ""}, {"float", "dt", "1.0"}},
-    {{"", "fiber", ""}},
+    {{gParamType_Unknown, "Muscle", ""}, {gParamType_Float, "dt", "1.0"}},
+    {{gParamType_Unknown, "fiber", ""}},
     {},
     {"Hercules"},
 });
@@ -167,7 +167,7 @@ struct DefaultBoneColor : zeno::ISerialSubgraphNode {
 };
 ZENDEFNODE(DefaultBoneColor, {
     {},
-    {{"", "color", ""}},
+    {{gParamType_Unknown, "color", ""}},
     {},
     {"Hercules"},
 });
@@ -180,7 +180,7 @@ struct DefaultFleshColor : zeno::ISerialSubgraphNode {
 };
 ZENDEFNODE(DefaultFleshColor, {
     {},
-    {{"", "FleshColor", ""}},
+    {{gParamType_Unknown, "FleshColor", ""}},
     {},
     {"Hercules"},
 });
@@ -193,7 +193,7 @@ struct DefaultSkinColor : zeno::ISerialSubgraphNode {
 };
 ZENDEFNODE(DefaultSkinColor, {
     {},
-    {{"", "SkinColor", ""}},
+    {{gParamType_Unknown, "SkinColor", ""}},
     {},
     {"Hercules"},
 });
@@ -205,8 +205,8 @@ struct ViewCVFiber : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(ViewCVFiber, {
-    {{"", "CV", ""}, {"float", "dt", "1.0"}},
-    {{"", "fiber", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Float, "dt", "1.0"}},
+    {{gParamType_Unknown, "fiber", ""}},
     {},
     {"Hercules"},
 });
@@ -218,8 +218,8 @@ struct MarkEmbeddedInterior : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(MarkEmbeddedInterior, {
-    {{"", "MarkInterior", ""}, {"", "Volume", ""}, {"float", "Dx", "0.1"}},
-    {{"", "primOut", ""}},
+    {{gParamType_Unknown, "MarkInterior", ""}, {gParamType_Unknown, "Volume", ""}, {gParamType_Float, "Dx", "0.1"}},
+    {{gParamType_Unknown, "primOut", ""}},
     {},
     {"Hercules"},
 });
@@ -231,8 +231,8 @@ struct BindCV2BoneGeos : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(BindCV2BoneGeos, {
-    {{"", "BoneGeos", ""}, {"", "CV_MESH", ""}, {"float", "Dx", "0.1"}},
-    {{"", "CV_OUT", ""}},
+    {{gParamType_Unknown, "BoneGeos", ""}, {gParamType_Unknown, "CV_MESH", ""}, {gParamType_Float, "Dx", "0.1"}},
+    {{gParamType_Unknown, "CV_OUT", ""}},
     {},
     {"Hercules"},
 });
@@ -244,8 +244,8 @@ struct CVDoOneStepFast : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(CVDoOneStepFast, {
-    {{"", "CV", ""}, {"int", "MaxNewtonIters", "100"}, {"int", "MaxLineSearch", "10"}, {"", "FrameNum", ""}, {"", "CUR_SKIN", ""}, {"float", "accuracy", "1e-6"}, {"", "MS_SIGNAL", ""}, {"float", "rel_epsilon", "1e-5"}, {"int", "window_size", "5"}, {"", "LaplaceOp", ""}, {"", "init_guess", ""}},
-    {{"", "CV", ""}},
+    {{gParamType_Unknown, "CV", ""}, {gParamType_Int, "MaxNewtonIters", "100"}, {gParamType_Int, "MaxLineSearch", "10"}, {gParamType_Unknown, "FrameNum", ""}, {gParamType_Unknown, "CUR_SKIN", ""}, {gParamType_Float, "accuracy", "1e-6"}, {gParamType_Unknown, "MS_SIGNAL", ""}, {gParamType_Float, "rel_epsilon", "1e-5"}, {gParamType_Int, "window_size", "5"}, {gParamType_Unknown, "LaplaceOp", ""}, {gParamType_Unknown, "init_guess", ""}},
+    {{gParamType_Unknown, "CV", ""}},
     {},
     {"Hercules"},
 });

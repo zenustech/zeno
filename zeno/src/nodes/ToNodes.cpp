@@ -19,7 +19,7 @@ struct MakeDummy : zeno::INode {
 
 ZENDEFNODE(MakeDummy, {
     {},
-    {"dummy"},
+    {{"object", "dummy"}},
     {},
     {"layout"},
 });

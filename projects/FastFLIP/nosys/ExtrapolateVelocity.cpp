@@ -5,7 +5,7 @@
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/tools/Morphology.h>
 #include <zeno/VDBGrid.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/zeno.h>
 
 #include "../vdb_velocity_extrapolator.h"
@@ -31,13 +31,13 @@ struct Vec3FieldExtrapolate : zeno::INode {
 
 static int defVec3FieldExtrapolate =
     zeno::defNodeClass<Vec3FieldExtrapolate>("Vec3FieldExtrapolate", {/* inputs: */ {
-                                                                          "Field",
-                                                                          "LiquidSDF",
+                                                                          {gParamType_VDBGrid, "Field"},
+                                                                          {gParamType_VDBGrid, "LiquidSDF"},
                                                                       },
                                                                       /* outputs: */ {},
                                                                       /* params: */
                                                                       {
-                                                                          {"int", "NumIterates", "1"},
+                                                                          {gParamType_Int, "NumIterates", "1"},
                                                                       },
 
                                                                       /* category: */

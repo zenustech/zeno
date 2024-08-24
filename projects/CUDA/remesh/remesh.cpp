@@ -406,15 +406,15 @@ struct UniformRemeshing : INode {
 
 ZENO_DEFNODE(UniformRemeshing)
 ({
-    {{"prim"},
-     {"int", "iterations", "10"},
-     {"float", "edge_length", "0"},
-     {"int", "vert_num", "0"},
-     {"int", "face_num", "0"},
-     {"bool", "use_min_length", "0"},
-     {"string", "line_pick_tag", "line_selected"},
+    {{gParamType_Primitive, "prim"},
+     {gParamType_Int, "iterations", "10"},
+     {gParamType_Float, "edge_length", "0"},
+     {gParamType_Int, "vert_num", "0"},
+     {gParamType_Int, "face_num", "0"},
+     {gParamType_Bool, "use_min_length", "0"},
+     {gParamType_String, "line_pick_tag", "line_selected"},
      {"marked_lines"}},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"primitive"},
 });
@@ -520,15 +520,15 @@ struct AdaptiveRemeshing : INode {
 
 ZENO_DEFNODE(AdaptiveRemeshing)
 ({
-    {{"prim"},
-     {"int", "iterations", "10"},
-     {"float", "max_length", "0"},
-     {"float", "min_length", "0"},
-     {"float", "approximation_tolerance", "0"},
-     {"string", "line_pick_tag", "line_selected"},
-     {"string", "length_tag", "length"},
+    {{gParamType_Primitive, "prim"},
+     {gParamType_Int, "iterations", "10"},
+     {gParamType_Float, "max_length", "0"},
+     {gParamType_Float, "min_length", "0"},
+     {gParamType_Float, "approximation_tolerance", "0"},
+     {gParamType_String, "line_pick_tag", "line_selected"},
+     {gParamType_String, "length_tag", "length"},
      {"marked_lines"}},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"primitive"},
 });
@@ -583,14 +583,14 @@ struct RepairDegenerateTriangle : INode {
 
 ZENO_DEFNODE(RepairDegenerateTriangle)
 ({
-    {{"prim"},
-    {"int", "iterations", "10"},
-    {"float", "min_edge_length", "0.001"},
-    {"float", "min_area", "0.000001"},
-    {"float", "max_angle", "170"},
-    {"string", "degenerate_tag", "degenerate"},
-    {"bool", "color", "0"}},
-    {"prim"},
+    {{gParamType_Primitive, "prim"},
+    {gParamType_Int, "iterations", "10"},
+    {gParamType_Float, "min_edge_length", "0.001"},
+    {gParamType_Float, "min_area", "0.000001"},
+    {gParamType_Float, "max_angle", "170"},
+    {gParamType_String, "degenerate_tag", "degenerate"},
+    {gParamType_Bool, "color", "0"}},
+    {gParamType_Primitive, "prim"},
     {},
     {"primitive"},
 });
@@ -653,11 +653,11 @@ struct CalcCurvature : INode {
 
 ZENO_DEFNODE(CalcCurvature)
 ({
-    {{"prim"},
-     {"string", "min_curv_tag", "curv_min"},
-     {"string", "max_curv_tag", "curv_max"},
-     {"string", "gaussian_curv_tag", "curv_gaussian"}},
-    {"prim"},
+    {{gParamType_Primitive, "prim"},
+     {gParamType_String, "min_curv_tag", "curv_min"},
+     {gParamType_String, "max_curv_tag", "curv_max"},
+     {gParamType_String, "gaussian_curv_tag", "curv_gaussian"}},
+    {gParamType_Primitive, "prim"},
     {},
     {"primitive"},
 });
@@ -722,10 +722,10 @@ struct MarkBoundary : INode {
 
 ZENO_DEFNODE(MarkBoundary)
 ({
-    {{"prim"},
-     {"string", "vert_boundary_tag", "v_boundary"},
-     {"string", "edge_boundary_tag", "e_boundary"}},
-    {"prim"},
+    {{gParamType_Primitive, "prim"},
+     {gParamType_String, "vert_boundary_tag", "v_boundary"},
+     {gParamType_String, "edge_boundary_tag", "e_boundary"}},
+    {gParamType_Primitive, "prim"},
     {},
     {"primitive"},
 });
@@ -987,9 +987,9 @@ struct SelectIntersectingFaces : INode {
 
 ZENO_DEFNODE(SelectIntersectingFaces)
 ({
-    {{"prim"},
-    {"string", "intersecting_tag", "intersecting"},
-    {"bool", "color", "0"}},
+    {{gParamType_Primitive, "prim"},
+    {gParamType_String, "intersecting_tag", "intersecting"},
+    {gParamType_Bool, "color", "0"}},
     {("prim")},
     {},
     {"primitive"},

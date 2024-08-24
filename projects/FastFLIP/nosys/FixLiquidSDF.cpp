@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
@@ -29,14 +29,14 @@ struct PushOutLiquidSDF : zeno::INode {
 };
 
 static int defPushOutLiquidSDF = zeno::defNodeClass<PushOutLiquidSDF>(
-    "PushOutLiquidSDF", {/* inputs: */ {"Dx",
-                             "LiquidSDF",
-                             "SolidSDF",
+    "PushOutLiquidSDF", {/* inputs: */ {{gParamType_Float, "Dx"},
+                             {gParamType_VDBGrid, "LiquidSDF"},
+                             {gParamType_VDBGrid, "SolidSDF"},
                          },
                          /* outputs: */ {},
                          /* params: */
                          {
-                             {"float", "dx", "0.0"},
+                             {gParamType_Float, "dx", "0.0"},
                          },
 
                          /* category: */

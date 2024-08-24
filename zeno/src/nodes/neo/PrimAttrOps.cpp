@@ -6,9 +6,9 @@
 #include <zeno/utils/arrayindex.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/parallel_reduce.h>
-#include <zeno/types/CurveObject.h>
 #include <stdexcept>
 #include <cmath>
+
 
 namespace zeno {
 namespace {
@@ -54,14 +54,14 @@ struct PrimFillAttr : INode {
 
 ZENDEFNODE(PrimFillAttr, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         {"enum vert tri loop poly line", "scope", "vert"},
-    {"string", "attr", "rad"},
+    {gParamType_String, "attr", "rad"},
     {"enum float vec3f int", "type", "float"},
-    {"float", "value", "0"},
+    {gParamType_Float, "value", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -79,11 +79,11 @@ struct PrimFillColor : PrimFillAttr {
 
 ZENDEFNODE(PrimFillColor, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "value", "1,0.5,0.5"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "value", "1,0.5,0.5"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -152,13 +152,13 @@ struct PrimFloatAttrToInt : INode {
 
 ZENDEFNODE(PrimFloatAttrToInt, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "attr", "tag"},
-    {"string", "attrOut", "tag"},
-    {"float", "divisor", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "attr", "tag"},
+    {gParamType_String, "attrOut", "tag"},
+    {gParamType_Float, "divisor", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -232,13 +232,13 @@ struct PrimIntAttrToFloat : INode {
 
 ZENDEFNODE(PrimIntAttrToFloat, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "attr", "tag"},
-    {"string", "attrOut", "tag"},
-    {"float", "divisor", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "attr", "tag"},
+    {gParamType_String, "attrOut", "tag"},
+    {gParamType_Float, "divisor", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -290,14 +290,14 @@ struct PrimAttrInterp : INode {
 
 ZENDEFNODE(PrimAttrInterp, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "prim2", "", zeno::Socket_ReadOnly},
-    {"string", "attr", ""},
-    {"float", "factor", "0.5"},
-    {"string", "facAttr", ""},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim2", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "attr", ""},
+    {gParamType_Float, "factor", "0.5"},
+    {gParamType_String, "facAttr", ""},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -305,7 +305,7 @@ ZENDEFNODE(PrimAttrInterp, {
 });
 
 template <class T>
-static void prim_remap(std::vector<T> &arr, bool autocompute, float inMax, float inMin, float outputMax, float outputMin, bool clampMax, bool clampMin, bool ramp, CurveObject *curve)
+static void prim_remap(std::vector<T> &arr, bool autocompute, float inMax, float inMin, float outputMax, float outputMin, bool clampMax, bool clampMin, bool ramp, const CurvesData *curve)
 {
         if (autocompute) {
             inMin = zeno::parallel_reduce_array<T>(arr.size(), arr[0], [&] (size_t i) -> T { return arr[i]; },
@@ -354,16 +354,16 @@ struct PrimAttrRemap : INode {
         auto outputMax = get_input2<float>("Output max");
         auto clampMin = get_input2<bool>("Clamp min");
         auto clampMax = get_input2<bool>("Clamp max");
-        auto curve = get_input<CurveObject>("Remap Ramp");
+        auto curve = get_input_prim<CurvesData>("Remap Ramp");
         auto ramp = get_input2<bool>("Use Ramp");
         if (scope == "vert"){
             if (prim->verts.attr_is<float>(attr)){
                 auto &arr = prim->verts.attr<float>(attr);
-                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else if (prim->verts.attr_is<int>(attr)){
                 auto &arr = prim->verts.attr<int>(attr);
-                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else{
                 throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
@@ -372,11 +372,11 @@ struct PrimAttrRemap : INode {
         else if (scope == "tri"){
             if (prim->tris.attr_is<float>(attr)){
                 auto &arr = prim->tris.attr<float>(attr);
-                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else if (prim->tris.attr_is<int>(attr)){
                 auto &arr = prim->tris.attr<int>(attr);
-                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else{
                 throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
@@ -385,11 +385,11 @@ struct PrimAttrRemap : INode {
         else if (scope == "loop"){
             if (prim->loops.attr_is<float>(attr)){
                 auto &arr = prim->loops.attr<float>(attr);
-                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else if (prim->loops.attr_is<int>(attr)){
                 auto &arr = prim->loops.attr<int>(attr);
-                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else{
                 throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
@@ -398,11 +398,11 @@ struct PrimAttrRemap : INode {
         else if (scope == "poly"){
             if (prim->polys.attr_is<float>(attr)){
                 auto &arr = prim->polys.attr<float>(attr);
-                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else if (prim->polys.attr_is<int>(attr)){
                 auto &arr = prim->polys.attr<int>(attr);
-                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else{
                 throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
@@ -411,11 +411,11 @@ struct PrimAttrRemap : INode {
         else if (scope == "line"){
             if (prim->lines.attr_is<float>(attr)){
                 auto &arr = prim->lines.attr<float>(attr);
-                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<float>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else if (prim->lines.attr_is<int>(attr)){
                 auto &arr = prim->lines.attr<int>(attr);
-                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve.get());
+                prim_remap<int>(arr, autoCompute, inMax, inMin, outputMax, outputMin, clampMax, clampMin, ramp, curve);
                 }
             else{
                 throw std::runtime_error("PrimAttrRemap: loops attr type not supported");
@@ -428,22 +428,22 @@ struct PrimAttrRemap : INode {
 
 ZENDEFNODE(PrimAttrRemap, {
     {
-        {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         {"enum vert tri loop poly line", "scope", "vert"},
-        {"string", "attr", ""},
-        {"bool", "Auto Compute input range", "0"},
-        {"bool", "Clamp min", "0"},
-        {"bool", "Clamp max", "0"},
-        {"float", "Input min", "0"},
-        {"float", "Input max", "1"},
-        {"float", "Output min", "0"},
-        {"float", "Output max", "1"},
-        {"bool", "Use Ramp", "0"},
-        {"curve", "Remap Ramp"},
+        {gParamType_String, "attr", ""},
+        {gParamType_Bool, "Auto Compute input range", "0"},
+        {gParamType_Bool, "Clamp min", "0"},
+        {gParamType_Bool, "Clamp max", "0"},
+        {gParamType_Float, "Input min", "0"},
+        {gParamType_Float, "Input max", "1"},
+        {gParamType_Float, "Output min", "0"},
+        {gParamType_Float, "Output max", "1"},
+        {gParamType_Bool, "Use Ramp", "0"},
+        {gParamType_Curve, "Remap Ramp"},
         
     },
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
     },
     {
     },

@@ -17,9 +17,9 @@ struct PrimGenerateONB : INode {
         auto bitanAttrOut = get_input2<std::string>("bitanAttrOut");
         auto writebackDir = get_input2<bool>("doNormalize");
 
-        auto &dir = prim->verts.attr<vec3f>(dirAttr);
-        auto &tan = prim->verts.add_attr<vec3f>(tanAttrOut);
-        auto &bitan = prim->verts.add_attr<vec3f>(bitanAttrOut);
+        auto &dir = prim->verts.attr<zeno::vec3f>(dirAttr);
+        auto &tan = prim->verts.add_attr<zeno::vec3f>(tanAttrOut);
+        auto &bitan = prim->verts.add_attr<zeno::vec3f>(bitanAttrOut);
 
         parallel_for(prim->verts.size(), [&] (size_t i) {
             auto d = normalizeSafe(dir[i]);
@@ -34,15 +34,15 @@ struct PrimGenerateONB : INode {
 
 ZENO_DEFNODE(PrimGenerateONB)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "dirAttr", "nrm"},
-        {"string", "tanAttrOut", "tang"},
-        {"string", "bitanAttrOut", "bitang"},
-        {"bool", "writebackDir", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "dirAttr", "nrm"},
+        {gParamType_String, "tanAttrOut", "tang"},
+        {gParamType_String, "bitanAttrOut", "bitang"},
+        {gParamType_Bool, "writebackDir", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });
@@ -58,9 +58,9 @@ struct PrimLineGenerateONB : zeno::INode {
         size_t n = prim->verts.size();
         if (lineSort) primLineSort(prim.get());
 
-        auto &dirs = prim->verts.add_attr<vec3f>(dirAttrOut);
-        auto &tans = prim->verts.add_attr<vec3f>(tanAttrOut);
-        auto &bitans = prim->verts.add_attr<vec3f>(bitanAttrOut);
+        auto &dirs = prim->verts.add_attr<zeno::vec3f>(dirAttrOut);
+        auto &tans = prim->verts.add_attr<zeno::vec3f>(tanAttrOut);
+        auto &bitans = prim->verts.add_attr<zeno::vec3f>(bitanAttrOut);
 
         if (n >= 2) {
             parallel_for((size_t)1, n - 1, [&] (size_t i) {
@@ -95,15 +95,15 @@ struct PrimLineGenerateONB : zeno::INode {
 
 ZENO_DEFNODE(PrimLineGenerateONB)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "dirAttrOut", "dir"},
-        {"string", "tanAttrOut", "tang"},
-        {"string", "bitanAttrOut", "bitang"},
-        {"bool", "lineSort", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "dirAttrOut", "dir"},
+        {gParamType_String, "tanAttrOut", "tang"},
+        {gParamType_String, "bitanAttrOut", "bitang"},
+        {gParamType_Bool, "lineSort", "1"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"primitive"},
 });

@@ -37,7 +37,7 @@ ZENDEFNODE(ShaderInputAttr, {
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {
-        {"shader", "out"},
+        {gParamType_Unknown, "out"},
     },
     {},
     {"shader"},
@@ -53,8 +53,8 @@ struct MakeShaderUniform : zeno::INode {
             for (const auto& [key, value] : uniformDict->lut) {
                 auto index = std::stoi(key);
                 if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
-                    auto value = num->get<vec3f>();
-                    std::vector<vec3f>& attr_arr = prim->add_attr<vec3f>("pos");
+                    auto value = num->get<zeno::vec3f>();
+                    std::vector<vec3f>& attr_arr = prim->add_attr<zeno::vec3f>("pos");
                     if (index < attr_arr.size()) {
                         attr_arr[index] = value;
                     }
@@ -71,11 +71,11 @@ struct MakeShaderUniform : zeno::INode {
 
 ZENDEFNODE(MakeShaderUniform, {
     {
-        {"int", "size", "512"},
-        {"uniformDict"},
+        {gParamType_Int, "size", "512"},
+        {"dict", "uniformDict"},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"shader"},
@@ -99,11 +99,11 @@ struct ShaderUniformAttr : ShaderNodeClone<ShaderUniformAttr> {
 
 ZENDEFNODE(ShaderUniformAttr, {
                                 {
-                                    {"int", "idx", "0"},
+                                    {gParamType_Int, "idx", "0"},
                                     {"enum float vec2 vec3 vec4", "type", "vec3"},
                                 },
                                 {
-                                    {"shader", "out"},
+                                    {gParamType_Unknown, "out"},
                                 },
                                 {},
                                 {"shader"},

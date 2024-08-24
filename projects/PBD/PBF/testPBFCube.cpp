@@ -17,7 +17,7 @@ struct testPBFCube : INode{
         // int cubeSize = 20;
         // float spacing = 1;
         auto numParticles = get_input<zeno::NumericObject>("numParticles")->get<int>();
-        auto initPos = get_input<zeno::NumericObject>("initPos")->get<vec3f>();
+        auto initPos = get_input<zeno::NumericObject>("initPos")->get<zeno::vec3f>();
         auto cubeSize = get_input<zeno::NumericObject>("cubeSize")->get<float>();
         auto spacing = get_input<zeno::NumericObject>("spacing")->get<float>();
 
@@ -42,10 +42,10 @@ struct testPBFCube : INode{
 
 ZENDEFNODE(testPBFCube, {
     {
-        {"int", "numParticles", "10000"},
-        {"vec3f", "initPos", "10,10,10"},
-        {"float", "cubeSize", "20"},
-        {"float", "spacing", "1"},
+        {gParamType_Int, "numParticles", "10000"},
+        {gParamType_Vec3f, "initPos", "10,10,10"},
+        {gParamType_Float, "cubeSize", "20"},
+        {gParamType_Float, "spacing", "1"},
     },
     {"outPrim"},
     {},

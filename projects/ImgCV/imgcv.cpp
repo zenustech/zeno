@@ -112,9 +112,9 @@ struct CVImageRead : CVINode {
 
 ZENDEFNODE(CVImageRead, {
     {
-        {"readpath", "path", ""},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
         {"enum RGB GRAY RGBA UNCHANGED", "mode", "RGB"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "image"},
@@ -142,7 +142,7 @@ struct CVSepAlpha : CVINode {
 ZENDEFNODE(CVSepAlpha, {
     {
         {"CVImageObject", "imageRGBA"},
-        {"bool", "alphaAsGray", "0"},
+        {gParamType_Bool, "alphaAsGray", "0"},
     },
     {
         {"CVImageObject", "imageRGB"},
@@ -192,8 +192,8 @@ struct CVImageShow : CVINode {
 ZENDEFNODE(CVImageShow, {
     {
         {"CVImageObject", "image"},
-        {"string", "title", "imshow"},
-        {"bool", "waitKey", "1"},
+        {gParamType_String, "title", "imshow"},
+        {gParamType_Bool, "waitKey", "1"},
     },
     {
     },
@@ -212,11 +212,11 @@ struct CVWaitKey : CVINode {
 
 ZENDEFNODE(CVWaitKey, {
     {
-        {"int", "delay", "0"},
+        {gParamType_Int, "delay", "0"},
     },
     {
-        {"bool", "hasPressed"},
-        {"int", "keyCode"},
+        {gParamType_Bool, "hasPressed"},
+        {gParamType_Int, "keyCode"},
     },
     {},
     {"opencv"},
@@ -286,8 +286,8 @@ ZENDEFNODE(CVImageMultiply, {
     {
         {"CVImageObject", "image"},
         {"float"/*or CVImageObject*/, "factor", "1"},
-        {"bool", "inverse", "0"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "inverse", "0"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "resimage"},
@@ -312,8 +312,8 @@ ZENDEFNODE(CVImageDivide, {
     {
         {"CVImageObject", "image"},
         {"float"/*or CVImageObject*/, "factor", "1"},
-        {"bool", "inverse", "0"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "inverse", "0"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "resimage"},
@@ -356,8 +356,8 @@ ZENDEFNODE(CVImageBlend, {
         {"CVImageObject", "image1"},
         {"CVImageObject", "image2"},
         {"float"/*or CVImageObject*/, "factor", "0.5"},
-        {"bool", "inverse", "0"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "inverse", "0"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "resimage"},
@@ -383,7 +383,7 @@ struct CVImageInvert : CVINode {
 ZENDEFNODE(CVImageInvert, {
     {
         {"CVImageObject", "image"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "resimage"},
@@ -466,7 +466,7 @@ struct CVImageFillColor : CVINode {
     void apply() override {
         auto likeimage = get_input<CVImageObject>("image");
         auto is255 = get_input2<bool>("is255");
-        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<zeno::vec3f>("color"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         if (has_input("mask")) {
@@ -499,9 +499,9 @@ ZENDEFNODE(CVImageFillColor, {
     {
         {"CVImageObject", "image"},
         {"optional CVImageObject", "mask"},
-        {"bool", "is255", "1"},
-        {"vec3f", "color", "1,1,1"},
-        {"bool", "inplace", "0"},
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Vec3f, "color", "1,1,1"},
+        {gParamType_Bool, "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
@@ -532,8 +532,8 @@ ZENDEFNODE(CVImageMaskedAssign, {
         {"CVImageObject", "image"},
         {"CVImageObject", "srcImage"},
         {"optional CVImageObject", "mask"},
-        {"bool", "is255", "1"},
-        {"bool", "inplace", "0"},
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Bool, "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
@@ -622,13 +622,13 @@ ZENDEFNODE(CVImageBlit, {
     {
         {"CVImageObject", "image"},
         {"CVImageObject", "srcImage"},
-        {"int", "X0", "0"},
-        {"int", "Y0", "0"},
-        {"bool", "centered", "0"},
+        {gParamType_Int, "X0", "0"},
+        {gParamType_Int, "Y0", "0"},
+        {gParamType_Bool, "centered", "0"},
         {"optional CVImageObject", "mask"},
-        {"bool", "isAlphaMask", "1"},
-        {"bool", "is255", "1"},
-        {"bool", "inplace", "0"},
+        {gParamType_Bool, "isAlphaMask", "1"},
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Bool, "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
@@ -657,12 +657,12 @@ struct CVImageCrop : CVINode {
 ZENDEFNODE(CVImageCrop, {
     {
         {"CVImageObject", "srcimage"},
-        {"int", "X0", "0"},
-        {"int", "Y0", "0"},
-        {"int", "DX", "32"},
-        {"int", "DY", "32"},
-        {"bool", "is255", "1"},
-        {"bool", "deepCopy", "1"},
+        {gParamType_Int, "X0", "0"},
+        {gParamType_Int, "Y0", "0"},
+        {gParamType_Int, "DX", "32"},
+        {gParamType_Int, "DY", "32"},
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Bool, "deepCopy", "1"},
     },
     {
         {"CVImageObject", "image"},
@@ -692,11 +692,11 @@ struct CVMakeImage : CVINode {
 
 ZENDEFNODE(CVMakeImage, {
     {
-        {"int", "width", "512"},
-        {"int", "height", "512"},
+        {gParamType_Int, "width", "512"},
+        {gParamType_Int, "height", "512"},
         {"enum RGB GRAY RGBA", "mode", "RGB"},
-        {"bool", "whiteBg", "0"},
-        {"bool", "is255", "1"},
+        {gParamType_Bool, "whiteBg", "0"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "image"},
@@ -719,9 +719,9 @@ ZENDEFNODE(CVGetImageSize, {
         {"CVImageObject", "image"},
     },
     {
-        {"int", "width"},
-        {"int", "height"},
-        {"int", "channels"},
+        {gParamType_Int, "width"},
+        {gParamType_Int, "height"},
+        {gParamType_Int, "channels"},
     },
     {},
     {"opencv"},
@@ -734,8 +734,8 @@ struct CVImageFillGrad : CVINode {
         auto scale = get_input2<float>("scale");
         auto offset = get_input2<float>("offset");
         auto is255 = get_input2<bool>("is255");
-        auto color1 = tocvscalar<float>(get_input2<vec3f>("color1"));
-        auto color2 = tocvscalar<float>(get_input2<vec3f>("color2"));
+        auto color1 = tocvscalar<float>(get_input2<zeno::vec3f>("color1"));
+        auto color2 = tocvscalar<float>(get_input2<zeno::vec3f>("color2"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         vec2i shape(image->image.size[1], image->image.size[0]);
@@ -768,13 +768,13 @@ struct CVImageFillGrad : CVINode {
 ZENDEFNODE(CVImageFillGrad, {
     {
         {"CVImageObject", "image"},
-        {"float", "angle", "0"},     // rotation clock-wise
-        {"float", "scale", "1"},     // thickness of gradient
-        {"float", "offset", "0.5"},  // 0 to 1
-        {"bool", "is255", "1"},
-        {"vec3f", "color1", "0,0,0"},
-        {"vec3f", "color2", "1,1,1"},
-        {"bool", "inplace", "0"},
+        {gParamType_Float, "angle", "0"},     // rotation clock-wise
+        {gParamType_Float, "scale", "1"},     // thickness of gradient
+        {gParamType_Float, "offset", "0.5"},  // 0 to 1
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Vec3f, "color1", "0,0,0"},
+        {gParamType_Vec3f, "color2", "1,1,1"},
+        {gParamType_Bool, "inplace", "0"},
     },
     {
         {"CVImageObject", "image"},
@@ -786,7 +786,7 @@ ZENDEFNODE(CVImageFillGrad, {
 struct CVImageDrawPoly : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("image");
-        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<zeno::vec3f>("color"));
         if (!get_input2<bool>("inplace"))
             image = std::make_shared<CVImageObject>(*image);
         auto prim = get_input<PrimitiveObject>("prim");
@@ -841,14 +841,14 @@ struct CVImageDrawPoly : CVINode {
 ZENDEFNODE(CVImageDrawPoly, {
     {
         {"CVImageObject", "image"},
-        {"PrimitiveObject", "prim"},
-        {"vec3f", "color", "1,1,1"},
-        {"PrimitiveObject", "points"},
-        {"int", "linewidth", "0"},
-        {"bool", "inplace", "0"},
-        {"bool", "batched", "0"},
-        {"bool", "antialias", "0"},
-        {"bool", "is255", "1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Vec3f, "color", "1,1,1"},
+        {gParamType_Primitive, "points"},
+        {gParamType_Int, "linewidth", "0"},
+        {gParamType_Bool, "inplace", "0"},
+        {gParamType_Bool, "batched", "0"},
+        {gParamType_Bool, "antialias", "0"},
+        {gParamType_Bool, "is255", "1"},
     },
     {
         {"CVImageObject", "image"},
@@ -868,7 +868,7 @@ struct CVImagePutText : CVINode {
         auto antialias = get_input2<bool>("antialias");
         auto scale = get_input2<float>("scale");
         auto is255 = get_input2<bool>("is255");
-        auto color = tocvscalar<double>(get_input2<vec3f>("color") * (is255 ? 255 : 1));
+        auto color = tocvscalar<double>(get_input2<zeno::vec3f>("color") * (is255 ? 255 : 1));
         cv::Point org(get_input2<int>("X0"), get_input2<int>("Y0"));
         cv::putText(image->image, text, org, fontFace, scale, color,
                     thickness, antialias ? cv::LINE_AA : cv::LINE_8);
@@ -879,16 +879,16 @@ struct CVImagePutText : CVINode {
 ZENDEFNODE(CVImagePutText, {
     {
         {"CVImageObject", "image"},
-        {"string", "text", "Hello, World"},
-        {"int", "X0", "0"},
-        {"int", "Y0", "0"},
-        {"bool", "is255", "1"},
-        {"vec3f", "color", "1,1,1"},
-        {"float", "scale", "1"},
-        {"int", "thickness", "1"},
-        {"int", "fontFace", "0"},
-        {"bool", "antialias", "0"},
-        {"bool", "inplace", "0"},
+        {gParamType_String, "text", "Hello, World"},
+        {gParamType_Int, "X0", "0"},
+        {gParamType_Int, "Y0", "0"},
+        {gParamType_Bool, "is255", "1"},
+        {gParamType_Vec3f, "color", "1,1,1"},
+        {gParamType_Float, "scale", "1"},
+        {gParamType_Int, "thickness", "1"},
+        {gParamType_Int, "fontFace", "0"},
+        {gParamType_Bool, "antialias", "0"},
+        {gParamType_Bool, "inplace", "0"},
     },
     {
         {"CVImageObject", "resimage"},

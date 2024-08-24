@@ -330,13 +330,13 @@ struct PrimUnmerge : INode {
 
 ZENDEFNODE(PrimUnmerge, {
     {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
-        {"string", "tagAttr", "tag"},
-        {"bool", "preSimplify", "0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_String, "tagAttr", "tag"},
+        {gParamType_Bool, "preSimplify", "0"},
         {"enum verts faces", "method", "verts"},
     },
     {
-        {"list", "listPrim"},
+        {gParamType_List, "listPrim"},
     },
     {
     },

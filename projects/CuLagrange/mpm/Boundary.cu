@@ -607,9 +607,9 @@ ZENDEFNODE(ApplyWindImpulseOnZSGrid, {
                                           "ZSVelField",
                                           "ZSPartition",
                                           "ZSGrid",
-                                          {"float", "windDrag", "0"},
-                                          {"float", "windDensity", "1"},
-                                          {"float", "dt", "0.1"}},
+                                          {gParamType_Float, "windDrag", "0"},
+                                          {gParamType_Float, "windDensity", "1"},
+                                          {gParamType_Float, "dt", "0.1"}},
                                          {"ZSGrid"},
                                          {},
                                          {"MPM"},
@@ -625,7 +625,7 @@ struct TransformZSLevelSet : INode {
         using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
         // translation
         if (has_input("translation")) {
-            auto b = get_input<NumericObject>("translation")->get<vec3f>();
+            auto b = get_input<NumericObject>("translation")->get<zeno::vec3f>();
             match(
                 [&b](basic_ls_t &basicLs) {
                     match(
@@ -663,7 +663,7 @@ struct TransformZSLevelSet : INode {
         }
         // rotation
         if (has_input("eulerXYZ")) {
-            auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<vec3f>();
+            auto yprAngles = get_input<NumericObject>("eulerXYZ")->get<zeno::vec3f>();
             auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1], yprAngles[2], zs::degree_c, zs::ypr_c};
             match(
                 [&rot](basic_ls_t &basicLs) {

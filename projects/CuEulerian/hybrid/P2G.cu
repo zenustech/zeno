@@ -227,7 +227,7 @@ struct ZSPrimitiveToSparseGrid : INode {
 
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
                                   wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;
@@ -342,7 +342,7 @@ struct ZSPrimitiveToSparseGrid : INode {
                          nchns] __device__(std::size_t cellno) mutable {
                             for (int d = 0; d < nchns; ++d) {
                                 auto wd = spg(wOffset + d, cellno);
-                                if (wd > limits<float>::epsilon() * 10) {
+                                if (wd > detail::deduce_numeric_epsilon<float>() * 10) {
                                     spg(tagDstOffset + d, cellno) /= wd;
                                 }
                             }
@@ -353,7 +353,7 @@ struct ZSPrimitiveToSparseGrid : INode {
                          wOffset = spg._grid.getPropertyOffset("weight"),
                          nchns] __device__(std::size_t cellno) mutable {
                             auto w = spg(wOffset, cellno);
-                            if (w > limits<float>::epsilon() * 10) {
+                            if (w > detail::deduce_numeric_epsilon<float>() * 10) {
                                 for (int d = 0; d < nchns; ++d)
                                     spg(tagDstOffset + d, cellno) /= w;
                             }
@@ -368,15 +368,15 @@ ZENDEFNODE(ZSPrimitiveToSparseGrid, {
                                         /* inputs: */
                                         {"ZSParticles",
                                          "SparseGrid",
-                                         {"string", "ParticleAttribute", ""},
-                                         {"string", "GridAttribute"},
+                                         {gParamType_String, "ParticleAttribute", ""},
+                                         {gParamType_String, "GridAttribute"},
                                          {"enum replace-all replace-local accumulate", "OpType", "replace-all"},
                                          {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
-                                         {"bool", "staggered", "0"},
-                                         {"bool", "initialize", "1"},
-                                         {"bool", "normalize", "1"},
-                                         {"bool", "activateBlock", "0"},
-                                         {"bool", "activateMultiGrid", "0"}},
+                                         {gParamType_Bool, "staggered", "0"},
+                                         {gParamType_Bool, "initialize", "1"},
+                                         {gParamType_Bool, "normalize", "1"},
+                                         {gParamType_Bool, "activateBlock", "0"},
+                                         {gParamType_Bool, "activateMultiGrid", "0"}},
                                         /* outputs: */
                                         {"SparseGrid"},
                                         /* params: */

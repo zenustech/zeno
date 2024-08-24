@@ -35,7 +35,7 @@ struct CountAlembicPrims : INode {
 
 ZENDEFNODE(CountAlembicPrims, {
     {{"ABCTree", "abctree"}},
-    {{"int", "count"}},
+    {{gParamType_Int, "count"}},
     {},
     {"alembic"},
 });
@@ -170,15 +170,15 @@ struct GetAlembicPrim : INode {
 
 ZENDEFNODE(GetAlembicPrim, {
     {
-        {"bool", "flipFrontBack", "1"},
+        {gParamType_Bool, "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
-        {"int", "index", "0"},
-        {"bool", "use_xform", "0"},
-        {"bool", "triangulate", "0"},
-        {"bool", "use_name", "0"},
-        {"string", "name", ""},
+        {gParamType_Int, "index", "0"},
+        {gParamType_Bool, "use_xform", "0"},
+        {gParamType_Bool, "triangulate", "0"},
+        {gParamType_Bool, "use_name", "0"},
+        {gParamType_String, "name", ""},
     },
-    {{"PrimitiveObject", "prim"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"alembic"},
 });
@@ -209,12 +209,12 @@ struct AllAlembicPrim : INode {
 
 ZENDEFNODE(AllAlembicPrim, {
     {
-        {"bool", "flipFrontBack", "1"},
+        {gParamType_Bool, "flipFrontBack", "1"},
         {"ABCTree", "abctree"},
-        {"bool", "use_xform", "0"},
-        {"bool", "triangulate", "0"},
+        {gParamType_Bool, "use_xform", "0"},
+        {gParamType_Bool, "triangulate", "0"},
     },
-    {{"PrimitiveObject", "prim"}},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"alembic"},
 });
@@ -317,18 +317,18 @@ struct AlembicPrimList : INode {
 
 ZENDEFNODE(AlembicPrimList, {
     {
-        {"bool", "flipFrontBack", "1"},
-        {"ABCTree", "abctree"},
-        {"bool", "use_xform", "0"},
-        {"bool", "triangulate", "0"},
-        {"bool", "splitByFaceset", "0"},
-        {"bool", "killDeadVerts", "1"},
-        {"string", "pathInclude", ""},
-        {"string", "pathExclude", ""},
-        {"string", "facesetInclude", ""},
-        {"string", "facesetExclude", ""},
+        {gParamType_Bool, "flipFrontBack", "1"},
+        {gParamType_Unknown, "abctree"},
+        {gParamType_Bool, "use_xform", "0"},
+        {gParamType_Bool, "triangulate", "0"},
+        {gParamType_Bool, "splitByFaceset", "0"},
+        {gParamType_Bool, "killDeadVerts", "1"},
+        {gParamType_String, "pathInclude", ""},
+        {gParamType_String, "pathExclude", ""},
+        {gParamType_String, "facesetInclude", ""},
+        {gParamType_String, "facesetExclude", ""},
     },
-    {"prims"},
+    {{gParamType_List, "prims"}},
     {},
     {"alembic"},
 });
@@ -390,20 +390,20 @@ struct GetAlembicCamera : INode {
 ZENDEFNODE(GetAlembicCamera, {
     {
         {"ABCTree", "abctree"},
-        {"int", "nx", "1920"},
-        {"int", "ny", "1080"},
+        {gParamType_Int, "nx", "1920"},
+        {gParamType_Int, "ny", "1080"},
     },
     {
-        {"vec3f", "pos"},
-        {"vec3f", "up"},
-        {"vec3f", "view"},
-        {"vec3f", "right"},
-        {"float","fov_y"},
-        {"float","focal_length"},
-        {"float","horizontalAperture"},
-        {"float","verticalAperture"},
-        {"float","near"},
-        {"float","far"},
+        {gParamType_Vec3f, "pos"},
+        {gParamType_Vec3f, "up"},
+        {gParamType_Vec3f, "view"},
+        {gParamType_Vec3f, "right"},
+        {gParamType_Float,"fov_y"},
+        {gParamType_Float,"focal_length"},
+        {gParamType_Float,"horizontalAperture"},
+        {gParamType_Float,"verticalAperture"},
+        {gParamType_Float,"near"},
+        {gParamType_Float,"far"},
     },
     {},
     {"alembic"},
@@ -438,7 +438,7 @@ struct ImportAlembicPrim : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, outOfRangeAsEmpty);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -473,17 +473,17 @@ struct ImportAlembicPrim : INode {
 
 ZENDEFNODE(ImportAlembicPrim, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"frameid"},
-        {"int", "index", "-1"},
-        {"bool", "use_xform", "0"},
-        {"bool", "triangulate", "0"},
-        {"bool", "read_face_set", "0"},
-        {"bool", "outOfRangeAsEmpty", "0"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Int, "frameid"},
+        {gParamType_Int, "index", "-1"},
+        {gParamType_Bool, "use_xform", "0"},
+        {gParamType_Bool, "triangulate", "0"},
+        {gParamType_Bool, "read_face_set", "0"},
+        {gParamType_Bool, "outOfRangeAsEmpty", "0"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {},
     {"alembic"},
 });

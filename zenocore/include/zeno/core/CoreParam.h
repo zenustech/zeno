@@ -10,6 +10,8 @@
 #include <set>
 #include <map>
 #include <optional>
+#include <zeno/core/data.h>
+
 
 namespace zeno {
 
@@ -22,12 +24,14 @@ struct ObjectLink {
     ObjectParam* toparam = nullptr;
     std::string fromkey;    //for dict/list 对于list来说，keyName好像不合适，不过ILink本来就存在于links里面，已经是列表储存了。
     std::string tokey;
+    std::string targetParam;
 };
 
 
 struct PrimitiveLink {
     PrimitiveParam* fromparam = nullptr;
     PrimitiveParam* toparam = nullptr;
+    std::string targetParam;
 };
 
 struct CoreParam {
@@ -43,17 +47,17 @@ struct CoreParam {
 
 struct ObjectParam : CoreParam {
     std::list<std::shared_ptr<ObjectLink>> links;
-    zany spObject;
+    zany /*zeno::reflect::Any*/ spObject;        //只储存基类指针，其实已经是一种"any"了。
 
     ParamObject exportParam() const;
 };
 
 struct PrimitiveParam : CoreParam {
-    zvariant defl;
-    zvariant result;
+    zeno::reflect::Any defl;
+    zeno::reflect::Any result;
     std::list<std::shared_ptr<PrimitiveLink>> links;
     ParamControl control = NullControl;
-    std::optional<ControlProperty> optCtrlprops;
+    zeno::reflect::Any ctrlProps;
     bool bVisible = true;
 
     ParamPrimitive exportParam() const;

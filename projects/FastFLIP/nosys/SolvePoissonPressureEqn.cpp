@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
@@ -66,21 +66,21 @@ struct AssembleSolvePPE : zeno::INode {
 
 static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>(
     "AssembleSolvePPE", {/* inputs: */ {
-                             "dt","Dx",
-                             {"float", "Density", "1000.0"},
-                             {"float", "SurfaceTension", "0.0"},
-                             "LiquidSDF",
-                             "Divergence",
-                             "Pressure",
-                             "CellFWeight",
-                             "Velocity",
-                             "SolidVelocity",
-                             "Curvature",
+                             {gParamType_Float, "dt"},{gParamType_Float, "Dx"},
+                             {gParamType_Float, "Density", "1000.0"},
+                             {gParamType_Float, "SurfaceTension", "0.0"},
+                             {gParamType_VDBGrid, "LiquidSDF"},
+                             {gParamType_VDBGrid, "Divergence"},
+                             {gParamType_VDBGrid, "Pressure"},
+                             {gParamType_VDBGrid, "CellFWeight"},
+                             {gParamType_VDBGrid, "Velocity"},
+                             {gParamType_VDBGrid, "SolidVelocity"},
+                             {gParamType_VDBGrid, "Curvature"},
                          },
                          /* outputs: */ {},
                          /* params: */
                          {
-                             {"float", "dx", "0.0"},
+                             {gParamType_Float, "dx", "0.0"},
                          },
 
                          /* category: */

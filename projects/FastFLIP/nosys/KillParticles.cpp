@@ -159,8 +159,8 @@ struct KillParticlesInSDF : zeno::INode {
 };
 
 ZENDEFNODE(KillParticlesInSDF, {
-    {"Particles", "KillerSDF"},
-    {"Particles"},
+    {{gParamType_VDBGrid, "Particles"}, {gParamType_VDBGrid, "KillerSDF"}},
+    {{gParamType_VDBGrid, "Particles"}},
     {{"enum KEEP DEL", "OpType", "KEEP"}},
     {"FLIPSolver"},
 });

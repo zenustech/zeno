@@ -34,9 +34,9 @@ struct INTERN_PreViewVDB : INode {
 
 static int defINTERN_PreViewVDB = zeno::defNodeClass<INTERN_PreViewVDB>("INTERN_PreViewVDB",
     { /* inputs: */ {
-        "arg0",
+        {gParamType_VDBGrid,"arg0"},
     }, /* outputs: */ {
-        "ret0",
+        {"object", "ret0"},
     }, /* params: */ {
     }, /* category: */ {
     "deprecated", // internal
@@ -68,9 +68,9 @@ struct SDFScatterPoints : INode {
 
 static int defSDFScatterPoints = zeno::defNodeClass<SDFScatterPoints>("SDFScatterPoints",
     { /* inputs: */ {
-        "SDF",
+        {gParamType_VDBGrid,"SDF"},
     }, /* outputs: */ {
-        "Points",
+        {"object", "Points"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",

@@ -18,7 +18,7 @@ struct PrimitiveFillAttr : INode {
         attrType = "float3";
     }
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     auto &arr = prim->attr(attrName);
@@ -39,14 +39,14 @@ struct PrimitiveFillAttr : INode {
 
 ZENDEFNODE(PrimitiveFillAttr,{
     {
-        {"","prim", "", zeno::Socket_ReadOnly},
-        {"NumericObject", "value"},
+        {gParamType_Primitive,"prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Vec3f, "value"},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        {"string", "attrName", "pos"},
+        {gParamType_String, "attrName", "pos"},
         {"enum float float3 none", "attrType", "none"},
     },
     {
@@ -85,13 +85,13 @@ struct PrimitivePrintAttr : INode {
 
 ZENDEFNODE(PrimitivePrintAttr,{
     {
-        {"","prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive,"prim", "", zeno::Socket_ReadOnly},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        {"string", "attrName", "pos"},
+        {gParamType_String, "attrName", "pos"},
     },
     {
         "deprecated",
@@ -112,7 +112,7 @@ struct PrimitiveRandomizeAttr : INode {
     auto attrName = get_param<std::string>(("attrName"));
     auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     prim->attr_visit(attrName, [min, minY, minZ, max, maxY, maxZ](auto &arr) {
@@ -135,20 +135,20 @@ struct PrimitiveRandomizeAttr : INode {
 
 ZENDEFNODE(PrimitiveRandomizeAttr, {
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        {"string", "attrName", "pos"},
+        {gParamType_String, "attrName", "pos"},
         {"enum float float3", "attrType", "float3"},
-        {"float", "min", "-1"},
-        {"float", "minY", "-1"},
-        {"float", "minZ", "-1"},
-        {"float", "max", "1"},
-        {"float", "maxY", "1"},
-        {"float", "maxZ", "1"},
+        {gParamType_Float, "min", "-1"},
+        {gParamType_Float, "minY", "-1"},
+        {gParamType_Float, "minZ", "-1"},
+        {gParamType_Float, "max", "1"},
+        {gParamType_Float, "maxY", "1"},
+        {gParamType_Float, "maxZ", "1"},
     },
     {
         "deprecated",
@@ -166,15 +166,15 @@ struct PrimitiveRandomAttr : INode {
     auto attrName = get_param<std::string>(("attrName"));
     auto attrType = get_param<std::string>(("attrType"));
     if (!prim->has_attr(attrName)) {
-        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
     prim->attr_visit(attrName, [&](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f f(frand(), frand(), frand());
-                auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
-                auto b = max->is<float>() ? (vec3f)max->get<float>() : max->get<vec3f>();
+                auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<zeno::vec3f>();
+                auto b = max->is<float>() ? (vec3f)max->get<float>() : max->get<zeno::vec3f>();
                 arr[i] = mix(a, b, f);
             } else {
                 float f(frand());
@@ -191,15 +191,15 @@ struct PrimitiveRandomAttr : INode {
 
 ZENDEFNODE(PrimitiveRandomAttr, {
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"NumericObject", "min", "-1"},
-        {"NumericObject", "max", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "min", "-1", zeno::Socket_WildCard},
+        {gParamType_Float, "max", "1", zeno::Socket_WildCard},
     },
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {
-        {"string", "attrName", "pos"},
+        {gParamType_String, "attrName", "pos"},
         {"enum float float3", "attrType", ""},
     },
     {

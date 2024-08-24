@@ -26,15 +26,15 @@ class CurveModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit CurveModel(const QString& id, const CURVE_RANGE& rg, QObject *parent = nullptr);
-    CurveModel(const QString& id, const CURVE_RANGE& rg, int rows, int columns, QObject *parent = nullptr);
+    explicit CurveModel(const QString& id, const zeno::CurveData::Range& rg, QObject *parent = nullptr);
+    CurveModel(const QString& id, const zeno::CurveData::Range& rg, int rows, int columns, QObject *parent = nullptr);
     ~CurveModel();
     //method for temporary node like MakeCurvemap, DynamicNumber
-    void initItems(CURVE_DATA const &curvedat);
-    CURVE_DATA getItems() const;
+    void initItems(zeno::CurveData const &curvedat);
+    zeno::CurveData getItems() const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    void resetRange(const CURVE_RANGE& rg);
-    CURVE_RANGE range() const;
+    void resetRange(const zeno::CurveData::Range& rg);
+    zeno::CurveData::Range range() const;
     bool isTimeline() const;
     void setTimeline(bool bTimeline);
     QString id() const;
@@ -53,10 +53,10 @@ public:
     QPair<QPointF, QPointF> adjustWhenRightHdlChanged(const QModelIndex& currIdx, QPointF newPos);
 
 signals:
-    void rangeChanged(CURVE_RANGE);
+    void rangeChanged(zeno::CurveData::Range);
 
 private:
-    CURVE_RANGE m_range;
+    zeno::CurveData::Range m_range;
     QString m_id;
     bool m_bTimeline;
     bool m_bVisible;

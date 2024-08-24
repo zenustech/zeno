@@ -157,10 +157,10 @@ struct ReadPNG16 : INode {//todo: select custom color space
 };
 ZENDEFNODE(ReadPNG16, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     },
     {
-        {"PrimitiveObject", "image"},
+        {gParamType_Primitive, "image"},
     },
     {},
     {"comp"},
@@ -262,6 +262,7 @@ ZENDEFNODE(WriteExr, {
     {},
     {"comp"},
 });
+#if 0
 struct ReadExr : INode {
     std::pair<std::string, int> get_output_name(std::string name) {
         std::string output_name;
@@ -369,7 +370,7 @@ struct ReadExr : INode {
 };
 ZENDEFNODE(ReadExr, {
     {
-        {"readpath", "path"},
+        {gParamType_String,"path", "", Socket_Primitve, ReadPathEdit},
     },
     {
         {"dict", "channels"},
@@ -377,4 +378,5 @@ ZENDEFNODE(ReadExr, {
     {},
     {"comp"},
 });
+#endif
 }

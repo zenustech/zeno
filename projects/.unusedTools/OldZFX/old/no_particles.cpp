@@ -19,7 +19,7 @@ struct MakeParticles : INode {
 ZENDEFNODE(MakeParticles, {
     {},
     {"particles"},
-    {{"int", "nchannels", "0"}, {"int", "size", "0"}},
+    {{gParamType_Int, "nchannels", "0"}, {gParamType_Int, "size", "0"}},
     {"zenofx"},
 });
 
@@ -52,7 +52,7 @@ struct ParticlesToPrimitive : INode {
 
 ZENDEFNODE(ParticlesToPrimitive, {
     {"particles"},
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {},
     {"zenofx"},
 });
@@ -101,7 +101,7 @@ struct PrimitiveToParticles : INode {
 };
 
 ZENDEFNODE(PrimitiveToParticles, {
-    {"prim"},
+    {gParamType_Primitive, "prim"},
     {"particles"},
     {},
     {"zenofx"},

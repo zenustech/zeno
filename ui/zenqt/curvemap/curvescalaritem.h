@@ -39,7 +39,7 @@ class CurveScalarItem : public QGraphicsObject
 public:
 	CurveScalarItem(bool bHorizontal, bool bFrame, CurveMapView* pView, QGraphicsItem* parent = nullptr);
 	QRectF boundingRect() const override;
-    CURVE_RANGE range() const;
+    zeno::CurveData::Range range() const;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
     int nFrames() const;
 	void setFrame(bool bFrame);

@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/utils/vec.h>
@@ -30,9 +30,9 @@ struct PrimitiveToParticles : zeno::INode{
 
 static int defPrimitiveToParticles = zeno::defNodeClass<PrimitiveToParticles>("PrimitiveToParticles",
     { /* inputs: */ {
-        "prim",
-    }, /* outputs: */ {
-        "pars",
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
+        {"object", "pars"},
     }, /* params: */ { 
     }, /* category: */ {
     "deprecated",

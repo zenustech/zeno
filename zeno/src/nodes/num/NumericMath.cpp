@@ -11,11 +11,11 @@ namespace {
 
 struct MakeOrthonormalBase : INode {
     virtual void apply() override {
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         normal = normalize(normal);
         vec3f tangent, bitangent;
         if (has_input("tangent")) {
-            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             bitangent = cross(normal, tangent);
         } else {
             tangent = vec3f(0, 0, 1);
@@ -35,8 +35,8 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -46,9 +46,9 @@ struct OrthonormalBase : INode {
     virtual void apply() override {
         std::unique_ptr<orthonormal> orb;
 
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         if (has_input("tangent")) {
-            auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            auto tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             orb = std::make_unique<orthonormal>(normal, tangent);
         } else {
             orb = std::make_unique<orthonormal>(normal);
@@ -61,8 +61,8 @@ struct OrthonormalBase : INode {
 };
 
 ZENDEFNODE(OrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -70,10 +70,10 @@ ZENDEFNODE(OrthonormalBase, {
 
 struct PixarOrthonormalBase : INode {
     virtual void apply() override {
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         vec3f tangent{}, bitangent{};
         if (has_input("tangent")) {
-            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             guidedPixarONB(normal, tangent, bitangent);
         } else {
             pixarONB(normal, tangent, bitangent);
@@ -86,8 +86,8 @@ struct PixarOrthonormalBase : INode {
 };
 
 ZENDEFNODE(PixarOrthonormalBase, {
-    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {{gParamType_Vec3f, "normal", "0,0,1"}, {gParamType_Vec3f, "tangent", "0,1,0"}},
+    {{gParamType_Vec3f, "normal"}, {gParamType_Vec3f, "tangent"}, {gParamType_Vec3f, "bitangent"}},
     {},
     {"math"},
 });
@@ -95,10 +95,10 @@ ZENDEFNODE(PixarOrthonormalBase, {
 
 struct AABBCollideDetect : INode {
     virtual void apply() override {
-        auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
-        auto bmaxA = get_input<NumericObject>("bmaxA")->get<vec3f>();
-        auto bminB = get_input<NumericObject>("bminB")->get<vec3f>();
-        auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
+        auto bminA = get_input<NumericObject>("bminA")->get<zeno::vec3f>();
+        auto bmaxA = get_input<NumericObject>("bmaxA")->get<zeno::vec3f>();
+        auto bminB = get_input<NumericObject>("bminB")->get<zeno::vec3f>();
+        auto bmaxB = get_input<NumericObject>("bmaxB")->get<zeno::vec3f>();
 
         // https://www.cnblogs.com/liez/p/11965027.html
         bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA + bmaxB - bminB));
@@ -111,15 +111,15 @@ struct AABBCollideDetect : INode {
 };
 
 ZENDEFNODE(AABBCollideDetect, {
-    {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
-    {{"bool", "overlap"}, {"bool", "AinsideB"}, {"bool", "BinsideA"}},
+    {{gParamType_Vec3f, "bminA"}, {gParamType_Vec3f, "bmaxA"}, {gParamType_Vec3f, "bminB"}, {gParamType_Vec3f, "bmaxB"}},
+    {{gParamType_Bool, "overlap"}, {gParamType_Bool, "AinsideB"}, {gParamType_Bool, "BinsideA"}},
     {},
     {"math"},
 });
 
 struct ProjectAndNormalize : INode {
     virtual void apply() override {
-        auto vec = get_input<NumericObject>("vec")->get<vec3f>();
+        auto vec = get_input<NumericObject>("vec")->get<zeno::vec3f>();
         auto plane = get_input2<std::string>("plane");
 
         std::array<vec3f, 2> orb;
@@ -163,18 +163,18 @@ struct ProjectAndNormalize : INode {
 
 ZENDEFNODE(ProjectAndNormalize, {
     {
-    {"vec3f", "vec"},
+    {gParamType_Vec3f, "vec"},
     {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
-    {"float", "directionScale", "1"},
-    {"float", "lengthScale", "1"},
-    {"float", "heightScale", "1"},
-    {"float", "heightOffset", "0"},
+    {gParamType_Float, "directionScale", "1"},
+    {gParamType_Float, "lengthScale", "1"},
+    {gParamType_Float, "heightScale", "1"},
+    {gParamType_Float, "heightOffset", "0"},
     },
     {
-    {"vec3f", "direction"},
-    {"float", "length"},
-    {"float", "height"},
-    {"float", "phase"},
+    {gParamType_Vec3f, "direction"},
+    {gParamType_Float, "length"},
+    {gParamType_Float, "height"},
+    {gParamType_Float, "phase"},
     },
     {},
     {"math"},
@@ -215,12 +215,12 @@ struct CalcDirectionFromAngle : INode {
 
 ZENDEFNODE(CalcDirectionFromAngle, {
     {
-    {"float", "angle", "0"},
+    {gParamType_Float, "angle", "0"},
     {"enum XY YX YZ ZY ZX XZ", "plane", "XY"},
-    {"float", "length", "1"},
+    {gParamType_Float, "length", "1"},
     },
     {
-    {"vec3f", "direction"},
+    {gParamType_Vec3f, "direction"},
     },
     {},
     {"math"},
@@ -238,9 +238,9 @@ struct DegreetoRad : INode {
 };
 
 ZENDEFNODE(DegreetoRad, {
-    {{"float", "degree", ""}, 
+    {{gParamType_Float, "degree", ""}, 
     },
-    {{"float", "radian"}},
+    {{gParamType_Float, "radian"}},
     {},
     {"math"},
 });
@@ -257,9 +257,9 @@ struct RadtoDegree : INode {
 };
 
 ZENDEFNODE(RadtoDegree, {
-    {{"float", "radian", ""}, 
+    {{gParamType_Float, "radian", ""}, 
     },
-    {{"float", "degree"}},
+    {{gParamType_Float, "degree"}},
     {},
     {"math"},
 });

@@ -324,12 +324,12 @@ struct ComputeVertexAO : INode {
 
 ZENDEFNODE(ComputeVertexAO, {
                                 {
-                                    {"PrimitiveObject", "prim", ""},
-                                    {"PrimitiveObject", "scene", ""},
-                                    {"string", "nrm_tag", "nrm"},
-                                    {"string", "ao_tag", "ao"},
-                                    {"float", "dist_cap", "0"},
-                                    {"int", "sample_iters", "512"},
+                                    {gParamType_Primitive, "prim", ""},
+                                    {gParamType_Primitive, "scene", ""},
+                                    {gParamType_String, "nrm_tag", "nrm"},
+                                    {gParamType_String, "ao_tag", "ao"},
+                                    {gParamType_Float, "dist_cap", "0"},
+                                    {gParamType_Int, "sample_iters", "512"},
                                 },
                                 {"prim"},
                                 {},

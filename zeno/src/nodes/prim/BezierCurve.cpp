@@ -2,11 +2,9 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 #include <vector>
-
 
 
 
@@ -61,7 +59,7 @@ struct CreateBezierCurve : zeno::INode {
         auto tag = get_param<std::string>("SampleTag");
         auto attr = get_param<std::string>("SampleAttr");
 
-        auto outCurve = std::make_shared<zeno::BCurveObject>();
+        zeno::BCurveObject outCurve;
         auto outprim = std::make_shared<zeno::PrimitiveObject>();
         std::vector<zeno::vec3f> inputPoint, cPoints;
         std::vector<float> tagList;
@@ -81,7 +79,7 @@ struct CreateBezierCurve : zeno::INode {
             auto inPrim = get_input<zeno::PrimitiveObject>("SamplePoints").get();
             if (attr.empty()) {
                 set_output("prim", std::move(std::shared_ptr<zeno::PrimitiveObject>(new zeno::PrimitiveObject)));
-                set_output("curev", std::move(std::shared_ptr<zeno::BCurveObject>(new zeno::BCurveObject)));
+                set_primitive_output("curev", outCurve);
                 return;
             }
             auto tmpPs = inPrim->attr<zeno::vec3f>(attr);
@@ -101,10 +99,10 @@ struct CreateBezierCurve : zeno::INode {
         zeno::log_info("output point size: {}", cPoints.size());
         zeno::log_info("precision : {}", precision);
         
-        outCurve->points = inputPoint;
-        outCurve->precision = precision;
-        outCurve->bPoints = cPoints;
-        outCurve->sampleTag = tag;
+        outCurve.points = inputPoint;
+        outCurve.precision = precision;
+        outCurve.bPoints = cPoints;
+        outCurve.sampleTag = tag;
 
         if (tagList.size() > 0)
         {
@@ -121,20 +119,20 @@ struct CreateBezierCurve : zeno::INode {
             }
         }       
         set_output("prim", std::move(outprim));
-        set_output("curev", std::move(outCurve));
+        set_primitive_output("curev", outCurve);
     }
 };
 
 ZENDEFNODE(CreateBezierCurve, {{
-                                   {"list", "CustomPoints"}, //input
-                                   {"prim", "SamplePoints"}, //input
-                                   {"float", "precision", "0.01"},
+                                   {gParamType_List, "CustomPoints"}, //input
+                                   {gParamType_Primitive, "SamplePoints"}, //input
+                                   {gParamType_Float, "precision", "0.01"},
                                },
-                               {"prim", "curev"}, //output
+                               {{gParamType_Primitive, "prim"}, {gParamType_Curve, "curev"}}, //output
                                {
                                    {"enum Bezier", "Type", "Bezier"},
-                                   {"string", "SampleTag", ""},
-                                   {"string", "SampleAttr", ""},
+                                   {gParamType_String, "SampleTag", ""},
+                                   {gParamType_String, "SampleAttr", ""},
                                },           //prim
                                {"create"}}); //cate
 
@@ -158,12 +156,12 @@ ZENDEFNODE(CreatePoint, {/*输入*/
 
                          },
                          /*输出*/
-                         {"prim"},
+                         {{gParamType_Primitive, "prim"}},
                          /*参数*/
                          {
-                             {"float", "x", "0"},
-                             {"float", "y", "0"},
-                             {"float", "z", "0"},
+                             {gParamType_Float, "x", "0"},
+                             {gParamType_Float, "y", "0"},
+                             {gParamType_Float, "z", "0"},
                          },
                          /*类别*/
                          {"create"}});

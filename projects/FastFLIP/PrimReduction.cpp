@@ -78,11 +78,11 @@ struct PrimTbbReduction : zeno::INode {
 };
 ZENDEFNODE(PrimTbbReduction,
     { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
+{gParamType_Primitive, "prim"},
+}, /* outputs: */ {
     "result",
     }, /* params: */ {
-    {"string", "attr", "pos"},
+    {gParamType_String, "attr", "pos"},
     {"enum avg max min absmax", "op", "avg"},
     }, /* category: */ {
     "primitive",

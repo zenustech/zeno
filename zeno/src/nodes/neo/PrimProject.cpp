@@ -444,7 +444,7 @@ struct PrimProject : INode {
             }
         };
 
-        auto const &nrm = prim->verts.attr<vec3f>(nrmAttr);
+        auto const &nrm = prim->verts.attr<zeno::vec3f>(nrmAttr);
         auto cond = enum_variant<std::variant<allow_front, allow_back, allow_both>>(
             array_index({"front", "back", "both"}, allowDir));
 
@@ -468,15 +468,15 @@ struct PrimProject : INode {
 
 ZENDEFNODE(PrimProject, {
                             {
-                                {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-                                {"PrimitiveObject", "targetPrim", "", zeno::Socket_ReadOnly},
-                                {"string", "nrmAttr", "nrm"},
-                                {"float", "offset", "0"},
-                                {"float", "limit", "0"},
+                                {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                                {gParamType_Primitive, "targetPrim", "", zeno::Socket_ReadOnly},
+                                {gParamType_String, "nrmAttr", "nrm"},
+                                {gParamType_Float, "offset", "0"},
+                                {gParamType_Float, "limit", "0"},
                                 {"enum front back both", "allowDir", "both"},
                             },
                             {
-                                {"PrimitiveObject", "prim"},
+                                {gParamType_Primitive, "prim"},
                             },
                             {},
                             {"primitive"},
@@ -484,10 +484,10 @@ ZENDEFNODE(PrimProject, {
 
 struct TestRayBox : INode {
     void apply() override {
-        auto origin = get_input2<vec3f>("ray_origin");
-        auto dir = get_input2<vec3f>("ray_dir");
-        auto bmin = get_input2<vec3f>("box_min");
-        auto bmax = get_input2<vec3f>("box_max");
+        auto origin = get_input2<zeno::vec3f>("ray_origin");
+        auto dir = get_input2<zeno::vec3f>("ray_dir");
+        auto bmin = get_input2<zeno::vec3f>("box_min");
+        auto bmax = get_input2<zeno::vec3f>("box_max");
         set_output("predicate",
                    std::make_shared<NumericObject>((int)ray_box_intersect(origin, dir, std::make_pair(bmin, bmax))));
     }
@@ -495,13 +495,13 @@ struct TestRayBox : INode {
 
 ZENDEFNODE(TestRayBox, {
                            {
-                               {"ray_origin"},
-                               {"ray_dir"},
-                               {"box_min"},
-                               {"box_max"},
+                               {gParamType_Vec3f, "ray_origin"},
+                               {gParamType_Vec3f, "ray_dir"},
+                               {gParamType_Vec3f, "box_min"},
+                               {gParamType_Vec3f, "box_max"},
                            },
                            {
-                               {"int","predicate"},
+                               {gParamType_Int,"predicate"},
                            },
                            {},
                            {"primitive"},

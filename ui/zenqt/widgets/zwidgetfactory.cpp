@@ -23,6 +23,7 @@
 #include "util/jsonhelper.h"
 #include "widgets/zcodeeditor.h"
 
+
 namespace zenoui
 {
     QWidget* createWidget(
@@ -31,7 +32,7 @@ namespace zenoui
         zeno::ParamControl ctrl,
         const zeno::ParamType type,
         CallbackCollection cbSet,
-        const zeno::ControlProperty& controlProps
+        const zeno::reflect::Any& controlProps
     )
     {
         switch (ctrl)
@@ -156,20 +157,20 @@ namespace zenoui
             {
                 int dim = -1;
                 bool bFloat = false;
-                if (type == zeno::Param_Vec2i || type == zeno::Param_Vec2f)
+                if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f)
                 {
                     dim = 2;
-                    bFloat = type == zeno::Param_Vec2f;
+                    bFloat = type == zeno::types::gParamType_Vec2f;
                 }
-                else if (type == zeno::Param_Vec3i || type == zeno::Param_Vec3f)
+                else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f)
                 {
                     dim = 3;
-                    bFloat = type == zeno::Param_Vec3f;
+                    bFloat = type == zeno::types::gParamType_Vec3f;
                 }
-                else if (type == zeno::Param_Vec4i || type == zeno::Param_Vec4f)
+                else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f)
                 {
                     dim = 4;
-                    bFloat = type == zeno::Param_Vec4f;
+                    bFloat = type == zeno::types::gParamType_Vec4f;
                 }
 
                 ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
@@ -184,9 +185,10 @@ namespace zenoui
             case zeno::Combobox:
             {
                 QStringList items;
-                if (controlProps.items.has_value())
+                if (controlProps.has_value())
                 {
-                    for (auto item : controlProps.items.value())
+                    auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(controlProps);
+                    for (auto item : vec)
                         items.push_back(QString::fromStdString(item));
                 }
 
@@ -211,15 +213,21 @@ namespace zenoui
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        QString newVal = JsonHelper::dumpCurves(pEditor->curves());
-                        cbSet.cbEditFinished(newVal);
+                        zeno::CurvesData& newVal = pEditor->curves();
+                        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
+                        cbSet.cbEditFinished(QVariant::fromValue(anyVal));
                     });
 
-                    CURVES_DATA curves;
+                    zeno::CurvesData curves;
                     if (cbSet.cbGetIndexData)
                     {
-                        const QString &str = cbSet.cbGetIndexData().toString();
-                        curves = JsonHelper::parseCurves(str);
+                        auto& qvar = cbSet.cbGetIndexData();
+                        if (qvar.canConvert<zeno::reflect::Any>()) {
+                            const auto& anyVal = qvar.value<zeno::reflect::Any>();
+                            if (zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+                                curves = zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+                            }
+                        }
                     }
                     pEditor->addCurves(curves);
                     pEditor->exec();
@@ -252,11 +260,12 @@ namespace zenoui
 
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
@@ -291,11 +300,12 @@ namespace zenoui
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -311,11 +321,12 @@ namespace zenoui
                 pSpinBox->setValue(value.toDouble());
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
@@ -328,11 +339,12 @@ namespace zenoui
             {
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
-                if (controlProps.ranges.has_value()) {
-                    const auto& ranges = controlProps.ranges.value();
-                    sliderInfo.min = ranges[0];
-                    sliderInfo.max = ranges[1];
-                    sliderInfo.step = ranges[2];
+                if (controlProps.has_value()) {
+                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    ZASSERT_EXIT(vec.size() == 3, nullptr);
+                    sliderInfo.min = vec[0];
+                    sliderInfo.max = vec[1];
+                    sliderInfo.step = vec[2];
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);

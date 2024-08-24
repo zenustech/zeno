@@ -1077,35 +1077,36 @@ struct PrimQuadsLotSubdivision : zeno::INode {
 };
 ZENDEFNODE(PrimQuadsLotSubdivision, {{
                                /* inputs: */
-                               {"", "input_quads_model", "", zeno::Socket_ReadOnly},
-                               {"int", "num", "1"},
-                               {"bool", "row_or_columns", "0"},
+                               {gParamType_Primitive, "input_quads_model", "", zeno::Socket_ReadOnly},
+                               {gParamType_Int, "num", "1"},
+                               {gParamType_Bool, "row_or_columns", "0"},
 
-                               {"bool", "random_rc", "0"},
-                               {"int", "random_seed", "1"},
+                               {gParamType_Bool, "random_rc", "0"},
+                               {gParamType_Int, "random_seed", "1"},
 
-                               {"bool", "rcrc", "1"},
+                               {gParamType_Bool, "rcrc", "1"},
 
-                               {"bool", "first_second_same", "1"},
-                               {"int", "same_seed", "1"},
-                               {"float", "min_offset", "0"},
-                               {"float", "max_offset", "0"},
+                               {gParamType_Bool, "first_second_same", "1"},
+                               {gParamType_Int, "same_seed", "1"},
+                               {gParamType_Float, "min_offset", "0"},
+                               {gParamType_Float, "max_offset", "0"},
 
-                               {"float", "first_edge_minoffset", "0"},
-                               {"float", "first_edge_maxoffset", "0"},
-                               {"int", "first_seed", "1"},
+                               {gParamType_Float, "first_edge_minoffset", "0"},
+                               {gParamType_Float, "first_edge_maxoffset", "0"},
+                               {gParamType_Int, "first_seed", "1"},
 
-                               {"float", "second_edge_minoffset", "0"},
-                               {"float", "second_edge_maxoffset", "0"},
-                               {"int", "second_seed", "1"},
+                               {gParamType_Float, "second_edge_minoffset", "0"},
+                               {gParamType_Float, "second_edge_maxoffset", "0"},
+                               {gParamType_Int, "second_seed", "1"},
 
-                               {"bool", "add_attr", "0"},
-                               {"string", "tag_attr", "tag"},
+                               {gParamType_Bool, "add_attr", "0"},
+                               {gParamType_String, "tag_attr", "tag"},
                            },
 
                            {
                                /* outputs: */
-                               "output",
+                               {gParamType_Primitive, "prim"},
+                               {gParamType_Primitive, "output"}
                            },
 
                            {

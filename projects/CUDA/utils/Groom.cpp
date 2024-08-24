@@ -168,16 +168,16 @@ struct SpawnGuidelines : INode {
 
 ZENDEFNODE(SpawnGuidelines, {
                                 {
-                                    {"PrimitiveObject", "points"},
-                                    {"string", "normalTag", "nrm"},
-                                    {"float", "length", "0.5"},
-                                    {"int", "segments", "5"},
+                                    {gParamType_Primitive, "points"},
+                                    {gParamType_String, "normalTag", "nrm"},
+                                    {gParamType_Float, "length", "0.5"},
+                                    {gParamType_Int, "segments", "5"},
                                     {"vdb_collider"},
-                                    {"float", "sep_dist", "0"},
-                                    {"int", "max_iter", "100"},
+                                    {gParamType_Float, "sep_dist", "0"},
+                                    {gParamType_Int, "max_iter", "100"},
                                 },
                                 {
-                                    {"PrimitiveObject", "guide_lines"},
+                                    {gParamType_Primitive, "guide_lines"},
                                 },
                                 {},
                                 {"zs_hair"},
@@ -574,18 +574,18 @@ struct StepGuidelines : INode {
 
 ZENDEFNODE(StepGuidelines, {
                                {
-                                   {"PrimitiveObject", "guide_lines"},
-                                   {"PrimitiveObject", "boundary_prim"},
-                                   {"string", "weightTag", "bvh_ws"},
-                                   {"string", "idTag", "bvh_id"},
-                                   {"float", "dt", "0.05"},
-                                   {"int", "num_substeps", "1"},
+                                   {gParamType_Primitive, "guide_lines"},
+                                   {gParamType_Primitive, "boundary_prim"},
+                                   {gParamType_String, "weightTag", "bvh_ws"},
+                                   {gParamType_String, "idTag", "bvh_id"},
+                                   {gParamType_Float, "dt", "0.05"},
+                                   {gParamType_Int, "num_substeps", "1"},
                                    {"vdb_collider"},
-                                   {"float", "sep_dist", "0"},
-                                   {"int", "collision_iters", "5"},
+                                   {gParamType_Float, "sep_dist", "0"},
+                                   {gParamType_Int, "collision_iters", "5"},
                                },
                                {
-                                   {"PrimitiveObject", "guide_lines"},
+                                   {gParamType_Primitive, "guide_lines"},
                                },
                                {},
                                {"zs_hair"},
@@ -625,7 +625,7 @@ struct GenerateHairs : INode {
             auto [id, _] = lbvhv.find_nearest(
                 pi,
                 [&](int j, float &dist, int &id) {
-                    float d = zs::limits<float>::max();
+                    float d = zs::detail::deduce_numeric_max<float>();
                     d = zs::dist_pp(pi, vec3::from_array(verts[loops[polys[j][0]]]));
 
                     if (d < dist) {
@@ -705,9 +705,9 @@ struct GenerateHairs : INode {
 
 ZENDEFNODE(GenerateHairs,
            {
-               {{"PrimitiveObject", "points"}, {"PrimitiveObject", "guide_lines"}, {"bool", "interpAttrs", "1"}},
+               {{gParamType_Primitive, "points"}, {gParamType_Primitive, "guide_lines"}, {gParamType_Bool, "interpAttrs", "1"}},
                {
-                   {"PrimitiveObject", "prim"},
+                   {gParamType_Primitive, "prim"},
                },
                {},
                {"zs_hair"},
@@ -758,13 +758,13 @@ struct RepelPoints : zeno::INode {
 
 ZENDEFNODE(RepelPoints, {
                             {
-                                {"PrimitiveObject", "points"},
+                                {gParamType_Primitive, "points"},
                                 {"vdb_collider"},
-                                {"float", "sep_dist", "0"},
-                                {"int", "max_iter", "100"},
+                                {gParamType_Float, "sep_dist", "0"},
+                                {gParamType_Int, "max_iter", "100"},
                             },
                             {
-                                {"PrimitiveObject", "prim"},
+                                {gParamType_Primitive, "prim"},
                             },
                             {},
                             {"zs_hair"},

@@ -53,8 +53,8 @@ struct GlobalState {
     ZENO_API void frameBegin();
     ZENO_API void frameEnd();
     ZENO_API void clearState();
-    ZENO_API int getFrameId() const;
-    ZENO_API void updateFrameId(int frameid);
+    ZENO_API float getFrameId() const;
+    ZENO_API void updateFrameId(float frameid);
     ZENO_API CalcObjStatus getCalcObjStatus() const { return m_status; }
     ZENO_API void setCalcObjStatus(CalcObjStatus status);
     ZENO_API void set_working(bool working);

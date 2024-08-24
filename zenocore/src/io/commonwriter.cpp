@@ -5,8 +5,6 @@
 #include <zeno/io/iohelper.h>
 #include <zeno/io/iotags.h>
 
-using namespace zeno::iotags;
-
 
 namespace zenoio
 {
@@ -195,6 +193,8 @@ namespace zenoio
                     writer.String(link.outKey.c_str());
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
+                    writer.Key("target-socket");
+                    writer.String(link.targetParam.c_str());
                 }
                 writer.EndArray();
             }
@@ -270,6 +270,8 @@ namespace zenoio
                     writer.String(link.outKey.c_str());
                     writer.Key("in-key");
                     writer.String(link.inKey.c_str());
+                    writer.Key("target-socket");
+                    writer.String(link.targetParam.c_str());
                 }
                 writer.EndArray();
             }
@@ -281,11 +283,12 @@ namespace zenoio
         if (param.bInput)
         {
             writer.Key("default-value");
-            writeZVariant(param.defl, param.type, writer);
+            writeAny(param.defl, param.type, writer);
 
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);
 
+#if 0
             writer.Key("controlProps");
             {
                 if (param.ctrlProps.has_value()) {
@@ -319,22 +322,22 @@ namespace zenoio
                     writer.Null();
                 }
             }
-
-            writer.Key("socket-type");
-            switch (param.socketType)
-            {
-            case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
-            case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
-            case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
-            case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
-            case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
-            default:
-                writer.String(iotags::params::socket_none);
-            }
-
-            writer.Key("visible");
-            writer.Bool(param.bVisible);
+#endif
         }
+        //输出现在也可能有Socket_WildCard类型，需记录socket_type
+        writer.Key("socket-type");
+        switch (param.socketType)
+        {
+        case zeno::Socket_Clone:    writer.String(iotags::params::socket_clone); break;
+        case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
+        case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
+        case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
+        case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
+        default:
+            writer.String(iotags::params::socket_none);
+        }
+        writer.Key("visible");
+        writer.Bool(param.bVisible);
 
         if (!param.tooltip.empty())
         {
@@ -348,15 +351,15 @@ namespace zenoio
         writer.Key("timeline");
         {
             JsonObjScope _batch(writer);
-            writer.Key(timeline::start_frame);
+            writer.Key(iotags::timeline::start_frame);
             writer.Int(info.beginFrame);
-            writer.Key(timeline::end_frame);
+            writer.Key(iotags::timeline::end_frame);
             writer.Int(info.endFrame);
-            writer.Key(timeline::curr_frame);
+            writer.Key(iotags::timeline::curr_frame);
             writer.Int(info.currFrame);
-            writer.Key(timeline::always);
+            writer.Key(iotags::timeline::always);
             writer.Bool(info.bAlways);
-            writer.Key(timeline::timeline_fps);
+            writer.Key(iotags::timeline::timeline_fps);
             writer.Int(info.timelinefps);
         }
     }

@@ -221,14 +221,14 @@ struct PrimDualMesh : INode {
 
 ZENDEFNODE(PrimDualMesh, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"bool", "polygonate", "1"},
-    {"bool", "keepBounds", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Bool, "polygonate", "1"},
+    {gParamType_Bool, "keepBounds", "0"},
     //{"enum faces lines", "faceType", "faces"},
-    //{"bool", "copyFaceAttrs", "1"},
+    //{gParamType_Bool, "copyFaceAttrs", "1"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

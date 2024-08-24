@@ -3,7 +3,6 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/CurveObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/extra/TempNode.h>
@@ -24,10 +23,10 @@ struct PrimSmooth : INode {
 
 ZENDEFNODE(PrimSmooth, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

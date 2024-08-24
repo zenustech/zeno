@@ -143,11 +143,11 @@ struct PrimitiveCalcNormal : zeno::INode {
 
 ZENDEFNODE(PrimitiveCalcNormal, {
     {
-    {"", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "nrmAttr", "nrm"},
-    {"bool", "flip", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "nrmAttr", "nrm"},
+    {gParamType_Bool, "flip", "0"},
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"primitive"},
 });
@@ -193,16 +193,16 @@ struct PrimitiveOrderVertexByNormal : zeno::INode{
 };
 ZENDEFNODE(PrimitiveOrderVertexByNormal, {
                                     {
-                                        {"", "prim", "", zeno::Socket_ReadOnly},
-                                        {"string", "nrmAttr", "nrm"}
+                                        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+                                        {gParamType_String, "nrmAttr", "nrm"}
                                     },
-                                    {"prim"},
+                                    {{gParamType_Primitive, "prim"}},
                                     {},
                                     {"primitive"},
 });
 //ZENO_API void primCalcInsetDir(zeno::PrimitiveObject* prim, float flip, std::string insetAttr)
 //{
-    //auto &out = prim->verts.add_attr<vec3f>(insetAttr);
+    //auto &out = prim->verts.add_attr<zeno::vec3f>(insetAttr);
     //for (size_t i = 0; i < prim->tris.size(); i++) {
         //auto ind = prim->tris[i];
         //auto a = prim->verts[ind[0]];

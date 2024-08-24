@@ -9,6 +9,8 @@
 
 namespace zeno {
 
+#ifdef ENABLE_LEGACY_ZENO_NODE
+
 struct CachedByKey : zeno::INode {
     std::map<std::string, std::shared_ptr<IObject>> cache;
 
@@ -207,5 +209,5 @@ ZENDEFNODE(ReadMutable, {
     {"control"},
 });*/
 
-
+#endif
 }

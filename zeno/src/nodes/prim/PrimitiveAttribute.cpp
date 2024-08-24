@@ -21,11 +21,11 @@ struct PrimitiveAddAttr : zeno::INode {
         }
         else if (type == "float3") {
             if (has_input("fillValue")) {
-                auto fillvalue = get_input<NumericObject>("fillValue")->get<vec3f>();
-                prim->add_attr<vec3f>(name, fillvalue);
+                auto fillvalue = get_input<NumericObject>("fillValue")->get<zeno::vec3f>();
+                prim->add_attr<zeno::vec3f>(name, fillvalue);
             }
             else {
-                prim->add_attr<vec3f>(name);
+                prim->add_attr<zeno::vec3f>(name);
             }
         }
         else {
@@ -39,14 +39,14 @@ struct PrimitiveAddAttr : zeno::INode {
 ZENDEFNODE(PrimitiveAddAttr, 
     { 
         {
-            {"", "fillValue", "", zeno::Socket_ReadOnly},
-            {"", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Vec3f, "fillValue", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         }, 
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {
-        {"string", "name", "clr"},
+        {gParamType_String, "name", "clr"},
         {"enum float float3", "type", "float3"},
-        {"string", "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
+        {gParamType_String, "pybisgreat", "DEPRECATED! USE PrimFillAttr INSTEAD"},
     },
     {
     "deprecated",
@@ -71,11 +71,11 @@ struct PrimitiveDelAttr : zeno::INode {
 ZENDEFNODE(PrimitiveDelAttr,
     {
         {
-            {"", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         },
-    {"prim"}, 
+    {{gParamType_Primitive, "prim"}},
     {
-        {"string", "name", "nrm"},
+        {gParamType_String, "name", "nrm"},
     },
     {
     "deprecated",
@@ -99,7 +99,7 @@ struct PrimitiveGetAttrValue : zeno::INode {
         }
         else if (type == "float3") {
             value->set<vec3f>(vec3f(0, 0, 0));
-                std::vector<vec3f>& attr_arr = prim->attr<vec3f>(name);
+                std::vector<vec3f>& attr_arr = prim->attr<zeno::vec3f>(name);
                 if (index < attr_arr.size()) {
                     value->set<vec3f>(attr_arr[index]);
                 }
@@ -113,14 +113,14 @@ struct PrimitiveGetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetAttrValue, {
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int","index","0"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int,"index","0"},
     }, 
     {
         {"NumericObject","value"},
     },
     {
-        {"string", "name", "pos"},
+        {gParamType_String, "name", "pos"},
         {"enum float float3", "type", "float3"},
     },
     {"deprecated"} 
@@ -141,8 +141,8 @@ struct PrimitiveSetAttrValue : zeno::INode {
                 }
         }
         else if (type == "float3") {
-            auto value = get_input<zeno::NumericObject>("value")->get<vec3f>();
-                std::vector<vec3f>& attr_arr = prim->add_attr<vec3f>(name);
+            auto value = get_input<zeno::NumericObject>("value")->get<zeno::vec3f>();
+                std::vector<vec3f>& attr_arr = prim->add_attr<zeno::vec3f>(name);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }
@@ -156,15 +156,15 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveSetAttrValue,{ 
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
-        {"int","index","0"},
-        {"float","value"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Int,"index","0"},
+        {gParamType_Float,"value"},
     }, 
     {
-        "prim",
-    },
+{gParamType_Primitive, "prim"},
+},
     {
-        {"string", "name", "pos"},
+        {gParamType_String, "name", "pos"},
         {"enum float float3", "type", "float3"},
     },
     {

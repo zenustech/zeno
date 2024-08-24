@@ -40,13 +40,13 @@ struct ZGL_PrimAsBuff : INode {
 };
 ZENO_DEFNODE(ZGL_PrimAsBuff)({
     {
-        {"PrimitiveObject", "prim"},
+        {gParamType_Primitive, "prim"},
         {"enum ALL TRIANGLES LINES POINTS", "mode", "POINTS"},
-        {"bool", "smoothNormal"},
+        {gParamType_Bool, "smoothNormal"},
     },
     {
-        {"PrimitiveObject", "buff"},
-        {"int", "count"},
+        {gParamType_Primitive, "buff"},
+        {gParamType_Int, "count"},
     },
     {},
     {"GUI"},
@@ -95,7 +95,7 @@ struct ZGL_VboFromBuff : INode {
 };
 ZENO_DEFNODE(ZGL_VboFromBuff)({
     {
-        {"PrimitiveObject", "buff"},
+        {gParamType_Primitive, "buff"},
     },
     {
         {"ZGL_VboObject", "vbo"},
@@ -119,7 +119,7 @@ struct ZGL_SetPointSize : INode {
 };
 ZENO_DEFNODE(ZGL_SetPointSize)({
     {
-        {"float", "size", "1.0"},
+        {gParamType_Float, "size", "1.0"},
         {"enum PointSize LineWidth", "mode", "PointSize"},
     },
     {},
@@ -144,7 +144,7 @@ struct ZGL_DrawVboArrays : INode {
 ZENO_DEFNODE(ZGL_DrawVboArrays)({
     {
         {"ZGL_VboObject", "vbo"},
-        {"int", "count", "1"},
+        {gParamType_Int, "count", "1"},
         {"enum TRIANGLES LINES POINTS", "mode", "POINTS"},
     },
     {},
@@ -154,7 +154,7 @@ ZENO_DEFNODE(ZGL_DrawVboArrays)({
 
 struct ZGL_ClearColor : INode {
     void apply() override {
-        auto color = get_input2<vec3f>("color");
+        auto color = get_input2<zeno::vec3f>("color");
         auto alpha = get_input2<float>("alpha");
         CHECK_GL(glClearColor(color[0], color[1], color[2], alpha));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
@@ -162,8 +162,8 @@ struct ZGL_ClearColor : INode {
 };
 ZENO_DEFNODE(ZGL_ClearColor)({
     {
-        {"vec3f", "color", "0.2,0.3,0.4"},
-        {"float", "alpha", "1.0"},
+        {gParamType_Vec3f, "color", "0.2,0.3,0.4"},
+        {gParamType_Float, "alpha", "1.0"},
     },
     {},
     {},
@@ -272,11 +272,11 @@ struct ZGL_Main : INode {
 };
 ZENO_DEFNODE(ZGL_Main)({
     {
-        {"string", "title", "ZenoPlay"},
-        {"int", "resx", "400"},
-        {"int", "resy", "300"},
-        {"bool", "quitOnEsc", "1"},
-        {"DictObject", "callbacks"},
+        {gParamType_String, "title", "ZenoPlay"},
+        {gParamType_Int, "resx", "400"},
+        {gParamType_Int, "resy", "300"},
+        {gParamType_Bool, "quitOnEsc", "1"},
+        {gParamType_Dict,"callbacks"},
     },
     {},
     {},

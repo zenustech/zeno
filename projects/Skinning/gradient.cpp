@@ -98,9 +98,9 @@ struct EvalGradientOnPrimAttr : zeno::INode {
 };
 
 ZENDEFNODE(EvalGradientOnPrimAttr, {
-    {"primIn"},
-    {"primOut"},
-    {{"string","attr_name","RENAME_ME"}},
+    {{gParamType_Primitive, "primIn"}},
+    {{gParamType_Primitive, "primOut"}},
+    {{gParamType_String,"attr_name","RENAME_ME"}},
     {"Skinning"},
 });
 

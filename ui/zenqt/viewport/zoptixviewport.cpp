@@ -78,7 +78,7 @@ void ZOptixProcViewport::setRenderSeparately(bool updateLightCameraOnly, bool up
     scene->drawOptions->updateMatlOnly = updateMatlOnly;
 }
 
-void ZOptixProcViewport::cameraLookTo(int dir)
+void ZOptixProcViewport::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     m_camera->lookTo(dir);
 }
@@ -283,26 +283,26 @@ void ZOptixProcViewport::keyPressEvent(QKeyEvent* event)
 
     key = settings.getShortCut(ShortCut_FrontView);
     if (uKey == key)
-        this->cameraLookTo(0);
+        this->cameraLookTo(zenovis::CameraLookToDir::front_view);
     key = settings.getShortCut(ShortCut_RightView);
     if (uKey == key)
-        this->cameraLookTo(1);
+        this->cameraLookTo(zenovis::CameraLookToDir::right_view);
     key = settings.getShortCut(ShortCut_VerticalView);
     if (uKey == key)
-        this->cameraLookTo(2);
+        this->cameraLookTo(zenovis::CameraLookToDir::top_view);
     key = settings.getShortCut(ShortCut_InitViewPos);
     if (uKey == key)
-        this->cameraLookTo(6);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
 
     key = settings.getShortCut(ShortCut_BackView);
     if (uKey == key)
-        this->cameraLookTo(3);
+        this->cameraLookTo(zenovis::CameraLookToDir::back_view);
     key = settings.getShortCut(ShortCut_LeftView);
     if (uKey == key)
-        this->cameraLookTo(4);
+        this->cameraLookTo(zenovis::CameraLookToDir::left_view);
     key = settings.getShortCut(ShortCut_UpwardView);
     if (uKey == key)
-        this->cameraLookTo(5);
+        this->cameraLookTo(zenovis::CameraLookToDir::bottom_view);
 
     key = settings.getShortCut(ShortCut_InitHandler);
     if (uKey == key)

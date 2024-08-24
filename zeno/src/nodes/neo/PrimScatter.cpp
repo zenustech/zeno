@@ -224,16 +224,16 @@ struct PrimScatter : INode {
 
 ZENO_DEFNODE(PrimScatter)({
     {
-        {"", "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         {"enum tris lines", "type", "tris"},
-        {"string", "denAttr", ""},
-        {"float", "density", "100"},
-        {"float", "minRadius", "0"},
-        {"bool", "interpAttrs", "1"},
-        {"int", "seed", "-1"},
+        {gParamType_String, "denAttr", ""},
+        {gParamType_Float, "density", "100"},
+        {gParamType_Float, "minRadius", "0"},
+        {gParamType_Bool, "interpAttrs", "1"},
+        {gParamType_Int, "seed", "-1"},
     },
     {
-        {"parsPrim"},
+        {gParamType_Primitive, "parsPrim"},
     },
     {},
     {"primitive"},

@@ -19,7 +19,7 @@ public:
 	QRectF boundingRect() const override;
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-	void resetTransform(QRectF rc, CURVE_RANGE rg, bool bInit);
+	void resetTransform(QRectF rc, zeno::CurveData::Range rg, bool bInit);
 	void addCurve(CurveModel* model);
     void removeCurve(QString id);
     bool isFuncCurve() const;

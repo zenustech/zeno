@@ -178,6 +178,7 @@ extern "C" __global__ void __raygen__rg()
     float3 tmp_normal{};
     unsigned int sobolseed = subframe_index;
     float3 mask_value = make_float3( 0.0f );
+    float3 click_pos = make_float3( 0.0f );
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
@@ -262,6 +263,7 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
         prd.mask_value = make_float3( 0.0f );
+        prd.click_pos = make_float3( 0.0f );
 
         prd.depth = 0;
         prd.diffDepth = 0;
@@ -288,6 +290,7 @@ extern "C" __global__ void __raygen__rg()
         prd.alphaHit = false;
 
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        click_pos = prd.click_pos;
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
 
@@ -430,9 +433,9 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
     params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
     params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
-
     params.frame_buffer[ image_index ] = make_color ( accum_color );
     params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
+    params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

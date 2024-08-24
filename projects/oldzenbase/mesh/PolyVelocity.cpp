@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/MeshObject.h>
-#include <zeno/ParticlesObject.h>
+#include <zeno/types/MeshObject.h>
+#include <zeno/types/ParticlesObject.h>
 #include <omp.h>
 #include <zeno/NumericObject.h>
 //#include <tl/function_ref.hpp>
@@ -36,9 +36,9 @@ struct GeoVertexVel : zeno::INode{
 
 static int defGeoVertexVel = zeno::defNodeClass<GeoVertexVel>("GeoVertexVel",
     { /* inputs: */ {
-        "dt", "TargetMesh", "OriginMesh", 
+        {gParamType_Float, "dt"}, {"object", "TargetMesh"}, {"object", "OriginMesh"},
     }, /* outputs: */ {
-        "MeshVel",
+        {"object", "MeshVel"},
     }, /* params: */ {
     
     }, /* category: */ {

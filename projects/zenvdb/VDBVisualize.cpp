@@ -62,11 +62,11 @@ struct ParticleAsVoxels : INode{
     }
 };
 ZENDEFNODE(ParticleAsVoxels, {
-                            {{"VDBGrid", "vdbGrid"}, 
-                             {"string", "Attr"},
-                             {"particles"},
+                            {{gParamType_VDBGrid,"vdbGrid"}, 
+                             {gParamType_String, "Attr"},
+                             {gParamType_Primitive, "particles"},
                             },
-                            {"oGrid"},
+                            {{gParamType_VDBGrid,"oGrid"}},
                             
                             {
                              
@@ -419,12 +419,12 @@ struct VDBVoxelAsParticles : INode {
 };
 
 ZENDEFNODE(VDBVoxelAsParticles, {
-                            {{"", "vdbGrid", "", zeno::Socket_ReadOnly},
-                             {"string", "valToAttr", "sdf"}},
-                            {"primPars"},
+                            {{gParamType_VDBGrid, "vdbGrid", "", zeno::Socket_ReadOnly},
+                             {gParamType_String, "valToAttr", "sdf"}},
+                            {{gParamType_Primitive, "primPars"}},
                             {
-                             {"bool", "hasInactive", "0"},
-                             {"bool", "asStaggers", "1"},
+                             {gParamType_Bool, "hasInactive", "0"},
+                             {gParamType_Bool, "asStaggers", "1"},
                             },
                             {"visualize"},
                         });
@@ -479,8 +479,8 @@ struct VDBLeafAsParticles : INode {
 };
 
 ZENDEFNODE(VDBLeafAsParticles, {
-                            {{"", "vdbGrid", "", zeno::Socket_ReadOnly}},
-                            {"primPars"},
+                            {{gParamType_VDBGrid, "vdbGrid", "", zeno::Socket_ReadOnly}},
+                            {{gParamType_Primitive, "primPars"}},
                             {},
                             {"visualize"},
                         });

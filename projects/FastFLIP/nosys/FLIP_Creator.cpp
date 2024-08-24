@@ -1,6 +1,6 @@
 #include "FLIP_vdb.h"
 #include <omp.h>
-#include <zeno/MeshObject.h>
+#include <zeno/types/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
@@ -120,22 +120,21 @@ struct FLIPCreator : zeno::INode {
 
 static int defFLIPCreator = zeno::defNodeClass<FLIPCreator>(
     "SetFLIPWorld",
-    {/* inputs: */ {"Dx"},
+    {/* inputs: */ {{gParamType_Float, "Dx"}},
      /* outputs: */
      {
-         
-         "Particles", "Pressure", "Divergence", "CellFWeight", "PressureDOFID",
-         "IsolatedCellDOF", "Velocity", "DeltaVelocity", "VelocitySnapshot",
-         "PostAdvVelocity", "ViscousVelocity", "SolidVelocity", "VelocityWeights",
-         "LiquidSDF", "LiquidSDFSnapshot", "ExtractedLiquidSDF", "ErodedLiquidSDF",
-         "SolidSDF",
+        {gParamType_VDBGrid, "Particles"},{gParamType_VDBGrid, "Pressure"},{gParamType_VDBGrid, "Divergence"},{gParamType_VDBGrid, "CellFWeight"},{gParamType_VDBGrid, "PressureDOFID"},
+        {gParamType_VDBGrid, "IsolatedCellDOF"},{gParamType_VDBGrid, "Velocity"},{gParamType_VDBGrid, "DeltaVelocity"},{gParamType_VDBGrid, "VelocitySnapshot"},
+        {gParamType_VDBGrid, "PostAdvVelocity"},{gParamType_VDBGrid, "ViscousVelocity"},{gParamType_VDBGrid, "SolidVelocity"},{gParamType_VDBGrid, "VelocityWeights"},
+        {gParamType_VDBGrid, "LiquidSDF"},{gParamType_VDBGrid, "LiquidSDFSnapshot"},{gParamType_VDBGrid, "ExtractedLiquidSDF"},{gParamType_VDBGrid, "ErodedLiquidSDF"},
+        {gParamType_VDBGrid, "SolidSDF"},
          //"acceleration_fields",
          //"domain_solid_sdf",
          //"boundary_velocity_volume",
      },
      /* params: */
      {
-         {"float", "dx", "0.08 0"},
+         {gParamType_Float, "dx", "0.08 0"},
      },
      /* category: */
      {

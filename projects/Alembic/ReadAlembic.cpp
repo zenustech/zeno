@@ -990,6 +990,19 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             offset += count;
         }
     }
+    if (auto width = mesh.getWidthsParam()) {
+        auto widthsamp =
+            width.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int index_size = (int)widthsamp.getIndices()->size();
+        if (prim->verts.size() == index_size) {
+            auto &width_attr = prim->add_attr<float>("width");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                auto index = widthsamp.getIndices()->operator[](i);
+                auto value = widthsamp.getVals()->operator[](index);
+                width_attr[i] = value;
+            }
+        }
+    }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
@@ -1006,6 +1019,7 @@ void traverseABC(
     std::string path,
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
+    bool skipInvisibleObject,
     bool outOfRangeAsEmpty
 ) {
     {
@@ -1037,7 +1051,7 @@ void traverseABC(
         else {
             tree.visible = parent_visible;
         }
-
+        if (!(tree.visible == ObjectVisibility::kVisibilityHidden && skipInvisibleObject)) {
         if (Alembic::AbcGeom::IPolyMesh::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a mesh [{}]", obj.getName());
@@ -1101,6 +1115,7 @@ void traverseABC(
             }
         }
     }
+    }
 
     size_t nch = obj.getNumChildren();
     if (!read_done) {
@@ -1116,7 +1131,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, outOfRangeAsEmpty);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, skipInvisibleObject, outOfRangeAsEmpty);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -1172,6 +1187,7 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
+            bool skipInvisibleObject = get_input2<bool>("skipInvisibleObject");
             Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
             TimeAndSamplesMap timeMap;
             for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
@@ -1179,7 +1195,8 @@ struct ReadAlembic : INode {
                             archive.getMaxNumSamplesForTimeSamplingIndex(s));
             }
 
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred,
+                        skipInvisibleObject, outOfRangeAsEmpty);
             read_done = true;
             usedPath = path;
         }
@@ -1204,14 +1221,15 @@ struct ReadAlembic : INode {
 
 ZENDEFNODE(ReadAlembic, {
     {
-        {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
-        {"bool", "read_face_set", "1"},
-        {"bool", "outOfRangeAsEmpty", "0"},
-        {"frameid"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+        {gParamType_Bool, "read_face_set", "1"},
+        {gParamType_Bool, "outOfRangeAsEmpty", "0"},
+        {gParamType_Bool, "skipInvisibleObject", "1"},
+        {gParamType_Float, "frameid"}
     },
     {
-        {"ABCTree", "abctree"},
-        "namelist",
+        {gParamType_Unknown, "abctree"},
+        {gParamType_List, "namelist"},
     },
     {},
     {"alembic"},
@@ -1316,12 +1334,12 @@ struct AlembicSplitByName: INode {
 
 ZENDEFNODE(AlembicSplitByName, {
     {
-        {"prim"},
-        {"bool", "killDeadVerts", "1"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Bool, "killDeadVerts", "1"},
     },
     {
-        {"DictObject", "dict"},
-        {"ListObject", "namelist"},
+        {gParamType_Dict,"dict"},
+        {gParamType_List, "namelist"},
     },
     {},
     {"alembic"},
@@ -1352,11 +1370,11 @@ struct CopyPosAndNrmByIndex: INode {
 
 ZENDEFNODE(CopyPosAndNrmByIndex, {
     {
-        {"prim"},
-        {"list", "list"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_List, "list"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1411,14 +1429,14 @@ struct PrimsFilterInUserdata: INode {
 
 ZENDEFNODE(PrimsFilterInUserdata, {
     {
-        {"list", "list"},
-        {"string", "name", ""},
-        {"string", "filters"},
-        {"bool", "contain", "1"},
-        {"bool", "fuzzy", "0"},
+        {gParamType_List, "list"},
+        {gParamType_String, "name", ""},
+        {gParamType_String, "filters"},
+        {gParamType_Bool, "contain", "1"},
+        {gParamType_Bool, "fuzzy", "0"},
     },
     {
-        {"list", "out"},
+        {gParamType_List, "out"},
     },
     {},
     {"alembic"},
@@ -1493,8 +1511,8 @@ struct PrimsFilterInUserdataPython: INode {
 
 ZENDEFNODE(PrimsFilterInUserdataPython, {
     {
-        {"list", "list"},
-        {"multiline_string", "py_code", "result = len(ud['label']) > 2"},
+        {gParamType_List, "list"},
+        {gParamType_String, "py_code", "result = len(ud['label']) > 2", Socket_Primitve, Multiline},
     },
     {
         {"out"},
@@ -1516,11 +1534,11 @@ struct SetFaceset: INode {
 
 ZENDEFNODE(SetFaceset, {
     {
-        "prim",
-        {"string", "facesetName", "defFS"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "facesetName", "defFS"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},
@@ -1538,11 +1556,11 @@ struct SetABCPath: INode {
 
 ZENDEFNODE(SetABCPath, {
     {
-        "prim",
-        {"string", "abcpathName", "/ABC/your_path"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "abcpathName", "/ABC/your_path"},
     },
     {
-        {"out"},
+        {gParamType_Primitive, "out"},
     },
     {},
     {"alembic"},

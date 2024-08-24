@@ -141,25 +141,25 @@ namespace zeno {
     };
 ZENDEFNODE(PrimitiveAttrFit, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "refPrim", "", zeno::Socket_ReadOnly},
-    {"string", "attrNameSrc", "pos"},
-    {"string", "attrNameDst", "pos"},
-    {"string", "refAttrNameSrc", "pos"},
-    {"string", "refAttrNameDst", "pos"},
-    {"float", "limitMin", "0"},
-    {"float", "limitMax", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "refPrim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "attrNameSrc", "pos"},
+    {gParamType_String, "attrNameDst", "pos"},
+    {gParamType_String, "refAttrNameSrc", "pos"},
+    {gParamType_String, "refAttrNameDst", "pos"},
+    {gParamType_Float, "limitMin", "0"},
+    {gParamType_Float, "limitMax", "1"},
     {"enum X Y Z", "axisSrc", "X"},
     {"enum X Y Z", "axisDst", "Y"},
     {"enum X Y Z", "refAxisSrc", "X"},
     {"enum X Y Z", "refAxisDst", "Y"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
-    {"bool", "autoMinMax", "1"},
-    {"bool", "autoSort", "1"},
+    {gParamType_Bool, "autoMinMax", "1"},
+    {gParamType_Bool, "autoSort", "1"},
     },
     {"primitive"},
 });

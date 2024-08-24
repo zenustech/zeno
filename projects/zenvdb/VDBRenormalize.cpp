@@ -40,13 +40,13 @@ namespace zeno {
 
 static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBRenormalizeSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {gParamType_VDBGrid,"inoutSDF"},
      }, /* outputs: */ {
-     "inoutSDF",
+     {gParamType_VDBGrid,"inoutSDF"}
      }, /* params: */ {
          {"enum 1oUpwind", "method", "1oUpwind"},
-         {"int", "iterations", "4"},
-         {"int", "dilateIters", "0"},
+         {gParamType_Int, "iterations", "4"},
+         {gParamType_Int, "dilateIters", "0"},
      }, /* category: */ {
      "openvdb",
      }});
@@ -93,13 +93,13 @@ struct VDBSmooth : zeno::INode {
 
 ZENO_DEFNODE(VDBSmooth)(
     { /* inputs: */ {
-    {"", "inoutVDB", "", zeno::Socket_ReadOnly},
-    {"", "MaskGrid", "", zeno::Socket_ReadOnly},
+    {gParamType_VDBGrid,"inoutVDB", "", zeno::Socket_ReadOnly},
+    {gParamType_VDBGrid,"MaskGrid", "", zeno::Socket_ReadOnly},
     {"enum Mean Gaussian Median", "type", "Gaussian"},
-    {"int", "width", "1"},
-    {"int", "iterations", "1"},
+    {gParamType_Int, "width", "1"},
+    {gParamType_Int, "iterations", "1"},
     }, /* outputs: */ {
-    "inoutVDB",
+        {gParamType_VDBGrid,"inoutVDB"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",
@@ -121,13 +121,13 @@ struct  VDBSmoothSDF : zeno::INode { /* cihou old graph */
 
 static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly},
+     {gParamType_VDBGrid,"inoutSDF"},
      }, /* outputs: */ {
-     "inoutSDF",
+     {gParamType_VDBGrid,"inoutSDF"},
      }, /* params: */ {
-         {"int", "width", "1"},
-         {"int", "iterations", "1"},
-         {"string", "DEPRECATED", "Use VDBSmooth Instead"},
+         {gParamType_Int, "width", "1"},
+         {gParamType_Int, "iterations", "1"},
+         {gParamType_String, "DEPRECATED", "Use VDBSmooth Instead"},
      }, /* category: */ {
      "deprecated",
      }});
@@ -145,10 +145,10 @@ struct  VDBDilateTopo : zeno::INode {
 
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
-     {"", "inField", "", zeno::Socket_ReadOnly},
-     {"int", "layers",}
+     {gParamType_VDBGrid,"inField", "", zeno::Socket_ReadOnly},
+     {gParamType_Int, "layers",}
      }, /* outputs: */ {
-       "oField"
+         {gParamType_VDBGrid,"oField"}
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -174,9 +174,9 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     {"", "inoutSDF", "", zeno::Socket_ReadOnly}, {"float", "depth"},
+     {gParamType_VDBGrid,"inoutSDF"}, {gParamType_Float, "depth"},
      }, /* outputs: */ {
-       "inoutSDF",
+       {gParamType_VDBGrid,"inoutSDF"}
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

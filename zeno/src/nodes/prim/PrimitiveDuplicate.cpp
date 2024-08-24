@@ -18,9 +18,9 @@ struct PrimitiveDuplicate : zeno::INode {
 
         auto scaleByAttr = get_param<std::string>("scaleByAttr");
 
-        auto const &parspos = pars->attr<vec3f>("pos");
-        auto const &meshpos = mesh->attr<vec3f>("pos");
-        auto &outmpos = outm->add_attr<vec3f>("pos");
+        auto const &parspos = pars->attr<zeno::vec3f>("pos");
+        auto const &meshpos = mesh->attr<zeno::vec3f>("pos");
+        auto &outmpos = outm->add_attr<zeno::vec3f>("pos");
 
         if (scaleByAttr.size()) {
             auto const &scaleAttr = pars->attr<float>(scaleByAttr);
@@ -110,15 +110,15 @@ struct PrimitiveDuplicate : zeno::INode {
 
 ZENDEFNODE(PrimitiveDuplicate, {
         {
-        "meshPrim",
-        "particlesPrim",
-        {"float", "uniScale", "1.0"},
+        {gParamType_Primitive, "meshPrim"},
+        {gParamType_Primitive, "particlesPrim"},
+        {gParamType_Float, "uniScale", "1.0"},
         }, {
-        "outPrim",
+        {gParamType_Primitive, "outPrim"},
         }, {
-        {"bool", "attrFromMesh", "1"},
-        {"bool", "attrFromParticles", "1"},
-        {"string", "scaleByAttr", ""},
+        {gParamType_Bool, "attrFromMesh", "1"},
+        {gParamType_Bool, "attrFromParticles", "1"},
+        {gParamType_String, "scaleByAttr", ""},
         }, {
         "deprecated",
         }});

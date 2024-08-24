@@ -88,15 +88,15 @@ struct CacheVDBGrid : zeno::INode {
 
 ZENDEFNODE(CacheVDBGrid,
     { /* inputs: */ {
-    {"", "inGrid", "", zeno::Socket_ReadOnly},
-    "frameNum",
+    {gParamType_VDBGrid,"inGrid", "", zeno::Socket_ReadOnly},
+    {gParamType_Int, "frameNum"},
     }, /* outputs: */ {
-    "outGrid",
+    {gParamType_VDBGrid,"outGrid"},
     }, /* params: */ {
-    {"string", "dir", "/tmp/cache"},
-    {"string", "prefix", ""},
-    {"bool", "ignore", "0"},
-    {"bool", "mute", "0"},
+    {gParamType_String, "dir", "/tmp/cache"},
+    {gParamType_String, "prefix", ""},
+    {gParamType_Bool, "ignore", "0"},
+    {gParamType_Bool, "mute", "0"},
     }, /* category: */ {
     "deprecated",
     }});
@@ -141,10 +141,10 @@ struct ReadVDBGrid : zeno::INode {
 };
 static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
     "ReadVDBGrid", {/* inputs: */ {
-                        {"string", "type", "", NoSocket},
-                        {"string", "path", "", NoSocket, ReadPathEdit},}, /* outputs: */
+                        {gParamType_String, "type", "", NoSocket},
+                        {gParamType_String, "path", "", NoSocket, ReadPathEdit},}, /* outputs: */
                     {
-                        "data",
+                        {gParamType_VDBGrid,"data"},
                     },
                     /* params: */
                     {
@@ -165,11 +165,11 @@ struct ImportVDBGrid : zeno::INode {
 
 static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     { /* inputs: */ {
-    "path",
+    {gParamType_String, "path", "", NoSocket, ReadPathEdit},
     }, /* outputs: */ {
-    "data",
+    {gParamType_VDBGrid,"data"},
     }, /* params: */ {
-    {"string", "type", ""},
+    {gParamType_String, "type", ""},
     }, /* category: */ {
     "deprecated",
     }});
@@ -178,9 +178,9 @@ struct ReadVDB : ImportVDBGrid {
 };
 static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     { /* inputs: */ {
-    {"string", "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
+    {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     }, /* outputs: */ {
-    "data",
+    {gParamType_VDBGrid,"data"},
     }, /* params: */ {
     }, /* category: */ {
     "openvdb",

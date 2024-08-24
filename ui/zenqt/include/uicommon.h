@@ -11,7 +11,10 @@
 #include <rapidjson/prettywriter.h>
 #include <memory>
 #include <zeno/core/data.h>
+#include <zeno/core/IObject.h>
 #include "qkeylist.h"
+#include <zeno/core/typeinfo.h>
+
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 #define QtSkipEmptyParts Qt::SkipEmptyParts
@@ -158,11 +161,13 @@ enum MODEL_ROLE {
     ROLE_PARAM_NAME,
     ROLE_PARAM_VALUE,
     ROLE_PARAM_TYPE,
+    ROLE_PARAM_RTTICODE,
     ROLE_PARAM_CONTROL,
     ROLE_PARAM_SOCKPROP,
     ROLE_PARAM_CTRL_PROPERTIES,
     ROLE_PARAM_TOOLTIP,
     ROLE_PARAM_VISIBLE,
+    ROLE_PARAM_SOCKET_CLR,
     ROLE_PARAM_GROUP,
     ROLE_SOCKET_TYPE,
     ROLE_PARAM_INFO,
@@ -269,7 +274,7 @@ Q_DECLARE_METATYPE(zeno::EdgeInfo)
 
 Q_DECLARE_METATYPE(zeno::zvariant)
 
-Q_DECLARE_METATYPE(zeno::ControlProperty)
+Q_DECLARE_METATYPE(zeno::reflect::Any)
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)

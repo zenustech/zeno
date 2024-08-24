@@ -70,13 +70,13 @@ struct ShaderTernaryMath : ShaderNodeClone<ShaderTernaryMath> {
 
 ZENDEFNODE(ShaderTernaryMath, {
     {
-        {"float", "in1", "0"},
-        {"float", "in2", "0"},
-        {"float", "in3", "0"},
+        {gParamType_Float, "in1", "0"},
+        {gParamType_Float, "in2", "0"},
+        {gParamType_Float, "in3", "0"},
         {(std::string)"enum " + ternops, "op", "mix"},
     },
     {
-        {"float", "out"},
+        {gParamType_Float, "out"},
     },
     {},
     {"shader"},
@@ -149,12 +149,12 @@ struct ShaderBinaryMath : ShaderNodeClone<ShaderBinaryMath> {
 
 ZENDEFNODE(ShaderBinaryMath, {
     {
-        {"float", "in1", "0"},
-        {"float", "in2", "0"},
+        {gParamType_Float, "in1", "0"},
+        {gParamType_Float, "in2", "0"},
         {(std::string)"enum " + binops, "op", "add"},
     },
     {
-        {"float", "out"},
+        {gParamType_Float, "out"},
     },
     {},
     {"shader"},
@@ -189,11 +189,11 @@ struct ShaderUnaryMath : ShaderNodeClone<ShaderUnaryMath> {
 
 ZENDEFNODE(ShaderUnaryMath, {
     {
-        {"float", "in1", "0"},
+        {gParamType_Float, "in1", "0"},
         {(std::string)"enum " + unops, "op", "sqrt"},
     },
     {
-        {"float", "out"},
+        {gParamType_Float, "out"},
     },
     {},
     {"shader"},
@@ -216,11 +216,11 @@ struct ShaderHsvAdjust : ShaderNodeClone<ShaderHsvAdjust> {
 
 ZENDEFNODE(ShaderHsvAdjust, {
     {
-        {"vec3f", "color"},
-        {"vec3f", "amount", "0,1,1"},
+        {gParamType_Vec3f, "color"},
+        {gParamType_Vec3f, "amount", "0,1,1"},
     },
     {
-        {"out"},
+        {"object", "out"},
     },
     {},
     {"shader"},

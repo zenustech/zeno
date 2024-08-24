@@ -158,13 +158,12 @@ std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
 {
     auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
     const QString& paramName = QString::fromStdString(input_name);
+    std::string ret;
     if (inputs.find(paramName) != inputs.end()) {
         auto& param = inputs[paramName];
-        if (std::holds_alternative<std::string>(param.defl)) {
-            return std::get<std::string>(param.defl);
-        }
+        zeno::zeno_get_if(param.defl, ret);
     }
-    return "";
+    return ret;
 }
 
 std::string NodeSyncMgr::getParamValString(const QModelIndex& node,

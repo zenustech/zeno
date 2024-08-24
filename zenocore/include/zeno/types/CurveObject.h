@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
 #include <algorithm>
 #include <cassert>
@@ -69,11 +68,20 @@ struct CurveData : private _CurveDataDetails {
         kMirror,
     };
 
+    enum HANDLE_TYPE
+    {
+        HDL_FREE,
+        HDL_ALIGNED,
+        HDL_VECTOR,
+        HDL_ASYM
+    };
+
     struct ControlPoint {
         float v{0};
         PointType cp_type{PointType::kConstant};
         vec2f left_handler{0, 0};
         vec2f right_handler{0, 0};
+        HANDLE_TYPE controlType = HDL_VECTOR;
     };
 
     struct Range {
@@ -87,10 +95,12 @@ struct CurveData : private _CurveDataDetails {
     std::vector<ControlPoint> cpoints;
     Range rg;
     CycleType cycleType{CycleType::kClamp};
+    bool visible = false;
+    bool timeline = true;
 
-    void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler) {
+    void addPoint(float f, float v, PointType cp_type, vec2f left_handler, vec2f right_handler, HANDLE_TYPE hdl_type) {
         cpbases.push_back(f);
-        cpoints.push_back({v, cp_type, left_handler, right_handler});
+        cpoints.push_back({v, cp_type, left_handler, right_handler, hdl_type});
     }
 
     void updateRange(Range const &newRg) {
@@ -173,23 +183,74 @@ struct CurveData : private _CurveDataDetails {
             return p.v;
         }
     }
+
+    bool operator==(const CurveData& other) {
+        if (other.cpbases.size() != cpbases.size() || other.cpoints.size() != cpoints.size())
+            return false;
+        if (other.cycleType != cycleType || other.visible != visible || other.timeline != timeline)
+            return false;
+        for (int i = 0; i < other.cpbases.size(); i++) {
+            if (other.cpbases[i] != cpbases[i])
+                return false;
+        }
+        for (int i = 0; i < other.cpoints.size(); i++) {
+            if (other.cpoints[i].v != cpoints[i].v || other.cpoints[i].cp_type != cpoints[i].cp_type ||
+                other.cpoints[i].controlType != cpoints[i].controlType || 
+                other.cpoints[i].left_handler[0] != cpoints[i].left_handler[0] || other.cpoints[i].left_handler[1] != cpoints[i].left_handler[1] ||
+                other.cpoints[i].right_handler[0] != cpoints[i].right_handler[0] || other.cpoints[i].right_handler[1] != cpoints[i].right_handler[1]) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
-struct CurveObject : IObjectClone<CurveObject> {
+struct CurvesData {
     std::map<std::string, CurveData> keys;
 
-    auto getEvaluator(std::string const &key) const {
-        return [&data = keys.at(key)] (float x) {
+    bool empty() const {
+        return keys.empty();
+    }
+
+    size_t size() const {
+        return keys.size();
+    }
+
+    bool contains(const std::string& key) const {
+        return keys.find(key) != keys.end();
+    }
+
+    auto getEvaluator(std::string const& key) const {
+        return [&data = keys.at(key)](float x) {
             return data.eval(x);
         };
     }
 
+    CurveData operator[](std::string const& key) {
+        if (!contains(key)) return CurveData();
+        return keys[key];
+    }
+
+    bool operator==(const CurvesData& other) {
+        if (other.keys.size() != keys.size())
+            return false;
+        for (auto& [otherKey, otherCurve]: other.keys) {
+            const auto& iter = keys.find(otherKey);
+            if (iter == keys.end()) {
+                return false;
+            }else if (!(iter->second == otherCurve)){
+                return false;
+            }
+        }
+        return true;
+    }
+
     template <class ...Ts>
-    void addPoint(std::string const &key, Ts ...ts) {
+    void addPoint(std::string const& key, Ts ...ts) {
         return keys[key].addPoint(ts...);
     }
 
-    float eval(std::string const &key, float x) const {
+    float eval(std::string const& key, float x) const {
         return keys.at(key).eval(x);
     }
 
@@ -198,22 +259,22 @@ struct CurveObject : IObjectClone<CurveObject> {
     }
 
     vec2f eval(vec2f v) const {
-        auto &[x, y] = v;
-        return {eval("x", x), eval("y", y)};
+        auto& [x, y] = v;
+        return { eval("x", x), eval("y", y) };
     }
 
     vec3f eval(vec3f v) const {
-        auto &[x, y, z] = v;
-        return {eval("x", x), eval("y", y), eval("z", z)};
+        auto& [x, y, z] = v;
+        return { eval("x", x), eval("y", y), eval("z", z) };
     }
 
     vec4f eval(vec4f v) const {
-        auto &[x, y, z, w] = v;
-        return {eval("x", x), eval("y", y), eval("z", z), eval("w", w)};
+        auto& [x, y, z, w] = v;
+        return { eval("x", x), eval("y", y), eval("z", z), eval("w", w) };
     }
 };
 
-struct BCurveObject : zeno::IObjectClone<BCurveObject> {
+struct BCurveObject {
     std::vector<zeno::vec3f> points;
     float precision = 0.0;
     std::vector<zeno::vec3f> bPoints;

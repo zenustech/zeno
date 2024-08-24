@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <thread>
 
+
 namespace {
 
 struct GCTest : zeno::IObjectClone<GCTest, zeno::NumericObject> {
@@ -38,7 +39,7 @@ struct GCTest : zeno::IObjectClone<GCTest, zeno::NumericObject> {
 
 struct MakeGCTest : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<GCTest>();
+        auto obj = std::make_shared<GCTest>();
         obj->set<int>(get_param<int>("value"));
         set_output("value", std::move(obj));
     }
@@ -46,8 +47,8 @@ struct MakeGCTest : zeno::INode {
 
 ZENDEFNODE(MakeGCTest, {
     {},
-    {{"int","value"}},
-    {{"int", "value", "42"}},
+    {{gParamType_Int,"value"}},
+    {{gParamType_Int, "value", "42"}},
     {"debug"},
 });
 
@@ -62,7 +63,7 @@ struct PrintMessage : zeno::INode {
 ZENDEFNODE(PrintMessage, {
     {},
     {},
-    {{"string", "message", "hello-stdout"}},
+    {{gParamType_String, "message", "hello-stdout"}},
     {"debug"},
 });
 
@@ -77,7 +78,7 @@ struct PrintMessageStdErr : zeno::INode {
 ZENDEFNODE(PrintMessageStdErr, {
     {},
     {},
-    {{"string", "message", "hello-stderr"}},
+    {{gParamType_String, "message", "hello-stderr"}},
     {"debug"},
 });
 
@@ -92,8 +93,8 @@ struct InfiniteLoop : zeno::INode {
 };
 
 ZENDEFNODE(InfiniteLoop, {
-    {{"int", "input", "2"}},
-    {{"int", "output"}},
+    {{gParamType_Int, "input", "2"}},
+    {{gParamType_Int, "output"}},
     {},
     {"debug"}
 });
@@ -109,7 +110,7 @@ struct TriggerExitProcess : zeno::INode {
 ZENDEFNODE(TriggerExitProcess, {
     {},
     {},
-    {{"int", "status", "-1"}},
+    {{gParamType_Int, "status", "-1"}},
     {"debug"},
 });
 
@@ -167,7 +168,7 @@ struct SpdlogInfoMessage : zeno::INode {
 ZENDEFNODE(SpdlogInfoMessage, {
     {},
     {},
-    {{"string", "message", "hello from spdlog!"}},
+    {{gParamType_String, "message", "hello from spdlog!"}},
     {"debug"},
 });
 
@@ -181,7 +182,7 @@ struct SpdlogErrorMessage : zeno::INode {
 ZENDEFNODE(SpdlogErrorMessage, {
     {},
     {},
-    {{"string", "message", "error from spdlog!"}},
+    {{gParamType_String, "message", "error from spdlog!"}},
     {"debug"},
 });
 
@@ -195,7 +196,7 @@ struct TriggerException : zeno::INode {
 ZENDEFNODE(TriggerException, {
     {},
     {},
-    {{"string", "message", "exception occurred!"}},
+    {{gParamType_String, "message", "exception occurred!"}},
     {"debug"},
 });
 
@@ -209,7 +210,7 @@ struct TriggerViewportFault : zeno::INode {
 
 ZENDEFNODE(TriggerViewportFault, {
     {},
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"debug"},
 });
@@ -223,10 +224,10 @@ struct MockRunning : zeno::INode {
 };
 
 ZENDEFNODE(MockRunning, {
-    {{"list", "SRC"},
-     {"int", "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
+    {{gParamType_List, "SRC"},
+     {gParamType_Int, "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
     },
-    {"DST"},
+    {{gParamType_IObject, "DST"}},
     {},
     {"debug"},
 });
@@ -250,12 +251,13 @@ struct Group : zeno::INode {
 };
 
 ZENDEFNODE(Group, {
-    {{"string", "title", "title"},{"string", "items"},{"vec3f", "background", "0, 0.39, 0.66"},{"vec2f", "size", "500,500"}},
+    {{gParamType_String, "title", "title"},{gParamType_String, "items"},{gParamType_Vec3f, "background", "0, 0.39, 0.66"},{gParamType_Vec2f, "size", "500,500"}},
     {},
     {},
     {"layout"},
     });
 
+#if 0
 struct CustomNode : zeno::INode {
     virtual void apply() override {
 
@@ -264,7 +266,7 @@ struct CustomNode : zeno::INode {
 
 ZENDEFINE(CustomNode, {
     {
-        {"obj_intput1", zeno::Param_Null, zeno::Socket_ReadOnly},
+        {"obj_intput1", Param_Null, zeno::Socket_ReadOnly},
     },
     {
         {
@@ -274,17 +276,17 @@ ZENDEFINE(CustomNode, {
                     {
                         "Group1",
                         {
-                            {"param1", zeno::Param_Null, zeno::Socket_ReadOnly},
-                            {"param2", zeno::Param_Prim, zeno::Socket_ReadOnly},
-                            {"param3", zeno::Param_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
+                            {"param1", Param_Null, zeno::Socket_ReadOnly},
+                            {"param2", gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param3", zeno::types::gParamType_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
                         }
                     },
                     {
                         "Group2",
                         {
-                            {"param4", zeno::Param_String, zeno::Socket_ReadOnly, "", zeno::Multiline, {}},
-                            {"param5", zeno::Param_Prim, zeno::Socket_ReadOnly},
-                            {"param6", zeno::Param_Null, zeno::NoSocket}
+                            {"param4", zeno::types::gParamType_String, zeno::Socket_ReadOnly, "", zeno::Multiline, {}},
+                            {"param5", gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param6", Param_Null, zeno::NoSocket}
                         }
                     }
                 }
@@ -295,17 +297,17 @@ ZENDEFINE(CustomNode, {
                     {
                         "Group3",
                         {
-                            {"param7", zeno::Param_Null, zeno::Socket_ReadOnly},
-                            {"param8", zeno::Param_Prim, zeno::Socket_ReadOnly},
-                            {"param9", zeno::Param_Null, zeno::NoSocket}
+                            {"param7", Param_Null, zeno::Socket_ReadOnly},
+                            {"param8", gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param9", Param_Null, zeno::NoSocket}
                         }
                     },
                     {
                         "Group4",
                         {
-                            {"param10", zeno::Param_Null, zeno::Socket_ReadOnly},
-                            {"param11", zeno::Param_Prim, zeno::Socket_ReadOnly},
-                            {"param12", zeno::Param_Null, zeno::NoSocket}
+                            {"param10", Param_Null, zeno::Socket_ReadOnly},
+                            {"param11", gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param12", Param_Null, zeno::NoSocket}
                         }
                     }
                 }
@@ -313,13 +315,14 @@ ZENDEFINE(CustomNode, {
         }
     },
     {
-        {"prim_output1", zeno::Param_Null, zeno::Socket_ReadOnly},
+        {"prim_output1", Param_Null, zeno::Socket_ReadOnly},
     },
     {
-        {"obj_output1", zeno::Param_Null, zeno::Socket_ReadOnly},
+        {"obj_output1", Param_Null, zeno::Socket_ReadOnly},
     },
     "debug",
     "CUI",
 });
+#endif
 
 }

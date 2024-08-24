@@ -69,12 +69,12 @@ struct PolyReduceLite : INode {
             // zeno::log_warn(fmt::format("begin iter {}\n", i));
             /// evaluate vert curvatures
             pol(range(pos.size()), [&](int i) {
-                vertEdgeCosts[i] = std::make_pair(limits<float>::max(), std::make_pair(i, -1));
+                vertEdgeCosts[i] = std::make_pair(detail::deduce_numeric_max<float>(), std::make_pair(i, -1));
                 if (vertVerts[i].size() == 0 || vertDiscard[i]) {
                     return;
                 }
 
-                auto cost = limits<float>::max();
+                auto cost = detail::deduce_numeric_max<float>();
                 for (auto j : vertVerts[i]) {
                     if (vertDiscard[j])
                         continue;
@@ -105,7 +105,7 @@ struct PolyReduceLite : INode {
             /// sort edges for collapse
             auto pair = std::reduce(
                 std::begin(vertEdgeCosts), std::end(vertEdgeCosts),
-                std::make_pair(limits<float>::max(), std::make_pair(-1, -1)),
+                std::make_pair(detail::deduce_numeric_max<float>(), std::make_pair(-1, -1)),
                 [](const std::pair<float, std::pair<int, int>> &a, const std::pair<float, std::pair<int, int>> &b) {
                     if (a.first < b.first)
                         return a;
@@ -223,9 +223,9 @@ struct PolyReduceLite : INode {
 };
 
 ZENDEFNODE(PolyReduceLite, {
-                               {{"PrimitiveObject", "prim"}, {"int", "iterations", "100"}},
+                               {{gParamType_Primitive, "prim"}, {gParamType_Int, "iterations", "100"}},
                                {
-                                   {"PrimitiveObject", "prim"},
+                                   {gParamType_Primitive, "prim"},
                                },
                                {},
                                {"zs_geom"},

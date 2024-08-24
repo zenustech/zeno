@@ -94,7 +94,7 @@ ZENDEFNODE(ZSMarkIsland, {{{"zsparticles"}},
 								{"zsparticles"}
 							},
 							{
-								{"string","mark_tag","mark_tag"}
+								{gParamType_String,"mark_tag","mark_tag"}
 							},
 							{"ZSGeometry"}});
 
@@ -121,7 +121,7 @@ ZENDEFNODE(ZSManifoldCheck, {{{"zsparticles"}},
 								{"is_manifold"}
 							},
 							{
-								// {"string","mark_tag","mark_tag"}
+								// {gParamType_String,"mark_tag","mark_tag"}
 							},
 							{"ZSGeometry"}});
 
@@ -196,8 +196,8 @@ ZENDEFNODE(DoTopogicalColoring, {{{"zsparticles"}},
 								{"zsparticles"}
 							},
 							{
-								{"string","colorTag","colorTag"},
-								// {"bool","sort_color","1"}
+								{gParamType_String,"colorTag","colorTag"},
+								// {gParamType_Bool,"sort_color","1"}
 							},
 							{"ZSGeometry"}});
 

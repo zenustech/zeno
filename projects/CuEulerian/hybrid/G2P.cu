@@ -110,7 +110,7 @@ struct ZSSparseGridToPrimitive : INode {
         auto tag = src_tag(zsSPG, attrTag);
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
                                   wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;
@@ -169,11 +169,11 @@ struct ZSSparseGridToPrimitive : INode {
 ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                      {"SparseGrid",
                                       "ZSParticles",
-                                      {"string", "GridAttribute"},
-                                      {"string", "ParticleAttribute", ""},
+                                      {gParamType_String, "GridAttribute"},
+                                      {gParamType_String, "ParticleAttribute", ""},
                                       {"enum replace accumulate", "OpType", "replace"},
                                       {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
-                                      {"bool", "staggered", "0"}},
+                                      {gParamType_Bool, "staggered", "0"}},
                                      /* outputs: */
                                      {"ZSParticles"},
                                      /* params: */

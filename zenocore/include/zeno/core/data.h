@@ -10,14 +10,11 @@
 #include <unordered_map>
 #include <optional>
 #include <zeno/utils/api.h>
+#include <reflect/container/any>
+#include <zeno/types/CurveObject.h>
+
 
 namespace zeno {
-
-    struct ControlProperty
-    {
-        std::optional<std::vector<std::string>> items;  //for combobox
-        std::optional<std::array<float, 3>> ranges;       //min, max, step
-    };
 
     struct EdgeInfo {
         std::string outNode;
@@ -27,6 +24,8 @@ namespace zeno {
         std::string inNode;
         std::string inParam;
         std::string inKey;
+
+        std::string targetParam;
 
         bool bObjLink = true;
 
@@ -77,37 +76,18 @@ namespace zeno {
         std::string name;
         ParamType type = Param_Null;
         SocketType socketType = Socket_Primitve;
-        zvariant defl;
-        zvariant result;    //run result.
+        zeno::reflect::Any defl;
+        zeno::reflect::Any result;    //run result.
         ParamControl control = NullControl;
-        std::optional<ControlProperty> ctrlProps;
+        zeno::reflect::Any ctrlProps;
 
         std::vector<EdgeInfo> links;
         SocketProperty prop = Socket_Normal;
 
         std::string tooltip;
         bool bInput = true;
-        bool bVisible = true;
+        bool bVisible = false;
         std::string wildCardGroup;
-
-        ParamPrimitive() {}
-        ParamPrimitive(std::string name, ParamType type, SocketType sockType, std::string tooltip = "")
-            : name(name)
-            , type(type)
-            , socketType(sockType)
-            , tooltip(tooltip)
-        {
-        }
-        ParamPrimitive(std::string name, ParamType type, SocketType sockType, zvariant defl, ParamControl ctrl, ControlProperty props, std::string tooltip = "")
-            : name(name)
-            , type(type)
-            , socketType(sockType)
-            , defl(defl)
-            , control(ctrl)
-            , ctrlProps(props)
-            , tooltip(tooltip)
-        {
-        }
     };
 
     using ObjectParams = std::vector<ParamObject>;
@@ -225,6 +205,70 @@ namespace zeno {
         std::set<std::string> remove_inputs;
         std::set<std::string> remove_outputs;
     };
+
+    template<typename T, typename E>
+    T zeno_get(const E& container) {
+        if constexpr (std::is_same_v<E, zvariant>) {
+            return std::visit([](auto&& val)->T {
+                using V = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<V, T>) {
+                    return val;
+                }
+                else {
+                    throw;
+                }
+            }, container);
+        }
+        else if constexpr (std::is_same_v<E, zeno::reflect::Any>) {
+            if (zeno::reflect::get_type<T>() == container.type()) {
+                return zeno::reflect::any_cast<T>(container);
+            }
+            else {
+                throw;
+            }
+        }
+        else {
+            throw;
+        }
+    }
+
+    template<typename T>
+    const T* any_get_if(const zeno::reflect::Any& val) {
+        if (zeno::reflect::get_type<T>() == val.type()) {
+            return zeno::reflect::any_cast<T>(&val);
+        }
+        else {
+            return nullptr;
+        }
+    }
+
+    template<typename T, typename E>
+    bool zeno_get_if(const T& container, E& ret) {
+        if constexpr (std::is_same_v<T, zvariant>) {
+            return std::visit([&](auto&& val)->bool {
+                using V = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<V, E>) {
+                    ret = val;
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }, container);
+        }
+        else if constexpr (std::is_same_v<T, zeno::reflect::Any>) {
+            if (zeno::reflect::get_type<E>() == container.type()) {
+                ret = zeno::reflect::any_cast<E>(container);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+    }
 
     enum formula_tip_type {
         FMLA_NO_MATCH,

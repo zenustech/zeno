@@ -43,22 +43,22 @@ namespace zeno
         CreateTree,
         {
             {
-                {"float", "start_x", "0.0"},
-                {"float", "start_y", "0.0"},
-                {"float", "start_z", "0.0"},
-                {"float", "offset_degree_min", "0.0"},
-                {"float", "offset_degree_max", "0.0"},
-                {"float", "length_min", "0.0"},
-                {"float", "length_max", "0.0"},
-                {"float", "radius_min", "0.0"},
-                {"float", "radius_max", "0.0"},
-                {"int", "turn_points_num_min", "0"},
-                {"int", "turn_points_num_max", "0"},
-                {"float", "turn_points_offset_min", "0.0"},
-                {"float", "turn_points_offset_max", "0.0"},
+                {gParamType_Float, "start_x", "0.0"},
+                {gParamType_Float, "start_y", "0.0"},
+                {gParamType_Float, "start_z", "0.0"},
+                {gParamType_Float, "offset_degree_min", "0.0"},
+                {gParamType_Float, "offset_degree_max", "0.0"},
+                {gParamType_Float, "length_min", "0.0"},
+                {gParamType_Float, "length_max", "0.0"},
+                {gParamType_Float, "radius_min", "0.0"},
+                {gParamType_Float, "radius_max", "0.0"},
+                {gParamType_Int, "turn_points_num_min", "0"},
+                {gParamType_Int, "turn_points_num_max", "0"},
+                {gParamType_Float, "turn_points_offset_min", "0.0"},
+                {gParamType_Float, "turn_points_offset_max", "0.0"},
             },
             {
-                {"treeObj"},
+                {gParamType_Unknown, "treeObj"},
             },
             {},
             {
@@ -108,24 +108,24 @@ namespace zeno
         TreeCreateBranchs,
         {
             {
-                {"treeObj"},
-                {"int", "num_min", "0"},
-                {"int", "num_max", "0"},
-                {"float", "offset_start_min", "0.0"},
-                {"float", "offset_start_max", "0.0"},
-                {"float", "offset_degree_min", "0.0"},
-                {"float", "offset_degree_max", "0.0"},
-                {"float", "length_min", "0.0"},
-                {"float", "length_max", "0.0"},
-                {"float", "radius_min", "0.0"},
-                {"float", "radius_max", "0.0"},
-                {"int", "turn_points_num_min", "0"},
-                {"int", "turn_points_num_max", "0"},
-                {"float", "turn_points_offset_min", "0.0"},
-                {"float", "turn_points_offset_max", "0.0"},
+                {gParamType_Unknown, "treeObj"},
+                {gParamType_Int, "num_min", "0"},
+                {gParamType_Int, "num_max", "0"},
+                {gParamType_Float, "offset_start_min", "0.0"},
+                {gParamType_Float, "offset_start_max", "0.0"},
+                {gParamType_Float, "offset_degree_min", "0.0"},
+                {gParamType_Float, "offset_degree_max", "0.0"},
+                {gParamType_Float, "length_min", "0.0"},
+                {gParamType_Float, "length_max", "0.0"},
+                {gParamType_Float, "radius_min", "0.0"},
+                {gParamType_Float, "radius_max", "0.0"},
+                {gParamType_Int, "turn_points_num_min", "0"},
+                {gParamType_Int, "turn_points_num_max", "0"},
+                {gParamType_Float, "turn_points_offset_min", "0.0"},
+                {gParamType_Float, "turn_points_offset_max", "0.0"},
             },
             {
-                {"treeObj"},
+                {gParamType_Unknown, "treeObj"},
             },
             {},
             {
@@ -149,10 +149,10 @@ namespace zeno
         TreeSetLeaves,
         {
             {
-                {"treeObj"},
+                {gParamType_Unknown, "treeObj"},
             },
             {
-                {"treeObj"},
+                {gParamType_Unknown, "treeObj"},
             },
             {},
             {
@@ -185,10 +185,10 @@ namespace zeno
         TreeToPrimitiveLines,
         {
             {
-                {"treeObj"},
+                {gParamType_Unknown, "treeObj"},
             },
             {
-                {"primitive", "prim"},
+                {gParamType_Primitive, "prim"},
             },
             {},
             {

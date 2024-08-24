@@ -1,6 +1,5 @@
 #include "GraphModel.h"
 #include "uicommon.h"
-#include "Descriptors.h"
 #include "zassert.h"
 #include "variantptr.h"
 #include "model/GraphsTreeModel.h"
@@ -10,6 +9,7 @@
 #include <zeno/core/Assets.h>
 #include <zeno/core/data.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 
@@ -367,11 +367,23 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
-                QVariant value = UiHelper::zvarToQVar(info.defl);
-                auto curves = JsonHelper::parseCurves(value);
-                for (CURVE_DATA& curve : curves)
-                {
-                    keys << curve.pointBases();
+                if (info.type != zeno::types::gParamType_Curve) {
+                    continue;
+                }
+                const QVariant& value = QVariant::fromValue(info.defl);
+
+                bool bValid = false;
+                zeno::CurvesData curves = UiHelper::getCurvesFromQVar(value, &bValid);
+                if (curves.empty() || !bValid) {
+                    return QVariant();
+                }
+
+                for (auto& [_, curve] : curves.keys) {
+                    QVector<int> cpbases;
+                    for (auto xval : curve.cpbases) {
+                        cpbases << xval;
+                    }
+                    keys << cpbases;
                 }
             }
             keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
@@ -435,7 +447,7 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
             for (auto&[key, param] : paramsInfo)
             {
                 QModelIndex idx = item->params->paramIdx(key, true);
-                item->params->setData(idx, UiHelper::zvarToQVar(param.defl) , ROLE_PARAM_VALUE);
+                item->params->setData(idx, QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
             }
             return true;
         }
@@ -868,6 +880,7 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
 
     NodeItem* pItem = new NodeItem(this);
     pItem->init(this, spNode);
+    pItem->params->setNodeIdx(createIndex(nRows, 0));
 
     const QString& name = QString::fromStdString(spNode->get_name());
     const QString& uuid = QString::fromStdString(spNode->get_uuid());
@@ -881,8 +894,6 @@ void GraphModel::_appendNode(std::shared_ptr<zeno::INode> spNode)
     m_name2uuid.insert(name, uuid);
 
     endInsertRows();
-
-    pItem->params->setNodeIdx(createIndex(nRows, 0));
 
     GraphsManager::instance().currentModel()->markDirty(true);
 }
@@ -942,7 +953,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                     nodedata.customUi = asset.m_customui;
                 }
                 zeno::ParamsUpdateInfo updateInfo;
-                UiHelper::parseUpdateInfo(nodedata.customUi, updateInfo);
+                zeno::parseUpdateInfo(nodedata.customUi, updateInfo);
                 paramsM->resetCustomUi(nodedata.customUi);
                 paramsM->batchModifyParams(updateInfo);
 

@@ -64,9 +64,9 @@ struct TetrahedralizeSurface : zeno::INode {
 };
 
 ZENDEFNODE(TetrahedralizeSurface, {
-    {"surf"},
-    {"tets"},
-    {{"float","mrer","2.0"}},
+    {{gParamType_Primitive, "surf"}},
+    {{gParamType_Primitive, "tets"}},
+    {{gParamType_Float,"mrer","2.0"}},
     {"Skinning"},
 });
 

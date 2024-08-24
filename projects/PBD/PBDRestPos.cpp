@@ -19,7 +19,7 @@ public:
 };
 
 ZENDEFNODE(PBDRestPos, {// inputs:
-                 {"prim"},
+                 {gParamType_Primitive, "prim"},
                  // outputs:
                 {"outPrim"},
                  // params:

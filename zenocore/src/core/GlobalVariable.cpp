@@ -1,6 +1,12 @@
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/core/INode.h>
+#include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
+#include "reflect/metadata.hpp"
+#include "reflect/registry.hpp"
+#include "reflect/container/object_proxy"
+#include "reflect/container/arraylist"
+
 
 namespace zeno {
 
@@ -27,11 +33,11 @@ namespace zeno {
         }
         auto it = GlobalVariables.find(var.name);
         if (it == GlobalVariables.end()) {
-            GlobalVariables.insert(std::make_pair(var.name, OverrdeVector(std::stack<GVariable>({var}), var.gvarType) ));
+            GlobalVariables.insert(std::make_pair(var.name, OverrdeVector(std::stack<GVariable>({var}), var.gvar.type()) ));
             return true;
         }
         else {
-            if (it->second.variableType == var.gvarType) {
+            if (it->second.variableType.equal_fast(var.gvar.type())) {
                 it->second.stack.push(var);
                 return true;
             }
@@ -56,7 +62,7 @@ namespace zeno {
         } 
     }
 
-    zvariant GlobalVariableStack::getVariable(std::string varname)
+    zeno::reflect::Any GlobalVariableStack::getVariable(std::string varname)
     {
         auto it = GlobalVariables.find(varname);
         if (it != GlobalVariables.end()) {
@@ -64,53 +70,7 @@ namespace zeno {
                 return it->second.stack.top().gvar;
             }
         }
-        return zvariant();
-    }
-
-    GVariable::GVariable(std::string globalvarName, zvariant globalvar) : name(globalvarName), gvar(globalvar)
-    {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int>) {
-            gvarType = GV_INT;
-        }
-        else if constexpr (std::is_same_v<T, float>) {
-            gvarType = GV_FLOAT;
-        }
-        else if constexpr (std::is_same_v<T, std::string>) {
-            gvarType = GV_STRING;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2i>) {
-            gvarType = GV_VEC2I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2f>) {
-            gvarType = GV_VEC2F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3i>) {
-            gvarType = GV_VEC3I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3f>) {
-            gvarType = GV_VEC3F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4i>) {
-            gvarType = GV_VEC4I;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4f>) {
-            gvarType = GV_VEC4F;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec2s>) {
-            gvarType = GV_VEC2S;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec3s>) {
-            gvarType = GV_VEC3S;
-        }
-        else if constexpr (std::is_same_v<T, zeno::vec4s>) {
-            gvarType = GV_VEC4S;
-        }
-        else {
-            gvarType = GV_UNDEFINE;
-        }
-        }, gvar);
+        return zeno::reflect::Any();
     }
 
     void GlobalVariableManager::propagateDirty(std::weak_ptr<INode> wpCurrNode, GVariable globalvar)
@@ -124,7 +84,7 @@ namespace zeno {
                 if (it != globalVariablesNameTypeMap.end())
                 {
                     for (auto& [name, type] : it->second) {
-                        if (name == globalvar.name && type == globalvar.gvarType) {
+                        if (name == globalvar.name && type.equal_fast(globalvar.gvar.type())) {
                             if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
                                 mark_dirty_by_dependNodes(node, true, upstreams);
                             }
@@ -200,24 +160,26 @@ namespace zeno {
         {
             upstreams.insert(spGraph->optParentSubgNode.value()->get_uuid_path());
             auto parentSubgNode = spGraph->optParentSubgNode.value();
-            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &parentSubgNode, this](std::string outParam) {
-                std::shared_ptr<INode> outNode = parentSubgNode->get_graph()->getNode(outParam);
-                assert(outNode);
-                getUpstreamNodes(outNode, depNodes, upstreams, outParam);
-                upstreams.insert(outNode->get_uuid_path());
+            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &parentSubgNode, this](std::string outNode, std::string outParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> node = graph->getNode(outNode);
+                    assert(node);
+                    getUpstreamNodes(node, depNodes, upstreams, outParam);
+                    upstreams.insert(node->get_uuid_path());
+                }
             };
             bool find = false;
             const auto& parentSubgNodePrimsInput = parentSubgNode->get_input_prim_param(spCurrNode->get_name(), &find);
             if (find) {
                 for (auto link : parentSubgNodePrimsInput.links) {
-                    parentSubgNodeGetUpstreamFunc(link.outParam);
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
                 }
             }
             bool find2 = false;
             const auto& parentSubgNodeObjsInput = parentSubgNode->get_input_obj_param(spCurrNode->get_name(), &find2);
-            if (find) {
+            if (find2) {
                 for (auto link : parentSubgNodeObjsInput.links) {
-                    parentSubgNodeGetUpstreamFunc(link.outParam);
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
                 }
             }
         }
@@ -281,31 +243,32 @@ namespace zeno {
         if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubOutput")
         {
             auto parentSubgNode = spGraph->optParentSubgNode.value();
-            auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode, this](std::string inParam) {
-
-                std::shared_ptr<INode> inNode = parentSubgNode->get_graph()->getNode(inParam);
-                assert(inNode);
-                mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
+            auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode, this](std::string innode, std::string inParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> inNode = graph->getNode(innode);
+                    assert(inNode);
+                    mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
+                }
             };
             bool find = false;
             const auto& parentSubgNodeOutputPrim = parentSubgNode->get_output_prim_param(spCurrNode->get_name(), &find);
             if (find) {
                 for (auto link : parentSubgNodeOutputPrim.links) {
-                    parentSubgNodeMarkDirty(link.inParam);
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
                 }
             }
             bool find2 = false;
-            const auto& parentSubgNodeOutputObjs = parentSubgNode->get_output_obj_param(spCurrNode->get_name(), &find);
+            const auto& parentSubgNodeOutputObjs = parentSubgNode->get_output_obj_param(spCurrNode->get_name(), &find2);
             if (find2) {
                 for (auto link : parentSubgNodeOutputObjs.links) {
-                    parentSubgNodeMarkDirty(link.inParam);
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
                 }
             }
             spGraph->optParentSubgNode.value()->mark_dirty(true, true, false);
         }
     }
 
-    void GlobalVariableManager::removeDependGlobalVaraible(ObjPath nodepath, std::string name)
+    ZENO_API void GlobalVariableManager::removeDependGlobalVaraible(const ObjPath& nodepath, std::string name)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it != globalVariablesNameTypeMap.end())
@@ -314,24 +277,24 @@ namespace zeno {
         }
     }
 
-    void GlobalVariableManager::addDependGlobalVaraible(ObjPath nodepath, std::string name, GlobalVariableType type)
+    void GlobalVariableManager::addDependGlobalVaraible(const ObjPath& nodepath, std::string name, zeno::reflect::RTTITypeInfo type)
     {
         auto it = globalVariablesNameTypeMap.find(nodepath);
         if (it == globalVariablesNameTypeMap.end())
         {
-            globalVariablesNameTypeMap.insert({ nodepath, std::map<std::string, GlobalVariableType>{ {name, type}} });
+            globalVariablesNameTypeMap.insert({ nodepath, std::map<std::string, zeno::reflect::RTTITypeInfo>{ {name, type}} });
         }
         else {
             it->second.insert({name, type});
         }
     }
 
-    bool GlobalVariableManager::updateVariable(const GVariable& newvar)
+    ZENO_API bool GlobalVariableManager::updateVariable(const GVariable& newvar)
     {
         return globalVariableStack.updateVariable(newvar);
     }
 
-    bool GlobalVariableManager::overrideVariable(const GVariable& var)
+    ZENO_API bool GlobalVariableManager::overrideVariable(const GVariable& var)
     {
         return globalVariableStack.overrideVariable(var);
     }
@@ -341,12 +304,12 @@ namespace zeno {
         globalVariableStack.cancelOverride(varname, cancelVar);
     }
 
-    zeno::zvariant GlobalVariableManager::getVariable(std::string varname)
+    ZENO_API zeno::reflect::Any GlobalVariableManager::getVariable(std::string varname)
     {
         return globalVariableStack.getVariable(varname);
     }
 
-    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> node, std::string gvarName, zvariant var) : currNode(node)
+    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> wknode, std::string gvarName, zeno::reflect::Any var): currNode(wknode)
     {
         gvar = GVariable(gvarName, var);
         overrideSuccess = zeno::getSession().globalVariableManager->overrideVariable(gvar);

@@ -484,15 +484,15 @@ struct PrimFilter : INode {
 
 ZENDEFNODE(PrimFilter, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttr", "tag"},
-    {"string", "revampAttrO", ""},
-    {"int", "tagValue", "0"},
-    {"bool", "isInversed", "1"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttr", "tag"},
+    {gParamType_String, "revampAttrO", ""},
+    {gParamType_Int, "tagValue", "0"},
+    {gParamType_Bool, "isInversed", "1"},
     {"enum verts faces", "method", "verts"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -509,10 +509,10 @@ struct PrimKillDeadVerts : INode {
 
 ZENDEFNODE(PrimKillDeadVerts, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

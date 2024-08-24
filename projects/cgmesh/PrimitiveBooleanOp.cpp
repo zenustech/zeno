@@ -43,7 +43,7 @@ struct PrimitiveBooleanOp : INode {
             auto attrValB = get_input<NumericObject>("faceAttrB")->value;
             std::visit([&] (auto const &valA) {
                 using T = std::decay_t<decltype(valA)>;
-                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, vec3f>) {
+                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, zeno::vec3f>) {
                     auto valB = std::get<T>(attrValB);
                     auto &arrC = primC->tris.add_attr<T>(attrName);
                     for (int i = 0; i < primC->tris.size(); i++) {
@@ -75,17 +75,20 @@ struct PrimitiveBooleanOp : INode {
 
 ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
-    "primA", "primB",
-    {"NumericObject", "faceAttrA"}, {"NumericObject", "faceAttrB"},
+        {gParamType_Primitive, "primA"}, {gParamType_Primitive, "primB"},
+        {gParamType_Float, "faceAttrA", "", Socket_WildCard},
+        {gParamType_Float, "faceAttrB", "", Socket_WildCard},
     },
     {
-    "primC", {"bool", "anyFromA"}, {"bool", "anyFromB"},
+        {gParamType_Primitive, "primC"},
+        {gParamType_Bool, "anyFromA"},
+        {gParamType_Bool, "anyFromB"},
     },
     {
-    {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
-    {"string", "faceAttrName", ""},
-    {"bool", "calcAnyFrom", "0"},
-    {"bool", "doMeshFix", "0"},
+        {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
+        {gParamType_String, "faceAttrName", ""},
+        {gParamType_Bool, "calcAnyFrom", "0"},
+        {gParamType_Bool, "doMeshFix", "0"},
     },
     {"cgmesh"},
 });
@@ -135,20 +138,20 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
 ZENO_DEFNODE(PrimitiveListBoolOp)({
     {
-    "primA", "primListB",
+        {gParamType_Primitive, "primA"}, {gParamType_List, "primListB"},
     },
     {
-    "primList", "lutList",
-    //{"bool", "anyFromA"}, {"bool", "anyFromB"},
+        {gParamType_List, "primList"}, {gParamType_List, "lutList"},
+    //{gParamType_Bool, "anyFromA"}, {gParamType_Bool, "anyFromB"},
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
-    {"string", "faceAttrName", ""},
-    {"bool", "assignAttrs", "1"},
-    {"bool", "calcAnyFrom", "0"},
-    {"bool", "doMeshFix", "1"},
-    {"bool", "noNullMesh", "1"},
-    {"string", "DEPRECATED", ""},
+    {gParamType_String, "faceAttrName", ""},
+    {gParamType_Bool, "assignAttrs", "1"},
+    {gParamType_Bool, "calcAnyFrom", "0"},
+    {gParamType_Bool, "doMeshFix", "1"},
+    {gParamType_Bool, "noNullMesh", "1"},
+    {gParamType_String, "DEPRECATED", ""},
     },
     {"cgmesh"},
 });

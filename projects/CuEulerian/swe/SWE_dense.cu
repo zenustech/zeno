@@ -163,10 +163,10 @@ struct ZSSolveShallowWaterHeight : INode {
 ZENDEFNODE(ZSSolveShallowWaterHeight, {/* inputs: */
                                        {
                                            "SWGrid",
-                                           {"float", "dt", "0.04"},
-                                           {"string", "height_attr", "height"},
-                                           {"string", "u_attr", "u"},
-                                           {"string", "w_attr", "w"},
+                                           {gParamType_Float, "dt", "0.04"},
+                                           {gParamType_String, "height_attr", "height"},
+                                           {gParamType_String, "u_attr", "u"},
+                                           {gParamType_String, "w_attr", "w"},
                                        },
                                        /* outputs: */
                                        {
@@ -299,10 +299,10 @@ struct SolveShallowWaterHeight : INode {
 ZENDEFNODE(SolveShallowWaterHeight, {/* inputs: */
                                      {
                                          "SWGrid",
-                                         {"float", "dt", "0.04"},
-                                         {"string", "height_attr", "height"},
-                                         {"string", "u_attr", "u"},
-                                         {"string", "w_attr", "w"},
+                                         {gParamType_Float, "dt", "0.04"},
+                                         {gParamType_String, "height_attr", "height"},
+                                         {gParamType_String, "u_attr", "u"},
+                                         {gParamType_String, "w_attr", "w"},
                                      },
                                      /* outputs: */
                                      {
@@ -421,7 +421,7 @@ struct ZSSolveShallowWaterMomentum : INode {
             adv_term += w_adv * scheme::HJ_WENO3(u_old[idx(i, j - upwind)], u_old[idx(i, j)], u_old[idx(i, j + upwind)],
                                                  u_old[idx(i, j + 2 * upwind)], w_adv, dx);
             h_f = 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]);
-            if (zs::abs(h_f) > zs::limits<float>::epsilon() * 10)
+            if (zs::abs(h_f) > zs::detail::deduce_numeric_epsilon<float>() * 10)
                 grad_term = gravity * ((h[idx(i, j)] - h[idx(i - 1, j)]) / dx + (B[idx(i, j)] - B[idx(i - 1, j)]) / dx);
             else
                 grad_term = 0;
@@ -440,7 +440,7 @@ struct ZSSolveShallowWaterMomentum : INode {
             adv_term += w_adv * scheme::HJ_WENO3(w_old[idx(i, j - upwind)], w_old[idx(i, j)], w_old[idx(i, j + upwind)],
                                                  w_old[idx(i, j + 2 * upwind)], w_adv, dx);
             h_f = 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]);
-            if (zs::abs(h_f) > zs::limits<float>::epsilon() * 10)
+            if (zs::abs(h_f) > zs::detail::deduce_numeric_epsilon<float>() * 10)
                 grad_term = gravity * ((h[idx(i, j)] - h[idx(i, j - 1)]) / dx + (B[idx(i, j)] - B[idx(i, j - 1)]) / dx);
             else
                 grad_term = 0;
@@ -512,12 +512,12 @@ struct ZSSolveShallowWaterMomentum : INode {
 ZENDEFNODE(ZSSolveShallowWaterMomentum, {/* inputs: */
                                          {
                                              "SWGrid",
-                                             {"float", "dt", "0.04"},
-                                             {"float", "gravity", "9.8"},
-                                             {"string", "terrain_attr", "terrain"},
-                                             {"string", "height_attr", "height"},
-                                             {"string", "u_attr", "u"},
-                                             {"string", "w_attr", "w"},
+                                             {gParamType_Float, "dt", "0.04"},
+                                             {gParamType_Float, "gravity", "9.8"},
+                                             {gParamType_String, "terrain_attr", "terrain"},
+                                             {gParamType_String, "height_attr", "height"},
+                                             {gParamType_String, "u_attr", "u"},
+                                             {gParamType_String, "w_attr", "w"},
                                          },
                                          /* outputs: */
                                          {
@@ -697,12 +697,12 @@ struct SolveShallowWaterMomentum : INode {
 ZENDEFNODE(SolveShallowWaterMomentum, {/* inputs: */
                                        {
                                            "SWGrid",
-                                           {"float", "dt", "0.04"},
-                                           {"float", "gravity", "9.8"},
-                                           {"string", "terrain_attr", "terrain"},
-                                           {"string", "height_attr", "height"},
-                                           {"string", "u_attr", "u"},
-                                           {"string", "w_attr", "w"},
+                                           {gParamType_Float, "dt", "0.04"},
+                                           {gParamType_Float, "gravity", "9.8"},
+                                           {gParamType_String, "terrain_attr", "terrain"},
+                                           {gParamType_String, "height_attr", "height"},
+                                           {gParamType_String, "u_attr", "u"},
+                                           {gParamType_String, "w_attr", "w"},
                                        },
                                        /* outputs: */
                                        {

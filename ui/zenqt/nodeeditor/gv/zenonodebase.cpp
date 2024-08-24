@@ -305,9 +305,9 @@ void ZenoNodeBase::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }
+#if 0
     else if (m_index.data(ROLE_CLASS_NAME).toString() == "BindMaterial")
     {
-#if 0
         QAction* newSubGraph = new QAction(tr("Create Material Subgraph"));
         connect(newSubGraph, &QAction::triggered, this, [=]() {
             NodeParamModel* pNodeParams = QVariantPtr<NodeParamModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
@@ -322,8 +322,8 @@ void ZenoNodeBase::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
         nodeMenu->addAction(newSubGraph);
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
-#endif
     }
+#endif
     else
     {
         ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));

@@ -2,6 +2,7 @@
 #include "statusbutton.h"
 #include "zenosvgitem.h"
 #include "style/zenostyle.h"
+#include "nodeeditor/gv/zgraphicstextitem.h"
 
 
 StatusGroup::StatusGroup(RoundRectInfo info, QGraphicsItem* parent)
@@ -45,9 +46,9 @@ StatusGroup::StatusGroup(RoundRectInfo info, QGraphicsItem* parent)
     m_view->hide();
 
     QSizeF sz2 = m_mute->size();
-    qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
+    qreal sMarginTwoBar = 0;
     //todo: kill these magin number.
-    QPointF base = QPointF(0, -sz2.height() - sMarginTwoBar);
+    QPointF base = QPointF(0 - ZenoStyle::dpiScaled(14), -sz2.height() - sMarginTwoBar);
     m_mute->setPos(base);
     base += QPointF(ZenoStyle::dpiScaled(38), 0);
     m_view->setPos(base);
@@ -70,6 +71,11 @@ StatusGroup::StatusGroup(RoundRectInfo info, QGraphicsItem* parent)
     connect(m_minView, &StatusButton::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_VIEW, hovered);
         });
+    setAcceptHoverEvents(true);
+}
+
+void StatusGroup::updateRightButtomRadius(bool bHasRadius) {
+    m_minView->updateRightButtomRadius(bHasRadius);
 }
 
 QRectF StatusGroup::boundingRect() const
@@ -99,7 +105,20 @@ void StatusGroup::setView(bool isView)
 
 void StatusGroup::onZoomed()
 {
-
+    if (1 - editor_factor > 0.00001f)
+    {
+        QSize size = QSize(ZenoStyle::scaleWidth(50), ZenoStyle::scaleWidth(42));
+        m_mute->resize(size);
+        m_view->resize(size);
+        QSizeF sz2 = m_mute->size();
+        qreal sMarginTwoBar = ZenoStyle::dpiScaled(0);
+        QPointF base = QPointF(ZenoStyle::scaleWidth(-48), -sz2.height() - sMarginTwoBar);
+        qreal offset = ZenoStyle::scaleWidth(38);
+        base += QPointF(offset, 0);
+        m_mute->setPos(base);
+        base += QPointF(offset, 0);
+        m_view->setPos(base);
+    }
 }
 
 void StatusGroup::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
@@ -116,7 +135,9 @@ void StatusGroup::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 
 void StatusGroup::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    m_mute->hide();
-    m_view->hide();
+    if (!m_mute->isHovered())
+        m_mute->hide();
+    if (!m_view->isHovered())
+        m_view->hide();
     _base::hoverLeaveEvent(event);
 }

@@ -23,7 +23,7 @@ struct VDBCreateLevelsetSphere : zeno::INode {
     vec3f center(0);
     if(has_input("center"))
     {
-      center = get_input("center")->as<NumericObject>()->get<vec3f>();
+      center = get_input("center")->as<NumericObject>()->get<zeno::vec3f>();
     }
     float half_width=(float)openvdb::LEVEL_SET_HALF_WIDTH;
     if(has_input("half_width"))
@@ -38,9 +38,9 @@ struct VDBCreateLevelsetSphere : zeno::INode {
 };
 
 static int defVDBCreateLevelsetSphere = zeno::defNodeClass<VDBCreateLevelsetSphere>(
-    "VDBCreateLevelsetSphere", {/* inputs: */ {{"float","Dx","0.08"},{"float","radius","1.0"},{"vec3f","center","0,0,0"},{"float","half_width","3.0"}}, /* outputs: */
+    "VDBCreateLevelsetSphere", {/* inputs: */ {{gParamType_Float,"Dx","0.08"},{gParamType_Float,"radius","1.0"},{gParamType_Vec3f,"center","0,0,0"},{gParamType_Float,"half_width","3.0"}}, /* outputs: */
                     {
-                        "data",
+                        {gParamType_VDBGrid, "data"},
                     },
                     /* params: */
                     {

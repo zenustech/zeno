@@ -28,9 +28,9 @@ struct PrimitiveBent : zeno::INode {
         midPoint = std::min(limitMax, std::max(limitMin, midPoint));
         biasDir = std::min(1.f, std::max(0.f, biasDir));
 
-        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<vec3f>() : vec3f(0, 0, 0);
-        auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<vec3f>() : vec3f(0, 1, 0);
-        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<vec3f>() : vec3f(1, 0, 0);
+        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>() : vec3f(1, 0, 0);
 
         orthonormal orb(direction, tangent);
         direction = orb.normal;
@@ -98,21 +98,21 @@ struct PrimitiveBent : zeno::INode {
 
 ZENDEFNODE(PrimitiveBent, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"vec3f", "origin", "0,0,0"},
-    {"vec3f", "tangent", "0,1,0"},
-    {"vec3f", "direction", "1,0,0"},
-    {"float", "angle", "45"},
-    {"float", "limitMin", "0"},
-    {"float", "limitMax", "1"},
-    {"float", "midPoint", "0.5"},
-    {"float", "biasDir", "0.5"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Vec3f, "origin", "0,0,0"},
+    {gParamType_Vec3f, "tangent", "0,1,0"},
+    {gParamType_Vec3f, "direction", "1,0,0"},
+    {gParamType_Float, "angle", "45"},
+    {gParamType_Float, "limitMin", "0"},
+    {gParamType_Float, "limitMax", "1"},
+    {gParamType_Float, "midPoint", "0.5"},
+    {gParamType_Float, "biasDir", "0.5"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
-    {"bool", "useOrigin", "0"},
+    {gParamType_Bool, "useOrigin", "0"},
     },
     {"deprecated"},
 });

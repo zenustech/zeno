@@ -51,6 +51,8 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     : QWidget(parent)
     , m_bReentry(false)
     , m_tabWidget(nullptr)
+    , m_normalNodeInputWidget(nullptr)
+    , m_outputWidget(nullptr)
     , m_hintlist(new ZenoHintListWidget)
     , m_descLabel(new ZenoFuncDescriptionLabel)
 {
@@ -122,7 +124,10 @@ void ZenoPropPanel::clearLayout()
     }
     setUpdatesEnabled(true);
     m_tabWidget = nullptr;
-    m_controls.clear();
+    m_normalNodeInputWidget = nullptr;
+    m_outputWidget = nullptr;
+    m_inputControls.clear();
+    m_outputControls.clear();
     m_floatColtrols.clear();
 
     if (m_idx.isValid())
@@ -171,7 +176,8 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
     connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
         //clear all
-        m_controls.clear();
+        m_inputControls.clear();
+        m_outputControls.clear();
         m_floatColtrols.clear();
         if (m_tabWidget)
         {
@@ -181,6 +187,14 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
                 m_tabWidget->removeTab(0);
                 delete wid;
             }
+        }
+        if (m_normalNodeInputWidget) {
+            m_normalNodeInputWidget->deleteLater();
+            m_normalNodeInputWidget = nullptr;
+        }
+        if (m_outputWidget) {
+            m_outputWidget->deleteLater();
+            m_outputWidget = nullptr;
         }
     });
 
@@ -198,20 +212,43 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
     QStandardItem* pInputs = root->child(0);
     if (!pInputs) return;
 
+    QStandardItem* pOutputs = root->child(1);
+    if (!pOutputs) return;
+
+    QSplitter* splitter = new QSplitter(Qt::Vertical, this);
+    splitter->setStyleSheet("QSplitter::handle {" "background-color: rgb(0,0,0);" "height: 2px;" "}");
+
     int nodeType = m_idx.data(ROLE_NODETYPE).toInt();
     if (nodeType != zeno::Node_SubgraphNode && nodeType != zeno::Node_AssetInstance && pInputs->rowCount() == 1 && pInputs->child(0)->rowCount() == 1)
-    {
-        QStandardItem* pItem = pInputs->child(0)->child(0);
-        QWidget* pWidget = initWidget(pItem);
-        pMainLayout->addWidget(pWidget);
-        m_hintlist->setParent(pWidget);
+    {   //普通节点布局
+        ZScrollArea* scrollArea = new ZScrollArea(this);
+        scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        scrollArea->setMinimumHeight(0);
+        scrollArea->setFrameShape(QFrame::NoFrame);
+        scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        scrollArea->setWidgetResizable(true);
+        ZContentWidget* pWidget = new ZContentWidget(scrollArea);
+        pWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        QGridLayout* pLayout = new QGridLayout(pWidget);
+        scrollArea->setWidget(pWidget);
+        pLayout->setContentsMargins(10, 15, 10, 15);
+        pLayout->setAlignment(Qt::AlignTop);
+        pLayout->setColumnStretch(2, 3);
+        pLayout->setSpacing(10);
+        m_normalNodeInputWidget = scrollArea;
+
+        QStandardItem* pGroupItem = pInputs->child(0)->child(0);
+        for (int row = 0; row < pGroupItem->rowCount(); row++){
+            normalNodeAddInputWidget(scrollArea, pLayout, pGroupItem, row);
+        }
+        splitter->addWidget(m_normalNodeInputWidget);
+
+        m_hintlist->setParent(m_normalNodeInputWidget);
         m_hintlist->resetSize();
-        m_hintlist->setCalcPropPanelPosFunc([pWidget]() -> QPoint {return pWidget->mapToGlobal(QPoint(0, 0)); });
-        m_descLabel->setParent(pWidget);
-        m_descLabel->setCalcPropPanelPosFunc([pWidget]() -> QPoint {return pWidget->mapToGlobal(QPoint(0, 0)); });
-        return;
-    }
-    m_tabWidget = new QTabWidget;
+        m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_normalNodeInputWidget->mapToGlobal(QPoint(0, 0)); });
+        m_descLabel->setParent(m_normalNodeInputWidget);
+    } else {    //子图节点布局
+        m_tabWidget = new QTabWidget(this);
     m_tabWidget->tabBar()->setProperty("cssClass", "propanel");
     m_tabWidget->setDocumentMode(true);
     m_tabWidget->setTabsClosable(false);
@@ -229,50 +266,63 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         syncAddTab(m_tabWidget, pTabItem, i);
     }
 
-    pMainLayout->addWidget(m_tabWidget);
-    pMainLayout->setSpacing(0);
-
+        splitter->addWidget(m_tabWidget);
     update();
 
     m_hintlist->setParent(m_tabWidget);
     m_hintlist->resetSize();
     m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
     m_descLabel->setParent(m_tabWidget);
+    }
+    ZScrollArea* scrollArea = new ZScrollArea(this);
+    scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    scrollArea->setMinimumHeight(0);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setWidgetResizable(true);
+    ZContentWidget* pWidget = new ZContentWidget(scrollArea);
+    pWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QGridLayout* pLayout = new QGridLayout(pWidget);
+    scrollArea->setWidget(pWidget);
+    pLayout->setContentsMargins(10, 15, 10, 15);
+    pLayout->setAlignment(Qt::AlignTop);
+    pLayout->setColumnStretch(1, 3);
+    pLayout->setSpacing(10);
+
+    for (int row = 0; row < pOutputs->rowCount(); row++) {
+        addOutputWidget(scrollArea, pLayout, pOutputs, row);
+    }
+    m_outputWidget = scrollArea;
+    splitter->addWidget(m_outputWidget);
+
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 1);
+    pMainLayout->addWidget(splitter);
 }
 
 void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, int last)
 {
-    ZASSERT_EXIT(m_tabWidget);
-    if (!m_idx.isValid())
-        return;
-
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
-    if (!parent.isValid())
-    {
         QStandardItem* root = paramsModel->invisibleRootItem();
         ZASSERT_EXIT(root);
-        if (root->rowCount() == 2)  //临时修复，paramsModel中 m_customParamsM->appendRow(pOutputs) 时会触发重复添加tab，第二次收到信号时返回
-            return;
-        QStandardItem* pRoot = root->child(0);
-        if (!pRoot) return;
-
-        for (int i = 0; i < pRoot->rowCount(); i++)
-        {
-            QStandardItem* pTabItem = pRoot->child(i);
-            syncAddTab(m_tabWidget, pTabItem, i);
-        }
-        return;
-    }
-
-    if (m_controls.isEmpty())
-        return;
 
     QStandardItem* parentItem = paramsModel->itemFromIndex(parent);
     ZASSERT_EXIT(parentItem);
+
     QStandardItem* newItem = parentItem->child(first);
-    int vType = newItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (newItem->data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
+        if (!m_idx.isValid())
+        return;
+        //subnet节点，可能有多个tab
+        if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
+            ZASSERT_EXIT(m_tabWidget);
+
+            if (m_inputControls.isEmpty())
+        return;
+
+            VPARAM_TYPE vType = (VPARAM_TYPE)newItem->data(ROLE_ELEMENT_TYPE).toInt();
     const QString& name = newItem->data(ROLE_PARAM_NAME).toString();
     if (vType == VPARAM_TAB)
     {
@@ -280,7 +330,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     }
     else if (vType == VPARAM_GROUP)
     {
-        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+                ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
         const QString& tabName = parentItem->data(ROLE_PARAM_NAME).toString();
         int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
         QWidget* tabWid = m_tabWidget->widget(idx);
@@ -299,10 +349,10 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     }
     else if (vType == VPARAM_PARAM)
     {
-        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+                ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
 
         QStandardItem* pTabItem = parentItem->parent();
-        ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+                ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
 
         const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
         const QString& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
@@ -324,52 +374,60 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
             }
         }
     }
+        }
+        else {  //普通节点，单个tab
+            ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
+            QStandardItem* pTabItem = parentItem->parent();
+            ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
 
+            if (ZScrollArea* area = qobject_cast<ZScrollArea*>(m_normalNodeInputWidget)) {
+                QList<QGridLayout*> layouts = area->findChildren<QGridLayout*>();
+                if (!layouts.empty())
+                    normalNodeAddInputWidget(area, layouts[0], parentItem, first);
+            }
+        }
+    }
+    else if (newItem->data(ROLE_PARAM_GROUP) == zeno::Role_OutputPrimitive) {
+        if (ZScrollArea* area = qobject_cast<ZScrollArea*>(m_outputWidget)) {
+            QList<QGridLayout*> layouts = area->findChildren<QGridLayout*>();
+            if (!layouts.empty()) {
+                addOutputWidget(area, layouts[0], parentItem, first);
+            }
+            m_outputWidget->setMinimumHeight(40);
+        }
+    }
     /*
     ViewParamModel *pModel = qobject_cast<ViewParamModel*>(sender());
     if (pModel && !newItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
         pModel->markDirty();
     */
 }
-QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
+
+void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pGroupItem, int row)
 {
-    ZScrollArea* scrollArea = new ZScrollArea(this);
-    scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    scrollArea->setMinimumHeight(0);
-    scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollArea->setWidgetResizable(true);
-    ZContentWidget* pWidget = new ZContentWidget(scrollArea);
-    pWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    QGridLayout* pLayout = new QGridLayout(pWidget);
-    scrollArea->setWidget(pWidget);
-    pLayout->setContentsMargins(10, 15, 10, 15);
-    pLayout->setAlignment(Qt::AlignTop);
-    pLayout->setColumnStretch(2, 3);
-    pLayout->setSpacing(10);
-    ZASSERT_EXIT(pGroupItem, scrollArea);
+    ZASSERT_EXIT(pGroupItem);
     QStandardItem* pTabItem = pGroupItem->parent();
-    ZASSERT_EXIT(pTabItem, scrollArea);
+    ZASSERT_EXIT(pTabItem);
 
     const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
     const QString& groupName = pGroupItem->data(ROLE_PARAM_NAME).toString();
-    for (int row = 0; row < pGroupItem->rowCount(); row++)
-    {
+
         auto paramItem = pGroupItem->child(row);
         const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
-        QVariant val = paramItem->data(ROLE_PARAM_VALUE);
+    QVariant val = UiHelper::anyToQvar(paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>());
+
         zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
-        const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
-        const zeno::ControlProperty& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+    const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
+    const zeno::reflect::Any& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
         QPersistentModelIndex perIdx(paramItem->index());
         CallbackCollection cbSet;
 
-        if (ctrl == zeno::Seperator)
-        {
-            return scrollArea;
-        }
+    //if (ctrl == zeno::Seperator)
+    //{
+    //    return scrollArea;
+    //}
 
         bool bFloat = UiHelper::isFloatType(type);
         cbSet.cbEditFinished = [=](QVariant newValue) {
@@ -410,14 +468,16 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
         //pLabel->setProperty("cssClass", "proppanel");
 
         bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
-        ZCheckBox* pCheckBox = new ZCheckBox(pWidget);
-        pCheckBox->setChecked(bVisible);
-        connect(pCheckBox, &ZCheckBox::stateChanged, this, [=]() {
+    ZIconLabel* pIcon = new ZIconLabel();
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
+        ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
+    pIcon->toggle(bVisible);
+    connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
             ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
             const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-            UiHelper::qIndexSetData(idx, pCheckBox->isChecked(), ROLE_PARAM_VISIBLE);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
         });
-        pLayout->addWidget(pCheckBox, row, 0, Qt::AlignCenter);
+    pLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
         pLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
         if (pControl)
@@ -434,20 +494,20 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
         _PANEL_CONTROL panelCtrl;
         panelCtrl.controlLayout = pLayout;
         panelCtrl.pLabel = pLabel;
-        panelCtrl.pCheckBox = pCheckBox;
+    panelCtrl.pIconLabel = pIcon;
         panelCtrl.m_viewIdx = perIdx;
         panelCtrl.pControl = pControl;
 
-        m_controls[tabName][groupName][paramName] = panelCtrl;
+    m_inputControls[tabName][groupName][paramName] = panelCtrl;
 
         if (bFloat && pControl) {
             m_floatColtrols << panelCtrl;
             pLabel->installEventFilter(this);
             pControl->installEventFilter(this);
             ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-            ZASSERT_EXIT(mainWin, scrollArea);
+        ZASSERT_EXIT(mainWin);
             ZTimeline* timeline = mainWin->timeline();
-            ZASSERT_EXIT(timeline, scrollArea);
+        ZASSERT_EXIT(timeline);
             onUpdateFrame(pControl, timeline->value(), paramItem->data(ROLE_PARAM_VALUE));
             connect(timeline, &ZTimeline::sliderValueChanged, pControl, [=](int nFrame) {
                 onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
@@ -456,9 +516,48 @@ QWidget* ZenoPropPanel::initWidget(QStandardItem* pGroupItem)
                 onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
         }
-    }
-    
-    return scrollArea;
+}
+
+void ZenoPropPanel::addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pOutputItem, int row)
+{
+    ZASSERT_EXIT(pOutputItem);
+
+    auto paramItem = pOutputItem->child(row);
+    const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
+
+    QPersistentModelIndex perIdx(paramItem->index());
+
+    ZTextLabel* pLabel = new ZTextLabel(paramName);
+    QFont font = QApplication::font();
+    font.setWeight(QFont::Light);
+    pLabel->setFont(font);
+    pLabel->setToolTip(paramItem->data(ROLE_PARAM_TOOLTIP).toString());
+    pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
+    pLabel->setHoverCursor(Qt::ArrowCursor);
+    //pLabel->setProperty("cssClass", "proppanel");
+
+    bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
+    ZIconLabel* pIcon = new ZIconLabel();
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
+        ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
+    pIcon->toggle(bVisible);
+    connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
+        ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+        const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), false);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
+    });
+
+    pLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
+    pLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
+    _PANEL_CONTROL panelCtrl;
+    panelCtrl.controlLayout = pLayout;
+    panelCtrl.pLabel = pLabel;
+    panelCtrl.pIconLabel = pIcon;
+    panelCtrl.m_viewIdx = perIdx;
+    panelCtrl.pControl = nullptr;
+
+    m_outputControls[paramName] = panelCtrl;
 }
 
 bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout* pGroupLayout, QStandardItem* paramItem, int row)
@@ -472,11 +571,11 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
     const QString& groupName = pGroupItem->data(ROLE_PARAM_NAME).toString();
     const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
-    QVariant val = paramItem->data(ROLE_PARAM_VALUE);
+    QVariant val = UiHelper::anyToQvar(paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>());
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
-    const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toInt();
-    const zeno::ControlProperty &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::ControlProperty>();
+    const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
+    const zeno::reflect::Any &pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
     QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
@@ -529,15 +628,17 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     pLabel->setHoverCursor(Qt::ArrowCursor);
     //pLabel->setProperty("cssClass", "proppanel");
     bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
-    ZCheckBox *pCheckBox = new ZCheckBox(pGroupWidget);
-    pCheckBox->setChecked(bVisible);
-    connect(pCheckBox, &ZCheckBox::stateChanged, this, [=]() {
+
+    ZIconLabel* pIcon = new ZIconLabel();
+    pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
+        ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
+    pIcon->toggle(bVisible);
+    connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, pCheckBox->isChecked(), ROLE_PARAM_VISIBLE);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
     });
-    //pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg");
-    pGroupLayout->addWidget(pCheckBox, row, 0, Qt::AlignCenter);
+    pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
     pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
     if (pControl)
@@ -556,11 +657,11 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     _PANEL_CONTROL panelCtrl;
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
-    panelCtrl.pCheckBox = pCheckBox;
+    panelCtrl.pIconLabel = pIcon;
     panelCtrl.m_viewIdx = perIdx;
     panelCtrl.pControl = pControl;
 
-    m_controls[tabName][groupName][paramName] = panelCtrl;
+    m_inputControls[tabName][groupName][paramName] = panelCtrl;
 
     if (bFloat && pControl) {
         m_floatColtrols << panelCtrl;
@@ -613,7 +714,7 @@ bool ZenoPropPanel::syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupI
 bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row)
 {
     const QString& tabName = pTabItem->data(Qt::DisplayRole).toString();
-    QWidget* tabWid = m_tabWidget->widget(UiHelper::tabIndexOfName(m_tabWidget, tabName));
+    QWidget* tabWid = pTabWidget->widget(UiHelper::tabIndexOfName(pTabWidget, tabName));
     if (tabWid)
         return false;
 
@@ -642,7 +743,7 @@ bool ZenoPropPanel::syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, 
 
 void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    if (m_controls.isEmpty() || !m_idx.isValid())
+    if (m_inputControls.isEmpty() || !m_idx.isValid())
         return;
 
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
@@ -662,7 +763,12 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     }
 
     QStandardItem* removeItem = parentItem->child(first);
-    int vType = removeItem->data(ROLE_VPARAM_TYPE).toInt();
+    if (removeItem->data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
+        if (!m_idx.isValid())
+            return;
+        //subnet节点，可能有多个tab
+        if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
+            int vType = removeItem->data(ROLE_ELEMENT_TYPE).toInt();
     const QString& name = removeItem->data(ROLE_PARAM_NAME).toString();
 
     if (VPARAM_TAB == vType)
@@ -672,7 +778,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     }
     else if (VPARAM_GROUP == vType)
     {
-        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+                ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
         const QString& tabName = parentItem->data(ROLE_PARAM_NAME).toString();
         int idx = UiHelper::tabIndexOfName(m_tabWidget, tabName);
         QWidget* tabWid = m_tabWidget->widget(idx);
@@ -693,10 +799,10 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     }
     else if (VPARAM_PARAM == vType)
     {
-        ZASSERT_EXIT(parentItem->data(ROLE_VPARAM_TYPE) == VPARAM_GROUP);
+                ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
 
         QStandardItem* pTabItem = parentItem->parent();
-        ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_VPARAM_TYPE) == VPARAM_TAB);
+                ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
 
         const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
         const QString& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
@@ -709,7 +815,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
         ZASSERT_EXIT(pGroupLayout);
         if (pGroupWidget->title() == groupName)
         {
-            _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+                    _PANEL_CONTROL& ctrl = m_inputControls[tabName][groupName][paramName];
             if (ctrl.controlLayout)
             {
                 QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
@@ -721,11 +827,70 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
                     ctrl.controlLayout->removeWidget(ctrl.pLabel);
                     delete ctrl.pLabel;
                 }
-                if (ctrl.pCheckBox) {
-                    ctrl.controlLayout->removeWidget(ctrl.pCheckBox);
-                    delete ctrl.pCheckBox;
+                        if (ctrl.pIconLabel) {
+                            ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
+                            delete ctrl.pIconLabel;
                 }
-                m_controls[tabName][groupName].remove(paramName);
+                        m_inputControls[tabName][groupName].remove(paramName);
+            }
+        }
+    }
+        }
+        else {  //普通节点
+            ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
+            QStandardItem* pTabItem = parentItem->parent();
+            ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
+
+            if (ZScrollArea* area = qobject_cast<ZScrollArea*>(m_normalNodeInputWidget)) {
+                QList<QGridLayout*> layouts = area->findChildren<QGridLayout*>();
+                if (!layouts.empty() && layouts[0]) {
+                    const auto& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
+                    const auto& groupName = parentItem->data(ROLE_PARAM_NAME).toString();
+                    const auto& paramName = removeItem->data(ROLE_PARAM_NAME).toString();
+                    _PANEL_CONTROL& ctrl = m_inputControls[tabName][groupName][paramName];
+                    if (ctrl.controlLayout)
+                    {
+                        QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
+                        ZASSERT_EXIT(pGridLayout);
+
+                        ctrl.controlLayout->removeWidget(ctrl.pControl);
+                        delete ctrl.pControl;
+                        if (ctrl.pLabel) {
+                            ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                            delete ctrl.pLabel;
+                        }
+                        if (ctrl.pIconLabel) {
+                            ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
+                            delete ctrl.pIconLabel;
+                        }
+                        m_inputControls[tabName][groupName].remove(paramName);
+                    }
+                }
+            }
+        }
+    } else if (removeItem->data(ROLE_PARAM_GROUP) == zeno::Role_OutputPrimitive) {
+        if (ZScrollArea* area = qobject_cast<ZScrollArea*>(m_outputWidget)) {
+            QList<QGridLayout*> layouts = area->findChildren<QGridLayout*>();
+            if (!layouts.empty() && layouts[0]) {
+                const auto& paramName = removeItem->data(ROLE_PARAM_NAME).toString();
+                _PANEL_CONTROL& ctrl = m_outputControls[paramName];
+                if (ctrl.controlLayout)
+                {
+                    QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
+                    ZASSERT_EXIT(pGridLayout);
+
+                    ctrl.controlLayout->removeWidget(ctrl.pControl);
+                    delete ctrl.pControl;
+                    if (ctrl.pLabel) {
+                        ctrl.controlLayout->removeWidget(ctrl.pLabel);
+                        delete ctrl.pLabel;
+                    }
+                    if (ctrl.pIconLabel) {
+                        ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
+                        delete ctrl.pIconLabel;
+                    }
+                    m_outputControls.remove(paramName);
+                }
             }
         }
     }
@@ -733,17 +898,17 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
 
 void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
-    if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || m_controls.isEmpty())
+    if (topLeft.data(ROLE_ELEMENT_TYPE) != VPARAM_PARAM || !m_idx.isValid() || (m_inputControls.isEmpty() && m_outputControls.isEmpty()))
         return;
 
-    if (topLeft.data(ROLE_PARAM_GROUP) != zeno::Group_InputPrimitive)
-        return;
     QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
     ZASSERT_EXIT(paramsModel);
 
     QStandardItem* paramItem = paramsModel->itemFromIndex(topLeft);
     ZASSERT_EXIT(paramItem);
 
+    if (topLeft.data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
+        //现在一般都是改name或者value，暂时不区分subnet和普通节点
     QStandardItem* groupItem = paramItem->parent();
     ZASSERT_EXIT(groupItem);
 
@@ -754,7 +919,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     const QString& tabName = tabItem->data(ROLE_PARAM_NAME).toString();
     const QString& groupName = groupItem->data(ROLE_PARAM_NAME).toString();
 
-    PANEL_GROUP& group = m_controls[tabName][groupName];
+        PANEL_GROUP& group = m_inputControls[tabName][groupName];
 
     for (int r = topLeft.row(); r <= bottomRight.row(); r++)
     {
@@ -786,9 +951,9 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 ctrl.controlLayout->removeWidget(ctrl.pLabel);
                 delete ctrl.pLabel;
             }
-            if (ctrl.pCheckBox) {
-                ctrl.controlLayout->removeWidget(ctrl.pCheckBox);
-                delete ctrl.pCheckBox;
+                if (ctrl.pIconLabel) {
+                    ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
+                    delete ctrl.pIconLabel;
             }
 
             int row = group.keys().indexOf(paramName, 0);
@@ -799,25 +964,27 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
         {
             const QString& paramName = param->data(ROLE_PARAM_NAME).toString();
             const QVariant& value = param->data(ROLE_PARAM_VALUE);
-            _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
+                _PANEL_CONTROL& ctrl = m_inputControls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);
 
             if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
             {
-                zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toInt();
+                    zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toLongLong();
                 zeno::ParamControl paramCtrl = (zeno::ParamControl)param->data(ROLE_PARAM_CONTROL).toInt();
                 QString literalNum;
-                if (type == zeno::Param_Float) {
+                    if (type == zeno::types::gParamType_Float) {
                     QVariant newVal = value;
                     bool bKeyFrame = AppHelper::getCurveValue(newVal);
                     literalNum = UiHelper::variantToString(newVal);
                     pLineEdit->setText(literalNum);
                     QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                        if (properties.empty())
+                            return;
                     pLineEdit->setProperty(g_setKey, properties.first());
                     pLineEdit->style()->unpolish(pLineEdit);
                     pLineEdit->style()->polish(pLineEdit);
-                    pLineEdit->update();                    
-                    
+                        pLineEdit->update();
+
                 } else {
                     literalNum = UiHelper::variantToString(value);
                     pLineEdit->setText(literalNum);
@@ -839,6 +1006,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 if (pVecEdit->isFloat())
                 {
                     QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                        if (!properties.empty())
                     pVecEdit->updateProperties(properties);
                 }
             }
@@ -861,8 +1029,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
             else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
             {
                 pSpinSlider->setValue(value.toInt());
-            } 
-            else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
+                }
+                else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl))
             {
                 // colorvec3f
                 if (value.canConvert<UI_VECTYPE>()) {
@@ -879,18 +1047,18 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
 		{
             const QString &paramName = param->data(ROLE_PARAM_NAME).toString();
             const QVariant &value = param->data(ROLE_PARAM_CTRL_PROPERTIES);
-            _PANEL_CONTROL &ctrl = m_controls[tabName][groupName][paramName];
+                _PANEL_CONTROL &ctrl = m_inputControls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);
 
-            if (QComboBox *pCombobox = qobject_cast<QComboBox *>(ctrl.pControl)) 
+                if (QComboBox *pCombobox = qobject_cast<QComboBox *>(ctrl.pControl))
 			{
                 if (value.type() == QMetaType::QVariantMap && value.toMap().contains("items"))
 				{
                     pCombobox->clear();
                     pCombobox->addItems(value.toMap()["items"].toStringList());
 				}
-            } else if (value.type() == QMetaType::QVariantMap && 
-                (value.toMap().contains("min") || value.toMap().contains("max") || value.toMap().contains("step"))) 
+                } else if (value.type() == QMetaType::QVariantMap &&
+                    (value.toMap().contains("min") || value.toMap().contains("max") || value.toMap().contains("step")))
             {
                 QVariantMap map = value.toMap();
                 SLIDER_INFO info;
@@ -904,41 +1072,59 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                     info.step = map["step"].toDouble();
                  }
 
-                 if (qobject_cast<ZSpinBoxSlider *>(ctrl.pControl)) 
+                    if (qobject_cast<ZSpinBoxSlider *>(ctrl.pControl))
                  {
                     ZSpinBoxSlider *pSpinBoxSlider = qobject_cast<ZSpinBoxSlider *>(ctrl.pControl);
                     pSpinBoxSlider->setSingleStep(info.step);
                     pSpinBoxSlider->setRange(info.min, info.max);
-                 } 
-                 else if (qobject_cast<QSlider *>(ctrl.pControl)) 
+                    }
+                    else if (qobject_cast<QSlider *>(ctrl.pControl))
                  {
                     QSlider *pSlider = qobject_cast<QSlider *>(ctrl.pControl);
                     pSlider->setSingleStep(info.step);
                     pSlider->setRange(info.min, info.max);
-                 } 
-                 else if (qobject_cast<QSpinBox *>(ctrl.pControl)) 
+                    }
+                    else if (qobject_cast<QSpinBox *>(ctrl.pControl))
                  {
                     QSpinBox *pSpinBox = qobject_cast<QSpinBox *>(ctrl.pControl);
                     pSpinBox->setSingleStep(info.step);
                     pSpinBox->setRange(info.min, info.max);
-                  } 
-                 else if (qobject_cast<QDoubleSpinBox *>(ctrl.pControl)) 
+                    }
+                    else if (qobject_cast<QDoubleSpinBox *>(ctrl.pControl))
                  {
                     QDoubleSpinBox *pSpinBox = qobject_cast<QDoubleSpinBox *>(ctrl.pControl);
                     pSpinBox->setSingleStep(info.step);
                     pSpinBox->setRange(info.min, info.max);
-                  } 
             }
-        } 
-        else if (role == ROLE_PARAM_TOOLTIP) 
+                }
+            }
+            else if (role == ROLE_PARAM_TOOLTIP)
         {
-            for (auto it = group.begin(); it != group.end(); it++) 
+                for (auto it = group.begin(); it != group.end(); it++)
             {
-                if (it->second.m_viewIdx == param->index()) 
+                    if (it->second.m_viewIdx == param->index())
                 {
                     const QString &newTip = it->second.m_viewIdx.data(ROLE_PARAM_TOOLTIP).toString();
                     it->second.pLabel->setToolTip(newTip);
                     break;
+                }
+            }
+        }
+    }
+    }
+    else if (topLeft.data(ROLE_PARAM_GROUP) == zeno::Role_OutputPrimitive) {
+        int role = roles[0];
+        const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
+
+        for (int r = topLeft.row(); r <= bottomRight.row(); r++) {
+            if (role == ROLE_PARAM_NAME) {
+                for (auto it = m_outputControls.begin(); it != m_outputControls.end(); it++) {
+                    if (it->second.m_viewIdx == paramItem->index()) {
+                        const QString& newName = it->second.m_viewIdx.data(ROLE_PARAM_NAME).toString();
+                        it->second.pLabel->setText(newName);
+                        it->first = newName;
+                        break;
+                    }
                 }
             }
         }
@@ -959,12 +1145,12 @@ void ZenoPropPanel::onViewParamsMoved(const QModelIndex &parent, int start, int 
     ZASSERT_EXIT(pTabItem);
     const QString &tabName = pTabItem->text();
     const QString &paramName = parentItem->child(start)->text();
-    QGridLayout *pGridLayout = qobject_cast<QGridLayout *>(m_controls[tabName][groupName][paramName].controlLayout);
+    QGridLayout *pGridLayout = qobject_cast<QGridLayout *>(m_inputControls[tabName][groupName][paramName].controlLayout);
     ZASSERT_EXIT(pGridLayout);
     for (int row = 0; row < pGridLayout->rowCount(); row++) 
     {
         const QString &name = parentItem->child(row)->text();
-        _PANEL_CONTROL control = m_controls[tabName][groupName][name];
+        _PANEL_CONTROL control = m_inputControls[tabName][groupName][name];
         QWidget *labelWidget = nullptr;
         if (pGridLayout->itemAtPosition(row, 1))
             labelWidget = pGridLayout->itemAtPosition(row, 1)->widget();
@@ -999,9 +1185,9 @@ ZExpandableSection* ZenoPropPanel::findGroup(const QString& tabName, const QStri
     return nullptr;
 }
 
-void ZenoPropPanel::getDelfCurveData(CURVE_DATA &curve, float y, bool visible, const QString &key) {
+void ZenoPropPanel::getDelfCurveData(zeno::CurveData& curve, float y, bool visible, const QString &key) {
     curve.visible = visible;
-    CURVE_RANGE &rg = curve.rg;
+    zeno::CurveData::Range& rg = curve.rg;
     rg.yFrom = rg.yFrom > y ? y : rg.yFrom;
     rg.yTo = rg.yTo > y ? rg.yTo : y;
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
@@ -1011,18 +1197,22 @@ void ZenoPropPanel::getDelfCurveData(CURVE_DATA &curve, float y, bool visible, c
     QPair<int, int> fromTo = timeline->fromTo();
     rg.xFrom = fromTo.first;
     rg.xTo = fromTo.second;
-    if (curve.points.isEmpty()) {
-        curve.key = key;
-        curve.cycleType = 0;
+    if (curve.cpoints.empty()) {
+        //curve.cycleType = 0;
     }
     float x = timeline->value();
     CURVE_POINT point = {QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED};
-    if (!curve.points.contains(point))
-        curve.points.append(point);
+    curve.cpbases.push_back(x);
+
+    zeno::CurveData::ControlPoint pt;
+    pt.v = y;
+    curve.cpoints.push_back(pt);
     updateHandler(curve);
 }
 
-void ZenoPropPanel::updateHandler(CURVE_DATA &curve) {
+void ZenoPropPanel::updateHandler(zeno::CurveData& _curve)
+{
+    CURVE_DATA curve = curve_util::toLegacyCurve(_curve);
     if (curve.points.size() > 1) {
         qSort(curve.points.begin(), curve.points.end(),
               [](const CURVE_POINT &p1, const CURVE_POINT &p2) { return p1.point.x() < p2.point.x(); });
@@ -1043,6 +1233,7 @@ void ZenoPropPanel::updateHandler(CURVE_DATA &curve) {
             curve.points[i].rightHandler = QPointF(handle, 0);
         }
     }
+    _curve = curve_util::fromLegacyCurve(curve);
 }
 
 void ZenoPropPanel::onSettings()
@@ -1083,7 +1274,7 @@ bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event)
             if (ctrl.pControl == obj || ctrl.pLabel == obj) {
                 //get curves
                 QStringList keys = getKeys(obj, ctrl);
-                CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
+                zeno::CurvesData curves = getCurvesData(ctrl.m_viewIdx, keys);
                 //show menu
                 QMenu *menu = new QMenu;
                 QAction setAction(tr("Set KeyFrame"));
@@ -1094,9 +1285,9 @@ bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event)
                 //set action enable
                 int nSize = getKeyFrameSize(curves);
                 delAction.setEnabled(nSize != 0);
-                setAction.setEnabled(curves.isEmpty() || nSize != curves.size());
-                kFramesAction.setEnabled(!curves.isEmpty());
-                clearAction.setEnabled(!curves.isEmpty());
+                setAction.setEnabled(curves.keys.empty() || nSize != curves.keys.size());
+                kFramesAction.setEnabled(!curves.keys.empty());
+                clearAction.setEnabled(!curves.keys.empty());
                 //add action
                 menu->addAction(&setAction);
                 menu->addAction(&delAction);
@@ -1146,7 +1337,13 @@ void ZenoPropPanel::onNodeRemoved(QString nodeName)
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
     QVariant val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
-    CURVES_DATA newVal = JsonHelper::parseCurves(val);
+
+    bool bValid = false;
+    zeno::CurvesData newVal = UiHelper::getCurvesFromQVar(val, &bValid);
+    if (newVal.empty() || !bValid) {
+        return;
+    }
+
     UI_VECTYPE vec;
     if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
         vec << lineEdit->text().toFloat();
@@ -1160,14 +1357,17 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
         {
             continue;
         }
-        if (!newVal.contains(key) || (!newVal[key].visible && newVal[key].points.size() < 2))
-            newVal[key] = CURVE_DATA();
+
+        std::string sKey = key.toStdString();
+        if (newVal.keys.find(sKey) == newVal.keys.end()) {
+            newVal.keys.insert(std::make_pair(sKey, zeno::CurveData()));
+        }
 
         bool visible = keys.contains(key);
-        getDelfCurveData(newVal[key], vec.at(i), visible, key);
+        getDelfCurveData(newVal.keys[sKey], vec.at(i), visible, key);
     }
-    
-    JsonHelper::dumpCurves(newVal, val);
+
+    val = UiHelper::getQVarFromCurves(newVal);
     UiHelper::qIndexSetData(ctrl.m_viewIdx, val, ROLE_PARAM_VALUE);
     updateTimelineKeys(newVal);
 }
@@ -1175,32 +1375,38 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
     QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
-    CURVES_DATA val = JsonHelper::parseCurves(var);
+    bool bValid = false;
+    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(var, &bValid);
+    if (curves.empty() || !bValid) {
+        return;
+    }
+
+
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
     int emptySize = 0;
-    for (auto &curve : val) {
-        QString key = curve.key;
-        if (curve.visible == false && curve.points.size() < 2) {
+    for (auto &[skey,curve] : curves.keys) {
+        QString key = QString::fromStdString(skey);
+        if (curve.visible == false && curve.cpoints.size() < 2) {
             emptySize++;
             continue;
         }
         if (!keys.contains(key))
             continue;
-        for (int i = 0; i < curve.points.size(); i++) {
-            int x = curve.points.at(i).point.x();
+        for (int i = 0; i < curve.cpbases.size(); i++) {
+            int x = static_cast<int>(curve.cpbases[i]);
             if (x == timeline->value()) {
-                curve.points.remove(i);
+                curve.cpbases.erase(curve.cpbases.begin() + i);
                 break;
             }
         }
-        if (curve.points.isEmpty()) {
+        if (curve.cpoints.empty()) {
             emptySize++;
             if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) 
             {
-                curve = CURVE_DATA();
+                curve = zeno::CurveData();
                 UI_VECTYPE vec = lineEdit->text();
                 int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
                 if (vec.size() > idx)
@@ -1209,37 +1415,44 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
         }
     }
     QVariant newVal;
-    if (emptySize == val.size()) 
+    if (emptySize == curves.keys.size()) 
     {
         if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
             newVal = QVariant::fromValue(lineEdit->text());
         } else if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
             newVal = QVariant::fromValue(lineEdit->text().toFloat());
         }
-        val = CURVES_DATA();
+        curves = zeno::CurvesData();
     }
     else 
     {
-        JsonHelper::dumpCurves(val, var);
-        newVal = var;
+        newVal = UiHelper::getQVarFromCurves(curves);
     }
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
-    updateTimelineKeys(val);
+    updateTimelineKeys(curves);
 }
 
 void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
     connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
-        CURVES_DATA newCurves = pEditor->curves();
+        zeno::CurvesData newCurves = pEditor->curves();
         QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
-        CURVES_DATA val = JsonHelper::parseCurves(var);
+
+        bool bValid = false;
+        zeno::CurvesData curves = UiHelper::getCurvesFromQVar(var, &bValid);
+        if (curves.empty() || !bValid) {
+            return;
+        }
+
         QVariant newVal;
-        if (!newCurves.isEmpty() || val.size() != keys.size()) {
+        if (!newCurves.empty() || curves.size() != keys.size()) {
             for (const QString &key : keys) {
-                if (newCurves.contains(key))
-                    val[key] = newCurves[key];
+                const std::string& sKey = key.toStdString();
+                if (newCurves.keys.find(sKey) != newCurves.keys.end()) {
+                    curves.keys[sKey] = newCurves.keys[sKey];
+                }
                 /*else {
                     val[key] = CURVE_DATA();
                     if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
@@ -1250,8 +1463,7 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
                     }
                 }*/
             }
-            JsonHelper::dumpCurves(val, var);
-            newVal = var;
+            newVal = UiHelper::getQVarFromCurves(curves);
         } else
         {
             if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
@@ -1259,12 +1471,12 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
             } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
                 newVal = QVariant::fromValue(lineEdit->text());
             }
-            val = CURVES_DATA();
+            curves = zeno::CurvesData();
         }
         UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
-        updateTimelineKeys(val);
+        updateTimelineKeys(curves);
     });
-    CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
+    zeno::CurvesData curves = getCurvesData(ctrl.m_viewIdx, keys);
     if (curves.size() > 1)
         curve_util::updateRange(curves);
     pEditor->setAttribute(Qt::WA_DeleteOnClose);
@@ -1281,16 +1493,21 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
 void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys)
 {
     QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
-    CURVES_DATA val = JsonHelper::parseCurves(var);
+    bool bValid = false;
+    zeno::CurvesData curves = UiHelper::getCurvesFromQVar(var, &bValid);
+    if (curves.empty() || !bValid) {
+        return;
+    }
+
     int emptySize = 0;
 
-    for (auto &curve : val) {
-        QString key = curve.key;
+    for (auto &[skey, curve] : curves.keys) {
+        QString key = QString::fromStdString(skey);
         if (keys.contains(key)) {
             emptySize++;
             if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                curve = CURVE_DATA();
+                curve = zeno::CurveData();
                 UI_VECTYPE vec = lineEdit->text();
                 int idx = key == "x" ? 0 : key == "y" ? 1 : key == "z" ? 2 : 3;
                 if (vec.size() > idx)
@@ -1299,13 +1516,13 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
                 }
             }
         }
-        else if (curve.visible == false && curve.points.size() < 2)
+        else if (curve.visible == false && curve.cpoints.size() < 2)
         {
             emptySize++;
         }
     }
     QVariant newVal;
-    if (emptySize == val.size())
+    if (emptySize == curves.size())
     {
         if (ZVecEditor* lineEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
             newVal = QVariant::fromValue(lineEdit->text());
@@ -1313,19 +1530,18 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
         else if (ZLineEdit* lineEdit = qobject_cast<ZLineEdit*>(ctrl.pControl)) {
             newVal = QVariant::fromValue(lineEdit->text().toFloat());
         }
-        val = CURVES_DATA();
+        curves = zeno::CurvesData();
     }
     else
     {
-        JsonHelper::dumpCurves(val, var);
-        newVal = var;
+        newVal = UiHelper::getQVarFromCurves(curves);
     }
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
-    updateTimelineKeys(val);
+    updateTimelineKeys(curves);
 }
 
-int ZenoPropPanel::getKeyFrameSize(const CURVES_DATA &curves)
+int ZenoPropPanel::getKeyFrameSize(const zeno::CurvesData& curves)
 {
     int size = 0;
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
@@ -1333,9 +1549,9 @@ int ZenoPropPanel::getKeyFrameSize(const CURVES_DATA &curves)
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline, false);
     int frame = timeline->value();
-    for (auto curve : curves) {
-        for (const auto &p : curve.points) {
-            int x = p.point.x();
+    for (auto& [key, curve] : curves.keys) {
+        for (const auto &_x : curve.cpbases) {
+            int x = (int)_x;
             if ((x == frame) && curve.visible) {
                 size++;
                 break;
@@ -1351,19 +1567,31 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
     if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl))     //control float
     {
         keys << "x";
-    } else if (ctrl.pLabel == obj) 
+    }
+    else if (ctrl.pLabel == obj) 
     {  //control label
-        if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).canConvert<UI_VECTYPE>()) {
-            UI_VECTYPE vec = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+        auto& qvar = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
+        if (qvar.canConvert<UI_VECTYPE>()) {
+            UI_VECTYPE vec = qvar.value<UI_VECTYPE>();
             for (int i = 0; i < vec.size(); i++) {
                 QString key = curve_util::getCurveKey(i);
                 if (!key.isEmpty())
                     keys << key;
             }
-        } else if (ctrl.m_viewIdx.data(ROLE_PARAM_VALUE).userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
+        }
+        else if (qvar.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
         {
-            CURVES_DATA val = JsonHelper::parseCurves(ctrl.m_viewIdx.data(ROLE_PARAM_VALUE));
-            keys << val.keys();
+            bool bValid = false;
+            zeno::CurvesData val = UiHelper::getCurvesFromQVar(qvar, &bValid);
+            if (val.empty() || !bValid) {
+                return keys;
+        }
+
+            QStringList _keys;
+            for (auto& [skey, _] : val.keys) {
+                _keys.append(QString::fromStdString(skey));
+            }
+            keys << _keys;
         }
     } else if (ZVecEditor *vecEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) //control vec
     {
@@ -1375,17 +1603,26 @@ QStringList ZenoPropPanel::getKeys(const QObject *obj, const _PANEL_CONTROL &ctr
     return keys;
 }
 
-CURVES_DATA ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys) {
-    CURVES_DATA val = JsonHelper::parseCurves(perIdx.data(ROLE_PARAM_VALUE));
-    CURVES_DATA curves;
+zeno::CurvesData ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys) {
+    bool bValid = false;
+    const auto& qvar = perIdx.data(ROLE_PARAM_VALUE);
+    zeno::CurvesData val = UiHelper::getCurvesFromQVar(qvar, &bValid);
+    if (val.empty() || !bValid) {
+        return val;
+    }
+
+
+    zeno::CurvesData curves;
     for (auto key : keys) {
-        if (val.contains(key)) {
-            curves[key] = val[key];
+        std::string skey = key.toStdString();
+        if (val.keys.find(skey) != val.keys.end()) {
+            curves.keys[skey] = val.keys[skey];
         }
     }
     return curves;
 }
-void ZenoPropPanel::updateTimelineKeys(const CURVES_DATA &curves) 
+
+void ZenoPropPanel::updateTimelineKeys(const zeno::CurvesData& curves)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);

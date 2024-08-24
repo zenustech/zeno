@@ -47,12 +47,12 @@ struct PrimMarkClose : INode {
 
 ZENDEFNODE(PrimMarkClose, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"float", "distance", "0.00001"},
-    {"string", "tagAttr", "weld"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Float, "distance", "0.00001"},
+    {gParamType_String, "tagAttr", "weld"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -84,13 +84,13 @@ struct PrimMarkSameIf : INode {
 
 ZENDEFNODE(PrimMarkSameIf, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttrIn", "index"},
-    {"int", "tagValueIs", "0"},
-    {"string", "tagAttrOut", "weld"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttrIn", "index"},
+    {gParamType_Int, "tagValueIs", "0"},
+    {gParamType_String, "tagAttrOut", "weld"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -179,15 +179,15 @@ struct PrimMarkIndex : INode {
 
 ZENDEFNODE(PrimMarkIndex, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttr", "index"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttr", "index"},
     {"enum int float", "type", "int"},
-    {"int", "base", "0"},
-    {"int", "step", "1"},
+    {gParamType_Int, "base", "0"},
+    {gParamType_Int, "step", "1"},
     {"enum vert tri loop poly line", "scope", "vert"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -227,17 +227,17 @@ struct PrimCheckTagInRange : INode {
 
 ZENDEFNODE(PrimCheckTagInRange, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "tagAttr", "index"},
-    {"int", "beg", "0"},
-    {"int", "end", "0"},
-    {"bool", "endExcluded", "0"},
-    {"int", "modularBy", "0"},
-    {"int", "trueVal", "1"},
-    {"int", "falseVal", "0"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "tagAttr", "index"},
+    {gParamType_Int, "beg", "0"},
+    {gParamType_Int, "end", "0"},
+    {gParamType_Bool, "endExcluded", "0"},
+    {gParamType_Int, "modularBy", "0"},
+    {gParamType_Int, "trueVal", "1"},
+    {gParamType_Int, "falseVal", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

@@ -91,15 +91,16 @@ void CameraNode::onEditClicked()
         auto camera = *(scene->camera.get());
 
         zeno::ParamPrimitive& pos = inputs["pos"];
-        vec = {camera.m_lodcenter[0], camera.m_lodcenter[1], camera.m_lodcenter[2]};
+        vec = {camera.m_pos[0], camera.m_pos[1], camera.m_pos[2]};
         pos.defl = vec;
 
-        inputs["up"].defl = zeno::vec3f({ camera.m_lodup[0], camera.m_lodup[1], camera.m_lodup[2] });
-        inputs["view"].defl = zeno::vec3f({ camera.m_lodfront[0], camera.m_lodfront[1], camera.m_lodfront[2] });
+        auto m_lodup = camera.get_lodup();
+        auto m_lodfront = camera.get_lodfront();
+        inputs["up"].defl = zeno::vec3f({ m_lodup[0], m_lodup[1], m_lodup[2] });
+        inputs["view"].defl = zeno::vec3f({ m_lodfront[0], m_lodfront[1], m_lodfront[2] });
         inputs["fov"].defl = camera.m_fov;
         inputs["aperture"].defl = camera.m_aperture;
         inputs["focalPlaneDistance"].defl = camera.focalPlaneDistance;
-
         // Is CameraNode
         if(CameraPattern == 0) {
             // FIXME Not work
@@ -108,11 +109,11 @@ void CameraNode::onEditClicked()
             inputs["frame"].defl = frameId;
 
             std::string other_prop;
-            auto center = camera.m_center;
+            auto center = camera.m_pivot;
             other_prop += zeno::format("{},{},{},", center[0], center[1], center[2]);
-            other_prop += zeno::format("{},", camera.m_theta);
-            other_prop += zeno::format("{},", camera.m_phi);
-            other_prop += zeno::format("{},", camera.m_radius);
+            other_prop += zeno::format("{},", 0);
+            other_prop += zeno::format("{},", 0);
+            other_prop += zeno::format("{},", camera.get_radius());
 
             inputs["other"].defl = other_prop;
         }
@@ -164,10 +165,10 @@ void LightNode::onEditClicked()
     ZASSERT_EXIT(scene);
 
     auto camera = *(scene->camera.get());
-    auto original_pos = glm::vec3(camera.m_lodcenter);
+    auto original_pos = glm::vec3(camera.m_pos);
 //    auto pos = glm::normalize(glm::vec3(camProp[0], camProp[1], camProp[2]));
-    auto view = -1.0f * glm::normalize(camera.m_lodfront);
-    auto up = glm::normalize(camera.m_lodup);
+    auto view = -1.0f * glm::normalize(camera.get_lodfront());
+    auto up = glm::normalize(camera.get_lodup());
     auto right = glm::normalize(glm::cross(up, view));
 
     glm::mat3 rotation(right, up, view);

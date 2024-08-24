@@ -5,6 +5,8 @@
 #include "uicommon.h"
 #include "zassert.h"
 #include "widgets/ztooltip.h"
+#include "util/uihelper.h"
+#include "style/colormanager.h"
 
 #define BASED_ON_SPEHERE
 
@@ -34,11 +36,14 @@ ZenoSocketItem::ZenoSocketItem(
         setData(GVKEY_SIZEHINT, m_size);
         setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     }
-    
-    if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
-        setBrush(QColor("#4B9EF4"), QColor("#5FD2FF"));
-    else
-        setBrush(QColor("#CCA44E"), QColor("#FFF000"));
+
+    zeno::ParamType type = m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
+    m_color = ZColorManager::getColorByType(type);
+    setBrush(m_color, m_color);
+    //if (m_paramIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard)
+    //    setBrush(QColor("#CC7C5A"), QColor("#5FD2FF"));
+    //else
+    //    setBrush(QColor("#CCA44E"), QColor("#FFF000"));
     setSockStatus(STATUS_NOCONN);
     setAcceptHoverEvents(true);
 }
@@ -123,7 +128,8 @@ void ZenoSocketItem::setHovered(bool bHovered)
     if (m_bHovered && m_paramIdx.isValid())
     {
         QString name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name);
+        QString type = UiHelper::getTypeNameFromRtti(m_paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+        ZToolTip::showText(QCursor::pos() + QPoint(ZenoStyle::dpiScaled(10), 0), name + " ( " + (type.isEmpty() ? "null" : type) + " )");
     }
     else
     {
@@ -198,6 +204,17 @@ QString ZenoSocketItem::netLabel() const
     return "";
 }
 
+void ZenoSocketItem::onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+{
+    if (!roles.empty() && roles[0] == ROLE_PARAM_TYPE) {
+        if (m_paramIdx.data(ROLE_PARAM_NAME).toString() == topLeft.data(ROLE_PARAM_NAME).toString()) {
+            m_color = ZColorManager::getColorByType(topLeft.data(ROLE_PARAM_TYPE).value<zeno::ParamType>());
+            setBrush(m_color, m_color);
+            update();
+        }
+    }
+}
+
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 #if 1
@@ -223,7 +240,7 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     }
     else
     {
-        bgClr = QColor("#4B9EF4");
+        bgClr = QColor("#CC7C5A");
     }
 
     QPen pen(bgClr, ZenoStyle::dpiScaled(4));
@@ -304,7 +321,9 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
 
 ZenoObjSocketItem::ZenoObjSocketItem(const QPersistentModelIndex& viewSockIdx, const QSizeF& sz, bool bInnerSocket, QGraphicsItem* parent)
     : _base(viewSockIdx, sz, bInnerSocket, parent)
+    , m_bInput(true)
 {
+    m_bInput = viewSockIdx.data(ROLE_ISINPUT).toBool();
 }
 
 ZenoObjSocketItem::~ZenoObjSocketItem()
@@ -318,19 +337,111 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     QRectF rc = boundingRect();
     auto status = sockStatus();
     bool bOn = status == STATUS_TRY_CONN || status == STATUS_CONNECTED || m_bHovered;
+    //TODO: 这些其实可以缓存，只有子图才会修改
     PARAM_LINKS links = paramIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
-    int type = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
-    if (m_bInput || type != zeno::Socket_Owning || links.isEmpty())
+    zeno::SocketType type = static_cast<zeno::SocketType>(paramIdx.data(ROLE_SOCKET_TYPE).toInt());
+    const QString& name = paramIdx.data(ROLE_PARAM_NAME).toString();
+
+    qreal xLeft = rc.left();
+    qreal xRight = rc.right();
+    qreal ytop = rc.top();
+    qreal ybottom = rc.bottom();
+
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    if (type == zeno::Socket_Owning)
     {
-        qreal alpha = bOn ? 0.8 : 0.5;
-        QColor col = type == zeno::Socket_Owning ? QColor("#4876FF") : type == zeno::Socket_ReadOnly ? QColor("#8C8C8C") : type == zeno::Socket_WildCard ? QColor("#4B9EF4") : QColor("#CD6839");
-        col.setAlphaF(alpha);
-        painter->setBrush(col);
+        ZASSERT_EXIT(m_bInput);
+
+        QPen pen(m_color, 4);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+
+        bool bOwn = !links.isEmpty();
+        if (bOwn) {
+            painter->setBrush(m_brush);
+        }
+
+        QPainterPath path;
+        path.moveTo(xLeft, ytop);
+        qreal yMiddle = rc.height() * 0.6;
+        qreal radius = rc.height() - yMiddle;
+        path.lineTo(0, yMiddle);
+        path.arcTo(QRectF(QPointF(xLeft, ybottom - 2 * radius), QPointF(xLeft + 2 * radius, ybottom)), 180, 90);
+        path.lineTo(xRight - radius, ybottom);
+        path.arcTo(QRectF(QPointF(xRight - 2 * radius, ytop), QPointF(xRight, ybottom)), 270, 90);
+        path.lineTo(xRight, ytop);
+
+        if (bOwn) {
+            path.lineTo(xLeft, ytop);
+        }
+
+        painter->drawPath(path);
+
+        pen = QPen(Qt::white, 2);
+        painter->setPen(pen);
+        rc.adjust(0, -3, 0, -3);
+
+        painter->drawText(rc, Qt::AlignHCenter | Qt::AlignTop, name);
     }
-    painter->setPen(Qt::NoPen);
-    painter->drawRect(rc);
-    QString name = paramIdx.data(ROLE_PARAM_NAME).toString();
-    QPen pen(Qt::white, 2);
-    painter->setPen(pen);
-    painter->drawText(rc, name, QTextOption(Qt::AlignCenter));
+    else if (type == zeno::Socket_ReadOnly)
+    {
+        ZASSERT_EXIT(m_bInput);
+        QPen pen(m_color, 4);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+
+        QPainterPath path;
+        path.moveTo(xLeft, ybottom);
+        path.lineTo(xLeft, ytop);
+        path.lineTo(xRight, ytop);
+        path.lineTo(xRight, ybottom);
+        painter->drawPath(path);
+
+        pen = QPen(Qt::white, 2);
+        
+        painter->setPen(pen);
+        rc.adjust(0, 2, 0, 2);
+        painter->drawText(rc, Qt::AlignCenter, name);
+    }
+    else if (type == zeno::Socket_Clone)
+    {
+        ZASSERT_EXIT(m_bInput);
+        QPen pen(m_color, 4);
+        QBrush brush(m_color);
+        painter->setPen(pen);
+        painter->setBrush(brush);
+
+        qreal radius = rc.height() * 0.2;
+        painter->drawRoundedRect(rc, radius, radius);
+
+        pen = QPen(Qt::white, 2);
+        painter->setPen(pen);
+        painter->drawText(rc, Qt::AlignCenter, name);
+    }
+    else {
+        //ZASSERT_EXIT(!m_bInput && type == zeno::Socket_Output);   //可能是wildcard的Input/Output
+        qreal radius = rc.height() * 0.2;
+        QPen pen = QPen(paramIdx.data(ROLE_PARAM_TYPE).value<zeno::ParamType>() == Obj_Wildcard ? Qt::black : Qt::white, 2);
+
+        //观察是否被own了
+        if (!links.empty()) {
+            QModelIndex targetSocket = links[0].data(ROLE_INSOCK_IDX).toModelIndex();
+            ZASSERT_EXIT(targetSocket.isValid());
+            zeno::SocketType sockType = static_cast<zeno::SocketType>(targetSocket.data(ROLE_SOCKET_TYPE).toInt());
+            if (sockType == zeno::Socket_Owning) {
+                painter->fillRect(rc, QColor("#AAAAAA"));
+                pen = QPen(QColor("#777777"), 2);
+            }
+            else {
+                painter->fillRect(rc, m_color);
+            }
+        }
+        else {
+            painter->fillRect(rc, m_color);
+        }
+
+        painter->setPen(pen);
+        painter->drawText(rc, Qt::AlignCenter, name);
+    }
 }

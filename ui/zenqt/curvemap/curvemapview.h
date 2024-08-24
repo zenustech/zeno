@@ -17,8 +17,8 @@ public:
 	~CurveMapView();
 	void init(bool timeFrame);
 	void addCurve(CurveModel* model);
-	CURVE_RANGE range() const;
-	void resetRange(const CURVE_RANGE& rg);
+	zeno::CurveData::Range range() const;
+	void resetRange(const zeno::CurveData::Range& rg);
 	void setChartType(bool bFrame);
     bool isSmoothCurve() const;
 	QMargins margins() const { return m_gridMargins; }
@@ -55,7 +55,7 @@ private:
 	QPoint _last_mouse_pos;
 	qreal m_factor;
 	QString m_path;
-	CURVE_RANGE m_range;
+	zeno::CurveData::Range m_range;
 	QMargins m_gridMargins;
 	QRectF m_fixedSceneRect;
 	CurveGrid* m_grid;

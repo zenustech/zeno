@@ -4,8 +4,6 @@
 #include <zeno/utils/helper.h>
 #include <zeno/io/iohelper.h>
 
-using namespace zeno::iotags;
-
 
 namespace zenoio
 {

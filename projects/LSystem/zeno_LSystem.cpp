@@ -91,11 +91,11 @@ namespace zeno
                 {"LSysGenerator", "generator"},
             },
             {
-                {"int", "isPlus", "1"},
-                {"int", "iterations", "0"},
-                {"int", "defaultCoefficient", "0"},
-                {"int", "thickness", "0"},
-                {"string", "axiom", ""},
+                {gParamType_Int, "isPlus", "1"},
+                {gParamType_Int, "iterations", "0"},
+                {gParamType_Int, "defaultCoefficient", "0"},
+                {gParamType_Int, "thickness", "0"},
+                {gParamType_String, "axiom", ""},
             },
             {
                 "LSystem",
@@ -124,7 +124,7 @@ namespace zeno
                 {"LSysGenerator", "generator"},
             },
             {
-                {"string", "ruleName", ""},
+                {gParamType_String, "ruleName", ""},
             },
             {
                 "LSystem",
@@ -230,7 +230,7 @@ namespace zeno
                  "saveState "
                  "restoreState",
                  "command", "turnLeft"},
-                {"string", "param", ""},
+                {gParamType_String, "param", ""},
             },
             {
                 "LSystem",
@@ -292,7 +292,7 @@ namespace zeno
                 {"LSysGenerator", "generator"},
             },
             {
-                {"primitive", "prim"},
+                {gParamType_Primitive, "prim"},
             },
             {},
             {
@@ -315,8 +315,8 @@ namespace zeno
                         "R3Mesh",
                     },
                     {
-                        "prim",
-                    },
+{gParamType_Primitive, "prim"},
+},
                     {},
                      {
                         "LSystem",
@@ -334,8 +334,8 @@ namespace zeno
     };
     ZENDEFNODE(PrimToR3Mesh,
                { {
-                    "prim",
-                },
+{gParamType_Primitive, "prim"},
+},
                  {
                     "R3Mesh",
                 },

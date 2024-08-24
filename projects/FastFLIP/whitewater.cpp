@@ -37,15 +37,15 @@ struct WhitewaterSource : INode {
         // pars->verts.values.push_back(vec3f{});
         // vel.push_back();
 
-        auto limit_depth = get_input2<vec2f>("LimitDepth");
-        auto speed_range = get_input2<vec2f>("SpeedRange");
+        auto limit_depth = get_input2<zeno::vec2f>("LimitDepth");
+        auto speed_range = get_input2<zeno::vec2f>("SpeedRange");
         auto curv_emit = get_input2<float>("EmitFromCurvature");
         auto max_angle = get_input2<float>("MaxVelocityAngle");
-        auto curv_range = get_input2<vec2f>("CurvatureRange");
+        auto curv_range = get_input2<zeno::vec2f>("CurvatureRange");
         auto acc_emit = get_input2<float>("EmitFromAcceleration");
-        auto acc_range = get_input2<vec2f>("AccelerationRange");
+        auto acc_range = get_input2<zeno::vec2f>("AccelerationRange");
         auto vor_emit = get_input2<float>("EmitFromVorticity");
-        auto vor_range = get_input2<vec2f>("VorticityRange");
+        auto vor_range = get_input2<zeno::vec2f>("VorticityRange");
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
 
@@ -178,25 +178,25 @@ struct WhitewaterSource : INode {
     }
 };
 
-ZENDEFNODE(WhitewaterSource, {/* inputs: */
-                              {"Primitive",
-                               {"float", "dt", "0.04"},
-                               {"float", "Lifespan", "0.8"},
-                               "LiquidSDF",
-                               "SolidSDF",
-                               "Velocity",
-                               "PreVelocity",
-                               {"vec2f", "LimitDepth", "-1, 0.5"},
-                               {"vec2f", "SpeedRange", "0, 1"},
-                               {"float", "EmitFromCurvature", "0"},
-                               {"float", "MaxVelocityAngle", "45"},
-                               {"vec2f", "CurvatureRange", "0, 1"},
-                               {"float", "EmitFromAcceleration", "0"},
-                               {"vec2f", "AccelerationRange", "0, 1"},
-                               {"float", "EmitFromVorticity", "0"},
-                               {"vec2f", "VorticityRange", "0, 1"}},
+ZENDEFNODE(WhitewaterSource, {{/* inputs: */
+                               {gParamType_Primitive, "Primitive"},
+                               {gParamType_Float, "dt", "0.04"},
+                               {gParamType_Float, "Lifespan", "0.8"},
+                               {gParamType_VDBGrid,"LiquidSDF"},
+                               {gParamType_VDBGrid,"SolidSDF"},
+                               {gParamType_VDBGrid,"Velocity"},
+                               {gParamType_VDBGrid,"PreVelocity"},
+                               {gParamType_Vec2f, "LimitDepth", "-1, 0.5"},
+                               {gParamType_Vec2f, "SpeedRange", "0, 1"},
+                               {gParamType_Float, "EmitFromCurvature", "0"},
+                               {gParamType_Float, "MaxVelocityAngle", "45"},
+                               {gParamType_Vec2f, "CurvatureRange", "0, 1"},
+                               {gParamType_Float, "EmitFromAcceleration", "0"},
+                               {gParamType_Vec2f, "AccelerationRange", "0, 1"},
+                               {gParamType_Float, "EmitFromVorticity", "0"},
+                               {gParamType_Vec2f, "VorticityRange", "0, 1"}},
                               /* outputs: */
-                              {"Primitive"},
+                              {{gParamType_Primitive, "Primitive"}},
                               /* params: */
                               {},
                               /* category: */
@@ -210,7 +210,7 @@ struct WhitewaterSolver : INode {
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
         auto TargetVelAttr = get_input2<std::string>("TargetVelAttr");
 
-        auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
+        auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<zeno::vec3f>("Gravity"));
         auto dragModel = get_input2<std::string>("DragModel");
         auto air_drag = get_input2<float>("AirDrag");
         auto foam_drag = get_input2<float>("FoamDrag");
@@ -287,19 +287,19 @@ struct WhitewaterSolver : INode {
 };
 
 ZENDEFNODE(WhitewaterSolver, {/* inputs: */
-                              {"Primitive",
-                               {"float", "dt", "0.04"},
-                               "LiquidSDF",
-                               "SolidSDF",
-                               {"string", "TargetVelAttr", "tv"},
-                               {"vec3f", "Gravity", "0, -9.8, 0"},
+                              {{gParamType_Primitive, "Primitive"},
+                               {gParamType_Float, "dt", "0.04"},
+                               {gParamType_VDBGrid,"LiquidSDF"},
+                               {gParamType_VDBGrid,"SolidSDF"},
+                               {gParamType_String, "TargetVelAttr", "tv"},
+                               {gParamType_Vec3f, "Gravity", "0, -9.8, 0"},
                                {"enum linear square", "DragModel", "linear"},
-                               {"float", "AirDrag", "0.05"},
-                               {"float", "FoamDrag", "0.9"},
-                               {"float", "BubbleDrag", "0.1"},
-                               {"float", "Buoyancy", "5"}},
+                               {gParamType_Float, "AirDrag", "0.05"},
+                               {gParamType_Float, "FoamDrag", "0.9"},
+                               {gParamType_Float, "BubbleDrag", "0.1"},
+                               {gParamType_Float, "Buoyancy", "5"}},
                               /* outputs: */
-                              {"Primitive"},
+                              {{gParamType_Primitive, "Primitive"}},
                               /* params: */
                               {},
                               /* category: */

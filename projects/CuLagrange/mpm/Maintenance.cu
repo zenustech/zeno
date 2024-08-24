@@ -148,7 +148,7 @@ struct PushOutZSParticles : INode {
     }
 };
 ZENDEFNODE(PushOutZSParticles, {
-                                   {"ZSParticles", "ZSLevelSet", {"float", "dis", "0.01"}},
+                                   {"ZSParticles", "ZSLevelSet", {gParamType_Float, "dis", "0.01"}},
                                    {"ZSParticles"},
                                    {},
                                    {"MPM"},
@@ -687,7 +687,7 @@ struct RefineMeshParticles : INode {
 #endif
 
 ZENDEFNODE(RefineMeshParticles, {
-                                    {"ZSParticles", {"float", "dx", "0.1"}},
+                                    {"ZSParticles", {gParamType_Float, "dx", "0.1"}},
                                     {"ZSParticles"},
                                     {},
                                     {"MPM"},
@@ -749,7 +749,7 @@ struct UpdateZSPrimitiveSequence : INode {
     }
 };
 ZENDEFNODE(UpdateZSPrimitiveSequence, {
-                                          {"ZSPrimitiveSequence", {"float", "stepdt", "0.1"}},
+                                          {"ZSPrimitiveSequence", {gParamType_Float, "stepdt", "0.1"}},
                                           {"ZSPrimitiveSequence"},
                                           {},
                                           {"MPM"},

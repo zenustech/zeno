@@ -108,9 +108,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     } else {
         auto &loop_uv = prim->loops.attr<int>("uvs");
         auto &uvs = prim->uvs;
-        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
@@ -186,15 +186,15 @@ struct PrimitiveTriangulate : INode {
 
 ZENDEFNODE(PrimitiveTriangulate,
         { /* inputs: */ {
-        {"primitive", "prim", "", zeno::Socket_ReadOnly},
-        {"bool", "with_attr", "1"},
+        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Bool, "with_attr", "1"},
         }, /* outputs: */ {
-        {"primitive", "prim"},
+        {gParamType_Primitive, "prim"},
         }, /* params: */ {
-        {"bool", "from_poly", "1"},
-        {"bool", "with_uv", "1"},
-        {"bool", "from_quads", "1"},
-        {"bool", "has_lines", "1"},
+        {gParamType_Bool, "from_poly", "1"},
+        {gParamType_Bool, "with_uv", "1"},
+        {gParamType_Bool, "from_quads", "1"},
+        {gParamType_Bool, "has_lines", "1"},
         }, /* category: */ {
         "primitive",
         }});
@@ -292,9 +292,9 @@ struct PrimTriangulateIntoPolys : INode {
 
 ZENDEFNODE(PrimTriangulateIntoPolys,
         { /* inputs: */ {
-            {"primitive", "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
         }, /* outputs: */ {
-            {"primitive", "prim"},
+            {gParamType_Primitive, "prim"},
         }, /* params: */ {
         }, /* category: */ {
             "primitive",

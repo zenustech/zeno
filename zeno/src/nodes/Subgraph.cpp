@@ -39,7 +39,7 @@ struct SubInput : zeno::INode {
 
 ZENDEFNODE(SubInput, {
     {},
-    {{"","port","",Socket_WildCard}, {"bool", "hasValue"}},
+    {{gParamType_Bool, "hasValue"}},
     {},
     {"subgraph"},
 });
@@ -53,7 +53,7 @@ struct SubOutput : zeno::INode {
 };
 
 ZENDEFNODE(SubOutput, {
-    {{"","port","",Socket_WildCard}},
+    {},
     {},
     {},
     {"subgraph"},

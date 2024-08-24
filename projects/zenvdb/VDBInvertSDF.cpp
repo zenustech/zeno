@@ -15,7 +15,7 @@ struct VDBChangeBackground : INode{
     if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
         openvdb::tools::changeBackground(p->m_grid->tree(), get_input2<float>("background"));
     } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
-        openvdb::tools::changeBackground(p->m_grid->tree(), vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("background")));
+        openvdb::tools::changeBackground(p->m_grid->tree(), vec_to_other<openvdb::Vec3f>(get_input2<zeno::vec3f>("background")));
     }
 
     set_output("grid", get_input("grid"));
@@ -23,10 +23,10 @@ struct VDBChangeBackground : INode{
 };
 ZENO_DEFNODE(VDBChangeBackground)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
-     {"float", "background"},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Float, "background", "", zeno::Socket_WildCard},
      }, /* outputs: */ {
-     "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -46,9 +46,9 @@ struct VDBGetBackground : INode{
 };
 ZENO_DEFNODE(VDBGetBackground)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-     {"float", "background"},
+     {gParamType_Float, "background"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -83,9 +83,9 @@ struct VDBInvertSDF : INode{
 };
 ZENO_DEFNODE(VDBInvertSDF)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
+     {gParamType_Unknown, "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-     "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -111,9 +111,9 @@ struct VDBPruneFootprint : INode{
 
 ZENO_DEFNODE(VDBPruneFootprint)(
      { /* inputs: */ {
-     {"", "grid", "", zeno::Socket_ReadOnly},
+         {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
      }, /* outputs: */ {
-     "grid",
+         {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",

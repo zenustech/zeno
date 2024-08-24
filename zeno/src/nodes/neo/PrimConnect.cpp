@@ -73,14 +73,14 @@ struct PrimConnectTape : INode {
 
 ZENDEFNODE(PrimConnectTape, {
     {
-    {"PrimitiveObject", "prim1", "", zeno::Socket_ReadOnly},
-    {"PrimitiveObject", "prim2", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim1", "", zeno::Socket_ReadOnly},
+    {gParamType_Primitive, "prim2", "", zeno::Socket_ReadOnly},
     {"enum quads lines none", "faceType", "quads"},
-    {"bool", "isCloseRing", "0"},
-    {"string", "edgeMaskAttr", ""},
+    {gParamType_Bool, "isCloseRing", "0"},
+    {gParamType_String, "edgeMaskAttr", ""},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -118,11 +118,11 @@ struct PrimConnectBridge : INode {
 
 ZENDEFNODE(PrimConnectBridge, {
     {
-    {"PrimitiveObject", "prim", "", zeno::Socket_ReadOnly},
-    {"string", "edgeIndAttr", "tag"},
+    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_String, "edgeIndAttr", "tag"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },
@@ -166,11 +166,11 @@ struct PrimConnectSkin : INode {
 
 ZENDEFNODE(PrimConnectSkin, {
     {
-    {"ListObject", "primList", "", zeno::Socket_ReadOnly},
-    {"bool", "isCloseRing", "0"},
+    {gParamType_List, "primList", "", zeno::Socket_ReadOnly},
+    {gParamType_Bool, "isCloseRing", "0"},
     },
     {
-    {"PrimitiveObject", "prim"},
+    {gParamType_Primitive, "prim"},
     },
     {
     },

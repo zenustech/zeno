@@ -612,7 +612,7 @@ struct BulletMakeConstraintRelationship : zeno::INode {
 
 ZENDEFNODE(BulletMakeConstraintRelationship,
            {
-               {"obj1", "obj2", {"int", "iternum", "100"}},
+               {"obj1", "obj2", {gParamType_Int, "iternum", "100"}},
                {"constraint_relationship"},
                {{"enum Glue Hard Soft Fixed ConeTwist Gear Generic6Dof Generic6DofSpring "
                  "Generic6DofSpring2 Hinge Hinge2 Point2Point Slider Universal",
@@ -627,11 +627,11 @@ struct BulletObjectSetVel : zeno::INode {
         auto body = obj->body.get();
 
         if (has_input("linearVel")) {
-            auto v = get_input2<vec3f>("linearVel");
+            auto v = get_input2<zeno::vec3f>("linearVel");
             body->setLinearVelocity(vec_to_other<btVector3>(v));
         }
         if (has_input("angularVel")) {
-            auto v = get_input2<vec3f>("angularVel");
+            auto v = get_input2<zeno::vec3f>("angularVel");
             body->setAngularVelocity(vec_to_other<btVector3>(v));
         }
 
