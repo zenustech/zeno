@@ -302,7 +302,7 @@ ZENDEFNODE(FBXSDKVisibility,
            });
 
 namespace zeno {
-struct FBXObject : PrimitiveObject {
+struct FBXObject : IObjectClone<FBXObject> {
     FbxManager* lSdkManager = nullptr;
     FbxScene* lScene = nullptr;
 };
