@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <zeno/formula/syntax_tree.h>
 #include <zeno/utils/vectorutil.h>
+#include <zeno/utils/format.h>
 
 
 namespace zeno

@@ -1435,9 +1435,9 @@ struct HEdgeGeoSelfTest : zeno::INode {
 
 ZENDEFNODE(HEdgeGeoSelfTest, {
     {
-        {"prim", "prim"}
+        {gParamType_Primitive , "prim"}
     },
-    {"prim"},
+    {{gParamType_Primitive, "prim"}},
     {},
     {"create"},
 });
@@ -1456,9 +1456,9 @@ struct HEdgeBasedPrim : zeno::INode {
 
 ZENDEFNODE(HEdgeBasedPrim, {
     {
-        {"prim", "prim"}
+        {gParamType_Primitive, "prim"}
     },
-    {"prim"},
+    {{gParamType_Unknown, "prim"}},
     {},
     {"create"},
 });

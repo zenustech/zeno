@@ -66,6 +66,9 @@ namespace zeno {
 
     float FunctionManager::callRef(const std::string& ref, ZfxContext* pContext) {
         //TODO: vec type.
+        //TODO: resolve with zeno::reflect::any
+        return 0;
+#if 0
         std::string fullPath, graphAbsPath;
 
         if (ref.empty()) {
@@ -170,6 +173,7 @@ namespace zeno {
             }
         }
         throw makeError<UnimplError>();
+#endif
     }
 
     static int getElementCount(std::shared_ptr<IObject> spObject, ZfxRunOver runover) {

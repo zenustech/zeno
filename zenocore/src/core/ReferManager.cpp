@@ -57,12 +57,12 @@ namespace zeno {
         auto namePath = spNode->get_path();
         namePath.pop_back();
         auto currPath = zeno::objPathToStr(namePath);
-        auto uuid_path = zeno::objPathToStr(objPath);
+        auto uuid_path = zeno::objPathToStr(uuidNodeRefer);
         auto zvar = AnyToZVariant(paramprim.defl);
         auto paths = referPaths(currPath, zvar);
         updateReferedInfo(uuid_path, param, paths);
         //被引用的参数数据更新时，引用该参数的节点需要标脏
-        updateDirty(uuid_node, param);
+        updateDirty(uuid_path, param);
     }
 
     void zeno::ReferManager::removeReference(const std::string& path, const std::string& uuid_path, const std::string& param)

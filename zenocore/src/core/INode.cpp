@@ -2032,16 +2032,9 @@ float INode::resolve(const std::string& expression, const ParamType type)
         else {
             throw makeError<UnimplError>();
         }
+    }
     else {
-        if (zeno::types::gParamType_Float == type)
-        {
-            float fVal = std::stof(formulaOrKFrame);
-            return fVal;
-        }
-        else {
-            float fVal = std::stoi(formulaOrKFrame);
-            return fVal;
-        }
+        //TODO: kframe issues
     }
 }
 

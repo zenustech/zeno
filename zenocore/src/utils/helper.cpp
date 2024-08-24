@@ -690,8 +690,8 @@ namespace zeno {
                             if (!param_part.empty() && (!param_component.empty() || bEndsWithDot)) {
                                 if (param.name == param_part) {
                                     switch (param.type) {
-                                    case Param_Vec2f:
-                                    case Param_Vec2i:
+                                    case gParamType_Vec2f:
+                                    case gParamType_Vec2i:
                                     {
                                         ret.type = FMLA_TIP_REFERENCE;
                                         ret.prefix = param_component;
@@ -710,8 +710,8 @@ namespace zeno {
                                         }
                                         break;
                                     }
-                                    case Param_Vec3f:
-                                    case Param_Vec3i:
+                                    case gParamType_Vec3f:
+                                    case gParamType_Vec3i:
                                     {
                                         ret.type = FMLA_TIP_REFERENCE;
                                         ret.prefix = param_component;
@@ -730,8 +730,8 @@ namespace zeno {
                                         }
                                         break;
                                     }
-                                    case Param_Vec4f:
-                                    case Param_Vec4i:
+                                    case gParamType_Vec4f:
+                                    case gParamType_Vec4i:
                                     {
                                         ret.type = FMLA_TIP_REFERENCE;
                                         ret.prefix = param_component;
@@ -862,8 +862,8 @@ namespace zeno {
     bool isObjectType(const zeno::reflect::RTTITypeInfo& type, bool& isConstPtr)
     {
         //目前TF_IsObject只是标识Object子类，不包括IObject，如果需要后者，可以判断TF_IsIObject.
+        //const 也可以用generator搞
         return type.has_flags(TF_IsObject);
-        isConstPtr = name.find("shared_ptr<const ") != std::string::npos;
     }
 
     bool isObjectType(ParamType type)
