@@ -2,6 +2,7 @@
 
 #include <QtWidgets>
 #include "widgets/zlineedit.h"
+#include <zeno/core/data.h>
 
 #define SideLength 12
 #define minWidth 80
@@ -76,9 +77,12 @@ class ZenoFuncDescriptionLabel :public QWidget
     Q_OBJECT
 public:
     ZenoFuncDescriptionLabel();
-    void setDesc(QString desc, int pos);
+    void setDesc(zeno::FUNC_INFO func, int pos);
     void setCurrentFuncName(std::string funcName);
     std::string getCurrentFuncName();
+    void setCalcPropPanelPosFunc(std::function<QPoint()> func);
+    QPoint getPropPanelPos();
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -86,4 +90,6 @@ protected:
 private:
     QLabel* m_label;
     std::string m_currentFunc;
+
+    std::function<QPoint()> m_getPropPanelPosfunc;
 };

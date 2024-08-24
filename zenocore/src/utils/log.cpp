@@ -47,6 +47,13 @@ ZENO_API void __impl_log_print(log_level_t level, source_location const &loc, st
         std::cerr << content;
 }
 
+ZENO_API void __impl_only_print(std::string_view msg) {
+    auto content = format("{}\n", msg);
+    //*os << ansiclr::reset;
+    *os << content;
+    os->flush();
+}
+
 namespace {
 struct LogInitializer {
     LogInitializer() {

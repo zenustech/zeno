@@ -140,8 +140,7 @@ QRectF ZenoNode::boundingRect() const
 
 void ZenoNode::initLayout()
 {
-    const QStringList& path = m_index.data(ROLE_OBJPATH).toStringList();
-    m_dbgName = path.join("/");
+    m_dbgName = m_index.data(ROLE_OBJPATH).toString();
 
     m_topInputSockets = initVerticalSockets(true);
     m_mainHeaderBg = initMainHeaderBg();
@@ -1398,7 +1397,7 @@ void ZenoNode::onZoomed()
         m_NameItemTip->setBrush(QColor("#CCCCCC"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         m_NameItemTip->setFont(font2);
-        m_NameItemTip->show();
+        //m_NameItemTip->show();
     }
     if (m_NameItemTip) 
     {

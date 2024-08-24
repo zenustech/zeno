@@ -75,7 +75,8 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                         }
                     }
                 }
-            }else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
+            }
+            else if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
             {
                 if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
                 {
@@ -85,8 +86,7 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
                         edit->hintSelectedSetText(m_hintlist->getCurrentText());
                     } else if (m_descLabel && m_descLabel->isVisible()) {
                         m_descLabel->hide();
-                    }
-                    else {
+                    } else {
                         edit->clearFocus();
                         for (int i = 0; i < m_editors.size(); i++) {
                             if (m_editors[i] != watched) {
@@ -304,6 +304,15 @@ int ZVecEditor::getCurrentEditor()
         }
     }
     return -1;
+}
+
+void ZVecEditor::setNodeIdx(const QModelIndex& index)
+{
+    m_nodeIdx = index;
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        m_editors[i]->setNodeIdx(m_nodeIdx);
+    }
 }
 
 void ZVecEditor::updateProperties(const QVector<QString>& properties)

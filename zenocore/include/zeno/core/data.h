@@ -269,6 +269,45 @@ namespace zeno {
             return false;
         }
     }
+
+    enum formula_tip_type {
+        FMLA_NO_MATCH,
+        FMLA_TIP_FUNC_CANDIDATES,   //function candidates.
+        FMLA_TIP_FUNC_ARGS,
+        FMLA_TIP_REFERENCE,
+    };
+
+    struct ARG_INFO
+    {
+        std::string name;
+        std::string type;
+    };
+
+    struct FUNC_INFO
+    {
+        std::string name;
+        std::string tip;
+        std::string rettype;
+        std::vector<ARG_INFO> args;
+    };
+
+    struct formula_args_tip {
+        FUNC_INFO func;
+        int argidx = -1;
+    };
+
+    struct ref_tip_info {
+        std::string nodename;
+        std::string iconres;
+    };
+
+    struct formula_tip_info {
+        std::string prefix;
+        formula_tip_type type;
+        std::vector<std::string> func_candidats;
+        formula_args_tip func_args;
+        std::vector<ref_tip_info> ref_candidates;
+    };
 }
 
 #endif

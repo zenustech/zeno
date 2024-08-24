@@ -58,6 +58,7 @@ public:
     ZENO_API virtual CustomUI get_customui() const;     //由节点默认定义导出的customUi
     ZENO_API CustomUI export_customui() const;          //由此刻实际存在的节点输入输出导出的customUi
     ZENO_API ObjPath get_path() const;
+    ZENO_API ObjPath get_graph_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
     ZENO_API std::string get_uuid() const;
     ZENO_API std::weak_ptr<Graph> getGraph() const { return graph; }

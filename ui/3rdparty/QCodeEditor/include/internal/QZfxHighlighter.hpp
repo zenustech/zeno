@@ -14,7 +14,7 @@ class QSyntaxStyle;
  * @brief Class, that describes C++ code
  * highlighter.
  */
-class QCXXHighlighter : public QStyleSyntaxHighlighter
+class QZfxHighlighter : public QStyleSyntaxHighlighter
 {
     Q_OBJECT
 public:
@@ -23,7 +23,7 @@ public:
      * @brief Constructor.
      * @param document Pointer to document.
      */
-    explicit QCXXHighlighter(QTextDocument* document=nullptr);
+    explicit QZfxHighlighter(QTextDocument* document=nullptr);
 
 protected:
     void highlightBlock(const QString& text) override;

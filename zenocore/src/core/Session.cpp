@@ -22,6 +22,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+#include <zeno/core/FunctionManager.h>
 #include <regex>
 
 #include <reflect/core.hpp>
@@ -647,6 +648,7 @@ ZENO_API Session::Session()
     , objsMan(std::make_unique<ObjectManager>())
     , referManager(std::make_unique<ReferManager>())
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
+    , funcManager(std::make_unique<FunctionManager>())
 {
     initReflectNodes();
 }
@@ -929,8 +931,6 @@ ZENO_API bool Session::run() {
 
     m_bInterrupted = false;
     globalState->set_working(true);
-
-    zeno::log_info("Session::run()");
 
     objsMan->beforeRun();
     zeno::scope_exit sp([&]() { objsMan->afterRun(); });

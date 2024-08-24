@@ -197,6 +197,7 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
 ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     : m_currentFunc("")
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     //setMinimumSize({ 100, 50 });
     m_label = new QLabel(this);
     m_label->setStyleSheet("QLabel{ font-size: 10pt; color: rgb(160, 178, 194)}");
@@ -210,25 +211,24 @@ ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     hide();
 }
 
-void ZenoFuncDescriptionLabel::setDesc(QString desc, int pos)
+void ZenoFuncDescriptionLabel::setDesc(zeno::FUNC_INFO func, int pos)
 {
-    QStringList list = desc.split('\n');
-    QString txtToSet = "";
-    for (int i = 0; i < list[0].toInt(); i++) {
+    std::string txtToSet = func.rettype + " " + func.name + " " + "(";
+    for (int i = 0; i < func.args.size(); i++) {
+        std::string arg_content = func.args[i].type + " " + func.args[i].name;
         if (i == pos) {
-            txtToSet += "<b>param:" + QString::number(i) + "</b> ";
+            txtToSet += "<b>" + arg_content + "</b> ";
         }
         else {
-            txtToSet += "param:" + QString::number(i) + " ";
+            txtToSet += arg_content + " ";
         }
     }
+    txtToSet += ")";
+
     txtToSet = "<p>" + txtToSet + "</p>";
-    list.removeFirst();
-    for (auto& i : list) {
-        txtToSet += "<p>" + i + "</p>";
-    }
+    txtToSet += "<p>" + func.tip + "</p>";
     txtToSet = "<html><head><style> p { margin: 10; } </style></head><body><div>" + txtToSet + "</div></body></html>";
-    m_label->setText(txtToSet);
+    m_label->setText(QString::fromStdString(txtToSet));
     m_label->setFont(QApplication::font());
     adjustSize();
 }
@@ -241,6 +241,16 @@ void ZenoFuncDescriptionLabel::setCurrentFuncName(std::string funcName)
 std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
 {
     return m_currentFunc;
+}
+
+void ZenoFuncDescriptionLabel::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+{
+    m_getPropPanelPosfunc = func;
+}
+
+QPoint ZenoFuncDescriptionLabel::getPropPanelPos()
+{
+    return m_getPropPanelPosfunc();
 }
 
 bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)

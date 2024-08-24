@@ -10,6 +10,7 @@
 #include <zeno/formula/formula.h>
 #include <util/log.h>
 
+
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
     , m_pSlider(nullptr)
@@ -57,16 +58,17 @@ void ZLineEdit::sltSetFocus()
 void ZLineEdit::init()
 {
     connect(this, &ZLineEdit::editingFinished, this, [=]() {
-        zeno::Formula fmla(text().toStdString());
+        zeno::Formula fmla(text().toStdString(), "");
         int ret = fmla.parse();
         fmla.printSyntaxTree();
         emit textEditFinished();
     });
     connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
-        if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList)
+        if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList && m_nodeIdx.isValid())
         {
             QString txt = text.left(cursorPosition());
-            zeno::Formula fmla(txt.toStdString());
+            QString nodePath = m_nodeIdx.data(ROLE_OBJPATH).toString();
+            zeno::Formula fmla(txt.toStdString(), nodePath.toStdString());
 
             QFontMetrics metrics(this->font());
             const QPoint& parentGlobalPos = m_hintlist->getPropPanelPos();
@@ -74,62 +76,70 @@ void ZLineEdit::init()
             globalPos.setX(globalPos.x() - parentGlobalPos.x() + metrics.width(txt));
             globalPos.setY(globalPos.y() - parentGlobalPos.y() + height());
 
-            //设置函数提示列表内容
-            //不能直接采用正则表达式识别函数，还是要归到语法树，这样才能即得到函数名称，以及函数参数位置。
-#if 0
-            QStringList items;
-            std::string candidateWord = "";
-            for (auto& i : fmla.getHintList(txt.toStdString(), candidateWord)) {
-                items << QString::fromStdString(i);
-            }
-            m_firstCandidateWord = QString::fromStdString(candidateWord);
-            if (items.size() == 0) {
-                if (m_hintlist->isVisible()) {
-                    m_hintlist->hide();
-                }
-            }
-            else {
-                m_hintlist->setData(items);
-                m_hintlist->move(globalPos);
-                if (!m_hintlist->isVisible())
-                {
-                    connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
-                    connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                    connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
-                    m_hintlist->show();
-                    if (m_descLabel->isVisible()) {
-                        m_descLabel->hide();
-                    }
-                }
-                m_hintlist->resetCurrentItem();
-                return;
-            }
-#endif
             //函数说明
             int ret = fmla.parse();
             //fmla.printSyntaxTree();
-            if (ret == 0 || fmla.getRoot())
+            if (ret == 0 || fmla.getASTResult())
             {
-                std::optional<std::tuple<std::string, std::string, int>> optNameDescPos = fmla.getCurrFuncDescription();
-                if (!optNameDescPos.has_value())
+                zeno::formula_tip_info recommandInfo = fmla.getRecommandTipInfo();
+                if (recommandInfo.type == zeno::FMLA_TIP_FUNC_CANDIDATES ||
+                    recommandInfo.type == zeno::FMLA_TIP_REFERENCE)
                 {
-                    if (m_descLabel->isVisible()) {
+                    QStringList items;
+                    std::string candidateWord = recommandInfo.prefix;
+                    for (auto& item : recommandInfo.func_candidats) {
+                        items << QString::fromStdString(item);
+                    }
+                    for (auto& item : recommandInfo.ref_candidates) {
+                        items << QString::fromStdString(item.nodename);
+                    }
+                    m_firstCandidateWord = QString::fromStdString(candidateWord);
+
+                    if (items.size() == 0) {
+                        if (m_hintlist->isVisible()) {
+                            m_hintlist->hide();
+                        }
+                    }
+                    else {
+                        m_hintlist->setData(items);
+                        m_hintlist->move(globalPos);
+                        if (!m_hintlist->isVisible())
+                        {
+                            connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
+                            connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                            connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                            m_hintlist->show();
+                            if (m_descLabel->isVisible()) {
+                                m_descLabel->hide();
+                            }
+                        }
+                        m_hintlist->resetCurrentItem();
+                    }
+                }
+                else if (recommandInfo.type == zeno::FMLA_TIP_FUNC_ARGS)
+                {
+                    m_hintlist->hide();
+                    if (recommandInfo.func_args.func.name.empty()) {
                         m_descLabel->hide();
                     }
-                } else {
-                    auto nameDescPos = optNameDescPos.value();
-                    m_descLabel->setDesc(QString::fromStdString(std::get<1>(nameDescPos)), std::get<2>(nameDescPos));
-                    //if (m_descLabel->getCurrentFuncName() != std::get<0>(nameDescPos)) {
-                    //    m_descLabel->move(globalPos);
-                    //}
-                    m_descLabel->move(globalPos);
-                    if (!m_descLabel->isVisible()) {
-                        m_descLabel->show();
+                    else {
+                        int pos = recommandInfo.func_args.argidx;
+                        m_descLabel->setDesc(recommandInfo.func_args.func, recommandInfo.func_args.argidx - 1);
+                        m_descLabel->move(globalPos);
+                        if (!m_descLabel->isVisible()) {
+                            m_descLabel->show();
+                        }
+                        m_descLabel->setCurrentFuncName(recommandInfo.func_args.func.name);
                     }
-                    m_descLabel->setCurrentFuncName(std::get<0>(nameDescPos));
                 }
-            } else if (m_descLabel->isVisible()) {
+                else if (recommandInfo.type == zeno::FMLA_NO_MATCH)
+                {
+                    m_hintlist->hide();
                     m_descLabel->hide();
+                }
+            }
+            else if (m_descLabel->isVisible()) {
+                m_descLabel->hide();
             }
         }
     });
@@ -176,6 +186,10 @@ void ZLineEdit::setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescript
     m_descLabel = descLabl;
 }
 
+void ZLineEdit::setNodeIdx(const QModelIndex& index) {
+    m_nodeIdx = index;
+}
+
 void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 {
     if (steps.isEmpty())
@@ -188,19 +202,19 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 
     connect(m_pSlider, &ZNumSlider::numSlided, this, [=](qreal val) {
         bool bOk = false;
-    qreal num = this->text().toFloat(&bOk);
-    if (bOk)
-    {
-        num = num + val;
-        QString newText = QString::number(num);
-        setText(newText);
-        emit editingFinished();
-    }
-        });
+        qreal num = this->text().toFloat(&bOk);
+        if (bOk)
+        {
+            num = num + val;
+            QString newText = QString::number(num);
+            setText(newText);
+            emit editingFinished();
+        }
+    });
     connect(m_pSlider, &ZNumSlider::slideFinished, this, [=]() {
         setShowingSlider(false);
-    emit editingFinished();
-        });
+        emit editingFinished();
+    });
 }
 
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
@@ -300,12 +314,19 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
                 }
             }
         }
-        if (m_descLabel && m_descLabel->isVisible())
+        else if (m_descLabel && m_descLabel->isVisible())
         {
             if (event->key() == Qt::Key_Escape || event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
                 m_descLabel->hide();
                 setFocus();
                 event->accept();
+            }
+        }
+        else {
+            if (event->key() == Qt::Key_Escape ||
+                event->key() == Qt::Key_Return ||
+                event->key() == Qt::Key_Enter) {
+                this->clearFocus();
             }
         }
     }

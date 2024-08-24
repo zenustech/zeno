@@ -191,7 +191,6 @@ GraphsTreeModel* GraphsManager::newFile()
 
     emit modelInited();
 
-    connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
     connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
     connect(m_model, &GraphsTreeModel::dirtyChanged, this, [=]() {

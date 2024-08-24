@@ -43,9 +43,9 @@ namespace zeno {
         }
     }
 
-    void zeno::ReferManager::checkReference(const ObjPath& objPath, const std::string& param)
+    void zeno::ReferManager::checkReference(const ObjPath& uuidNodeRefer, const std::string& param)
     {
-        auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+        auto spNode = getSession().mainGraph->getNodeByUuidPath(uuidNodeRefer);
         if (!spNode)
             return;
 
@@ -62,7 +62,7 @@ namespace zeno {
         auto paths = referPaths(currPath, zvar);
         updateReferedInfo(uuid_path, param, paths);
         //被引用的参数数据更新时，引用该参数的节点需要标脏
-        updateDirty(uuid_path, param);
+        updateDirty(uuid_node, param);
     }
 
     void zeno::ReferManager::removeReference(const std::string& path, const std::string& uuid_path, const std::string& param)
@@ -254,13 +254,13 @@ namespace zeno {
         }
     }
 
-    void zeno::ReferManager::updateReferedInfo(const std::string& uuid_path, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams)
+    void zeno::ReferManager::updateReferedInfo(const std::string& refer_uuid_node, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams)
     {
         if (m_bModify)
             return;
         m_bModify = true;
         //get all refered params
-        auto uuid_param = uuid_path + "/" + param;
+        auto uuid_param = refer_uuid_node + "/" + param;
         std::set<std::pair<std::string, std::string>> referedParams_old = getAllReferedParams(uuid_param);
         //remove info
         for (auto& it : referedParams_old)
@@ -336,19 +336,19 @@ namespace zeno {
         }
     }
 
-    std::set <std::pair<std::string, std::string>> ReferManager::referPaths(const std::string& currPath, const zvariant& val) const
+    std::set <std::pair<std::string, std::string>> ReferManager::referPaths(const std::string& pathOfgraphRefer, const zvariant& val) const
     {
         std::set <std::pair<std::string, std::string>> res;
         std::set<std::string> paths = zeno::getReferPaths(val);
         for (auto& val : paths)
         {
-            std::string absolutePath = zeno::absolutePath(currPath, val);
-            int idx = absolutePath.find_last_of("/");
-            std::string path = absolutePath.substr(0, idx);
-            std::string param = absolutePath.substr(idx + 1, val.size() - idx);
+            std::string referredFullPath = pathOfgraphRefer + val;
+            int idx = referredFullPath.find_last_of(".");
+            std::string path = referredFullPath.substr(0, idx);
+            std::string param = referredFullPath.substr(idx + 1);
             if (auto spNode = getSession().mainGraph->getNodeByPath(path))
             {
-                path = zeno::objPathToStr(spNode->get_uuid_path());
+                path = spNode->get_uuid_path();
                 res.emplace(std::make_pair(path, param));
             }
         }

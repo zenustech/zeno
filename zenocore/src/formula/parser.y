@@ -70,7 +70,7 @@
 /*通过zeno::Parser::make_XXX(loc)给token添加前缀*/
 %define api.token.prefix {TOKEN_}
 
-%token <string>RPAREN
+%token RPAREN
 %token <string>IDENTIFIER
 %token <float>NUMBER
 %token EOL
@@ -82,6 +82,8 @@
 %token LITERAL
 %token FUNC
 %token UNCOMPSTR
+%token DOLLAR
+%token VARNAME
 
 %left ADD "+"
 %left SUB "-"
@@ -94,83 +96,81 @@
 
 %left <string>LPAREN
 
-%type <std::shared_ptr<struct node>> exp calclist factor term funccontent// farg// zenvar func //unaryfunc
-%type <std::vector<std::shared_ptr<struct node>>> funcargs
-%type <string> LITERAL FUNC UNCOMPSTR
+%type <std::shared_ptr<ZfxASTNode>> exp calclist factor term func-content zenvar parencontent
+%type <std::vector<std::shared_ptr<ZfxASTNode>>> funcargs
+%type <string> LITERAL FUNC UNCOMPSTR DOLLAR VARNAME RPAREN
 
 %start calclist
 
 %%
 calclist: %empty{}|calclist exp EOL {
     $$ = $2;
-    //driver.setResult($$);
+    driver.setASTResult($$);
 };
 
 exp: factor             { $$ = $1; }
-    | exp ADD factor    { std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children); }
-    | exp SUB factor    { std::vector<std::shared_ptr<struct node>>children({$1, $3}); $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children); }
+    | exp ADD factor    { 
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, PLUS, children);
+            }
+    | exp SUB factor    {
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, MINUS, children);
+            }
     ;
 
 factor: term            { $$ = $1; }
-    | factor MUL term { 
-        std::vector<std::shared_ptr<struct node>>children({$1, $3});
-        $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
-    }
+    | factor MUL term   { 
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, MUL, children);
+            }
     | factor DIV term {
-        std::vector<std::shared_ptr<struct node>>children({$1, $3});
-        $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
-    }
+            std::vector<std::shared_ptr<ZfxASTNode>>children({$1, $3});
+            $$ = driver.makeNewNode(FOUROPERATIONS, DIV, children); 
+            }
     ;
 
-//zenvar: FRAME { $$ = driver.getFrameNum(); }
-//    | FPS { $$ = driver.getFps(); }
-//    | PI { $$ = driver.getPI(); }
-//    ;
+zenvar: VARNAME { $$ = driver.makeZenVarNode($1); }
+    | DOLLAR { $$ = driver.makeZenVarNode(""); };
 
-//func: RAND LPAREN RPAREN {
-//        std::srand(std::time(nullptr)); // use current time as seed for random generator
-//        int random_value = std::rand();
-//        $$ = (float)random_value / (RAND_MAX + 1u);
-//    }
-//    ;
-
-/* 一元函数 */
-//unaryfunc: SIN LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SIN, $3, nullptr); }
-//    | SIN LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SIN, nullptr, nullptr); }
-//    | SINH LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SINH, $3, nullptr); }
-//    | SINH LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, SINH, nullptr, nullptr); }
-//    | COS LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COS, $3, nullptr); }
-//    | COS LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COS, nullptr, nullptr); }
-//    | COSH LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COSH, $3, nullptr); }
-//    | COSH LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, COSH, nullptr, nullptr); }
-//    | ABS LPAREN exp RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, ABS, $3, nullptr); }
-//    | ABS LPAREN RPAREN { $$ = driver.makeNewNode(UNARY_FUNC, ABS, nullptr, nullptr); }
-//    //| REF LPAREN LITERAL RPAREN { $$ = driver.callRef($3); }
-//    ;
-
-funcargs: exp            { $$ = std::vector<std::shared_ptr<struct node>>({$1}); }
+funcargs: exp            { $$ = std::vector<std::shared_ptr<ZfxASTNode>>({$1}); }
     | funcargs COMMA exp { $1.push_back($3); $$ = $1; }
 
-funccontent: LPAREN funcargs RPAREN { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2); $$->isParenthesisNodeComplete = true; }
-    | LPAREN funcargs { $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2); $$->isParenthesisNodeComplete = false; }
-    | %empty { $$ = driver.makeEmptyNode(); }
+func-content: LPAREN funcargs RPAREN { 
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
+        $$->isParenthesisNodeComplete = true;
+        $$->func_match = Match_Exactly;
+    }
+    | LPAREN funcargs { 
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
+        $$->isParenthesisNodeComplete = false;
+        $$->func_match = Match_LeftPAREN;
+    }
+    | %empty {
+        $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, {});
+        $$->func_match = Match_Nothing;
+    };
+
+parencontent: LPAREN exp RPAREN { $$ = $2; $$->paren_match = Match_Exactly; }
+    /* 括号不全的情况不予以识别，否则parser无法识别全括号的情况
+    | LPAREN exp { driver.debugASTNode($2); $$ = $2; $$->paren_match = Match_LeftPAREN; }
+    | LPAREN { $$ = driver.makeEmptyNode(); $$->paren_match = Match_LeftPAREN; };
+    */
 
 term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
-    | LPAREN exp RPAREN { $2->isParenthesisNode = true; $$ = $2; }
+    | parencontent      { $$ = $1; }
     | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
-    //| zenvar { $$ = $1; }
-    //| func { $$ = $1; }
-    //| unaryfunc { $$ = $1; }
-    | FUNC funccontent  { 
+    | zenvar            { $$ = $1; }
+    | FUNC func-content  { 
         $$ = $2;
         $$->opVal = DEFAULT_FUNCVAL;
         $$->type = FUNC;
         $$->value = $1;
         $$->isParenthesisNode = true;
     }
-    | %empty { $$ = driver.makeEmptyNode(); }
+    | %empty { /*$$ = driver.makeEmptyNode();*/ }
     ;
 %%
 

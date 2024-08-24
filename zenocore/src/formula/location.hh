@@ -53,7 +53,7 @@
 #  endif
 # endif
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 namespace  zeno  {
 #line 59 "location.hh"
 
@@ -299,7 +299,7 @@ namespace  zeno  {
     return ostr;
   }
 
-#line 10 "parser.y"
+#line 10 "zfxparser.y"
 } //  zeno 
 #line 305 "location.hh"
 

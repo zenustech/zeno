@@ -630,8 +630,8 @@ void DockContent_Editor::initConnections()
         m_btnKill->setVisible(true);
         if (m_btnRun->text() == tr("ReRun")) {
             zeno::getSession().set_Rerun();
-            for (auto view : zenoApp->getMainWindow()->viewports())
-                view->cleanUpScene();
+        for (auto view : zenoApp->getMainWindow()->viewports())
+            view->cleanUpScene();
         }
 
 
@@ -1073,9 +1073,12 @@ void DockContent_View::initConnections()
     connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
-    connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
+
+    if (m_background) {
+        connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
         m_pDisplay->onSetBackground(state > 0);
-    });
+            });
+    }
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
 

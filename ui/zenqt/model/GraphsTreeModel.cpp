@@ -165,8 +165,9 @@ void GraphsTreeModel::onNameUpdated(const QModelIndex& nodeIdx, const QString& o
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM)
     {
-        QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
-        QModelIndex nodeIdx = getIndexByPath(nodePath);
+        const QString& nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
+        QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
+        QModelIndex nodeIdx = getIndexByPath(pathitems);
         emit dataChanged(nodeIdx, nodeIdx, { Qt::DisplayRole, ROLE_NODE_NAME });
     }
 }

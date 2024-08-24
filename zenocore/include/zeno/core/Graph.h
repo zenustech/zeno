@@ -81,7 +81,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
     ZENO_API std::shared_ptr<INode> getNode(std::string const& name);
     ZENO_API std::shared_ptr<INode> getNodeByUuidPath(ObjPath path);
-    ZENO_API std::shared_ptr<INode> getNodeByPath(std::string path);
+    ZENO_API std::shared_ptr<INode> getNodeByPath(const std::string& path);
+    ZENO_API std::shared_ptr<Graph> getGraphByPath(const std::string& path);
     ZENO_API std::map<std::string, std::shared_ptr<INode>> getNodes() const;
 
     ZENO_API GraphData exportGraph() const;
@@ -143,6 +144,8 @@ private:
     void updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
     void removeLinkWhenUpdateWildCardParam(const std::string& outNode, const std::string& inNode, EdgeInfo& edge);
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
+    std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
+    bool isLinkVaild(const EdgeInfo& edge);
 
     bool isLinkValid(const EdgeInfo& edge);
 

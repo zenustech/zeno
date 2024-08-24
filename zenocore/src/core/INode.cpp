@@ -29,6 +29,7 @@
 #include <zeno/extra/GraphException.h>
 #include <zeno/formula/formula.h>
 #include <zeno/core/ReferManager.h>
+#include <zeno/core/FunctionManager.h>
 #include "reflect/type.hpp"
 #include <zeno/types/MeshObject.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
@@ -122,6 +123,30 @@ ZENO_API CustomUI INode::get_customui() const {
     }
 }
 
+ZENO_API ObjPath INode::get_graph_path() const {
+    ObjPath path;
+    path = "";
+
+    std::shared_ptr<Graph> pGraph = graph.lock();
+
+    while (pGraph) {
+        const std::string name = pGraph->getName();
+        if (name == "main") {
+            path = "/main/" + path;
+            break;
+        }
+        else {
+            if (!pGraph->optParentSubgNode.has_value())
+                break;
+            auto pSubnetNode = pGraph->optParentSubgNode.value();
+            assert(pSubnetNode);
+            path = pSubnetNode->m_name + "/" + path;
+            pGraph = pSubnetNode->graph.lock();
+        }
+    }
+    return path;
+}
+
 ZENO_API CustomUI INode::export_customui() const
 {
     std::set<std::string> intputPrims, outputPrims, inputObjs, outputObjs;
@@ -203,7 +228,7 @@ ZENO_API ObjPath INode::get_path() const {
     while (pGraph) {
         const std::string name = pGraph->getName();
         if (name == "main") {
-            path = "/main" + path;
+            path = "/main/" + path;
             break;
         }
         else {
@@ -713,10 +738,10 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
             float fVal = pCurves->keys.begin()->second.eval(frame);
             if (type == zeno::types::gParamType_Int || type == zeno::types::gParamType_Bool) {
                 return static_cast<int>(fVal);
-            }
+        }
             else {
                 return fVal;
-            }
+        }
         }
         else {
             result = std::move(defl);
@@ -814,11 +839,11 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                         if (out_param->spObject)
                         {
                             receiveOutputObj(in_param, out_param->spObject, out_param->type);
-                        }
                     }
                 }
             }
         }
+    }
     }
     else {
         auto iter2 = m_inputPrims.find(ds);
@@ -878,8 +903,8 @@ ZENO_API void INode::doApply() {
 #endif
         reportStatus(true, Node_Running);
         if (!m_pTypebase) {
-            apply();
-        }
+        apply();
+    }
         else {
             reflecNode_apply();
         }
@@ -1250,10 +1275,10 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
                 if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
                     if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
                         iter->second.links.remove(spLink);
-                        return true;
-                    }
+                    return true;
                 }
             }
+        }
         }
         else {
             auto iter = m_inputPrims.find(edge.inParam);
@@ -1263,11 +1288,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
                 if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
                     if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam) {
                         iter->second.links.remove(spLink);
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
+    }
     }
     else {
         if (edge.bObjLink) {
@@ -1278,10 +1303,10 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
                 if (auto inNode = spLink->toparam->m_wpNode.lock()) {
                     if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
                         iter->second.links.remove(spLink);
-                        return true;
-                    }
+                    return true;
                 }
             }
+        }
         }
         else {
             auto iter = m_outputPrims.find(edge.outParam);
@@ -1291,11 +1316,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
                 if (auto inNode = spLink->toparam->m_wpNode.lock()) {
                     if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam) {
                         iter->second.links.remove(spLink);
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
+    }
     }
     return false;
 }
@@ -1414,10 +1439,10 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
             {
                 auto& spParam = prim->second;
                 if (type != spParam.type)
-                {
+    {
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
-                    return true;
+                        return true;
                 }
             }
         }
@@ -1433,7 +1458,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
                     return true;
-                }
+    }
             }
         }
     return false;
@@ -1457,22 +1482,22 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, z
     CORE_API_BATCH
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
     spParam.ctrlProps = props;
-    CALLBACK_NOTIFY(update_param_control_prop, param, props)
-    return true;
+        CALLBACK_NOTIFY(update_param_control_prop, param, props)
+        return true;
 }
 
 ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible, bool bInput)
 {
     CORE_API_BATCH
     if (bInput) {
-        auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
 
         if (spParam.bVisible != bVisible)
-        {
+    {
             spParam.bVisible = bVisible;
             CALLBACK_NOTIFY(update_param_visible, param, bVisible, bInput)
-                return true;
-        }
+            return true;
+    }
     } else {
         auto& spParam = safe_at(m_outputPrims, param, "miss output param `" + param + "` on node `" + m_name + "`");
 
@@ -1724,6 +1749,11 @@ ZENO_API void INode::init(const NodeData& dat)
     if (!dat.name.empty())
         m_name = dat.name;
 
+    if (m_name == "selfinc") {
+        int j;
+        j = -0;
+    }
+
     m_pos = dat.uipos;
     m_bView = dat.bView;
     if (m_bView) {
@@ -1778,9 +1808,9 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         auto iter = m_outputPrims.find(param.name);
         if (iter == m_outputPrims.end()) {
-            add_output_prim_param(param);
+        add_output_prim_param(param);
             continue;
-        }
+    }
         auto& sparam = iter->second;
         sparam.bVisible = param.bVisible;
         sparam.type = param.type;
@@ -1861,19 +1891,19 @@ ZENO_API zany INode::get_input(std::string const &id) const {
             {
                 const std::string& str = zeno::reflect::any_cast<std::string>(val);
                 return std::make_shared<StringObject>(str);
-            }
+                }
             default: {
             return nullptr;
+                }
+            }
         }
-    }
-    }
     else {
         auto iter2 = m_inputObjs.find(id);
         if (iter2 != m_inputObjs.end()) {
             return iter2->second.spObject;
         }
-        return nullptr;
-    }
+            return nullptr;
+        }
 }
 
 ZENO_API void INode::set_pos(std::pair<float, float> pos) {
@@ -1980,27 +2010,28 @@ ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {
     return TempNodeCaller(spGraph.get(), id);
 }
 
-float INode::resolve(const std::string& formulaOrKFrame, const ParamType type)
+float INode::resolve(const std::string& expression, const ParamType type)
 {
-    int frame = getGlobalState()->getFrameId();
-    if (zeno::starts_with(formulaOrKFrame, "=")) {
-        std::string code = formulaOrKFrame.substr(1);
-        std::set<std::string>paths = zeno::getReferPath(code);
-        std::string currPath = zeno::objPathToStr(get_path());
-        currPath = currPath.substr(0, currPath.find_last_of("/"));
-        for (auto& path : paths)
-        {
-            auto absolutePath = zeno::absolutePath(currPath, path);
-            if (absolutePath != path)
-            {
-                code.replace(code.find(path), path.size(), absolutePath);
-            }
+    std::string code = expression;
+    Formula fmla(code, get_path());
+    int ret = fmla.parse();
+    if (ret == 0)
+    {
+        auto& funcMgr = zeno::getSession().funcManager;
+        auto& astRoot = fmla.getASTResult();
+        ZfxContext ctx;
+        ctx.code = code;
+        ctx.spNode = shared_from_this();
+        zfxvariant res = funcMgr->calc(astRoot, &ctx);
+        if (std::holds_alternative<int>(res)) {
+            return std::get<int>(res);
         }
-        Formula fmla(code);
-        int ret = fmla.parse();
-        float res = fmla.getResult();
-        return res;
-    }
+        else if (std::holds_alternative<float>(res)) {
+            return std::get<float>(res);
+        }
+        else {
+            throw makeError<UnimplError>();
+        }
     else {
         if (zeno::types::gParamType_Float == type)
         {
@@ -2039,8 +2070,8 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
             {
                 if (!wildCardGroup.empty() || param_name == name) {
                     params.push_back({name, true});
-                }
             }
+        }
         }
         for (const auto& [name, spParam] : m_outputPrims)
         {
@@ -2048,8 +2079,8 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
             {
                 if (!wildCardGroup.empty() || param_name == name) {
                     params.push_back({name, false});
-                }
             }
+        }
         }
     } 
     else
@@ -2069,8 +2100,8 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
             {
                 if (!wildCardGroup.empty() || param_name == name) {
                     params.push_back({name, true});
-                }
             }
+        }
         }
         for (const auto& [name, spParam] : m_outputObjs)
         {
@@ -2078,9 +2109,9 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
             {
                 if (!wildCardGroup.empty() || param_name == name) {
                     params.push_back({name, false});
-                }
             }
         }
+    }
     }
     return params;
 }
@@ -2093,7 +2124,7 @@ void zeno::INode::getParamTypeAndSocketType(const std::string& param_name, bool 
             paramType = iter->second.type;
             socketType = iter->second.socketType;
             return;
-        }
+    }
     }
     else {
         auto iter = bInput ? m_inputObjs.find(param_name) : m_outputObjs.find(param_name);

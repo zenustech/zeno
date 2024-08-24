@@ -7,6 +7,7 @@
 #include <regex>
 #include <optional>
 #include <zeno/utils/api.h>
+#include <zeno/core/data.h>
 #include "syntax_tree.h"
 
 namespace zeno {
@@ -14,7 +15,7 @@ namespace zeno {
 class Formula
 {
 public:
-    ZENO_API Formula(const std::string& formula);
+    ZENO_API Formula(const std::string& formula, const std::string& nodepath);
     ZENO_API ~Formula();
     /**
      * Run parser. Results are stored inside.
@@ -55,28 +56,28 @@ public:
     unsigned int location() const;
 
     //syntax_tree
-    ZENO_API std::shared_ptr<struct node> getRoot();
-    void setRoot(std::shared_ptr<struct node> root);
-    std::shared_ptr<struct node> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<struct node>> children);
-    std::shared_ptr<struct node> makeNewNumberNode(float value);
-    std::shared_ptr<node> makeStringNode(std::string text);
-    std::shared_ptr<node> makeQuoteStringNode(std::string text);
-    std::shared_ptr<struct node> makeEmptyNode();
+    ZENO_API std::shared_ptr<ZfxASTNode> getASTResult();
+    std::shared_ptr<ZfxASTNode> makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children);
+    std::shared_ptr<ZfxASTNode> makeNewNumberNode(float value);
+    std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeEmptyNode();
+    void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
+    void debugASTNode(std::shared_ptr<ZfxASTNode> pNode);
     ZENO_API void printSyntaxTree();
-    ZENO_API std::optional<std::tuple<std::string, std::string, int>> getCurrFuncDescription();
-    //regex
-    ZENO_API std::vector<std::string> getHintList(std::string originTxt, std::string& candidateTxt);
+    ZENO_API formula_tip_info getRecommandTipInfo() const;
 
 private:
-
     unsigned int m_location;          // Used by scanner
     std::string m_formula;
+    std::string m_nodepath;
     float m_result;
 
     //syntax_tree
-    std::shared_ptr<struct node> m_rootNode;
+    std::shared_ptr<ZfxASTNode> m_rootNode;
 };
 
 }
 
-#endif __ZEN_FORMULA_H__
+#endif

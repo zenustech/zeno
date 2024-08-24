@@ -11,12 +11,15 @@
 namespace zeno {
 
 
-static std::vector<std::string> split_str(std::string const &s, char delimiter = ' ') {
+static std::vector<std::string> split_str(std::string const &s, char delimiter = ' ', bool bKeepEmpty = true) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream iss(s);
-    while (std::getline(iss, token, delimiter))
+    while (std::getline(iss, token, delimiter)) {
+        if (!bKeepEmpty && token.empty())
+            continue;
         tokens.push_back(token);
+    }
     return tokens;
 }
 static std::vector<std::string> split_str(std::string const &s, std::set<char> pattens) {

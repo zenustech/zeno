@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style-scheme version="1.0" name="Dracula">
+	<style name="Type" foreground="#ED77ED" bold="true"/>
+	<style name="Function" foreground="#66CCCC" bold="true"/>
+    <style name="String" foreground="#66CC66" bold="true"/>
+    <style name="Keyword" foreground="#ED77ED" bold="true"/>
+	<style name="Property" foreground="#DEAE6F" bold="true"/>
+	<style name="Comment" foreground="#EDED77" bold="true"/>
+	<style name="StartWith#" foreground="#DEAE6F" bold="true"/>
+	<!-- <style name="Number" foreground="#bd93f9"/> -->
+
     <style name="Text" foreground="#f8f8f2" background="#282a36"/>
     <style name="Link" foreground="#8be9fd" underlineStyle="SingleUnderline"/>
     <style name="Selection" background="#44475a"/>
@@ -14,22 +23,15 @@
     <style name="Occurrences" foreground="#000000" background="#f8f8f2"/>
     <style name="Occurrences.Unused" foreground="#f8f8f2"/>
     <style name="Occurrences.Rename" foreground="#000000" background="#f8f8f2"/>
-    <style name="Number" foreground="#bd93f9"/>
-    <style name="String" foreground="#f1fa8c"/>
-    <style name="Type" foreground="#7ce4fb"/>
     <style name="Local" foreground="#ffffff"/>
     <style name="Global" foreground="#ffb86c"/>
     <style name="Field" foreground="#ffffff"/>
     <style name="Static" foreground="#ffb86c"/>
     <style name="VirtualMethod" foreground="#50fa7b" italic="true"/>
-    <style name="Function" foreground="#50fa7b"/>
-    <style name="Keyword" foreground="#ff79c6" bold="true"/>
     <style name="PrimitiveType" foreground="#7ce4fb" italic="true"/>
     <style name="Operator" foreground="#ffffff"/>
     <style name="Overloaded Operator"/>
-    <style name="Preprocessor" foreground="#ff79c6"/>
     <style name="Label" foreground="#ffb86c"/>
-    <style name="Comment" foreground="#6272a4" bold="true"/>
     <style name="Doxygen.Comment" foreground="#6272a4"/>
     <style name="Doxygen.Tag" foreground="#6272a4" bold="true"/>
     <style name="VisualWhitespace" foreground="#6272a4"/>

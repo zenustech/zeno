@@ -27,6 +27,7 @@
 namespace zenoui
 {
     QWidget* createWidget(
+        const QModelIndex& nodeIdx,
         const QVariant& value,
         zeno::ParamControl ctrl,
         const zeno::ParamType type,
@@ -44,6 +45,7 @@ namespace zenoui
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", type));
+                pLineEdit->setNodeIdx(nodeIdx);
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     QString text = pLineEdit->text();
@@ -77,6 +79,7 @@ namespace zenoui
             case zeno::Multiline:
             {
                 ZTextEdit* pTextEdit = new ZTextEdit;
+                pTextEdit->setNodeIdx(nodeIdx);
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
@@ -171,6 +174,7 @@ namespace zenoui
                 }
 
                 ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
+                pVecEdit->setNodeIdx(nodeIdx);
                 pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
                     const QVariant &newValue = pVecEdit->vec();

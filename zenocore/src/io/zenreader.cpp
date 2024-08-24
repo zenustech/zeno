@@ -75,6 +75,11 @@ namespace zenoio
     {
         zeno::NodeData retNode;
 
+        if (nodeid == "selfinc") {
+            int j;
+            j = 0;
+        }
+
         const auto& objValue = nodeObj;
         const rapidjson::Value& nameValue = objValue["name"];
         const std::string& cls = objValue["class"].GetString();

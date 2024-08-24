@@ -757,8 +757,9 @@ void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, con
 
 void ZenoGraphsEditor::onPageActivated(const QModelIndex& subgNodeIdx)
 {
-    const QStringList& objPath = subgNodeIdx.data(ROLE_OBJPATH).toStringList();
-    activateTab(objPath);
+    const QString& nodePath = subgNodeIdx.data(ROLE_OBJPATH).toString();
+    QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
+    activateTab(pathitems);
 }
 
 void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)

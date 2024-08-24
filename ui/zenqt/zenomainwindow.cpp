@@ -654,7 +654,7 @@ void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefa
         QAction *pCustomLayout_ = new QAction(name);
         connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
             loadDockLayout(name, isDefault); 
-            //updateLatestLayout(name);
+            updateLatestLayout(name);
         });
         actions.append(pCustomLayout_);
     }
@@ -1044,10 +1044,12 @@ void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, Q
             GraphsTreeModel* pTreeM = zenoApp->graphsManager()->currentModel();
             if (pTreeM) {
                 QModelIndex nodeIdx = pTreeM->getIndexByUuidPath(nodeUuidPath);
-                QStringList nodePath = nodeIdx.data(ROLE_OBJPATH).toStringList();
-                QString nodeName = nodePath.back();
-                nodePath.pop_back();
-                pEditor->activateTab(nodePath, nodeName, true);
+                const QString& nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
+                QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
+                ZASSERT_EXIT(!pathitems.isEmpty());
+                QString nodeName = pathitems.back();
+                pathitems.pop_back();
+                pEditor->activateTab(pathitems, nodeName, true);
             }
         }
     }

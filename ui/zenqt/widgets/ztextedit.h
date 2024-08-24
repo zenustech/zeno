@@ -9,6 +9,7 @@ class ZTextEdit : public QTextEdit
 public:
     explicit ZTextEdit(QWidget* parent = nullptr);
     explicit ZTextEdit(const QString& text, QWidget* parent = nullptr);
+    void setNodeIdx(const QModelIndex& index);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     QSize viewportSizeHint() const override;
@@ -24,6 +25,8 @@ protected:
 
 private:
     void initUI();
+
+    QPersistentModelIndex m_index;
 };
 
 

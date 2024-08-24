@@ -39,6 +39,7 @@ struct CalcManager;
 struct ObjectManager;
 struct AssetsMgr;
 struct ReferManager;
+class FunctionManager;
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
@@ -53,6 +54,7 @@ struct Session {
     std::shared_ptr<AssetsMgr> assets;
     std::unique_ptr<ReferManager> referManager;
     std::unique_ptr<GlobalVariableManager> globalVariableManager;
+    std::unique_ptr<FunctionManager> funcManager;
 
     ZENO_API Session();
     ZENO_API ~Session();

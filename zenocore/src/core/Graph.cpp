@@ -171,6 +171,12 @@ void Graph::viewNodeUpdated(const std::string node, bool bView) {
     if (bView) {
         //TODO: only run calculation chain which associate with `node`.
         //getSession().run_main_graph();
+        //disable the previous view.
+        auto viewnodes = m_viewnodes;
+        for (auto nodename : viewnodes) {
+            auto spNode = getNode(nodename);
+            spNode->set_view(false);
+        }
         m_viewnodes.insert(node);
     }
     else {
@@ -871,46 +877,84 @@ ZENO_API std::shared_ptr<INode> Graph::getNodeByUuidPath(ObjPath path) {
     return it->second;
 }
 
-ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(std::string path)
+std::shared_ptr<Graph> Graph::_getGraphByPath(std::vector<std::string> items)
 {
-    if (path.empty())
-        return nullptr;
-    int sPos = 0;
-    if (m_name == "main")
-    {
-        sPos = path.find(m_name) + m_name.size();
-        if (path.size() <= sPos)
-            return nullptr;
-        path = path.substr(sPos + 1, path.size() - sPos);
+    if (items.empty())
+        return shared_from_this();
+
+    std::string currname = items[0];
+    items.erase(items.begin());
+    if (m_name == "main") {
+        if (currname == "main") {
+            return _getGraphByPath(items);
+        }
     }
-    std::string name = path.substr(0, path.find("/"));
-    if (m_name2uuid.find(name) == m_name2uuid.end())
+
+    if (m_name2uuid.find(currname) == m_name2uuid.end())
+    {
+        if (currname == ".") {
+            return _getGraphByPath(items);
+        }
+        else if (currname == "..") {
+            //ȡparent graph.
+            if (optParentSubgNode.has_value()) {
+                SubnetNode* parentNode = optParentSubgNode.value();
+                auto parentG = parentNode->getGraph().lock();
+                return parentG->_getGraphByPath(items);
+            }
+        }
         return nullptr;
-    std::string uuid = m_name2uuid[name];
+    }
+
+    std::string uuid = m_name2uuid[currname];
     auto it = m_nodes.find(uuid);
     if (it == m_nodes.end()) {
         return nullptr;
     }
-    sPos = path.find("/");
 
-    if (sPos != std::string::npos)
+    if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
     {
-        path = path.substr(sPos + 1, path.size() - sPos);
-        //subnet
-        if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(it->second))
-        {
-            auto spGraph = subnetNode->subgraph;
-            if (spGraph)
-                return spGraph->getNodeByPath(path);
-            else
-                return nullptr;
-        }
+        auto spGraph = subnetNode->subgraph;
+        if (spGraph)
+            return spGraph->_getGraphByPath(items);
+        else
+            return nullptr;
     }
-    return it->second;
+    return nullptr;
+}
+
+ZENO_API std::shared_ptr<Graph> Graph::getGraphByPath(const std::string& pa)
+{
+    std::string path = pa;
+    if (path.empty())
+        return nullptr;
+
+    auto pathitems = split_str(pa, '/', false);
+    return _getGraphByPath(pathitems);
+}
+
+ZENO_API std::shared_ptr<INode> Graph::getNodeByPath(const std::string& pa)
+{
+    std::string path = pa;
+    if (path.empty())
+        return nullptr;
+
+    auto pathitems = split_str(pa, '/', false);
+    if (pathitems.empty())
+        return nullptr;
+
+    std::string nodename = pathitems.back();
+    pathitems.pop_back();
+    auto spGraph = _getGraphByPath(pathitems);
+    return spGraph->getNode(nodename);
 }
 
 ZENO_API std::map<std::string, std::shared_ptr<INode>> Graph::getNodes() const {
-    return m_nodes;
+    std::map<std::string, std::shared_ptr<INode>> nodes;
+    for (auto& [uuid, node] : m_nodes) {
+        nodes.insert(std::make_pair(node->get_name(), node));
+    }
+    return nodes;
 }
 
 ZENO_API GraphData Graph::exportGraph() const {
