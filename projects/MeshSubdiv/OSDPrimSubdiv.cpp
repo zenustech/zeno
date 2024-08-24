@@ -732,7 +732,7 @@ struct OSDPrimSubdiv : INode {
 ZENO_DEFNODE(OSDPrimSubdiv)
 ({
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
         {gParamType_Int, "levels", "2"},
         {gParamType_String, "edgeCreaseAttr", ""},
         {gParamType_Bool, "triangulate", "1"},

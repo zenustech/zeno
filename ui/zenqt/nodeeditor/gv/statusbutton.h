@@ -17,6 +17,8 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void updateRightButtomRadius(bool bHasRadius);
 
+    static const int dirtyLayoutHeight = 2;
+
 signals:
     void hoverChanged(bool);
     void toggled(bool);

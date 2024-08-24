@@ -390,21 +390,41 @@ ZENO_API void INode::reflecNode_apply()
         for (zeno::reflect::IMemberFunction* func : m_pTypebase->get_member_functions()) {
             const auto& funcname = func->get_name();
             if (funcname == "apply") {
+                //根据ReflectCustomUI获取fieldName到displayName映射
+                std::map<std::string, std::string> inputPrims, outputPrims, inputObjs, outputObjs;
+                getFieldNameParamNameMapByReflectCustomUi(m_pTypebase, shared_from_this(), inputPrims, outputPrims, inputObjs, outputObjs);
+                const auto& getOutputParamNameFromFieldName = [&outputPrims, &outputObjs](std::string paramname, bool isPrim) -> std::string {
+                    if (!isPrim) {
+                        return outputObjs.find(paramname) == outputObjs.end() ? paramname : outputObjs[paramname];
+                    }
+                    else {
+                        return outputPrims.find(paramname) == outputPrims.end() ? paramname : outputPrims[paramname];
+                    }
+                };
                 //从apply参数获取输入
                 zeno::reflect::ArrayList<zeno::reflect::Any> paramValues;
                 std::vector<std::tuple<std::string, zeno::ParamType, int>> outputsName;
 
                 const zeno::reflect::ArrayList<zeno::reflect::RTTITypeInfo>& params = func->get_params();
-                const auto& param_names = func->get_params_name();
+                const auto& field_names = func->get_params_name();
                 for (int i = 0; i < params.size(); i++) {
                     const zeno::reflect::RTTITypeInfo& param_type = params[i];
                     if (!param_type.has_flags(zeno::reflect::TF_IsConst) && param_type.has_flags(zeno::reflect::TF_IsLValueRef)) {
                         ParamType _type = param_type.get_decayed_hash() == 0 ? param_type.hash_code() : param_type.get_decayed_hash();
-                        outputsName.push_back({ param_names[i].c_str(), _type, i });
+                        bool bConstPtr;
+                        outputsName.push_back({ getOutputParamNameFromFieldName(field_names[i].c_str(), zeno::isObjectType(param_type, bConstPtr)), _type, i});
                     }
                     else {
                         zeno::reflect::Any inputAny;
-                        auto iter = m_inputPrims.find(param_names[i].c_str());
+                        bool bConstPtr;
+                        std::string inputName;
+                        if (zeno::isObjectType(param_type, bConstPtr)) {
+                            inputName = inputObjs.find(field_names[i].c_str()) == inputObjs.end() ? field_names[i].c_str() : inputObjs[field_names[i].c_str()];
+                        }
+                        else {
+                            inputName = inputPrims.find(field_names[i].c_str()) == inputPrims.end() ? field_names[i].c_str() : inputPrims[field_names[i].c_str()];
+                        }
+                        auto iter = m_inputPrims.find(inputName);
                         if (iter != m_inputPrims.end()) {
                             auto& val = iter->second.result;
                             if (val.has_value()) {
@@ -415,7 +435,7 @@ ZENO_API void INode::reflecNode_apply()
                             }
                         }
                         else {
-                            auto iter2 = m_inputObjs.find(param_names[i].c_str());
+                            auto iter2 = m_inputObjs.find(inputName);
                             if (iter2 != m_inputObjs.end())
                                 inputAny = zeno::reflect::move(iter2->second.spObject);
                         }
@@ -467,14 +487,14 @@ ZENO_API void INode::reflecNode_apply()
                 zeno::reflect::Any res = func->invoke_unsafe(this, paramValues);
                 //从apply参数/返回值获取输出
                 for (int i = paramValues.size() - 1; i > paramValues.size() - outputsName.size() - 1; i--) {
-                    auto iter = m_outputObjs.find(param_names[i].c_str());
+                    auto iter = m_outputObjs.find(getOutputParamNameFromFieldName(field_names[i].c_str(), false));
                     if (iter != m_outputObjs.end()) {
                         if (paramValues[i].has_value() && params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
                             iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
                         }
                     }
                     else {
-                        auto iter2 = m_outputPrims.find(param_names[i].c_str());
+                        auto iter2 = m_outputPrims.find(getOutputParamNameFromFieldName(field_names[i].c_str(), true));
                         if (iter2 != m_outputPrims.end()) {
                             iter2->second.result = zeno::reflect::move(paramValues[i]);
                         }
@@ -1224,9 +1244,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_inputObjs.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
+                    if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam && spLink->fromkey == edge.outKey) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1235,9 +1257,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_inputPrims.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->fromparam->name == edge.outParam) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto outNode = spLink->fromparam->m_wpNode.lock()) {
+                    if (outNode->get_name() == edge.outNode && spLink->fromparam->name == edge.outParam) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1248,9 +1272,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_outputObjs.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto inNode = spLink->toparam->m_wpNode.lock()) {
+                    if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam && spLink->tokey == edge.inKey) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -1259,9 +1285,11 @@ bool INode::removeLink(bool bInput, const EdgeInfo& edge) {
             if (iter == m_outputPrims.end())
                 return false;
             for (auto spLink : iter->second.links) {
-                if (spLink->toparam->name == edge.inParam) {
-                    iter->second.links.remove(spLink);
-                    return true;
+                if (auto inNode = spLink->toparam->m_wpNode.lock()) {
+                    if (inNode->get_name() == edge.inNode && spLink->toparam->name == edge.inParam) {
+                        iter->second.links.remove(spLink);
+                        return true;
+                    }
                 }
             }
         }
@@ -2084,15 +2112,23 @@ std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const s
 void zeno::INode::getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType)
 {
     if (bPrim) {
-        ParamPrimitive const& primParam = bInput ? get_input_prim_param(param_name) : get_output_prim_param(param_name);
-        paramType = primParam.type;
-        socketType = primParam.socketType;
+        auto iter = bInput ? m_inputPrims.find(param_name) : m_outputPrims.find(param_name);
+        if (bInput ? (iter != m_inputPrims.end()) : (iter != m_outputPrims.end())) {
+            paramType = iter->second.type;
+            socketType = iter->second.socketType;
+            return;
+        }
     }
     else {
-        ParamObject const& objParam = bInput ? get_input_obj_param(param_name) : get_output_obj_param(param_name);
-        paramType = objParam.type;
-        socketType = objParam.socketType;
+        auto iter = bInput ? m_inputObjs.find(param_name) : m_outputObjs.find(param_name);
+        if (bInput ? (iter != m_inputObjs.end()) : (iter != m_outputObjs.end())) {
+            paramType = iter->second.type;
+            socketType = iter->second.socketType;
+            return;
+        }
     }
+    paramType = Param_Null;
+    socketType = Socket_Primitve;
 }
 
 template<class T, class E> T INode::resolveVec(const zeno::reflect::Any& defl, const ParamType type)
