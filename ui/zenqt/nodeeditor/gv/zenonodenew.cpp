@@ -828,7 +828,7 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
 
     SocketBackgroud* pBackground = nullptr;
     ZSocketLayout* pMiniLayout = nullptr;
-    if (type == zeno::types::gParamType_Dict || type == zeno::types::gParamType_List) {
+    if (type == gParamType_Dict || type == gParamType_List) {
         pBackground = new SocketBackgroud(bInput, true);
         pMiniLayout = new ZDictSocketLayout(paramIdx, bInput, pBackground);
     }

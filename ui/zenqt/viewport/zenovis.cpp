@@ -39,6 +39,12 @@ void Zenovis::initializeGL()
 
 void Zenovis::paintGL()
 {
+    {
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
+        double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
+        session->set_viewport_point_size_scale(viewportPointSizeScale);
+    }
     int frameid = session->get_curr_frameid();
     //doFrameUpdate();
     session->new_frame();
@@ -114,6 +120,16 @@ void Zenovis::cleanUpScene()
     pScene->cleanUpScene();
 }
 
+void Zenovis::cleanupView()
+{
+    if (!session)
+        return;
+
+    auto pScene = session->get_scene();
+    ZASSERT_EXIT(pScene);
+    pScene->cleanupView();
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
@@ -158,7 +174,6 @@ int Zenovis::setCurrentFrameId(int frameid)
         if (m_camera_keyframe && m_camera_control) {
             PerspectiveInfo r;
             if (m_camera_keyframe->queryFrame(frameid, r)) {
-                m_camera_control->setKeyFrame();
                 m_camera_control->updatePerspective();
             }
         }

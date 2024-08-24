@@ -297,7 +297,7 @@ struct ValidateAdaptiveGrid : INode {
         //
         zs::vec<float, 3> zsp{p[0], p[1], p[2]};
         auto v = zsagv.wSample(zsacc, 0, zsp);
-        if (zs::abs(vref - v) >= limits<float>::epsilon() &&
+        if (zs::abs(vref - v) >= detail::deduce_numeric_epsilon<float>() &&
             vref != sdf->background())
           fmt::print("\tref: {}, actual: {}\n", vref, v);
         else

@@ -409,7 +409,7 @@ struct Duplicate : INode {
                 objOutput.bInput = false;
                 objOutput.name = "duplicateObj";
                 objOutput.socketType = zeno::Socket_Output;
-                objOutput.type = types::gParamType_IObject;
+                objOutput.type = gParamType_IObject;
                 params.push_back({ objOutput , "" });
             }
             params_change_info changes = update_editparams(params);

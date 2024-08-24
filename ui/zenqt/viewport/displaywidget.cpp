@@ -97,6 +97,14 @@ void DisplayWidget::initRecordMgr()
     });
 }
 
+void DisplayWidget::cleanupView()
+{
+    if (m_glView)
+        m_glView->cleanUpView();
+    else
+        m_optixView->cleanupView();
+}
+
 void DisplayWidget::testCleanUp()
 {
     if (m_glView)
@@ -338,7 +346,7 @@ std::tuple<int, int, bool> DisplayWidget::getOriginWindowSizeInfo()
     return originWindowSizeInfo;
 }
 
-void DisplayWidget::cameraLookTo(int dir)
+void DisplayWidget::cameraLookTo(zenovis::CameraLookToDir dir)
 {
     if (m_bGLView)
         m_glView->cameraLookTo(dir);
@@ -736,6 +744,28 @@ void DisplayWidget::onMouseHoverMoved()
 #endif
 }
 
+void DisplayWidget::onSetCamera(zenovis::ZOptixCameraSettingInfo value)
+{
+    if (!m_bGLView) {
+        m_optixView->setdata_on_optix_thread(value);
+    }
+}
+
+void DisplayWidget::onSetBackground(bool bShowBackground)
+{
+    if (!m_bGLView) {
+        m_optixView->showBackground(bShowBackground);
+    }
+}
+
+zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
+{
+    if (!m_bGLView) {
+        return m_optixView->getdata_from_optix_thread();
+    }
+    return zenovis::ZOptixCameraSettingInfo{};
+}
+
 void DisplayWidget::onDockViewAction(bool triggered)
 {
     QAction* action = qobject_cast<QAction*>(sender());
@@ -743,33 +773,37 @@ void DisplayWidget::onDockViewAction(bool triggered)
     switch (viewType)
     {
         case ACTION_ORIGIN_VIEW:
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_to_origin);
             break;
         case ACTION_FRONT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::front_view);
             break;
         }
         case ACTION_BACK_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::back_view);
             break;
         }
         case ACTION_RIGHT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::right_view);
             break;
         }
         case ACTION_LEFT_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::left_view);
             break;
         }
         case ACTION_TOP_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::top_view);
             break;
         }
         case ACTION_BOTTOM_VIEW: {
-            cameraLookTo(viewType);
+            cameraLookTo(zenovis::CameraLookToDir::bottom_view);
             break;
         }
     }
+}
+
+void DisplayWidget::sendTaskToServer(const VideoRecInfo& info) {
+    //TODO or TO be deprecated.
 }
 
 void DisplayWidget::onRecord()
@@ -789,6 +823,12 @@ void DisplayWidget::onRecord()
         if (!dlg.getInfo(recInfo))
         {
             QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
+        //send task to server
+        if (false)// && recInfo.bSendToServer)
+        {
+            sendTaskToServer(recInfo);
             return;
         }
         //validation.
@@ -1206,10 +1246,11 @@ void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &
                 ZASSERT_EXIT(pZenovis && pZenovis->getSession());
                 auto scene = pZenovis->getSession()->get_scene();
                 auto fov = scene->camera->m_fov;
-                auto cz = glm::length(scene->camera->m_lodcenter);
+                auto cz = glm::length(scene->camera->m_pos);
                 if (depth != 0) {
                     cz = scene->camera->inf_z_near / depth;
                 }
+                zeno::log_info("click depth {}", depth);
                 auto w = scene->camera->m_nx;
                 auto h = scene->camera->m_ny;
                 // zeno::log_info("fov: {}", fov);
@@ -1221,11 +1262,11 @@ void DisplayWidget::onNodeSelected(GraphModel* subgraph, const QModelIndexList &
                 auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
                 // zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
                 glm::vec4 cc = {cx, cy, -cz, 1};
-                auto wc = glm::inverse(scene->camera->m_view) * cc;
+                auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
                 wc /= wc.w;
                 // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
                 auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
-                zeno::log_info("fetch {}", points.c_str());
+                zeno::log_info("fetch {}", wc);
                 points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
                 zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
             };

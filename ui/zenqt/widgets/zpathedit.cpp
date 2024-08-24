@@ -39,19 +39,19 @@ void ZPathEdit::initUI()
         QString filePath = path;
 
         // need to resolve the formula path
-        {
-            zeno::setConfigVariable("ZSG", zsgDir.toStdString());
-            auto code = std::make_shared<zeno::StringObject>();
-            code->set(path.toStdString());
-            auto outs = zeno::TempNodeSimpleCaller("StringEval")
-                .set("zfxCode", code)
-                .call();
-            std::shared_ptr<zeno::StringObject> spStrObj = outs.get<zeno::StringObject>("result");
-            if (spStrObj)
-            {
-                filePath = QString::fromStdString(spStrObj->get());
-            }
-        }
+        //{
+        //    zeno::setConfigVariable("ZSG", zsgDir.toStdString());
+        //    auto code = std::make_shared<zeno::StringObject>();
+        //    code->set(path.toStdString());
+        //    auto outs = zeno::TempNodeSimpleCaller("StringEval")
+        //        .set("zfxCode", code)
+        //        .call();
+        //    std::shared_ptr<zeno::StringObject> spStrObj = outs.get<zeno::StringObject>("result");
+        //    if (spStrObj)
+        //    {
+        //        filePath = QString::fromStdString(spStrObj->get());
+        //    }
+        //}
 
         QString dirPath;
 

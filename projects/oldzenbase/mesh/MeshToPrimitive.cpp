@@ -114,7 +114,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).
 struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
     virtual void apply() override {
         PrimitiveToMesh::apply();
-        //get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("mesh"), zeno::types::gParamType_IObject))).get());
+        //get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("mesh"), gParamType_IObject))).get());
     }
 };
 

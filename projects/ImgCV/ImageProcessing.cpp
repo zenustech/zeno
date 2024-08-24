@@ -645,8 +645,8 @@ struct ImageBlur : INode {
         auto type = get_input2<std::string>("type");
         auto fastgaussian = get_input2<bool>("Fast Blur(Gaussian)");
         auto sigmaX = get_input2<float>("GaussianSigma");
-        auto sigmaColor = get_input2<vec2f>("BilateralSigma")[0];
-        auto sigmaSpace = get_input2<vec2f>("BilateralSigma")[1];
+        auto sigmaColor = get_input2<zeno::vec2f>("BilateralSigma")[0];
+        auto sigmaSpace = get_input2<zeno::vec2f>("BilateralSigma")[1];
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -1152,8 +1152,8 @@ ZENDEFNODE(ImageErode, {
 struct ImageColor : INode {
     virtual void apply() override {
         auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<vec4f>("Color");
-        auto size = get_input2<vec2i>("Size");
+        auto color = get_input2<zeno::vec4f>("Color");
+        auto size = get_input2<zeno::vec2i>("Size");
         auto balpha = get_input2<bool>("alpha");
         auto vertsize = size[0] * size[1];
         image->verts.resize(vertsize);
@@ -1192,9 +1192,9 @@ ZENDEFNODE(ImageColor, {
 struct ImageColor2 : INode {
     virtual void apply() override {
         auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<vec3f>("Color");
+        auto color = get_input2<zeno::vec3f>("Color");
         auto alpha = get_input2<float>("Alpha");
-        auto size = get_input2<vec2i>("Size");
+        auto size = get_input2<zeno::vec2i>("Size");
         auto balpha = get_input2<bool>("alpha");
         auto vertsize = size[0] * size[1];
         image->verts.resize(vertsize);
@@ -1487,8 +1487,8 @@ ZENDEFNODE(ImageMatting, {
 struct ImageLevels: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto inputLevels = get_input2<vec2f>("Input Levels");
-        auto outputLevels = get_input2<vec2f>("Output Levels");
+        auto inputLevels = get_input2<zeno::vec2f>("Input Levels");
+        auto outputLevels = get_input2<zeno::vec2f>("Output Levels");
         auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
         auto channel = get_input2<std::string>("channel");
         auto clamp = get_input2<bool>("Clamp Output");

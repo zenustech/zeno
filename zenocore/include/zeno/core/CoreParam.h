@@ -47,7 +47,7 @@ struct CoreParam {
 
 struct ObjectParam : CoreParam {
     std::list<std::shared_ptr<ObjectLink>> links;
-    zeno::reflect::Any spObject;
+    zany /*zeno::reflect::Any*/ spObject;        //只储存基类指针，其实已经是一种"any"了。
 
     ParamObject exportParam() const;
 };

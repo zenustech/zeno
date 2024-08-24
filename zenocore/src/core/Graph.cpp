@@ -22,6 +22,7 @@
 #include <regex>
 #include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
+#include <zeno/core/typeinfo.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
@@ -1062,7 +1063,7 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     {
         ParamObject inParam = inNode->get_input_obj_param(edge.inParam);
         ParamObject outParam = outNode->get_output_obj_param(edge.outParam);
-        if (inParam.type == zeno::types::gParamType_Dict || inParam.type == zeno::types::gParamType_List) {
+        if (inParam.type == gParamType_Dict || inParam.type == gParamType_List) {
             bool bSameType = inParam.type == outParam.type;
             if (bSameType) {
                 //直接连接，并去掉输入端原来的参数.

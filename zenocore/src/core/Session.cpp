@@ -14,6 +14,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/helper.h>
+#include <zeno/zeno.h>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -30,6 +31,7 @@
 #include <reflect/container/object_proxy>
 #include <reflect/container/any>
 #include <reflect/container/arraylist>
+#include <reflect/core.hpp>
 #include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 #include "zeno_nodes/reflect/reflection.generated.hpp"
@@ -39,6 +41,13 @@ using namespace zeno::reflect;
 using namespace zeno::types;
 
 namespace zeno {
+
+    struct _ObjUIInfo
+    {
+        std::string_view name;
+        std::string_view color;
+    };
+    static std::map<size_t, _ObjUIInfo> s_objsUIInfo;
 
 namespace {
 
@@ -996,7 +1005,25 @@ void Session::initReflectNodes() {
     }
 }
 
+ZENO_API void Session::registerObjUIInfo(size_t hashcode, std::string_view color, std::string_view nametip) {
+    s_objsUIInfo.insert(std::make_pair(hashcode, _ObjUIInfo { nametip, color }));
+}
+
+ZENO_API bool Session::getObjUIInfo(size_t hashcode, std::string_view& color, std::string_view& nametip) {
+    auto iter = s_objsUIInfo.find(hashcode);
+    if (iter == s_objsUIInfo.end()) {
+        color = "#000000";
+        nametip = "unknown type";
+        return false;
+    }
+    color = iter->second.color;
+    nametip = iter->second.name;
+    return true;
+}
+
 ZENO_API zeno::NodeCates Session::dumpCoreCates() {
+    //有可能插件的初始化反射信息较晚，所以要再扫一次。TODO:扫描优化可以再精简一下
+    zeno::getSession().initReflectNodes();
     return m_cates;
 }
 

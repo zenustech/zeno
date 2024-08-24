@@ -5,6 +5,7 @@
 #include <zeno/types/ObjectDef.h>
 #include <zeno/core/reflectdef.h>
 #include <regex>
+#include <zeno/core/typeinfo.h>
 
 
 using namespace zeno::types;
@@ -428,7 +429,7 @@ namespace zeno {
         }
         else if (type == gParamType_IObject)
         {
-            return std::shared_ptr<IObject>();
+            return nullptr;
         }
         return zeno::reflect::Any();
     }
@@ -604,36 +605,6 @@ namespace zeno {
         }
     }
 
-    static zeno::reflect::RTTITypeInfo getRttiInfo(ParamType type)
-    {
-        switch (type)
-        {
-        case gParamType_Bool:    return zeno::reflect::type_info<bool>();
-        case gParamType_Int:     return zeno::reflect::type_info<int>();
-        case gParamType_String:  return zeno::reflect::type_info<std::string>();
-        case gParamType_Float:   return zeno::reflect::type_info<float>();
-        case gParamType_Vec2i:   return zeno::reflect::type_info<zeno::vec2i>();
-        case gParamType_Vec3i:   return zeno::reflect::type_info<zeno::vec3i>();
-        case gParamType_Vec4i:   return zeno::reflect::type_info<zeno::vec4i>();
-        case gParamType_Vec2f:   return zeno::reflect::type_info<zeno::vec2f>();
-        case gParamType_Vec3f:   return zeno::reflect::type_info<zeno::vec3f>();
-        case gParamType_Vec4f:   return zeno::reflect::type_info<zeno::vec4f>();
-        case gParamType_IObject://TODO: vdbgrid: VDBFloatGrid or VDBFloat3Grid VDBPointsGrid?
-            return zeno::reflect::type_info<std::shared_ptr<IObject>>();
-        case gParamType_Primitive:    return zeno::reflect::type_info<std::shared_ptr<zeno::PrimitiveObject>>();
-        case gParamType_Camera:  return zeno::reflect::type_info<std::shared_ptr<zeno::CameraObject>>();
-        case gParamType_Light:   return zeno::reflect::type_info<std::shared_ptr<zeno::LightObject>>();
-        case gParamType_Dict:    return zeno::reflect::type_info<std::shared_ptr<zeno::DictObject>>();
-        case gParamType_List:    return zeno::reflect::type_info<std::shared_ptr<zeno::ListObject>>();
-        case gParamType_Curve:   return zeno::reflect::type_info<zeno::CurvesData>();
-        case gParamType_Heatmap: return zeno::reflect::type_info<zeno::HeatmapData>();
-        default:
-            //no supporting right now.
-            //assert(false);
-            return { "<default_type>", 0, 0 };
-        }
-    }
-
     void initControlsByType(CustomUI& ui) {
         for (ParamTab& tab : ui.inputPrims.tabs)
         {
@@ -747,16 +718,9 @@ namespace zeno {
 
     bool isObjectType(const zeno::reflect::RTTITypeInfo& type, bool& isConstPtr)
     {
-        isConstPtr = false;
-        std::string name(type.name());
-        //目前没有太多办法很方便判断是否为对象类型，如果采用枚举值，就得不断登记，先用这种方式，后续可能采用register的方式。
-        if (name.find("shared_ptr<") != std::string::npos) {
-            isConstPtr = name.find("shared_ptr<const ") != std::string::npos;
-            return true;
-        }
-        else {
-            return false;
-        }
+        //目前TF_IsObject只是标识Object子类，不包括IObject，如果需要后者，可以判断TF_IsIObject.
+        return type.has_flags(TF_IsObject);
+        isConstPtr = name.find("shared_ptr<const ") != std::string::npos;
     }
 
     bool isObjectType(ParamType type)
@@ -806,7 +770,7 @@ namespace zeno {
         else if (isSameDimensionNumericVecType(outType, inType)) { //同维度数值vec互连
             return true;
         }
-        else if (zeno::reflect::get_type<std::shared_ptr<zeno::IObject>>().type_hash() == inType && isObjectType(outType)) {    //outType的Obj类型可以转IObject
+        else if (gParamType_IObject == inType && isObjectType(outType)) {    //outType的Obj类型可以转IObject
             return true;
         }
         else{

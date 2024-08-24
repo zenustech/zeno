@@ -154,7 +154,7 @@ ZENO_DEFNODE(ZGL_DrawVboArrays)({
 
 struct ZGL_ClearColor : INode {
     void apply() override {
-        auto color = get_input2<vec3f>("color");
+        auto color = get_input2<zeno::vec3f>("color");
         auto alpha = get_input2<float>("alpha");
         CHECK_GL(glClearColor(color[0], color[1], color[2], alpha));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));

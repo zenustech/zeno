@@ -76,11 +76,11 @@ ZENO_CAPI Zeno_Error Zeno_CreateObjectInt(Zeno_Object *objectRet_, const int *va
         if (dim_ == 1)
             *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(value_[0]));
         else if (dim_ == 2)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec2i(value_[0], value_[1])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec2i(value_[0], value_[1])));
         else if (dim_ == 3)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec3i(value_[0], value_[1], value_[2])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec3i(value_[0], value_[1], value_[2])));
         else if (dim_ == 4)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec4i(value_[0], value_[1], value_[2], value_[3])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec4i(value_[0], value_[1], value_[2], value_[3])));
     });
 }
 
@@ -89,11 +89,11 @@ ZENO_CAPI Zeno_Error Zeno_CreateObjectFloat(Zeno_Object *objectRet_, const float
         if (dim_ == 1)
             *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(value_[0]));
         else if (dim_ == 2)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec2f(value_[0], value_[1])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec2f(value_[0], value_[1])));
         else if (dim_ == 3)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec3f(value_[0], value_[1], value_[2])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec3f(value_[0], value_[1], value_[2])));
         else if (dim_ == 4)
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(vec4f(value_[0], value_[1], value_[2], value_[3])));
+            *objectRet_ = PyZeno::lutObject.create(std::make_shared<NumericObject>(zeno::vec4f(value_[0], value_[1], value_[2], value_[3])));
     });
 }
 
@@ -131,19 +131,19 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectLiterialType(Zeno_Object object_, int *typeRe
             if (auto numptr = dynamic_cast<NumericObject *>(optr)) {
                 if (numptr->is<int>())
                     return 11;
-                if (numptr->is<vec2i>())
+                if (numptr->is<zeno::vec2i>())
                     return 12;
-                if (numptr->is<vec3i>())
+                if (numptr->is<zeno::vec3i>())
                     return 13;
-                if (numptr->is<vec4i>())
+                if (numptr->is<zeno::vec4i>())
                     return 14;
                 if (numptr->is<float>())
                     return 21;
-                if (numptr->is<vec2f>())
+                if (numptr->is<zeno::vec2f>())
                     return 22;
-                if (numptr->is<vec3f>())
+                if (numptr->is<zeno::vec3f>())
                     return 23;
-                if (numptr->is<vec4f>())
+                if (numptr->is<zeno::vec4f>())
                     return 24;
             }
             return 0;
@@ -161,16 +161,16 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectInt(Zeno_Object object_, int *value_, size_t 
             auto const &val = ptr->get<int>();
             value_[0] = val;
         } else if (dim_ == 2) {
-            auto const &val = ptr->get<vec2i>();
+            auto const &val = ptr->get<zeno::vec2i>();
             value_[0] = val[0];
             value_[1] = val[1];
         } else if (dim_ == 3) {
-            auto const &val = ptr->get<vec3i>();
+            auto const &val = ptr->get<zeno::vec3i>();
             value_[0] = val[0];
             value_[1] = val[1];
             value_[2] = val[2];
         } else if (dim_ == 4) {
-            auto const &val = ptr->get<vec4i>();
+            auto const &val = ptr->get<zeno::vec4i>();
             value_[0] = val[0];
             value_[1] = val[1];
             value_[2] = val[2];
@@ -189,16 +189,16 @@ ZENO_CAPI Zeno_Error Zeno_GetObjectFloat(Zeno_Object object_, float *value_, siz
             auto const &val = ptr->get<float>();
             value_[0] = val;
         } else if (dim_ == 2) {
-            auto const &val = ptr->get<vec2f>();
+            auto const &val = ptr->get<zeno::vec2f>();
             value_[0] = val[0];
             value_[1] = val[1];
         } else if (dim_ == 3) {
-            auto const &val = ptr->get<vec3f>();
+            auto const &val = ptr->get<zeno::vec3f>();
             value_[0] = val[0];
             value_[1] = val[1];
             value_[2] = val[2];
         } else if (dim_ == 4) {
-            auto const &val = ptr->get<vec4f>();
+            auto const &val = ptr->get<zeno::vec4f>();
             value_[0] = val[0];
             value_[1] = val[1];
             value_[2] = val[2];

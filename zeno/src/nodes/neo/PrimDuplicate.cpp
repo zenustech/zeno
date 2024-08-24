@@ -81,9 +81,9 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
                 });
             };
             if constexpr (hasDirAttr.value) {
-                auto const &accDir = parsPrim->attr<vec3f>(dirAttr);
+                auto const &accDir = parsPrim->attr<zeno::vec3f>(dirAttr);
                 if (!tanAttr.empty())
-                    func(accDir, std::true_type{}, parsPrim->attr<vec3f>(tanAttr));
+                    func(accDir, std::true_type{}, parsPrim->attr<zeno::vec3f>(tanAttr));
                 else
                     func(accDir, std::false_type{}, std::array<int, 0>{});
             } else {

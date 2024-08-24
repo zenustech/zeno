@@ -34,6 +34,7 @@
 #include "layout/zdockwidget.h"
 #include "calculation/calculationmgr.h"
 #include "model/GraphModel.h"
+#include "dialog/ZOptixCameraSetting.h"
 
 
 
@@ -748,6 +749,18 @@ DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     , m_background(nullptr)
 {
 }
+void DockContent_View::keyPressEvent(QKeyEvent *event) {
+    DockToolbarWidget::keyPressEvent(event);
+    int uKey = event->key();
+    if (uKey == Qt::Key_C) {
+        auto state = m_depth->checkState();
+        m_depth->setCheckState(state == Qt::Checked? Qt::Unchecked : Qt::Checked);
+    }
+    else if (uKey == Qt::Key_N) {
+        auto state = m_FPN->checkState();
+        m_FPN->setCheckState(state == Qt::Checked? Qt::Unchecked : Qt::Checked);
+    }
+}
 
 void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 {
@@ -950,8 +963,22 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
         pToolLayout->addWidget(m_background);
+        m_camera_setting = new QPushButton("Camera");
+        pToolLayout->addWidget(m_camera_setting);
     }
 
+    {
+    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
+        m_depth = new QCheckBox(tr("Depth[C]"));
+        m_depth->setStyleSheet("color: white;");
+        m_depth->setCheckState(Qt::Checked);
+        pToolLayout->addWidget(m_depth);
+        m_FPN = new QCheckBox(tr("FPN[N]"));
+        m_FPN->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_FPN);
+        m_Reset = new QPushButton(tr("Reset"));
+        pToolLayout->addWidget(m_Reset);
+    }
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
     pToolLayout->addWidget(m_recordVideo);
@@ -989,6 +1016,36 @@ void DockContent_View::initConnections()
         });
     }
 
+    connect(m_depth, &QCheckBox::stateChanged, this, [=](int state) {
+        bool bChecked = (state == Qt::Checked);
+        zeno::getSession().userData().set2("viewport-depth-aware-navigation", bChecked);
+    });
+
+    connect(m_FPN, &QCheckBox::stateChanged, this, [=](int state) {
+        bool bChecked = (state == Qt::Checked);
+        zeno::getSession().userData().set2("viewport-FPN-navigation", bChecked);
+    });
+
+    if (m_camera_setting) {
+        connect(m_camera_setting, &QPushButton::clicked, this, [=](bool bToggled) {
+            zenovis::ZOptixCameraSettingInfo info = m_pDisplay->getCamera();
+//            zeno::log_info("get Camera from optix thread {}", info.iso);
+
+            ZOptixCameraSetting dialog(info);
+            if (dialog.exec() == QDialog::Accepted) {
+//                zeno::log_info("set ZOptixCameraSettingInfo");
+                m_pDisplay->onSetCamera(info);
+            }
+        });
+    }
+    if (m_Reset) {
+        connect(m_Reset, &QPushButton::clicked, this, [=](bool bToggled) {
+            auto *scene = m_pDisplay->getZenoVis()->getSession()->get_scene();
+            scene->camera->reset();
+            m_pDisplay->updateFrame();
+        });
+    }
+
     connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SMOOTH_SHADING, bToggled);
     });
@@ -1017,20 +1074,7 @@ void DockContent_View::initConnections()
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
     connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
-        auto &ud = zeno::getSession().userData();
-        ud.set2("optix_show_background", state > 0);
-
-        {
-            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
-            ZASSERT_EXIT(pZenoVis);
-            auto session = pZenoVis->getSession();
-            ZASSERT_EXIT(session);
-            auto scene = session->get_scene();
-            ZASSERT_EXIT(scene);
-            scene->objectsMan->needUpdateLight = true;
-            m_pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        }
+        m_pDisplay->onSetBackground(state > 0);
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {

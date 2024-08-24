@@ -5,7 +5,6 @@
 #include <zeno/utils/log.h>
 
 #include <zeno/zeno.h>
-#include <zeno/utils/eulerangle.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/NumericObject.h>
@@ -32,7 +31,6 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <fstream>
-#include <regex>
 
 #define SET_CAMERA_DATA                         \
     out_pos = (n->pos);                       \
@@ -85,58 +83,6 @@ ZENO_DEFNODE(CihouMayaCameraFov)({
         {gParamType_Float, "fov"},
     },
     {},
-    {"FBX"},
-});
-
-struct CameraNode: zeno::INode{
-    virtual void apply() override {
-        auto camera = std::make_shared<zeno::CameraObject>();
-
-        camera->pos = get_input2<zeno::vec3f>("pos");
-        camera->up = get_input2<zeno::vec3f>("up");
-        camera->view = get_input2<zeno::vec3f>("view");
-        camera->fov = get_input2<float>("fov");
-        camera->aperture = get_input2<float>("aperture");
-        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
-        camera->userData().set2("frame", get_input2<float>("frame"));
-
-        std::string other_props = get_input2<StringObject>("other")->get();
-        std::regex reg(",");
-        std::sregex_token_iterator p(other_props.begin(), other_props.end(), reg, -1);
-        std::sregex_token_iterator end;
-        std::vector<float> prop_vals;
-        while (p != end) {
-            prop_vals.push_back(std::stof(*p));
-            p++;
-        }
-        if (prop_vals.size() == 6) {
-            camera->isSet = true;
-            camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
-            camera->theta = prop_vals[3];
-            camera->phi = prop_vals[4];
-            camera->radius = prop_vals[5];
-        }
-
-        set_output("camera", std::move(camera));
-    }
-};
-
-ZENO_DEFNODE(CameraNode)({
-    {
-        {gParamType_Vec3f, "pos", "0,0,5"},
-        {gParamType_Vec3f, "up", "0,1,0"},
-        {gParamType_Vec3f, "view", "0,0,-1"},
-        {gParamType_Float, "fov", "45"},
-        {gParamType_Float, "aperture", "11"},
-        {gParamType_Float, "focalPlaneDistance", "2.0"},
-        {gParamType_String, "other", ""},
-        {gParamType_Int, "frame", "0"},
-    },
-    {
-        {gParamType_Camera, "camera"},
-    },
-    {
-    },
     {"FBX"},
 });
 

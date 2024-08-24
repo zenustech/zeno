@@ -11,11 +11,11 @@ namespace {
 
 struct MakeOrthonormalBase : INode {
     virtual void apply() override {
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         normal = normalize(normal);
         vec3f tangent, bitangent;
         if (has_input("tangent")) {
-            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             bitangent = cross(normal, tangent);
         } else {
             tangent = vec3f(0, 0, 1);
@@ -46,9 +46,9 @@ struct OrthonormalBase : INode {
     virtual void apply() override {
         std::unique_ptr<orthonormal> orb;
 
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         if (has_input("tangent")) {
-            auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            auto tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             orb = std::make_unique<orthonormal>(normal, tangent);
         } else {
             orb = std::make_unique<orthonormal>(normal);
@@ -70,10 +70,10 @@ ZENDEFNODE(OrthonormalBase, {
 
 struct PixarOrthonormalBase : INode {
     virtual void apply() override {
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
+        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
         vec3f tangent{}, bitangent{};
         if (has_input("tangent")) {
-            tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+            tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
             guidedPixarONB(normal, tangent, bitangent);
         } else {
             pixarONB(normal, tangent, bitangent);
@@ -95,10 +95,10 @@ ZENDEFNODE(PixarOrthonormalBase, {
 
 struct AABBCollideDetect : INode {
     virtual void apply() override {
-        auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
-        auto bmaxA = get_input<NumericObject>("bmaxA")->get<vec3f>();
-        auto bminB = get_input<NumericObject>("bminB")->get<vec3f>();
-        auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
+        auto bminA = get_input<NumericObject>("bminA")->get<zeno::vec3f>();
+        auto bmaxA = get_input<NumericObject>("bmaxA")->get<zeno::vec3f>();
+        auto bminB = get_input<NumericObject>("bminB")->get<zeno::vec3f>();
+        auto bmaxB = get_input<NumericObject>("bmaxB")->get<zeno::vec3f>();
 
         // https://www.cnblogs.com/liez/p/11965027.html
         bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA + bmaxB - bminB));
@@ -119,7 +119,7 @@ ZENDEFNODE(AABBCollideDetect, {
 
 struct ProjectAndNormalize : INode {
     virtual void apply() override {
-        auto vec = get_input<NumericObject>("vec")->get<vec3f>();
+        auto vec = get_input<NumericObject>("vec")->get<zeno::vec3f>();
         auto plane = get_input2<std::string>("plane");
 
         std::array<vec3f, 2> orb;

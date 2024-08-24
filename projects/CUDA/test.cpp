@@ -21,6 +21,12 @@
 #include "zensim/execution/ConcurrencyPrimitive.hpp"
 #include "zensim/visitors/Print.hpp"
 
+#if 0
+#include "glm/glm.hpp"
+#include "glm/gtx/quaternion.hpp"
+#include <zeno/utils/log.h>
+#endif
+
 namespace zeno {
 
 struct spinlock {
@@ -442,6 +448,16 @@ struct ZSLinkTest : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
+
+#if 0
+        glm::vec3 v{1, 2, 3};
+        glm::mat3 m;
+        glm::quat q= {1, 0, 0, 0};
+        zeno::log_info("glm vec3: {}", v);
+        zeno::log_info("glm mat3: {}", m);
+        zeno::log_info("glm quat: {}", q);
+#endif
+
 #if 0
         using namespace zs;
         zs::initialize_openvdb();
@@ -839,7 +855,7 @@ struct TestAdaptiveGrid : INode {
             auto cc = c.cast<f32>() / 3;
             auto vv = zsagv.iSample(0, cc);
             openvdb::FloatGrid::ValueType vref = sampler.isSample(openvdb::Vec3R(cc[0], cc[1], cc[2]));
-            if (zs::abs(vref - vv) >= limits<float>::epsilon()) {
+            if (zs::abs(vref - vv) >= detail::deduce_numeric_epsilon<float>()) {
                 fmt::print(fg(fmt::color::green), "sampled value is {} ({}) at {}, {}, {}\n", v, vv, vref, cc[0], cc[1],
                            cc[2]);
             }

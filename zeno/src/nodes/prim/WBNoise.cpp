@@ -136,7 +136,7 @@ struct erode_noise_perlin : INode {
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -145,7 +145,7 @@ struct erode_noise_perlin : INode {
         {
             zeno::log_error("no such data named '{}'.", vec3fAttrName);
         }
-        auto& vec3fAttr = terrain->verts.attr<vec3f>(vec3fAttrName);
+        auto& vec3fAttr = terrain->verts.attr<zeno::vec3f>(vec3fAttrName);
 
 
         terrain->attr_visit(attrName, [&](auto& arr) {
@@ -536,7 +536,7 @@ struct erode_noise_simplex : INode {
         auto attrName = get_param<std::string>("attrName");
         auto attrType = get_param<std::string>("attrType");
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -545,7 +545,7 @@ struct erode_noise_simplex : INode {
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
         terrain->attr_visit(attrName, [&](auto& arr) {
 #pragma omp parallel for
@@ -740,16 +740,16 @@ struct erode_noise_analytic_simplex_2d : INode {
 
         auto attrName = get_param<std::string>("attrName");
         if (!terrain->has_attr(attrName)) {
-            terrain->add_attr<vec3f>(attrName);
+            terrain->add_attr<zeno::vec3f>(attrName);
         }
-        auto& noise = terrain->verts.attr<vec3f>(attrName);
+        auto& noise = terrain->verts.attr<zeno::vec3f>(attrName);
 
         auto posLikeAttrName = get_input<StringObject>("posLikeAttrName")->get();
         if (!terrain->verts.has_attr(posLikeAttrName))
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
 #pragma omp parallel for
         for (int i = 0; i < terrain->verts.size(); i++)
@@ -872,13 +872,13 @@ struct NoiseImageGen2 : INode {//todo::image shape should same when pixel aspect
 
     virtual void apply() override {
         auto perC = get_input2<bool>("noise per component");
-        auto image_size = get_input2<vec2i>("image size");
+        auto image_size = get_input2<zeno::vec2i>("image size");
         auto seed = get_input2<int>("seed");
         auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
         auto roughness = get_input2<float>("roughness");
         auto exponent = get_input2<float>("exponent");
-        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
-        auto amplitude = get_input2<vec4f>("amplitude");
+        auto frequency = get_input2<zeno::vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<zeno::vec4f>("amplitude");
         auto pulsenum = get_input2<int>("pulsenum");
 
         auto image = std::make_shared<PrimitiveObject>();
@@ -1037,13 +1037,13 @@ struct NoiseImageGen : INode {
 
     virtual void apply() override {
         auto perC = get_input2<bool>("noise per component");
-        auto image_size = get_input2<vec2i>("image size");
+        auto image_size = get_input2<zeno::vec2i>("image size");
         auto seed = get_input2<int>("seed");
         auto turbulence = get_input2<int>("turbulence")+1; // tofix: think the case that turbulence = 0
         auto roughness = get_input2<float>("roughness");
         auto exponent = get_input2<float>("exponent");
-        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
-        auto amplitude = get_input2<vec4f>("amplitude");
+        auto frequency = get_input2<zeno::vec2f>("spatial frequency") * 0.001f; // tofix: mysterious scale?
+        auto amplitude = get_input2<zeno::vec4f>("amplitude");
 
         auto image = std::make_shared<PrimitiveObject>();
         image->verts.resize(image_size[0] * image_size[1]);
@@ -1139,7 +1139,7 @@ struct erode_noise_sparse_convolution : INode {
 
         if (!terrain->has_attr(attrName)) {
             if (attrType == "float3")
-                terrain->add_attr<vec3f>(attrName);
+                terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float")
                 terrain->add_attr<float>(attrName);
         }
@@ -1149,7 +1149,7 @@ struct erode_noise_sparse_convolution : INode {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
 
-        auto &pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto &pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
 
         terrain->attr_visit(attrName, [&](auto &arr) {
 #pragma omp parallel for
@@ -1327,7 +1327,7 @@ struct Noise_gabor_2d : INode {
         if (!terrain->verts.has_attr(posLikeAttrName)) {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto &pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto &pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
         
         glm::vec3 ret{};
         auto K_ = 2.5f;  // act on spectrum
@@ -1444,7 +1444,7 @@ struct erode_noise_worley : INode {
         {
             zeno::log_error("no such data named '{}'.", posLikeAttrName);
         }
-        auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
+        auto& pos = terrain->verts.attr<zeno::vec3f>(posLikeAttrName);
         auto jitter = get_input2<float>("celljitter");
         vec3f offset;
         if (!has_input("seed")) {
@@ -1453,7 +1453,7 @@ struct erode_noise_worley : INode {
             offset = vec3f(unif(gen), unif(gen), unif(gen));
         }
         else {
-            offset = get_input<NumericObject>("seed")->get<vec3f>();
+            offset = get_input<NumericObject>("seed")->get<zeno::vec3f>();
         }
 
         int fType = 0;
@@ -1471,7 +1471,7 @@ struct erode_noise_worley : INode {
         auto attrType = get_param<std::string>("attrType");
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1565,7 +1565,7 @@ struct erode_hybridMultifractal_v1 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1650,7 +1650,7 @@ struct erode_hybridMultifractal_v2 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1733,7 +1733,7 @@ struct erode_hybridMultifractal_v3 : INode {
         auto& pos = terrain->verts;
 
         if (!terrain->has_attr(attrName)) {
-            if (attrType == "float3") terrain->add_attr<vec3f>(attrName);
+            if (attrType == "float3") terrain->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") terrain->add_attr<float>(attrName);
         }
 
@@ -1811,7 +1811,7 @@ struct erode_domainWarping_v1 : INode {
         auto attrType = get_param<std::string>("attrType");
         auto& pos = prim->verts;
         if (!prim->has_attr(attrName)) {
-            if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+            if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") prim->add_attr<float>(attrName);
         }
 
@@ -1877,7 +1877,7 @@ struct erode_domainWarping_v2 : INode {
         auto attrType = get_param<std::string>("attrType");
         auto& pos = prim->verts;
         if (!prim->has_attr(attrName)) {
-            if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+            if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
             else if (attrType == "float") prim->add_attr<float>(attrName);
         }
 
@@ -1939,10 +1939,10 @@ struct erode_voronoi : INode {
 
         auto attrName = get_param<std::string>("attrName");
         if (!prim->has_attr(attrName)) { prim->add_attr<float>(attrName); }
-        if (!prim->has_attr("minFeaturePointPos")) { prim->add_attr<vec3f>("minFeaturePointPos"); }
+        if (!prim->has_attr("minFeaturePointPos")) { prim->add_attr<zeno::vec3f>("minFeaturePointPos"); }
 
         auto& attr_voro = prim->attr<float>(attrName);
-        auto& attr_mFPP = prim->attr<vec3f>("minFeaturePointPos");
+        auto& attr_mFPP = prim->attr<zeno::vec3f>("minFeaturePointPos");
 
         auto& samplePoints = prim->verts;
         auto& featurePoints = featurePrim->verts;
@@ -1983,7 +1983,7 @@ void assign_clusters(std::vector<clusterPointset>& cpoints, const std::vector<cl
         cpoints[i].pointnumber = i;
         cpoints[i].clusterid = -1;
         for (const auto& c : clusters) {
-            float dist = zeno::distance(c.center, prim->verts.attr<vec3f>(attrName)[i]);
+            float dist = zeno::distance(c.center, prim->verts.attr<zeno::vec3f>(attrName)[i]);
             if (dist < smallest_dist) {
                 smallest_dist = dist;
                 cpoints[i].clusterid = c.id;
@@ -2004,7 +2004,7 @@ struct Primcluster : INode {//todo:: just for color ramp now
 
         std::default_random_engine generator(seed);
         std::uniform_real_distribution<float> distribution(0.0, 1.0);
-        auto &attr = prim->verts.attr<vec3f>(attrName);//only test with vec3f now
+        auto &attr = prim->verts.attr<zeno::vec3f>(attrName);//only test with vec3f now
         
 
         std::vector<clusterset> old_clusters;
@@ -2051,7 +2051,7 @@ struct Primcluster : INode {//todo:: just for color ramp now
             _iter++;
         }
         for(int i = 0; i < old_clusters.size(); i++){
-            prim->verts.add_attr<vec3f>(outputattr)[i] = old_clusters[i].center;
+            prim->verts.add_attr<zeno::vec3f>(outputattr)[i] = old_clusters[i].center;
         }
         
             set_output("prim", get_input("prim"));

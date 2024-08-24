@@ -240,9 +240,9 @@ struct CompBlur : INode {//TODO::delete
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto s = get_input2<int>("strength");
-        auto ktop = get_input2<vec3f>("kerneltop");
-        auto kmid = get_input2<vec3f>("kernelmid");
-        auto kbot = get_input2<vec3f>("kernelbot");
+        auto ktop = get_input2<zeno::vec3f>("kerneltop");
+        auto kmid = get_input2<zeno::vec3f>("kernelmid");
+        auto kbot = get_input2<zeno::vec3f>("kernelbot");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -374,7 +374,7 @@ struct CompImport : INode {
         int nx = ud.has("nx")?ud.get2<int>("nx"):ud.get2<int>("w");
         int ny = ud.has("ny")?ud.get2<int>("ny"):ud.get2<int>("h");
         auto attrName = get_input2<std::string>("attrName");
-        auto remapRange = get_input2<vec2f>("RemapRange");
+        auto remapRange = get_input2<zeno::vec2f>("RemapRange");
         auto remap = get_input2<bool>("Remap");
         auto image = std::make_shared<PrimitiveObject>();
         auto attributesType = get_input2<std::string>("AttributesType");

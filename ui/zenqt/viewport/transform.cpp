@@ -115,26 +115,22 @@ bool FakeTransformer::calcTransformStart(glm::vec3 ori, glm::vec3 dir, glm::vec3
     return true;
 }
 
-bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front) {
+bool FakeTransformer::clickedAnyHandler(glm::vec3 ori, glm::vec3 dir, glm::vec3 front) {
     if (!m_handler) return false;
-    auto ray_ori = QVec3ToGLMVec3(ori);
-    auto ray_dir = QVec3ToGLMVec3(dir);
-    m_operation_mode = m_handler->handleClick(ray_ori, ray_dir);
-    if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
+    m_operation_mode = m_handler->handleClick(ori, dir);
+    if (!calcTransformStart(ori, dir, front)) return false;
     return m_operation_mode != zenovis::INTERACT_NONE;
 }
 
-bool FakeTransformer::hoveredAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 front)
+bool FakeTransformer::hoveredAnyHandler(glm::vec3 ori, glm::vec3 dir, glm::vec3 front)
 {
     if (!m_handler) return false;
-    auto ray_ori = QVec3ToGLMVec3(ori);
-    auto ray_dir = QVec3ToGLMVec3(dir);
-    int mode = m_handler->handleHover(ray_ori, ray_dir);
-    if (!calcTransformStart(ray_ori, ray_dir, front)) return false;
+    int mode = m_handler->handleHover(ori, dir);
+    if (!calcTransformStart(ori, dir, front)) return false;
     return mode != zenovis::INTERACT_NONE;
 }
 
-void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
+void FakeTransformer::transform(glm::vec3 camera_pos, glm::vec3 ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
 
     auto pZenovis = m_viewport->getZenoVis();
@@ -144,8 +140,8 @@ void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::ve
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
 
-    auto ori = QVec3ToGLMVec3(camera_pos);
-    auto dir = QVec3ToGLMVec3(ray_dir);
+    auto ori = camera_pos;
+    auto dir = ray_dir;
 
     auto x_axis = glm::vec3(1, 0, 0);
     auto y_axis = glm::vec3(0, 1, 0);

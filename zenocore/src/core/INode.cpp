@@ -35,6 +35,7 @@
 
 
 using namespace zeno::reflect;
+using namespace zeno::types;
 
 
 namespace zeno {
@@ -348,13 +349,12 @@ void INode::mark_dirty_objs()
 {
     for (auto const& [name, param] : m_outputObjs)
     {
-        if (param.spObject.has_value()) {
-            zany spObject = zeno::reflect::any_cast<zany>(param.spObject);
-            assert(spObject);
-            if (spObject->key().empty()) {
+        if (param.spObject) {
+            assert(param.spObject);
+            if (param.spObject->key().empty()) {
                 continue;
             }
-            getSession().objsMan->collect_removing_objs(spObject->key());
+            getSession().objsMan->collect_removing_objs(param.spObject->key());
         }
     }
 }
@@ -428,16 +428,17 @@ ZENO_API void INode::reflecNode_apply()
                         if (iter != m_inputPrims.end()) {
                             auto& val = iter->second.result;
                             if (val.has_value()) {
-                                inputAny = zeno::reflect::move(val);
+                                inputAny = val;
                             }
                             else {
-                                inputAny = zeno::reflect::move(iter->second.defl);
+                                inputAny = iter->second.defl;
                             }
                         }
                         else {
                             auto iter2 = m_inputObjs.find(inputName);
-                            if (iter2 != m_inputObjs.end())
-                                inputAny = zeno::reflect::move(iter2->second.spObject);
+                            if (iter2 != m_inputObjs.end()) {
+                                inputAny = iter2->second.spObject;
+                        }
                         }
                         paramValues.add_item(inputAny);
                     }
@@ -474,8 +475,9 @@ ZENO_API void INode::reflecNode_apply()
                                 }
                                 else {
                                     auto iter2 = m_inputObjs.find(param_name);
-                                    if (iter2 != m_inputObjs.end())
-                                        inputAny = /*zeno::reflect::move(*/iter2->second.spObject;
+                                    if (iter2 != m_inputObjs.end()) {
+                                        inputAny = iter2->second.spObject;
+                                }
                                 }
                                 if (inputAny.has_value())
                                     field->set_field_value(this, inputAny);
@@ -483,14 +485,17 @@ ZENO_API void INode::reflecNode_apply()
                         }
                     }
                 }
+
                 //调用apply
                 zeno::reflect::Any res = func->invoke_unsafe(this, paramValues);
+
                 //从apply参数/返回值获取输出
                 for (int i = paramValues.size() - 1; i > paramValues.size() - outputsName.size() - 1; i--) {
                     auto iter = m_outputObjs.find(getOutputParamNameFromFieldName(field_names[i].c_str(), false));
                     if (iter != m_outputObjs.end()) {
-                        if (paramValues[i].has_value() && params[i].get_decayed_hash() == zeno::reflect::type_info<std::shared_ptr<zeno::IObject>>().hash_code()) {
-                            iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
+                        if (paramValues[i].has_value() && params[i].has_flags(TF_IsObject)) {
+                            //TODO: 从引用参数传出至shared_ptr<IObject>
+                            //iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(paramValues[i]);
                         }
                     }
                     else {
@@ -506,7 +511,7 @@ ZENO_API void INode::reflecNode_apply()
                 if (zeno::isObjectType(rtti, bConstPtr)) {
                     auto iter = m_outputObjs.find("result");
                     if (iter != m_outputObjs.end()) {
-                        iter->second.spObject = res;
+                        iter->second.spObject = any_cast<zany>(res);
                     }
                 }
                 else {
@@ -537,12 +542,15 @@ ZENO_API void INode::reflecNode_apply()
                                     else {
                                         auto iter2 = m_outputObjs.find(param_name);
                                         if (iter2 != m_outputObjs.end())
-                                            iter2->second.spObject = zeno::reflect::any_cast<std::shared_ptr<IObject>>(outputAny);
+                                        {
+                                            //TODO: need to parse on the param, not only return value.
+                                            //iter2->second.spObject = zeno::reflect::any_cast<std::shared_ptr<IObject>>(outputAny);
                                     }
                                 }
                             }
                         }
                     }
+                }
                 }
                 break;
             }
@@ -554,30 +562,27 @@ ZENO_API void INode::registerObjToManager()
 {
     for (auto const& [name, param] : m_outputObjs)
     {
-        if (param.spObject.has_value())
+        if (param.spObject)
         {
-            zany spObject = zeno::reflect::any_cast<zany>(param.spObject);
-            assert(spObject);
-
-            if (std::dynamic_pointer_cast<NumericObject>(spObject) ||
-                std::dynamic_pointer_cast<StringObject>(spObject)) {
+            if (std::dynamic_pointer_cast<NumericObject>(param.spObject) ||
+                std::dynamic_pointer_cast<StringObject>(param.spObject)) {
                 return;
             }
 
-            if (spObject->key().empty())
+            if (param.spObject->key().empty())
             {
                 //如果当前节点是引用前继节点产生的obj，则obj.key不为空，此时就必须沿用之前的id，
                 //以表示“引用”，否则如果新建id，obj指针可能是同一个，会在manager引起混乱。
-                spObject->update_key(m_uuid);
+                param.spObject->update_key(m_uuid);
             }
 
-            const std::string& key = spObject->key();
+            const std::string& key = param.spObject->key();
             assert(!key.empty());
-            spObject->nodeId = m_name;
+            param.spObject->nodeId = m_name;
 
             auto& objsMan = getSession().objsMan;
             std::shared_ptr<INode> spNode = shared_from_this();
-            objsMan->collectingObject(spObject, spNode, m_bView);
+            objsMan->collectingObject(param.spObject, spNode, m_bView);
         }
     }
 }
@@ -601,9 +606,9 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
                 }, outNode.get());
 
             auto outResult = outNode->get_output_obj(out_param->name);
-            assert(outResult.has_value());
-            assert(out_param->type == zeno::types::gParamType_Dict);
-            spDict = any_cast<std::shared_ptr<DictObject>>(outResult);
+            assert(outResult);
+            assert(out_param->type == gParamType_Dict);
+            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
         }
     }
     if (!bDirecyLink)
@@ -620,8 +625,8 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
                 }, outNode.get());
 
             auto outResult = outNode->get_output_obj(out_param->name);
-            assert(outResult.has_value());
-            spDict->lut[keyName] = zeno::reflect::any_cast<zany>(outResult);
+            assert(outResult);
+            spDict->lut[keyName] = outResult;
         }
     }
     return spDict;
@@ -644,9 +649,9 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
                 }, outNode.get());
 
             auto outResult = outNode->get_output_obj(out_param->name);
-            assert(outResult.has_value());
-            assert(out_param->type == zeno::types::gParamType_List);
-            spList = any_cast<std::shared_ptr<ListObject>>(outResult);
+            assert(outResult);
+            assert(out_param->type == gParamType_List);
+            spList = std::dynamic_pointer_cast<ListObject>(outResult);
         }
     }
     if (!bDirectLink)
@@ -664,16 +669,14 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
                     }, outNode.get());
 
                 auto outResult = outNode->get_output_obj(out_param->name);
-                assert(outResult.has_value());
-                zany outResultObj = zeno::reflect::any_cast<zany>(outResult);
-                spList->push_back(outResultObj);
+                assert(outResult);
+                spList->push_back(outResult);
                 //spList->dirtyIndice.insert(indx);
             }
             else {
                 auto outResult = outNode->get_output_obj(out_param->name);
-                assert(outResult.has_value());
-                zany outResultObj = zeno::reflect::any_cast<zany>(outResult);
-                spList->push_back(outResultObj);
+                assert(outResult);
+                spList->push_back(outResult);
             }
         }
     }
@@ -739,12 +742,12 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         break;
     }
     //这里指的是基础类型的List/Dict.
-    case zeno::types::gParamType_List:
+    case gParamType_List:
     {
         //TODO: List现在还没有ui支持，而且List是泛型容器，对于非Literal值不好设定默认值。
         break;
     }
-    case zeno::types::gParamType_Dict:
+    case gParamType_Dict:
     {
         break;
     }
@@ -752,16 +755,16 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
     return result;
 }
 
-bool INode::receiveOutputObj(ObjectParam* in_param, Any output, ParamType outobj_type) {
+bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType outobj_type) {
 
     if (in_param->socketType == Socket_Clone) {
-        in_param->spObject.deep_clone(output);
+        in_param->spObject = outputObj->clone();
     }
     else if (in_param->socketType == Socket_Owning) {
-        in_param->spObject.deep_move_clone(output);
+        in_param->spObject = outputObj->move_clone();
     }
     else if (in_param->socketType == Socket_ReadOnly) {
-        in_param->spObject = output;
+        in_param->spObject = outputObj;
         //TODO: readonly property on object.
     }
     return true;
@@ -780,19 +783,19 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
         else {
             switch (in_param->type)
             {
-                case zeno::types::gParamType_Dict:
+                case gParamType_Dict:
                 {
                     std::shared_ptr<DictObject> outDict = processDict(in_param);
-                    receiveOutputObj(in_param, outDict, zeno::types::gParamType_Dict);
+                    receiveOutputObj(in_param, outDict, gParamType_Dict);
                     break;
                 }
-                case zeno::types::gParamType_List:
+                case gParamType_List:
                 {
                     std::shared_ptr<ListObject> outList = processList(in_param);
-                    receiveOutputObj(in_param, outList, zeno::types::gParamType_List);
+                    receiveOutputObj(in_param, outList, gParamType_List);
                     break;
                 }
-                case zeno::types::gParamType_Curve:
+                case gParamType_Curve:
                 {
                     //Curve要视作Object，因为整合到variant太麻烦，只要对于最原始的MakeCurve节点，以字符串（储存json）作为特殊类型即可。
                 }
@@ -808,7 +811,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                             outNode->doApply();
                         }, outNode.get());
 
-                        if (out_param->spObject.has_value())
+                        if (out_param->spObject)
                         {
                             receiveOutputObj(in_param, out_param->spObject, out_param->type);
                         }
@@ -1866,9 +1869,8 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     }
     else {
         auto iter2 = m_inputObjs.find(id);
-        if (iter2 != m_inputObjs.end() && iter2->second.spObject.has_value()) {
-            zany spObject = zeno::reflect::any_cast<zany>(iter2->second.spObject);
-            return spObject;
+        if (iter2 != m_inputObjs.end()) {
+            return iter2->second.spObject;
         }
         return nullptr;
     }
@@ -1904,37 +1906,12 @@ bool INode::set_primitive_output(std::string const& id, const zeno::reflect::Any
     iter->second.result = val;
 }
 
-ZENO_API void INode::set_output_any(std::string const& param, zeno::reflect::Any obj) {
-    auto iter = m_outputObjs.find(param);
-    if (iter != m_outputObjs.end()) {
-        iter->second.spObject = obj;
-    }
-}
-
-#if 0
 ZENO_API bool INode::set_output(std::string const& param, zany obj) {
     //只给旧节点模块使用，如果函数暴露reflect::Any，就会迫使所有使用这个函数的cpp文件include headers
     //会增加程序体积以及编译时间，待后续生成文件优化后再考虑处理。
     auto iter = m_outputObjs.find(param);
     if (iter != m_outputObjs.end()) {
-        if (auto spObject = std::dynamic_pointer_cast<PrimitiveObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<LightObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<ListObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<DictObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else if (auto spObject = std::dynamic_pointer_cast<CameraObject>(obj)) {
-            iter->second.spObject = spObject;
-        }
-        else {
             iter->second.spObject = obj;
-        }
         return true;
     }
     else {
@@ -1990,9 +1967,8 @@ ZENO_API bool INode::set_output(std::string const& param, zany obj) {
     }
     return false;
 }
-#endif
 
-ZENO_API zeno::reflect::Any INode::get_output_obj(std::string const& param) {
+ZENO_API zany INode::get_output_obj(std::string const& param) {
     auto& spParam = safe_at(m_outputObjs, param, "miss output param `" + param + "` on node `" + m_name + "`");
     return spParam.spObject;
 }

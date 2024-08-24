@@ -112,7 +112,7 @@ static void deserialize(const std::vector<char> &str, AttrVector<T> &arr)
 
         if (attributeHeader->type == AttributeType::Vec3f)
         {
-            auto &attr = arr.template add_attr<vec3f>(key);
+            auto &attr = arr.template add_attr<zeno::vec3f>(key);
             attr.clear();
             attr.reserve(attributeHeader->size);
             std::copy_n((vec3f *)attributeHeader->buff, attributeHeader->size, std::back_inserter(attr));

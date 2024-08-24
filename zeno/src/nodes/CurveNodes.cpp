@@ -153,9 +153,9 @@ struct UpdateCurveControlPoint : zeno::INode {
         if (has_input("point_y"))
             data.cpoints[i].v = get_input2<float>("point_y");
         if (has_input("left_handler"))
-            data.cpoints[i].left_handler = get_input2<vec2f>("left_handler");
+            data.cpoints[i].left_handler = get_input2<zeno::vec2f>("left_handler");
         if (has_input("right_handler"))
-            data.cpoints[i].right_handler = get_input2<vec2f>("right_handler");
+            data.cpoints[i].right_handler = get_input2<zeno::vec2f>("right_handler");
 
         set_primitive_output("curve", *curve);
     }

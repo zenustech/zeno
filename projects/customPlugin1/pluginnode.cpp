@@ -21,7 +21,7 @@ namespace zeno
             {zeno::types::gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
         },
         {
-            {zeno::types::gParamType_Primitive, "prim"},
+            {gParamType_Primitive, "prim"},
         },
         {},
         {

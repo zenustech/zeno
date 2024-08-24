@@ -353,7 +353,7 @@ struct ZSMaintainSparseGrid : INode {
         else if (opt == 1)
             maintain(
                 zsSPG.get(), src_tag(zsSPG, tag),
-                [] __device__(float v) -> bool { return v > zs::limits<float>::epsilon() * 10; }, nlayers);
+                [] __device__(float v) -> bool { return v > zs::detail::deduce_numeric_epsilon<float>() * 10; }, nlayers);
         else if (opt == 2)
             maintain(
                 zsSPG.get(), src_tag(zsSPG, tag),

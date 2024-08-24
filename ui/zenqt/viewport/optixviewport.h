@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "recordvideomgr.h"
 #include "uicommon.h"
+#include "zenovis/Camera.h"
 #include <zeno/core/ObjectManager.h>
 
 class Zenovis;
@@ -43,6 +44,10 @@ public slots:
     void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void onCleanUpScene();
     void load_objects();
+    void onCleanUpView();
+    void onSetBackground(bool bShowBg);
+
+    void onSetData(float, float, float, bool, bool);
 
 private:
     Zenovis *m_zenoVis;
@@ -63,12 +68,13 @@ public:
     ~ZOptixViewport();
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
-    void cameraLookTo(int dir);
+    void cameraLookTo(zenovis::CameraLookToDir dir);
     void updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void updatePerspective();
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
+    void showBackground(bool bShow);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
@@ -82,6 +88,10 @@ public:
     void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
     void cleanUpScene();
     void load_objects();
+    void cleanupView();
+
+    zenovis::ZOptixCameraSettingInfo getdata_from_optix_thread();
+    void setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value);
 
 signals:
     void cameraAboutToRefresh();
@@ -103,6 +113,9 @@ signals:
     void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void sig_cleanUpScene();
     void sig_loadObjects();
+    void sig_cleanUpView();
+    void sig_setBackground(bool bShowBg);
+    void sig_setdata_on_optix_thread(float, float, float, bool, bool);
 
 public slots:
     void onFrameRunFinished(int frame);

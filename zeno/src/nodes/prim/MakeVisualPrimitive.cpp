@@ -16,16 +16,16 @@ struct MakeVisualAABBPrimitive : INode {
         auto dx = has_input("dx") ? //zhxxhappy
             get_input<NumericObject>("dx")->get<float>() : 1;
         auto a = has_input("boundMin")
-            ? get_input<NumericObject>("boundMin")->get<vec3f>()
+            ? get_input<NumericObject>("boundMin")->get<zeno::vec3f>()
             : vec3f(-0.5, -0.5, -0.5) * dx;
         auto b = has_input("boundMax")
-            ? get_input<NumericObject>("boundMax")->get<vec3f>()
+            ? get_input<NumericObject>("boundMax")->get<zeno::vec3f>()
             : vec3f(+0.5, +0.5, +0.5) * dx;
         
         auto connType = get_param<std::string>("type");
 
         auto prim = std::make_shared<PrimitiveObject>();
-        auto &pos = prim->add_attr<vec3f>("pos");
+        auto &pos = prim->add_attr<zeno::vec3f>("pos");
         prim->resize(8);
         pos[0] = vec3f(a[0], a[1], a[2]);
         pos[1] = vec3f(b[0], a[1], a[2]);

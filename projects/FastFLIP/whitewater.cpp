@@ -37,15 +37,15 @@ struct WhitewaterSource : INode {
         // pars->verts.values.push_back(vec3f{});
         // vel.push_back();
 
-        auto limit_depth = get_input2<vec2f>("LimitDepth");
-        auto speed_range = get_input2<vec2f>("SpeedRange");
+        auto limit_depth = get_input2<zeno::vec2f>("LimitDepth");
+        auto speed_range = get_input2<zeno::vec2f>("SpeedRange");
         auto curv_emit = get_input2<float>("EmitFromCurvature");
         auto max_angle = get_input2<float>("MaxVelocityAngle");
-        auto curv_range = get_input2<vec2f>("CurvatureRange");
+        auto curv_range = get_input2<zeno::vec2f>("CurvatureRange");
         auto acc_emit = get_input2<float>("EmitFromAcceleration");
-        auto acc_range = get_input2<vec2f>("AccelerationRange");
+        auto acc_range = get_input2<zeno::vec2f>("AccelerationRange");
         auto vor_emit = get_input2<float>("EmitFromVorticity");
-        auto vor_range = get_input2<vec2f>("VorticityRange");
+        auto vor_range = get_input2<zeno::vec2f>("VorticityRange");
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
 
@@ -210,7 +210,7 @@ struct WhitewaterSolver : INode {
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
         auto TargetVelAttr = get_input2<std::string>("TargetVelAttr");
 
-        auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
+        auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<zeno::vec3f>("Gravity"));
         auto dragModel = get_input2<std::string>("DragModel");
         auto air_drag = get_input2<float>("AirDrag");
         auto foam_drag = get_input2<float>("FoamDrag");

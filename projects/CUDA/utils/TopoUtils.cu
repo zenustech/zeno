@@ -152,7 +152,7 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
         using vec3 = RM_CVREF_T(t0);
         using T = typename vec3::value_type;
         auto nrm = (t1 - t0).cross(t2 - t0);
-        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+        if (auto len = nrm.l2NormSqr(); len > detail::deduce_numeric_epsilon<T>() * 10)
             nrm /= zs::sqrt(len);
         else
             nrm = vec3::zeros();
@@ -179,7 +179,7 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
         using vec3 = RM_CVREF_T(e0);
         using T = typename vec3::value_type;
         auto nrm = ne.cross(e10);
-        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+        if (auto len = nrm.l2NormSqr(); len > detail::deduce_numeric_epsilon<T>() * 10)
             nrm /= zs::sqrt(len);
         else
             nrm = vec3::zeros();

@@ -32,7 +32,7 @@ struct MakeVDBGrid : zeno::INode {
       auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloat3Grid>()
           : std::make_shared<VDBFloat3Grid>(openvdb::Vec3fGrid::create(
                   zeno::vec_to_other<openvdb::Vec3f>(get_input("background")
-                                                     ->as<NumericObject>()->get<vec3f>())));
+                                                     ->as<NumericObject>()->get<zeno::vec3f>())));
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       if (structure == "Staggered") {
