@@ -1,0 +1,36 @@
+#include <zeno/zeno.h>
+
+
+//基础类型也要写在这里
+
+registerObjectTypeUIInfo(Bool, Bool, "#FFFF00")
+registerObjectTypeUIInfo(Int, Int, "#FF0000")
+registerObjectTypeUIInfo(Float, Float, "#00FF00")
+registerObjectTypeUIInfo(String, String, "#CCA44E")
+registerObjectTypeUIInfo(Vec2i, Vec2i, "#FF00FF")
+registerObjectTypeUIInfo(Vec2f, Vec2f, "#FF00FF")
+registerObjectTypeUIInfo(Vec2s, Vec2s, "#FF00FF")
+registerObjectTypeUIInfo(Vec3i, Vec3i, "#FF00FF")
+registerObjectTypeUIInfo(Vec3f, Vec3f, "#FF00FF")
+registerObjectTypeUIInfo(Vec3s, Vec3s, "#FF00FF")
+registerObjectTypeUIInfo(Vec4i, Vec4i, "#FF00FF")
+registerObjectTypeUIInfo(Vec4f, Vec4f, "#FF00FF")
+registerObjectTypeUIInfo(Vec4s, Vec4s, "#FF00FF")
+registerObjectTypeUIInfo(Matrix3, Matrix3, "#FF00FF")
+registerObjectTypeUIInfo(Matrix4, Matrix4, "#FF00FF")
+registerObjectTypeUIInfo(StringList, StringList, "#FF00FF")
+registerObjectTypeUIInfo(IntList, IntList, "#FF00FF")
+registerObjectTypeUIInfo(FloatList, FloatList, "#FF00FF")
+registerObjectTypeUIInfo(Curve, Curve, "#FF00FF")
+registerObjectTypeUIInfo(BCurve, BCurve, "#FF00FF")
+registerObjectTypeUIInfo(Heatmap, Heatmap, "#FF00FF")
+
+registerObjectTypeUIInfo(IObject, IObject, "#708090")
+registerObjectTypeUIInfo(DictObject, Dict, "#A28EB9")
+registerObjectTypeUIInfo(ListObject, List, "#802A2A")
+registerObjectTypeUIInfo(PrimitiveObject, Primitive, "#CC7C5A")
+registerObjectTypeUIInfo(CameraObject, Camera, "#3D59AB")
+registerObjectTypeUIInfo(LightObject, Light, "#8DAD9B")
+registerObjectTypeUIInfo(MeshObject, Mesh, "#803333")
+registerObjectTypeUIInfo(ParticlesObject, Particles, "ABC333")
+registerObjectTypeUIInfo(MaterialObject, Material, "BAA566")

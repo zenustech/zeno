@@ -455,8 +455,7 @@ struct CreateCube : zeno::INode {
         }
 
         NORMUV_CIHOU
-        set_output_any("prim", constructObject(std::move(prim)));
-        //set_output("prim", std::move(prim));
+        set_output("prim", std::move(prim));
     }
 };
 

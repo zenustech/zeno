@@ -4,3 +4,4 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/defNode.h>
+#include <zeno/core/typeinfo.h>

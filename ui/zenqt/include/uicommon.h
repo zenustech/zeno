@@ -13,7 +13,7 @@
 #include <zeno/core/data.h>
 #include <zeno/core/IObject.h>
 #include "qkeylist.h"
-#include "zeno_types/reflect/reflection.generated.hpp"
+#include <zeno/core/typeinfo.h>
 
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)

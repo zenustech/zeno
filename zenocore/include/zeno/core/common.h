@@ -32,14 +32,7 @@ namespace zeno {
     #define Param_Null 0
     #define Param_Wildcard 1
     #define Obj_Wildcard 2
-
-
-
     #define gParamType_Unknown 233
-    #define gParamType_VDBGrid 234    //待定
-    #define gParamType_FOR     235
-    #define gParamType_Material 236     //后续反射生成后就擦掉
-    #define gParamType_Instance 237
 
     enum NodeStatus : unsigned int
     {

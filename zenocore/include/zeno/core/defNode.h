@@ -38,9 +38,11 @@ inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return 1;
 }
 
-// deprecated:
-#define ZENDEFNODE(Class, ...) \
-    ZENO_DEFNODE(Class)(__VA_ARGS__);
+#if !defined(ZENO_REFLECT_PROCESSING)
+#define ZENDEFNODE(Class, ...) ZENO_DEFNODE(Class)(__VA_ARGS__);
+#else
+#define ZENDEFNODE(Class, ...)
+#endif
 
 #define ZENDEFINE(Class, ...) \
     ZENO_DEFNODE2(Class)(__VA_ARGS__);

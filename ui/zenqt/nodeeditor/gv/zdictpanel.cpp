@@ -149,7 +149,7 @@ ZDictPanel::ZDictPanel(ZDictSocketLayout* pLayout, const QPersistentModelIndex& 
     const zeno::ParamType type = (zeno::ParamType)m_paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
 
     const QString& coreType = m_paramIdx.data(ROLE_PARAM_TYPE).toString();
-    m_bDict = type == zeno::types::gParamType_Dict;
+    m_bDict = type == gParamType_Dict;
 
     bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
 

@@ -133,9 +133,9 @@ ZENO_API void SubnetNode::apply() {
     for (auto const &subinput_node: subgraph->getSubInputs()) {
         auto subinput = subgraph->getNode(subinput_node);
         auto iter = m_inputObjs.find(subinput_node);
-        if (iter != m_inputObjs.end() && iter->second.spObject.has_value()) {
+        if (iter != m_inputObjs.end()) {
             //object type.
-            zany spObject = zeno::reflect::any_cast<zany>(iter->second.spObject);
+            zany spObject = iter->second.spObject;
             bool ret = subinput->set_output("port", spObject);
             assert(ret);
             ret = subinput->set_output("hasValue", std::make_shared<NumericObject>(true));

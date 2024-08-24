@@ -89,6 +89,41 @@ if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()
 
+if (ZENO_WITH_REFLECTOR)
+    include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
+
+    set(GENERATE_ON_BUILD_DIR ON)
+    set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
+    set(INJA_TEMPLATE_DIR_PATH  ${CMAKE_BINARY_DIR}/intermediate)
+    #头文件包含目录
+    set(CUSTOM_HEADER_INCLUDE_DIR ${CMAKE_BINARY_DIR}/intermediate)
+
+    #遍历整个目录，并收集所有标有ZRECORD或者ZPRIMITIVE的类的文件，暂时不包含project文件夹，以后可能插件化
+    #如果有什么动态Object或者类型，现在这里添加搜索目录（如果没有的话）
+    file(GLOB_RECURSE scan_source CONFIGURE_DEPENDS 
+        ../projects/FBX/*.h
+        ../projects/FBX/*.cpp
+    )
+
+    set(REFLECTE_HEADER "dummy")
+    foreach(file_path ${scan_source})
+        file(READ ${file_path} CURR_FILE_CONTENT)
+        string(FIND "${CURR_FILE_CONTENT}" "ZPRIMITIVE" OUT_MATCH_RESULT)
+        if (NOT OUT_MATCH_RESULT EQUAL -1)
+            list(APPEND REFLECTE_HEADER ${file_path})
+        endif()
+
+        string(FIND "${CURR_FILE_CONTENT}" "REFLECT_REGISTER_OBJECT" OUT_MATCH_RESULT)
+        if (NOT OUT_MATCH_RESULT EQUAL -1)
+            list(APPEND REFLECTE_HEADER ${file_path})
+        endif()
+    endforeach()
+    list(POP_FRONT REFLECTE_HEADER)    #把最开始的移除掉
+
+    #送入Generator并生成
+    #zeno_declare_reflection_support(zeno "${REFLECTE_HEADER}" zeno_util)
+endif()
+
 #if (ZENO_NO_WARNING)
     #if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         #target_compile_options(zeno PUBLIC $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:-Wno-all -Wno-cpp -Wno-deprecated-declarations -Wno-enum-compare -Wno-ignored-attributes -Wno-extra -Wreturn-type -Wmissing-declarations -Wnon-virtual-dtor -Wsuggest-override -Wconversion-null>>)

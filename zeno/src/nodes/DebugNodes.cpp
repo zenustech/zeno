@@ -277,7 +277,7 @@ ZENDEFINE(CustomNode, {
                         "Group1",
                         {
                             {"param1", Param_Null, zeno::Socket_ReadOnly},
-                            {"param2", zeno::types::gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param2", gParamType_Primitive, zeno::Socket_ReadOnly},
                             {"param3", zeno::types::gParamType_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
                         }
                     },
@@ -285,7 +285,7 @@ ZENDEFINE(CustomNode, {
                         "Group2",
                         {
                             {"param4", zeno::types::gParamType_String, zeno::Socket_ReadOnly, "", zeno::Multiline, {}},
-                            {"param5", zeno::types::gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param5", gParamType_Primitive, zeno::Socket_ReadOnly},
                             {"param6", Param_Null, zeno::NoSocket}
                         }
                     }
@@ -298,7 +298,7 @@ ZENDEFINE(CustomNode, {
                         "Group3",
                         {
                             {"param7", Param_Null, zeno::Socket_ReadOnly},
-                            {"param8", zeno::types::gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param8", gParamType_Primitive, zeno::Socket_ReadOnly},
                             {"param9", Param_Null, zeno::NoSocket}
                         }
                     },
@@ -306,7 +306,7 @@ ZENDEFINE(CustomNode, {
                         "Group4",
                         {
                             {"param10", Param_Null, zeno::Socket_ReadOnly},
-                            {"param11", zeno::types::gParamType_Primitive, zeno::Socket_ReadOnly},
+                            {"param11", gParamType_Primitive, zeno::Socket_ReadOnly},
                             {"param12", Param_Null, zeno::NoSocket}
                         }
                     }

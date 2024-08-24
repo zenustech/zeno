@@ -44,12 +44,15 @@ REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::HeatmapData, Heatmap)
 
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(zeno::ReflectCustomUI, ReflectCustomUI)
 
-//由于对象类型必须用shared_ptr包着，所以只能用这种做法定义（继承shared_ptr<T>的情况没考虑，而且反射起来可能有坑）
-REFLECT_REGISTER_OBJECT(zeno::PrimitiveObject, Primitive)
-REFLECT_REGISTER_OBJECT(zeno::CameraObject, Camera)
-REFLECT_REGISTER_OBJECT(zeno::LightObject, Light)
-REFLECT_REGISTER_OBJECT(zeno::IObject, IObject)
-REFLECT_REGISTER_OBJECT(zeno::ListObject, List)
-REFLECT_REGISTER_OBJECT(zeno::DictObject, Dict)
-REFLECT_REGISTER_OBJECT(zeno::MeshObject, Mesh)
-REFLECT_REGISTER_OBJECT(zeno::ParticlesObject, Particles)
+//只能定义基类指针
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<IObject>)
+REFLECT_REGISTER_RTTI_TYPE_MANUAL(std::shared_ptr<const IObject>)
+//不能对子类指针实施反射，因为Any在转换的过程中无法转为基类指针，同时也得为所有子模块所有类型构造反射，不方便
+//REFLECT_REGISTER_OBJECT(zeno::PrimitiveObject, Primitive)
+//REFLECT_REGISTER_OBJECT(zeno::CameraObject, Camera)
+//REFLECT_REGISTER_OBJECT(zeno::LightObject, Light)
+//REFLECT_REGISTER_OBJECT(zeno::IObject, IObject)
+//REFLECT_REGISTER_OBJECT(zeno::ListObject, List)
+//REFLECT_REGISTER_OBJECT(zeno::DictObject, Dict)
+//REFLECT_REGISTER_OBJECT(zeno::MeshObject, Mesh)
+//REFLECT_REGISTER_OBJECT(zeno::ParticlesObject, Particles)

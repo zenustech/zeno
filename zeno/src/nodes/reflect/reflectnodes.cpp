@@ -91,14 +91,15 @@ namespace zeno
             }
         };
 
-        std::shared_ptr<const zeno::IObject> apply(
+        std::shared_ptr<zeno::PrimitiveObject> apply(
             std::shared_ptr<zeno::PrimitiveObject> input_obj,
             const std::string& name1 = "a16",
             const std::string& name2 = "a24",
             int a = 234,
             float b = 456.234)
         {
-            return input_obj;
+            std::shared_ptr<zeno::PrimitiveObject> res = std::make_shared<zeno::PrimitiveObject>();
+            return res;
         }
     };
 
