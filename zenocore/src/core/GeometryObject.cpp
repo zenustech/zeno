@@ -2,6 +2,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <assert.h>
 #include <zeno/formula/syntax_tree.h>
+#include <zeno/utils/vectorutil.h>
 
 
 namespace zeno
@@ -410,7 +411,6 @@ namespace zeno
                     break;
             }
             hedge->face -= nStep;
-
             /*
             auto ph = hedge.get();
             auto fh = m_faces[hedge->face]->h;
@@ -466,27 +466,100 @@ namespace zeno
 
     zfxintarr GeometryObject::pointvertex(int point_id)
     {
-        zfxintarr vertices;
-        return vertices;
+        throw makeError<UnimplError>();
     }
 
-    bool GeometryObject::createFaceAttr(int face_id, const std::string& attr_name)
+    bool GeometryObject::createFaceAttr(const std::string& attr_name, const zfxvariant& defl)
     {
+        if (m_faces.empty())
+            return false;
+
+        if (m_faces[0]->attr.find(attr_name) != m_faces[0]->attr.end())
+            return false;   //already exist
+
+        for (auto pFace : m_faces) {
+            pFace->attr.insert(std::make_pair(attr_name, defl));
+        }
+        //需要同步到外侧的zfx manager
+        return true;
+    }
+
+    bool GeometryObject::setFaceAttr(const std::string& attr_name, const zfxvariant& val)
+    {
+        if (m_faces.empty())
+            return false;
+        if (m_faces[0]->attr.find(attr_name) == m_faces[0]->attr.end())
+            return false;   //not exist
+        for (auto pFace : m_faces) {
+            pFace->attr[attr_name] = val;
+        }
+        return true;
+    }
+
+    std::vector<zfxvariant> GeometryObject::getFaceAttr(const std::string& attr_name) const
+    {
+        std::vector<zfxvariant> res;
+        res.resize(m_faces.size());
+        for (int i = 0; i < m_faces.size(); i++)
+        {
+            assert(m_faces[i] && m_faces[i]->attr.find(attr_name) != m_faces[i]->attr.end());
+            res[i] = m_faces[i]->attr[attr_name];
+        }
+        return res;
+    }
+
+    bool GeometryObject::deleteFaceAttr(const std::string& attr_name)
+    {
+        for (int i = 0; i < m_faces.size(); i++)
+        {
+            assert(m_faces[i] && m_faces[i]->attr.find(attr_name) != m_faces[i]->attr.end());
+            m_faces[i]->attr.erase(attr_name);
+        }
         return false;
     }
 
-    bool GeometryObject::setFaceAttr(int face_id, const std::string& attr_name, const zfxvariant& val)
-    {
-        return false;
+    bool GeometryObject::createPointAttr(const std::string& attr_name, const zfxvariant& defl) {
+        if (m_points.empty())
+            return false;
+
+        if (m_points[0]->attr.find(attr_name) != m_points[0]->attr.end())
+            return false;   //already exist
+
+        for (auto pFace : m_points) {
+            pFace->attr.insert(std::make_pair(attr_name, defl));
+        }
+        //需要同步到外侧的zfx manager
+        return true;
     }
 
-    zfxvariant GeometryObject::getFaceAttr(int face_id, const std::string& attr_name) const
-    {
-        return zfxvariant();
+    bool GeometryObject::setPointAttr(const std::string& attr_name, const zfxvariant& val) {
+        if (m_points.empty())
+            return false;
+        if (m_points[0]->attr.find(attr_name) == m_points[0]->attr.end())
+            return false;   //not exist
+        for (auto pFace : m_points) {
+            pFace->attr[attr_name] = val;
+        }
+        return true;
     }
 
-    bool GeometryObject::deleteFaceAttr(int face_id, const std::string& attr_name)
-    {
+    std::vector<zfxvariant> GeometryObject::getPointAttr(const std::string& attr_name) const {
+        std::vector<zfxvariant> res;
+        res.resize(m_points.size());
+        for (int i = 0; i < m_points.size(); i++)
+        {
+            assert(m_points[i] && m_points[i]->attr.find(attr_name) != m_points[i]->attr.end());
+            res[i] = m_points[i]->attr[attr_name];
+        }
+        return res;
+    }
+
+    bool GeometryObject::deletePointAttr(const std::string& attr_name) {
+        for (int i = 0; i < m_points.size(); i++)
+        {
+            assert(m_points[i] && m_points[i]->attr.find(attr_name) != m_points[i]->attr.end());
+            m_points[i]->attr.erase(attr_name);
+        }
         return false;
     }
 
@@ -555,8 +628,72 @@ namespace zeno
 
     }
 
-    bool GeometryObject::remove_prim(int face_id) {
-        return false;
+    bool GeometryObject::remove_faces(const std::set<int>& faces, bool includePoints) {
+        if (faces.empty()) {
+            return false;
+        }
+
+        std::set<int> remPoints;
+        std::set<Point*> remPtrPoints;
+        for (auto face_id : faces) {
+            auto pFace = m_faces[face_id];
+            if (includePoints) {
+                //考察face上所有的点，是否有点需要被删除
+                auto firsth = pFace->h;
+                auto h = firsth;
+                do 
+                {
+                    auto& spPoint = m_points[h->point];
+                    spPoint->edges.erase(h);
+                    if (spPoint->edges.empty()) {
+                        remPoints.insert(h->point);
+                        remPtrPoints.insert(spPoint.get());
+                    }
+                    if (h->pair) {
+                        //对面置空自己
+                        h->pair->pair = nullptr;
+                    }
+                    h->pair = nullptr;
+                    auto nexth = h->next;
+                    //h的依赖都解除了，现在就可以删除了。
+                    m_hEdges.erase(h->id);
+                    h = nexth;
+                } while (firsth != h);
+            }
+        }
+
+        //边都已经删除了，现在只要删除点和面即可。
+        removeElements(m_points, remPoints);
+        removeElements(m_faces, faces);
+
+
+        //因为点被删除了，故需要调整所有未被删除的边（只要调整point和face的索引），至于face则不需要调整，因为删除的就是face，直接删了完事
+        for (auto& [_, hedge] : m_hEdges) {
+            int nStep = 0;
+            for (auto remPointId : remPoints) {
+                if (hedge->point >= remPointId)
+                    nStep++;
+                else
+                    break;
+            }
+            hedge->point -= nStep;
+
+            nStep = 0;
+            for (auto remFaceId : faces) {
+                if (hedge->face >= remFaceId)
+                    nStep++;
+                else
+                    break;
+            }
+            hedge->face -= nStep;
+
+            auto ph = hedge.get();
+            auto fh = m_faces[hedge->face]->h;
+            if (m_bTriangle) {
+                assert(fh == ph || fh == ph->next || fh == ph->next->next);
+            }
+        }
+        return true;
     }
 
     int GeometryObject::npoints() const {

@@ -60,6 +60,7 @@ namespace zeno {
         void commitToPrim(const std::string& attrname, const ZfxVariable& val, ZfxElemFilter& filter, ZfxContext* pContext);
         bool removePoint(int pointnum, ZfxContext* pContext);
         void afterRemovePoint(int rempoint);
+        void afterRemoveElements(std::set<int> rm_indice);
 
         VariableTable m_globalAttrCached;
         std::map<std::string, FUNC_INFO> m_funcs;

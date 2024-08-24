@@ -41,6 +41,7 @@ struct HEdge {
 
 struct Face {
     HEdge* h = 0;      //any h-edge of this face.
+    std::map<std::string, zfxvariant> attr;
 };
 
 struct Point {
@@ -79,17 +80,22 @@ public:
     zfxintarr pointfaces(int point_id);
     zfxintarr pointvertex(int point_id);
 
-    bool createFaceAttr(int face_id, const std::string& attr_name);
-    bool setFaceAttr(int face_id, const std::string& attr_name, const zfxvariant& val);
-    zfxvariant getFaceAttr(int face_id, const std::string& attr_name) const;
-    bool deleteFaceAttr(int face_id, const std::string& attr_name);
+    bool createFaceAttr(const std::string& attr_name, const zfxvariant& defl);
+    bool setFaceAttr(const std::string& attr_name, const zfxvariant& val);
+    std::vector<zfxvariant> getFaceAttr(const std::string& attr_name) const;
+    bool deleteFaceAttr(const std::string& attr_name);
+
+    bool createPointAttr(const std::string& attr_name, const zfxvariant& defl);
+    bool setPointAttr(const std::string& attr_name, const zfxvariant& val);
+    std::vector<zfxvariant> getPointAttr(const std::string& attr_name) const;
+    bool deletePointAttr(const std::string& attr_name);
 
     int addpoint(zfxvariant pos = zfxfloatarr({0,0,0}));
     void addprim();
     int addvertex(int face_id, int point_id);
 
     bool remove_point(int ptnum);
-    bool remove_prim(int face_id);
+    bool remove_faces(const std::set<int>& faces, bool includePoints);
 
     int npoints() const;
     int nfaces() const;

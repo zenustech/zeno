@@ -47,9 +47,9 @@ struct KeyError : Error {
 };
 
 struct InterruputError : Error {
-    ObjPath m_node;
+    std::string m_node;
 
-    ZENO_API explicit InterruputError(ObjPath const &node) noexcept;
+    ZENO_API explicit InterruputError(std::string const &node) noexcept;
     ZENO_API ~InterruputError() noexcept override;
 };
 

@@ -13,6 +13,7 @@
 #include <numeric>
 #include <zeno/geo/geometryutil.h>
 #include <zeno/types/GeometryObject.h>
+#include <zeno/utils/vectorutil.h>
 
 
 namespace zeno {
@@ -1886,6 +1887,47 @@ namespace zeno {
                 }
                 return ZfxVariable();
             }
+            else if (funcname == "removeface") {
+                if (args.size() > 2 || args.empty())
+                    throw makeError<UnimplError>();
+
+                auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject);
+                const auto& arg = args[0];
+                bool bIncludePoints = true;
+                if (args.size() == 2) {
+                    bIncludePoints = get_zfxvar<bool>(args[1].value[0]);
+                }
+
+                int N = arg.value.size();
+                if (N == 0) return ZfxVariable();
+                bool bSucceed = false;
+
+                std::set<int> remfaces;
+                if (N < filter.size()) {
+                    assert(N == 1);
+                    int currrem = get_zfxvar<int>(arg.value[0]);
+                    remfaces.insert(currrem);
+                }
+                else {
+                    assert(N == filter.size());
+                    for (int i = 0; i < N; i++) {
+                        if (!filter[i]) continue;
+                        int pointnum = get_zfxvar<int>(arg.value[i]);
+                        remfaces.insert(pointnum);
+                    }
+                }
+
+                bSucceed = spGeo->remove_faces(remfaces, bIncludePoints);
+                if (bSucceed) {
+                    //要调整filter，移除掉第currrem位置的元素
+                    removeElemsByIndice(filter, remfaces);
+                    afterRemoveElements(remfaces);
+                }
+                else {
+                    throw makeError<UnimplError>("error on removeface");
+                }
+                return ZfxVariable();
+            }
             else {
                 throw makeError<UnimplError>();
             }
@@ -1898,6 +1940,13 @@ namespace zeno {
             return spGeo->remove_point(pointnum);
         }
         return false;
+    }
+
+    void FunctionManager::afterRemoveElements(std::set<int> rm_indice) {
+        for (auto& [name, attrVar] : m_globalAttrCached) {
+            auto& attrvalues = attrVar.value;
+            removeElemsByIndice(attrvalues, rm_indice);
+        }
     }
 
     void FunctionManager::afterRemovePoint(int rempoint) {

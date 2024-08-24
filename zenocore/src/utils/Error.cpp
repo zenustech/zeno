@@ -75,7 +75,7 @@ ZENO_API KeyError::KeyError(std::string_view key, std::string_view hint) noexcep
 
 ZENO_API KeyError::~KeyError() noexcept = default;
 
-ZENO_API InterruputError::InterruputError(ObjPath const& node) noexcept
+ZENO_API InterruputError::InterruputError(std::string const& node) noexcept
     : Error("interruption happen")
     , m_node(node)
 {
