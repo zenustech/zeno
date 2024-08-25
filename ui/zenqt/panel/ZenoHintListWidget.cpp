@@ -6,7 +6,7 @@ ZenoHintListWidget::ZenoHintListWidget()
     , m_model(new QStringListModel(this))
     , m_currentLineEdit(nullptr)
 {
-    setMinimumSize({ minWidth,minHeight });
+    //setMinimumSize({ minWidth,minHeight });
     setWindowFlags(windowFlags() | Qt::FramelessWindowHint| Qt::WindowStaysOnTopHint);
 
     QVBoxLayout* pLayout = new QVBoxLayout(this);
@@ -24,7 +24,7 @@ ZenoHintListWidget::ZenoHintListWidget()
     m_listView->installEventFilter(this);
     m_listView->setModel(m_model);
     m_listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_listView->setStyleSheet("border: 0px;");
+    m_listView->setStyleSheet("border: 0px; font: 14pt Microsoft Sans Serif");
     connect(m_listView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(sltItemSelect(const QModelIndex&)));
 
     qApp->installEventFilter(this);
@@ -35,9 +35,19 @@ void ZenoHintListWidget::setData(QStringList items) {
     m_model->setStringList(items);
 };
 
-void ZenoHintListWidget::setActive() {
-    m_listView->setFocus();
-    resetCurrentItem();
+void ZenoHintListWidget::onSwitchItemByKey(bool bDown) {
+    //m_listView->setFocus(); 没必要获得焦点，让它留在编辑器上。
+    QItemSelectionModel* selModel = m_listView->selectionModel();
+    int r = selModel->currentIndex().row();
+    if (bDown && r < m_model->rowCount() - 1) {
+        r++;
+    }
+    else if (!bDown && r > 0) {
+        r--;
+    }
+    const QModelIndex& idx = m_model->index(r, 0);
+    if (idx.isValid())
+        selModel->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
 };
 
 void ZenoHintListWidget::resetCurrentItem()
@@ -186,12 +196,10 @@ void ZenoHintListWidget::mouseReleaseEvent(QMouseEvent* event)
 
 void ZenoHintListWidget::paintEvent(QPaintEvent* event)
 {
-    QWidget::paintEvent(event);
     QPainter painter(this);
     painter.fillRect(rect(), "#22252C");
     painter.setPen(Qt::black);
     painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
-    QWidget::paintEvent(event);
 }
 
 ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
@@ -200,7 +208,7 @@ ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     //setMinimumSize({ 100, 50 });
     m_label = new QLabel(this);
-    m_label->setStyleSheet("QLabel{ font-size: 10pt; color: rgb(160, 178, 194)}");
+    m_label->setStyleSheet("QLabel{ font: 12pt Microsoft Sans Serif; color: rgb(160, 178, 194)}");
     
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -279,10 +287,8 @@ bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)
 
 void ZenoFuncDescriptionLabel::paintEvent(QPaintEvent* event)
 {
-    QWidget::paintEvent(event);
     QPainter painter(this);
     painter.fillRect(rect(), "#22252C");
     painter.setPen(Qt::black);
     painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
-    QWidget::paintEvent(event);
 }

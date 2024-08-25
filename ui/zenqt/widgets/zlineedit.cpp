@@ -291,8 +291,9 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
     {
         if (m_hintlist->isVisible())
         {
-            if (event->key() == Qt::Key_Down) {
-                m_hintlist->setActive();
+            if (event->key() == Qt::Key_Down || event->key() == Qt::Key_Up) {
+                bool bDown = event->key() == Qt::Key_Down;
+                m_hintlist->onSwitchItemByKey(bDown);
                 event->accept();
                 return;
             }

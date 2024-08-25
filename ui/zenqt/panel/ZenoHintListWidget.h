@@ -33,7 +33,7 @@ class ZenoHintListWidget : public QWidget {
 public:
     ZenoHintListWidget();
     void setData(QStringList items);
-    void setActive();
+    void onSwitchItemByKey(bool bDown);
 
     void resetCurrentItem();
     void clearCurrentItem();
@@ -48,10 +48,11 @@ public:
 
 public slots:
     void sltItemSelect(const QModelIndex& selectedIdx);
+
 signals:
     void hintSelected(QString);
     void resizeFinished();
-
+    void continueToEdit();
     void escPressedHide();
     void clickOutSideHide(QWidget*);
 
