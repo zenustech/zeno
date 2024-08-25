@@ -707,6 +707,15 @@ static CustomUI descToCustomui(const Descriptor& desc) {
                 param.socketType = param_desc.socketType;
             param.bInput = true;
             param.wildCardGroup = param_desc.wildCard;
+
+            //dict和list允许多连接口，且不限定对象类型（但只能是对象，暂不接收primitive，否则就违反了对象和primitive分开连的设计了）
+            if (type == gParamType_Dict || type == gParamType_List) {
+                param.prop = Socket_MultiInput;
+            }
+            else {
+                param.prop = Socket_Normal;
+            }
+
             ui.inputObjs.emplace_back(std::move(param));
         }
     }

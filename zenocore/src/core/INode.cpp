@@ -633,7 +633,23 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
             auto outResult = outNode->get_output_obj(out_param->name);
             assert(outResult);
             assert(out_param->type == gParamType_Dict);
-            spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+
+            if (in_param->socketType == Socket_Owning) {
+                spDict = std::dynamic_pointer_cast<DictObject>(outResult->move_clone());
+            }
+            else if (in_param->socketType == Socket_ReadOnly) {
+                spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+            }
+            else if (in_param->socketType == Socket_Clone) {
+                //里面的元素也要clone
+                spDict = std::make_shared<DictObject>();
+                std::shared_ptr<DictObject> outDict = std::dynamic_pointer_cast<DictObject>(outResult);
+                for (auto& [key, spObject] : outDict->get()) {
+                    //后续要考虑key的问题
+                    spDict->lut.insert(std::make_pair(key, spObject->clone()));
+                }
+            }
+            return spDict;
         }
     }
     if (!bDirecyLink)
@@ -651,8 +667,18 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
 
             auto outResult = outNode->get_output_obj(out_param->name);
             assert(outResult);
-            spDict->lut[keyName] = outResult;
+            if (in_param->socketType == Socket_Owning) {
+                spDict->lut[keyName] = outResult->move_clone();
+            }
+            else if (in_param->socketType == Socket_ReadOnly) {
+                spDict->lut[keyName] = outResult;
+            }
+            else if (in_param->socketType == Socket_Clone) {
+                //后续要考虑key的问题
+                spDict->lut[keyName] = outResult->clone();
+            }
         }
+        //已经是新构造的Dict了，不用复制了
     }
     return spDict;
 }

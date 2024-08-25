@@ -356,11 +356,9 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         QPen pen(m_color, 4);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
+        painter->setBrush(Qt::NoBrush);
 
         bool bOwn = !links.isEmpty();
-        if (bOwn) {
-            painter->setBrush(m_brush);
-        }
 
         QPainterPath path;
         path.moveTo(xLeft, ytop);
@@ -377,7 +375,6 @@ void ZenoObjSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*
         }
 
         painter->drawPath(path);
-
         pen = QPen(Qt::white, 2);
         painter->setPen(pen);
         rc.adjust(0, -3, 0, -3);

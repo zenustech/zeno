@@ -33,7 +33,6 @@
 #include "widgets/ztooltip.h"
 #include "zenonodenew.h"
 #include <zeno/utils/helper.h>
-//#include "nodeeditor/gv/pythonmaterialnode.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)

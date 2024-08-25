@@ -913,6 +913,9 @@ namespace zeno {
         else if (isSameDimensionNumericVecType(outType, inType)) { //同维度数值vec互连
             return true;
         }
+        else if (inType == gParamType_Dict || inType == gParamType_List) {
+            return true;
+        }
         else if (gParamType_IObject == inType && isObjectType(outType)) {    //outType的Obj类型可以转IObject
             return true;
         }

@@ -41,7 +41,7 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{gParamType_Dict,"dict", "", zeno::Socket_ReadOnly}, {gParamType_String, "key"}, {gParamType_IObject, "defl", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Dict,"dict", "", zeno::Socket_Owning}, {gParamType_String, "key"}, {gParamType_IObject, "defl", "", zeno::Socket_ReadOnly}},
     {{gParamType_IObject, "object"}},
     {},
     {"dict"},
@@ -89,7 +89,7 @@ struct MakeDict : zeno::INode {
 };
 
 ZENDEFNODE(MakeDict, {
-    {{gParamType_Dict, "objs", "", zeno::Socket_ReadOnly}},
+    {{gParamType_Dict, "objs", "", zeno::Socket_Owning}},
     {{gParamType_Dict,"dict"}},
     {},
     {"dict"},
