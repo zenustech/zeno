@@ -15,6 +15,8 @@
 #include <zeno/types/GeometryObject.h>
 #include <zeno/utils/vectorutil.h>
 
+using namespace zeno::types;
+using namespace zeno::reflect;
 
 namespace zeno {
 
@@ -67,8 +69,7 @@ namespace zeno {
     float FunctionManager::callRef(const std::string& ref, ZfxContext* pContext) {
         //TODO: vec type.
         //TODO: resolve with zeno::reflect::any
-        return 0;
-#if 0
+#if 1
         std::string fullPath, graphAbsPath;
 
         if (ref.empty()) {
@@ -115,11 +116,12 @@ namespace zeno {
             throw makeError<UnimplError>();
 
         if (items.size() == 1) {
-            if (std::holds_alternative<int>(paramData.defl)) {
-                return std::get<int>(paramData.defl);
+            size_t primtype = paramData.defl.type().hash_code();
+            if (primtype == zeno::types::gParamType_Int) {
+                return zeno::reflect::any_cast<int>(paramData.defl);
             }
-            else if (std::holds_alternative<float>(paramData.defl)) {
-                return std::get<float>(paramData.defl);
+            else if (primtype == zeno::types::gParamType_Float) {
+                return zeno::reflect::any_cast<float>(paramData.defl);
             }
             else {
                 throw makeError<UnimplError>();
@@ -127,9 +129,9 @@ namespace zeno {
         }
 
         if (items.size() == 2 &&
-            (paramData.type == Param_Vec2f || paramData.type == Param_Vec2i ||
-                paramData.type == Param_Vec3f || paramData.type == Param_Vec3i ||
-                paramData.type == Param_Vec4f || paramData.type == Param_Vec4i))
+            (paramData.type == gParamType_Vec2f || paramData.type == gParamType_Vec2i ||
+                paramData.type == gParamType_Vec3f || paramData.type == gParamType_Vec3i ||
+                paramData.type == gParamType_Vec4f || paramData.type == gParamType_Vec4i))
         {
             if (items[1].size() != 1)
                 throw makeError<UnimplError>();
@@ -144,28 +146,28 @@ namespace zeno {
             default:
                 throw makeError<UnimplError>();
             }
-            if (paramData.type == Param_Vec2f || paramData.type == Param_Vec2i) {
+            if (paramData.type == gParamType_Vec2f || paramData.type == gParamType_Vec2i) {
                 if (idx < 2) {
-                    return paramData.type == Param_Vec2f ? std::get<vec2f>(paramData.defl)[idx] :
-                        std::get<vec2i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec2f ? any_cast<vec2f>(paramData.defl)[idx] :
+                        any_cast<vec2i>(paramData.defl)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();
                 }
             }
-            if (paramData.type == Param_Vec3f || paramData.type == Param_Vec3i) {
+            if (paramData.type == gParamType_Vec3f || paramData.type == gParamType_Vec3i) {
                 if (idx < 3) {
-                    return paramData.type == Param_Vec3f ? std::get<vec3f>(paramData.defl)[idx] :
-                        std::get<vec3i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec3f ? any_cast<vec3f>(paramData.defl)[idx] :
+                        any_cast<vec3i>(paramData.defl)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();
                 }
             }
-            if (paramData.type == Param_Vec4f || paramData.type == Param_Vec4i) {
+            if (paramData.type == gParamType_Vec4f || paramData.type == gParamType_Vec4i) {
                 if (idx < 4) {
-                    return paramData.type == Param_Vec4f ? std::get<vec4f>(paramData.defl)[idx] :
-                        std::get<vec4i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec4f ? any_cast<vec4f>(paramData.defl)[idx] :
+                        any_cast<vec4i>(paramData.defl)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();

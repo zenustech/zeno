@@ -32,8 +32,8 @@ namespace zeno {
         void updateDirty(const std::string& uuid_path, const std::string& param);
         std::set<std::pair<std::string, std::string>> getAllReferedParams(const std::string& uuid_param) const;
 
-        std::set<std::pair<std::string, std::string>> referPaths(const std::string& currPath, const zvariant& val) const;
-        bool updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg);
+        std::set<std::pair<std::string, std::string>> referPaths(const std::string& currPath, const zeno::reflect::Any& val) const;
+        bool updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg) const;
 
         //<被引用参数uuidpath, <被引用参数, 引用参数params>>
         std::map <std::string, std::map<std::string, std::set<std::string> > > m_referInfos; 
