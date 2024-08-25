@@ -658,6 +658,11 @@ void FakeTransformer::addObject(const std::string& name) {
         return;
     }
 
+    if (!m_objnodeinfo.spViewNode) {
+        zeno::log_warn("view node not found");
+        return;
+    }
+
     const std::string& nodecls = m_objnodeinfo.spViewNode->get_nodecls();
 
     std::shared_ptr<PrimitiveObject> object;
