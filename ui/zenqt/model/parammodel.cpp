@@ -11,6 +11,27 @@
 #include <zeno/utils/helper.h>
 
 
+class CustomUIProxyModel : public QStandardItemModel
+{
+public:
+    CustomUIProxyModel(ParamsModel* parent = nullptr) : QStandardItemModel(parent), m_baseM(parent) {}
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
+        if (role == ROLE_PARAM_VALUE) { 
+            QString paramName = index.data(ROLE_PARAM_NAME).toString();
+            QModelIndex idxparam = m_baseM->paramIdx(paramName, true);
+            QVariant wtf = idxparam.data(ROLE_PARAM_VALUE);
+            return wtf;
+        }
+        else {
+            return QStandardItemModel::data(index, role);
+        }
+    }
+
+private:
+    ParamsModel* m_baseM;
+};
+
+
 ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     : QAbstractListModel(parent)
     , m_wpNode(spNode)

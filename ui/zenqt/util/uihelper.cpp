@@ -117,7 +117,7 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
                         return zeno::vec3i((int)vec[0], (int)vec[1], (int)vec[2]);
                     }
                     else {
-                        return zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f(vec[0], vec[1], vec[2]));
+                        return zeno::vec3f(vec[0], vec[1], vec[2]);
                     }
                 }
                 if (vec.size() == 4) {
@@ -157,8 +157,9 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
 
 QVariant UiHelper::anyToQvar(zeno::reflect::Any var)
 {
-    if (!var.has_value())
+    if (!var.has_value()) {
         return QVariant();
+    }
     if (zeno::reflect::get_type<int>() == var.type()) {
         return zeno::reflect::any_cast<int>(var);
     }
