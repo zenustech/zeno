@@ -38,7 +38,6 @@ target_sources(zenovis PRIVATE
   SDK/sutil/PPMLoader.h         SDK/sutil/vec_math.h
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
 
-  SDK/cuda//GeometryData.h
   )
 
 file(GLOB hair_src "hair/*.h" "hair/*.cpp")
@@ -114,8 +113,6 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/cstdint.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/curve.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/GeometryData.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/LocalGeometry.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/BufferView.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h

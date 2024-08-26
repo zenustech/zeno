@@ -5,8 +5,6 @@
 #include <sutil/vec_math.h>
 #include "optixPathTracer.h"
 
-#include <cuda/GeometryData.h>
-
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 
