@@ -865,11 +865,11 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                         if (out_param->spObject)
                         {
                             receiveOutputObj(in_param, out_param->spObject, out_param->type);
+                        }
                     }
                 }
             }
         }
-    }
     }
     else {
         auto iter2 = m_inputPrims.find(ds);
@@ -929,8 +929,8 @@ ZENO_API void INode::doApply() {
 #endif
         reportStatus(true, Node_Running);
         if (!m_pTypebase) {
-        apply();
-    }
+            apply();
+        }
         else {
             reflecNode_apply();
         }
@@ -1805,7 +1805,11 @@ ZENO_API void INode::initParams(const NodeData& dat)
             continue;
         }
         auto& sparam = iter->second;
-        sparam.socketType = paramObj.socketType;
+
+        //如果不是子图，不能读写socketType，一律以节点定义处为准。（TODO: 如果涉及到转为owning，甚至有些obj连线要去掉）
+        if (dat.type == Node_SubgraphNode || dat.type == Node_AssetInstance) {
+            sparam.socketType = paramObj.socketType;
+        }
     }
     for (auto tab : dat.customUi.inputPrims.tabs)
     {
@@ -1834,9 +1838,9 @@ ZENO_API void INode::initParams(const NodeData& dat)
     {
         auto iter = m_outputPrims.find(param.name);
         if (iter == m_outputPrims.end()) {
-        add_output_prim_param(param);
+            add_output_prim_param(param);
             continue;
-    }
+        }
         auto& sparam = iter->second;
         sparam.bVisible = param.bVisible;
         sparam.type = param.type;
