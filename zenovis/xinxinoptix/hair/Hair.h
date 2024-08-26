@@ -85,10 +85,6 @@ class Hair
     //
     std::vector<uint> segments(zeno::CurveType mode) const;
 
-    std::vector<float2> strandU(zeno::CurveType mode) const;
-    std::vector<uint2>  strandInfo(zeno::CurveType mode) const;
-    std::vector<int>    strandIndices(zeno::CurveType mode) const;
-
     sutil::Aabb  aabb() const { return m_aabb; }
     
   protected:

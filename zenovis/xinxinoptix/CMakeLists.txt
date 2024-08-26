@@ -26,6 +26,8 @@ target_sources(zenovis PRIVATE
   TypeCaster.cpp
   TypeCaster.h
   
+  GeometryAux.h
+  
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/cuda/climits.h
@@ -136,6 +138,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/@GeometryAux.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Portal.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    

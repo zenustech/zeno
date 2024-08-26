@@ -27,8 +27,6 @@
 //
 #pragma once
 
-#include <cuda/GeometryData.h>
-#include <cuda/BufferView.h>
 #include <cuda_runtime.h>
 #include <sutil/Aabb.h>
 
@@ -47,6 +45,7 @@
 
 #include "Util.h"
 #include "Hair.h"
+#include "GeometryAux.h"
 
 struct CurveGroup {
     std::string mtlid;
@@ -63,24 +62,37 @@ struct HairState
     std::shared_ptr<Hair> pHair;
     sutil::Aabb aabb;
 
+    std::shared_ptr<CurveGroup> curveGroup;
+ 
     zeno::CurveType curveType;
     std::string mtid;
 
     OptixTraversableHandle gasHandle = 0;
     xinxinoptix::raii<CUdeviceptr> gasBuffer {};
     // Aux data
-    GeometryData::Curves curves {};
+    CurveGroupAux aux {};
 
 public:
 
 void makeHairGAS(OptixDeviceContext contex);
-void makeAuxData();
+void makeAuxData(const std::vector<uint>& strands);
 
-void makeCurveGroupGas(OptixDeviceContext context, 
+void makeCurveGroupGAS(OptixDeviceContext context, 
                         const std::vector<float3>& points, 
                         const std::vector<float>& widths,
                         const std::vector<float3>& normals, 
                         const std::vector<uint>& strands);
+
+inline void makeCurveGroupGAS(OptixDeviceContext context) {
+    if (nullptr == curveGroup) { return; }
+    
+    makeCurveGroupGAS(context, curveGroup->points, curveGroup->widths, curveGroup->normals, curveGroup->strands);
+}
+
+std::vector<float2> strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands);
+std::vector<uint2> strandInfo(zeno::CurveType curveType, const std::vector<uint>& m_strands);
+std::vector<uint> strandIndices(zeno::CurveType curveType, const std::vector<uint>& m_strands);
+
 };
 
 inline std::map< std::string, std::shared_ptr<Hair> > hair_cache;
@@ -135,7 +147,6 @@ inline void prepareHairs(OptixDeviceContext context) {
     for (auto& [key, state] : geo_hair_map) {
 
         state->makeHairGAS(context);
-        state->makeAuxData();
     }
 }
 
@@ -163,9 +174,13 @@ inline void prepareCurveGroup(OptixDeviceContext context) {
 
     for (auto& ele : curveGroupCache) {
         auto state = std::make_shared<HairState>();
+
+        state->curveGroup = std::make_shared<CurveGroup>(ele);
+
         state->curveType = ele.curveType;
         state->mtid = ele.mtlid;
-        state->makeCurveGroupGas(context, ele.points, ele.widths, ele.normals, ele.strands);
+
+        state->makeCurveGroupGAS(context);
 
         curveGroupStateCache.push_back(state);
     }

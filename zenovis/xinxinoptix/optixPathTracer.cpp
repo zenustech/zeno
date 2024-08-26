@@ -1281,7 +1281,7 @@ void updateRootIAS()
 		optix_instances.push_back( opinstance );
 	}
 
-    std::vector<GeometryData::Curves> auxHair;
+    std::vector<CurveGroupAux> auxHair;
     state.params.hairInstOffset = op_index;
 
     for (auto& key : hair_yyy_cache) {
@@ -1311,17 +1311,7 @@ void updateRootIAS()
 		memcpy(opinstance.transform, yUpTransform.getData(), sizeof(float) * 12);
 		optix_instances.push_back( opinstance );
 
-        auxHair.push_back(hair_state->curves);
-    }
-
-    state.auxHairBuffer.reset();
-
-    {
-        size_t byte_size = sizeof(GeometryData::Curves) * auxHair.size();
-        state.auxHairBuffer.resize(byte_size);
-        cudaMemcpy((void*)state.auxHairBuffer.handle, auxHair.data(), byte_size, cudaMemcpyHostToDevice);
-
-        state.params.hairAux = (void*)state.auxHairBuffer.handle;
+        auxHair.push_back(hair_state->aux);
     }
 
     for (size_t i=0; i<curveGroupStateCache.size(); ++i) {
@@ -1343,6 +1333,18 @@ void updateRootIAS()
 
 		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
 		optix_instances.push_back( opinstance );
+
+        auxHair.push_back(ele->aux);
+    }
+
+    state.auxHairBuffer.reset();
+
+    {
+        size_t byte_size = sizeof(CurveGroupAux) * auxHair.size();
+        state.auxHairBuffer.resize(byte_size);
+        cudaMemcpy((void*)state.auxHairBuffer.handle, auxHair.data(), byte_size, cudaMemcpyHostToDevice);
+
+        state.params.hairAux = (void*)state.auxHairBuffer.handle;
     }
 
 	OptixAccelBuildOptions accel_options{};

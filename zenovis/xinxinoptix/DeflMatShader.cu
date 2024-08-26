@@ -21,6 +21,7 @@
 #endif
 
 #include <cuda/curve.h>
+#include "GeometryAux.h"
 
 // Get curve hit-point in world coordinates.
 static __forceinline__ __device__ float3 getHitPoint()
@@ -484,17 +485,21 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->geometryNormal = N;
 
-    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
-    auto hairAux = reinterpret_cast<GeometryData::Curves*>(params.hairAux);
-    // auto& aux = hairAux[hair_idx];
-
-    // uint  strandIndex = aux.strand_i[primIdx];
-    // uint2 strandInfo  = aux.strand_info[strandIndex];
-    // float u = ( primIdx - strandInfo.x ) / (float)strandInfo.y;
-
     attrs.pos = P;
     attrs.nrm = N;
-    // attrs.uv = {u, (float)strandIndex/ aux.strand_i.count, 0};
+
+    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
+    auto hairAux = reinterpret_cast<CurveGroupAux*>(params.hairAux);
+
+    auto& aux = hairAux[hair_idx];
+
+    uint strandIndex = aux.strand_i[primIdx];
+
+    float  segmentU   = optixGetCurveParameter();
+    float2 strand_u = aux.strand_u[primIdx];
+    float u = strand_u.x + segmentU * strand_u.y;
+
+    attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
 
 #elif (_P_TYPE_==1)
 
@@ -1095,8 +1100,6 @@ extern "C" __global__ void __closesthit__radiance()
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
         shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
     }
-
-    shadingP = P + params.cam.eye;
 
     prd->radiance = {};
     prd->direction = normalize(wi);

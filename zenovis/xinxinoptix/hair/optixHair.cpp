@@ -37,7 +37,7 @@
 #include "Util.h"
 #include "optixHair.h"
 
-void HairState::makeCurveGroupGas(OptixDeviceContext context, 
+void HairState::makeCurveGroupGAS(OptixDeviceContext context, 
                                 const std::vector<float3>& points, 
                                 const std::vector<float>& widths,
                                 const std::vector<float3>& normals, 
@@ -134,6 +134,8 @@ void HairState::makeCurveGroupGas(OptixDeviceContext context,
     accelBuildOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     xinxinoptix::buildXAS(context, accelBuildOptions, buildInput, gasBuffer, gasHandle);
+
+    makeAuxData(strands);
     return;
 }
 
@@ -149,40 +151,101 @@ void HairState::makeHairGAS(OptixDeviceContext context)
     auto& widths = pHair->widths();
     auto& strands = pHair->strands();
 
-    makeCurveGroupGas(context, points, widths, {}, strands);
+    makeCurveGroupGAS(context, points, widths, {}, strands);
     return;
 }
 
-void HairState::makeAuxData()
+std::vector<float2> HairState::strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+{
+    std::vector<float2> strand_u;
+    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
+    {
+        const int   start    = *( strand );
+        const int   end      = *( strand + 1 ) - CurveDegree(curveType);
+        const int   segments = end - start;  // number of strand's segments
+        const float scale    = 1.0f / segments;
+        for( int i = 0; i < segments; ++i )
+        {
+            strand_u.push_back( make_float2( i * scale, scale ) );
+        }
+    }
+
+    return strand_u;
+}
+
+std::vector<uint2> HairState::strandInfo(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+{
+    std::vector<uint2> strandInfo;
+    unsigned int       firstPrimitiveIndex = 0;
+    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
+    {
+        uint2 info;
+        info.x = firstPrimitiveIndex;                        // strand's start index
+        info.y = *( strand + 1 ) - *(strand)-CurveDegree(curveType);  // number of segments in strand
+        firstPrimitiveIndex += info.y;                       // increment with number of primitives/segments in strand
+        strandInfo.push_back( info );
+    }
+    return strandInfo;
+}
+
+std::vector<uint> HairState::strandIndices(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+{
+    std::vector<uint> strandIndices;
+    int              strandIndex = 0;
+    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
+    {
+        const int start = *( strand );
+        const int end   = *( strand + 1 ) - CurveDegree(curveType);
+        for( auto segment = start; segment != end; ++segment )
+        {
+            strandIndices.push_back( strandIndex );
+        }
+        ++strandIndex;
+    }
+
+    return strandIndices;
+}
+
+void HairState::makeAuxData(const std::vector<uint>& strands)
 {
     auto pState = this;
     // clear curves_ data
-    cudaFree( reinterpret_cast<void*>( pState->curves.strand_u.data ) );
-    pState->curves.strand_u.data = 0;
-    cudaFree( reinterpret_cast<void*>( pState->curves.strand_i.data ) );
-    pState->curves.strand_i.data = 0;
-    cudaFree( reinterpret_cast<void*>( pState->curves.strand_info.data ) );
-    pState->curves.strand_info.data = 0;
+    cudaFree( reinterpret_cast<void*>( pState->aux.strand_u.data ) );
+    pState->aux.strand_u.data = 0;
+    cudaFree( reinterpret_cast<void*>( pState->aux.strand_i.data ) );
+    pState->aux.strand_i.data = 0;
+    cudaFree( reinterpret_cast<void*>( pState->aux.strand_info.data ) );
+    pState->aux.strand_info.data = 0;
 
     CUdeviceptr strandUs = 0;
-    createOnDevice( pState->pHair->strandU(pState->curveType), &strandUs );
-    pState->curves.strand_u.data        = strandUs;
-    pState->curves.strand_u.byte_stride = static_cast<uint16_t>( sizeof( float2 ) );
-    SUTIL_ASSERT( pState->pHair->numberOfSegments(pState->curveType) == static_cast<int>( pState->pHair->strandU(pState->curveType).size() ) );
-
-    pState->curves.strand_u.count          = static_cast<uint16_t>( pState->pHair->numberOfSegments(pState->curveType) );
-    pState->curves.strand_u.elmt_byte_size = static_cast<uint16_t>( sizeof( float2 ) );
+    {
+        auto strand_u = pState->strandU(pState->curveType, strands);
+        createOnDevice( strand_u, &strandUs );
+        pState->aux.strand_u.data        = strandUs;
+        pState->aux.strand_u.count       = strand_u.size();
+        pState->aux.strand_u.byte_stride = static_cast<uint16_t>( sizeof( float2 ) );
+        //SUTIL_ASSERT( numberOfSegments(pState->curveType) == static_cast<int>( strandU(pState->curveType).size() );
+        pState->aux.strand_u.elmt_byte_size = static_cast<uint16_t>( sizeof( float2 ) );
+    }
 
     CUdeviceptr strandIs = 0;
-    createOnDevice( pState->pHair->strandIndices(pState->curveType), &strandIs );
-    pState->curves.strand_i.data           = strandIs;
-    pState->curves.strand_i.byte_stride    = static_cast<uint16_t>( sizeof( unsigned int ) );
-    pState->curves.strand_i.count          = static_cast<uint16_t>( pState->pHair->numberOfSegments(pState->curveType) );
-    pState->curves.strand_i.elmt_byte_size = static_cast<uint16_t>( sizeof( unsigned int ) );
-    CUdeviceptr strandInfos = 0;
-    createOnDevice( pState->pHair->strandInfo(pState->curveType), &strandInfos );
-    pState->curves.strand_info.data           = strandInfos;
-    pState->curves.strand_info.byte_stride    = static_cast<uint16_t>( sizeof( uint2 ) );
-    pState->curves.strand_info.count          = static_cast<uint16_t>( pState->pHair->numberOfStrands() );
-    pState->curves.strand_info.elmt_byte_size = static_cast<uint16_t>( sizeof( uint2 ) );
+    {
+        auto strand_i = strandIndices(pState->curveType, strands);
+        createOnDevice( strand_i, &strandIs );
+        pState->aux.strand_i.data           = strandIs;
+        pState->aux.strand_i.count          = strand_i.size();
+        pState->aux.strand_i.byte_stride    = static_cast<uint16_t>( sizeof( uint ) );
+        pState->aux.strand_i.elmt_byte_size = static_cast<uint16_t>( sizeof( uint ) );
+    }
+
+    CUdeviceptr strandInfos = 0; 
+    {
+        auto strand_info = pState->strandInfo(pState->curveType, strands);
+
+        createOnDevice( pState->strandInfo(pState->curveType, strands), &strandInfos );
+        pState->aux.strand_info.data           = strandInfos;
+        pState->aux.strand_info.count          = strand_info.size();
+        pState->aux.strand_info.byte_stride    = static_cast<uint16_t>( sizeof( uint2 ) );
+        pState->aux.strand_info.elmt_byte_size = static_cast<uint16_t>( sizeof( uint2 ) );
+    }
 }

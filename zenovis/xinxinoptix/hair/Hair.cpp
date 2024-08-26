@@ -213,56 +213,6 @@ std::vector<uint> Hair::segments(zeno::CurveType curveType) const
     return segments;
 }
 
-std::vector<float2> Hair::strandU(zeno::CurveType curveType) const
-{
-    std::vector<float2> strand_u;
-    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
-    {
-        const int   start    = *( strand );
-        const int   end      = *( strand + 1 ) - CurveDegree(curveType);
-        const int   segments = end - start;  // number of strand's segments
-        const float scale    = 1.0f / segments;
-        for( int i = 0; i < segments; ++i )
-        {
-            strand_u.push_back( make_float2( i * scale, scale ) );
-        }
-    }
-
-    return strand_u;
-}
-
-std::vector<int> Hair::strandIndices(zeno::CurveType curveType) const
-{
-    std::vector<int> strandIndices;
-    int              strandIndex = 0;
-    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
-    {
-        const int start = *( strand );
-        const int end   = *( strand + 1 ) - CurveDegree(curveType);
-        for( auto segment = start; segment != end; ++segment )
-        {
-            strandIndices.push_back( strandIndex );
-        }
-        ++strandIndex;
-    }
-
-    return strandIndices;
-}
-
-std::vector<uint2> Hair::strandInfo(zeno::CurveType curveType) const
-{
-    std::vector<uint2> strandInfo;
-    unsigned int       firstPrimitiveIndex = 0;
-    for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
-    {
-        uint2 info;
-        info.x = firstPrimitiveIndex;                        // strand's start index
-        info.y = *( strand + 1 ) - *(strand)-CurveDegree(curveType);  // number of segments in strand
-        firstPrimitiveIndex += info.y;                       // increment with number of primitives/segments in strand
-        strandInfo.push_back( info );
-    }
-    return strandInfo;
-}
 
 void Hair::prepareWidths( )
 {
