@@ -99,6 +99,7 @@ private:
     bool m_bAutoRun = false;
     bool m_bInterrupted = false;
     bool m_bDisableRunning = false;
+    bool m_bReentrance = false;
 
     std::function<void()> m_callbackRunTrigger;
     F_NodeStatus m_funcNodeStatus;

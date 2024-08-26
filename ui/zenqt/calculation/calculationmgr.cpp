@@ -14,10 +14,6 @@
 
 CalcWorker::CalcWorker(QObject* parent) {
     auto& sess = zeno::getSession();
-    sess.registerRunTrigger([=]() {
-        run();
-    });
-
     if (m_bReportNodeStatus) {
         sess.registerNodeCallback([=](zeno::ObjPath nodePath, bool bDirty, zeno::NodeRunStatus status) {
             NodeState state;
@@ -53,7 +49,7 @@ void CalcWorker::run() {
 
 CalculationMgr::CalculationMgr(QObject* parent)
     : QObject(parent)
-    , m_bMultiThread(true)
+    , m_bMultiThread(false)
     , m_worker(nullptr)
 {
     m_worker = new CalcWorker(this);
@@ -61,6 +57,11 @@ CalculationMgr::CalculationMgr(QObject* parent)
     connect(&m_thread, &QThread::started, m_worker, &CalcWorker::run);
     connect(m_worker, &CalcWorker::calcFinished, this, &CalculationMgr::onCalcFinished);
     connect(m_worker, &CalcWorker::nodeStatusChanged, this, &CalculationMgr::onNodeStatusReported);
+
+    auto& sess = zeno::getSession();
+    sess.registerRunTrigger([=]() {
+        run();
+    });
 }
 
 void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState state)
@@ -71,7 +72,8 @@ void CalculationMgr::onNodeStatusReported(zeno::ObjPath uuidPath, NodeState stat
         if (targetNode.isValid()) {
             UiHelper::qIndexSetData(targetNode, QVariant::fromValue(state), ROLE_NODE_RUN_STATE);
             if (!m_bMultiThread) {
-                zenoApp->processEvents();
+                //TODO: 处理的时间里可能会包括改变节点状态和数据的操作，比如滑动时间轴，所以必须要控制事件的范围
+                //zenoApp->processEvents();
             }
         }
     }

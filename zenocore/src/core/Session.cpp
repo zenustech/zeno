@@ -938,11 +938,19 @@ ZENO_API bool Session::run() {
     if (m_bDisableRunning)
         return false;
 
+    if (m_bReentrance) {
+        return true;
+    }
+
+    m_bReentrance = true;
     m_bInterrupted = false;
     globalState->set_working(true);
 
     objsMan->beforeRun();
-    zeno::scope_exit sp([&]() { objsMan->afterRun(); });
+    zeno::scope_exit sp([&]() { 
+        objsMan->afterRun();
+        m_bReentrance = false;
+    });
 
     globalError->clearState();
 
