@@ -149,8 +149,7 @@ void ZenoMainWindow::updateNativeWinTitle(const QString& title)
     QWidgetList lst = QApplication::topLevelWidgets();
     for (auto wid : lst)
     {
-        if (qobject_cast<ads::CDockWidget*>(wid) ||
-            qobject_cast<ZenoMainWindow*>(wid))
+        if (qobject_cast<ZenoMainWindow*>(wid))
         {
             wid->setWindowTitle(title);
         }
