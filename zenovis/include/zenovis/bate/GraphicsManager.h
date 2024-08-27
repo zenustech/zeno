@@ -43,6 +43,9 @@ struct GraphicsManager {
         if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
             return add_listobj(spList);
         }
+        if (auto spDict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+            return add_dictobj(spDict);
+        }
 
         const std::string& key = obj->key();
         if (!obj || key.empty())
@@ -75,6 +78,9 @@ struct GraphicsManager {
         if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(spObj)) {
             return remove_listobj(spList);
         }
+        if (auto spDict = std::dynamic_pointer_cast<zeno::DictObject>(spObj)) {
+            return remove_dictobj(spDict);
+        }
 
         const std::string& key = spObj->key();
         auto& graphics_ = graphics.m_curr.m_curr;
@@ -102,6 +108,22 @@ struct GraphicsManager {
         return true;
     }
 
+    bool add_dictobj(std::shared_ptr<zeno::DictObject> spDict) {
+        for (auto& [key, spObject] : spDict->get()) {
+            if (auto dictobj = std::dynamic_pointer_cast<zeno::DictObject>(spObject)) {
+                bool ret = add_dictobj(dictobj);
+                if (!ret)
+                    return ret;
+            }
+            else {
+                bool ret = add_object(spObject);
+                if (!ret)
+                    return ret;
+            }
+        }
+        return true;
+    }
+
     bool remove_listobj(std::shared_ptr<zeno::ListObject> spList) {
         for (auto obj : spList->get()) {
             if (auto listobj = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
@@ -118,15 +140,31 @@ struct GraphicsManager {
         return true;
     }
 
+    bool remove_dictobj(std::shared_ptr<zeno::DictObject> spDict) {
+        for (auto& [key, spObject] : spDict->get()) {
+            if (auto dictobj = std::dynamic_pointer_cast<zeno::DictObject>(spObject)) {
+                bool ret = remove_dictobj(dictobj);
+                if (!ret)
+                    return ret;
+            }
+            else {
+                bool ret = remove_object(spObject);
+                if (!ret)
+                    return ret;
+            }
+        }
+        return true;
+    }
+
     void load_objects2(const zeno::RenderObjsInfo& objs) {
+        for (auto [key, spObj] : objs.remObjs) {    //if obj both in remObjs and in newObjs, need remove first?
+            remove_object(spObj);
+        }
         for (auto [key, spObj] : objs.newObjs) {
             add_object(spObj);
         }
         for (auto [key, spObj] : objs.modifyObjs) {
             add_object(spObj);
-        }
-        for (auto [key, spObj] : objs.remObjs) {
-            remove_object(spObj);
         }
     }
 

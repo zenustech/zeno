@@ -1108,10 +1108,21 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         ParamObject inParam = inNode->get_input_obj_param(edge.inParam);
         ParamObject outParam = outNode->get_output_obj_param(edge.outParam);
         if (inParam.type == gParamType_Dict || inParam.type == gParamType_List) {
-            bool bSameType = inParam.type == outParam.type;
-            if (bSameType) {
-                //直接连接，并去掉输入端原来的参数.
-                if (edge.inKey.empty()) {
+            std::vector<EdgeInfo> inParamLinks = inParam.links;
+            if (inParamLinks.size() == 1) {
+                if (auto node = getNode(inParamLinks[0].outNode)) {
+                    ParamObject existOneParam = node->get_output_obj_param(inParamLinks[0].outParam);
+                    if (existOneParam.type == inParam.type) {
+                        updateLink(inParamLinks[0], false, inParamLinks[0].inKey, "obj0");
+                        adjustEdge.inKey = "obj0";
+                        inParam = inNode->get_input_obj_param(edge.inParam);
+                    }
+                }
+                bRemOldLinks = false;
+                bConnectWithKey = true;
+            }else if (inParamLinks.size() < 1)
+            {
+                if (inParam.type == outParam.type) {
                     bRemOldLinks = true;
                     bConnectWithKey = false;
                 }
@@ -1158,8 +1169,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     }
     else {
         std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
-        spLink->fromkey = edge.outKey;
-        spLink->tokey = edge.inKey;
+        spLink->fromkey = adjustEdge.outKey;
+        spLink->tokey = adjustEdge.inKey;
         outNode->init_object_link(false, edge.outParam, spLink, edge.targetParam);
         inNode->init_object_link(true, edge.inParam, spLink, edge.targetParam);
         adjustEdge.bObjLink = true;
@@ -1237,6 +1248,21 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     ParamType outParamType;
     outNode->getParamTypeAndSocketType(edge.outParam, bPrimType, false, outParamType, outSocketType);
     resetWildCardParamsType(outSocketType, outNode, edge.outParam, bPrimType, false);
+
+    if (!bPrimType2) {
+        const ParamObject& inParam = inNode->get_input_obj_param(edge.inParam);
+        if (inParam.type == gParamType_List || inParam.type == gParamType_Dict) {
+            std::vector<EdgeInfo> inParamLinks = inParam.links;
+            if (inParamLinks.size() == 1) {
+                if (auto node = getNode(inParamLinks[0].outNode)) {
+                    ParamObject existOneParam = node->get_output_obj_param(inParamLinks[0].outParam);
+                    if (existOneParam.type == inParam.type) {   //只连一条dict/list,重置tokey表示直连
+                        updateLink(inParamLinks[0], false, inParamLinks[0].inKey, "");
+                    }
+                }
+            }
+        }
+    }
 
     CALLBACK_NOTIFY(removeLink, edge)
     return true;

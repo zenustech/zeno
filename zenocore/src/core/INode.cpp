@@ -623,33 +623,36 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
         auto out_param = spLink->fromparam;
         std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
-        if (out_param->type == in_param->type && !spLink->tokey.empty())
+        if (out_param->type == in_param->type && spLink->tokey.empty()) //根据Graph::addLink规则，类型相同且无key视为直连
         {
             bDirecyLink = true;
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
+            if (outNode->is_dirty()) {
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
 
-            auto outResult = outNode->get_output_obj(out_param->name);
-            assert(outResult);
-            assert(out_param->type == gParamType_Dict);
+                auto outResult = outNode->get_output_obj(out_param->name);
+                assert(outResult);
+                assert(out_param->type == gParamType_Dict);
 
-            if (in_param->socketType == Socket_Owning) {
-                spDict = std::dynamic_pointer_cast<DictObject>(outResult->move_clone());
-            }
-            else if (in_param->socketType == Socket_ReadOnly) {
-                spDict = std::dynamic_pointer_cast<DictObject>(outResult);
-            }
-            else if (in_param->socketType == Socket_Clone) {
-                //里面的元素也要clone
-                spDict = std::make_shared<DictObject>();
-                std::shared_ptr<DictObject> outDict = std::dynamic_pointer_cast<DictObject>(outResult);
-                for (auto& [key, spObject] : outDict->get()) {
-                    //后续要考虑key的问题
-                    spDict->lut.insert(std::make_pair(key, spObject->clone()));
+                if (in_param->socketType == Socket_Owning) {
+                    spDict = std::dynamic_pointer_cast<DictObject>(outResult->move_clone());
                 }
+                else if (in_param->socketType == Socket_ReadOnly) {
+                    spDict = std::dynamic_pointer_cast<DictObject>(outResult);
+                }
+                else if (in_param->socketType == Socket_Clone) {
+                    //里面的元素也要clone
+                    spDict = std::make_shared<DictObject>();
+                    std::shared_ptr<DictObject> outDict = std::dynamic_pointer_cast<DictObject>(outResult);
+                    for (auto& [key, spObject] : outDict->get()) {
+                        //后续要考虑key的问题
+                        spDict->lut.insert(std::make_pair(key, spObject->clone()));
+                    }
+                }
+                spDict->update_key(m_uuid);
+                return spDict;
             }
-            return spDict;
         }
     }
     if (!bDirecyLink)
@@ -661,9 +664,11 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
             auto out_param = spLink->fromparam;
             std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
+            if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
+            }
 
             auto outResult = outNode->get_output_obj(out_param->name);
             assert(outResult);
@@ -678,6 +683,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
                 spDict->lut[keyName] = outResult->clone();
             }
         }
+        spDict->update_key(m_uuid);
         //已经是新构造的Dict了，不用复制了
     }
     return spDict;
@@ -692,17 +698,35 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
         auto out_param = spLink->fromparam;
         std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
-        if (out_param->type == in_param->type && !spLink->tokey.empty()) {
+        if (out_param->type == in_param->type && spLink->tokey.empty()) {   //根据Graph::addLink规则，类型相同且无key视为直连
             bDirectLink = true;
 
-            GraphException::translated([&] {
-                outNode->doApply();
-                }, outNode.get());
+            if (outNode->is_dirty()) {
+                GraphException::translated([&] {
+                    outNode->doApply();
+                    }, outNode.get());
 
-            auto outResult = outNode->get_output_obj(out_param->name);
-            assert(outResult);
-            assert(out_param->type == gParamType_List);
-            spList = std::dynamic_pointer_cast<ListObject>(outResult);
+                auto outResult = outNode->get_output_obj(out_param->name);
+                assert(outResult);
+                assert(out_param->type == gParamType_List);
+
+                if (in_param->socketType == Socket_Owning) {
+                    spList = std::dynamic_pointer_cast<ListObject>(outResult->move_clone());
+                }
+                else if (in_param->socketType == Socket_ReadOnly) {
+                    spList = std::dynamic_pointer_cast<ListObject>(outResult);
+                }
+                else if (in_param->socketType == Socket_Clone) {
+                    //里面的元素也要clone
+                    spList = std::make_shared<ListObject>();
+                    std::shared_ptr<ListObject> outList = std::dynamic_pointer_cast<ListObject>(outResult);
+                    for (int i = 0; i < outList->size(); i++) {
+                        //后续要考虑key的问题
+                        spList->push_back(outList->get(i)->clone());
+                    }
+                }
+                spList->update_key(m_uuid);
+            }
         }
     }
     if (!bDirectLink)
@@ -718,18 +742,22 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
                 GraphException::translated([&] {
                     outNode->doApply();
                     }, outNode.get());
+            }
+            auto outResult = outNode->get_output_obj(out_param->name);
+            assert(outResult);
 
-                auto outResult = outNode->get_output_obj(out_param->name);
-                assert(outResult);
-                spList->push_back(outResult);
-                //spList->dirtyIndice.insert(indx);
+            if (in_param->socketType == Socket_Owning) {
+                spList->push_back(outResult->move_clone());
             }
-            else {
-                auto outResult = outNode->get_output_obj(out_param->name);
-                assert(outResult);
+            else if (in_param->socketType == Socket_ReadOnly) {
                 spList->push_back(outResult);
             }
+            else if (in_param->socketType == Socket_Clone) {
+                spList->push_back(outResult->clone());
+            }
+            //spList->dirtyIndice.insert(indx);
         }
+        spList->update_key(m_uuid);
     }
     return spList;
 }

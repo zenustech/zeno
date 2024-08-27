@@ -28,6 +28,18 @@ struct DictObject : IObjectClone<DictObject> {
       }
       return res;
   }
+
+  bool update_key(const std::string& key) override {
+      m_key = key;
+      for (auto& [key, spObject] : lut) {
+          if (spObject->key().empty())
+          {
+              std::string itemKey = m_key + "/" + key;
+              spObject->update_key(itemKey);
+          }
+      }
+      return true;
+  }
 };
 
 }

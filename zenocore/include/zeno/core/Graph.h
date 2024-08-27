@@ -145,8 +145,6 @@ private:
     void removeLinkWhenUpdateWildCardParam(const std::string& outNode, const std::string& inNode, EdgeInfo& edge);
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
-    bool isLinkVaild(const EdgeInfo& edge);
-
     bool isLinkValid(const EdgeInfo& edge);
 
     std::map<std::string, std::string> subInputNodes;
