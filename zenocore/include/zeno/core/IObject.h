@@ -78,11 +78,14 @@ struct IObjectClone : CustomBase {
 
     virtual std::shared_ptr<IObject> clone() const override {
         auto spClonedObj = std::make_shared<Derived>(static_cast<Derived const &>(*this));
+        spClonedObj->update_key(m_key);
         return spClonedObj;
     }
 
     virtual std::shared_ptr<IObject> move_clone() override {
-        return std::make_shared<Derived>(static_cast<Derived &&>(*this));
+        auto spMoveCloneObj = std::make_shared<Derived>(static_cast<Derived&&>(*this));
+        spMoveCloneObj->update_key(m_key);
+        return spMoveCloneObj;
     }
 
     virtual std::string key() override {

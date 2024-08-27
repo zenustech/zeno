@@ -145,9 +145,8 @@ private:
     void removeLinkWhenUpdateWildCardParam(const std::string& outNode, const std::string& inNode, EdgeInfo& edge);
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
-    bool isLinkVaild(const EdgeInfo& edge);
-
     bool isLinkValid(const EdgeInfo& edge);
+    std::vector<EdgeInfo> listOrDictLinksOfParam(const ParamObject& paramObj);   //paramObj为inParam，获取对应outParam中list/dict的边
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;

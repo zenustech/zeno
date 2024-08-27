@@ -923,6 +923,21 @@ std::shared_ptr<Graph> Graph::_getGraphByPath(std::vector<std::string> items)
     return nullptr;
 }
 
+std::vector<zeno::EdgeInfo> Graph::listOrDictLinksOfParam(const ParamObject& paramObj)
+{
+    std::vector<EdgeInfo> edgs;
+    for (auto& link : paramObj.links) {
+        if (auto node = getNode(link.outNode)) {
+            ParamType paramType;
+            SocketType socketType;
+            node->getParamTypeAndSocketType(link.outParam, false, false, paramType, socketType);
+            if (paramType == gParamType_List || paramType == gParamType_Dict)
+                edgs.push_back(link);
+        }
+    }
+    return edgs;
+}
+
 ZENO_API std::shared_ptr<Graph> Graph::getGraphByPath(const std::string& pa)
 {
     std::string path = pa;
@@ -1110,14 +1125,27 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         if (inParam.type == gParamType_Dict || inParam.type == gParamType_List) {
             bool bSameType = inParam.type == outParam.type;
             if (bSameType) {
-                //直接连接，并去掉输入端原来的参数.
-                if (edge.inKey.empty()) {
-                    bRemOldLinks = true;
-                    bConnectWithKey = false;
+                if (inParam.type == gParamType_List || inParam.type == gParamType_Dict) {
+                    std::vector<EdgeInfo> listOrDictLinks(std::move(listOrDictLinksOfParam(inParam)));
+                    if (listOrDictLinks.size() == 1) {          //已连接一条dict/list的边，为该边inkey赋值，不再直连
+                        updateLink(edge, false, edge.inKey, "obj0");
+                        adjustEdge.inKey = "obj0";
+                        inParam = inNode->get_input_obj_param(edge.inParam);
+                        bRemOldLinks = false;
+                        bConnectWithKey = true;
+                    } else if (listOrDictLinks.size() < 1) {    //0条边，直接连接
+                        bRemOldLinks = true;
+                        bConnectWithKey = false;
+                    }
+                    else {  //大于1条边，不去掉参数
+                        bRemOldLinks = false;
+                        bConnectWithKey = true;
+                    }
                 }
                 else {
-                    bRemOldLinks = false;
-                    bConnectWithKey = true;
+                    //直接连接，并去掉输入端原来的参数.
+                    bRemOldLinks = true;
+                    bConnectWithKey = false;
                 }
             }
             else {
@@ -1158,8 +1186,8 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
     }
     else {
         std::shared_ptr<ObjectLink> spLink = std::make_shared<ObjectLink>();
-        spLink->fromkey = edge.outKey;
-        spLink->tokey = edge.inKey;
+        spLink->fromkey = adjustEdge.outKey;
+        spLink->tokey = adjustEdge.inKey;
         outNode->init_object_link(false, edge.outParam, spLink, edge.targetParam);
         inNode->init_object_link(true, edge.inParam, spLink, edge.targetParam);
         adjustEdge.bObjLink = true;
@@ -1237,6 +1265,16 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     ParamType outParamType;
     outNode->getParamTypeAndSocketType(edge.outParam, bPrimType, false, outParamType, outSocketType);
     resetWildCardParamsType(outSocketType, outNode, edge.outParam, bPrimType, false);
+
+    if (!bPrimType2) {
+        const ParamObject& inParam = inNode->get_input_obj_param(edge.inParam);
+        if (inParam.type == gParamType_List || inParam.type == gParamType_Dict) {
+            std::vector<EdgeInfo> listOrDictLinks(std::move(listOrDictLinksOfParam(inParam)));
+            if (listOrDictLinks.size() == 1) {  //inparam只连一条dict/list,重置tokey表示直连
+                updateLink(listOrDictLinks[0], false, listOrDictLinks[0].inKey, "");
+            }
+        }
+    }
 
     CALLBACK_NOTIFY(removeLink, edge)
     return true;
