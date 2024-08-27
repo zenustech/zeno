@@ -1284,7 +1284,7 @@ void updateRootIAS()
     std::vector<CurveGroupAux> auxHair;
     state.params.hairInstOffset = op_index;
 
-    for (auto& key : hair_yyy_cache) {
+    for (auto& [key, val] : hair_yyy_cache) {
 
         OptixInstance opinstance {};
         auto& [filePath, mode, mtlid] = key;
@@ -1297,21 +1297,32 @@ void updateRootIAS()
         auto& hair_state = geo_hair_map[ std::tuple(filePath, mode) ];
 
 		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = op_index++;
+		//opinstance.instanceId = op_index++;
 		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
 		opinstance.visibilityMask = DefaultMatMask;
 		opinstance.traversableHandle = hair_state->gasHandle;
 
-        sutil::Matrix3x4 yUpTransform = {
-            0.0f, 1.0f, 0.0f, -campos.x,
-            0.0f, 0.0f, 1.0f, -campos.y,
-            1.0f, 0.0f, 0.0f, -campos.z,
-        };
+        // sutil::Matrix3x4 yUpTransform = {
+        //     0.0f, 1.0f, 0.0f, -campos.x,
+        //     0.0f, 0.0f, 1.0f, -campos.y,
+        //     1.0f, 0.0f, 0.0f, -campos.z,
+        // };
 
-		memcpy(opinstance.transform, yUpTransform.getData(), sizeof(float) * 12);
-		optix_instances.push_back( opinstance );
+        for (auto& trans : val) {
 
-        auxHair.push_back(hair_state->aux);
+            auto dummy = glm::transpose(trans);
+            auto dummy_ptr = glm::value_ptr( dummy );
+
+		    memcpy(opinstance.transform, dummy_ptr, sizeof(float) * 12);
+            opinstance.transform[3]  += -campos.x;
+            opinstance.transform[7]  += -campos.y;
+            opinstance.transform[11] += -campos.z;
+
+            opinstance.instanceId = op_index++;
+		    optix_instances.push_back( opinstance );
+
+            auxHair.push_back(hair_state->aux); 
+        }
     }
 
     for (size_t i=0; i<curveGroupStateCache.size(); ++i) {

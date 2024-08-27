@@ -251,9 +251,16 @@ struct GraphicsManager {
 
                     auto type_index = ud.get2<uint>("curve", 0u);
                     auto path_string = ud.get2<std::string>("path", "");
-                    auto yup = ud.get2<bool>("yup", true);;
+                    auto yup = ud.get2<bool>("yup", true);
 
-                    loadHair( path_string, mtlid, type_index);
+                    auto trans = yup? glm::mat4 { 
+                                                    0, 0, 1, 0,
+                                                    1, 0, 0, 0,
+                                                    0, 1, 0, 0,
+                                                    0, 0, 0, 1
+                                                } : glm::mat4(1.0);
+
+                    loadHair( path_string, mtlid, type_index, trans);
                     return;
                 }
 
@@ -1204,7 +1211,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cachedMeshesMaterials = xinxinoptix::uniqueMatsForMesh();
                 cachedSphereMaterials = xinxinoptix::uniqueMatsForSphere();
 
-                for (auto& key : hair_xxx_cache) 
+                for (auto& [key, _] : hair_xxx_cache) 
                 {
                     auto& [filePath, mode, mtid] = key;
 
@@ -1220,8 +1227,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 for (auto& ele : curveGroupCache) {
 
-                    auto ctype = ele.curveType;
-                    auto mtlid = ele.mtlid;
+                    auto ctype = ele->curveType;
+                    auto mtlid = ele->mtlid;
 
                     if (cachedCurvesMaterials.count(mtlid) > 0) {
                         auto& ref = cachedCurvesMaterials.at(mtlid);

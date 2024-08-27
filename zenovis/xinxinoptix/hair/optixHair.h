@@ -100,8 +100,8 @@ inline std::map< std::tuple<std::string, uint>, std::shared_ptr<HairState> > geo
 
 using hair_state_key = std::tuple<std::string, uint, std::string>;
 
-inline std::set<hair_state_key> hair_xxx_cache;
-inline std::set<hair_state_key> hair_yyy_cache;
+inline std::map<hair_state_key, std::vector<glm::mat4>> hair_xxx_cache;
+inline std::map<hair_state_key, std::vector<glm::mat4>> hair_yyy_cache;
 
 inline void loadHair(const std::string& filePath, const std::string& mtlid, uint mode, glm::mat4 transform=glm::mat4(1.0f)) {
 
@@ -122,7 +122,11 @@ inline void loadHair(const std::string& filePath, const std::string& mtlid, uint
     geo_hair_map[ std::tuple{filePath, mode} ] = state;
 
     auto key = std::tuple{ filePath, mode, mtlid};
-    hair_xxx_cache.insert(key );
+    if (hair_xxx_cache.count(key)) {
+        hair_xxx_cache[key].push_back(transform);
+    } else {
+        hair_xxx_cache[key] = { transform }; 
+    }
 }
 
 inline void prepareHairs(OptixDeviceContext context) {
