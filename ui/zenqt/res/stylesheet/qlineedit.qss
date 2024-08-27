@@ -172,7 +172,7 @@ QPlainTextEdit[cssClass="logpanel"]
     background-color: rgb(37,37,37); 
     border: 1px solid rgb(18,20,22);
     font-family:'Arial';
-    font-size: 13pt;
+    font-size: 10pt;
 }
 
 QLineEdit[cssClass="blackboard_title"]

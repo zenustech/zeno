@@ -18,6 +18,10 @@ ZENO_API void set_log_level(log_level_t level) {
     curr_level = level;
 }
 
+ZENO_API log_level_t get_log_level() {
+    return curr_level;
+}
+
 ZENO_API bool __check_log_level(log_level_t level) {
     return level >= curr_level;
 }

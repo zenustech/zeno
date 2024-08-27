@@ -200,11 +200,15 @@ protected:
     QWidget* initWidget() override;
     void initConnections() override;
 
+private slots:
+    void onLogLevelChanged(int idx);
+
 private:
     QStackedWidget* m_stack;
     ZToolBarButton* m_pBtnFilterLog;
     ZToolBarButton* m_pBtnPlainLog;
     ZToolBarButton* m_pDeleteLog;
+    QComboBox* m_cbLogLevel;
 };
 
 class DockContent_Image : public DockToolbarWidget {

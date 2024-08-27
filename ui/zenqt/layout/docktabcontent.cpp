@@ -1176,6 +1176,7 @@ void DockContent_View::setOptixBackgroundState(bool checked)
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
     : DockToolbarWidget(parent)
     , m_stack(nullptr)
+    , m_cbLogLevel(nullptr)
 {
 }
 
@@ -1185,6 +1186,13 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
     m_pBtnFilterLog = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     m_pBtnPlainLog = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
     m_pDeleteLog = new ZToolBarButton(false, ":/icons/toolbar_delete_idle.svg", ":/icons/toolbar_delete_light.svg");
+    m_cbLogLevel = new QComboBox();
+    m_cbLogLevel->addItems({"trace", "debug", "info", "critical", "warning", "error"});
+
+    auto level = zeno::get_log_level();
+    int idx = (int)level - (int)zeno::log_level_t::trace;
+    m_cbLogLevel->setCurrentIndex(idx);
+
     m_pBtnPlainLog->setChecked(true);
     m_pBtnFilterLog->setChecked(false);
     m_pBtnFilterLog->setToolTip(tr("Filter Log Panel"));
@@ -1195,6 +1203,7 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_pBtnFilterLog);
     pToolLayout->addStretch();
     pToolLayout->addWidget(m_pDeleteLog);
+    pToolLayout->addWidget(m_cbLogLevel);
 }
 
 QWidget* DockContent_Log::initWidget()
@@ -1227,6 +1236,7 @@ void DockContent_Log::initConnections()
             pLogger->clear();
         ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
     });
+    connect(m_cbLogLevel, SIGNAL(currentIndexChanged(int)), this, SLOT(onLogLevelChanged(int)));
 
     connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
         if (m_pBtnFilterLog->isChecked())
@@ -1241,6 +1251,13 @@ void DockContent_Log::initConnections()
             }
         }
     });
+}
+
+void DockContent_Log::onLogLevelChanged(int idx)
+{
+    zeno::log_level_t level = static_cast<zeno::log_level_t>(idx);
+    zeno::set_log_level(level);
+    //TODO: update env var.
 }
 
 
