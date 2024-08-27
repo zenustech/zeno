@@ -923,21 +923,6 @@ std::shared_ptr<Graph> Graph::_getGraphByPath(std::vector<std::string> items)
     return nullptr;
 }
 
-std::vector<zeno::EdgeInfo> Graph::listOrDictLinksOfParam(const ParamObject& paramObj)
-{
-    std::vector<EdgeInfo> edgs;
-    for (auto& link : paramObj.links) {
-        if (auto node = getNode(link.outNode)) {
-            ParamType paramType;
-            SocketType socketType;
-            node->getParamTypeAndSocketType(link.outParam, false, false, paramType, socketType);
-            if (paramType == gParamType_List || paramType == gParamType_Dict)
-                edgs.push_back(link);
-        }
-    }
-    return edgs;
-}
-
 ZENO_API std::shared_ptr<Graph> Graph::getGraphByPath(const std::string& pa)
 {
     std::string path = pa;
@@ -1123,29 +1108,27 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         ParamObject inParam = inNode->get_input_obj_param(edge.inParam);
         ParamObject outParam = outNode->get_output_obj_param(edge.outParam);
         if (inParam.type == gParamType_Dict || inParam.type == gParamType_List) {
-            bool bSameType = inParam.type == outParam.type;
-            if (bSameType) {
-                if (inParam.type == gParamType_List || inParam.type == gParamType_Dict) {
-                    std::vector<EdgeInfo> listOrDictLinks(std::move(listOrDictLinksOfParam(inParam)));
-                    if (listOrDictLinks.size() == 1) {          //已连接一条dict/list的边，为该边inkey赋值，不再直连
-                        updateLink(edge, false, edge.inKey, "obj0");
+            std::vector<EdgeInfo> inParamLinks = inParam.links;
+            if (inParamLinks.size() == 1) {
+                if (auto node = getNode(inParamLinks[0].outNode)) {
+                    ParamObject existOneParam = node->get_output_obj_param(inParamLinks[0].outParam);
+                    if (existOneParam.type == inParam.type) {
+                        updateLink(inParamLinks[0], false, inParamLinks[0].inKey, "obj0");
                         adjustEdge.inKey = "obj0";
                         inParam = inNode->get_input_obj_param(edge.inParam);
-                        bRemOldLinks = false;
-                        bConnectWithKey = true;
-                    } else if (listOrDictLinks.size() < 1) {    //0条边，直接连接
-                        bRemOldLinks = true;
-                        bConnectWithKey = false;
-                    }
-                    else {  //大于1条边，不去掉参数
-                        bRemOldLinks = false;
-                        bConnectWithKey = true;
                     }
                 }
-                else {
-                    //直接连接，并去掉输入端原来的参数.
+                bRemOldLinks = false;
+                bConnectWithKey = true;
+            }else if (inParamLinks.size() < 1)
+            {
+                if (inParam.type == outParam.type) {
                     bRemOldLinks = true;
                     bConnectWithKey = false;
+                }
+                else {
+                    bRemOldLinks = false;
+                    bConnectWithKey = true;
                 }
             }
             else {
@@ -1269,9 +1252,14 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
     if (!bPrimType2) {
         const ParamObject& inParam = inNode->get_input_obj_param(edge.inParam);
         if (inParam.type == gParamType_List || inParam.type == gParamType_Dict) {
-            std::vector<EdgeInfo> listOrDictLinks(std::move(listOrDictLinksOfParam(inParam)));
-            if (listOrDictLinks.size() == 1) {  //inparam只连一条dict/list,重置tokey表示直连
-                updateLink(listOrDictLinks[0], false, listOrDictLinks[0].inKey, "");
+            std::vector<EdgeInfo> inParamLinks = inParam.links;
+            if (inParamLinks.size() == 1) {
+                if (auto node = getNode(inParamLinks[0].outNode)) {
+                    ParamObject existOneParam = node->get_output_obj_param(inParamLinks[0].outParam);
+                    if (existOneParam.type == inParam.type) {   //只连一条dict/list,重置tokey表示直连
+                        updateLink(inParamLinks[0], false, inParamLinks[0].inKey, "");
+                    }
+                }
             }
         }
     }

@@ -650,6 +650,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
                         spDict->lut.insert(std::make_pair(key, spObject->clone()));
                     }
                 }
+                spDict->update_key(m_uuid);
                 return spDict;
             }
         }
@@ -682,6 +683,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
                 spDict->lut[keyName] = outResult->clone();
             }
         }
+        spDict->update_key(m_uuid);
         //已经是新构造的Dict了，不用复制了
     }
     return spDict;
@@ -723,6 +725,7 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
                         spList->push_back(outList->get(i)->clone());
                     }
                 }
+                spList->update_key(m_uuid);
             }
         }
     }
@@ -754,6 +757,7 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
             }
             //spList->dirtyIndice.insert(indx);
         }
+        spList->update_key(m_uuid);
     }
     return spList;
 }
