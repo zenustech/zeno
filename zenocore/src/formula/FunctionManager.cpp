@@ -1546,8 +1546,10 @@ namespace zeno {
     }
 
     zfxvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {
-        switch (root->type)
+        if (root)
         {
+            switch (root->type)
+            {
             case nodeType::NUMBER:
             case nodeType::STRING: return root->value;
             case nodeType::ZENVAR:
@@ -1633,6 +1635,7 @@ namespace zeno {
                         throw makeError<UnimplError>();
                     }
                 }
+            }
             }
         }
         return zfxvariant();
