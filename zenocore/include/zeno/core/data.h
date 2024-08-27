@@ -63,7 +63,7 @@ namespace zeno {
     struct ParamObject {
         std::string name;
         ParamType type = Param_Null;
-        SocketType socketType = Socket_Clone;
+        SocketType socketType = Socket_ReadOnly;    //为了兼容zeno老版本的使用习惯，clone可能有内存性能风险，owning可能概念不明
         std::vector<EdgeInfo> links;
         SocketProperty prop = Socket_Normal;
         std::string tooltip;
