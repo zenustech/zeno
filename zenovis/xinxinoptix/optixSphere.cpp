@@ -38,7 +38,7 @@ void buildUniformedSphereGAS(const OptixDeviceContext& context,  OptixTraversabl
                             OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
                             
     float3 sphereVertex = make_float3( 0.f, 0.f, 0.f );
-    float  sphereRadius = 1.0f;
+    float  sphereRadius = 0.5f;
 
     CUdeviceptr d_vertex_buffer{};
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer ), sizeof( float3 ) ) );

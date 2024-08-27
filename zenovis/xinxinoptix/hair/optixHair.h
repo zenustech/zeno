@@ -60,10 +60,9 @@ struct CurveGroup {
 struct HairState
 {
     std::shared_ptr<Hair> pHair;
+    std::shared_ptr<CurveGroup> curveGroup;
     sutil::Aabb aabb;
 
-    std::shared_ptr<CurveGroup> curveGroup;
- 
     zeno::CurveType curveType;
     std::string mtid;
 
@@ -83,11 +82,7 @@ void makeCurveGroupGAS(OptixDeviceContext context,
                         const std::vector<float3>& normals, 
                         const std::vector<uint>& strands);
 
-inline void makeCurveGroupGAS(OptixDeviceContext context) {
-    if (nullptr == curveGroup) { return; }
-    
-    makeCurveGroupGAS(context, curveGroup->points, curveGroup->widths, curveGroup->normals, curveGroup->strands);
-}
+void makeCurveGroupGAS(OptixDeviceContext context);
 
 std::vector<float2> strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands);
 std::vector<uint2> strandInfo(zeno::CurveType curveType, const std::vector<uint>& m_strands);
@@ -149,25 +144,24 @@ inline void prepareHairs(OptixDeviceContext context) {
     hair_cache.clear();
 
     for (auto& [key, state] : geo_hair_map) {
-
         state->makeHairGAS(context);
     }
 }
 
-inline std::vector<CurveGroup> curveGroupCache;
+inline std::vector<std::shared_ptr<CurveGroup>> curveGroupCache;
 inline std::vector<std::shared_ptr<HairState>> curveGroupStateCache;
 
 inline void loadCurveGroup(const std::vector<float3>& points, const std::vector<float>& widths, const std::vector<float3>& normals, const std::vector<uint>& strands, 
                            zeno::CurveType curveType, std::string mtlid) {
 
-    CurveGroup cg;
-    cg.mtlid = mtlid; 
-    cg.curveType = curveType;
+    auto cg = std::make_shared<CurveGroup>();
+    cg->mtlid = mtlid; 
+    cg->curveType = curveType;
 
-    cg.points = points;
-    cg.widths = widths;
-    cg.normals = normals;
-    cg.strands = strands;
+    cg->points = std::move(points);
+    cg->widths = std::move(widths);
+    cg->normals = std::move(normals);
+    cg->strands = std::move(strands);
 
     curveGroupCache.push_back(cg);
 }
@@ -179,10 +173,10 @@ inline void prepareCurveGroup(OptixDeviceContext context) {
     for (auto& ele : curveGroupCache) {
         auto state = std::make_shared<HairState>();
 
-        state->curveGroup = std::make_shared<CurveGroup>(ele);
+        state->curveGroup = ele;
 
-        state->curveType = ele.curveType;
-        state->mtid = ele.mtlid;
+        state->curveType = ele->curveType;
+        state->mtid = ele->mtlid;
 
         state->makeCurveGroupGAS(context);
 

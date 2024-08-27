@@ -37,11 +37,15 @@
 #include "Util.h"
 #include "optixHair.h"
 
+#include <tbb/task.h>
+#include <tbb/task_group.h>
+
 void HairState::makeCurveGroupGAS(OptixDeviceContext context, 
                                 const std::vector<float3>& points, 
                                 const std::vector<float>& widths,
                                 const std::vector<float3>& normals, 
-                                const std::vector<uint>& strands) {
+                                const std::vector<uint>& strands) 
+{
 
     xinxinoptix::raii<CUdeviceptr> devicePoints;
     {
@@ -134,9 +138,31 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context,
     accelBuildOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
     xinxinoptix::buildXAS(context, accelBuildOptions, buildInput, gasBuffer, gasHandle);
-
-    makeAuxData(strands);
     return;
+}
+
+void HairState::makeCurveGroupGAS(OptixDeviceContext context) {
+    if (nullptr == curveGroup && nullptr == pHair) { return; }
+
+    tbb::task_group tgroup;
+
+    tgroup.run([&]() {
+        if (nullptr != pHair) {
+            makeCurveGroupGAS(context, pHair->points(), pHair->widths(), {}, pHair->strands());
+        } else { 
+            makeCurveGroupGAS(context, curveGroup->points, curveGroup->widths, curveGroup->normals, curveGroup->strands);
+        } 
+    });
+    
+    tgroup.run([&]() {
+        if (nullptr != pHair) {
+            makeAuxData(pHair->strands());
+        } else {
+            makeAuxData(curveGroup->strands);
+        }
+    });
+
+    tgroup.wait();
 }
 
 void HairState::makeHairGAS(OptixDeviceContext context)
@@ -147,11 +173,8 @@ void HairState::makeHairGAS(OptixDeviceContext context)
     pState->gasHandle = 0;
     pState->gasBuffer.reset();
 
-    auto& points = pHair->points();
-    auto& widths = pHair->widths();
-    auto& strands = pHair->strands();
+    makeCurveGroupGAS(context);
 
-    makeCurveGroupGAS(context, points, widths, {}, strands);
     return;
 }
 
