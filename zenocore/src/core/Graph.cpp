@@ -121,15 +121,17 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
     auto spNode = spParam->m_wpNode.lock();
     assert(spNode);
     const std::string& uuid = spNode->get_uuid();
-    if (zeno::types::gParamType_String == spParam->type) {
-        std::string newstr = zeno_get<std::string>(new_value);
-        std::regex pattern("\\$F");
-        if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
-            frame_nodes.insert(uuid);
-            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
+    if (zeno::types::gParamType_String == spParam->type || zeno::types::gParamType_Int == spParam->type || zeno::types::gParamType_Float == spParam->type) {
+        std::string newstr;
+        if (zeno_get_if(new_value, newstr)) {
+            std::regex pattern("\\$F");
+            if (std::regex_search(newstr, pattern, std::regex_constants::match_default)) {
+                frame_nodes.insert(uuid);
+                getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
+            }
         }
     }
-    else if (zeno::types::gParamType_Vec2f == spParam->type) {
+    else if (zeno::types::gParamType_Vec2f == spParam->type || zeno::types::gParamType_Vec2i == spParam->type || zeno::types::gParamType_Vec2s == spParam->type) {
         vec2s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");
@@ -141,7 +143,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             }
         }
     }
-    else if (zeno::types::gParamType_Vec3f == spParam->type) {
+    else if (zeno::types::gParamType_Vec3f == spParam->type || zeno::types::gParamType_Vec3i == spParam->type || zeno::types::gParamType_Vec3s == spParam->type) {
         vec3s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");
@@ -153,7 +155,7 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
             }
         }
     }
-    else if (zeno::types::gParamType_Vec4f == spParam->type) {
+    else if (zeno::types::gParamType_Vec4f == spParam->type || zeno::types::gParamType_Vec4i == spParam->type || zeno::types::gParamType_Vec4s == spParam->type) {
         vec4s vec;
         if (zeno_get_if(new_value, vec)) {
             std::regex pattern("\\$F");

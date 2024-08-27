@@ -27,7 +27,7 @@ struct NumericIntVec2 : zeno::INode {
 
 ZENDEFNODE(NumericIntVec2, {
     {},
-    {{"vec2i", "vec2"}},
+    {{gParamType_Vec2i, "vec2"}},
     {{gParamType_Int, "x", "0"}, {gParamType_Int, "y", "0"}},
     {"deprecated"},
 });
@@ -60,7 +60,7 @@ struct NumericIntVec3 : zeno::INode {
 
 ZENDEFNODE(NumericIntVec3, {
     {},
-    {{"vec3i", "vec3"}},
+    {{gParamType_Vec3i, "vec3"}},
     {{gParamType_Int, "x", "0"}, {gParamType_Int, "y", "0"}, {gParamType_Int, "z", "0"}},
     {"numeric"},
 });
@@ -78,7 +78,7 @@ struct NumericIntVec4 : zeno::INode {
 
 ZENDEFNODE(NumericIntVec4, {
     {},
-    {{gParamType_Vec4f, "vec4"}},
+    {{gParamType_Vec4i, "vec4"}},
     {{gParamType_Float, "x", "0"}, {gParamType_Float, "y", "0"},
      {gParamType_Float, "z", "0"}, {gParamType_Float, "w", "0"}},
     {"numeric"},
