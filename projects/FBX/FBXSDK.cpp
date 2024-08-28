@@ -1010,7 +1010,7 @@ struct NewFBXImportAnimation : INode {
             ud.set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
                 ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
-                zeno::log_info("boneName: {}", bone_names[i]);
+                zeno::log_debug("boneName: {}", bone_names[i]);
             }
         }
 
