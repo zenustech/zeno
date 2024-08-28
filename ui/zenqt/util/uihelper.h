@@ -57,6 +57,7 @@ public:
     static bool qIndexSetData(const QModelIndex& index, const QVariant& value, int role);
     static QStringList getCoreTypeList();
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
+    static QString anyToString(const zeno::reflect::Any& any);
     static QString variantToString(const QVariant& var);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);

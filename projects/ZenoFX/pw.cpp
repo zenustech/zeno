@@ -1,13 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/GeometryObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/core/Graph.h>
-#include <zeno/formula/zfxexecute.h>
-#include <zeno/core/FunctionManager.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -62,38 +59,6 @@ static void vectors_wrangle
         }
     }
 }
-
-struct AttributeWrangle : zeno::INode {
-    virtual void apply() override {
-        auto code = get_input<zeno::StringObject>("zfxCode")->get();
-
-        ZfxContext ctx;
-        ctx.spNode = shared_from_this();
-        ctx.spObject = get_input("prim")->clone();
-        ctx.code = code;
-        ZfxExecute zfx(code, ctx);
-        zfx.execute();
-
-        if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(ctx.spObject)) {
-            set_output("prim", spGeo->toPrimitive());
-        }
-        else {
-            set_output("prim", ctx.spObject);
-        }
-        //auto& funcMgr = zeno::getSession().funcManager;
-        //funcMgr->testExp();
-    }
-};
-
-ZENDEFNODE(AttributeWrangle, {
-    {{gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-     {gParamType_String, "zfxCode", "", Socket_Primitve, CodeEditor},
-     {gParamType_Dict, "params", "", zeno::Socket_ReadOnly}},
-    {{gParamType_Primitive, "prim"}},
-    {},
-    {"zenofx"},
-});
-
 
 struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {

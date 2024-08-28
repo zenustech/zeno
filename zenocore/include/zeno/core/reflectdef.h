@@ -14,6 +14,7 @@ namespace zeno {
         std::string dispName;
         zeno::reflect::Any defl;
         std::string wildCardGroup;
+        ParamControl ctrl;
     };
 
     struct _ObjectParam

@@ -30,6 +30,8 @@
 #include "widgets/zcheckbox.h"
 
 
+using namespace zeno::reflect;
+
 class RetryScope
 {
 public:
@@ -937,7 +939,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     const QString& tabName = tabItem->data(ROLE_PARAM_NAME).toString();
     const QString& groupName = groupItem->data(ROLE_PARAM_NAME).toString();
 
-        PANEL_GROUP& group = m_inputControls[tabName][groupName];
+    PANEL_GROUP& group = m_inputControls[tabName][groupName];
 
     for (int r = topLeft.row(); r <= bottomRight.row(); r++)
     {
@@ -969,9 +971,9 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 ctrl.controlLayout->removeWidget(ctrl.pLabel);
                 delete ctrl.pLabel;
             }
-                if (ctrl.pIconLabel) {
-                    ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
-                    delete ctrl.pIconLabel;
+            if (ctrl.pIconLabel) {
+                ctrl.controlLayout->removeWidget(ctrl.pIconLabel);
+                delete ctrl.pIconLabel;
             }
 
             int row = group.keys().indexOf(paramName, 0);
@@ -981,40 +983,44 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
         else if (role == ROLE_PARAM_VALUE)
         {
             const QString& paramName = param->data(ROLE_PARAM_NAME).toString();
-            const QVariant& value = param->data(ROLE_PARAM_VALUE);
-                _PANEL_CONTROL& ctrl = m_inputControls[tabName][groupName][paramName];
+            const QVariant& qvarAny = param->data(ROLE_PARAM_VALUE);
+            zeno::reflect::Any value = qvarAny.value<zeno::reflect::Any>();
+            ZASSERT_EXIT(value.has_value());
+
+            _PANEL_CONTROL& ctrl = m_inputControls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);
 
             if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
             {
-                    zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toLongLong();
+                zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toLongLong();
                 zeno::ParamControl paramCtrl = (zeno::ParamControl)param->data(ROLE_PARAM_CONTROL).toInt();
                 QString literalNum;
-                    if (type == zeno::types::gParamType_Float) {
+                if (type == zeno::types::gParamType_Float) {
                     QVariant newVal = value;
                     bool bKeyFrame = AppHelper::getCurveValue(newVal);
                     literalNum = UiHelper::variantToString(newVal);
                     pLineEdit->setText(literalNum);
-                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
-                        if (properties.empty())
-                            return;
+                    QVector<QString> properties;//TODO = AppHelper::getKeyFrameProperty(value);
+                    if (properties.empty())
+                        return;
                     pLineEdit->setProperty(g_setKey, properties.first());
                     pLineEdit->style()->unpolish(pLineEdit);
                     pLineEdit->style()->polish(pLineEdit);
-                        pLineEdit->update();
-
+                    pLineEdit->update();
                 } else {
-                    literalNum = UiHelper::variantToString(value);
+                    literalNum = UiHelper::anyToString(value);
                     pLineEdit->setText(literalNum);
                 }
             }
             else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
             {
-                pCombobox->setCurrentText(value.toString());
+                const std::string& text = any_cast<std::string>(value);
+                pCombobox->setCurrentText(QString::fromStdString(text));
             }
             else if (QTextEdit* pTextEidt = qobject_cast<QTextEdit*>(ctrl.pControl))
             {
-                pTextEidt->setText(value.toString());
+                const std::string& text = any_cast<std::string>(value);
+                pTextEidt->setText(QString::fromStdString(text));
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
@@ -1023,41 +1029,46 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 pVecEdit->setVec(newVal, pVecEdit->isFloat());
                 if (pVecEdit->isFloat())
                 {
-                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
-                        if (!properties.empty())
-                    pVecEdit->updateProperties(properties);
+                    //QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                    //if (!properties.empty())
+                    //    pVecEdit->updateProperties(properties);
                 }
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
             {
-                pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+                bool bChecked = any_cast<bool>(value);
+                pCheckbox->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
             }
             else if (QSlider* pSlider = qobject_cast<QSlider*>(ctrl.pControl))
             {
-                pSlider->setValue(value.toInt());
+                int intval = any_cast<int>(value);
+                pSlider->setValue(intval);
             }
             else if (QSpinBox* pSpinBox = qobject_cast<QSpinBox*>(ctrl.pControl))
             {
-                pSpinBox->setValue(value.toInt());
+                int intval = any_cast<int>(value);
+                pSpinBox->setValue(intval);
             }
             else if (QDoubleSpinBox* pSpinBox = qobject_cast<QDoubleSpinBox*>(ctrl.pControl))
             {
-                pSpinBox->setValue(value.toDouble());
+                float fval = any_cast<float>(value);
+                pSpinBox->setValue(fval);
             }
             else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
             {
-                pSpinSlider->setValue(value.toInt());
-                }
-                else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl))
+                int intval = any_cast<int>(value);
+                pSpinSlider->setValue(intval);
+            }
+            else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl))
             {
                 // colorvec3f
-                if (value.canConvert<UI_VECTYPE>()) {
-                    UI_VECTYPE vec = value.value<UI_VECTYPE>();
-                    if (vec.size() == 3) {
-                        auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
-                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
-                    }
-                }
+                //if (value.canConvert<UI_VECTYPE>()) {
+                //    UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                //    if (vec.size() == 3) {
+                //        auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
+                //        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                //    }
+                //}
             }
             //...
         }

@@ -116,16 +116,16 @@ if (ZENO_WITH_REFLECTOR)
 
     # BEGIN - 基础数据类型和自定义类型的自动扫描
 
-    if (0)
-        #遍历整个目录，并收集所有标有ZRECORD或者ZPRIMITIVE的类的文件，暂时不包含project文件夹，以后可能插件化
-        #如果有什么动态Object或者类型，现在这里添加搜索目录（如果没有的话）
-        file(GLOB_RECURSE scan_source CONFIGURE_DEPENDS 
-            include/*.h
-            src/*.cpp
-            ../zeno/*.h
-            ../zeno/*.cpp
-        )
+    #遍历整个目录，并收集所有标有ZRECORD或者ZPRIMITIVE的类的文件，暂时不包含project文件夹，以后可能插件化
+    #如果有什么动态Object或者类型，现在这里添加搜索目录（如果没有的话）
+    file(GLOB_RECURSE scan_source CONFIGURE_DEPENDS 
+        include/*.h
+        src/*.cpp
+        ../zeno/*.h
+        ../zeno/*.cpp
+    )
 
+    if (0)
         set(REFLECTE_ZENO_TYPES_HEADER "dummy")
         foreach(file_path ${scan_source})
             file(READ ${file_path} CURR_FILE_CONTENT)
@@ -157,7 +157,7 @@ if (ZENO_WITH_REFLECTOR)
 
     # BEGIN - 节点定义的自动扫描，在这里我们把带有ZDEFNODE标识的约定为节点的定义
     # 生成节点类的反射信息
-    if (0)
+    if (1)
         set(REFLECTION_NODES "dummy")
         #make_absolute_paths(REFLECTION_NODES ${reflectnodes})
         foreach(file_path ${scan_source})

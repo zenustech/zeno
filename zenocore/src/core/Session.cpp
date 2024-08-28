@@ -128,6 +128,7 @@ struct ReflectNodeClass : INodeClass {
                             else if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
                                 inputPrims[param.mapTo].name = param.dispName;
                                 inputPrims[param.mapTo].defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
+                                inputPrims[param.mapTo].control = param.ctrl;
                                 group.params.push_back(std::move(inputPrims[param.mapTo]));
                                 inputPrims.erase(param.mapTo);
                             }
@@ -984,7 +985,8 @@ ZENO_API void Session::set_Rerun()
 }
 
 static bool isBasedINode(const size_t hash) {
-    if (hash == zeno::types::gParamType_INode)
+    static size_t inodecode = zeno::reflect::type_info<class zeno::INode>().hash_code();
+    if (hash == inodecode)
         return true;
 
     auto& registry = zeno::reflect::ReflectionRegistry::get();

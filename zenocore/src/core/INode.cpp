@@ -534,15 +534,28 @@ ZENO_API void INode::reflecNode_apply()
                 ParamType _type = rtti.get_decayed_hash() == 0 ? rtti.hash_code() : rtti.get_decayed_hash();
                 bool bConstPtr = false;
                 if (zeno::isObjectType(rtti, bConstPtr)) {
-                    auto iter = m_outputObjs.find("result");
-                    if (iter != m_outputObjs.end()) {
-                        iter->second.spObject = any_cast<zany>(res);
+                    //apply函数的返回值没法用命名表达，所以应该是空字符串
+                    auto iter = outputObjs.find("");
+                    if (iter != outputObjs.end()) {
+                        auto _iter = m_outputObjs.find(iter->second);
+                        if (_iter != m_outputObjs.end()) {
+                            _iter->second.spObject = any_cast<zany>(res);
+                        }
+                    }
+                    else {
+                        zeno::log_warn("invalid output object name");
                     }
                 }
                 else {
-                    auto iter2 = m_outputPrims.find("result");
-                    if (iter2 != m_outputPrims.end()) {
-                        iter2->second.result = res;
+                    auto iter = outputPrims.find("");
+                    if (iter != outputPrims.end()) {
+                        auto _iter = m_outputPrims.find(iter->second);
+                        if (_iter != m_outputPrims.end()) {
+                            _iter->second.result = res;
+                        }
+                    }
+                    else {
+                        zeno::log_warn("invalid output prim name");
                     }
                 }
                 //从成员变量到输入

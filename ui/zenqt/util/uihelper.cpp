@@ -155,6 +155,8 @@ zeno::reflect::Any UiHelper::qvarToAny(const QVariant& var, const zeno::ParamTyp
     return zeno::reflect::Any();
 }
 
+
+
 QVariant UiHelper::anyToQvar(zeno::reflect::Any var)
 {
     if (!var.has_value()) {
@@ -920,6 +922,113 @@ QString UiHelper::getSockSubgraph(const QString& sockPath)
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
     if (lst.size() > 0)
         return lst[0];
+    return "";
+}
+
+QString UiHelper::anyToString(const zeno::reflect::Any& any)
+{
+    if (!any.has_value()) {
+        return "";
+    }
+    if (zeno::reflect::get_type<int>() == any.type()) {
+        return QString::number(zeno::reflect::any_cast<int>(any));
+    }
+    else if (zeno::reflect::get_type<float>() == any.type()) {
+        return QString::number(zeno::reflect::any_cast<float>(any));
+    }
+    else if (zeno::reflect::get_type<std::string>() == any.type()) {
+        return QString::fromStdString(zeno::reflect::any_cast<std::string>(any));
+    }
+    else if (zeno::reflect::get_type<zeno::vec2i>() == any.type()) {
+        zeno::vec2i vec2i = zeno::reflect::any_cast<zeno::vec2i>(any);
+        QString res;
+        res += QString::number(vec2i[0]);
+        res += ",";
+        res += QString::number(vec2i[1]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec3i>() == any.type()) {
+        zeno::vec3i vec3i = zeno::reflect::any_cast<zeno::vec3i>(any);
+        QString res;
+        res += QString::number(vec3i[0]);
+        res += ",";
+        res += QString::number(vec3i[1]);
+        res += ",";
+        res += QString::number(vec3i[2]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec4i>() == any.type()) {
+        zeno::vec4i vec4i = zeno::reflect::any_cast<zeno::vec4i>(any);
+        QString res;
+        res += QString::number(vec4i[0]);
+        res += ",";
+        res += QString::number(vec4i[1]);
+        res += ",";
+        res += QString::number(vec4i[2]);
+        res += ",";
+        res += QString::number(vec4i[3]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec2f>() == any.type()) {
+        zeno::vec2f vec2f = zeno::reflect::any_cast<zeno::vec2f>(any);
+        QString res;
+        res += QString::number(vec2f[0]);
+        res += ",";
+        res += QString::number(vec2f[1]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec3f>() == any.type()) {
+        zeno::vec3f vec3f = zeno::reflect::any_cast<zeno::vec3f>(any);
+        QString res;
+        res += QString::number(vec3f[0]);
+        res += ",";
+        res += QString::number(vec3f[1]);
+        res += ",";
+        res += QString::number(vec3f[2]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec4f>() == any.type()) {
+        zeno::vec4f vec4f = zeno::reflect::any_cast<zeno::vec4f>(any);
+        QString res;
+        res += QString::number(vec4f[0]);
+        res += ",";
+        res += QString::number(vec4f[1]);
+        res += ",";
+        res += QString::number(vec4f[2]);
+        res += ",";
+        res += QString::number(vec4f[3]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec2s>() == any.type()) {
+        zeno::vec2s vec2s = zeno::reflect::any_cast<zeno::vec2s>(any);
+        QString res;
+        res += QString::fromStdString(vec2s[0]);
+        res += ",";
+        res += QString::fromStdString(vec2s[1]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec3s>() == any.type()) {
+        zeno::vec3s vec3s = zeno::reflect::any_cast<zeno::vec3s>(any);
+        QString res;
+        res += QString::fromStdString(vec3s[0]);
+        res += ",";
+        res += QString::fromStdString(vec3s[1]);
+        res += ",";
+        res += QString::fromStdString(vec3s[2]);
+        return res;
+    }
+    else if (zeno::reflect::get_type<zeno::vec4s>() == any.type()) {
+        zeno::vec4s vec4s = zeno::reflect::any_cast<zeno::vec4s>(any);
+        QString res;
+        res += QString::fromStdString(vec4s[0]);
+        res += ",";
+        res += QString::fromStdString(vec4s[1]);
+        res += ",";
+        res += QString::fromStdString(vec4s[2]);
+        res += ",";
+        res += QString::fromStdString(vec4s[3]);
+        return res;
+    }
     return "";
 }
 
