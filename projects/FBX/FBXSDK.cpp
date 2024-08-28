@@ -1461,6 +1461,7 @@ static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
     }
     return boneNames;
 }
+
 static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zeno::PrimitiveObject* skeleton) {
     std::vector<int> ordering;
     std::set<int> ordering_set;
@@ -1994,6 +1995,134 @@ ZENDEFNODE(PrimAttrFlat, {
     },
     {},
     {"debug"},
+});
+
+struct IKChainsItemObject : PrimitiveObject {
+    std::string RootName;
+    std::string MidName;
+    std::string TipName;
+    bool MatchByName = true;
+    std::string TwistName;
+    std::string GoalName;
+    float Blend = 1;
+    bool OrientTip = true;
+};
+struct IKChainsItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<IKChainsItemObject>();
+        item->RootName  = get_input2<std::string>("RootName");
+        item->MidName  = get_input2<std::string>("MidName");
+        item->TipName  = get_input2<std::string>("TipName");
+        item->MatchByName  = get_input2<bool>("MatchByName");
+        item->TwistName  = get_input2<std::string>("TwistName");
+        item->Blend  = get_input2<float>("Blend");
+        item->OrientTip  = get_input2<bool>("OrientTip");
+
+        set_output2("poseItem", std::move(item));
+    }
+};
+
+ZENDEFNODE(IKChainsItem, {
+    {
+        {"string", "RootName", ""},
+        {"string", "MidName", ""},
+        {"string", "TipName", ""},
+        {"bool", "MatchByName", "1"},
+        {"string", "TwistName", ""},
+        {"string", "GoalName", ""},
+        {"float", "Blend", "1"},
+        {"bool", "OrientTip", "1"},
+    },
+    {
+        "poseItem",
+    },
+    {},
+    {"Animation"},
+});
+
+float sqr(float v) {
+    return v * v;
+}
+// return: mid, tip
+std::pair<vec3f, vec3f> twoBoneIK(
+    vec3f root
+    , vec3f joint
+    , vec3f end
+    , vec3f jointTarget
+    , vec3f effector
+) {
+        vec3f output_joint = {};
+        vec3f output_end = {};
+
+        auto root_to_effect = effector - root;
+        auto root_to_jointTarget = jointTarget - root;
+
+        auto upper_limb_length = zeno::length(root - joint);
+        auto lower_limb_length = zeno::length(joint - end);
+        auto desired_length = zeno::length(root_to_effect);
+        if (desired_length < abs(upper_limb_length - lower_limb_length)) {
+            zeno::log_info("A");
+            output_joint = root + normalize(root_to_effect) * abs(upper_limb_length - lower_limb_length);
+            output_end = root + normalize(root_to_effect) * upper_limb_length;
+        }
+        else if (desired_length > upper_limb_length + lower_limb_length) {
+            zeno::log_info("B");
+
+            output_joint = root + normalize(root_to_effect) * upper_limb_length;
+            output_end = root + normalize(root_to_effect) * (upper_limb_length + lower_limb_length);
+        }
+        else {
+            zeno::log_info("C");
+
+            vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
+            float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
+            float sin_theta = sqrt(1 - sqr(cos_theta));
+            output_joint = root + normalize(root_to_effect) * cos_theta + to_pole * sin_theta;
+            output_end = effector;
+        }
+
+    return {output_joint, output_end};
+}
+
+struct IKChains : INode {
+    virtual void apply() override {
+        auto skeleton = get_input2<PrimitiveObject>("Skeleton");
+        auto ikDrivers = get_input2<PrimitiveObject>("IK Drivers");
+        auto items = get_input<zeno::ListObject>("items")->getRaw<IKChainsItemObject>();
+        auto skeletonBoneNameMapping = getBoneNameMapping(skeleton.get());
+        auto ikDriversBoneNameMapping = getBoneNameMapping(ikDrivers.get());
+
+        for (auto item: items) {
+            std::string TwistName = item->MatchByName? item->MidName: item->TwistName;
+            std::string GoalName = item->MatchByName? item->TipName: item->GoalName;
+            vec3f root = skeleton->verts[skeletonBoneNameMapping[item->RootName]];
+            vec3f &joint = skeleton->verts[skeletonBoneNameMapping[item->MidName]];
+            vec3f &end = skeleton->verts[skeletonBoneNameMapping[item->TipName]];
+            vec3f jointTarget = ikDrivers->verts[ikDriversBoneNameMapping[TwistName]];
+            vec3f effector = ikDrivers->verts[ikDriversBoneNameMapping[GoalName]];
+            zeno::log_info("{} {} {}", root, joint, end);
+            zeno::log_info("{} {}", jointTarget, effector);
+            auto [midPos, tipPos] = twoBoneIK(root, joint, end, jointTarget, effector);
+            // set ...
+            joint = midPos;
+            end = tipPos;
+        }
+
+        set_output("Skeleton", skeleton);
+    }
+};
+
+ZENDEFNODE(IKChains, {
+    {
+        "Skeleton",
+        "IK Drivers",
+        {"list", "items"},
+    },
+    {
+        "Skeleton",
+    },
+    {},
+    {"Animation"},
 });
 
 #if 0
