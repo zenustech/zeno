@@ -220,11 +220,12 @@ struct GraphicsManager {
                     auto curveTypeIndex = ud.get2<uint>("curve", 0u);
                     auto curveTypeEnum = magic_enum::enum_cast<zeno::CurveType>(curveTypeIndex).value_or(zeno::CurveType::LINEAR);
 
-                    auto& normalArray = prim_in->verts.attr("v");
                     auto& widthArray = prim_in->verts.attr("width");
                     auto& pointArray = prim_in->verts;
+
+                    std::vector<float3> dummy {};
                     
-                    auto& normals = reinterpret_cast<const std::vector<float3>&>(normalArray);
+                    auto& normals = prim_in->verts.has_attr("v") ? reinterpret_cast<std::vector<float3>&>(prim_in->verts.attr("v")) : dummy;
                     auto& points = reinterpret_cast<const std::vector<float3>&>(pointArray);
                     auto& widths = reinterpret_cast<const std::vector<float>&>(widthArray);
 
