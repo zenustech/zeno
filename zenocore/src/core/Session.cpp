@@ -1038,6 +1038,19 @@ ZENO_API bool Session::getObjUIInfo(size_t hashcode, std::string_view& color, st
     return true;
 }
 
+ZENO_API void Session::initEnv(const zenoio::ZSG_PARSE_RESULT ioresult) {
+    resetMainGraph();
+    mainGraph->init(ioresult.mainGraph);
+    referManager->init(mainGraph);
+
+    bool bDisableRun = m_bDisableRunning;
+    m_bDisableRunning = true;
+    scope_exit sp([&]() {m_bDisableRunning = bDisableRun; });
+    switchToFrame(ioresult.timeline.currFrame);
+    //init $F globalVariable
+    //zeno::getSession().globalVariableManager->overrideVariable(zeno::GVariable("$F", zeno::reflect::make_any<float>(ioresult.timeline.currFrame)));
+}
+
 ZENO_API zeno::NodeCates Session::dumpCoreCates() {
     //有可能插件的初始化反射信息较晚，所以要再扫一次。TODO:扫描优化可以再精简一下
     zeno::getSession().initReflectNodes();

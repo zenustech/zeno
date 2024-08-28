@@ -182,7 +182,6 @@ public slots:
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
-    void onFrameSwitched(int frameid);
     void onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg);
     void justLoadObjects();
 

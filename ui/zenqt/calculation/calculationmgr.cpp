@@ -10,6 +10,7 @@
 #include <zeno/core/common.h>
 #include "model/graphsmanager.h"
 #include "model/GraphsTreeModel.h"
+#include "widgets/ztimeline.h"
 
 
 CalcWorker::CalcWorker(QObject* parent) {
@@ -51,12 +52,14 @@ CalculationMgr::CalculationMgr(QObject* parent)
     : QObject(parent)
     , m_bMultiThread(false)
     , m_worker(nullptr)
+    , m_playTimer(new QTimer(this))
 {
     m_worker = new CalcWorker(this);
     m_worker->moveToThread(&m_thread);
     connect(&m_thread, &QThread::started, m_worker, &CalcWorker::run);
     connect(m_worker, &CalcWorker::calcFinished, this, &CalculationMgr::onCalcFinished);
     connect(m_worker, &CalcWorker::nodeStatusChanged, this, &CalculationMgr::onNodeStatusReported);
+    connect(m_playTimer, SIGNAL(timeout()), this, SLOT(onPlayReady()));
 
     auto& sess = zeno::getSession();
     sess.registerRunTrigger([=]() {
@@ -100,6 +103,65 @@ void CalculationMgr::run()
     }
 }
 
+void CalculationMgr::onPlayReady() {
+    auto& sess = zeno::getSession();
+    if (!sess.is_auto_run()) {
+        run();
+    }
+    //切到下一帧
+    int frame = sess.globalState->getFrameId();
+    sess.switchToFrame(frame + 1);
+
+    //ui上也同步这一帧
+    if (auto mainWin = zenoApp->getMainWindow()) {
+        if (auto timeline = mainWin->timeline()) {
+            timeline->blockSignals(true);
+            timeline->setSliderValue(frame + 1);
+            timeline->blockSignals(false);
+        }
+    }
+
+    m_playTimer->start();
+}
+
+void CalculationMgr::onPlayTriggered(bool bToggled) {
+    if (m_playTimer) {
+        if (bToggled) {
+            m_playTimer->start();
+        }
+        else {
+            m_playTimer->stop();
+        }
+
+        if (auto mainWin = zenoApp->getMainWindow()) {
+            if (auto timeline = mainWin->timeline()) {
+                bool block = timeline->signalsBlocked();
+                timeline->blockSignals(true);
+                timeline->setPlayButtonChecked(bToggled);
+                timeline->blockSignals(block);
+            }
+        }
+    }
+}
+
+void CalculationMgr::onFrameSwitched(int frame) {
+    //手动移动时间轴
+
+    //停止播放
+    m_playTimer->stop();
+    if (auto mainWin = zenoApp->getMainWindow()) {
+        if (auto timeline = mainWin->timeline()) {
+            bool block = timeline->signalsBlocked();
+            timeline->blockSignals(true);
+            timeline->setPlayButtonChecked(false);
+            timeline->blockSignals(block);
+        }
+    }
+
+    auto& sess = zeno::getSession();
+    sess.switchToFrame(frame);
+}
+
 void CalculationMgr::kill()
 {
     zeno::getSession().interrupt();
@@ -115,6 +177,10 @@ void CalculationMgr::registerRenderWid(DisplayWidget* pDisp)
 
 void CalculationMgr::unRegisterRenderWid(DisplayWidget* pDisp) {
     m_loadedRender.remove(pDisp);
+}
+
+bool CalculationMgr::isMultiThreadRunning() const {
+    return m_bMultiThread;
 }
 
 void CalculationMgr::on_render_objects_loaded()

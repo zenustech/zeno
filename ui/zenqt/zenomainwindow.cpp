@@ -970,69 +970,14 @@ void ZenoMainWindow::assetsWatcher()
 
 void ZenoMainWindow::initTimeline()
 {
-    connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
-        QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views) {
-            view->onPlayClicked(bPlaying);
-        }
-    });
-
-    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, &ZenoMainWindow::onFrameSwitched);
-
-    auto graphs = zenoApp->graphsManager();
-    connect(graphs, &GraphsManager::modelDataChanged, this, [=]() {
-        if (!m_bAlways && !m_bAlwaysLightCamera && !m_bAlwaysMaterial)
-            return;
-#if 0
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
-        m_pTimeline->togglePlayButton(false);
-        int nFrame = m_pTimeline->value();
-        QVector<DisplayWidget *> views = viewports();
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-            QVector<DisplayWidget *> views = viewports();
-            for (auto displayWid : views) {
-                if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                }
-            }
-        };
-        for (DisplayWidget *view : views) {
-            if (m_bAlways) {
-                setOptixUpdateSeparately(false, false);
-                LAUNCH_PARAM launchParam;
-                launchParam.beginFrame = nFrame;
-                launchParam.endFrame = nFrame;
-                launchParam.projectFps = timeline()->fps();
-                AppHelper::initLaunchCacheParam(launchParam);
-                view->onRun(launchParam);
-            }
-            else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                LAUNCH_PARAM launchParam;
-                launchParam.beginFrame = nFrame;
-                launchParam.endFrame = nFrame;
-                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
-                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
-                launchParam.projectFps = timeline()->fps();
-                AppHelper::initLaunchCacheParam(launchParam);
-                view->onRun(launchParam);
-            }
-        }
-#endif
-    });
+    auto pCalcMgr = zenoApp->calculationMgr();
+    connect(m_pTimeline, &ZTimeline::playForward, pCalcMgr, &CalculationMgr::onPlayTriggered);
+    connect(m_pTimeline, &ZTimeline::sliderValueChanged, pCalcMgr, &CalculationMgr::onFrameSwitched);
 }
 
 ZTimeline* ZenoMainWindow::timeline() const
 {
     return m_pTimeline;
-}
-
-void ZenoMainWindow::onFrameSwitched(int frameid)
-{
-    auto& sess = zeno::getSession();
-    sess.switchToFrame(frameid);
 }
 
 void ZenoMainWindow::onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg)
@@ -1695,10 +1640,6 @@ bool ZenoMainWindow::openFile(QString filePath)
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
-    //resetDocks(pGraphs->layoutInfo().layerOutNode);
-
-    //init $F globalVariable
-    zeno::getSession().globalVariableManager->overrideVariable(zeno::GVariable("$F", zeno::reflect::make_any<float>(pGraphs->timeInfo().currFrame)));
 
     m_ui->statusbar->showMessage(tr("File Opened"));
     zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
@@ -2146,6 +2087,7 @@ void ZenoMainWindow::resetTimeline(zeno::TimelineInfo info)
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
     m_pTimeline->initFps(info.timelinefps);
+    m_pTimeline->setSliderValue(info.currFrame);
     for (auto view: viewports())
     {
         view->setSliderFeq(1000 / info.timelinefps);

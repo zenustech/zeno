@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <zeno/core/common.h>
+#include <zeno/io/iocommon.h>
 
 
 namespace zeno {
@@ -90,6 +91,7 @@ struct Session {
     ZENO_API void initReflectNodes();
     ZENO_API void registerObjUIInfo(size_t hashcode, std::string_view color, std::string_view nametip);
     ZENO_API bool getObjUIInfo(size_t hashcode, std::string_view& color, std::string_view& nametip);
+    ZENO_API void initEnv(const zenoio::ZSG_PARSE_RESULT ioresult);
     void reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status);
 
 private:

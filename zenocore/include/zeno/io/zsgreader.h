@@ -2,7 +2,7 @@
 #define __ZSG_READER_H__
 
 #include <rapidjson/document.h>
-#include <zeno/io//iocommon.h>
+#include <zeno/io/iocommon.h>
 #include <zeno/core/data.h>
 
 namespace zenoio

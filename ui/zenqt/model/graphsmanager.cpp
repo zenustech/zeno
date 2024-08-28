@@ -135,9 +135,7 @@ bool GraphsManager::isImporting() const
 void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
 {
     ZASSERT_EXIT(m_assets);
-    zeno::getSession().resetMainGraph();
-    zeno::getSession().mainGraph->init(ioresult.mainGraph);
-    zeno::getSession().referManager->init(zeno::getSession().mainGraph);
+    zeno::getSession().initEnv(ioresult);
 }
 
 bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
