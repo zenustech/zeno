@@ -226,8 +226,8 @@ struct GraphicsManager {
                     std::vector<float3> dummy {};
                     
                     auto& normals = prim_in->verts.has_attr("v") ? reinterpret_cast<std::vector<float3>&>(prim_in->verts.attr("v")) : dummy;
-                    auto& points = reinterpret_cast<const std::vector<float3>&>(pointArray);
-                    auto& widths = reinterpret_cast<const std::vector<float>&>(widthArray);
+                    auto& points = reinterpret_cast<std::vector<float3>&>(pointArray);
+                    auto& widths = reinterpret_cast<std::vector<float>&>(widthArray);
 
                     std::vector<uint> strands {};
                     strands.push_back(prim_in->lines[0][0]);

@@ -172,7 +172,7 @@ inline void prepareHairs(OptixDeviceContext context) {
 inline std::vector<std::shared_ptr<CurveGroup>> curveGroupCache;
 inline std::vector<std::shared_ptr<HairState>> curveGroupStateCache;
 
-inline void loadCurveGroup(const std::vector<float3>& points, const std::vector<float>& widths, const std::vector<float3>& normals, const std::vector<uint>& strands, 
+inline void loadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, 
                            zeno::CurveType curveType, std::string mtlid) {
 
     auto cg = std::make_shared<CurveGroup>();

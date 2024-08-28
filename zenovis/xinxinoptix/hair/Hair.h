@@ -39,6 +39,10 @@
 #include <ostream>
 #include <filesystem>
 
+#if !defined(uint)
+using uint = unsigned int;
+#endif 
+
 static const std::map<zeno::CurveType, OptixPrimitiveType> CURVE_TYPE_MAP {
     
     { zeno::CurveType::QUADRATIC_BSPLINE, OPTIX_PRIMITIVE_TYPE_ROUND_QUADRATIC_BSPLINE },
