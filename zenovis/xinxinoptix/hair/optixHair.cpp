@@ -169,6 +169,8 @@ void HairState::makeHairGAS(OptixDeviceContext context)
 {
     auto pState = this;
     const Hair* pHair = pState->pHair.get();
+    
+    if (pState->gasHandle) return;
 
     pState->gasHandle = 0;
     pState->gasBuffer.reset();

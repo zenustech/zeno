@@ -1283,10 +1283,10 @@ struct CreateSphere : zeno::INode {
             memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
             memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
 
-            prim->userData().set2("sphere_transform_row0", row0);
-            prim->userData().set2("sphere_transform_row1", row1);
-            prim->userData().set2("sphere_transform_row2", row2);
-            prim->userData().set2("sphere_transform_row3", row3);
+            prim->userData().set2("_transform_row0", row0);
+            prim->userData().set2("_transform_row1", row1);
+            prim->userData().set2("_transform_row2", row2);
+            prim->userData().set2("_transform_row3", row3);
         }
 
         set_output("prim",std::move(prim));

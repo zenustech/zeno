@@ -36,6 +36,7 @@
 #include <set>
 #include <map>
 #include <memory>
+#include <filesystem>
 
 #include <glm/common.hpp>
 #include <glm/mat4x4.hpp>
@@ -91,7 +92,7 @@ std::vector<uint> strandIndices(zeno::CurveType curveType, const std::vector<uin
 };
 
 inline std::map< std::string, std::shared_ptr<Hair> > hair_cache;
-inline std::map< std::tuple<std::string, uint>, std::shared_ptr<HairState> > geo_hair_map;
+inline std::map< std::tuple<std::string, uint>, std::shared_ptr<HairState> > geo_hair_cache;
 
 using hair_state_key = std::tuple<std::string, uint, std::string>;
 
@@ -100,21 +101,37 @@ inline std::map<hair_state_key, std::vector<glm::mat4>> hair_yyy_cache;
 
 inline void loadHair(const std::string& filePath, const std::string& mtlid, uint mode, glm::mat4 transform=glm::mat4(1.0f)) {
 
+    auto lwt = std::filesystem::last_write_time(filePath);
+    bool neo = false;
+
     auto hair = [&]() -> std::shared_ptr<Hair> {
-        if (hair_cache.count(filePath) == 0) 
+
+        if (hair_cache.count(filePath) == 0 || lwt != hair_cache[filePath]->time()) 
         {
+            neo = true;
             auto tmp = std::make_shared<Hair>( filePath );
             tmp->prepareWidths();
             hair_cache[filePath] = tmp;
+            return tmp;
         }
         return hair_cache[filePath];
     } ();
 
-    auto state = std::make_shared<HairState>();
-    state->curveType = (zeno::CurveType)mode;
-    state->pHair = hair;
+    auto hairState = [&]() {
+        auto key = std::tuple {filePath, mode};
 
-    geo_hair_map[ std::tuple{filePath, mode} ] = state;
+        if (geo_hair_cache.count( key ) == 0 || neo) {
+
+            auto tmp = std::make_shared<HairState>();
+            tmp->curveType = (zeno::CurveType)mode;
+            tmp->pHair = hair;
+
+            geo_hair_cache[ key ] = tmp;
+            return tmp;
+        } 
+        
+        return geo_hair_cache[key];
+    } ();
 
     auto key = std::tuple{ filePath, mode, mtlid};
     if (hair_xxx_cache.count(key)) {
@@ -126,24 +143,28 @@ inline void loadHair(const std::string& filePath, const std::string& mtlid, uint
 
 inline void prepareHairs(OptixDeviceContext context) {
 
-    std::vector< std::tuple<std::string, uint> > garbage;
-    for (auto& [key, _] : geo_hair_map) {
-        auto& [filePath, mode] = key;
+    decltype(hair_cache)     hair_cache_tmp;
+    decltype(geo_hair_cache) geo_hair_cache_tmp;
+
+    for (auto& [key, val] : hair_xxx_cache) {
+        auto& [filePath, mode, mtlid] = key;
+
         if (hair_cache.count(filePath)) {
-            continue;
+            hair_cache_tmp[filePath] = hair_cache[filePath];
         }
-        garbage.push_back(key);
+
+        if (geo_hair_cache.count( {filePath, mode} )) {
+            geo_hair_cache_tmp[ {filePath, mode} ] = geo_hair_cache[ {filePath, mode} ];
+        }
     }
 
-    for (auto& key : garbage) {
-        geo_hair_map.erase(key);
-    }
+    hair_cache     = std::move(hair_cache_tmp);
+    geo_hair_cache = std::move(geo_hair_cache_tmp);
 
     hair_yyy_cache = hair_xxx_cache;
     hair_xxx_cache.clear();
-    hair_cache.clear();
 
-    for (auto& [key, state] : geo_hair_map) {
+    for (auto& [key, state] : geo_hair_cache) {
         state->makeHairGAS(context);
     }
 }
@@ -189,7 +210,7 @@ inline void prepareCurveGroup(OptixDeviceContext context) {
 
 inline void cleanupHairs() {
     hair_cache.clear();
-    geo_hair_map.clear();
+    geo_hair_cache.clear();
 
     hair_xxx_cache.clear();
     hair_yyy_cache.clear();  

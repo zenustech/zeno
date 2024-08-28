@@ -1294,7 +1294,7 @@ void updateRootIAS()
 		auto combinedID = mtlid + ":" + std::to_string(shader_mark);
 		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
-        auto& hair_state = geo_hair_map[ std::tuple(filePath, mode) ];
+        auto& hair_state = geo_hair_cache[ std::tuple(filePath, mode) ];
 
 		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
 		//opinstance.instanceId = op_index++;

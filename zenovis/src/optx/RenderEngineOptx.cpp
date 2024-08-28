@@ -251,8 +251,24 @@ struct GraphicsManager {
 
                     auto type_index = ud.get2<uint>("curve", 0u);
                     auto path_string = ud.get2<std::string>("path", "");
-                    auto yup = ud.get2<bool>("yup", true);
 
+                    glm::mat4 transform(1.0f);
+                    auto transform_ptr = glm::value_ptr(transform);
+
+                    if (ud.has("_transform_row0") && ud.has("_transform_row1") && ud.has("_transform_row2") && ud.has("_transform_row3")) {
+
+                        auto row0 = ud.get2<zeno::vec4f>("_transform_row0");
+                        auto row1 = ud.get2<zeno::vec4f>("_transform_row1");
+                        auto row2 = ud.get2<zeno::vec4f>("_transform_row2");
+                        auto row3 = ud.get2<zeno::vec4f>("_transform_row3");
+
+                        memcpy(transform_ptr, row0.data(), sizeof(float)*4);
+                        memcpy(transform_ptr+4, row1.data(), sizeof(float)*4);
+                        memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
+                        memcpy(transform_ptr+12, row3.data(), sizeof(float)*4); 
+                    }
+
+                    auto yup = ud.get2<bool>("yup", true);
                     auto trans = yup? glm::mat4 { 
                                                     0, 0, 1, 0,
                                                     1, 0, 0, 0,
@@ -260,6 +276,7 @@ struct GraphicsManager {
                                                     0, 0, 0, 1
                                                 } : glm::mat4(1.0);
 
+                    trans = transform * trans;
                     loadHair( path_string, mtlid, type_index, trans);
                     return;
                 }
@@ -287,10 +304,10 @@ struct GraphicsManager {
                     } else {
 
                         //zeno::vec4f row0, row1, row2, row3;
-                        auto row0 = ud.get2<zeno::vec4f>("sphere_transform_row0");
-                        auto row1 = ud.get2<zeno::vec4f>("sphere_transform_row1");
-                        auto row2 = ud.get2<zeno::vec4f>("sphere_transform_row2");
-                        auto row3 = ud.get2<zeno::vec4f>("sphere_transform_row3");
+                        auto row0 = ud.get2<zeno::vec4f>("_transform_row0");
+                        auto row1 = ud.get2<zeno::vec4f>("_transform_row1");
+                        auto row2 = ud.get2<zeno::vec4f>("_transform_row2");
+                        auto row3 = ud.get2<zeno::vec4f>("_transform_row3");
 
                         glm::mat4 sphere_transform;
                         auto transform_ptr = glm::value_ptr(sphere_transform);

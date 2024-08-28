@@ -35,6 +35,8 @@
 
 Hair::Hair( const std::string& fileName )
 {
+    last_write_time = std::filesystem::last_write_time(fileName);
+
     std::ifstream input( fileName.c_str(), std::ios::binary );
     SUTIL_ASSERT_MSG( input.is_open(), "Unable to open " + fileName + "." );
 

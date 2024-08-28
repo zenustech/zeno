@@ -37,6 +37,7 @@
 #include <vector>
 #include <string>
 #include <ostream>
+#include <filesystem>
 
 static const std::map<zeno::CurveType, OptixPrimitiveType> CURVE_TYPE_MAP {
     
@@ -86,6 +87,8 @@ class Hair
     std::vector<uint> segments(zeno::CurveType mode) const;
 
     sutil::Aabb  aabb() const { return m_aabb; }
+
+    std::filesystem::file_time_type time() const { return last_write_time; }
     
   protected:
     bool hasSegments() const;
@@ -93,8 +96,6 @@ class Hair
     bool hasThickness() const;
     bool hasAlpha() const;
     bool hasColor() const;
-
-    OptixTraversableHandle gas() const;
 
     uint32_t defaultNumberOfSegments() const;
     float    defaultThickness() const;
@@ -146,6 +147,8 @@ class Hair
 
     mutable sutil::Aabb m_aabb;
 
+    std::filesystem::file_time_type last_write_time;
+    
     friend std::ostream& operator<<( std::ostream& o, const Hair& hair );
 };
 
