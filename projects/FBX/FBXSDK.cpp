@@ -1530,9 +1530,9 @@ struct NewFBXRigPose : INode {
             if (Transformations.count(bi)) {
                 auto trans = Transformations[bi];
                 glm::mat4 matTrans = glm::translate(vec_to_other<glm::vec3>(trans->translate));
-                glm::mat4 matRotx  = glm::rotate( (float)(trans->rotate[0] * M_PI / 180), glm::vec3(1,0,0) );
-                glm::mat4 matRoty  = glm::rotate( (float)(trans->rotate[1] * M_PI / 180), glm::vec3(0,1,0) );
-                glm::mat4 matRotz  = glm::rotate( (float)(trans->rotate[2] * M_PI / 180), glm::vec3(0,0,1) );
+                glm::mat4 matRotx  = glm::rotate(glm::radians(trans->rotate[0]), glm::vec3(1,0,0) );
+                glm::mat4 matRoty  = glm::rotate(glm::radians(trans->rotate[1]), glm::vec3(0,1,0) );
+                glm::mat4 matRotz  = glm::rotate(glm::radians(trans->rotate[2]), glm::vec3(0,0,1) );
                 transform = matTrans*matRoty*matRotx*matRotz;
                 transform = transforms[bi] * transform * transformsInv[bi];
             }
@@ -2077,7 +2077,7 @@ std::pair<vec3f, vec3f> twoBoneIK(
             vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
             float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
             float sin_theta = sqrt(1 - sqr(cos_theta));
-            output_joint = root + normalize(root_to_effect) * cos_theta + to_pole * sin_theta;
+            output_joint = root + (normalize(root_to_effect) * cos_theta + to_pole * sin_theta) * upper_limb_length;
             output_end = effector;
         }
 
@@ -2091,21 +2091,62 @@ struct IKChains : INode {
         auto items = get_input<zeno::ListObject>("items")->getRaw<IKChainsItemObject>();
         auto skeletonBoneNameMapping = getBoneNameMapping(skeleton.get());
         auto ikDriversBoneNameMapping = getBoneNameMapping(ikDrivers.get());
+        std::map<int, int> bone_connects;
+        for (auto i = 0; i < skeleton->polys.size(); i++) {
+            bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
+        }
+        auto ordering = TopologicalSorting(bone_connects, skeleton.get());
+
+        auto &verts = skeleton->verts;
+        auto &transform_r0 = skeleton->verts.attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.attr<vec3f>("transform_r2");
 
         for (auto item: items) {
             std::string TwistName = item->MatchByName? item->MidName: item->TwistName;
             std::string GoalName = item->MatchByName? item->TipName: item->GoalName;
-            vec3f root = skeleton->verts[skeletonBoneNameMapping[item->RootName]];
-            vec3f &joint = skeleton->verts[skeletonBoneNameMapping[item->MidName]];
-            vec3f &end = skeleton->verts[skeletonBoneNameMapping[item->TipName]];
+            auto root_index = skeletonBoneNameMapping[item->RootName];
+            vec3f root = skeleton->verts[root_index];
+            auto joint_index = skeletonBoneNameMapping[item->MidName];
+            vec3f joint = skeleton->verts[joint_index];
+            auto end_index = skeletonBoneNameMapping[item->TipName];
+            vec3f end = skeleton->verts[end_index];
             vec3f jointTarget = ikDrivers->verts[ikDriversBoneNameMapping[TwistName]];
             vec3f effector = ikDrivers->verts[ikDriversBoneNameMapping[GoalName]];
-            zeno::log_info("{} {} {}", root, joint, end);
-            zeno::log_info("{} {}", jointTarget, effector);
             auto [midPos, tipPos] = twoBoneIK(root, joint, end, jointTarget, effector);
-            // set ...
-            joint = midPos;
-            end = tipPos;
+            auto parent = glm::rotation(bit_cast<glm::vec3>(normalize(joint - root)), bit_cast<glm::vec3>(normalize(midPos - root)));
+            auto from_ = parent * bit_cast<glm::vec3>(normalize(end - joint));
+            auto child = glm::rotation(from_, bit_cast<glm::vec3>(normalize(tipPos - midPos)));
+            auto transforms    = getBoneMatrix(skeleton.get());
+            auto transformsInv = getInvertedBoneMatrix(skeleton.get());
+            bool start = false;
+            std::map<int, glm::mat4> cache;
+            for (auto bi: ordering) {
+                if (bi == root_index) {
+                    start = true;
+                }
+                if (start) {
+                    glm::mat4 transform = glm::mat4(1.0f);
+                    if (bi == root_index) {
+                        transform = glm::translate(glm::vec3(transforms[bi][3])) * glm::toMat4(parent) * glm::translate(-glm::vec3(transforms[bi][3]));
+                    }
+                    else if (bi == joint_index) {
+                        transform = glm::translate(glm::vec3(transforms[bi][3])) * glm::toMat4(child) * glm::translate(-glm::vec3(transforms[bi][3]));
+                    }
+                    if (bone_connects.count(bi) && cache.count(bone_connects[bi])) {
+                        transform = cache[bone_connects[bi]] * transform;
+                    }
+                    if (bi == end_index && item->OrientTip) {
+                        auto target_pos = transform_pos(transform, verts[bi]);
+                        transform = glm::translate(bit_cast<glm::vec3>(target_pos - verts[bi]));
+                    }
+                    cache[bi] = transform;
+                    verts[bi]        = transform_pos(transform, verts[bi]);
+                    transform_r0[bi] = transform_nrm(transform, transform_r0[bi]);
+                    transform_r1[bi] = transform_nrm(transform, transform_r1[bi]);
+                    transform_r2[bi] = transform_nrm(transform, transform_r2[bi]);
+                }
+            }
         }
 
         set_output("Skeleton", skeleton);
