@@ -695,8 +695,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     ) );
 
         //CUDA_SYNC_CHECK();
-
-        timer.tick();
         
         OPTIX_CHECK( optixLaunch(
                     OptixUtil::pipeline,
@@ -708,8 +706,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     state.params.tile_h,  // launch height
                     1                     // launch depth
                     ) );
-
-        timer.tock("frametime");
       }
     }
     output_buffer.unmap();

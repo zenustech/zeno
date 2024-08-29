@@ -339,7 +339,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
         using namespace zs;
         constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
         constexpr auto defaultBv =
-            bv_t{vec3f::constant(zs::limits<zs::f32>::max()), vec3f::constant(zs::limits<zs::f32>::lowest())};
+            bv_t{vec3f::constant(zs::detail::deduce_numeric_max<zs::f32>()), vec3f::constant(zs::detail::deduce_numeric_lowest<zs::f32>())};
         if (!particles)
             return defaultBv;
 
@@ -357,14 +357,14 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
             y = xn[1];
             z = xn[2];
         });
-        zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::limits<zs::f32>::max(), getmin<zs::f32>{});
-        zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::limits<zs::f32>::lowest(),
+        zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::detail::deduce_numeric_max<zs::f32>(), getmin<zs::f32>{});
+        zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::detail::deduce_numeric_lowest<zs::f32>(),
                    getmax<zs::f32>{});
-        zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::limits<zs::f32>::max(), getmin<zs::f32>{});
-        zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::limits<zs::f32>::lowest(),
+        zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::detail::deduce_numeric_max<zs::f32>(), getmin<zs::f32>{});
+        zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::detail::deduce_numeric_lowest<zs::f32>(),
                    getmax<zs::f32>{});
-        zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::limits<zs::f32>::max(), getmin<zs::f32>{});
-        zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::limits<zs::f32>::lowest(),
+        zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::detail::deduce_numeric_max<zs::f32>(), getmin<zs::f32>{});
+        zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::detail::deduce_numeric_lowest<zs::f32>(),
                    getmax<zs::f32>{});
         res = res.clone({memsrc_e::host, -1});
         return bv_t{vec3f{res[0], res[1], res[2]}, vec3f{res[3], res[4], res[5]}};

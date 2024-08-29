@@ -96,7 +96,7 @@ struct ZSParticlePerlinNoise : INode {
         auto &tv = zspars->getParticles();
 
         if (!tv.hasProperty(tag))
-            throw std::runtime_error(fmt::format("Attribute [{}] doesn't exist!", tag));
+            throw std::runtime_error(fmt::format("Attribute [{}] doesn't exist!", tag.asChars()));
         const int nchns = tv.getPropertySize(tag);
 
         auto pol = zs::cuda_exec();
@@ -199,9 +199,9 @@ struct ZSPrimitiveReduction : zeno::INode {
         if (opStr == "avg") {
             result = prim_reduce(verts, 0, pass_on{}, std::plus<float>{}, attrToReduce) / verts.size();
         } else if (opStr == "max") {
-            result = prim_reduce(verts, limits<float>::lowest(), pass_on{}, getmax<float>{}, attrToReduce);
+            result = prim_reduce(verts, detail::deduce_numeric_lowest<float>(), pass_on{}, getmax<float>{}, attrToReduce);
         } else if (opStr == "min") {
-            result = prim_reduce(verts, limits<float>::max(), pass_on{}, getmin<float>{}, attrToReduce);
+            result = prim_reduce(verts, detail::deduce_numeric_max<float>(), pass_on{}, getmin<float>{}, attrToReduce);
         } else if (opStr == "absmax") {
             result = prim_reduce(verts, 0, getabs{}, getmax<float>{}, attrToReduce);
         }
