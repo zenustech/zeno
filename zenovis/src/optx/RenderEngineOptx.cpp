@@ -230,14 +230,22 @@ struct GraphicsManager {
                     auto& widths = reinterpret_cast<std::vector<float>&>(widthArray);
 
                     std::vector<uint> strands {};
-                    strands.push_back(prim_in->lines[0][0]);
+
+                    int begin = 0;
+                    int end = 1;
+
+                    if (prim_in->lines[0][1] < prim_in->lines[0][0]) {
+                        std::swap(begin, end);
+                    }
+
+                    strands.push_back(prim_in->lines[0][begin]);
 
                     for (size_t i=1; i<prim_in->lines->size(); ++i) {
                         auto& prev_segment = prim_in->lines[i-1];
                         auto& this_segment = prim_in->lines[i];
 
-                        if (prev_segment[1] != this_segment[0]) { // new strand
-                            strands.push_back(this_segment[0]);
+                        if (prev_segment[end] != this_segment[begin]) { // new strand
+                            strands.push_back(this_segment[begin]);
                         }
                     }
 
