@@ -88,7 +88,6 @@ struct Session {
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);
-    ZENO_API void initReflectNodes();
     ZENO_API void registerObjUIInfo(size_t hashcode, std::string_view color, std::string_view nametip);
     ZENO_API bool getObjUIInfo(size_t hashcode, std::string_view& color, std::string_view& nametip);
     ZENO_API void initEnv(const zenoio::ZSG_PARSE_RESULT ioresult);

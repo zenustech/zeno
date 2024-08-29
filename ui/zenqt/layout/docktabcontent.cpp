@@ -543,7 +543,6 @@ void DockContent_Editor::initConnections()
             std::shared_ptr<zeno::INode> spNode;
 
             HMODULE hDll = LoadLibrary("C:\\zeno3\\Debug\\bin\\customPlugin1.dll");
-            sess.initReflectNodes();
 #if 0
             if (0) {
                 spNode = sess.mainGraph->getNode("NumericInt1");

@@ -651,7 +651,6 @@ ZENO_API Session::Session()
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
     , funcManager(std::make_unique<FunctionManager>())
 {
-    initReflectNodes();
 }
 
 ZENO_API Session::~Session() = default;
@@ -999,31 +998,6 @@ static bool isBasedINode(const size_t hash) {
     return false;
 }
 
-
-void Session::initReflectNodes() {
-    auto& registry = zeno::reflect::ReflectionRegistry::get();
-    for (zeno::reflect::TypeBase* type : registry->all()) {
-        const zeno::reflect::ReflectedTypeInfo& info = type->get_info();
-        zeno::reflect::ITypeConstructor* ctor = type->get_constructor_or_null({});
-        const ArrayList<TypeHandle>& baseclasses = type->get_base_classes();
-
-        //多重继承的情况需要检测
-        auto hash = type->type_hash();
-        if (isBasedINode(hash)) {
-            assert(ctor);
-            defNodeReflectClass([=]()->std::shared_ptr<INode> {
-                INode* pNewNode = static_cast<INode*>(ctor->new_instance());
-                pNewNode->initTypeBase(type);
-                std::shared_ptr<INode> spNode(pNewNode);
-                return spNode;
-            }, type);
-        }
-        else {
-            //自定义数据类型
-        }
-    }
-}
-
 ZENO_API void Session::registerObjUIInfo(size_t hashcode, std::string_view color, std::string_view nametip) {
     s_objsUIInfo.insert(std::make_pair(hashcode, _ObjUIInfo { nametip, color }));
 }
@@ -1054,8 +1028,6 @@ ZENO_API void Session::initEnv(const zenoio::ZSG_PARSE_RESULT ioresult) {
 }
 
 ZENO_API zeno::NodeCates Session::dumpCoreCates() {
-    //有可能插件的初始化反射信息较晚，所以要再扫一次。TODO:扫描优化可以再精简一下
-    zeno::getSession().initReflectNodes();
     return m_cates;
 }
 

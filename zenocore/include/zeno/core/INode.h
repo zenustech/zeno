@@ -122,6 +122,7 @@ public:
     ZENO_API std::pair<float, float> get_pos() const;
 
     ZENO_API bool in_asset_file() const;
+    ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
 
     void onInterrupted();
     void mark_previous_ref_dirty();
@@ -141,7 +142,6 @@ public:
     bool removeLink(bool bInput, const EdgeInfo& edge);
     void mark_dirty_objs();
     std::vector<std::pair<std::string, bool>> getWildCardParams(const std::string& name, bool bPrim);
-    void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
     void getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType);
 
 protected:
