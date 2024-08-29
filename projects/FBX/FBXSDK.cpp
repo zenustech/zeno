@@ -2015,7 +2015,6 @@ struct IKChainsItem : INode {
         item->TipName  = get_input2<std::string>("TipName");
         item->MatchByName  = get_input2<bool>("MatchByName");
         item->TwistName  = get_input2<std::string>("TwistName");
-        item->Blend  = get_input2<float>("Blend");
         item->OrientTip  = get_input2<bool>("OrientTip");
 
         set_output2("poseItem", std::move(item));
@@ -2030,8 +2029,7 @@ ZENDEFNODE(IKChainsItem, {
         {"bool", "MatchByName", "1"},
         {"string", "TwistName", ""},
         {"string", "GoalName", ""},
-        {"float", "Blend", "1"},
-        {"bool", "OrientTip", "1"},
+        {"bool", "OrientTip", "0"},
     },
     {
         "poseItem",
@@ -2117,8 +2115,6 @@ struct IKChains : INode {
             auto parent = glm::rotation(bit_cast<glm::vec3>(normalize(joint - root)), bit_cast<glm::vec3>(normalize(midPos - root)));
             auto from_ = parent * bit_cast<glm::vec3>(normalize(end - joint));
             auto child = glm::rotation(from_, bit_cast<glm::vec3>(normalize(tipPos - midPos)));
-            auto transforms    = getBoneMatrix(skeleton.get());
-            auto transformsInv = getInvertedBoneMatrix(skeleton.get());
             bool start = false;
             std::map<int, glm::mat4> cache;
             for (auto bi: ordering) {
@@ -2128,10 +2124,10 @@ struct IKChains : INode {
                 if (start) {
                     glm::mat4 transform = glm::mat4(1.0f);
                     if (bi == root_index) {
-                        transform = glm::translate(glm::vec3(transforms[bi][3])) * glm::toMat4(parent) * glm::translate(-glm::vec3(transforms[bi][3]));
+                        transform = glm::translate(bit_cast<glm::vec3>(verts[bi])) * glm::toMat4(parent) * glm::translate(-bit_cast<glm::vec3>(verts[bi]));
                     }
                     else if (bi == joint_index) {
-                        transform = glm::translate(glm::vec3(transforms[bi][3])) * glm::toMat4(child) * glm::translate(-glm::vec3(transforms[bi][3]));
+                        transform = glm::translate(bit_cast<glm::vec3>(verts[bi])) * glm::toMat4(child) * glm::translate(-bit_cast<glm::vec3>(verts[bi]));
                     }
                     if (bone_connects.count(bi) && cache.count(bone_connects[bi])) {
                         transform = cache[bone_connects[bi]] * transform;
