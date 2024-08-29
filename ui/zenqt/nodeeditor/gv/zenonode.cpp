@@ -1009,7 +1009,8 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
     zeno::ParamType sockType = (zeno::ParamType)paramIdx.data(ROLE_PARAM_TYPE).toLongLong();
     zeno::ParamControl ctrl = (zeno::ParamControl)paramIdx.data(ROLE_PARAM_CONTROL).toInt();
     bool bFloat = UiHelper::isFloatType(sockType);
-    auto cbUpdateSocketDefl = [=](QVariant newValue) {
+    auto cbUpdateSocketDefl = [=](zeno::reflect::Any newValue) {
+#if 0
         const auto& oldVal = paramIdx.data(ROLE_PARAM_VALUE);
         if (oldVal == newValue)
             return;
@@ -1029,6 +1030,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
                 QMessageBox::warning(nullptr, tr("Warning"), tr("Set data failed!"));
             }
         }
+#endif
     };
 
     auto cbSwith = [=](bool bOn) {

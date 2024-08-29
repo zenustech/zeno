@@ -102,7 +102,7 @@ private:
     void initUI();
     void initIcon(QStandardItem *item);
     QIcon getIcon(const QStandardItem *pItem);
-    void proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role);
+    void proxyModelSetData(const QModelIndex& index, const zeno::reflect::Any& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
     void initModel(const QStandardItemModel* pModel);
 

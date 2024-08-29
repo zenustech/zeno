@@ -398,8 +398,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     }
     props = items;
 
-    Callback_EditFinished funcZoomEdited = [=](QVariant newValue) {
-        const QString& percent = newValue.toString();
+    Callback_EditFinished funcZoomEdited = [=](zeno::reflect::Any newValue) {
+        const QString& percent = QString::fromStdString(zeno::reflect::any_cast<std::string>(newValue));
         QRegExp rx("(\\d+)\\%");
         rx.indexIn(percent);
         auto caps = rx.capturedTexts();
@@ -870,16 +870,17 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     zeno::reflect::Any props = items;
 
     QFontMetrics fontMetrics(font);
-    Callback_EditFinished funcRender = [=](QVariant newValue) {
+    Callback_EditFinished funcRender = [=](zeno::reflect::Any newValue) {
+        const QString& newText = QString::fromStdString(zeno::reflect::any_cast<std::string>(newValue));
         int nx = -1, ny = -1;
         ZASSERT_EXIT(m_pDisplay);
         bool bLock = false;
-        if (newValue == tr("Free"))
+        if (newText == tr("Free"))
         {
             nx = 100;
             ny = 100;
         }
-        else if (newValue == tr("Customize Size"))
+        else if (newText == tr("Customize Size"))
         {
             //todo
             QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -918,8 +919,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         else
         {
             bLock = true;
-            QString resStr = newValue.toString();
-            auto L = resStr.split('x');
+            auto L = newText.split('x');
             bool bOK = false;
             nx = L[0].toInt(&bOK);
             ZASSERT_EXIT(nx);
@@ -927,7 +927,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
             ZASSERT_EXIT(ny);
         }
         m_pDisplay->setSafeFrames(bLock, nx, ny);
-        m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
+        m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newText) + ZenoStyle::dpiScaled(28));
     };
 
     CallbackCollection cbSet;

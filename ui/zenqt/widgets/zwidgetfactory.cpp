@@ -22,44 +22,59 @@
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
 #include "widgets/zcodeeditor.h"
+#include <zeno/utils/helper.h>
 
+
+using namespace zeno::reflect;
 
 namespace zenoui
 {
     QWidget* createWidget(
         const QModelIndex& nodeIdx,
-        const QVariant& value,
+        const Any& value,                   //编辑值，里面的类型未必是参数真正的类型，比如公式的编辑值
         zeno::ParamControl ctrl,
-        const zeno::ParamType type,
+        const zeno::ParamType paramType,    //参数真正的类型
         CallbackCollection cbSet,
-        const zeno::reflect::Any& controlProps
+        const Any& controlProps
     )
     {
         switch (ctrl)
         {
             case zeno::Lineedit:
             {
-                QString text = UiHelper::variantToString(value);
+                QString text = UiHelper::anyToString(value);
                 ZLineEdit *pLineEdit = new ZLineEdit(text);
 
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-                pLineEdit->setNumSlider(UiHelper::getSlideStep("", type));
+                pLineEdit->setNumSlider(UiHelper::getSlideStep("", paramType));
                 pLineEdit->setNodeIdx(nodeIdx);
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     QString text = pLineEdit->text();
-                    const QVariant& newValue = UiHelper::parseStringByType(text, type);
-                    cbSet.cbEditFinished(newValue);
-                    });
+                    const Any& newVal = zeno::str2any(text.toStdString(), paramType);
+                    cbSet.cbEditFinished(newVal);
+                });
                 return pLineEdit;
             }
             case zeno::Checkbox:
             {
                 QCheckBox* pCheckbox = new QCheckBox;
-                pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
+                size_t typecode = value.type().hash_code();
+                if (typecode == gParamType_Bool) {
+                    pCheckbox->setCheckState(any_cast<bool>(value) ? Qt::Checked : Qt::Unchecked);
+                }
+                else if (typecode == gParamType_Int) {
+                    //以后反射定义里不排除用户会写int类型却用checkbox
+                    pCheckbox->setCheckState(any_cast<int>(value) ? Qt::Checked : Qt::Unchecked);
+                }
+                else {
+                    ZASSERT_EXIT(false, nullptr);
+                }
+
                 QObject::connect(pCheckbox, &QCheckBox::stateChanged, [=](int state) {
-                    cbSet.cbEditFinished(state);
+                    bool bChecked = state == Qt::Checked;
+                    cbSet.cbEditFinished(bChecked);
                 });
                 return pCheckbox;
             }
@@ -67,17 +82,27 @@ namespace zenoui
             case zeno::WritePathEdit:
             case zeno::DirectoryPathEdit:
             {
-                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString(), ctrl);
+                if (value.type().hash_code() != gParamType_String) {
+                    ZASSERT_EXIT(false, nullptr);
+                }
+                QString text = QString::fromStdString(any_cast<std::string>(value));
+                ZPathEdit *pathLineEdit = new ZPathEdit(text, ctrl);
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
                 QObject::connect(pathLineEdit, &ZLineEdit::textEditFinished, [=]() {
-                    cbSet.cbEditFinished(pathLineEdit->text());
+                    const std::string& path = pathLineEdit->text().toStdString();
+                    cbSet.cbEditFinished(path);
                 });
                 return pathLineEdit;
             }
             case zeno::Multiline:
             {
+                if (value.type().hash_code() != gParamType_String) {
+                    ZASSERT_EXIT(false, nullptr);
+                }
+                QString text = QString::fromStdString(any_cast<std::string>(value));
+
                 ZTextEdit* pTextEdit = new ZTextEdit;
                 pTextEdit->setNodeIdx(nodeIdx);
                 pTextEdit->setFrameShape(QFrame::NoFrame);
@@ -91,14 +116,15 @@ namespace zenoui
                 QTextCharFormat format;
                 format.setFont(font);
                 pTextEdit->setCurrentFont(font);
-                pTextEdit->setText(value.toString());
+                pTextEdit->setText(text);
 
                 QPalette pal = pTextEdit->palette();
                 pal.setColor(QPalette::Base, QColor(61, 61, 61));
                 pTextEdit->setPalette(pal);
 
                 QObject::connect(pTextEdit, &ZTextEdit::editFinished, [=]() {
-                    cbSet.cbEditFinished(pTextEdit->toPlainText());
+                    const std::string& editedText = pTextEdit->toPlainText().toStdString();
+                    cbSet.cbEditFinished(editedText);
                 });
                 return pTextEdit;
             }
@@ -118,22 +144,26 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Heatmap");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
+                    //TODO
+                    /*
                     QString val = cbSet.cbGetIndexData().toString();
                     ZenoHeatMapEditor editor(val);
                     editor.exec();
                     QString newVal = editor.colorRamps();
                     cbSet.cbEditFinished(QVariant::fromValue(newVal));
+                    */
                 });
                 return pBtn;
             }
             case zeno::ColorVec:
             {
-                QColor currentColor;
-                if (ctrl == zeno::ColorVec) {
-                    auto colorVec = value.value<UI_VECTYPE>();
-                    colorVec.resize(3);
-                    currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+                if (value.type().hash_code() != gParamType_Vec3f) {
+                    ZASSERT_EXIT(false, nullptr);
                 }
+
+                zeno::vec3f colorVec = any_cast<zeno::vec3f>(value);
+                QColor currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+
                 QPushButton *pBtn = new QPushButton;
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(currentColor.name()));
@@ -145,7 +175,8 @@ namespace zenoui
                         if (ctrl == zeno::ColorVec) {
                             UI_VECTYPE colorVec(3);
                             color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
-                            cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
+                            zeno::vec3f newVal(colorVec[0], colorVec[1], colorVec[2]);
+                            cbSet.cbEditFinished(newVal);
                         }
                     }
                 });
@@ -157,33 +188,36 @@ namespace zenoui
             {
                 int dim = -1;
                 bool bFloat = false;
-                if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f)
+                if (paramType == zeno::types::gParamType_Vec2i || paramType == zeno::types::gParamType_Vec2f)
                 {
                     dim = 2;
-                    bFloat = type == zeno::types::gParamType_Vec2f;
+                    bFloat = paramType == zeno::types::gParamType_Vec2f;
                 }
-                else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f)
+                else if (paramType == zeno::types::gParamType_Vec3i || paramType == zeno::types::gParamType_Vec3f)
                 {
                     dim = 3;
-                    bFloat = type == zeno::types::gParamType_Vec3f;
+                    bFloat = paramType == zeno::types::gParamType_Vec3f;
                 }
-                else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f)
+                else if (paramType == zeno::types::gParamType_Vec4i || paramType == zeno::types::gParamType_Vec4f)
                 {
                     dim = 4;
-                    bFloat = type == zeno::types::gParamType_Vec4f;
+                    bFloat = paramType == zeno::types::gParamType_Vec4f;
                 }
 
-                ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
+                ZVecEditor* pVecEdit = new ZVecEditor(value, paramType, dim, "zeno2_2_lineedit");
                 pVecEdit->setNodeIdx(nodeIdx);
                 pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    const QVariant &newValue = pVecEdit->vec();
+                    const Any& newValue = pVecEdit->vec();
                     cbSet.cbEditFinished(newValue);
                 });
                 return pVecEdit;
             }
             case zeno::Combobox:
             {
+                ZASSERT_EXIT(paramType == gParamType_String, nullptr);
+                QString text = QString::fromStdString(any_cast<std::string>(value));
+
                 QStringList items;
                 if (controlProps.has_value())
                 {
@@ -195,12 +229,12 @@ namespace zenoui
                 ZComboBox *pComboBox = new ZComboBox;
                 pComboBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pComboBox->addItems(items);
-                pComboBox->setCurrentText(value.toString());
+                pComboBox->setCurrentText(text);
                 pComboBox->setEditable(true);
                 pComboBox->setItemDelegate(new ZComboBoxItemDelegate2(pComboBox));
 
-                QObject::connect(pComboBox, &ZComboBox::_textActivated, [=](const QString& text) {
-                    cbSet.cbEditFinished(text);
+                QObject::connect(pComboBox, &ZComboBox::_textActivated, [=](const QString& newText) {
+                    cbSet.cbEditFinished(newText.toStdString());
                 });
                 return pComboBox;
             }
@@ -215,7 +249,7 @@ namespace zenoui
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
                         zeno::CurvesData& newVal = pEditor->curves();
                         auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
-                        cbSet.cbEditFinished(QVariant::fromValue(anyVal));
+                        cbSet.cbEditFinished(anyVal);
                     });
 
                     zeno::CurvesData curves;
@@ -236,6 +270,9 @@ namespace zenoui
             }
             case zeno::Slider:
             {
+                ZASSERT_EXIT(paramType == gParamType_Int, nullptr);
+                int intVal = any_cast<int>(value);
+
                 QSlider* pSlider = new QSlider(Qt::Horizontal);
                 pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet("\
                     QSlider::groove:horizontal {\
@@ -256,7 +293,7 @@ namespace zenoui
                         background: #707D9C;\
                     }\
                 "));
-                pSlider->setValue(value.toInt());
+                pSlider->setValue(intVal);
 
                 SLIDER_INFO sliderInfo;
                 
@@ -270,8 +307,8 @@ namespace zenoui
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
 
-                QObject::connect(pSlider, &QSlider::valueChanged, [=](int value) {
-                    cbSet.cbEditFinished(value);
+                QObject::connect(pSlider, &QSlider::valueChanged, [=](int newVal) {
+                    cbSet.cbEditFinished(newVal);
                 });
 
                 QObject::connect(pSlider, &QSlider::sliderPressed, [=]() {
@@ -293,10 +330,13 @@ namespace zenoui
             }
             case zeno::SpinBox:
             {
+                ZASSERT_EXIT(paramType == gParamType_Int, nullptr);
+                int intVal = any_cast<int>(value);
+
                 QSpinBox* pSpinBox = new QSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
-                pSpinBox->setValue(value.toInt());
+                pSpinBox->setValue(intVal);
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 
@@ -309,16 +349,19 @@ namespace zenoui
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
-                QObject::connect(pSpinBox, static_cast<void (QSpinBox::*)(int)>(& QSpinBox::valueChanged),[=](int value) { 
-					cbSet.cbEditFinished(value);
-				});
+                QObject::connect(pSpinBox, static_cast<void (QSpinBox::*)(int)>(& QSpinBox::valueChanged),[=](int newVal) { 
+                    cbSet.cbEditFinished(newVal);
+                });
                 return pSpinBox;
             }
             case zeno::DoubleSpinBox: {
+                ZASSERT_EXIT(paramType == gParamType_Float, nullptr);
+                float fVal = any_cast<float>(value);
+
                 QDoubleSpinBox *pSpinBox = new QDoubleSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
                 pSpinBox->setAlignment(Qt::AlignCenter);
-                pSpinBox->setValue(value.toDouble());
+                pSpinBox->setValue(fVal);
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 if (controlProps.has_value()) {
@@ -330,13 +373,16 @@ namespace zenoui
                 }
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
-                QObject::connect(pSpinBox, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),[=](double value) {
-                    cbSet.cbEditFinished(value); 
+                QObject::connect(pSpinBox, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),[=](double newVal) {
+                    cbSet.cbEditFinished(newVal);
                 });
                 return pSpinBox;
             }
             case zeno::SpinBoxSlider:
             {
+                ZASSERT_EXIT(paramType == gParamType_Int, nullptr);
+                int intVal = any_cast<int>(value);
+
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
                 if (controlProps.has_value()) {
@@ -348,17 +394,20 @@ namespace zenoui
                 }
                 pSlider->setSingleStep(sliderInfo.step);
                 pSlider->setRange(sliderInfo.min, sliderInfo.max);
-                pSlider->setValue(value.toInt());
-                QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int value) {
-                    cbSet.cbEditFinished(value);
+                pSlider->setValue(intVal);
+                QObject::connect(pSlider, &ZSpinBoxSlider::valueChanged, [=](int newVal) {
+                    cbSet.cbEditFinished(newVal);
                 });
                 return pSlider;
             }
             case zeno::CodeEditor:
             {
-                ZCodeEditor* pCodeEditor = new ZCodeEditor(value.toString());
-                QObject::connect(pCodeEditor, &ZCodeEditor::editFinished, [=](const QString& text) {
-                    cbSet.cbEditFinished(text);
+                ZASSERT_EXIT(paramType == gParamType_String, nullptr);
+                QString text = QString::fromStdString(any_cast<std::string>(value));
+
+                ZCodeEditor* pCodeEditor = new ZCodeEditor(text);
+                QObject::connect(pCodeEditor, &ZCodeEditor::editFinished, [=](const QString& newText) {
+                    cbSet.cbEditFinished(newText.toStdString());
                 });
                 return pCodeEditor;
             }
@@ -390,29 +439,4 @@ namespace zenoui
         case zeno::ColorVec:       return qobject_cast<QPushButton*>(pControl) != nullptr;
         }
     }
-
-    void updateValue(QWidget* pControl, const QVariant& value)
-    {
-        if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl))
-        {
-            pLineEdit->setText(value.toString());
-        }
-        else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(pControl))
-        {
-            pCheckbox->setCheckState(value.toBool() ? Qt::Checked : Qt::Unchecked);
-        }
-        else if (ZVecEditor* pVecEditor = qobject_cast<ZVecEditor*>(pControl))
-        {
-            pVecEditor->setVec(value, pVecEditor->isFloat());
-        }
-        else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pControl))
-        {
-            pTextEdit->setText(value.toString());
-        }
-        else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(pControl))
-        {
-            pCombobox->setCurrentText(value.toString());
-        }
-    }
-
 }

@@ -421,11 +421,11 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
     return QIcon();
 }
 
-void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const QVariant& newValue, int role)
+void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const zeno::reflect::Any& newValue, int role)
 {
     //TODO: ?
     //const QString& objPath = index.data(ROLE_OBJPATH).toString();
-    m_paramsLayoutM_inputs->setData(index, newValue, role);
+    m_paramsLayoutM_inputs->setData(index, QVariant::fromValue(newValue), role);
 }
 
 void ZEditParamLayoutDlg::onParamTreeDeleted()
@@ -511,9 +511,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         const QString &parentName = parentItem->text();
 
         QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+        const zeno::reflect::Any& anyVal = deflVal.value<zeno::reflect::Any>();
 
         CallbackCollection cbSets;
-        cbSets.cbEditFinished = [=](QVariant newValue) {
+        cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
             proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
         };
         if (!deflVal.isValid())
@@ -526,7 +527,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             return pCurrentItem->data(ROLE_PARAM_VALUE);
         };
 
-        QWidget *valueControl = zenoui::createWidget(QModelIndex(), deflVal, ctrl, paramType, cbSets, controlProperties);
+        QWidget *valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, paramType, cbSets, controlProperties);
         if (valueControl) {
             valueControl->setEnabled(bEditable);
             m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
@@ -593,13 +594,15 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
     zeno::reflect::Any controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
     QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+    zeno::reflect::Any anyVal = deflVal.value<zeno::reflect::Any>();
 
     CallbackCollection cbSets;
-    cbSets.cbEditFinished = [=](QVariant newValue) {
+    cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
         proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
     };
-    if (!deflVal.isValid())
-        deflVal = UiHelper::initDefaultValue(paramType);
+    if (!deflVal.isValid()) {
+        anyVal = zeno::initAnyDeflValue(paramType);
+    }
 
     cbSets.cbGetIndexData = [=]() -> QVariant {
         if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
@@ -608,7 +611,7 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
         return pCurrentItem->data(ROLE_PARAM_VALUE);
     };
 
-    QWidget* valueControl = zenoui::createWidget(QModelIndex(), deflVal, ctrl, paramType, cbSets, controlProperties);
+    QWidget* valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, paramType, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(bEditable);
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
@@ -815,7 +818,7 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
                         QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
                         if (pControl) {
                             pControl->setCurrentText(value);
-                            proxyModelSetData(pItem->index(), value, ROLE_PARAM_VALUE);
+                            proxyModelSetData(pItem->index(), value.toStdString(), ROLE_PARAM_VALUE);
                         }
                     }
                 }
@@ -980,7 +983,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     }
 
     CallbackCollection cbSets;
-    cbSets.cbEditFinished = [=](QVariant newValue) {
+    cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
 
@@ -991,12 +994,13 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     pItem->setData(type, ROLE_PARAM_TYPE);
 
     QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
+    zeno::reflect::Any anyVal = value.value<zeno::reflect::Any>();
     if (!value.isValid())
-        value = UiHelper::initDefaultValue(type);
+        anyVal = zeno::initAnyDeflValue(type);
 
     zeno::reflect::Any controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value< zeno::reflect::Any>();
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initDefaultValue(type); };
-    QWidget *valueControl = zenoui::createWidget(QModelIndex(), value, ctrl, type, cbSets, controlProperties);
+    QWidget *valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, type, cbSets, controlProperties);
     if (valueControl) {
         valueControl->setEnabled(true);
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);

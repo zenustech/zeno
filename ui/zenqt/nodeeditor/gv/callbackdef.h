@@ -7,6 +7,8 @@
 #include <QModelIndex>
 #include <QAction>
 #include <zeno/core/common.h>
+#include <reflect/container/any>
+
 
 typedef std::function<void(QString, QString)> Callback_EditContentsChange;
 typedef std::function<void(QString)> Callback_OnClicked;
@@ -17,8 +19,8 @@ typedef std::function<void(ZenoSocketItem*)> Callback_OnSockClicked;
 
 typedef std::function<void(ZenoSocketItem*)> Callback_OnSockLabelEdited;
 
-typedef std::function<void(QVariant state)> Callback_EditFinished;
-typedef std::function<void(QVariant state)> Callback_EditFinishedWithSlider;
+typedef std::function<void(zeno::reflect::Any state)> Callback_EditFinished;
+typedef std::function<void(zeno::reflect::Any state)> Callback_EditFinishedWithSlider;
 
 typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 

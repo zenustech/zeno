@@ -436,7 +436,7 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
         j = 0;
     }
 
-    QVariant val = UiHelper::anyToQvar(anyVal);
+    //QVariant val = UiHelper::anyToQvar(anyVal);
 
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
@@ -447,18 +447,19 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     CallbackCollection cbSet;
 
     bool bFloat = UiHelper::isFloatType(type);
-    cbSet.cbEditFinished = [=](QVariant newValue) {
+    cbSet.cbEditFinished = [=](zeno::reflect::Any newValue) {
+        /*
         if (bFloat)
         {
             QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
             BlockSignalScope scope(paramsModel); //setData时需屏蔽dataChange信号
-            const auto& defl = UiHelper::qvarToAny(newValue);
             //这里只是设值给custommodel，不会引起连锁的复制，而且要转为any存。
-            paramsModel->setData(perIdx,QVariant::fromValue(defl), ROLE_PARAM_VALUE);
+            paramsModel->setData(perIdx, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
         }
+        */
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, newValue, ROLE_PARAM_VALUE);
+        UiHelper::qIndexSetData(idx, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
@@ -471,10 +472,10 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     bool bKeyFrame = false;
     if (bFloat)
     {
-        bKeyFrame = AppHelper::getCurveValue(val);
+        //bKeyFrame = AppHelper::getCurveValue(val);
     }
 
-    QWidget* pControl = zenoui::createWidget(m_idx, val, ctrl, type, cbSet, pros);
+    QWidget* pControl = zenoui::createWidget(m_idx, anyVal, ctrl, type, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
@@ -591,7 +592,8 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     const QString& tabName = pTabItem->data(ROLE_PARAM_NAME).toString();
     const QString& groupName = pGroupItem->data(ROLE_PARAM_NAME).toString();
     const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
-    QVariant val = UiHelper::anyToQvar(paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>());
+    const zeno::reflect::Any& anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+    //QVariant val = UiHelper::anyToQvar();
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
     const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
@@ -606,7 +608,8 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     }
 
     bool bFloat = UiHelper::isFloatType(type);
-    cbSet.cbEditFinished = [=](QVariant newValue) {
+    cbSet.cbEditFinished = [=](zeno::reflect::Any newValue) {
+        /*
         if (bFloat)
         {
             //if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
@@ -618,9 +621,10 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
             BlockSignalScope scope(paramsModel); //setData时需屏蔽dataChange信号
             paramsModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
         }
+        */
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, newValue, ROLE_PARAM_VALUE);
+        UiHelper::qIndexSetData(idx, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
@@ -632,10 +636,10 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     bool bKeyFrame = false;
     if (bFloat)
     {
-        bKeyFrame = AppHelper::getCurveValue(val);
+        //bKeyFrame = AppHelper::getCurveValue(val);
     }
 
-    QWidget* pControl = zenoui::createWidget(m_idx, val, ctrl, type, cbSet, pros);
+    QWidget* pControl = zenoui::createWidget(m_idx, anyVal, ctrl, type, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
@@ -1024,9 +1028,10 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                QVariant newVal = value;
-                bool bKeyFrame = AppHelper::getCurveValue(newVal);
-                pVecEdit->setVec(newVal, pVecEdit->isFloat());
+                //TODO:
+                //QVariant newVal = value;
+                //bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                pVecEdit->setVec(value);
                 if (pVecEdit->isFloat())
                 {
                     //QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
@@ -1365,6 +1370,7 @@ void ZenoPropPanel::onNodeRemoved(QString nodeName)
 
 void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
+#if 0
     QVariant val = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
 
     bool bValid = false;
@@ -1376,7 +1382,8 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
     UI_VECTYPE vec;
     if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
         vec << lineEdit->text().toFloat();
-    } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
+    }
+    else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
         vec = lineEdit->text();
     }
    
@@ -1399,10 +1406,12 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
     val = UiHelper::getQVarFromCurves(newVal);
     UiHelper::qIndexSetData(ctrl.m_viewIdx, val, ROLE_PARAM_VALUE);
     updateTimelineKeys(newVal);
+#endif
 }
 
 void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
+#if 0
     QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
     bool bValid = false;
     zeno::CurvesData curves = UiHelper::getCurvesFromQVar(var, &bValid);
@@ -1460,10 +1469,12 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
     updateTimelineKeys(curves);
+#endif
 }
 
 void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys) 
 {
+#if 0
     ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
     connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
         zeno::CurvesData newCurves = pEditor->curves();
@@ -1517,10 +1528,12 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
         }
     }
     pEditor->exec();
+#endif
 }
 
 void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys)
 {
+#if 0
     QVariant var = ctrl.m_viewIdx.data(ROLE_PARAM_VALUE);
     bool bValid = false;
     zeno::CurvesData curves = UiHelper::getCurvesFromQVar(var, &bValid);
@@ -1568,6 +1581,7 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
 
     UiHelper::qIndexSetData(ctrl.m_viewIdx, newVal, ROLE_PARAM_VALUE);
     updateTimelineKeys(curves);
+#endif
 }
 
 int ZenoPropPanel::getKeyFrameSize(const zeno::CurvesData& curves)
@@ -1663,13 +1677,15 @@ void ZenoPropPanel::updateTimelineKeys(const zeno::CurvesData& curves)
 
 void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
 {
+    //TODO:
+#if 0
     QVariant newVal = val;
     if (!AppHelper::getCurveValue(newVal))
         return;
     //vec
     if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pContrl))
     {
-        pVecEdit->setVec(newVal, pVecEdit->isFloat());
+        pVecEdit->setVec(newVal);
         QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
         pVecEdit->updateProperties(properties);
     }
@@ -1683,4 +1699,5 @@ void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
         pLineEdit->style()->polish(pLineEdit);
         pLineEdit->update();
     }
+#endif
 }

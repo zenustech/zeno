@@ -59,9 +59,10 @@ public:
             panel->onRemovedBtnClicked(m_key);
         });
 
-        Callback_EditFinished cbEditFinished = [=](QVariant newValue) {
-            panel->onKeyEdited(m_key, newValue.toString());
-            m_key = newValue.toString();
+        Callback_EditFinished cbEditFinished = [=](zeno::reflect::Any newValue) {
+            QString newText = QString::fromStdString(zeno::reflect::any_cast<std::string>(newValue));
+            panel->onKeyEdited(m_key, newText);
+            m_key = newText;
             m_socket->setInnerKey(m_key);
         };
 

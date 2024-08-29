@@ -9,15 +9,14 @@ namespace zenoui
 {
     QWidget* createWidget(
         const QModelIndex& nodeIdx,
-        const QVariant& value,
+        const zeno::reflect::Any& value,
         zeno::ParamControl ctrl,
-        const zeno::ParamType type,
+        const zeno::ParamType paramType,
         CallbackCollection cbSet,
         const zeno::reflect::Any& properties = zeno::reflect::Any()
     );
 
     bool isMatchControl(zeno::ParamControl ctrl, QWidget* pControl);
-    void updateValue(QWidget* pControl, const QVariant& value);
 }
 
 #endif

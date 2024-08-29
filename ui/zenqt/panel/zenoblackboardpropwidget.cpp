@@ -64,6 +64,7 @@ void ZenoBlackboardPropWidget::onDataChanged(const QModelIndex& topLeft, const Q
 }
 
 void ZenoBlackboardPropWidget::insertRow(const QString &desc, const zeno::ParamControl&ctrl, const QVariant &value, int row,QGridLayout *pGroupLayout) {
+    zeno::reflect::Any anyVal = value.value<zeno::reflect::Any>();
     ZTextLabel *pLabel = new ZTextLabel(desc);
     pLabel->setFont(QApplication::font());
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
@@ -77,17 +78,17 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const zeno::ParamC
     pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
     CallbackCollection cbSet;
-    cbSet.cbEditFinished = [=](QVariant newValue) {
+    cbSet.cbEditFinished = [=](zeno::reflect::Any newValue) {
         if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS)))
         {
             auto index = paramsM->index(paramsM->indexFromName(desc, true), 0);
             if (!index.isValid())
                 return;
-            UiHelper::qIndexSetData(index, newValue, ROLE_PARAM_VALUE);
+            UiHelper::qIndexSetData(index, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
         }
     };
     zeno::ParamType type = desc == "title" ? zeno::types::gParamType_String : zeno::types::gParamType_Vec3f;
-    QWidget *pControl = zenoui::createWidget(m_idx, value, ctrl, type, cbSet, zeno::reflect::Any());
+    QWidget *pControl = zenoui::createWidget(m_idx, anyVal, ctrl, type, cbSet, zeno::reflect::Any());
     pControl->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred));
     if (desc == "title") {
         m_pTitle = qobject_cast<ZTextEdit *>(pControl);

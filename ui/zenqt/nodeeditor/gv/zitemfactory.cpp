@@ -74,6 +74,9 @@ namespace zenoui
         const zeno::reflect::Any& controlProps
     )
     {
+        //Deprecated
+        return nullptr;
+#if 0
         ZtfUtil& inst = ZtfUtil::GetInstance();
         static NodeUtilParam m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
         QGraphicsItem* pItemWidget = nullptr;
@@ -432,6 +435,7 @@ namespace zenoui
             pItemWidget->setData(GVKEY_CONTROL, ctrl);
         }
         return pItemWidget;
+#endif
     }
 }
 
