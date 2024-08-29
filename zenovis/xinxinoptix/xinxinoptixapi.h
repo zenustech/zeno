@@ -9,19 +9,36 @@
 #include <glm/glm.hpp>
 #include "optixSphere.h"
 #include "zeno/utils/vec.h"
+#include "zeno/types/CurveType.h"
 #include "zeno/types/LightObject.h"
 
 #include "Portal.h"
 #include "OptiXStuff.h"
 
-enum ShaderMaker {
-    Mesh = 0,
-    Sphere = 1,
-    Volume = 2,
+enum ShaderMark {
+    Mesh, Sphere, Volume,
+
+    CURVE_QUADRATIC,
+    CURVE_RIBBON,
+    CURVE_CUBIC,
+
+    CURVE_LINEAR,
+    CURVE_BEZIER,
+    CURVE_CATROM,
+};
+
+static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
+    { zeno::CurveType::QUADRATIC_BSPLINE, ShaderMark::CURVE_QUADRATIC },
+    { zeno::CurveType::RIBBON_BSPLINE,    ShaderMark::CURVE_RIBBON    },
+    { zeno::CurveType::CUBIC_BSPLINE,     ShaderMark::CURVE_CUBIC     },
+    
+    { zeno::CurveType::LINEAR,    ShaderMark::CURVE_LINEAR    },
+    { zeno::CurveType::BEZIER,    ShaderMark::CURVE_BEZIER    },
+    { zeno::CurveType::CATROM,    ShaderMark::CURVE_CATROM    },
 };
 
 struct ShaderPrepared {
-    ShaderMaker mark;
+    ShaderMark mark;
     std::string matid;
     std::string filename;
 
@@ -49,8 +66,11 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut);
 void UpdateDynamicInstMesh(const std::map<std::string, int> &mtlidlut);
 void CopyInstMeshToGlobalMesh();
 void UpdateMeshGasAndIas(bool staticNeedUpdate);
-void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders);
-
+void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders, 
+                    bool requireTriangObj, bool requireTriangLight, 
+                    bool requireSphereObj, bool requireSphereLight, 
+                    bool requireVolumeObj, uint usesCurveTypes, bool refresh=false);
+                    
 void updateSphereXAS();
 
 void updateVolume(uint32_t volume_shader_offset);
@@ -115,5 +135,7 @@ void updatePortalLights(const std::vector<Portal>& portals);
 void updateDistantLights(std::vector<zeno::DistantLightData>& dldl);
 // void optixUpdateUniforms(std::vector<float4> & inConstants);
 void optixUpdateUniforms(void *inConstants, std::size_t size);
-std::map<std::string, LightDat> &get_lightdats();
+
+const std::map<std::string, LightDat> &get_lightdats();
+
 }

@@ -4,7 +4,6 @@
 #include <Shape.h>
 
 #include "LightBounds.h"
-// #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -191,6 +190,9 @@ struct Params
 
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
+
+    uint32_t hairInstOffset;
+    void* hairAux;
 
     void*    dlights_ptr;
     void*    plights_ptr;

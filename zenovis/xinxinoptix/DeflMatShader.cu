@@ -16,6 +16,14 @@
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
+#ifndef __CUDACC_RTC__
+#define _P_TYPE_ 2
+#endif
+
+#if (_P_TYPE_==2)
+#include "Curves.h"
+#endif
+
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
@@ -67,9 +75,21 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
 
+    auto pType = optixGetPrimitiveType();
+    if (pType != OPTIX_PRIMITIVE_TYPE_SPHERE && pType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        
+        prd->attanuation = vec3(0);
+        optixTerminateRay();
+        return;
+    }
+
     bool sphere_external_ray = false;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+    float3 N = {};
+    printf("Should not reach here\n");
+    return;
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -209,7 +229,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         float p = rnd(prd->seed);
 
         float skip = opacity;
-        #if (_SPHERE_)
+        #if (_P_TYPE_==1)
             if (sphere_external_ray) {
                 skip *= opacity;
             }
@@ -258,7 +278,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
-                #if (_SPHERE_)
+                #if (_P_TYPE_==1)
                     if (sphere_external_ray) {
                         prd->attanuation *= vec3(1, 0, 0);
                         if (nDi < (1.0f-_FLT_EPL_)) {
@@ -309,7 +329,47 @@ extern "C" __global__ void __closesthit__radiance()
     MatInput attrs{};
     float estimation = 0;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+
+    float3 N = {}; 
+
+    auto pType = optixGetPrimitiveType();
+    if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        prd->done = true;
+        return;
+    }
+
+    float3 normal = computeCurveNormal( optixGetPrimitiveType(), primIdx );
+
+    if (dot(normal, -ray_dir) < 0) {
+        normal = -normal;
+    }
+
+    N = normal;
+        
+    float3 wldPos = P; 
+    float3 wldNorm = normal;
+    float wldOffset = 0.0f;
+
+    prd->geometryNormal = N;
+
+    attrs.pos = P;
+    attrs.nrm = N;
+
+    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
+    auto hairAux = reinterpret_cast<CurveGroupAux*>(params.hairAux);
+
+    auto& aux = hairAux[hair_idx];
+
+    uint strandIndex = aux.strand_i[primIdx];
+
+    float  segmentU   = optixGetCurveParameter();
+    float2 strand_u = aux.strand_u[primIdx];
+    float u = strand_u.x + segmentU * strand_u.y;
+
+    attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
+
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -458,7 +518,12 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-#if _SPHERE_
+#if (_P_TYPE_==2)
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
+        N = faceforward( N, -ray_dir, N );
+        prd->geometryNormal = N;
+    }
+#elif (_P_TYPE_==1)
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N, -ray_dir, N );
@@ -885,7 +950,12 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     float3 frontPos, backPos;
-    SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    if (wldOffset > 0) {
+        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    } else {
+        frontPos = wldPos;
+        backPos = wldPos;
+    }
 
     shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
