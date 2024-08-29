@@ -139,6 +139,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@GeometryAux.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Curves.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Portal.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
