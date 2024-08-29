@@ -35,7 +35,7 @@ static unsigned int CurveDegree(zeno::CurveType type) {
 }
 
 static std::string CurveTypeDefaultString() {
-    auto name = magic_enum::enum_name(CurveType::CUBIC_BSPLINE);
+    auto name = magic_enum::enum_name(CurveType::LINEAR);
     return std::string(name);
 }
 

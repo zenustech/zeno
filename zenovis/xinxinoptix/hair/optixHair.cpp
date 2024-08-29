@@ -60,7 +60,7 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context,
         for( auto strand = strands.begin(); strand != strands.end() - 1; ++strand ) {
             const int end = *( strand + 1 ) - 1;
 
-            int degree = CurveDegree(curveType);
+            auto degree = CurveDegree(curveType);
             if (zeno::CurveType::CATROM == curveType ) {
                 degree -= 1;
             }
@@ -79,10 +79,11 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context,
         std::vector<uint> segments;
         // loop to one before end, as last strand value is the "past last valid vertex"
         // index
+        auto degree = CurveDegree(curveType);
         for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
         {
             const int start = *( strand );                      // first vertex in first segment
-            const int end   = *( strand + 1 ) - CurveDegree(curveType);  // second vertex of last segment
+            const int end   = *( strand + 1 ) - degree;         // second vertex of last segment
             for( int i = start; i < end; ++i )
             {
                 segments.push_back( i );
@@ -183,10 +184,12 @@ void HairState::makeHairGAS(OptixDeviceContext context)
 std::vector<float2> HairState::strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands)
 {
     std::vector<float2> strand_u;
+    auto degree = CurveDegree(curveType);
+
     for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
     {
         const int   start    = *( strand );
-        const int   end      = *( strand + 1 ) - CurveDegree(curveType);
+        const int   end      = *( strand + 1 ) - degree;
         const int   segments = end - start;  // number of strand's segments
         const float scale    = 1.0f / segments;
         for( int i = 0; i < segments; ++i )
@@ -202,11 +205,14 @@ std::vector<uint2> HairState::strandInfo(zeno::CurveType curveType, const std::v
 {
     std::vector<uint2> strandInfo;
     unsigned int       firstPrimitiveIndex = 0;
+
+    auto degree = CurveDegree(curveType);
+
     for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
     {
         uint2 info;
         info.x = firstPrimitiveIndex;                        // strand's start index
-        info.y = *( strand + 1 ) - *(strand)-CurveDegree(curveType);  // number of segments in strand
+        info.y = *( strand + 1 ) - *(strand) - degree;       // number of segments in strand
         firstPrimitiveIndex += info.y;                       // increment with number of primitives/segments in strand
         strandInfo.push_back( info );
     }
@@ -217,10 +223,13 @@ std::vector<uint> HairState::strandIndices(zeno::CurveType curveType, const std:
 {
     std::vector<uint> strandIndices;
     int              strandIndex = 0;
+
+    auto degree = CurveDegree(curveType);
+
     for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
     {
         const int start = *( strand );
-        const int end   = *( strand + 1 ) - CurveDegree(curveType);
+        const int end   = *( strand + 1 ) - degree;
         for( auto segment = start; segment != end; ++segment )
         {
             strandIndices.push_back( strandIndex );

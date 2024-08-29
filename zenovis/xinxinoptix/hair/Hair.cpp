@@ -202,10 +202,11 @@ std::vector<uint> Hair::segments(zeno::CurveType curveType) const
     std::vector<uint> segments;
     // loop to one before end, as last strand value is the "past last valid vertex"
     // index
+    auto degree = CurveDegree(curveType);
     for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
     {
         const int start = *( strand );                      // first vertex in first segment
-        const int end   = *( strand + 1 ) - CurveDegree(curveType);  // second vertex of last segment
+        const int end   = *( strand + 1 ) - degree;         // second vertex of last segment
         for( int i = start; i < end; ++i )
         {
             segments.push_back( i );
