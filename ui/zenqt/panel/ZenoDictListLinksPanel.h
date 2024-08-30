@@ -2,6 +2,7 @@
 #define __ZENO_DICTLIST_PANEL_H__
 
 #include <QtWidgets>
+#include "uicommon.h"
 
 class IconDelegate : public QStyledItemDelegate {
     Q_OBJECT
@@ -18,7 +19,7 @@ class DragDropModel : public QAbstractTableModel {
     Q_OBJECT
 
 public:
-    explicit DragDropModel(int row, int column, int allowDragColumn, QObject* parent = nullptr);
+    explicit DragDropModel(const QModelIndex& inputObjsIdx, int allowDragColumn, QObject* parent = nullptr);
     //base
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -31,30 +32,45 @@ public:
     Qt::DropActions supportedDropActions() const override;
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
     bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+    //
+    void insertLink(const zeno::EdgeInfo& edge);
+    QList<QPair<QString, QModelIndex>> linksNeedUpdate();
+    QList<QModelIndex> linksNeedRemove();
+    QString getInKeyFromOutnodeName(const QString& nodeNameParam);
 private:
     int m_allowDragColumn;
     QList<QString> m_reorderedTexts;
+    QHash<QString, QString> m_outNodesInkeyMap;
 
     QStringList horizontalHeaderLabels;
-    QVector<QVector<QString>> dataMatrix;
+    QList<QList<QString>> dataMatrix;
+
+    QPersistentModelIndex m_objsParamIdx;
 };
 
 class ZenoDictListLinksTable : public QTableView {
     Q_OBJECT
 
 public:
-    ZenoDictListLinksTable(int row, int column, int allowDragColumn, QWidget* parent = nullptr);
+    ZenoDictListLinksTable(int allowDragColumn, QWidget* parent = nullptr);
+    void initDelegate();
+
+    void addLink(const zeno::EdgeInfo& edge);
+    void removeLink(const zeno::EdgeInfo& edge);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
+signals:
+    void linksRemoved(QList<QModelIndex>);
+    void linksUpdated(QList<QPair<QString, QModelIndex>>);
+
 private slots:
     void slt_clicked(const QModelIndex& index);
 private:
     int m_allowDragColumn;
-    DragDropModel* m_model;
 };
 
 #endif

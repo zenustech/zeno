@@ -56,6 +56,7 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     , m_tabWidget(nullptr)
     , m_normalNodeInputWidget(nullptr)
     , m_outputWidget(nullptr)
+    , m_dictListLinksTable(nullptr)
     , m_hintlist(new ZenoHintListWidget)
     , m_descLabel(new ZenoFuncDescriptionLabel)
 {
@@ -126,22 +127,37 @@ void ZenoPropPanel::clearLayout()
         pMainLayout->removeItem(pItem);
     }
     setUpdatesEnabled(true);
-    m_tabWidget = nullptr;
-    m_normalNodeInputWidget = nullptr;
-    m_outputWidget = nullptr;
-    m_inputControls.clear();
-    m_outputControls.clear();
-    m_floatColtrols.clear();
 
-    if (m_idx.isValid())
-    {
-        QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-        if (paramsModel)
+    if (m_idx.data(ROLE_CLASS_NAME).toString() == "MakeDict" || m_idx.data(ROLE_CLASS_NAME).toString() == "MakeList") {
+        m_dictListLinksTable = nullptr;
+
+        if (m_idx.isValid()) {
+            if (ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))) {
+                disconnect(paramsModel, &ParamsModel::linkAboutToBeRemoved, this, &ZenoPropPanel::onLinkRemoved);
+                disconnect(paramsModel, &ParamsModel::linkAboutToBeInserted, this, &ZenoPropPanel::onLinkAdded);
+                disconnect(m_dictListLinksTable, &ZenoDictListLinksTable::linksUpdated, this, &ZenoPropPanel::onDictListTableUpdateLink);
+                disconnect(m_dictListLinksTable, &ZenoDictListLinksTable::linksRemoved, this, &ZenoPropPanel::onDictListTableRemoveLink);
+            }
+        }
+    }
+    else {
+        m_tabWidget = nullptr;
+        m_normalNodeInputWidget = nullptr;
+        m_outputWidget = nullptr;
+        m_inputControls.clear();
+        m_outputControls.clear();
+        m_floatColtrols.clear();
+
+        if (m_idx.isValid())
         {
-            disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-            disconnect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-            disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
-            disconnect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
+            QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
+            if (paramsModel)
+            {
+                disconnect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+                disconnect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+                disconnect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
+                disconnect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
+            }
         }
     }
 
@@ -170,8 +186,20 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         return;
 
     if (m_idx.data(ROLE_CLASS_NAME).toString() == "MakeDict" || m_idx.data(ROLE_CLASS_NAME).toString() == "MakeList") {
-        ZenoDictListLinksTable* dictListLinksView = new ZenoDictListLinksTable(4,4,2,this);
-        pMainLayout->addWidget(dictListLinksView);
+        if (ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))) {
+            connect(paramsModel, &ParamsModel::linkAboutToBeRemoved, this, &ZenoPropPanel::onLinkRemoved);
+            connect(paramsModel, &ParamsModel::linkAboutToBeInserted, this, &ZenoPropPanel::onLinkAdded);
+            QModelIndex inputObjsIdx = paramsModel->paramIdx("objs", true);
+            if (inputObjsIdx.isValid()) {
+                m_dictListLinksTable = new ZenoDictListLinksTable(2, this);
+                DragDropModel* dragdropModel = new DragDropModel(inputObjsIdx, 2, m_dictListLinksTable);
+                m_dictListLinksTable->setModel(dragdropModel);
+                m_dictListLinksTable->initDelegate();
+                connect(m_dictListLinksTable, &ZenoDictListLinksTable::linksUpdated, this, &ZenoPropPanel::onDictListTableUpdateLink);
+                connect(m_dictListLinksTable, &ZenoDictListLinksTable::linksRemoved, this, &ZenoPropPanel::onDictListTableRemoveLink);
+                pMainLayout->addWidget(m_dictListLinksTable);
+            }
+        }
     }
     else {
         QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
@@ -1204,6 +1232,40 @@ void ZenoPropPanel::onViewParamsMoved(const QModelIndex &parent, int start, int 
     }
     
 
+}
+
+void ZenoPropPanel::onLinkAdded(const zeno::EdgeInfo& link)
+{
+    if (m_dictListLinksTable) {
+        m_dictListLinksTable->addLink(link);
+    }
+}
+
+void ZenoPropPanel::onLinkRemoved(const zeno::EdgeInfo& link)
+{
+    if (m_dictListLinksTable) {
+        m_dictListLinksTable->removeLink(link);
+    }
+}
+
+void ZenoPropPanel::onDictListTableUpdateLink(QList<QPair<QString, QModelIndex>> links)
+{
+    if (GraphModel* currGraph = QVariantPtr<GraphModel>::asPtr(m_idx.data(ROLE_GRAPH))) {
+        for (auto& [inkey, link] : links) {
+            zeno::EdgeInfo edge = link.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+            currGraph->updateLink(link, true, QString::fromStdString(edge.inKey), inkey);
+        }
+    }
+}
+
+void ZenoPropPanel::onDictListTableRemoveLink(QList<QModelIndex> links)
+{
+    if (GraphModel* currGraph = QVariantPtr<GraphModel>::asPtr(m_idx.data(ROLE_GRAPH))) {
+        for (auto& link : links) {
+            zeno::EdgeInfo edge = link.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+            currGraph->removeLink(edge);
+        }
+    }
 }
 
 ZExpandableSection* ZenoPropPanel::findGroup(const QString& tabName, const QString& groupName)
