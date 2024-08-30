@@ -128,6 +128,7 @@ struct ReflectNodeClass : INodeClass {
                             else if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
                                 inputPrims[param.mapTo].name = param.dispName;
                                 inputPrims[param.mapTo].defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
+                                convertToEditVar(inputPrims[param.mapTo].defl, param.defl.type().hash_code());
                                 inputPrims[param.mapTo].control = param.ctrl;
                                 group.params.push_back(std::move(inputPrims[param.mapTo]));
                                 inputPrims.erase(param.mapTo);
@@ -423,6 +424,7 @@ struct ReflectNodeClass : INodeClass {
                     prim.control = ctrl;
                     prim.ctrlProps = controlProps;
                     prim.defl = defl;
+                    convertToEditVar(prim.defl, prim.type);
                     prim.socketType = Socket_Primitve;
                     prim.tooltip;
                     prim.wildCardGroup;
@@ -599,6 +601,7 @@ struct ReflectNodeClass : INodeClass {
                             else {
                                 inPrim.defl = func->init_param_default_value(idxParam);
                             }
+                            convertToEditVar(inPrim.defl, inPrim.type);
 
                             inPrim.control = getDefaultControl(type);
                             inPrim.bVisible = false;
@@ -675,6 +678,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.name = param_desc.name;
             param.type = type;
             param.defl = zeno::str2any(param_desc.defl, param.type);
+            convertToEditVar(param.defl, param.type);
             if (param_desc.socketType != zeno::NoSocket)
                 param.socketType = param_desc.socketType;
             if (param_desc.control != NullControl)
@@ -724,6 +728,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         param.name = param_desc.name;
         param.type = param_desc.type;
         param.defl = zeno::str2any(param_desc.defl, param.type);
+        convertToEditVar(param.defl, param.type);
         param.socketType = NoSocket;
         //其他控件估计是根据类型推断的。
         if (!param_desc.comboxitems.empty()) {
@@ -750,6 +755,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.name = param_desc.name;
             param.type = type;
             param.defl = zeno::str2any(param_desc.defl, param.type);
+            //输出的数据端口没必要将vec转为vecedit
             if (param_desc.socketType != zeno::NoSocket)
                 param.socketType = param_desc.socketType;
             param.control = NullControl;
@@ -782,7 +788,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
 }
 
 ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
-    if (clsname == "CustomPlugin1Node") {
+    if (clsname == "CreateCube") {
         int j;
         j = 0;
     }

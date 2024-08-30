@@ -474,7 +474,7 @@ ZENDEFNODE(CreateCube, {
         {gParamType_Int, "div_h", "2", Socket_Primitve, Lineedit},
         {gParamType_Int, "div_d", "2", Socket_Primitve, Lineedit},
         {gParamType_Float, "size", "1", Socket_Primitve, Lineedit},
-        {gParamType_Bool, "quads", "0", Socket_Primitve, Lineedit},
+        {gParamType_Bool, "quads", "0", Socket_Primitve, Checkbox},
     },
     {{gParamType_Primitive, "prim"}},
     {},

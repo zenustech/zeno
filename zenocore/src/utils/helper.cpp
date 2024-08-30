@@ -122,6 +122,18 @@ namespace zeno {
         case gParamType_Int:    return any_cast<int>(lhs) == any_cast<int>(rhs);
         case gParamType_Float:  return zeno::reflect::any_cast<float>(lhs) == zeno::reflect::any_cast<float>(rhs);
         case gParamType_String: return zeno::reflect::any_cast<std::string>(lhs) == zeno::reflect::any_cast<std::string>(rhs);
+        case gParamType_PrimVariant:
+            return any_cast<PrimVar>(lhs) == any_cast<PrimVar>(rhs);
+        case gParamType_VecEdit: {
+            auto& vec1 = any_cast<vecvar>(lhs);
+            auto& vec2 = any_cast<vecvar>(rhs);
+            if (vec1 != vec2) return false;
+            for (int i = 0; i < vec1.size(); i++) {
+                if (vec1[i] != vec2[i])
+                    return false;
+            }
+            return true;
+        }
         case gParamType_Vec2f: {
             auto& vec1 = zeno::reflect::any_cast<zeno::vec2f>(lhs);
             auto& vec2 = zeno::reflect::any_cast<zeno::vec2f>(rhs);
@@ -173,7 +185,7 @@ namespace zeno {
             return curve1 == curve2;
         }
         default:
-            return false;
+            return lhs == rhs;
         }
     }
 
@@ -205,6 +217,40 @@ namespace zeno {
         }
     }
 
+    ZENO_API void convertToEditVar(zeno::reflect::Any& val, const ParamType type) {
+        //部分类型可以允许k帧，公式，因此要转换为“编辑”类型
+        if (type == gParamType_Int) {
+            val = PrimVar(zeno::reflect::any_cast<int>(val));
+        }
+        else if (type == gParamType_Float) {
+            val = PrimVar(zeno::reflect::any_cast<float>(val));
+        }
+        else if (type == gParamType_Vec2f) {
+            auto& vec2 = zeno::reflect::any_cast<vec2f>(val);
+            val = vecvar{ vec2[0], vec2[1] };
+        }
+        else if (type == gParamType_Vec2i) {
+            auto& vec2 = zeno::reflect::any_cast<vec2i>(val);
+            val = vecvar{ vec2[0], vec2[1] };
+        }
+        else if (type == gParamType_Vec3i) {
+            auto& vec3 = zeno::reflect::any_cast<vec3i>(val);
+            val = vecvar{ vec3[0], vec3[1], vec3[2] };
+        }
+        else if (type == gParamType_Vec3f) {
+            auto& vec3 = zeno::reflect::any_cast<vec3f>(val);
+            val = vecvar{ vec3[0], vec3[1], vec3[2] };
+        }
+        else if (type == gParamType_Vec4i) {
+            auto& vec4 = zeno::reflect::any_cast<vec4i>(val);
+            val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
+        }
+        else if (type == gParamType_Vec4f) {
+            auto& vec4 = zeno::reflect::any_cast<vec4f>(val);
+            val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
+        }
+    }
+
     ZENO_API zeno::reflect::Any str2any(std::string const& defl, ParamType const& type) {
         if (defl.empty())
             return initAnyDeflValue(type);
@@ -213,8 +259,8 @@ namespace zeno {
             return defl;
         }
         case gParamType_Bool: {
-            if (defl == "0" || defl == "false")    return 0;
-            if (defl == "1" || defl == "true")     return 1;
+            if (defl == "0" || defl == "false")    return false;
+            if (defl == "1" || defl == "true")     return true;
             return zeno::reflect::Any();
         }
         case gParamType_Int: {
@@ -1069,6 +1115,25 @@ namespace zeno {
                 return false;
             }
         }, lhs, rhs);
+    }
+
+    ZENO_API std::string editVariantToStr(const PrimVar& var)
+    {
+        return std::visit([](auto&& val) -> std::string {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<T, int>) {
+                return std::to_string(val);
+            }
+            else if constexpr (std::is_same_v<T, float>) {
+                return std::to_string(val);
+            }
+            else if constexpr (std::is_same_v<T, std::string>) {
+                return val;
+            }
+            else {
+                return "";
+            }
+        }, var);
     }
 
     ZENO_API zeno::ParamControl getDefaultControl(const zeno::ParamType type)

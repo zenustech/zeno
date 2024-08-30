@@ -9,16 +9,16 @@
 #include <zeno/core/IObject.h>
 
 
-ZVecEditor::ZVecEditor(const zeno::reflect::Any& vec, zeno::ParamType paramType, int deflSize, QString styleCls, QWidget* parent)
+ZVecEditor::ZVecEditor(const zeno::vecvar& vec, bool bFloat, QString styleCls, QWidget* parent)
     : QWidget(parent)
-    , m_paramType(paramType)
-    , m_bFloat(m_paramType == gParamType_Vec2f || m_paramType == gParamType_Vec3f || m_paramType == gParamType_Vec4f)
-    , m_deflSize(deflSize)
+    , m_bFloat(bFloat)
     , m_styleCls(styleCls)
     , m_hintlist(nullptr)
     , m_descLabel(nullptr)
+    , m_vec(vec)
 {
-    initUI(vec);
+    m_deflSize = vec.size();
+    initUI(m_vec);
 }
 
 bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
@@ -103,56 +103,14 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     return QWidget::eventFilter(watched, event);
 }
 
-void ZVecEditor::initUI(const zeno::reflect::Any& anyVal) {
-    ZASSERT_EXIT(anyVal.has_value());
-
+void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
     pLayout->setSpacing(5);
 
-    QStringList vecLiteral;
-    int n = m_deflSize;
-
-    if (zeno::reflect::get_type<zeno::vec3f>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec3f>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec3i>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec3i>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec3s>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec3s>(anyVal);
-        vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]), QString::fromStdString(vec[2]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec2f>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec2f>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec2i>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec2i>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec2s>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec2s>(anyVal);
-        vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec4f>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec4f>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]), QString::number(vec[3]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec4i>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec4i>(anyVal);
-        vecLiteral = QStringList({ QString::number(vec[0]), QString::number(vec[1]), QString::number(vec[2]), QString::number(vec[3]) });
-    }
-    else if (zeno::reflect::get_type<zeno::vec4s>() == anyVal.type()) {
-        const auto& vec = zeno::reflect::any_cast<zeno::vec4s>(anyVal);
-        vecLiteral = QStringList({ QString::fromStdString(vec[0]), QString::fromStdString(vec[1]), QString::fromStdString(vec[2]), QString::fromStdString(vec[3]) });
-    }
-
-    ZASSERT_EXIT(vecLiteral.size() == n);
+    int n = vecedit.size();
     m_editors.resize(n);
-    for (int i = 0; i < m_editors.size(); i++)
+    for (int i = 0; i < n; i++)
     {
         m_editors[i] = new ZLineEdit;
         if (m_bFloat) {
@@ -162,10 +120,68 @@ void ZVecEditor::initUI(const zeno::reflect::Any& anyVal) {
         m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::types::gParamType_Float : zeno::types::gParamType_Int));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
-        setText(vecLiteral.at(i), m_editors[i]);
+
+        QString text = std::visit([](auto&& val) -> QString {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<T, int>) {
+                return QString::number(val);
+            }
+            else if constexpr (std::is_same_v<T, float>) {
+                return QString::number(val);
+            }
+            else if constexpr (std::is_same_v<T, std::string>) {
+                return QString::fromStdString(val);
+            }
+            else {
+                return "";
+            }
+        }, vecedit[i]);
+
+        ZASSERT_EXIT(!text.isEmpty());
+        m_editors[i]->setText(text);
 
         pLayout->addWidget(m_editors[i]);
-        connect(m_editors[i], &ZLineEdit::editingFinished, this, &ZVecEditor::editingFinished);
+        connect(m_editors[i], &ZLineEdit::editingFinished, this, [=]() {
+            QString newText = m_editors[i]->text();
+            if (!m_bFloat) {
+                bool bConvert = false;
+                int ival = newText.toInt(&bConvert);
+                if (bConvert) {
+                    m_vec[i] = ival;
+                }
+                else {
+                    //可以尝试一下转float
+                    float fval = newText.toFloat(&bConvert);
+                    if (bConvert) {
+                        ival = static_cast<int>(fval);
+                        m_vec[i] = ival;
+                    }
+                    else {
+                        //可能是别的表达式了，这时候直接套字符串进去就行
+                        m_vec[i] = newText.toStdString();
+                    }
+                }
+            }
+            else {
+                bool bConvert = false;
+                float fval = newText.toFloat(&bConvert);
+                if (bConvert) {
+                    m_vec[i] = fval;
+                }
+                else {
+                    //可以尝试一下转int
+                    int ival = newText.toInt(&bConvert);
+                    if (bConvert) {
+                        fval = ival;
+                        m_vec[i] = fval;
+                    }
+                    else {
+                        m_vec[i] = newText.toStdString();
+                    }
+                }
+            }
+            emit valueChanged(m_vec);
+        });
     }
     setLayout(pLayout);
     setStyleSheet("ZVecEditor { background: transparent; } ");
@@ -176,82 +192,16 @@ bool ZVecEditor::isFloat() const
     return m_bFloat;
 }
 
-zeno::reflect::Any ZVecEditor::vec() const
+zeno::vecvar ZVecEditor::vec() const
 {
-    QVariant value;
-    QVector<float> vec;
-    QVector<std::string> vecStr;
-    int n = m_editors.size();
-    for (int i = 0; i < n; i++)
-    {
-        if (m_bFloat)
-        {
-            bool bOK = false;
-            float val = m_editors[i]->text().toFloat(&bOK);
-            if (bOK && vecStr.isEmpty()) {
-                vec.append(val);
-            }
-            else {
-                for (auto data : vec) {
-                    vecStr.append(QString::number(data).toStdString());
-                }
-                vec.clear();
-                QString str = m_editors[i]->text();
-                vecStr.append(str.toStdString());
-            }
-        }
-        else
-        {
-            bool bOK = false;
-            int val = m_editors[i]->text().toInt(&bOK);
-            if (bOK && vecStr.isEmpty()) {
-                vec.append(val);
-            }
-            else {
-                for (auto data : vec) {
-                    vecStr.append(QString::number(data).toStdString());
-                }
-                vec.clear();
-                QString str = m_editors[i]->text();
-                vecStr.append(str.toStdString());
-            }
-        }
-    }
-    if (vec.size() == n) 
-    {
-        switch (n)
-        {
-        case 2: return m_bFloat ? zeno::vec2f(vec[0], vec[1]) : zeno::vec2i(vec[0], vec[1]);
-        case 3: return m_bFloat ? zeno::vec3f(vec[0], vec[1], vec[2]) : zeno::vec3i(vec[0], vec[1], vec[2]);
-        case 4: return m_bFloat ? zeno::vec4f(vec[0], vec[1], vec[2], vec[3]) : zeno::vec4i(vec[0], vec[1], vec[2], vec[3]);
-        }
-    } 
-    else if (vecStr.size() == n) 
-    {
-        value = QVariant::fromValue(vecStr);
-    }
-    ZASSERT_EXIT(false, zeno::reflect::Any::make_null());
-    return zeno::reflect::Any::make_null();
+    return m_vec;
 }
 
-void ZVecEditor::setVec(const zeno::reflect::Any& editVec)
+void ZVecEditor::setVec(const zeno::vecvar& editVec, bool bFloat)
 {
     int size = m_editors.size();
 
-    bool bFloat = false;
-    zeno::ParamType newType = editVec.type().hash_code();
-    switch (newType) {
-    case gParamType_Vec2i: size = 2; bFloat = false; break;
-    case gParamType_Vec2f: size = 2; bFloat = true; break;
-    case gParamType_Vec3i: size = 3; bFloat = false; break;
-    case gParamType_Vec3f: size = 3; bFloat = true; break;
-    case gParamType_Vec4i: size = 4; bFloat = false; break;
-    case gParamType_Vec4f: size = 4; bFloat = true; break;
-    default:
-        ZASSERT_EXIT(false);
-    }
-
-    if (bFloat != m_bFloat || size != m_editors.size())
+    if (bFloat != m_bFloat || editVec.size() != size)
     {
         //类型大小发生了变化，应该只有子图参数才能发生
         Q_ASSERT(m_nodeIdx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode);
@@ -259,55 +209,24 @@ void ZVecEditor::setVec(const zeno::reflect::Any& editVec)
     }
     else
     {
-        for (int i = 0; i < m_editors.size(); i++) 
+        for (int i = 0; i < size; i++)
         {
-            switch (newType) {
-            case gParamType_Vec2i: {
-                int val = zeno::reflect::any_cast<zeno::vec2i>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec2f: {
-                float val = zeno::reflect::any_cast<zeno::vec2f>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec2s: {
-                std::string val = zeno::reflect::any_cast<zeno::vec2s>(editVec)[i];
-                m_editors[i]->setText(QString::fromStdString(val));
-                break;
-            }
-            case gParamType_Vec3i: {
-                int val = zeno::reflect::any_cast<zeno::vec3i>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec3f: {
-                float val = zeno::reflect::any_cast<zeno::vec3f>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec3s: {
-                std::string val = zeno::reflect::any_cast<zeno::vec2s>(editVec)[i];
-                m_editors[i]->setText(QString::fromStdString(val));
-                break;
-            }
-            case gParamType_Vec4i: {
-                int val = zeno::reflect::any_cast<zeno::vec4i>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec4f: {
-                float val = zeno::reflect::any_cast<zeno::vec4f>(editVec)[i];
-                m_editors[i]->setText(QString::number(val));
-                break;
-            }
-            case gParamType_Vec4s: {
-                std::string val = zeno::reflect::any_cast<zeno::vec4s>(editVec)[i];
-                m_editors[i]->setText(QString::fromStdString(val));
-                break;
-            }
-            }
+            QString text = std::visit([](auto&& val) -> QString {
+                using T = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<T, int>) {
+                    return QString::number(val);
+                }
+                else if constexpr (std::is_same_v<T, float>) {
+                    return QString::number(val);
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    return QString::fromStdString(val);
+                }
+                else {
+                    return "";
+                }
+            }, editVec[i]);
+            m_editors[i]->setText(text);
         }
     }
 }

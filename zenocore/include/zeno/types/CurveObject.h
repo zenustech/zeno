@@ -184,7 +184,7 @@ struct CurveData : private _CurveDataDetails {
         }
     }
 
-    bool operator==(const CurveData& other) {
+    bool operator==(const CurveData& other) const {
         if (other.cpbases.size() != cpbases.size() || other.cpoints.size() != cpoints.size())
             return false;
         if (other.cycleType != cycleType || other.visible != visible || other.timeline != timeline)
@@ -202,6 +202,10 @@ struct CurveData : private _CurveDataDetails {
             }
         }
         return true;
+    }
+
+    bool operator!=(const CurveData& rhs) const {
+        return !operator==(rhs);
     }
 };
 

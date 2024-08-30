@@ -9,6 +9,7 @@
 #include "widgets/zlabel.h"
 #include <zeno/formula/formula.h>
 #include <util/log.h>
+#include <zeno/utils/helper.h>
 
 
 ZLineEdit::ZLineEdit(QWidget* parent)
@@ -402,4 +403,66 @@ void ZLineEdit::focusOutEvent(QFocusEvent* event)
         disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
     }
     QLineEdit::focusOutEvent(event);
+}
+
+
+
+ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType targetType, QWidget* parent)
+    : ZLineEdit(QString::fromStdString(zeno::editVariantToStr(var)), parent)
+    , m_var(var)
+    , m_targetType(targetType)
+{
+    connect(this, &ZLineEdit::textEditFinished, this, [=]() {
+        QString newText = this->text();
+        if (m_targetType == gParamType_Int) {
+            bool bConvert = false;
+            int ival = newText.toInt(&bConvert);
+            if (bConvert) {
+                m_var = ival;
+            }
+            else {
+                //可以尝试一下转float
+                float fval = newText.toFloat(&bConvert);
+                if (bConvert) {
+                    ival = static_cast<int>(fval);
+                    m_var = ival;
+                }
+                else {
+                    //可能是别的表达式了，这时候直接套字符串进去就行
+                    m_var = newText.toStdString();
+                }
+            }
+        }
+        else if (m_targetType == gParamType_Float) {
+            bool bConvert = false;
+            float fval = newText.toFloat(&bConvert);
+            if (bConvert) {
+                m_var = fval;
+            }
+            else {
+                //可以尝试一下转int
+                int ival = newText.toInt(&bConvert);
+                if (bConvert) {
+                    fval = ival;
+                    m_var = fval;
+                }
+                else {
+                    m_var = newText.toStdString();
+                }
+            }
+        }
+        else if (m_targetType == gParamType_String) {
+            m_var = newText.toStdString();
+        }
+        else {
+            //TODO: curve case
+            ZASSERT_EXIT(false);
+        }
+        emit valueChanged(m_var);
+    });
+}
+
+zeno::PrimVar ZCoreParamLineEdit::getPrimVariant() const
+{
+    return m_var;
 }

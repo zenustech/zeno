@@ -308,6 +308,10 @@ namespace zeno {
         formula_args_tip func_args;
         std::vector<ref_tip_info> ref_candidates;
     };
+
+    //可以是公式，曲线，数值，字符串中的一种，适用于所有数值类型和向量类型
+    using PrimVar = std::variant<int, float, std::string, CurveData>;
+    using vecvar = std::vector<zeno::PrimVar>;
 }
 
 #endif

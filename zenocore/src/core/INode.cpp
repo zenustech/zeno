@@ -787,32 +787,48 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
     const ParamType type = in_param->type;
     const auto& defl = in_param->defl;
     zeno::reflect::Any result = defl;
+    ParamType editType = defl.type().hash_code();
 
     switch (type) {
-    case zeno::types::gParamType_Int:
-    case zeno::types::gParamType_Float:
-    case zeno::types::gParamType_Bool:
+    case gParamType_Int:
+    case gParamType_Float:
     {
-        //先不考虑int float的划分,直接按variant的值来。
-        std::string str;
-        if (zeno_get_if(defl, str)) {
-            float fVal = resolve(str, type);
-            result = fVal;
+        if (editType == gParamType_PrimVariant) {
+            zeno::PrimVar var = any_cast<zeno::PrimVar>(defl);
+            result = std::visit([=](auto&& arg)->Any {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+                    return arg;
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    return resolve(arg, type);
+                }
+                else if constexpr (std::is_same_v<T, CurveData>) {
+                    int frame = getGlobalState()->getFrameId();
+                    return arg.eval(frame);
+                }
+                else {
+                    throw UnimplError();
+                }
+            }, var);
         }
-        else if (auto pCurves = any_get_if<CurvesData>(defl))
-        {
-            assert(pCurves->keys.size() == 1);
-            float fVal = pCurves->keys.begin()->second.eval(frame);
-            if (type == zeno::types::gParamType_Int || type == zeno::types::gParamType_Bool) {
-                return static_cast<int>(fVal);
+        else if (editType == gParamType_Int) {
+            //目前所有defl都是以PrimVariant的方式储存，暂时不会以本值类型储存
+            assert(false);
         }
-            else {
-                return fVal;
-        }
+        else if (editType == gParamType_Float) {
+            assert(false);
         }
         else {
-            result = std::move(defl);
+            assert(false);
         }
+        break;
+    }
+    case zeno::types::gParamType_Bool:
+    {
+        //Bool值暂不支持控件编写表达式，因此直接取值
+        assert(editType == gParamType_Bool);
+        result = std::move(defl);
         break;
     }
     case zeno::types::gParamType_String:
@@ -820,12 +836,44 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         //TODO: format string as formula
         break;
     }
-    case zeno::types::gParamType_Vec2f:   result = resolveVec<vec2f, vec2s>(defl, type);  break;
-    case zeno::types::gParamType_Vec2i:   result = resolveVec<vec2i, vec2s>(defl, type);  break;
-    case zeno::types::gParamType_Vec3f:   result = resolveVec<vec3f, vec3s>(defl, type);  break;
-    case zeno::types::gParamType_Vec3i:   result = resolveVec<vec3i, vec3s>(defl, type);  break;
-    case zeno::types::gParamType_Vec4f:   result = resolveVec<vec4f, vec4s>(defl, type);  break;
-    case zeno::types::gParamType_Vec4i:   result = resolveVec<vec4i, vec4s>(defl, type);  break;
+    case gParamType_Vec2f:
+    case gParamType_Vec2i:
+    case gParamType_Vec3f:
+    case gParamType_Vec3i:
+    case gParamType_Vec4f:
+    case gParamType_Vec4i:
+    {
+        assert(gParamType_VecEdit == editType);
+        zeno::vecvar editvec = any_cast<zeno::vecvar>(defl);
+        std::vector<float> vec;
+        for (int i = 0; i < editvec.size(); i++)
+        {
+            float res = std::visit([=](auto&& arg)->float {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+                    return arg;
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    return resolve(arg, type);
+                }
+                else if constexpr (std::is_same_v<T, CurveData>) {
+                    int frame = getGlobalState()->getFrameId();
+                    return arg.eval(frame);
+                }
+                else {
+                    throw UnimplError();
+                }
+            }, editvec[i]);
+            vec.push_back(res);
+        }
+        if (type == gParamType_Vec2f)       result = zeno::vec2f(vec[0], vec[1]);
+        else if (type == gParamType_Vec2i)  result = zeno::vec2i(vec[0], vec[1]);
+        else if (type == gParamType_Vec3f)  result = zeno::vec3f(vec[0], vec[1], vec[2]);
+        else if (type == gParamType_Vec3i)  result = zeno::vec3i(vec[0], vec[1], vec[2]);
+        else if (type == gParamType_Vec4f)  result = zeno::vec4f(vec[0], vec[1], vec[2], vec[3]);
+        else if (type == gParamType_Vec4i)  result = zeno::vec4i(vec[0], vec[1], vec[2], vec[3]);
+        break;
+    }
     case zeno::types::gParamType_Heatmap:
     {
         //TODO: heatmap的结构体定义.

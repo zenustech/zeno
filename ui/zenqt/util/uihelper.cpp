@@ -936,6 +936,21 @@ QString UiHelper::anyToString(const zeno::reflect::Any& any)
     else if (zeno::reflect::get_type<float>() == any.type()) {
         return QString::number(zeno::reflect::any_cast<float>(any));
     }
+    else if (gParamType_PrimVariant == any.type().hash_code()) {
+        zeno::PrimVar var = zeno::reflect::any_cast<zeno::PrimVar>(any);
+        return std::visit([](auto&& val)->QString {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<int, T> || std::is_same_v<float, T>) {
+                return QString::number(val);
+            }
+            else if constexpr (std::is_same_v<std::string, T>) {
+                return QString::fromStdString(val);
+            }
+            else {
+                return "";
+            }
+        }, var);
+    }
     else if (zeno::reflect::get_type<std::string>() == any.type()) {
         return QString::fromStdString(zeno::reflect::any_cast<std::string>(any));
     }

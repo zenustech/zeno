@@ -59,10 +59,8 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                 auto oldVal = pItem->data(ROLE_PARAM_VALUE);
                 if (pItem->data(ROLE_ISINPUT).toBool())
                 {
-                    if (newValue.type() == QVariant::UserType)
-                    {
-                        if (zeno::isAnyEqual(old_value, new_value))
-                            continue;
+                    if (zeno::isAnyEqual(old_value, new_value)) {
+                        continue;
                     }
                     pItem->setData(newValue, ROLE_PARAM_VALUE);
                 }

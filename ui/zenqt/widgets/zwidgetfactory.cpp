@@ -42,17 +42,16 @@ namespace zenoui
         {
             case zeno::Lineedit:
             {
-                QString text = UiHelper::anyToString(value);
-                ZLineEdit *pLineEdit = new ZLineEdit(text);
+                ZASSERT_EXIT(value.type().hash_code() == gParamType_PrimVariant, nullptr);
+                const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
+
+                ZCoreParamLineEdit* pLineEdit = new ZCoreParamLineEdit(var, paramType);
 
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", paramType));
                 pLineEdit->setNodeIdx(nodeIdx);
-                QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
-                    // be careful about the dynamic type.
-                    QString text = pLineEdit->text();
-                    const Any& newVal = zeno::str2any(text.toStdString(), paramType);
+                QObject::connect(pLineEdit, &ZCoreParamLineEdit::valueChanged, [=](zeno::PrimVar newVal) {
                     cbSet.cbEditFinished(newVal);
                 });
                 return pLineEdit;
@@ -186,29 +185,29 @@ namespace zenoui
             case zeno::Vec3edit:
             case zeno::Vec4edit:
             {
-                int dim = -1;
                 bool bFloat = false;
                 if (paramType == zeno::types::gParamType_Vec2i || paramType == zeno::types::gParamType_Vec2f)
                 {
-                    dim = 2;
                     bFloat = paramType == zeno::types::gParamType_Vec2f;
                 }
                 else if (paramType == zeno::types::gParamType_Vec3i || paramType == zeno::types::gParamType_Vec3f)
                 {
-                    dim = 3;
                     bFloat = paramType == zeno::types::gParamType_Vec3f;
                 }
                 else if (paramType == zeno::types::gParamType_Vec4i || paramType == zeno::types::gParamType_Vec4f)
                 {
-                    dim = 4;
                     bFloat = paramType == zeno::types::gParamType_Vec4f;
                 }
+                else {
+                    ZASSERT_EXIT(false, nullptr);
+                }
 
-                ZVecEditor* pVecEdit = new ZVecEditor(value, paramType, dim, "zeno2_2_lineedit");
+                ZASSERT_EXIT(value.type().hash_code() == gParamType_VecEdit, nullptr);
+
+                ZVecEditor* pVecEdit = new ZVecEditor(any_cast<zeno::vecvar>(value), bFloat, "zeno2_2_lineedit");
                 pVecEdit->setNodeIdx(nodeIdx);
                 pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
-                QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    const Any& newValue = pVecEdit->vec();
+                QObject::connect(pVecEdit, &ZVecEditor::valueChanged, [=](zeno::vecvar newValue) {
                     cbSet.cbEditFinished(newValue);
                 });
                 return pVecEdit;

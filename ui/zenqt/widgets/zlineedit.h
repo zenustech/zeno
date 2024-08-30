@@ -2,6 +2,7 @@
 #define __ZLINEEDIT_H__
 
 #include <QtWidgets>
+#include <zeno/core/data.h>
 
 class ZNumSlider;
 class ZTimeline;
@@ -61,6 +62,21 @@ private:
 
     ZenoHintListWidget* m_hintlist;
     ZenoFuncDescriptionLabel* m_descLabel;
+};
+
+class ZCoreParamLineEdit : public ZLineEdit
+{
+    Q_OBJECT
+public:
+    ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType targetType, QWidget* parent = nullptr);
+    zeno::PrimVar getPrimVariant() const;
+
+signals:
+    void valueChanged(zeno::PrimVar newVal);
+
+private:
+    zeno::PrimVar m_var;
+    zeno::ParamType m_targetType;
 };
 
 #endif

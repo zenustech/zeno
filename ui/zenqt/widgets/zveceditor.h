@@ -8,13 +8,12 @@
 
 class ZLineEdit;
 
-
 class ZVecEditor : public QWidget
 {
     Q_OBJECT
 public:
-    ZVecEditor(const zeno::reflect::Any& vec, zeno::ParamType paramType, int deflSize, QString styleCls, QWidget* parent = nullptr);
-    zeno::reflect::Any vec() const;
+    ZVecEditor(const zeno::vecvar& vec, bool bFloat, QString styleCls, QWidget* parent = nullptr);
+    zeno::vecvar vec() const;
     bool isFloat() const;
     int getCurrentEditor();
     void updateProperties(const QVector<QString>& properties);
@@ -22,25 +21,25 @@ public:
     void setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl);
 
 signals:
-    void valueChanged(zeno::reflect::Any);
+    void valueChanged(zeno::vecvar);
     void editingFinished();
 
 public slots:
-    void setVec(const zeno::reflect::Any& vec);
+    void setVec(const zeno::vecvar& vec, bool bFloat);
     void showNoFocusLineEdits(QWidget* lineEdit);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event);
 
 private:
-    void initUI(const zeno::reflect::Any& vec);
+    void initUI(const zeno::vecvar& vec);
     void setText(const QString& text, ZLineEdit*);
 
+    zeno::vecvar m_vec;
     QVector<ZLineEdit*> m_editors;
     int m_deflSize;
     QString m_styleCls;
     QPersistentModelIndex m_nodeIdx;
-    const zeno::ParamType m_paramType;
     bool m_bFloat;
 
     ZenoHintListWidget* m_hintlist;

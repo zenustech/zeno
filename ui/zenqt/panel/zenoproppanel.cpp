@@ -1031,7 +1031,9 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                 //TODO:
                 //QVariant newVal = value;
                 //bool bKeyFrame = AppHelper::getCurveValue(newVal);
-                pVecEdit->setVec(value);
+                ZASSERT_EXIT(value.type().hash_code() == gParamType_VecEdit);
+                
+                pVecEdit->setVec(any_cast<zeno::vecvar>(value), pVecEdit->isFloat());
                 if (pVecEdit->isFloat())
                 {
                     //QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
