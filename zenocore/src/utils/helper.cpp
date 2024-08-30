@@ -105,7 +105,7 @@ namespace zeno {
             return gParamType_IObject;    //zeno各个模块定义的类型不规范程度很大，而且积累了很多，很难一下子改好，所以不明类型都转成obj
     }
 
-    ZENO_API bool isAnyEqual(const zeno::reflect::Any& lhs, const zeno::reflect::Any& rhs)
+    ZENO_API bool isAnyEqual(const Any& lhs, const Any& rhs)
     {
         if (lhs.type() != rhs.type() || lhs.has_value() != rhs.has_value())
             return false;       //对于int和float的同等值，可能会漏
@@ -120,8 +120,9 @@ namespace zeno {
         switch (lhsType)
         {
         case gParamType_Int:    return any_cast<int>(lhs) == any_cast<int>(rhs);
-        case gParamType_Float:  return zeno::reflect::any_cast<float>(lhs) == zeno::reflect::any_cast<float>(rhs);
-        case gParamType_String: return zeno::reflect::any_cast<std::string>(lhs) == zeno::reflect::any_cast<std::string>(rhs);
+        case gParamType_Float:  return any_cast<float>(lhs) == any_cast<float>(rhs);
+        case gParamType_Bool:   return any_cast<bool>(lhs) == any_cast<bool>(rhs);
+        case gParamType_String: return any_cast<std::string>(lhs) == any_cast<std::string>(rhs);
         case gParamType_PrimVariant:
             return any_cast<PrimVar>(lhs) == any_cast<PrimVar>(rhs);
         case gParamType_VecEdit: {
@@ -135,53 +136,53 @@ namespace zeno {
             return true;
         }
         case gParamType_Vec2f: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec2f>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec2f>(rhs);
+            auto& vec1 = any_cast<zeno::vec2f>(lhs);
+            auto& vec2 = any_cast<zeno::vec2f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
         case gParamType_Vec2i: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec2i>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec2i>(rhs);
+            auto& vec1 = any_cast<zeno::vec2i>(lhs);
+            auto& vec2 = any_cast<zeno::vec2i>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
         case gParamType_Vec2s: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec2s>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec2s>(rhs);
+            auto& vec1 = any_cast<zeno::vec2s>(lhs);
+            auto& vec2 = any_cast<zeno::vec2s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1];
         }
         case gParamType_Vec3f: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec3f>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec3f>(rhs);
+            auto& vec1 = any_cast<zeno::vec3f>(lhs);
+            auto& vec2 = any_cast<zeno::vec3f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
         case gParamType_Vec3i: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec3i>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec3i>(rhs);
+            auto& vec1 = any_cast<zeno::vec3i>(lhs);
+            auto& vec2 = any_cast<zeno::vec3i>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
         case gParamType_Vec3s: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec3s>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec3s>(rhs);
+            auto& vec1 = any_cast<zeno::vec3s>(lhs);
+            auto& vec2 = any_cast<zeno::vec3s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2];
         }
         case gParamType_Vec4f: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec4f>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec4f>(rhs);
+            auto& vec1 = any_cast<zeno::vec4f>(lhs);
+            auto& vec2 = any_cast<zeno::vec4f>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
         case gParamType_Vec4i: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec4i>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec4i>(rhs);
+            auto& vec1 = any_cast<zeno::vec4i>(lhs);
+            auto& vec2 = any_cast<zeno::vec4i>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
         case gParamType_Vec4s: {
-            auto& vec1 = zeno::reflect::any_cast<zeno::vec4s>(lhs);
-            auto& vec2 = zeno::reflect::any_cast<zeno::vec4s>(rhs);
+            auto& vec1 = any_cast<zeno::vec4s>(lhs);
+            auto& vec2 = any_cast<zeno::vec4s>(rhs);
             return vec1[0] == vec2[0] && vec1[1] == vec2[1] && vec1[2] == vec2[2] && vec1[3] == vec2[3];
         }
         case gParamType_Curve: {
-            auto& curve1 = zeno::reflect::any_cast<zeno::CurvesData>(lhs);
-            auto& curve2 = zeno::reflect::any_cast<zeno::CurvesData>(rhs);
+            auto& curve1 = any_cast<zeno::CurvesData>(lhs);
+            auto& curve2 = any_cast<zeno::CurvesData>(rhs);
             return curve1 == curve2;
         }
         default:
@@ -217,41 +218,41 @@ namespace zeno {
         }
     }
 
-    ZENO_API void convertToEditVar(zeno::reflect::Any& val, const ParamType type) {
+    ZENO_API void convertToEditVar(Any& val, const ParamType type) {
         //部分类型可以允许k帧，公式，因此要转换为“编辑”类型
         if (type == gParamType_Int) {
-            val = PrimVar(zeno::reflect::any_cast<int>(val));
+            val = PrimVar(any_cast<int>(val));
         }
         else if (type == gParamType_Float) {
-            val = PrimVar(zeno::reflect::any_cast<float>(val));
+            val = PrimVar(any_cast<float>(val));
         }
         else if (type == gParamType_Vec2f) {
-            auto& vec2 = zeno::reflect::any_cast<vec2f>(val);
+            auto& vec2 = any_cast<vec2f>(val);
             val = vecvar{ vec2[0], vec2[1] };
         }
         else if (type == gParamType_Vec2i) {
-            auto& vec2 = zeno::reflect::any_cast<vec2i>(val);
+            auto& vec2 = any_cast<vec2i>(val);
             val = vecvar{ vec2[0], vec2[1] };
         }
         else if (type == gParamType_Vec3i) {
-            auto& vec3 = zeno::reflect::any_cast<vec3i>(val);
+            auto& vec3 = any_cast<vec3i>(val);
             val = vecvar{ vec3[0], vec3[1], vec3[2] };
         }
         else if (type == gParamType_Vec3f) {
-            auto& vec3 = zeno::reflect::any_cast<vec3f>(val);
+            auto& vec3 = any_cast<vec3f>(val);
             val = vecvar{ vec3[0], vec3[1], vec3[2] };
         }
         else if (type == gParamType_Vec4i) {
-            auto& vec4 = zeno::reflect::any_cast<vec4i>(val);
+            auto& vec4 = any_cast<vec4i>(val);
             val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
         }
         else if (type == gParamType_Vec4f) {
-            auto& vec4 = zeno::reflect::any_cast<vec4f>(val);
+            auto& vec4 = any_cast<vec4f>(val);
             val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
         }
     }
 
-    ZENO_API zeno::reflect::Any str2any(std::string const& defl, ParamType const& type) {
+    ZENO_API Any str2any(std::string const& defl, ParamType const& type) {
         if (defl.empty())
             return initAnyDeflValue(type);
         switch (type) {
@@ -261,7 +262,7 @@ namespace zeno {
         case gParamType_Bool: {
             if (defl == "0" || defl == "false")    return false;
             if (defl == "1" || defl == "true")     return true;
-            return zeno::reflect::Any();
+            return Any();
         }
         case gParamType_Int: {
             return std::stoi(defl);
@@ -286,7 +287,7 @@ namespace zeno {
             else {
                 return vec4i(vec[0], vec[1], vec[2], vec[3]);
             }
-            return zeno::reflect::Any();
+            return Any();
         }
         case gParamType_Vec2f:
         case gParamType_Vec3f:
@@ -312,7 +313,7 @@ namespace zeno {
                     return vec4f();
                 return vec4f(vec[0], vec[1], vec[2], vec[3]);
             }
-            return zeno::reflect::Any();
+            return Any();
         }
         default:
             return defl;
@@ -387,49 +388,49 @@ namespace zeno {
         }
     }
 
-    ZENO_API zvariant AnyToZVariant(zeno::reflect::Any const& var) {
+    ZENO_API zvariant AnyToZVariant(Any const& var) {
         if (!var.has_value())
             return zvariant();
-        if (zeno::reflect::get_type<int>() == var.type()) {
-            return zeno::reflect::any_cast<int>(var);
+        if (get_type<int>() == var.type()) {
+            return any_cast<int>(var);
         }
-        else if (zeno::reflect::get_type<float>() == var.type()) {
-            return zeno::reflect::any_cast<float>(var);
+        else if (get_type<float>() == var.type()) {
+            return any_cast<float>(var);
         }
-        else if (zeno::reflect::get_type<std::string>() == var.type()) {
-            return zeno::reflect::any_cast<std::string>(var);
+        else if (get_type<std::string>() == var.type()) {
+            return any_cast<std::string>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec2i>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec2i>(var);
+        else if (get_type<zeno::vec2i>() == var.type()) {
+            return any_cast<zeno::vec2i>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec3i>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec3i>(var);
+        else if (get_type<zeno::vec3i>() == var.type()) {
+            return any_cast<zeno::vec3i>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec4i>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec4i>(var);
+        else if (get_type<zeno::vec4i>() == var.type()) {
+            return any_cast<zeno::vec4i>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec2f>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec2f>(var);
+        else if (get_type<zeno::vec2f>() == var.type()) {
+            return any_cast<zeno::vec2f>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec3f>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec3f>(var);
+        else if (get_type<zeno::vec3f>() == var.type()) {
+            return any_cast<zeno::vec3f>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec4f>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec4f>(var);
+        else if (get_type<zeno::vec4f>() == var.type()) {
+            return any_cast<zeno::vec4f>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec2s>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec2s>(var);
+        else if (get_type<zeno::vec2s>() == var.type()) {
+            return any_cast<zeno::vec2s>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec3s>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec3s>(var);
+        else if (get_type<zeno::vec3s>() == var.type()) {
+            return any_cast<zeno::vec3s>(var);
         }
-        else if (zeno::reflect::get_type<zeno::vec4s>() == var.type()) {
-            return zeno::reflect::any_cast<zeno::vec4s>(var);
+        else if (get_type<zeno::vec4s>() == var.type()) {
+            return any_cast<zeno::vec4s>(var);
         }
         return zvariant();
     }
 
-    ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type)
+    ZENO_API Any initAnyDeflValue(ParamType const& type)
     {
         if (type == gParamType_String) {
             return std::string("");     //要注意和char*常量区分，any::get_type的时候是不一样的
@@ -472,13 +473,13 @@ namespace zeno {
         }
         else if (type == gParamType_Curve)
         {
-            return zeno::reflect::make_any<CurvesData>();
+            return make_any<CurvesData>();
         }
         else if (type == gParamType_IObject)
         {
             return nullptr;
         }
-        return zeno::reflect::Any();
+        return Any();
     }
 
     zvariant zeno::initDeflValue(ParamType const& type)
@@ -905,7 +906,7 @@ namespace zeno {
         return result;
     }
 
-    bool isObjectType(const zeno::reflect::RTTITypeInfo& type, bool& isConstPtr)
+    bool isObjectType(const RTTITypeInfo& type, bool& isConstPtr)
     {
         //目前TF_IsObject只是标识Object子类，不包括IObject，如果需要后者，可以判断TF_IsIObject.
         //const 也可以用generator搞
@@ -977,11 +978,11 @@ namespace zeno {
         if (!typeBase || !node) {
             return;
         }
-        for (zeno::reflect::IMemberField* field : typeBase->get_member_fields()) {
-            if (field->get_field_type() == zeno::reflect::get_type<ReflectCustomUI>()) {
-                zeno::reflect::Any reflectCustomUiAny = field->get_field_value(node.get());
+        for (IMemberField* field : typeBase->get_member_fields()) {
+            if (field->get_field_type() == get_type<ReflectCustomUI>()) {
+                Any reflectCustomUiAny = field->get_field_value(node.get());
                 if (reflectCustomUiAny.has_value()) {
-                    ReflectCustomUI reflectCustomUi = zeno::reflect::any_cast<ReflectCustomUI>(reflectCustomUiAny);
+                    ReflectCustomUI reflectCustomUi = any_cast<ReflectCustomUI>(reflectCustomUiAny);
                     for (auto& group : reflectCustomUi.inputPrims.groups) {
                         for (auto& param : group.params) {
                             inputPrims.insert({ param.mapTo, param.dispName });
