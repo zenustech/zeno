@@ -1303,7 +1303,7 @@ ZENO_API bool Graph::updateLink(const EdgeInfo& edge, bool bInput, const std::st
         return false;
     if (bInputPrim != bOutputPrim)
         return false;
-    return inNode->updateLinkKey(true, edge.inParam, oldkey, newkey);
+    return inNode->updateLinkKey(true, edge, oldkey, newkey);
 }
 
 ZENO_API bool Graph::moveUpLinkKey(const EdgeInfo& edge, bool bInput, const std::string keyName)

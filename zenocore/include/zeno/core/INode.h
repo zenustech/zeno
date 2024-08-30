@@ -137,7 +137,7 @@ public:
     bool isPrimitiveType(bool bInput, const std::string& param_name, bool& bExist);
     std::vector<EdgeInfo> getLinks() const;
     std::vector<EdgeInfo> getLinksByParam(bool bInput, const std::string& param_name) const;
-    bool updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey);
+    bool updateLinkKey(bool bInput, const zeno::EdgeInfo& edge, const std::string& oldkey, const std::string& newkey);
     bool moveUpLinkKey(bool bInput, const std::string& param_name, const std::string& key);
     bool removeLink(bool bInput, const EdgeInfo& edge);
     void mark_dirty_objs();

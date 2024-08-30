@@ -1301,15 +1301,19 @@ std::vector<EdgeInfo> INode::getLinksByParam(bool bInput, const std::string& par
     return links;
 }
 
-bool INode::updateLinkKey(bool bInput, const std::string& param_name, const std::string& oldkey, const std::string& newkey)
+bool INode::updateLinkKey(bool bInput, const zeno::EdgeInfo& edge, const std::string& oldkey, const std::string& newkey)
 {
     auto& objects = bInput ? m_inputObjs : m_outputObjs;
-    auto iter = objects.find(param_name);
+    auto iter = objects.find(edge.inParam);
     if (iter != objects.end()) {
         for (auto spLink : iter->second.links) {
-            if (spLink->tokey == oldkey) {
-                spLink->tokey = newkey;
-                return true;
+            if (auto fromParam = spLink->fromparam) {
+                if (auto outnode = fromParam->m_wpNode.lock()) {
+                    if (outnode->get_name() == edge.outNode && spLink->tokey == oldkey) {   //需outnode和tokey均相同
+                        spLink->tokey = newkey;
+                        return true;
+                    }
+                }
             }
         }
     }
