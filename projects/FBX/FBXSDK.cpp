@@ -2035,7 +2035,7 @@ ZENDEFNODE(IKChainsItem, {
         "poseItem",
     },
     {},
-    {"Animation"},
+    {"deprecated"},
 });
 
 float sqr(float v) {
@@ -2159,7 +2159,7 @@ ZENDEFNODE(IKChains, {
         "Skeleton",
     },
     {},
-    {"Animation"},
+    {"deprecated"},
 });
 
 #if 0
@@ -2177,34 +2177,28 @@ void GaussSeidelSolve(std::vector<std::vector<float>> &A, std::vector<float> &b,
                       int max_iter, float tol)
     {
         int iter=0;
-        float b_nrm = length(b);
+        float b_nrm = 0;
+        for(int i=0;i<b.size();i++)
+        {
+            b_nrm = max(b_nrm, abs(b[i]));
+        }
+        if(b_nrm<=0.00001)
+            return;
         while(iter<max_iter)
         {
+            float e_max = 0;
             for(int i=0;i<x.size();i++)
             {
-                float d = 0;
+                float e = b[i];
                 for(int j=0;j<A[i].size();j++)
                 {
-                    if(j!=i)
-                    {
-                        d += A[i][j] * x[j];
-                    }
+                    e -= A[i][j] * x[i];
                 }
+                e_max = max(e_max, abs(e));
+                x[i] += e / A[i][i];
+            }
 
-                x[i] = (b[i] - d)/A[i][i];
-            }
-            float e = 0;
-            for(int i=0;i<x.size();i++)
-            {
-                float d = b[i];
-                for(int j=0;j<A[i].size();j++)
-                {
-                    d -= A[i][j] * x[j];
-                }
-                e = max(abs(d), e);
-            }
-            e = e/b_nrm;
-            if(e<tol)
+            if(e_max/b_nrm<tol)
                 break;
             iter++;
         }
