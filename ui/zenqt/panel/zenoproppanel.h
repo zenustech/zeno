@@ -12,6 +12,7 @@ class IGraphsModel;
 
 class ZExpandableSection;
 class ZScrollArea;
+class ZenoDictListLinksTable;
 
 class ZenoPropPanel : public QWidget
 {
@@ -45,6 +46,12 @@ public slots:
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow);
+    //dict/list links table
+    void onLinkAdded(const zeno::EdgeInfo& link);
+    void onLinkRemoved(const zeno::EdgeInfo& link);
+    void onDictListTableUpdateLink(QList<QPair<QString, QModelIndex>> links);
+    void onDictListTableRemoveLink(QList<QModelIndex> links);
+
     void onSettings();
 
 protected:
@@ -81,6 +88,9 @@ private:
     QWidget* m_normalNodeInputWidget;       //普通节点input使用
     QTabWidget* m_tabWidget;                //子图节点input使用
     QWidget* m_outputWidget;                //output
+
+    ZenoDictListLinksTable* m_dictListLinksTable;   //显示makeDict/makeList输入边
+
     bool m_bReentry;
 
     PANEL_TABS m_inputControls;
