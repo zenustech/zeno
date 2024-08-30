@@ -194,7 +194,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
                 m_dictListLinksTable = new ZenoDictListLinksTable(2, this);
                 DragDropModel* dragdropModel = new DragDropModel(inputObjsIdx, 2, m_dictListLinksTable);
                 m_dictListLinksTable->setModel(dragdropModel);
-                m_dictListLinksTable->initDelegate();
+                m_dictListLinksTable->init();
                 connect(m_dictListLinksTable, &ZenoDictListLinksTable::linksUpdated, this, &ZenoPropPanel::onDictListTableUpdateLink);
                 connect(m_dictListLinksTable, &ZenoDictListLinksTable::linksRemoved, this, &ZenoPropPanel::onDictListTableRemoveLink);
                 pMainLayout->addWidget(m_dictListLinksTable);
