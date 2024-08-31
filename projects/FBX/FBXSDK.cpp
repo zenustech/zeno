@@ -2162,7 +2162,6 @@ ZENDEFNODE(IKChains, {
     {"deprecated"},
 });
 
-#if 0
 float length(std::vector<float> &b)
 {
     float l = 0;
@@ -2203,52 +2202,56 @@ void GaussSeidelSolve(std::vector<std::vector<float>> &A, std::vector<float> &b,
             iter++;
         }
     }
-    void computeJointJacobian(std::vector<int> &index,
-                              std::vector<vec3f> &J,
-                              std::vector<vec3f> &r,
-                              //skeleton * skel_ptr,
-                              vec3f e_curr
-                              )
+vec3f getJointPos(int id, PrimitiveObject * skel_ptr) {
+    return skel_ptr->verts[id];
+}
+void computeJointJacobian(std::vector<int> &index,
+                          std::vector<vec3f> &J,
+                          std::vector<vec3f> &r,
+                          PrimitiveObject * skel_ptr,
+                          vec3f e_curr
+                          )
+{
+    J.resize(index.size());
+    for(int i=0;i<index.size();i++)
     {
-        J.resize(index.size());
-        for(int i=0;i<index.size();i++)
-        {
-            int id = index[i];
-            auto r_i = r[index[i]];
-            auto p_i = getJointPos(id, skel_ptr);
-            auto dedtheta_i = cross(r_i, e_curr - p_i);
-            J[i] = dedtheta_i;
-        }
+        int id = index[i];
+        auto r_i = r[index[i]];
+        auto p_i = getJointPos(id, skel_ptr);
+        auto dedtheta_i = cross(r_i, e_curr - p_i);
+        J[i] = dedtheta_i;
     }
-    void computeJTJ(std::vector<vec3f> &J, std::vector<std::vector<float>> &JTJ, float alpha)
+}
+void computeJTJ(std::vector<vec3f> &J, std::vector<std::vector<float>> &JTJ, float alpha)
+{
+    JTJ.resize(J.size());
+    for(int i=0;i<J.size();i++)
     {
-        JTJ.resize(J.size());
-        for(int i=0;i<J.size();i++)
-        {
-            JTJ[i].resize(J.size());
-        }
-        for(int i=0;i<J.size();i++)
-        {
-            for(int j=0;j<J.size();j++)
-            {
-                JTJ[i][j] = dot(J[i], J[j]);
-            }
-            JTJ[i][i] += alpha;
-        }
+        JTJ[i].resize(J.size());
     }
+    for(int i=0;i<J.size();i++)
+    {
+        for(int j=0;j<J.size();j++)
+        {
+            JTJ[i][j] = dot(J[i], J[j]);
+        }
+        JTJ[i][i] += alpha;
+    }
+}
+#if 0
 void solveJointUpdate(int id,
-                      //tarPos,
+                      glm::vec3 tarPos,
                       std::vector<int> &index,
                       std::vector<float> &dtheta,
                       std::vector<float> &theta,
                       float &dist)
 {
     dtheta.resize(theta.size());
-    dtheta.assign(0);
-    //skeleton = FK(theta);
-    //e_curr = getJointPos(id, skeleton);
-    //de = e - tarPos;
-    dist = length(de);
+    dtheta.assign(dtheta.size(), 0);
+    PrimitiveObject * skeleton = nullptr; //skeleton = FK(theta);
+    glm::vec3 e_curr = getJointPos(id, skeleton);
+    glm::vec3 de = e_curr - tarPos;
+    dist = glm::length(de);
     if(dist<0.0001)
         return;
     //computeJointJacobian();
@@ -2265,8 +2268,11 @@ void solveJointUpdate(int id,
         dtheta[index[i]] = x[i];
     }
 }
+std::vector<int> getIds(int startId, int endId, PrimitiveObject* skeletonPtr) {
 
-void SolveIKConstrained(//skeletonPtr,
+    return {};
+}
+void SolveIKConstrained(PrimitiveObject* skeletonPtr,
                         std::vector<float> & theta,
                         std::vector<vec2f> & theta_constraints,
                         std::vector<vec3f> &targets,
@@ -2286,19 +2292,19 @@ void SolveIKConstrained(//skeletonPtr,
         for (int i = 0; i < endEffectorIDs.size(); i++) {
             auto endid = endEffectorIDs[i];
             auto startid = startIDs[i];
-            //index = getIds(startId, endId, skeletonPtr);
+            std::vector<int> index = getIds(startid, endid, skeletonPtr);
             float e_i;
-            solveJointUpdate(endid, index, dtheta[i], theta, e_i);
+//            solveJointUpdate(endid, index, dtheta[i], theta, e_i);
             err += e_i;
         }
         if (err < 0.0001)
             break;
         std::vector<float> w;
         w.resize(theta.size());
-        w.assign(0);
+        w.assign(w.size(), 0);
         std::vector<float> total_dtheta;
         total_dtheta.resize(theta.size());
-        total_dtheta.assign(0);
+        total_dtheta.assign(total_dtheta.size(), 0);
 
         for(int j=0;j<endEffectorIDs.size();j++)
             for (int i = 0; i < theta.size(); i++) {
@@ -2324,4 +2330,134 @@ void SolveIKConstrained(//skeletonPtr,
 
 }
 #endif
+struct IkChainsItemObject : PrimitiveObject {
+    std::string startName;
+    std::string endEffectorName;
+    vec3f targetPos;
+};
+
+struct IkChainsItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<IkChainsItemObject>();
+        item->startName = get_input2<std::string>("startName");
+        item->endEffectorName = get_input2<std::string>("endEffectorName");
+        item->targetPos = get_input2<vec3f>("targetPos");
+
+        set_output2("IkChain", std::move(item));
+    }
+};
+
+ZENDEFNODE(IkChainsItem, {
+    {
+        {"string", "startName", ""},
+        {"string", "endEffectorName", ""},
+        {"vec3f", "targetPos", ""},
+    },
+    {
+        "IkChain",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct JointLimitObject : PrimitiveObject {
+    std::string boneName;
+    vec3i enableLimit;
+    vec2f xLimit;
+    vec2f yLimit;
+    vec2f zLimit;
+};
+
+struct JointLimitItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<JointLimitObject>();
+        item->boneName = get_input2<std::string>("boneName");
+        item->enableLimit = {
+            get_input2<int>("enableXLimit"),
+            get_input2<int>("enableYLimit"),
+            get_input2<int>("enableZLimit"),
+        };
+        item->xLimit = get_input2<vec2f>("xLimit");
+        item->yLimit = get_input2<vec2f>("yLimit");
+        item->zLimit = get_input2<vec2f>("zLimit");
+
+        set_output2("JointLimit", std::move(item));
+    }
+};
+
+ZENDEFNODE(JointLimitItem, {
+    {
+        {"string", "startName", ""},
+        {"bool", "enableXLimit", "0"},
+        {"vec2f", "xLimit", "0,0"},
+        {"bool", "enableYLimit", "0"},
+        {"vec2f", "yLimit", "0,0"},
+        {"bool", "enableZLimit", "0"},
+        {"vec2f", "zLimit", "0,0"},
+    },
+    {
+        "JointLimit",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct IkSolver : INode {
+    void apply() override {
+        auto skeleton = get_input2<PrimitiveObject>("Skeleton");
+        PrimitiveObject* skeletonPtr = skeleton.get();
+        auto boneNameMapping = getBoneNameMapping(skeletonPtr);
+        int iter_max = 50;
+        std::vector<float> theta;
+        std::vector<vec2f> theta_constraints;
+        if (has_input("jointLimits")) {
+            auto items = get_input<zeno::ListObject>("jointLimits")->getRaw<IkChainsItemObject>();
+            for (auto &item: items) {
+
+
+            }
+        }
+        std::vector<vec3f> targets;
+        std::vector<int> endEffectorIDs;
+        std::vector<int> startIDs;
+        {
+            auto items = get_input<zeno::ListObject>("IkChains")->getRaw<IkChainsItemObject>();
+            for (auto &item: items) {
+                if (boneNameMapping.count(item->startName) == 0) {
+                    log_warn("Not find ik startBone: {}", item->startName);
+                    continue;
+                }
+                if (boneNameMapping.count(item->endEffectorName) == 0) {
+                    log_warn("Not find ik endEffector: {}", item->endEffectorName);
+                    continue;
+                }
+                endEffectorIDs.push_back(boneNameMapping[item->endEffectorName]);
+                startIDs.push_back(boneNameMapping[item->startName]);
+                targets.push_back(item->targetPos);
+            }
+        }
+
+//        SolveIKConstrained(
+//            skeletonPtr,
+//            theta,
+//            theta_constraints,
+//            targets,
+//            endEffectorIDs,
+//            startIDs,
+//            iter_max
+//            );
+    }
+};
+ZENDEFNODE(IkSolver, {
+    {
+        "Skeleton",
+        {"list", "IkChains"},
+        {"list", "jointLimits"},
+    },
+    {
+        "Skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
 }
