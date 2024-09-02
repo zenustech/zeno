@@ -218,8 +218,17 @@ namespace zeno {
         }
     }
 
-    ZENO_API void convertToEditVar(Any& val, const ParamType type) {
+    ZENO_API bool convertToEditVar(Any& val, const ParamType type) {
+        if (!val.has_value()) return false;
+
+        ParamType anyType = val.type().hash_code();
         //部分类型可以允许k帧，公式，因此要转换为“编辑”类型
+        if (anyType == gParamType_PrimVariant || anyType == gParamType_VecEdit)
+            return true;
+
+        if (anyType != type)
+            return false;
+
         if (type == gParamType_Int) {
             val = PrimVar(any_cast<int>(val));
         }
@@ -250,6 +259,7 @@ namespace zeno {
             auto& vec4 = any_cast<vec4f>(val);
             val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
         }
+        return true;
     }
 
     ZENO_API Any str2any(std::string const& defl, ParamType const& type) {

@@ -85,7 +85,7 @@ public:
     ZENO_API virtual NodeData exportInfo() const;
     ZENO_API void set_result(bool bInput, const std::string& name, zany spObj);
 
-    ZENO_API bool update_param(const std::string& name, const zeno::reflect::Any& new_value);
+    ZENO_API bool update_param(const std::string& name, zeno::reflect::Any new_value);
     CALLBACK_REGIST(update_param, void, const std::string&, zeno::reflect::Any, zeno::reflect::Any)
 
     ZENO_API bool update_param_socket_type(const std::string& name, SocketType type);

@@ -1183,6 +1183,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.bInput = true;
     sparam.control = param.control;
     sparam.defl = param.defl;
+    convertToEditVar(sparam.defl, param.type);
     sparam.m_wpNode = shared_from_this();
     sparam.name = param.name;
     sparam.socketType = param.socketType;
@@ -1508,9 +1509,14 @@ ZENO_API NodeData INode::exportInfo() const
     return node;
 }
 
-ZENO_API bool INode::update_param(const std::string& param, const zeno::reflect::Any& new_value) {
+ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any new_value) {
     CORE_API_BATCH
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+    bool isvalid = convertToEditVar(new_value, spParam.type);
+    if (!isvalid) {
+        zeno::log_error("cannot convert to edit variable");
+        return false;
+    }
     if (!isAnyEqual(spParam.defl, new_value))
     {
         auto old_value = spParam.defl;
@@ -1750,6 +1756,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 
                 PrimitiveParam sparam;
                 sparam.defl = param.defl;
+                convertToEditVar(sparam.defl, param.type);
                 sparam.name = newname;
                 sparam.type = param.type;
                 sparam.control = param.control;
@@ -1780,6 +1787,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 
                 auto& spParam = in_outputs[newname];
                 spParam.defl = param.defl;
+                convertToEditVar(spParam.defl, spParam.type);
                 spParam.name = newname;
                 spParam.socketType = param.socketType;
                 if (param.bInput)
@@ -1917,6 +1925,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 }
                 auto& sparam = iter->second;
                 sparam.defl = param.defl;
+                convertToEditVar(sparam.defl, param.type);
                 sparam.control = param.control;
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.bVisible = param.bVisible;

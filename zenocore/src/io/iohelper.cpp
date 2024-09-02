@@ -500,7 +500,7 @@ namespace zenoio
         case zeno::types::gParamType_Bool:
         {
             if (val.IsBool())
-                defl = (int)val.GetBool();
+                defl = val.GetBool();
             else if (val.IsInt())
                 defl = val.GetInt() != 0;
             else if (val.IsFloat())
