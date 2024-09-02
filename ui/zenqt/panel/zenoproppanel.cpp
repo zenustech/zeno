@@ -458,20 +458,8 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     QModelIndex paramIdx = paramItem->index();
     const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
 
-    zeno::reflect::Any anyVal;
-    if (0) {
-        //TODO: 为了安全起见，其实QVariant应该只存Any。
-        anyVal = paramIdx.data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
-    }
-    else {
-        anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
-    }
-    if (!anyVal.has_value()) {
-        int j;
-        j = 0;
-    }
-
-    //QVariant val = UiHelper::anyToQvar(anyVal);
+    zeno::reflect::Any anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+    ZASSERT_EXIT(anyVal.has_value());
 
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
@@ -483,18 +471,7 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
 
     bool bFloat = UiHelper::isFloatType(type);
     cbSet.cbEditFinished = [=](zeno::reflect::Any newValue) {
-        /*
-        if (bFloat)
-        {
-            QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-            BlockSignalScope scope(paramsModel); //setData时需屏蔽dataChange信号
-            //这里只是设值给custommodel，不会引起连锁的复制，而且要转为any存。
-            paramsModel->setData(perIdx, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
-        }
-        */
-        ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
-        const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
+        paramItem->setData(QVariant::fromValue(newValue), ROLE_PARAM_VALUE);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.

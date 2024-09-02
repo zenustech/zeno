@@ -16,7 +16,7 @@ struct ParamItem
     //BEGIN: temp cache on ui model, the actual value has been stored in m_wpParam.
     QString name;
     zeno::ParamType type = Param_Null;
-    QVariant value;
+    zeno::reflect::Any value;
     //END
     //std::weak_ptr<zeno::CoreParam> m_wpParam;
 
@@ -74,9 +74,6 @@ signals:
     void linkAboutToBeRemoved(const zeno::EdgeInfo& link);
     void portTypeChanged(const QModelIndex& idx, bool bPrime);
 
-private slots:
-    void onCustomModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
-
 private:
     void initParamItems();
     void initCustomUI(const zeno::CustomUI& customui);
@@ -84,6 +81,7 @@ private:
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
     void updateParamData(const QString& name, const QVariant& val, int role, bool bInput = true);
+    QStandardItemModel* constructProxyModel();
 
     QPersistentModelIndex m_nodeIdx;
     QVector<ParamItem> m_items;
