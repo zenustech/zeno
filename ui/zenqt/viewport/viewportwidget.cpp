@@ -424,6 +424,6 @@ void ViewportWidget::keyReleaseEvent(QKeyEvent *event) {
 }
 
 void ViewportWidget::enterEvent(QEvent *event) {
-    setFocus();
+    //setFocus();
     QWidget::enterEvent(event);
 }
