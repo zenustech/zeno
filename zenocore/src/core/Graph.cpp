@@ -121,9 +121,16 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
     auto spNode = spParam->m_wpNode.lock();
     assert(spNode);
     const std::string& uuid = spNode->get_uuid();
-    if (gParamType_String == spParam->type ||
-        gParamType_Int == spParam->type ||
-        gParamType_Float == spParam->type)
+    if (gParamType_String == spParam->type)
+    {
+        std::string defl = zeno::reflect::any_cast<std::string>(spParam->defl);
+        std::regex pattern("\\$F");
+        if (std::regex_search(defl, pattern, std::regex_constants::match_default)) {
+            frame_nodes.insert(uuid);
+            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
+        }
+    }
+    else if (gParamType_Int == spParam->type || gParamType_Float == spParam->type)
     {
         assert(gParamType_PrimVariant == spParam->defl.type().hash_code());
         const zeno::PrimVar& editVar = zeno::reflect::any_cast<zeno::PrimVar>(spParam->defl);

@@ -42,19 +42,33 @@ namespace zenoui
         {
             case zeno::Lineedit:
             {
-                ZASSERT_EXIT(value.type().hash_code() == gParamType_PrimVariant, nullptr);
-                const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
+                if (paramType == gParamType_String) {
+                    QString text = QString::fromStdString(any_cast<std::string>(value));
+                    ZLineEdit* pLineEdit = new ZLineEdit(text);
+                    pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
+                    pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
+                    pLineEdit->setNodeIdx(nodeIdx);
+                    QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
+                        const std::string& newValue = pLineEdit->text().toStdString();
+                        cbSet.cbEditFinished(newValue);
+                    });
+                    return pLineEdit;
+                }
+                else {
+                    ZASSERT_EXIT(value.type().hash_code() == gParamType_PrimVariant, nullptr);
+                    const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
 
-                ZCoreParamLineEdit* pLineEdit = new ZCoreParamLineEdit(var, paramType);
+                    ZCoreParamLineEdit* pLineEdit = new ZCoreParamLineEdit(var, paramType);
 
-                pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
-                pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-                pLineEdit->setNumSlider(UiHelper::getSlideStep("", paramType));
-                pLineEdit->setNodeIdx(nodeIdx);
-                QObject::connect(pLineEdit, &ZCoreParamLineEdit::valueChanged, [=](zeno::PrimVar newVal) {
-                    cbSet.cbEditFinished(newVal);
-                });
-                return pLineEdit;
+                    pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
+                    pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
+                    pLineEdit->setNumSlider(UiHelper::getSlideStep("", paramType));
+                    pLineEdit->setNodeIdx(nodeIdx);
+                    QObject::connect(pLineEdit, &ZCoreParamLineEdit::valueChanged, [=](zeno::PrimVar newVal) {
+                        cbSet.cbEditFinished(newVal);
+                    });
+                    return pLineEdit;
+                }
             }
             case zeno::Checkbox:
             {

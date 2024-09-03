@@ -625,6 +625,79 @@ ZENO_API void INode::registerObjToManager()
     }
 }
 
+std::set<std::pair<std::string, std::string>> INode::resolveReferSource(std::string const& primitive_param) {
+
+    std::set<std::pair<std::string, std::string>> refSources;
+
+    auto iter = m_inputPrims.find(primitive_param);
+    if (iter == m_inputPrims.end())
+        return refSources;
+
+    std::vector<std::string> refSegments;
+    const Any& param_defl = iter->second.defl;
+
+    ParamType deflType = param_defl.type().hash_code();
+    if (deflType == zeno::types::gParamType_String) {
+        const std::string& param_text = zeno::reflect::any_cast<std::string>(param_defl);
+        if (param_text.find("ref(") == std::string::npos) {
+            return refSources;
+        }
+        refSegments.push_back(param_text);
+    }
+    else if (deflType == zeno::types::gParamType_PrimVariant) {
+        zeno::PrimVar var = zeno::reflect::any_cast<zeno::PrimVar>(param_defl);
+        if (!std::holds_alternative<std::string>(var)) {
+            return refSources;
+        }
+        std::string param_text = std::get<std::string>(var);
+        if (param_text.find("ref(") == std::string::npos) {
+            return refSources;
+        }
+        refSegments.push_back(param_text);
+    }
+    else if (deflType == zeno::types::gParamType_VecEdit) {
+        const zeno::vecvar& vec = zeno::reflect::any_cast<zeno::vecvar>(param_defl);
+        for (const zeno::PrimVar& elem : vec) {
+            if (!std::holds_alternative<std::string>(elem)) {
+                continue;
+            }
+            std::string param_text = std::get<std::string>(elem);
+            if (param_text.find("ref(") != std::string::npos) {
+                refSegments.push_back(param_text);
+            }
+        }
+    }
+
+    if (refSegments.empty())
+        return refSources;
+
+    auto namePath = get_path();
+
+    //需要用zfxparser直接parse出所有引用信息
+    GlobalError err;
+    zeno::GraphException::catched([&] {
+        auto& funcMgr = zeno::getSession().funcManager;
+        ZfxContext ctx;
+        ctx.spNode = shared_from_this();
+        for (auto param_text : refSegments)
+        {
+            Formula fmla(param_text, namePath);
+            int ret = fmla.parse();
+            if (ret == 0)
+            {
+                ctx.code = param_text;
+                std::shared_ptr<ZfxASTNode> astRoot = fmla.getASTResult();
+                std::set<std::pair<std::string, std::string>> paths =
+                    funcMgr->getReferSources(astRoot, &ctx);
+                if (!paths.empty()) {
+                    refSources.insert(paths.begin(), paths.end());
+                }
+            }
+        }
+    }, err);
+    return refSources;
+}
+
 std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
     std::shared_ptr<DictObject> spDict;
     //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
@@ -779,6 +852,20 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
 {
     if (!in_param) {
         return nullptr;
+    }
+
+    //观察参数是否存在引用参数
+    auto refSources = resolveReferSource(in_param->name);
+    //如果有，需要先执行，因为我们需要获得参数的实际计算值
+    for (auto refSource : refSources)
+    {
+        const std::string& source_node_uuidpath = refSource.first;
+        auto spNode = getSession().mainGraph->getNodeByUuidPath(source_node_uuidpath);
+        assert(spNode);
+        GraphException::translated([&] {
+            spNode->doApply();
+        }, spNode.get());
+        //后续执行ref函数的时候，上述节点的计算结果已经出来了
     }
 
     int frame = getGlobalState()->getFrameId();
@@ -1528,7 +1615,15 @@ ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any n
         spGraph->onNodeParamUpdated(&spParam, old_value, new_value);
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
-        getSession().referManager->checkReference(m_uuidPath, spParam.name);
+
+        auto& refMgr = getSession().referManager;
+        auto refSources = resolveReferSource(spParam.name);
+        if (!refSources.empty()) {
+            refMgr->registerRelations(m_uuidPath, spParam.name, refSources);
+        }
+
+        //当前节点的这个参数可能被引用，需要找到所有引用者并标脏它们
+        refMgr->updateDirty(m_uuidPath, spParam.name);
         return true;
     }
     return false;

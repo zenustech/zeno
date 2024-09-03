@@ -116,12 +116,17 @@ namespace zeno {
             throw makeError<UnimplError>();
 
         if (items.size() == 1) {
-            size_t primtype = paramData.defl.type().hash_code();
+            //直接拿引用源的计算结果，所以本节点在执行前，引用源必须先执行，所以要在preApply的基础上作提前依赖计算
+            if (!paramData.result.has_value()) {
+                throw makeError<UnimplError>("there is no result on refer source, should calc the source first.");
+            }
+
+            size_t primtype = paramData.result.type().hash_code();
             if (primtype == zeno::types::gParamType_Int) {
-                return zeno::reflect::any_cast<int>(paramData.defl);
+                return zeno::reflect::any_cast<int>(paramData.result);
             }
             else if (primtype == zeno::types::gParamType_Float) {
-                return zeno::reflect::any_cast<float>(paramData.defl);
+                return zeno::reflect::any_cast<float>(paramData.result);
             }
             else {
                 throw makeError<UnimplError>();
@@ -1543,6 +1548,114 @@ namespace zeno {
             }
         }
         return ZfxVariable();
+    }
+
+    std::set<std::pair<std::string, std::string>>
+        FunctionManager::getReferSources(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext)
+    {
+        if (!root) {
+            return {};
+        }
+
+        switch (root->type)
+        {
+        case nodeType::NUMBER:
+        case nodeType::STRING:
+        case nodeType::ZENVAR:
+            return {};
+        case nodeType::FOUROPERATIONS:
+        {
+            if (root->children.size() != 2)
+            {
+                throw makeError<UnimplError>();
+            }
+            std::set<std::pair<std::string, std::string>> paths, lpaths, rpaths;
+            lpaths = getReferSources(root->children[0], pContext);
+            rpaths = getReferSources(root->children[1], pContext);
+            if (!lpaths.empty())
+                paths.insert(lpaths.begin(), lpaths.end());
+            if (!rpaths.empty())
+                paths.insert(rpaths.begin(), rpaths.end());
+            return paths;
+        }
+        case nodeType::FUNC:
+        {
+            const std::string& funcname = std::get<std::string>(root->value);
+            std::set<std::pair<std::string, std::string>> paths;
+            if (funcname == "ref") {
+                if (root->children.size() != 1)
+                    throw makeError<UnimplError>();
+                const std::string ref = std::get<std::string>(calc(root->children[0], pContext));
+                //收集ref信息源，包括源节点和参数
+
+                std::string fullPath, graphAbsPath;
+
+                if (ref.empty()) {
+                    zeno::log_warn("ref empty");
+                    return {};
+                }
+
+                auto thisNode = pContext->spNode.lock();
+                const std::string& thisnodePath = thisNode->get_path();
+                graphAbsPath = thisnodePath.substr(0, thisnodePath.find_last_of('/'));
+
+                if (ref.front() == '/') {
+                    fullPath = ref;
+                }
+                else {
+                    fullPath = graphAbsPath + "/" + ref;
+                }
+
+                size_t idx = fullPath.find_last_of('/');
+                if (idx == std::string::npos) {
+                    zeno::log_warn("unresolve node");
+                    return {};
+                }
+
+                const std::string& nodePath = fullPath.substr(idx + 1);
+
+                idx = nodePath.find('.');
+                if (idx == std::string::npos) {
+                    throw makeError<UnimplError>("no param name when resolve ref path");
+                }
+                std::string nodename = nodePath.substr(0, idx);
+                std::string parampath = nodePath.substr(idx + 1);
+
+                std::string nodeAbsPath = graphAbsPath + '/' + nodename;
+                std::shared_ptr<INode> spNode = zeno::getSession().mainGraph->getNodeByPath(nodeAbsPath);
+                if (!spNode) {
+                    //unresolve node.
+                    zeno::log_warn("unresolve node");
+                    return {};
+                }
+
+                std::string paramname;
+                auto items = split_str(parampath, '.');
+                if (items.empty()) {
+                    paramname = parampath;
+                }
+                else {
+                    paramname = items[0];
+                }
+
+                std::string uuidpath = spNode->get_uuid_path();
+                paths.insert(std::make_pair(uuidpath, paramname));
+            }
+            else {
+                //函数参数也可能调用引用：
+                for (auto paramNode : root->children)
+                {
+                    std::set<std::pair<std::string, std::string>> _paths = getReferSources(paramNode, pContext);
+                    if (_paths.empty()) {
+                        paths.insert(_paths.begin(), _paths.end());
+                    }
+                }
+            }
+            return paths;
+        }
+        default:
+            return {};
+        }
     }
 
     zfxvariant FunctionManager::calc(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext) {

@@ -18,18 +18,23 @@ namespace zeno {
         ReferManager();
         ~ReferManager();
         ZENO_API void init(const std::shared_ptr<Graph>& pGraph);
-        void checkReference(const ObjPath& uuid_path, const std::string& param);
+        void registerRelations(
+            const std::string& refnode_uuidpath,
+            const std::string& referparam,
+            const std::set<std::pair<std::string, std::string>>& referSources);
+
         void removeReference(const std::string& path, const std::string& uuid_path, const std::string& param = "");
         //当被引用的节点名称修改后，需要更新数据
         void updateReferParam(const std::string& oldPath, const std::string& newPath, const std::string& uuid_path, const std::string& param = "");
         bool isReferSelf(const std::string& uuid_path, const std::string& param) const;//是否循环引用
+        void updateDirty(const std::string& uuid_path, const std::string& param);
 
     private:
-        void addReferInfo(const std::set<std::pair<std::string, std::string>>& referedParams, const std::string& referPath);
+        void addReferInfo(const std::set<std::pair<std::string, std::string>>& referSources, const std::string& referPath);
         //当引用的参数修改后，需要更新数据
-        void updateReferedInfo(const std::string& uuid_path, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams);
+
+
         //被引用的参数更新时需要对引用的节点标脏
-        void updateDirty(const std::string& uuid_path, const std::string& param);
         std::set<std::pair<std::string, std::string>> getAllReferedParams(const std::string& uuid_param) const;
 
         std::set<std::pair<std::string, std::string>> referPaths(const std::string& currPath, const zeno::reflect::Any& val) const;

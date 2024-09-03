@@ -5,7 +5,11 @@
 #include <zeno/core/INode.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/utils/helper.h>
+#include <zeno/formula/formula.h>
+#include <zeno/core/FunctionManager.h>
+#include <zeno/extra/GraphException.h>
 #include <regex>
+
 
 namespace zeno {
     ReferManager::ReferManager() : m_bModify(false)
@@ -40,27 +44,6 @@ namespace zeno {
                 }
             }
         }
-    }
-
-    void zeno::ReferManager::checkReference(const ObjPath& objPath, const std::string& param)
-    {
-        auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
-        if (!spNode)
-            return;
-
-        bool bExist = false;
-        ParamPrimitive paramprim = spNode->get_input_prim_param(param, &bExist);
-        if (!bExist)
-            return;
-
-        auto namePath = spNode->get_path();
-        auto referGraph = spNode->get_graph_path();
-        auto currPath = zeno::objPathToStr(referGraph);
-        auto uuid_path = zeno::objPathToStr(objPath);
-        auto paths = referPaths(currPath, paramprim.defl);
-        updateReferedInfo(uuid_path, param, paths);
-        //被引用的参数数据更新时，引用该参数的节点需要标脏
-        updateDirty(uuid_path, param);
     }
 
     void zeno::ReferManager::removeReference(const std::string& path, const std::string& uuid_path, const std::string& param)
@@ -171,15 +154,21 @@ namespace zeno {
         }
     }
 
-    void ReferManager::addReferInfo(const std::set<std::pair<std::string, std::string>>& referedParams, const std::string& referPath)
+    void ReferManager::addReferInfo(const std::set<std::pair<std::string, std::string>>& referSources, const std::string& referPath)
     {
-        for (const auto& param : referedParams)
+        //referPath的格式是： uuid-path-of-node/param.
+        for (const auto& param : referSources)
         {
-            if (m_referInfos.find(param.first) == m_referInfos.end())
-                m_referInfos[param.first] = std::map<std::string, std::set<std::string> >();
-            if (m_referInfos[param.first].find(param.second) == m_referInfos[param.first].end())
-                m_referInfos[param.first][param.second] = std::set<std::string>();
-            m_referInfos[param.first][param.second].emplace(referPath);
+            const std::string& source_node_uuid = param.first;
+            const std::string& source_param = param.second;
+
+            if (m_referInfos.find(source_node_uuid) == m_referInfos.end())
+                m_referInfos[source_node_uuid] = std::map<std::string, std::set<std::string> >();
+
+            if (m_referInfos[source_node_uuid].find(source_param) == m_referInfos[source_node_uuid].end())
+                m_referInfos[source_node_uuid][source_param] = std::set<std::string>();
+
+            m_referInfos[source_node_uuid][source_param].emplace(referPath);
         }
     }
 
@@ -253,18 +242,22 @@ namespace zeno {
         }
     }
 
-    void zeno::ReferManager::updateReferedInfo(const std::string& uuid_path, const std::string& param, const std::set<std::pair<std::string, std::string>>& referedParams)
+    void zeno::ReferManager::registerRelations(
+        const std::string& refnode_uuidpath,
+        const std::string& referparam,
+        const std::set<std::pair<std::string, std::string>>& referSources)
     {
         if (m_bModify)
             return;
+
         m_bModify = true;
         //get all refered params
-        auto uuid_param = uuid_path + "/" + param;
+        auto uuid_param = refnode_uuidpath + "/" + referparam;
         std::set<std::pair<std::string, std::string>> referedParams_old = getAllReferedParams(uuid_param);
         //remove info
         for (auto& it : referedParams_old)
         {
-            if (referedParams.find(it) == referedParams.end())
+            if (referSources.find(it) == referSources.end())
             {
                 m_referInfos[it.first][it.second].erase(uuid_param);
                 if (m_referInfos[it.first][it.second].empty())
@@ -274,16 +267,17 @@ namespace zeno {
             }
         }
         //add info
-        std::set<std::pair<std::string, std::string>> referedParams_add;
-        for (auto& it : referedParams)
+        std::set<std::pair<std::string, std::string>> referSources_add;
+        for (auto& it : referSources)
         {
             if (referedParams_old.find(it) == referedParams_old.end())
             {
-                referedParams_add.emplace(it);
+                referSources_add.emplace(it);
             }
         }
-        if (!referedParams_add.empty())
-            addReferInfo(referedParams_add, uuid_param);
+        if (!referSources_add.empty()) {
+            addReferInfo(referSources_add, uuid_param);
+        }
         m_bModify = false;
     }
 
@@ -304,15 +298,15 @@ namespace zeno {
     }
 
 
-    void ReferManager::updateDirty(const std::string& uuid_path, const std::string& param)
+    void ReferManager::updateDirty(const std::string& uuid_path_sourcenode, const std::string& param)
     {
-        auto iter = m_referInfos.find(uuid_path);
+        auto iter = m_referInfos.find(uuid_path_sourcenode);
         if (iter != m_referInfos.end())
         {
             auto param_it = iter->second.find(param);
             if (param_it != iter->second.end())
             {
-                if (isReferSelf(uuid_path, param))
+                if (isReferSelf(uuid_path_sourcenode, param))
                 {
                     zeno::log_error("{} refer loop", param);
                     return;
