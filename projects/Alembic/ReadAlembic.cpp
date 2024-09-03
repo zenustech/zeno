@@ -840,7 +840,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     }
     if (!prim->loops.has_attr("uvs")) {
         if (!read_done) {
-            log_warn("[alembic] Not found uv, auto fill zero.");
+            // log_warn("[alembic] Not found uv, auto fill zero.");
         }
         prim->uvs.resize(1);
         prim->uvs[0] = zeno::vec2f(0, 0);

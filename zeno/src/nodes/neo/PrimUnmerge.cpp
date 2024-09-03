@@ -22,9 +22,18 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(Primitiv
     }
 
 #if 1
+    std::vector<std::vector<int>> aux_arrays;
+    aux_arrays.resize(tagMax);
+    for (int tag = 0; tag < tagMax; tag++) {
+      aux_arrays[tag].resize(0);
+    }
+    //auto const &tagArr = prim->verts.attr<int>(tagAttr);
+    for (int i = 0; i < prim->size(); i++) {
+      aux_arrays[tagArr[i]].emplace_back(i);
+    }
     for (int tag = 0; tag < tagMax; tag++) {
         primList[tag]->assign(prim);
-        primFilterVerts(primList[tag].get(), tagAttr, tag);
+        primFilterVerts(primList[tag].get(), tagAttr, tag, false, {}, "verts", aux_arrays[tag].data(), aux_arrays[tag].size(),true);
     }
 
 #else
