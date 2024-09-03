@@ -364,7 +364,7 @@ ZENDEFNODE(ReadFBXFile, {
         "fbx_object",
     },
     {},
-    {"FBX"},
+    {"FBXSDK"},
 });
 
 /**
@@ -836,7 +836,7 @@ ZENDEFNODE(NewFBXImportSkin, {
         "prim",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, std::shared_ptr<PrimitiveObject>& prim) {
@@ -1068,7 +1068,7 @@ ZENDEFNODE(NewFBXImportSkeleton, {
         "prim",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 struct NewFBXImportAnimation : INode {
@@ -1230,7 +1230,7 @@ ZENDEFNODE(NewFBXImportAnimation, {
         "prim",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 struct NewFBXImportCamera : INode {
@@ -1375,7 +1375,7 @@ ZENDEFNODE(NewFBXImportCamera, {
         "far",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 }
 #endif
@@ -1461,6 +1461,7 @@ static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
     }
     return boneNames;
 }
+
 static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zeno::PrimitiveObject* skeleton) {
     std::vector<int> ordering;
     std::set<int> ordering_set;
@@ -1529,9 +1530,9 @@ struct NewFBXRigPose : INode {
             if (Transformations.count(bi)) {
                 auto trans = Transformations[bi];
                 glm::mat4 matTrans = glm::translate(vec_to_other<glm::vec3>(trans->translate));
-                glm::mat4 matRotx  = glm::rotate( (float)(trans->rotate[0] * M_PI / 180), glm::vec3(1,0,0) );
-                glm::mat4 matRoty  = glm::rotate( (float)(trans->rotate[1] * M_PI / 180), glm::vec3(0,1,0) );
-                glm::mat4 matRotz  = glm::rotate( (float)(trans->rotate[2] * M_PI / 180), glm::vec3(0,0,1) );
+                glm::mat4 matRotx  = glm::rotate(glm::radians(trans->rotate[0]), glm::vec3(1,0,0) );
+                glm::mat4 matRoty  = glm::rotate(glm::radians(trans->rotate[1]), glm::vec3(0,1,0) );
+                glm::mat4 matRotz  = glm::rotate(glm::radians(trans->rotate[2]), glm::vec3(0,0,1) );
                 transform = matTrans*matRoty*matRotx*matRotz;
                 transform = transforms[bi] * transform * transformsInv[bi];
             }
@@ -1737,7 +1738,7 @@ ZENDEFNODE(NewFBXBoneDeform, {
         "prim",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 struct NewFBXExtractKeyframe : INode {
@@ -1816,7 +1817,7 @@ ZENDEFNODE(NewFBXExtractKeyframe, {
         "keyframe",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 
@@ -1875,7 +1876,7 @@ ZENDEFNODE(NewFBXGenerateAnimation, {
         "DeformPointTransforms",
     },
     {},
-    {"primitive"},
+    {"FBXSDK"},
 });
 
 
@@ -1995,5 +1996,749 @@ ZENDEFNODE(PrimAttrFlat, {
     {},
     {"debug"},
 });
+
+struct IKChainsItemObject : PrimitiveObject {
+    std::string RootName;
+    std::string MidName;
+    std::string TipName;
+    bool MatchByName = true;
+    std::string TwistName;
+    std::string GoalName;
+    float Blend = 1;
+    bool OrientTip = true;
+};
+struct IKChainsItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<IKChainsItemObject>();
+        item->RootName  = get_input2<std::string>("RootName");
+        item->MidName  = get_input2<std::string>("MidName");
+        item->TipName  = get_input2<std::string>("TipName");
+        item->MatchByName  = get_input2<bool>("MatchByName");
+        item->TwistName  = get_input2<std::string>("TwistName");
+        item->OrientTip  = get_input2<bool>("OrientTip");
+
+        set_output2("poseItem", std::move(item));
+    }
+};
+
+ZENDEFNODE(IKChainsItem, {
+    {
+        {"string", "RootName", ""},
+        {"string", "MidName", ""},
+        {"string", "TipName", ""},
+        {"bool", "MatchByName", "1"},
+        {"string", "TwistName", ""},
+        {"string", "GoalName", ""},
+        {"bool", "OrientTip", "0"},
+    },
+    {
+        "poseItem",
+    },
+    {},
+    {"deprecated"},
+});
+
+float sqr(float v) {
+    return v * v;
+}
+// return: mid, tip
+std::pair<vec3f, vec3f> twoBoneIK(
+    vec3f root
+    , vec3f joint
+    , vec3f end
+    , vec3f jointTarget
+    , vec3f effector
+) {
+        vec3f output_joint = {};
+        vec3f output_end = {};
+
+        auto root_to_effect = effector - root;
+        auto root_to_jointTarget = jointTarget - root;
+
+        auto upper_limb_length = zeno::length(root - joint);
+        auto lower_limb_length = zeno::length(joint - end);
+        auto desired_length = zeno::length(root_to_effect);
+        if (desired_length < abs(upper_limb_length - lower_limb_length)) {
+            zeno::log_info("A");
+            output_joint = root + normalize(root_to_effect) * abs(upper_limb_length - lower_limb_length);
+            output_end = root + normalize(root_to_effect) * upper_limb_length;
+        }
+        else if (desired_length > upper_limb_length + lower_limb_length) {
+            zeno::log_info("B");
+
+            output_joint = root + normalize(root_to_effect) * upper_limb_length;
+            output_end = root + normalize(root_to_effect) * (upper_limb_length + lower_limb_length);
+        }
+        else {
+            zeno::log_info("C");
+
+            vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
+            float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
+            float sin_theta = sqrt(1 - sqr(cos_theta));
+            output_joint = root + (normalize(root_to_effect) * cos_theta + to_pole * sin_theta) * upper_limb_length;
+            output_end = effector;
+        }
+
+    return {output_joint, output_end};
+}
+
+struct IKChains : INode {
+    virtual void apply() override {
+        auto skeleton = get_input2<PrimitiveObject>("Skeleton");
+        auto ikDrivers = get_input2<PrimitiveObject>("IK Drivers");
+        auto items = get_input<zeno::ListObject>("items")->getRaw<IKChainsItemObject>();
+        auto skeletonBoneNameMapping = getBoneNameMapping(skeleton.get());
+        auto ikDriversBoneNameMapping = getBoneNameMapping(ikDrivers.get());
+        std::map<int, int> bone_connects;
+        for (auto i = 0; i < skeleton->polys.size(); i++) {
+            bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
+        }
+        auto ordering = TopologicalSorting(bone_connects, skeleton.get());
+
+        auto &verts = skeleton->verts;
+        auto &transform_r0 = skeleton->verts.attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.attr<vec3f>("transform_r2");
+
+        for (auto item: items) {
+            std::string TwistName = item->MatchByName? item->MidName: item->TwistName;
+            std::string GoalName = item->MatchByName? item->TipName: item->GoalName;
+            auto root_index = skeletonBoneNameMapping[item->RootName];
+            vec3f root = skeleton->verts[root_index];
+            auto joint_index = skeletonBoneNameMapping[item->MidName];
+            vec3f joint = skeleton->verts[joint_index];
+            auto end_index = skeletonBoneNameMapping[item->TipName];
+            vec3f end = skeleton->verts[end_index];
+            vec3f jointTarget = ikDrivers->verts[ikDriversBoneNameMapping[TwistName]];
+            vec3f effector = ikDrivers->verts[ikDriversBoneNameMapping[GoalName]];
+            auto [midPos, tipPos] = twoBoneIK(root, joint, end, jointTarget, effector);
+            auto parent = glm::rotation(bit_cast<glm::vec3>(normalize(joint - root)), bit_cast<glm::vec3>(normalize(midPos - root)));
+            auto from_ = parent * bit_cast<glm::vec3>(normalize(end - joint));
+            auto child = glm::rotation(from_, bit_cast<glm::vec3>(normalize(tipPos - midPos)));
+            bool start = false;
+            std::map<int, glm::mat4> cache;
+            for (auto bi: ordering) {
+                if (bi == root_index) {
+                    start = true;
+                }
+                if (start) {
+                    glm::mat4 transform = glm::mat4(1.0f);
+                    if (bi == root_index) {
+                        transform = glm::translate(bit_cast<glm::vec3>(verts[bi])) * glm::toMat4(parent) * glm::translate(-bit_cast<glm::vec3>(verts[bi]));
+                    }
+                    else if (bi == joint_index) {
+                        transform = glm::translate(bit_cast<glm::vec3>(verts[bi])) * glm::toMat4(child) * glm::translate(-bit_cast<glm::vec3>(verts[bi]));
+                    }
+                    if (bone_connects.count(bi) && cache.count(bone_connects[bi])) {
+                        transform = cache[bone_connects[bi]] * transform;
+                    }
+                    if (bi == end_index && item->OrientTip) {
+                        auto target_pos = transform_pos(transform, verts[bi]);
+                        transform = glm::translate(bit_cast<glm::vec3>(target_pos - verts[bi]));
+                    }
+                    cache[bi] = transform;
+                    verts[bi]        = transform_pos(transform, verts[bi]);
+                    transform_r0[bi] = transform_nrm(transform, transform_r0[bi]);
+                    transform_r1[bi] = transform_nrm(transform, transform_r1[bi]);
+                    transform_r2[bi] = transform_nrm(transform, transform_r2[bi]);
+                }
+            }
+        }
+
+        set_output("Skeleton", skeleton);
+    }
+};
+
+ZENDEFNODE(IKChains, {
+    {
+        "Skeleton",
+        "IK Drivers",
+        {"list", "items"},
+    },
+    {
+        "Skeleton",
+    },
+    {},
+    {"deprecated"},
+});
+
+float length(std::vector<float> &b)
+{
+    float l = 0;
+    for(int i=0;i<b.size();i++)
+    {
+        l += b[i] * b[i];
+    }
+    return sqrt(l);
+}
+//
+void GaussSeidelSolve(std::vector<std::vector<float>> &A, std::vector<float> &b, std::vector<float>&x,
+                      int max_iter, float tol)
+    {
+        int iter=0;
+        float b_nrm = 0;
+        for(int i=0;i<b.size();i++)
+        {
+            b_nrm = max(b_nrm, abs(b[i]));
+        }
+        if(b_nrm<=0.00001)
+            return;
+        while(iter<max_iter)
+        {
+//            std::cout<<"solving"<<std::endl;
+            float e_max = 0;
+            for(int i=0;i<x.size();i++)
+            {
+                float e = b[i];
+                for(int j=0;j<A[i].size();j++)
+                {
+                    e -= A[i][j] * x[j];
+                }
+                e_max = max(e_max, abs(e));
+                x[i] += e / A[i][i];
+            }
+
+            if(e_max/b_nrm<tol) {
+//                std::cout<<"iter:"<<iter<<", err:"<<e_max/b_nrm<<std::endl;
+                break;
+            }
+            iter++;
+        }
+    }
+vec3f getJointPos(int id, PrimitiveObject * skel_ptr) {
+    return skel_ptr->verts[id];
+}
+void computeJointJacobian(std::vector<int> &index,
+                          std::vector<vec3f> &J,
+                          std::vector<vec3f> &r,
+                          PrimitiveObject * skel_ptr,
+                          vec3f e_curr
+                          )
+{
+    J.resize(index.size() * 3);
+    for(int i=0;i<index.size();i++)
+    {
+        int id = index[i];
+        auto p_i = getJointPos(id, skel_ptr);
+        for (auto j = 0; j < 3; j++) {
+            auto r_i = r[id * 3 + j];
+            auto dedtheta_i = cross(r_i, e_curr - p_i);
+            J[i * 3 + j] = dedtheta_i;
+        }
+    }
+}
+void computeJTJ(std::vector<vec3f> &J, std::vector<std::vector<float>> &JTJ, float alpha)
+{
+    JTJ.resize(J.size());
+    for(int i=0;i<J.size();i++)
+    {
+        JTJ[i].resize(J.size());
+    }
+    for(int i=0;i<J.size();i++)
+    {
+        for(int j=0;j<J.size();j++)
+        {
+            JTJ[i][j] = dot(J[i], J[j]);
+        }
+        JTJ[i][i] += alpha;
+    }
+    for(int i=0;i<JTJ.size();i++)
+    {
+        float row_sum = 0;
+        for(int j=0;j<JTJ[i].size();j++)
+        {
+            if(j!=i)
+                row_sum += abs(JTJ[i][j]);
+        }
+        if(abs(JTJ[i][i])<row_sum)
+            JTJ[i][i] = glm::sign(JTJ[i][i]) * row_sum;
+    }
+}
+std::shared_ptr<PrimitiveObject> FK(
+    std::vector<float> theta
+    , std::shared_ptr<PrimitiveObject> skel_ptr
+) {
+        std::vector<glm::mat4> Transformations;
+        for (auto i = 0; i < skel_ptr->verts.size(); i++) {
+            auto mx = glm::rotate(theta[i * 3 + 0], glm::vec3(1, 0, 0));
+            auto my = glm::rotate(theta[i * 3 + 1], glm::vec3(0, 1, 0));
+            auto mz = glm::rotate(theta[i * 3 + 2], glm::vec3(0, 0, 1));
+            auto Transformation = mx * my * mz;
+            Transformations.push_back(Transformation);
+        }
+
+        auto skeleton = std::dynamic_pointer_cast<PrimitiveObject>(skel_ptr->clone());
+        std::map<int, int> bone_connects;
+        for (auto i = 0; i < skeleton->polys.size(); i++) {
+            bone_connects[skeleton->loops[i * 2 + 1]] = skeleton->loops[i * 2];
+        }
+        auto ordering = TopologicalSorting(bone_connects, skeleton.get());
+        auto &verts = skeleton->verts;
+        auto &transform_r0 = skeleton->verts.add_attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.add_attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.add_attr<vec3f>("transform_r2");
+        auto transforms    = getBoneMatrix(skeleton.get());
+        auto transformsInv = getInvertedBoneMatrix(skeleton.get());
+        auto boneNames = getBoneNames(skeleton.get());
+        std::map<int, glm::mat4> cache;
+        for (auto bi: ordering) {
+            glm::mat4 transform = glm::mat4(1.0f);
+            auto trans = Transformations[bi];
+            transform = transforms[bi] * trans * transformsInv[bi];
+            if (bone_connects.count(bi)) {
+                transform = cache[bone_connects[bi]] * transform;
+            }
+            cache[bi] = transform;
+            verts[bi]        = transform_pos(transform, verts[bi]);
+            transform_r0[bi] = transform_nrm(transform, transform_r0[bi]);
+            transform_r1[bi] = transform_nrm(transform, transform_r1[bi]);
+            transform_r2[bi] = transform_nrm(transform, transform_r2[bi]);
+        }
+    return skeleton;
+}
+void solveJointUpdate(int id,
+                      vec3f tarPos,
+                      std::shared_ptr<PrimitiveObject> skel_ptr,
+                      std::vector<int> &index,
+                      std::vector<float> &dtheta,
+                      std::vector<float> &theta,
+                      float &dist,
+                      float scale)
+{
+    dtheta.resize(theta.size());
+    dtheta.assign(dtheta.size(), 0);
+//    zeno::log_error("{} FK.....", id);
+    std::shared_ptr<PrimitiveObject> skeleton = FK(theta, skel_ptr);
+//    zeno::log_error("{} FK----------", id);
+    vec3f e_curr = getJointPos(id, skeleton.get());
+    vec3f de = tarPos - e_curr;
+    dist = glm::length(bit_cast<glm::vec3>(de));
+    if(dist / scale <0.0001)
+        return;
+    std::vector<vec3f> r;
+    {
+        auto &transform_r0 = skeleton->verts.attr<vec3f>("transform_r0");
+        auto &transform_r1 = skeleton->verts.attr<vec3f>("transform_r1");
+        auto &transform_r2 = skeleton->verts.attr<vec3f>("transform_r2");
+        for (auto i = 0; i < skeleton->verts.size(); i++) {
+            r.push_back(zeno::normalize(transform_r0[i]));
+            r.push_back(zeno::normalize(transform_r1[i]));
+            r.push_back(zeno::normalize(transform_r2[i]));
+        }
+    }
+    std::vector<vec3f> J;
+    computeJointJacobian(index, J, r, skel_ptr.get(), e_curr);
+    if (0) {
+        // log
+        auto boneNames = getBoneNames(skel_ptr.get());
+        for (auto i = 0; i < index.size(); i++) {
+            auto idx = index[i];
+            std::cout << boneNames[idx] << " : ";
+            std::cout << J[i * 3 + 0][0] << ", " << J[i * 3 + 0][1] << ", " << J[i * 3 + 0][2] << "; ";
+            std::cout << J[i * 3 + 1][0] << ", " << J[i * 3 + 1][1] << ", " << J[i * 3 + 1][2] << "; ";
+            std::cout << J[i * 3 + 2][0] << ", " << J[i * 3 + 2][1] << ", " << J[i * 3 + 2][2] << "; ";
+        }
+    }
+
+//    zeno::log_error("computeJointJacobian");
+    std::vector<std::vector<float>> JTJ;
+    computeJTJ(J, JTJ, 0.001);
+    for (auto i = 0; i < JTJ.size(); i++) {
+//        std::cout << JTJ[i][i] << ' ';
+    }
+//    zeno::log_error("computeJTJ");
+    auto b = std::vector<float>(index.size() * 3);
+    for(int i=0;i<b.size();i++)
+    {
+        b[i] = dot(J[i], de);
+    }
+    std::vector<float> x(index.size() * 3);
+    GaussSeidelSolve(JTJ, b, x, 100, 0.00001);
+//    zeno::log_error("GaussSeidelSolve");
+    for (auto i = 0; i < x.size(); i++) {
+//        std::cout << x[i] << ' ';
+    }
+    for(int i=0;i<index.size();i++)
+    {
+        for (auto j = 0; j < 3; j++) {
+            dtheta[index[i] * 3 + j] = x[i * 3 +j];
+        }
+    }
+//    zeno::log_error("return..........");
+}
+
+std::vector<int> getIds(int endId, int depth, PrimitiveObject* skeletonPtr) {
+    std::map<int, int> connects;
+    auto count = skeletonPtr->loops.size() / 2;
+    for (auto i = 0; i < count; i++) {
+        auto parentId = skeletonPtr->loops[2 * i + 0];
+        auto childId = skeletonPtr->loops[2 * i + 1];
+        connects[childId] = parentId;
+    }
+    std::vector<int> result = {endId};
+    auto cur_id = endId;
+    for (auto i = 0; i < depth; i++) {
+        if (connects.count(cur_id) == 0) {
+            break;
+        }
+        cur_id = connects[cur_id];
+        result.push_back(cur_id);
+    }
+
+    return result;
+}
+
+float computeError(int id, std::shared_ptr<PrimitiveObject> skeletion, vec3f targetPos
+                 , std::vector<float> & theta) {
+    auto curPose = FK(theta, skeletion);
+    auto curJointPos = getJointPos(id, curPose.get());
+    return zeno::distance(curJointPos, targetPos);
+}
+
+float proposeTheta(std::vector<int> &ids, std::shared_ptr<PrimitiveObject> skeletion, std::vector<vec3f> &targetPoss
+                  , std::vector<float> & new_theta, std::vector<float> & theta, std::vector<float> & dtheta, std::vector<float> & total_theta
+                  , std::vector<vec2f> &limit, float alpha, std::vector<float> w) {
+
+    for (int i = 0; i < theta.size(); ++i) {
+        new_theta[i] = theta[i] + alpha * dtheta[i] / (w[i] > 0 ? w[i] : 1);
+        auto tmp_theta = clamp(total_theta[i] + new_theta[i], limit[i][0], limit[i][1]);
+        new_theta[i] = tmp_theta - total_theta[i];
+    }
+    float e = 0;
+    for (auto i = 0; i < ids.size(); i++) {
+        e += computeError(ids[i], skeletion, targetPoss[i], new_theta);
+    }
+    return e;
+}
+
+
+void line_search(std::vector<int> &ids, std::shared_ptr<PrimitiveObject> skeletion, std::vector<vec3f> &targetPoss
+                 , std::vector<float> & theta, std::vector<float> & dtheta, std::vector<float> & total_theta
+                  , std::vector<vec2f> &limit, float damp, std::vector<float> &w, float prev_err) {
+    std::vector<float> new_theta = theta;
+    float alpha = 1;
+
+    float e;
+    e = proposeTheta(ids, skeletion, targetPoss, new_theta, theta, dtheta, total_theta, limit, alpha, w);
+
+    if (e < prev_err) {
+        theta = new_theta;
+        return;
+    }
+    while (alpha > 1e-7) {
+        alpha *= damp;
+        e = proposeTheta(ids, skeletion, targetPoss, new_theta, theta, dtheta, total_theta, limit, alpha, w);
+        if (e < prev_err) {
+            theta = new_theta;
+            return;
+        }
+    }
+}
+
+void SolveIKConstrained(std::shared_ptr<PrimitiveObject> skeletonPtr,
+                        std::vector<float> & theta,
+                        std::vector<float> & total_theta,
+                        std::vector<vec2f> & theta_constraints,
+                        std::vector<vec3f> &targets,
+                        std::vector<int> endEffectorIDs,
+                        std::vector<int> depths,
+                        int iter_max
+                        )
+{
+    std::vector<std::vector<float>> dtheta;
+    dtheta.resize(endEffectorIDs.size());
+    int iter = 0;
+    std::vector<float> old_theta;
+    old_theta = theta;
+    float prev_err = INFINITY;
+    float scale = 1;
+    {
+        for (int i = 0; i < endEffectorIDs.size(); i++) {
+            auto endId = endEffectorIDs[i];
+            auto depth = depths[i];
+            std::vector<int> index = getIds(endId, depth, skeletonPtr.get());
+            auto tarPos = targets[i];
+            float e_i;
+            solveJointUpdate(endId, tarPos, skeletonPtr, index, dtheta[i], theta, e_i, 1);
+            scale = max(scale, e_i);
+        }
+    }
+    while(iter<iter_max) {
+//        zeno::log_error("iter: {}", iter);
+        iter++;
+        float err = 0;
+        for (int i = 0; i < endEffectorIDs.size(); i++) {
+//            zeno::log_error("i: {}", i);
+            auto endId = endEffectorIDs[i];
+            auto depth = depths[i];
+            std::vector<int> index = getIds(endId, depth, skeletonPtr.get());
+            auto tarPos = targets[i];
+            float e_i;
+            solveJointUpdate(endId, tarPos, skeletonPtr, index, dtheta[i], theta, e_i, scale);
+            err += e_i;
+        }
+        prev_err = err;
+//        std::cout<<"current err:"<<err<<std::endl;
+        if (err / scale < 0.0001)
+            break;
+        std::vector<float> w;
+        w.resize(theta.size());
+        w.assign(w.size(), 0);
+        std::vector<float> total_dtheta;
+        total_dtheta.resize(theta.size());
+        total_dtheta.assign(total_dtheta.size(), 0);
+
+        for(int j=0;j<endEffectorIDs.size();j++)
+            for (int i = 0; i < theta.size(); i++) {
+                total_dtheta[i] += dtheta[j][i];
+                w[i] += abs(dtheta[j][i]) > 0 ? 1 : 0;
+            }
+
+        float damp = 0.5;
+        line_search(endEffectorIDs, skeletonPtr, targets , theta, total_dtheta, total_theta
+                  , theta_constraints, damp, w, prev_err);
+        if (0) {
+            // log
+            auto boneNames = getBoneNames(skeletonPtr.get());
+            for (auto i = 0; i < skeletonPtr->verts.size(); i++) {
+                std::cout << boneNames[i] << " : ";
+                std::cout << total_dtheta[i * 3 + 0] << ", ";
+                std::cout << total_dtheta[i * 3 + 1] << ", ";
+                std::cout << total_dtheta[i * 3 + 2] << ", " << std::endl;
+            }
+        }
+
+//        float max_dtheta = 0;
+//        for(int i=0;i<theta.size();i++)
+//        {
+//            max_dtheta = max(abs(old_theta[i] - theta[i]), max_dtheta);
+//        }
+//        if(max_dtheta<0.0001) break;
+//
+//        old_theta = theta;
+    }
+}
+
+struct IkChainsItemObject : PrimitiveObject {
+    int depth;
+    std::string endEffectorName;
+    vec3f targetPos;
+};
+
+struct IkChainsItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<IkChainsItemObject>();
+        item->depth = get_input2<int>("depth");
+        item->endEffectorName = get_input2<std::string>("endEffectorName");
+        item->targetPos = get_input2<vec3f>("targetPos");
+
+        set_output2("IkChain", std::move(item));
+    }
+};
+
+ZENDEFNODE(IkChainsItem, {
+    {
+        {"string", "endEffectorName", ""},
+        {"int", "depth", "2"},
+        {"vec3f", "targetPos", ""},
+    },
+    {
+        "IkChain",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct JointLimitObject : PrimitiveObject {
+    std::string boneName;
+    vec3i enableLimit;
+    vec2f xLimit;
+    vec2f yLimit;
+    vec2f zLimit;
+};
+
+struct JointLimitItem : INode {
+    virtual void apply() override {
+        auto item = std::make_shared<JointLimitObject>();
+        item->boneName = get_input2<std::string>("boneName");
+        item->enableLimit = {
+            get_input2<int>("enableXLimit"),
+            get_input2<int>("enableYLimit"),
+            get_input2<int>("enableZLimit"),
+        };
+        item->xLimit = get_input2<vec2f>("xLimit");
+        item->yLimit = get_input2<vec2f>("yLimit");
+        item->zLimit = get_input2<vec2f>("zLimit");
+
+        set_output2("JointLimit", std::move(item));
+    }
+};
+
+ZENDEFNODE(JointLimitItem, {
+    {
+        {"string", "boneName", ""},
+        {"bool", "enableXLimit", "0"},
+        {"vec2f", "xLimit", "0,0"},
+        {"bool", "enableYLimit", "0"},
+        {"vec2f", "yLimit", "0,0"},
+        {"bool", "enableZLimit", "0"},
+        {"vec2f", "zLimit", "0,0"},
+    },
+    {
+        "JointLimit",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct IkSolver : INode {
+    void apply() override {
+        auto skeleton = get_input2<PrimitiveObject>("Skeleton");
+        auto boneNameMapping = getBoneNameMapping(skeleton.get());
+        int iter_max = get_input2<int>("iterCount");
+        auto &enableXYZLimit = skeleton->add_attr<vec3i>("enableXYZLimit");
+        auto &xLimit = skeleton->add_attr<vec2f>("xLimit");
+        auto &yLimit = skeleton->add_attr<vec2f>("yLimit");
+        auto &zLimit = skeleton->add_attr<vec2f>("zLimit");
+        if (has_input("jointLimits")) {
+            auto items = get_input<zeno::ListObject>("jointLimits")->getRaw<JointLimitObject>();
+            for (auto &item: items) {
+                if (boneNameMapping.count(item->boneName)) {
+                    auto index = boneNameMapping[item->boneName];
+                    enableXYZLimit[index] = item->enableLimit;
+                    xLimit[index] = item->xLimit;
+                    yLimit[index] = item->yLimit;
+                    zLimit[index] = item->zLimit;
+                }
+            }
+        }
+        std::vector<float> theta;
+        std::vector<vec2f> theta_constraints;
+        {
+            theta.resize(skeleton->verts.size() * 3);
+            for (auto i = 0; i < skeleton->verts.size(); i++) {
+                theta_constraints.push_back(enableXYZLimit[i][0]? xLimit[i]: vec2f(-INFINITY, INFINITY));
+                theta_constraints.push_back(enableXYZLimit[i][1]? yLimit[i]: vec2f(-INFINITY, INFINITY));
+                theta_constraints.push_back(enableXYZLimit[i][2]? zLimit[i]: vec2f(-INFINITY, INFINITY));
+            }
+        }
+        std::vector<vec3f> targets;
+        std::vector<int> endEffectorIDs;
+        std::vector<int> depths;
+        {
+            auto items = get_input<zeno::ListObject>("IkChains")->getRaw<IkChainsItemObject>();
+            for (auto &item: items) {
+                if (boneNameMapping.count(item->endEffectorName) == 0) {
+                    log_warn("Not find ik endEffector: {}", item->endEffectorName);
+                    continue;
+                }
+                endEffectorIDs.push_back(boneNameMapping[item->endEffectorName]);
+                depths.push_back(item->depth);
+                targets.push_back(item->targetPos);
+            }
+        }
+
+        auto &total_theta_3 = skeleton->verts.attr<vec3f>("TotalTheta");
+        std::vector<float> total_theta(skeleton->verts.size() * 3);
+        for (auto i = 0; i < skeleton->verts.size(); i++) {
+            total_theta[i*3 + 0] = total_theta_3[i][0];
+            total_theta[i*3 + 1] = total_theta_3[i][1];
+            total_theta[i*3 + 2] = total_theta_3[i][2];
+        }
+        SolveIKConstrained(
+            skeleton,
+            theta,
+            total_theta,
+            theta_constraints,
+            targets,
+            endEffectorIDs,
+            depths,
+            iter_max
+            );
+        std::shared_ptr<PrimitiveObject> out_skeleton = FK(theta, skeleton);
+        {
+            auto &total_theta = out_skeleton->verts.attr<vec3f>("TotalTheta");
+            for (auto i = 0; i < out_skeleton->verts.size(); i++) {
+                total_theta[i][0] += theta[i * 3 + 0];
+                total_theta[i][1] += theta[i * 3 + 1];
+                total_theta[i][2] += theta[i * 3 + 2];
+            }
+        }
+        set_output2("Skeleton", out_skeleton);
+    }
+};
+ZENDEFNODE(IkSolver, {
+    {
+        "Skeleton",
+        {"int", "iterCount", "50"},
+        {"list", "IkChains"},
+        {"list", "jointLimits"},
+    },
+    {
+        "Skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct IkJointConstraints : INode {
+    void apply() override {
+        auto skeleton = get_input2<PrimitiveObject>("Skeleton");
+        auto boneNameMapping = getBoneNameMapping(skeleton.get());
+        auto rest_skeleton = get_input2<PrimitiveObject>("RestSkeleton");
+        std::vector<vec3i> enableXYZLimit(skeleton->verts.size());
+        std::vector<vec2f> xLimit(skeleton->verts.size());
+        std::vector<vec2f> yLimit(skeleton->verts.size());
+        std::vector<vec2f> zLimit(skeleton->verts.size());
+        if (has_input("jointLimits")) {
+            auto items = get_input<zeno::ListObject>("jointLimits")->getRaw<JointLimitObject>();
+            for (auto &item: items) {
+                if (boneNameMapping.count(item->boneName)) {
+                    auto index = boneNameMapping[item->boneName];
+                    enableXYZLimit[index] = item->enableLimit;
+                    xLimit[index] = item->xLimit;
+                    yLimit[index] = item->yLimit;
+                    zLimit[index] = item->zLimit;
+                }
+            }
+        }
+        auto &total_theta_3 = skeleton->verts.attr<vec3f>("TotalTheta");
+        for (auto i = 0; i < skeleton->verts.size(); i++) {
+            if (enableXYZLimit[i][0]) {
+                total_theta_3[i][0] = clamp(total_theta_3[i][0], xLimit[i][0], xLimit[i][1]);
+            }
+            if (enableXYZLimit[i][1]) {
+                total_theta_3[i][1] = clamp(total_theta_3[i][1], yLimit[i][0], yLimit[i][1]);
+            }
+            if (enableXYZLimit[i][2]) {
+                total_theta_3[i][2] = clamp(total_theta_3[i][2], zLimit[i][0], zLimit[i][1]);
+            }
+        }
+
+        std::vector<float> total_theta(skeleton->verts.size() * 3);
+        for (auto i = 0; i < skeleton->verts.size(); i++) {
+            total_theta.push_back(total_theta_3[i][0]);
+            total_theta.push_back(total_theta_3[i][1]);
+            total_theta.push_back(total_theta_3[i][2]);
+
+        }
+        std::shared_ptr<PrimitiveObject> out_skeleton = FK(total_theta, skeleton);
+        set_output2("Skeleton", out_skeleton);
+    }
+};
+ZENDEFNODE(IkJointConstraints, {
+    {
+        "Skeleton",
+        "RestSkeleton",
+        {"list", "jointLimits"},
+    },
+    {
+        "Skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+
 
 }
