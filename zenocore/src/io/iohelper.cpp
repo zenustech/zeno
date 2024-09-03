@@ -9,6 +9,8 @@
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
+using namespace zeno::reflect;
+
 namespace zenoio
 {
     class JsonObjBatch
@@ -454,7 +456,7 @@ namespace zenoio
     {
         zeno::reflect::Any defl;
         switch (type) {
-        case zeno::types::gParamType_Int:
+        case gParamType_Int:
         {
             if (val.IsInt()) {
                 defl = val.GetInt();
@@ -477,7 +479,7 @@ namespace zenoio
             }
             break;
         }
-        case zeno::types::gParamType_Float:
+        case gParamType_Float:
         {
             if (val.IsFloat())
                 defl = val.GetFloat();
@@ -497,7 +499,7 @@ namespace zenoio
                 zeno::log_error("error type");
             break;
         }
-        case zeno::types::gParamType_Bool:
+        case gParamType_Bool:
         {
             if (val.IsBool())
                 defl = val.GetBool();
@@ -509,125 +511,73 @@ namespace zenoio
                 zeno::log_error("error type");
             break;
         }
-        case zeno::types::gParamType_String:
+        case gParamType_String:
         {
             if (val.IsString())
                 defl = (std::string)val.GetString();
             break;
         }
-        case zeno::types::gParamType_Vec2i:
-        case zeno::types::gParamType_Vec2f:
-        case zeno::types::gParamType_Vec3i:
-        case zeno::types::gParamType_Vec3f:
-        case zeno::types::gParamType_Vec4i:
-        case zeno::types::gParamType_Vec4f:
+        case gParamType_Vec2i:
+        case gParamType_Vec2f:
+        case gParamType_Vec3i:
+        case gParamType_Vec3f:
+        case gParamType_Vec4i:
+        case gParamType_Vec4f:
         {
             int dim = 0;
             bool bFloat = false;
-            if (zeno::types::gParamType_Vec2i == type) dim = 2; bFloat = false;
-            if (zeno::types::gParamType_Vec2f == type) dim = 2; bFloat = true;
-            if (zeno::types::gParamType_Vec3i == type) dim = 3; bFloat = false;
-            if (zeno::types::gParamType_Vec3f == type) dim = 3; bFloat = true;
-            if (zeno::types::gParamType_Vec4i == type) dim = 4; bFloat = false;
-            if (zeno::types::gParamType_Vec4f == type) dim = 4; bFloat = true;
+            if (gParamType_Vec2i == type) dim = 2; bFloat = false;
+            if (gParamType_Vec2f == type) dim = 2; bFloat = true;
+            if (gParamType_Vec3i == type) dim = 3; bFloat = false;
+            if (gParamType_Vec3f == type) dim = 3; bFloat = true;
+            if (gParamType_Vec4i == type) dim = 4; bFloat = false;
+            if (gParamType_Vec4f == type) dim = 4; bFloat = true;
 
-            std::vector<float> vecnum;
-            std::vector<std::string> vecstr;
-
-            if (val.IsArray()) {
-                auto arr = val.GetArray();
-                assert(dim == arr.Size());
-                for (int i = 0; i < arr.Size(); i++)
+            zeno::vecvar editvec;
+            auto arr = val.GetArray();
+            assert(dim == arr.Size());
+            for (int i = 0; i < arr.Size(); i++)
+            {
+                if (arr[i].IsFloat())
                 {
-                    if (arr[i].IsFloat())
-                    {
-                        vecnum.push_back(arr[i].GetFloat());
-                    }
-                    else if (arr[i].IsDouble())
-                    {
-                        vecnum.push_back(arr[i].GetDouble());
-                    }
-                    else if (arr[i].IsInt())
-                    {
-                        vecnum.push_back(arr[i].GetInt());
-                    }
-                    else if (arr[i].IsString())
-                    {
-                        //may be a curve json str, or a formula str
-                        //but the format of curve in zsg2.0 represents as :
-                        /*
-                          "position": {
-                              "default-value": {
-                                   "objectType": "curve",
-                                   "x": {...}
-                                   "y": {...}
-                                   "z": {...}
-                              }
+                    editvec.push_back(arr[i].GetFloat());
+                }
+                else if (arr[i].IsDouble())
+                {
+                    editvec.push_back(static_cast<float>(arr[i].GetDouble()));
+                }
+                else if (arr[i].IsInt())
+                {
+                    editvec.push_back(arr[i].GetInt());
+                }
+                else if (arr[i].IsString())
+                {
+                    //may be a curve json str, or a formula str
+                    //but the format of curve in zsg2.0 represents as :
+                    /*
+                      "position": {
+                          "default-value": {
+                               "objectType": "curve",
+                               "x": {...}
+                               "y": {...}
+                               "z": {...}
                           }
+                      }
 
-                           it seems that the k-frame is set on the whole vec,
-                           may be we just want to k-frame for only one component.
-                         */
-                        vecstr.push_back(arr[i].GetString());
-                    }
-                    else {
-                        zeno::log_error("unknown type value on vec parsing");
-                        break;
-                    }
+                       it seems that the k-frame is set on the whole vec,
+                       may be we just want to k-frame for only one component.
+                     */
+                    editvec.push_back(arr[i].GetString());
+                }
+                else {
+                    zeno::log_error("unknown type value on vec parsing");
+                    break;
                 }
             }
-            else if (val.IsString()) {
-                std::string strinfo = val.GetString();
-                std::vector<std::string> lst = zeno::split_str(strinfo);
-                for (auto& num : lst)
-                {
-                    if (num.empty()) {
-                        vecnum.push_back(0);
-                    }
-                    else {
-                        //don't support formula.
-                        vecnum.push_back(std::stof(num));
-                    }
-                }
-            }
-
-            if (vecnum.size() == dim) {
-                if (zeno::types::gParamType_Vec2i == type) {
-                    defl = zeno::vec2i(vecnum[0], vecnum[1]);
-                }
-                if (zeno::types::gParamType_Vec2f == type) {
-                    defl = zeno::vec2f(vecnum[0], vecnum[1]);
-                }
-                if (zeno::types::gParamType_Vec3i == type) {
-                    defl = zeno::vec3i(vecnum[0], vecnum[1], vecnum[2]);
-                }
-                if (zeno::types::gParamType_Vec3f == type) {
-                    defl = zeno::vec3f(vecnum[0], vecnum[1], vecnum[2]);
-                }
-                if (zeno::types::gParamType_Vec4i == type) {
-                    defl = zeno::vec4i(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
-                }
-                if (zeno::types::gParamType_Vec4f == type) {
-                    defl = zeno::vec4f(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
-                }
-            }
-            else if (vecstr.size() == dim) {
-                if (zeno::types::gParamType_Vec2i == type || zeno::types::gParamType_Vec2f == type) {
-                    defl = zeno::vec2s(vecstr[0], vecstr[1]);
-                }
-                if (zeno::types::gParamType_Vec3i == type || zeno::types::gParamType_Vec3f == type) {
-                    defl = zeno::vec3s(vecstr[0], vecstr[1], vecstr[2]);
-                }
-                if (zeno::types::gParamType_Vec4i == type || zeno::types::gParamType_Vec4f == type) {
-                    defl = zeno::vec4s(vecstr[0], vecstr[1], vecstr[2], vecstr[3]);
-                }
-            }
-            else {
-                zeno::log_error("unknown type value on vec parsing");
-            }
+            defl = editvec;
             break;
         }
-        case zeno::types::gParamType_Curve:
+        case gParamType_Curve:
         {
             //todo: wrap the json object as string, and parse it when calculate,
             //by the method of parseCurve on ParseObjectFromUi.cpp
@@ -640,8 +590,9 @@ namespace zenoio
             }
             break;
         }
-        case zeno::types::gParamType_Heatmap:
+        case gParamType_Heatmap: {
             break;
+        }
         case Param_Null:
         {
             if (val.IsString())
@@ -669,7 +620,7 @@ namespace zenoio
     {
         zeno::zvariant defl;
         switch (type) {
-        case zeno::types::gParamType_Int:
+        case gParamType_Int:
         {
             if (val.IsInt()) {
                 defl = val.GetInt();
@@ -692,7 +643,7 @@ namespace zenoio
             }
             break;
         }
-        case zeno::types::gParamType_Float:
+        case gParamType_Float:
         {
             if (val.IsFloat())
                 defl = val.GetFloat();
@@ -712,7 +663,7 @@ namespace zenoio
                 zeno::log_error("error type");
             break;
         }
-        case zeno::types::gParamType_Bool:
+        case gParamType_Bool:
         {
             if (val.IsBool())
                 defl = (int)val.GetBool();
@@ -724,27 +675,27 @@ namespace zenoio
                 zeno::log_error("error type");
             break;
         }
-        case zeno::types::gParamType_String:
+        case gParamType_String:
         {
             if (val.IsString())
                 defl = val.GetString();
             break;
         }
-        case zeno::types::gParamType_Vec2i:
-        case zeno::types::gParamType_Vec2f:
-        case zeno::types::gParamType_Vec3i:
-        case zeno::types::gParamType_Vec3f:
-        case zeno::types::gParamType_Vec4i:
-        case zeno::types::gParamType_Vec4f:
+        case gParamType_Vec2i:
+        case gParamType_Vec2f:
+        case gParamType_Vec3i:
+        case gParamType_Vec3f:
+        case gParamType_Vec4i:
+        case gParamType_Vec4f:
         {
             int dim = 0;
             bool bFloat = false;
-            if (zeno::types::gParamType_Vec2i == type) dim = 2; bFloat = false;
-            if (zeno::types::gParamType_Vec2f == type) dim = 2; bFloat = true;
-            if (zeno::types::gParamType_Vec3i == type) dim = 3; bFloat = false;
-            if (zeno::types::gParamType_Vec3f == type) dim = 3; bFloat = true;
-            if (zeno::types::gParamType_Vec4i == type) dim = 4; bFloat = false;
-            if (zeno::types::gParamType_Vec4f == type) dim = 4; bFloat = true;
+            if (gParamType_Vec2i == type) dim = 2; bFloat = false;
+            if (gParamType_Vec2f == type) dim = 2; bFloat = true;
+            if (gParamType_Vec3i == type) dim = 3; bFloat = false;
+            if (gParamType_Vec3f == type) dim = 3; bFloat = true;
+            if (gParamType_Vec4i == type) dim = 4; bFloat = false;
+            if (gParamType_Vec4f == type) dim = 4; bFloat = true;
 
             std::vector<float> vecnum;
             std::vector<std::string> vecstr;
@@ -807,33 +758,33 @@ namespace zenoio
             }
 
             if (vecnum.size() == dim) {
-                if (zeno::types::gParamType_Vec2i == type) {
+                if (gParamType_Vec2i == type) {
                     defl = zeno::vec2i(vecnum[0], vecnum[1]);
                 }
-                if (zeno::types::gParamType_Vec2f == type) {
+                if (gParamType_Vec2f == type) {
                     defl = zeno::vec2f(vecnum[0], vecnum[1]);
                 }
-                if (zeno::types::gParamType_Vec3i == type) {
+                if (gParamType_Vec3i == type) {
                     defl = zeno::vec3i(vecnum[0], vecnum[1], vecnum[2]);
                 }
-                if (zeno::types::gParamType_Vec3f == type) {
+                if (gParamType_Vec3f == type) {
                     defl = zeno::vec3f(vecnum[0], vecnum[1], vecnum[2]);
                 }
-                if (zeno::types::gParamType_Vec4i == type) {
+                if (gParamType_Vec4i == type) {
                     defl = zeno::vec4i(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
                 }
-                if (zeno::types::gParamType_Vec4f == type) {
+                if (gParamType_Vec4f == type) {
                     defl = zeno::vec4f(vecnum[0], vecnum[1], vecnum[2], vecnum[3]);
                 }
             }
             else if (vecstr.size() == dim) {
-                if (zeno::types::gParamType_Vec2i == type || zeno::types::gParamType_Vec2f == type) {
+                if (gParamType_Vec2i == type || gParamType_Vec2f == type) {
                     defl = zeno::vec2s(vecstr[0], vecstr[1]);
                 }
-                if (zeno::types::gParamType_Vec3i == type || zeno::types::gParamType_Vec3f == type) {
+                if (gParamType_Vec3i == type || gParamType_Vec3f == type) {
                     defl = zeno::vec3s(vecstr[0], vecstr[1], vecstr[2]);
                 }
-                if (zeno::types::gParamType_Vec4i == type || zeno::types::gParamType_Vec4f == type) {
+                if (gParamType_Vec4i == type || gParamType_Vec4f == type) {
                     defl = zeno::vec4s(vecstr[0], vecstr[1], vecstr[2], vecstr[3]);
                 }
             }
@@ -842,7 +793,7 @@ namespace zenoio
             }
             break;
         }
-        case zeno::types::gParamType_Curve:
+        case gParamType_Curve:
         {
             //todo: wrap the json object as string, and parse it when calculate,
             //by the method of parseCurve on ParseObjectFromUi.cpp
@@ -857,7 +808,7 @@ namespace zenoio
             }
             break;
         }
-        case zeno::types::gParamType_Heatmap:
+        case gParamType_Heatmap:
         {
             if (val.IsString())
             {
@@ -999,15 +950,131 @@ namespace zenoio
         writer.EndObject();
     }
 
-    void writeAny(const zeno::reflect::Any& any, zeno::ParamType type, RAPIDJSON_WRITER& writer)
+    void writeAny(const zeno::reflect::Any& any, zeno::ParamType coreType, RAPIDJSON_WRITER& writer)
     {
-        if (auto pCurves = zeno::reflect::any_cast<zeno::CurvesData>(&any)) {
-            //后续会采用序列化进行读写，现在先转为json字符串储存，以便复用以前的代码
-            dumpCurves(pCurves, writer);
+        if (!any.has_value()) {
+            writer.Null();
+            return;
         }
-        else {
-            auto zvar = zeno::AnyToZVariant(any);
-            writeZVariant(zvar, type, writer);
+
+        zeno::ParamType anyType = any.type().hash_code();
+        switch (coreType)
+        {
+            case gParamType_PrimVariant:
+            case gParamType_VecEdit:
+                assert(false);
+                zeno::log_error("core type cannot be edit type");
+                break;
+            case gParamType_Int:
+            {
+                if (anyType == gParamType_PrimVariant) {
+                    std::visit([&](auto&& arg) {
+                        using T = std::decay_t<decltype(arg)>;
+                        if constexpr (std::is_same_v<T, int>) {
+                            writer.Int(arg);
+                        }
+                        else {
+                            assert(false);
+                            zeno::log_error("type error when writing param defl value");
+                            writer.Null();
+                        }
+                    }, any_cast<zeno::PrimVar>(any));
+                }
+                else {
+                    assert(anyType == gParamType_Int);
+                    writer.Int(any_cast<int>(any));
+                }
+                break;
+            }
+            case gParamType_Float:
+            {
+                if (anyType == gParamType_PrimVariant) {
+                    std::visit([&](auto&& arg) {
+                        using T = std::decay_t<decltype(arg)>;
+                        if constexpr (std::is_same_v<T, float>) {
+                            writer.Double(arg);
+                        }
+                        else {
+                            assert(false);
+                            zeno::log_error("type error when writing param defl value");
+                            writer.Null();
+                        }
+                    }, any_cast<zeno::PrimVar>(any));
+                }
+                else {
+                    assert(anyType == gParamType_Float);
+                    writer.Double(any_cast<float>(any));
+                }
+                break;
+            }
+            case gParamType_Bool:
+            {
+                assert(anyType == gParamType_Bool);
+                writer.Bool(any_cast<bool>(any));
+                break;
+            }
+            case gParamType_String:
+            {
+                assert(anyType == gParamType_String);
+                writer.String(any_cast<std::string>(any).c_str());
+                break;
+            }
+            case gParamType_Curve:
+            {
+                if (auto pCurves = zeno::reflect::any_cast<zeno::CurvesData>(&any)) {
+                    //后续会采用序列化进行读写，现在先转为json字符串储存，以便复用以前的代码
+                    dumpCurves(pCurves, writer);
+                }
+                break;
+            }
+            case gParamType_Heatmap:
+            {
+                //TODO:
+                writer.Null();
+                break;
+            }
+            case gParamType_Vec2i:
+            case gParamType_Vec2f:
+            case gParamType_Vec3i:
+            case gParamType_Vec3f:
+            case gParamType_Vec4i:
+            case gParamType_Vec4f:
+            {
+                if (anyType == gParamType_VecEdit) {
+                    const zeno::vecvar& vec = any_cast<zeno::vecvar>(any);
+                    writer.StartArray();
+                    for (const zeno::PrimVar& elem : vec) {
+                        std::visit([&](auto&& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, float>) {
+                                writer.Double(arg);
+                            }
+                            else if constexpr (std::is_same_v<T, int>) {
+                                writer.Int(arg);
+                            }
+                            else if constexpr (std::is_same_v<T, std::string>) {
+                                writer.String(arg.c_str());
+                            }
+                            else if constexpr (std::is_same_v<T, zeno::CurveData>) {
+                                //TODO
+                            }
+                        }, any_cast<zeno::PrimVar>(elem));
+                    }
+                    writer.EndArray();
+                }
+                else {
+                    //其实defl肯定都是edit类型的
+                    assert(false);
+                    writer.Null();
+                }
+                break;
+            }
+            default:
+            {
+                //TODO: custom type
+                writer.Null();
+                break;
+            }
         }
     }
 
@@ -1015,7 +1082,7 @@ namespace zenoio
     {
         switch (type)
         {
-            case zeno::types::gParamType_Int:
+            case gParamType_Int:
             {
                 int val = 0;
                 if (std::holds_alternative<int>(defl))
@@ -1035,7 +1102,7 @@ namespace zenoio
                 }
                 break;
             }
-            case zeno::types::gParamType_Float:
+            case gParamType_Float:
             {
                 float val = 0;
                 if (std::holds_alternative<int>(defl))
@@ -1055,7 +1122,7 @@ namespace zenoio
                 }
                 break;
             }
-            case zeno::types::gParamType_Bool:
+            case gParamType_Bool:
             {
                 int val = 0;
                 if (std::holds_alternative<int>(defl))
@@ -1065,9 +1132,9 @@ namespace zenoio
                 writer.Bool(val != 0);
                 break;
             }
-            case zeno::types::gParamType_String:
-            case zeno::types::gParamType_Curve:
-            case zeno::types::gParamType_Heatmap:
+            case gParamType_String:
+            case gParamType_Curve:
+            case gParamType_Heatmap:
             {
                 std::string val;
                 if (std::holds_alternative<std::string>(defl))
@@ -1077,12 +1144,12 @@ namespace zenoio
                 writer.String(val.c_str());
                 break;
             }
-            case zeno::types::gParamType_Vec2i:
-            case zeno::types::gParamType_Vec2f:
-            case zeno::types::gParamType_Vec3i:
-            case zeno::types::gParamType_Vec3f:
-            case zeno::types::gParamType_Vec4i:
-            case zeno::types::gParamType_Vec4f:
+            case gParamType_Vec2i:
+            case gParamType_Vec2f:
+            case gParamType_Vec3i:
+            case gParamType_Vec3f:
+            case gParamType_Vec4i:
+            case gParamType_Vec4f:
             {
                 if (std::holds_alternative<zeno::vec2f>(defl))
                 {
