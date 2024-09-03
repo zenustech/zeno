@@ -66,7 +66,10 @@ struct MatInput {
     vec3 instTang;
     float NoL;
     float LoV;
+    
     float rayLength;
+    bool isShadowRay;
+    
     vec3 reflectance;
     vec3 N;
     vec3 T;

@@ -89,7 +89,7 @@ struct ZenoLBvh {
         Vector<Box> box{orderedBvs.get_allocator(), 1};
         if (numLeaves <= 2) {
             using TV = typename Box::TV;
-            box.setVal(Box{TV::uniform(limits<value_type>::max()), TV::uniform(limits<value_type>::lowest())});
+            box.setVal(Box{TV::uniform(detail::deduce_numeric_max<value_type>()), TV::uniform(detail::deduce_numeric_lowest<value_type>())});
             pol(Collapse{numLeaves}, [bvh = proxy<space>(*this), box = proxy<space>(box)] ZS_LAMBDA(int vi) mutable {
                 auto bv = bvh.getNodeBV(vi);
                 for (int d = 0; d != dim; ++d) {
@@ -239,13 +239,13 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::build(zs::CudaExecution
     auto lOffsets = proxy<space>(leafOffsets);
 
     // total bounding volume
-    const auto defaultBox = Box{TV::uniform(limits<value_type>::max()), TV::uniform(limits<value_type>::lowest())};
+    const auto defaultBox = Box{TV::uniform(detail::deduce_numeric_max<value_type>()), TV::uniform(detail::deduce_numeric_lowest<value_type>())};
     Vector<Box> wholeBox{primBvs.get_allocator(), 1};
     wholeBox.setVal(defaultBox);
     policy(primBvs, [box = proxy<space>(wholeBox), execTag] ZS_LAMBDA(const Box &bv) mutable {
         for (int d = 0; d != dim; ++d) {
-            atomic_min(execTag, &box(0)._min[d], bv._min[d] - 10 * limits<T>::epsilon());
-            atomic_max(execTag, &box(0)._max[d], bv._max[d] + 10 * limits<T>::epsilon());
+            atomic_min(execTag, &box(0)._min[d], bv._min[d] - 10 * detail::deduce_numeric_epsilon<T>());
+            atomic_max(execTag, &box(0)._max[d], bv._max[d] + 10 * detail::deduce_numeric_epsilon<T>());
         }
     });
 
@@ -624,7 +624,7 @@ void ZenoLBvh<dim, lane_width, Index, Value, Allocator>::refit(zs::CudaExecution
 // refit
 #if 0
     policy(orderedBvs, [] ZS_LAMBDA(auto &bv) {
-        bv = Box{TV::uniform(limits<value_type>::max()), TV::uniform(limits<value_type>::lowest())};
+        bv = Box{TV::uniform(detail::deduce_numeric_max<value_type>()), TV::uniform(detail::deduce_numeric_lowest<value_type>())};
     });
 #endif
     policy(Collapse{numLeaves}, [primBvs = proxy<space>(primBvs), orderedBvs = proxy<space>(orderedBvs),

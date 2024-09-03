@@ -84,6 +84,9 @@
 #include "LightTree.h"
 #include "Portal.h"
 
+#include <hair/Hair.h>
+#include <hair/optixHair.h>
+
 #include "ChiefDesignerEXR.h"
 using namespace zeno::ChiefDesignerEXR;
 
@@ -257,7 +260,7 @@ using Vertex = float4;
 
 struct PathTracerState
 {
-    OptixDeviceContext context = 0;
+    raii<CUdeviceptr> auxHairBuffer;
 
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
@@ -283,12 +286,6 @@ struct PathTracerState
     raii<CUdeviceptr>              d_uniforms;
 
     raii<OptixModule>              ptx_module;
-    OptixPipelineCompileOptions    pipeline_compile_options;
-    OptixPipeline                  pipeline;
-
-    OptixProgramGroup              raygen_prog_group;
-    OptixProgramGroup              radiance_miss_group;
-    OptixProgramGroup              occlusion_miss_group;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
@@ -315,12 +312,7 @@ struct PathTracerState
     raii<CUdeviceptr>                        d_params;
     CUdeviceptr                              d_params2=0;
 
-    raii<CUdeviceptr>  d_raygen_record;
-    raii<CUdeviceptr>  d_miss_records;
-    raii<CUdeviceptr>  d_hitgroup_records;
-    raii<CUdeviceptr>  d_callable_records;    
-
-    OptixShaderBindingTable        sbt                      = {};
+    OptixShaderBindingTable sbt {};
 };
 
 PathTracerState state;
@@ -703,11 +695,9 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     ) );
 
         //CUDA_SYNC_CHECK();
-
-        timer.tick();
         
         OPTIX_CHECK( optixLaunch(
-                    state.pipeline,
+                    OptixUtil::pipeline,
                     0,
                     (CUdeviceptr)state.d_params2,
                     sizeof( Params ),
@@ -716,8 +706,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     state.params.tile_h,  // launch height
                     1                     // launch depth
                     ) );
-
-        timer.tock("frametime");
       }
     }
     output_buffer.unmap();
@@ -751,14 +739,19 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
     //output_buffer_o.getHostPointer();
 }
 
+void updateCurves() {
+    prepareHairs(OptixUtil::context);
+    prepareCurveGroup(OptixUtil::context);
+}
+
 void updateSphereXAS() {
     timer.tick();
     //cleanupSpheresGPU();
 
-    buildInstancedSpheresGAS(state.context, sphereInstanceGroupAgentList);
+    buildInstancedSpheresGAS(OptixUtil::context, sphereInstanceGroupAgentList);
 
     if (uniformed_sphere_gas_handle == 0 && !xinxinoptix::SphereTransformedTable.empty()) { 
-        buildUniformedSphereGAS(state.context, uniformed_sphere_gas_handle, uniformed_sphere_gas_buffer);
+        buildUniformedSphereGAS(OptixUtil::context, uniformed_sphere_gas_handle, uniformed_sphere_gas_buffer);
     }
 
     std::vector<OptixInstance> optix_instances; 
@@ -777,7 +770,7 @@ void updateSphereXAS() {
 
         OptixInstance inst{};
 
-        auto combinedID = sphereAgent->base.materialID + ":" + std::to_string(ShaderMaker::Sphere);
+        auto combinedID = sphereAgent->base.materialID + ":" + std::to_string(ShaderMark::Sphere);
         auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
         auto sbt_offset = shader_index * RAY_TYPE_COUNT;
@@ -809,7 +802,7 @@ void updateSphereXAS() {
 
         for(auto& [key, dsphere] : SphereTransformedTable) {
 
-            auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMaker::Sphere);
+            auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMark::Sphere);
             auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
             auto sbt_offset = shader_index * RAY_TYPE_COUNT;
@@ -832,7 +825,7 @@ void updateSphereXAS() {
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
     accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-    buildIAS(state.context, accel_options, optix_instances, sphereBufferXAS,  sphereHandleXAS);
+    buildIAS(OptixUtil::context, accel_options, optix_instances, sphereBufferXAS,  sphereHandleXAS);
     timer.tock("Build Sphere IAS");
 }
 
@@ -911,7 +904,7 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    buildXAS(state.context, accel_options, triangle_input, mesh->d_gas_output_buffer, mesh->gas_handle);
+    buildXAS(OptixUtil::context, accel_options, triangle_input, mesh->d_gas_output_buffer, mesh->gas_handle);
     
     mesh->dverts.reset();
     mesh->dmats.reset(); 
@@ -1120,7 +1113,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
     accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-    buildIAS(state.context, accel_options, optix_instances, state.meshBufferIAS, state.meshHandleIAS);
+    buildIAS(OptixUtil::context, accel_options, optix_instances, state.meshBufferIAS, state.meshHandleIAS);
     timer.tock("Build Mesh IAS");    
 }
 
@@ -1171,7 +1164,7 @@ void updateRootIAS()
 
 		auto& [key, val] = OptixUtil::volumeBoxs.at(i);
 
-		auto combinedID = key + ":" + std::to_string(ShaderMaker::Volume);
+		auto combinedID = key + ":" + std::to_string(ShaderMark::Volume);
     	auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
     	sbt_offset = shader_index * RAY_TYPE_COUNT;
@@ -1226,8 +1219,10 @@ void updateRootIAS()
 		optix_instances.push_back( optix_instance );
 	}
 
+    auto op_index = optix_instances.size();
+
     uint32_t MAX_INSTANCE_ID;
-    optixDeviceContextGetProperty( state.context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
+    optixDeviceContextGetProperty( OptixUtil::context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
     state.params.maxInstanceID = MAX_INSTANCE_ID;
 
   	//process light
@@ -1235,7 +1230,7 @@ void updateRootIAS()
 	{
 		OptixInstance opinstance {};
 
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Mesh);
 		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
 		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
@@ -1252,7 +1247,7 @@ void updateRootIAS()
 	{
 		OptixInstance opinstance {};
 
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Mesh);
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Mesh);
 		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
 		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
@@ -1269,7 +1264,7 @@ void updateRootIAS()
 	{
 		OptixInstance opinstance {};
 
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMaker::Sphere);
+		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Sphere);
 		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
 		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
@@ -1282,11 +1277,88 @@ void updateRootIAS()
 		optix_instances.push_back( opinstance );
 	}
 
+    std::vector<CurveGroupAux> auxHair;
+    state.params.hairInstOffset = op_index;
+
+    for (auto& [key, val] : hair_yyy_cache) {
+
+        OptixInstance opinstance {};
+        auto& [filePath, mode, mtlid] = key;
+        
+        auto shader_mark = mode + 3;
+
+		auto combinedID = mtlid + ":" + std::to_string(shader_mark);
+		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+        auto& hair_state = geo_hair_cache[ std::tuple(filePath, mode) ];
+
+		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		//opinstance.instanceId = op_index++;
+		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+		opinstance.visibilityMask = DefaultMatMask;
+		opinstance.traversableHandle = hair_state->gasHandle;
+
+        // sutil::Matrix3x4 yUpTransform = {
+        //     0.0f, 1.0f, 0.0f, -campos.x,
+        //     0.0f, 0.0f, 1.0f, -campos.y,
+        //     1.0f, 0.0f, 0.0f, -campos.z,
+        // };
+
+        for (auto& trans : val) {
+
+            auto dummy = glm::transpose(trans);
+            auto dummy_ptr = glm::value_ptr( dummy );
+
+		    memcpy(opinstance.transform, dummy_ptr, sizeof(float) * 12);
+            opinstance.transform[3]  += -campos.x;
+            opinstance.transform[7]  += -campos.y;
+            opinstance.transform[11] += -campos.z;
+
+            opinstance.instanceId = op_index++;
+		    optix_instances.push_back( opinstance );
+
+            auxHair.push_back(hair_state->aux); 
+        }
+    }
+
+    for (size_t i=0; i<curveGroupStateCache.size(); ++i) {
+
+        auto& ele = curveGroupStateCache[i];
+
+        OptixInstance opinstance {};
+        
+        auto shader_mark = (uint)ele->curveType + 3;
+
+		auto combinedID = ele->mtid + ":" + std::to_string(shader_mark);
+		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
+
+		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		opinstance.instanceId = op_index++;
+		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+		opinstance.visibilityMask = DefaultMatMask;
+		opinstance.traversableHandle = ele->gasHandle;
+
+		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+		optix_instances.push_back( opinstance );
+
+        auxHair.push_back(ele->aux);
+    }
+
+    state.auxHairBuffer.reset();
+
+    {
+        size_t byte_size = sizeof(CurveGroupAux) * auxHair.size();
+        state.auxHairBuffer.resize(byte_size);
+        cudaMemcpy((void*)state.auxHairBuffer.handle, auxHair.data(), byte_size, cudaMemcpyHostToDevice);
+
+        state.params.hairAux = (void*)state.auxHairBuffer.handle;
+    }
+
 	OptixAccelBuildOptions accel_options{};
 	accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
 	accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-	buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);  
+	buildIAS(OptixUtil::context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);  
 
 	timer.tock("update Root IAS");
 	state.params.handle = state.rootHandleIAS;
@@ -1294,21 +1366,21 @@ void updateRootIAS()
 
 static void createSBT( PathTracerState& state )
 {
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_callable_records.reset();
+        OptixUtil::d_raygen_record.reset();
+        OptixUtil::d_miss_records.reset();
+        OptixUtil::d_hitgroup_records.reset();
+        OptixUtil::d_callable_records.reset();
 
         state.accum_buffer_p.reset();
         state.albedo_buffer_p.reset();
         state.normal_buffer_p.reset();
 
-    raii<CUdeviceptr>  &d_raygen_record = state.d_raygen_record;
+    raii<CUdeviceptr>  &d_raygen_record = OptixUtil::d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
-        CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
+    CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
 
     RayGenRecord rg_sbt = {};
-    OPTIX_CHECK( optixSbtRecordPackHeader( state.raygen_prog_group, &rg_sbt ) );
+    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::raygen_prog_group, &rg_sbt ) );
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)d_raygen_record ),
@@ -1317,15 +1389,14 @@ static void createSBT( PathTracerState& state )
                 cudaMemcpyHostToDevice
                 ) );
 
-
-    raii<CUdeviceptr>  &d_miss_records = state.d_miss_records;
+    raii<CUdeviceptr>  &d_miss_records = OptixUtil::d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
     CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
 
     MissRecord ms_sbt[2];
-    OPTIX_CHECK( optixSbtRecordPackHeader( state.radiance_miss_group,  &ms_sbt[0] ) );
+    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::radiance_miss_group,  &ms_sbt[0] ) );
     ms_sbt[0].data.bg_color = make_float4( 0.0f );
-    OPTIX_CHECK( optixSbtRecordPackHeader( state.occlusion_miss_group, &ms_sbt[1] ) );
+    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::occlusion_miss_group, &ms_sbt[1] ) );
     ms_sbt[1].data.bg_color = make_float4( 0.0f );
 
     CUDA_CHECK( cudaMemcpy(
@@ -1340,7 +1411,7 @@ static void createSBT( PathTracerState& state )
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
     const size_t hitgroup_record_count = shader_count * RAY_TYPE_COUNT;
 
-    raii<CUdeviceptr>  &d_hitgroup_records = state.d_hitgroup_records;
+    raii<CUdeviceptr>  &d_hitgroup_records = OptixUtil::d_hitgroup_records;
     
     CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
                 hitgroup_record_size * hitgroup_record_count
@@ -1389,6 +1460,7 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
             hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
 #endif
+
             for(int t=0;t<32;t++)
             {
                 hitgroup_records[sbt_idx].data.textures[t] = shader_ref.getTexture(t);
@@ -1476,7 +1548,7 @@ static void createSBT( PathTracerState& state )
     //state.sbt.exceptionRecord;
 
     {
-        raii<CUdeviceptr>& d_callable_records = state.d_callable_records;
+        raii<CUdeviceptr>& d_callable_records = OptixUtil::d_callable_records;
         size_t      sizeof_callable_record = sizeof( CallablesRecord );
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_callable_records ), sizeof_callable_record * shader_count ) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_callable_records ), callable_records.data(),
@@ -1488,17 +1560,6 @@ static void createSBT( PathTracerState& state )
     }
 }
 
-static void cleanupState( PathTracerState& state )
-{
-    OPTIX_CHECK(optixProgramGroupDestroy(state.raygen_prog_group ));
-    OPTIX_CHECK(optixProgramGroupDestroy(state.radiance_miss_group));
-    OPTIX_CHECK(optixProgramGroupDestroy(state.occlusion_miss_group));
-
-    OPTIX_CHECK(optixModuleDestroy(OptixUtil::ray_module));
-    OPTIX_CHECK(optixModuleDestroy(OptixUtil::sphere_module));
-
-    std::cout << "optix cleanup" << std::endl;
-}
 
 static void detectHuangrenxunHappiness() {
     int dev;
@@ -1589,7 +1650,6 @@ void optixinit( int argc, char* argv[] )
         //
         //createContext( state );
         OptixUtil::createContext();
-        state.context = OptixUtil::context;
 
     //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
     if(state.d_params2==0)
@@ -1672,7 +1732,7 @@ void updateVolume(uint volume_shader_offset) {
 
     for (uint i=0; i<list_volume.size(); ++i) {
         //VolumeAccel accel;
-        buildVolumeAccel( list_volume[i]->accel, *(list_volume[i]), state.context );
+        buildVolumeAccel( list_volume[i]->accel, *(list_volume[i]), OptixUtil::context );
     }
 
     OptixUtil::logInfoVRAM("After Volume GAS");
@@ -1981,8 +2041,7 @@ static std::map<std::string, LightDat> lightdats;
 static std::vector<float2>  triangleLightCoords;
 static std::vector<float3>  triangleLightNormals;
 
-
-std::map<std::string, LightDat> &get_lightdats() {
+const std::map<std::string, LightDat> &get_lightdats() {
     return lightdats;
 }
 
@@ -2218,7 +2277,7 @@ static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& li
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
     accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     
-    buildXAS(state.context, accel_options, triangle_input, bufferGas, handleGas);
+    buildXAS(OptixUtil::context, accel_options, triangle_input, bufferGas, handleGas);
 }
 
 static void buildLightSpheresGAS( PathTracerState& state, std::vector<Vertex>& lightSpheres, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas) {
@@ -2265,7 +2324,7 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<Vertex>& l
     // sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = sizeof(uint);
     // sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = sizeof(uint);
 
-    buildXAS(state.context, accel_options, sphere_input, bufferGas, handleGas);
+    buildXAS(OptixUtil::context, accel_options, sphere_input, bufferGas, handleGas);
 }
 
 static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>& lightMesh, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas)
@@ -2305,7 +2364,7 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
     accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     
-    buildXAS(state.context, accel_options, triangle_input, bufferGas, handleGas);
+    buildXAS(OptixUtil::context, accel_options, triangle_input, bufferGas, handleGas);
 }
 
 void buildLightTree() {
@@ -2535,71 +2594,121 @@ void buildLightTree() {
     }
 }
 
-inline std::map<std::tuple<std::string, ShaderMaker>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
+inline std::map<std::tuple<std::string, ShaderMark>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
 
-void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders) 
+void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders, 
+                   bool requireTriangObj, bool requireTriangLight, 
+                   bool requireSphereObj, bool requireSphereLight, 
+                   bool requireVolumeObj, uint usesCurveTypeFlags, bool refresh)
 {
     camera_changed = true;
 
     CppTimer theTimer;
     theTimer.tick();
-    //static bool hadOnce = false;
-    if (OptixUtil::ray_module.handle==0) {
+    
+    if (refresh) {
 
+        shaderCoreLUT = {};
         OptixUtil::_compile_group.run([&] () {
 
             if (!OptixUtil::createModule(
-                OptixUtil::ray_module,
-                state.context,
+                OptixUtil::raygen_module.reset(),
+                OptixUtil::context,
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
 
-            OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
+            OptixUtil::createRenderGroups(OptixUtil::context, OptixUtil::raygen_module);
         });
 
-        OptixUtil::_compile_group.run([&] () {
-            auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
-                
-            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
-            shaderCore->loadProgram(0);
-            shaderCoreLUT.emplace(std::tuple{"DeflMatShader.cu", ShaderMaker::Mesh}, shaderCore);
-        });
+        if (requireTriangObj) {
 
-        OptixUtil::_compile_group.run([&] () {
-            auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+            OptixUtil::_compile_group.run([&] () {
+                auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+                auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
 
-            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
-            shaderCore->moduleIS = &OptixUtil::sphere_module;
-            shaderCore->loadProgram(1, "--define-macro=_SPHERE_");
-            shaderCoreLUT.emplace(std::tuple{"DeflMatShader.cu", ShaderMaker::Sphere}, shaderCore);
-        });
+                std::vector<std::string> macros = {"--undefine-macro=_P_TYPE_", "--define-macro=_P_TYPE_=0"};
+                shaderCore->loadProgram(0, macros);
+                shaderCoreLUT[ std::tuple{"DeflMatShader.cu", ShaderMark::Mesh} ] = shaderCore;
+            });    
+        }
 
-        OptixUtil::_compile_group.run([&] () {
-            auto shader_string = sutil::lookupIncFile("Light.cu");
+        if (requireSphereObj) {
 
+            OptixUtil::_compile_group.run([&] () {
+                auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+                auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+                shaderCore->moduleIS = &OptixUtil::sphere_ism;
+
+                std::vector<std::string> macros = {"--undefine-macro=_P_TYPE_", "--define-macro=_P_TYPE_=1"};
+                shaderCore->loadProgram(1, macros);
+                shaderCoreLUT[ std::tuple{"DeflMatShader.cu", ShaderMark::Sphere} ] = shaderCore;
+            });
+        }
+
+        if (requireVolumeObj) {
+
+            OptixUtil::_compile_group.run([&] () {
+                auto shader_string = sutil::lookupIncFile("volume.cu");
+                auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, 
+                                                        "__closesthit__radiance_volume", "__anyhit__occlusion_volume", "__intersection__volume");
+                shaderCore->loadProgram(4);
+                shaderCoreLUT[ std::tuple{"volume.cu", ShaderMark::Volume} ] = shaderCore;
+            });
+        }
+
+        if (usesCurveTypeFlags) {
+
+            OptixUtil::_compile_group.run([&] () {
+                auto shader_string = sutil::lookupIncFile("DeflMatShader.cu"); 
+                std::vector<std::string> macros = {"--undefine-macro=_P_TYPE_", "--define-macro=_P_TYPE_=2"};
+
+                const std::vector<std::tuple<OptixPrimitiveTypeFlags, OptixModule*, ShaderMark>> curveTypes {
+
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_QUADRATIC_BSPLINE, &OptixUtil::round_quadratic_ism, ShaderMark::CURVE_QUADRATIC },
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_FLAT_QUADRATIC_BSPLINE,  &OptixUtil::flat_quadratic_ism,  ShaderMark::CURVE_RIBBON    },
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE,     &OptixUtil::round_cubic_ism,     ShaderMark::CURVE_CUBIC     },
+
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR,       &OptixUtil::round_linear_ism, ShaderMark::CURVE_LINEAR },
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CATMULLROM,   &OptixUtil::round_catrom_ism, ShaderMark::CURVE_CATROM },
+                    { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BEZIER, &OptixUtil::round_bezier_ism, ShaderMark::CURVE_BEZIER },
+                };
+
+                for (auto& [tflag, module_ptr, mark]: curveTypes) {
+
+                    bool ignore = !(usesCurveTypeFlags & tflag);
+                    if (ignore) continue;
+
+                    auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+                    shaderCore->moduleIS = module_ptr;
+
+                    shaderCore->loadProgram(10, macros);
+                    shaderCoreLUT[ std::tuple{"DeflMatShader.cu", mark} ] = shaderCore;
+                }
+            });
+        } // usesCurveTypeFlags
+        
+    } // refresh
+
+    OptixUtil::_compile_group.run([&] () {
+        auto shader_string = sutil::lookupIncFile("Light.cu");
+
+        if (requireTriangLight) {
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->loadProgram(2);
-            shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Mesh}, shaderCore);
+            shaderCoreLUT[ std::tuple{"Light.cu", ShaderMark::Mesh} ] = shaderCore;
+        }
 
-            shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
-            shaderCore->moduleIS = &OptixUtil::sphere_module;
+        if (requireSphereLight) {
+            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
+            shaderCore->moduleIS = &OptixUtil::sphere_ism;
             shaderCore->loadProgram(3);
-            shaderCoreLUT.emplace(std::tuple{"Light.cu", ShaderMaker::Sphere}, shaderCore);
-        });
+            shaderCoreLUT[ std::tuple{"Light.cu", ShaderMark::Sphere} ] = shaderCore;
+        }
+    });
 
-        OptixUtil::_compile_group.run([&] () {
-            auto shader_string = sutil::lookupIncFile("volume.cu");
+    OptixUtil::_compile_group.wait();
 
-            auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, 
-                                                    "__closesthit__radiance_volume", "__anyhit__occlusion_volume", "__intersection__volume");
-            shaderCore->loadProgram(4);
-            shaderCoreLUT.emplace(std::tuple{"volume.cu", ShaderMaker::Volume}, shaderCore);
-        });
-
-        OptixUtil::_compile_group.wait();
-    } //hadOnce = true;
-
-    OptixUtil::rtMaterialShaders.resize(0);
+    OptixUtil::rtMaterialShaders.clear();
     OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
@@ -2630,29 +2739,17 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;  
         OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
 
-        switch(shaders[i]->mark) {
-            case(ShaderMaker::Mesh): {          
-                break;
-            }
-            case(ShaderMaker::Sphere): { 
-                break;
-            }
-            case(ShaderMaker::Volume): {      
-                OptixUtil::rtMaterialShaders[i].has_vdb = true; 
-                break;
-            }
-            default: {}
+        if (ShaderMark::Volume == shaders[i]->mark) {
+            OptixUtil::rtMaterialShaders[i].has_vdb = true; 
         }
 
         auto& texs = shaders[i]->tex_keys;
+        std::cout<<"texSize:"<<texs.size()<<std::endl;
 
-        if(texs.size()>0){
-            std::cout<<"texSize:"<<texs.size()<<std::endl;
-            for(int j=0;j<texs.size();j++)
-            {
-                std::cout<< "texName:" << texs[j].path <<std::endl;
-                OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
-            }
+        for(int j=0;j<texs.size();j++)
+        {
+            std::cout<< "texPath:" << texs[j].path <<std::endl;
+            OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
         }
 }); //_compile_group
     } //for
@@ -2719,18 +2816,12 @@ OptixUtil::_compile_group.wait();
 
 void optixupdateend() {
     camera_changed = true;
-        OptixUtil::createPipeline();
-
-    printf("Pipeline created \n");
-
-        state.pipeline_compile_options = OptixUtil::pipeline_compile_options;
-        state.pipeline = OptixUtil::pipeline;
-        state.raygen_prog_group = OptixUtil::raygen_prog_group;
-        state.radiance_miss_group = OptixUtil::radiance_miss_group;
-        state.occlusion_miss_group = OptixUtil::occlusion_miss_group;
 
     createSBT( state );
     printf("SBT created \n");
+
+    OptixUtil::createPipeline();
+    printf("Pipeline created \n");
 
     initLaunchParams( state );
     printf("init params created \n");
@@ -2759,8 +2850,9 @@ std::set<std::string> uniqueMatsForMesh() {
 
     std::set<std::string> result;
     for (auto const &[key, dat]: drawdats) {
-        for(auto s:dat.mtlidList) {
-          result.insert(s);
+        result.insert(dat.mtlid);
+        for(auto& s : dat.mtlidList) {
+            result.insert(s);
         }
     }
 
@@ -4025,6 +4117,8 @@ void optixCleanup() {
 
     g_StaticMeshPieces.clear();
     g_meshPieces.clear();
+
+    cleanupHairs();
 }
 
 void optixDestroy() {
@@ -4032,13 +4126,10 @@ void optixDestroy() {
     try {
         CUDA_SYNC_CHECK();
         optixCleanup();
-        cleanupState( state );
+
         rtMaterialShaders.clear();
-
-        OptixUtil::shaderCoreLUT.clear();
-
-        OPTIX_CHECK(optixPipelineDestroy(state.pipeline));
-        OPTIX_CHECK(optixDeviceContextDestroy(state.context));
+        shaderCoreLUT.clear();
+        OptixUtil::resetAll();
     }
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
@@ -4046,8 +4137,8 @@ void optixDestroy() {
 
     context                  .handle=0;
     pipeline                 .handle=0;
-    ray_module               .handle=0;
-    sphere_module            .handle=0;
+    raygen_module            .handle=0;
+    sphere_ism               .handle=0;
     raygen_prog_group        .handle=0;
     radiance_miss_group      .handle=0;
     occlusion_miss_group     .handle=0;

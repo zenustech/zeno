@@ -215,7 +215,7 @@ struct ZSGridExtrapolateAttr : INode {
                 normal[1] = (sdf_y[1] - sdf_y[0]) / (2.f * dx);
                 normal[2] = (sdf_z[1] - sdf_z[0]) / (2.f * dx);
 
-                normal /= zs::max(normal.length(), zs::limits<float>::epsilon() * 10);
+                normal /= zs::max(normal.length(), zs::detail::deduce_numeric_epsilon<float>() * 10);
 
                 spgv._grid.tuple(zs::dim_c<3>, "adv", blockno * spgv.block_size + cellno) = normal;
             }
@@ -404,8 +404,8 @@ struct ZSGridExtrapolateAttr : INode {
                                 }
                             }
 
-                            if ((extDir == "negative" && sdf < -zs::limits<float>::epsilon() * 10) ||
-                                (extDir == "positive" && sdf > zs::limits<float>::epsilon() * 10) || extDir == "both") {
+                            if ((extDir == "negative" && sdf < -zs::detail::deduce_numeric_epsilon<float>() * 10) ||
+                                (extDir == "positive" && sdf > zs::detail::deduce_numeric_epsilon<float>() * 10) || extDir == "both") {
 
                                 zs::vec<float, 3> normal =
                                     spgv._grid.pack(zs::dim_c<3>, "adv", blockno * spgv.block_size + cellno);
@@ -422,7 +422,7 @@ struct ZSGridExtrapolateAttr : INode {
                                             spgv._grid.pack(zs::dim_c<3>, "adv", blockno * spgv.block_size + n_cellno);
                                     }
 
-                                    normal /= zs::max(normal.length(), zs::limits<float>::epsilon() * 10);
+                                    normal /= zs::max(normal.length(), zs::detail::deduce_numeric_epsilon<float>() * 10);
                                 }
 
                                 auto sign = [](float val) { return val > 0 ? 1 : -1; };

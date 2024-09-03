@@ -68,13 +68,55 @@ namespace OptixUtil
     using namespace xinxinoptix;
 ////these are all material independent stuffs;
 inline raii<OptixDeviceContext>             context                  ;
-inline OptixPipelineCompileOptions        pipeline_compile_options {};
+
+inline OptixPipelineCompileOptions          pipeline_compile_options ;
 inline raii<OptixPipeline>                  pipeline                 ;
-inline raii<OptixModule>                    ray_module               ;
-inline raii<OptixModule>                    sphere_module            ;
+
+inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+
+inline raii<CUdeviceptr> d_raygen_record;
+inline raii<CUdeviceptr> d_miss_records;
+inline raii<CUdeviceptr> d_hitgroup_records;
+inline raii<CUdeviceptr> d_callable_records;    
+
+inline raii<OptixModule> sphere_ism;
+
+inline raii<OptixModule> round_linear_ism;
+inline raii<OptixModule> round_bezier_ism;
+inline raii<OptixModule> round_catrom_ism;
+
+inline raii<OptixModule> round_quadratic_ism;
+inline raii<OptixModule> flat_quadratic_ism;
+inline raii<OptixModule> round_cubic_ism;
+
+inline std::vector< std::function<void(void)> > garbageTasks;
+
+inline void resetAll() {
+
+    raygen_prog_group.reset();
+    radiance_miss_group.reset();
+    occlusion_miss_group.reset();
+
+    raygen_module.reset();
+
+    auto count = garbageTasks.size();
+    for (auto& task : garbageTasks) {
+        task();
+    }
+    garbageTasks.clear();
+
+    d_miss_records.reset();
+    d_raygen_record.reset();
+    d_hitgroup_records.reset();
+    d_callable_records.reset();  
+
+    pipeline.reset();
+    context.reset();
+}
+
 inline bool isPipelineCreated = false;
 ////end material independent stuffs
 
@@ -106,6 +148,15 @@ inline void createContext()
 #endif
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+}
+
+inline uint CachedPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+
+inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
+
+    if (usesPrimitiveTypeFlags == CachedPrimitiveTypeFlags) { return false; }
+    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.usesMotionBlur        = false;
@@ -114,17 +165,46 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
-    pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+    //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
+    pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
     OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
     OptixBuiltinISOptions builtin_is_options {};
+    builtin_is_options.usesMotionBlur = false;
+    builtin_is_options.buildFlags     = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-    builtin_is_options.usesMotionBlur      = false;
-    builtin_is_options.buildFlags          = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-    builtin_is_options.builtinISModuleType = OPTIX_PRIMITIVE_TYPE_SPHERE;
-    OPTIX_CHECK( optixBuiltinISModuleGet( context, &module_compile_options, &pipeline_compile_options,
-                            &builtin_is_options, &sphere_module ) );
+    const static auto PrimitiveTypeConfigs = std::vector<std::tuple<OptixPrimitiveTypeFlags, OptixPrimitiveType, OptixModule*>> {
+
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE, OPTIX_PRIMITIVE_TYPE_SPHERE, &sphere_ism },
+
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR,       OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR,       &round_linear_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CATMULLROM,   OPTIX_PRIMITIVE_TYPE_ROUND_CATMULLROM,   &round_catrom_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BEZIER, OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BEZIER, &round_bezier_ism },
+    
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_FLAT_QUADRATIC_BSPLINE,  OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE,  &flat_quadratic_ism  },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_QUADRATIC_BSPLINE, OPTIX_PRIMITIVE_TYPE_ROUND_QUADRATIC_BSPLINE, &round_quadratic_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE,     OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE,     &round_cubic_ism     }
+    };
+
+    auto count = garbageTasks.size();
+    for (auto& task : garbageTasks) {
+        task();
+    }
+    garbageTasks.clear();
+
+    for (auto& [pflag, ptype, module_ptr] : PrimitiveTypeConfigs) {
+        if (pflag & pipeline_compile_options.usesPrimitiveTypeFlags) {
+            builtin_is_options.builtinISModuleType = ptype;
+            OPTIX_CHECK( optixBuiltinISModuleGet( context, &module_compile_options, &pipeline_compile_options, &builtin_is_options, module_ptr ) );
+            
+            garbageTasks.push_back([module_ptr=module_ptr](){
+                optixModuleDestroy(*module_ptr);
+                *module_ptr = 0u;
+            });
+        } //if
+    }
+    return true;
 }
 
 #define COMPILE_WITH_TASKS_CHECK( call ) check( call, #call, __FILE__, __LINE__ )
@@ -178,9 +258,9 @@ static std::vector<char> readData(std::string const& filename)
   return data;
 }
 
-inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const char *macro=nullptr, tbb::task_group* _c_group = nullptr)
+inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
 {
-    OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
+    OptixModuleCompileOptions module_compile_options = OptixUtil::DefaultCompileOptions();
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
 
     char log[2048];
@@ -202,11 +282,14 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         ,"--split-compile=0"
     };
 
-    if (macro != nullptr) {
-        compilerOptions.push_back(macro);
+    std::string flat_macros = ""; 
+
+    for (auto &ele : macros) {
+        compilerOptions.push_back(ele.c_str());
+        flat_macros += ele;
     }
 
-    const char* input = sutil::getCodePTX( source, macro, name, inputSize, is_success, nullptr, compilerOptions);
+    const char* input = sutil::getCodePTX( source, flat_macros.c_str(), name, inputSize, is_success, nullptr, compilerOptions);
 
     if(is_success==false)
     {
@@ -257,7 +340,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &raygen_prog_group
+                    &raygen_prog_group.reset()
                     ) );
     }
 
@@ -272,7 +355,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     1,  // num program groups
                     &program_group_options,
                     log, &sizeof_log,
-                    &radiance_miss_group
+                    &radiance_miss_group.reset()
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
@@ -285,11 +368,9 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &occlusion_miss_group
+                    &occlusion_miss_group.reset()
                     ) );
     }
-
-    
 }
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
@@ -305,17 +386,21 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     OptixProgramGroupDesc desc        = {};
     desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
+    const char* entryName = entry.empty()? nullptr:entry.c_str();
+
+if (entryName != nullptr) { 
 
     if(kind == "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP")
     {
         desc.hitgroup.moduleCH            = _module;
-        desc.hitgroup.entryFunctionNameCH = entry.c_str();
+        desc.hitgroup.entryFunctionNameCH = entryName;
     } 
     else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
-        desc.hitgroup.moduleAH           = _module;
-        desc.hitgroup.entryFunctionNameAH = entry.c_str();
+        desc.hitgroup.moduleAH            = _module;
+        desc.hitgroup.entryFunctionNameAH = entryName;
     }
+}
 
     if (moduleIS != nullptr) {
         desc.hitgroup.moduleIS            = *moduleIS;
@@ -1053,14 +1138,17 @@ struct OptixShaderCore {
         _occlusionEntry = occlusionEntry;
     }
 
-    bool loadProgram(uint idx, const char* macro=nullptr, tbb::task_group* _c_group = nullptr)
+    bool loadProgram(uint idx, const std::vector<std::string> &macro_list = {}, tbb::task_group* _c_group = nullptr)
     {
         std::string tmp_name = "MatShader.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
          
-        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro, _c_group))
+        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro_list, _c_group))
         {
             std::cout<<"module created"<<std::endl;
+
+            m_radiance_hit_group.reset();
+            m_occlusion_hit_group.reset();
 
             createRTProgramGroups(context, module, 
                 "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
@@ -1104,12 +1192,13 @@ struct OptixShaderWrapper
         std::string tmp_name = "Callable.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
 
-        std::string macro;
-        if (fallback) { 
-            macro = "--define-macro=_FALLBACK_"; 
+        std::vector<std::string> macros {};
+
+        if (fallback) {
+            macros.push_back("--define-macro=_FALLBACK_"); 
         }
 
-        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macro.empty()? nullptr:macro.c_str()); 
+        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macros); 
         if (callable_done) {
 
             // Callable programs
@@ -1124,7 +1213,7 @@ struct OptixShaderWrapper
             size_t LOG_SIZE = sizeof( LOG );
 
             OPTIX_CHECK( 
-                optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &callable_prog_group.reset()); 
+                optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &callable_prog_group.reset())
             );
             return true;
         }
@@ -1164,7 +1253,7 @@ inline void createPipeline()
     size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     num_progs += rtMaterialShaders.size(); // callables;
 
-    OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
+    std::vector<OptixProgramGroup> program_groups(num_progs, {});
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
@@ -1187,7 +1276,7 @@ inline void createPipeline()
                 context,
                 &pipeline_compile_options,
                 &pipeline_link_options,
-                program_groups,
+                program_groups.data(),
                 num_progs,
                 log,
                 &sizeof_log,
@@ -1229,8 +1318,6 @@ inline void createPipeline()
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
-    delete[]program_groups;
-
 }
 
 

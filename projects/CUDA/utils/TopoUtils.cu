@@ -133,15 +133,15 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
     constexpr auto space = execspace_e::cuda;
 
     if (!verts.hasProperty(xTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for vertex positions.", xTag));
+        throw std::runtime_error(fmt::format("missing property [{}] for vertex positions.", xTag.asChars()));
     if (!tris.hasProperty("inds"))
         throw std::runtime_error("missing property [inds] for surface triangles.");
     if (!lines.hasProperty("fe_inds") || !lines.hasProperty("inds"))
         throw std::runtime_error("missing property [fe_inds]/[inds] for surface edges.");
     if (!tris.hasProperty(triNrmTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for surface triangles.", triNrmTag));
+        throw std::runtime_error(fmt::format("missing property [{}] for surface triangles.", triNrmTag.asChars()));
     if (!lines.hasProperty(biNrmTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for surface edges.", biNrmTag));
+        throw std::runtime_error(fmt::format("missing property [{}] for surface edges.", biNrmTag.asChars()));
 
     pol(range(tris.size()), [verts = proxy<space>(verts), xOffset = verts.getPropertyOffset(xTag), vOffset = vOffset,
                              tris = proxy<space>({}, tris), triNrmTag] ZS_LAMBDA(int ti) mutable {
@@ -152,7 +152,7 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
         using vec3 = RM_CVREF_T(t0);
         using T = typename vec3::value_type;
         auto nrm = (t1 - t0).cross(t2 - t0);
-        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+        if (auto len = nrm.l2NormSqr(); len > detail::deduce_numeric_epsilon<T>() * 10)
             nrm /= zs::sqrt(len);
         else
             nrm = vec3::zeros();
@@ -179,7 +179,7 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
         using vec3 = RM_CVREF_T(e0);
         using T = typename vec3::value_type;
         auto nrm = ne.cross(e10);
-        if (auto len = nrm.l2NormSqr(); len > limits<T>::epsilon() * 10)
+        if (auto len = nrm.l2NormSqr(); len > detail::deduce_numeric_epsilon<T>() * 10)
             nrm /= zs::sqrt(len);
         else
             nrm = vec3::zeros();
