@@ -313,6 +313,9 @@ void ZLineEdit::keyPressEvent(QKeyEvent* event)
                 {
                     m_hintlist->hide();
                     hintSelectedSetText(m_hintlist->getCurrentText());
+                    event->accept();
+                    setFocus();
+                    return;
                 }
             }
         }
