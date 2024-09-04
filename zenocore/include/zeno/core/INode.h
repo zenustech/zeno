@@ -143,6 +143,7 @@ public:
     void mark_dirty_objs();
     std::vector<std::pair<std::string, bool>> getWildCardParams(const std::string& name, bool bPrim);
     void getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType);
+    std::set<std::pair<std::string, std::string>> resolveReferSource(std::string const& primitive_param);
 
 protected:
     ZENO_API virtual void complete();
@@ -168,7 +169,6 @@ private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
     std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
     std::shared_ptr<ListObject> processList(ObjectParam* in_param);
-    std::set<std::pair<std::string, std::string>> resolveReferSource(std::string const& primitive_param);
     bool receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType outobj_type);
     void reportStatus(bool bDirty, NodeRunStatus status);
     float resolve(const std::string& formulaOrKFrame, const ParamType type);

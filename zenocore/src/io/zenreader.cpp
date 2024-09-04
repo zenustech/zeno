@@ -10,7 +10,8 @@ namespace zenoio
     {
     }
 
-    bool ZenReader::importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData& links)
+    bool ZenReader::importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData& links,
+        zeno::ReferencesData& refs)
     {
         rapidjson::Document doc;
         doc.Parse(fn.c_str());
@@ -26,7 +27,7 @@ namespace zenoio
         {
             const std::string& nodeid = node.name.GetString();
             zeno::AssetsData assets;
-            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, links);
+            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, links, refs);
             nodes.insert(std::make_pair(nodeid, nodeData));
         }
         return true;
@@ -60,7 +61,7 @@ namespace zenoio
         for (const auto& node : nodes.GetObject())
         {
             const std::string& nodeid = node.name.GetString();
-            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, ret.links);
+            const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, assets, ret.links, ret.references);
             ret.nodes.insert(std::make_pair(nodeid, nodeData));
         }
         return true;
@@ -71,7 +72,8 @@ namespace zenoio
         const std::string& nodeid,
         const rapidjson::Value& nodeObj,
         const zeno::AssetsData& assets,
-        zeno::LinksData& links)
+        zeno::LinksData& links,
+        zeno::ReferencesData& refs)
     {
         zeno::NodeData retNode;
 
@@ -93,10 +95,10 @@ namespace zenoio
             retNode.customUi = _parseCustomUI(nodeid, objValue["subnet-customUi"], links);
         }
         if (objValue.HasMember(iotags::params::node_inputs_objs)) {
-            _parseInputs(true, nodeid, cls, objValue[iotags::params::node_inputs_objs], retNode, links);
+            _parseInputs(true, nodeid, cls, objValue[iotags::params::node_inputs_objs], retNode, links, refs);
         }
         if (objValue.HasMember(iotags::params::node_inputs_primitive) && !objValue.HasMember("subnet-customUi")) {
-            _parseInputs(false, nodeid, cls, objValue[iotags::params::node_inputs_primitive], retNode, links);
+            _parseInputs(false, nodeid, cls, objValue[iotags::params::node_inputs_primitive], retNode, links, refs);
         }
         if (objValue.HasMember(iotags::params::node_outputs_primitive)) {
             _parseOutputs(false, nodeid, cls, objValue[iotags::params::node_outputs_primitive], retNode, links);
@@ -236,7 +238,8 @@ namespace zenoio
             }
             else if (outObj.IsObject())
             {
-                _parseSocket(false, false, bObjectParam, id, nodeName, outParam, outObj, ret, links);
+                zeno::ReferencesData refs;
+                _parseSocket(false, false, bObjectParam, id, nodeName, outParam, outObj, ret, links, refs);
             }
             else
             {
@@ -248,10 +251,11 @@ namespace zenoio
     void ZenReader::_parseInputs(
         const bool bObjectParam,
         const std::string& id,
-        const std::string& nodeName,
+        const std::string& nodeCls,
         const rapidjson::Value& inputs,
         zeno::NodeData& ret,
-        zeno::LinksData& links)
+        zeno::LinksData& links,
+        zeno::ReferencesData& refs)
     {
         for (const auto& inObj : inputs.GetObject())
         {
@@ -267,7 +271,7 @@ namespace zenoio
             else if (inputObj.IsObject())
             {
                 bool bSubnet = ret.cls == "Subnet";
-                _parseSocket(true, bSubnet, bObjectParam, id, nodeName, inSock, inputObj, ret, links);
+                _parseSocket(true, bSubnet, bObjectParam, id, nodeCls, inSock, inputObj, ret, links, refs);
             }
             else
             {
@@ -280,12 +284,13 @@ namespace zenoio
         const bool bInput,
         const bool bSubnetNode,
         const bool bObjectParam,
-        const std::string& id,
+        const std::string& nodename,
         const std::string& nodeCls,
         const std::string& sockName,
         const rapidjson::Value& sockObj,
         zeno::NodeData& ret,
-        zeno::LinksData& links)
+        zeno::LinksData& links,
+        zeno::ReferencesData& refs)
     {
         std::string sockProp;
         if (sockObj.HasMember("property"))
@@ -330,7 +335,17 @@ namespace zenoio
         bool bPrimitiveType = !bObjectParam;
 
         if (sockObj.HasMember("default-value")) {
-            defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType);
+            bool hasRef = false;
+            defl = zenoio::jsonValueToAny(sockObj["default-value"], paramType, &hasRef);
+            if (hasRef) {
+                std::set<std::string> params_with_refs;
+                auto iter = refs.find(nodename);
+                if (iter != refs.end()) {
+                    params_with_refs = iter->second;
+                }
+                params_with_refs.insert(sockName);
+                refs.insert_or_assign(nodename, params_with_refs);
+            }
         }
 
         if (sockObj.HasMember("socket-type") && sockObj["socket-type"].IsString()) {
@@ -352,7 +367,7 @@ namespace zenoio
                 const std::string& outnode = linkObj["out-node"].GetString();
                 const std::string& outsock = linkObj["out-socket"].GetString();
                 const std::string& outkey = linkObj["out-key"].GetString();
-                const std::string& innode = id;
+                const std::string& innode = nodename;
                 const std::string& insock = sockName;
                 const std::string& inkey = linkObj["in-key"].GetString();
                 std::string targetsock = "";

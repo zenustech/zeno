@@ -10,7 +10,8 @@ namespace zenoio
     {
     public:
         ZENO_API ZenReader();
-        ZENO_API bool importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData &links);
+        ZENO_API bool importNodes(const std::string& fn, zeno::NodesData& nodes, zeno::LinksData& links,
+            zeno::ReferencesData& refs);
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
 
@@ -23,7 +24,8 @@ namespace zenoio
             const std::string& inSock,
             const rapidjson::Value& sockObj,
             zeno::NodeData& ret,
-            zeno::LinksData& links);
+            zeno::LinksData& links,
+            zeno::ReferencesData& refs);
 
         void _parseInputs(
             const bool bObjectParam,
@@ -31,7 +33,8 @@ namespace zenoio
             const std::string& nodeName,
             const rapidjson::Value& inputs,
             zeno::NodeData& ret,
-            zeno::LinksData& links);
+            zeno::LinksData& links,
+            zeno::ReferencesData& refs);
 
         void _parseOutputs(
             const bool bObjectParam,
@@ -51,7 +54,8 @@ namespace zenoio
             const std::string& nodeid,
             const rapidjson::Value& nodeObj,
             const zeno::AssetsData& subgraphDatas,
-            zeno::LinksData& links);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
+            zeno::LinksData& links,
+            zeno::ReferencesData& refs);    //在parse节点的时候顺带把节点上的边信息也逐个记录到这里
 
         zeno::CustomUI _parseCustomUI(const std::string& id, const rapidjson::Value& customuiObj, zeno::LinksData& links);
         zeno::CustomUI _parseCustomUI(const rapidjson::Value& customuiObj);

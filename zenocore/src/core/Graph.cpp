@@ -345,6 +345,19 @@ ZENO_API void Graph::init(const GraphData& graph) {
             inNode->init_object_link(true, link.inParam, spLink, link.targetParam);
         }
     }
+
+    for (const auto& [nodename, refparams] : graph.references) {
+        std::shared_ptr<INode> refNode = getNode(nodename);
+        const auto& uuidpath = refNode->get_uuid_path();
+       
+        auto& refMgr = getSession().referManager;
+        for (auto paramname : refparams) {
+            auto refSources = refNode->resolveReferSource(paramname);
+            if (!refSources.empty()) {
+                refMgr->registerRelations(uuidpath, paramname, refSources);
+            }
+        }
+    }
 }
 
 void Graph::markDirtyWhenFrameChanged()

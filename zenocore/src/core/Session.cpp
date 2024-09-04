@@ -1023,7 +1023,7 @@ ZENO_API bool Session::getObjUIInfo(size_t hashcode, std::string_view& color, st
 ZENO_API void Session::initEnv(const zenoio::ZSG_PARSE_RESULT ioresult) {
     resetMainGraph();
     mainGraph->init(ioresult.mainGraph);
-    referManager->init(mainGraph);
+    //referManager->init(mainGraph);
 
     bool bDisableRun = m_bDisableRunning;
     m_bDisableRunning = true;

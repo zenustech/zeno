@@ -12,7 +12,7 @@ namespace zenoio {
         const std::string& subnetName);
 
     zeno::zvariant jsonValueToZVar(const rapidjson::Value& val, zeno::ParamType const& type);
-    zeno::reflect::Any jsonValueToAny(const rapidjson::Value& val, zeno::ParamType const& type);
+    zeno::reflect::Any jsonValueToAny(const rapidjson::Value& val, zeno::ParamType const& type, bool* hasRef = nullptr);
 
     void writeZVariant(zeno::zvariant var, zeno::ParamType type, RAPIDJSON_WRITER& writer);
     void writeAny(const zeno::reflect::Any& any, zeno::ParamType type, RAPIDJSON_WRITER& writer);

@@ -452,7 +452,7 @@ namespace zenoio
         return newGraph;
     }
 
-    zeno::reflect::Any jsonValueToAny(const rapidjson::Value& val, zeno::ParamType const& type)
+    zeno::reflect::Any jsonValueToAny(const rapidjson::Value& val, zeno::ParamType const& type, bool* hasRef)
     {
         zeno::reflect::Any defl;
         switch (type) {
@@ -469,6 +469,9 @@ namespace zenoio
             }
             else if (val.IsString()) {
                 std::string sval(val.GetString());
+                if (hasRef && sval.find("ref(") != std::string::npos) {
+                    *hasRef = true;
+                }
                 if (!sval.empty())
                     defl = sval;
                 else
@@ -490,6 +493,9 @@ namespace zenoio
             else if (val.IsString())
             {
                 std::string sval(val.GetString());
+                if (hasRef && sval.find("ref(") != std::string::npos) {
+                    *hasRef = true;
+                }
                 if (!sval.empty())
                     defl = sval;
                 else
@@ -513,8 +519,13 @@ namespace zenoio
         }
         case gParamType_String:
         {
-            if (val.IsString())
-                defl = (std::string)val.GetString();
+            if (val.IsString()) {
+                std::string sval = (std::string)val.GetString();
+                if (hasRef && sval.find("ref(") != std::string::npos) {
+                    *hasRef = true;
+                }
+                defl = sval;
+            }
             break;
         }
         case gParamType_Vec2i:
@@ -567,7 +578,11 @@ namespace zenoio
                        it seems that the k-frame is set on the whole vec,
                        may be we just want to k-frame for only one component.
                      */
-                    editvec.push_back(arr[i].GetString());
+                    std::string sval(arr[i].GetString());
+                    if (hasRef && sval.find("ref(") != std::string::npos) {
+                        *hasRef = true;
+                    }
+                    editvec.push_back(sval);
                 }
                 else {
                     zeno::log_error("unknown type value on vec parsing");

@@ -131,12 +131,14 @@ namespace zeno {
 
     using NodesData = std::map<std::string, NodeData>;
     using LinksData = std::vector<EdgeInfo>;
+    using ReferencesData = std::map<std::string, std::set<std::string>>;    /* refer-node-name, set(params) */
 
     struct GraphData {
         std::string name;   //the name like "subnet1", "subnet2", not a template name.
         std::string templateName;
         NodesData nodes;
         LinksData links;
+        ReferencesData references;  //potenial reference node.
         SubnetType type;
     };
 

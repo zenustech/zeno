@@ -2025,6 +2025,14 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.bVisible = param.bVisible;
                 sparam.type = param.type;
+
+                //resolve引用关系
+                //auto& refMgr = getSession().referManager;
+                //auto refSources = resolveReferSource(sparam.name);
+                //if (!refSources.empty()) {
+                //    refMgr->registerRelations(m_uuidPath, sparam.name, refSources);
+                //}
+
                 //graph记录$F相关节点
                 if (std::shared_ptr<Graph> spGraph = graph.lock())
                     spGraph->parseNodeParamDependency(&sparam, param.defl);

@@ -95,7 +95,8 @@ namespace zenoio
                 else if (inputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    _parseSocket(true, true, true, "", "", inSock, inputObj, ret, links);
+                    zeno::ReferencesData refs;
+                    _parseSocket(true, true, true, "", "", inSock, inputObj, ret, links, refs);
                 }
                 else
                 {
@@ -116,7 +117,8 @@ namespace zenoio
                 else if (inputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    _parseSocket(true, true, false, "", "", inSock, inputObj, ret, links);
+                    zeno::ReferencesData refs;
+                    _parseSocket(true, true, false, "", "", inSock, inputObj, ret, links, refs);
                 }
                 else
                 {
@@ -135,7 +137,8 @@ namespace zenoio
                 else if (outputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    _parseSocket(false, true, false, "", "", outSock, outputObj, ret, links);
+                    zeno::ReferencesData refs;
+                    _parseSocket(false, true, false, "", "", outSock, outputObj, ret, links, refs);
                 }
                 else
                 {
@@ -157,7 +160,8 @@ namespace zenoio
                 else if (outputObj.IsObject())
                 {
                     zeno::LinksData links;
-                    _parseSocket(false, true, true, "", "", outSock, outputObj, ret, links);
+                    zeno::ReferencesData refs;
+                    _parseSocket(false, true, true, "", "", outSock, outputObj, ret, links, refs);
                 }
                 else
                 {

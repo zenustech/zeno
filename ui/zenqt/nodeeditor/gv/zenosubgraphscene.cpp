@@ -616,7 +616,8 @@ void ZenoSubGraphScene::paste(QPointF pos)
         zenoio::ZenReader reader;
         const QString& strJson = pMimeData->text();
         std::pair<zeno::NodesData, zeno::LinksData> datas;
-        reader.importNodes(strJson.toStdString(), datas.first, datas.second);
+        zeno::ReferencesData refs;
+        reader.importNodes(strJson.toStdString(), datas.first, datas.second, refs);
         //UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
 
         //todo: ret value for api.
