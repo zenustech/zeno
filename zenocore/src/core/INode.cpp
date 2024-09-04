@@ -861,10 +861,10 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
     {
         const std::string& source_node_uuidpath = refSource.first;
         auto spNode = getSession().mainGraph->getNodeByUuidPath(source_node_uuidpath);
-        assert(spNode);
-        GraphException::translated([&] {
-            spNode->doApply();
-        }, spNode.get());
+        std::shared_ptr<Graph> spSrcGraph = spNode->graph.lock();
+        assert(spSrcGraph);
+        auto nodename = spNode->get_name();
+        spSrcGraph->applyNode(nodename);
         //后续执行ref函数的时候，上述节点的计算结果已经出来了
     }
 
@@ -1607,6 +1607,8 @@ ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any n
     if (!isAnyEqual(spParam.defl, new_value))
     {
         auto old_value = spParam.defl;
+        auto oldRefSources = resolveReferSource(spParam.name);
+
         spParam.defl = new_value;
 
         std::shared_ptr<Graph> spGraph = graph.lock();
@@ -1620,6 +1622,14 @@ ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any n
         auto refSources = resolveReferSource(spParam.name);
         if (!refSources.empty()) {
             refMgr->registerRelations(m_uuidPath, spParam.name, refSources);
+        }
+        else if (!oldRefSources.empty()){
+            //如果之前已经注册了引用，就移除
+            for (auto oldRefSource : oldRefSources) {
+                auto sourcenode = oldRefSource.first;
+                auto sourceparam = oldRefSource.second;
+                refMgr->unregisterRelations(sourcenode, sourceparam, m_uuidPath, spParam.name);
+            }
         }
 
         //当前节点的这个参数可能被引用，需要找到所有引用者并标脏它们
@@ -2035,7 +2045,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
 
                 //graph记录$F相关节点
                 if (std::shared_ptr<Graph> spGraph = graph.lock())
-                    spGraph->parseNodeParamDependency(&sparam, param.defl);
+                    spGraph->parseNodeParamDependency(&sparam, sparam.defl);
             }
         }
     }

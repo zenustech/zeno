@@ -242,13 +242,36 @@ namespace zeno {
         }
     }
 
-    void zeno::ReferManager::registerRelations(
+    bool ReferManager::unregisterRelations(
+        const std::string& refsource_node,
+        const std::string& refsource_param,
+        const std::string& refnode,
+        const std::string& refparam
+    )
+    {
+        auto iterSourceNode = m_referInfos.find(refsource_node);
+        if (iterSourceNode == m_referInfos.end())
+            return false;
+
+        auto iterSourceParam = iterSourceNode->second.find(refsource_param);
+        if (iterSourceParam == iterSourceNode->second.end())
+            return false;
+
+        std::string path = refnode + '/' + refparam;
+        if (iterSourceParam->second.find(path) == iterSourceParam->second.end())
+            return false;
+
+        iterSourceParam->second.erase(path);
+        return true;
+    }
+
+    bool zeno::ReferManager::registerRelations(
         const std::string& refnode_uuidpath,
         const std::string& referparam,
         const std::set<std::pair<std::string, std::string>>& referSources)
     {
         if (m_bModify)
-            return;
+            return true;
 
         m_bModify = true;
         //get all refered params
@@ -279,24 +302,8 @@ namespace zeno {
             addReferInfo(referSources_add, uuid_param);
         }
         m_bModify = false;
+        return true;
     }
-
-    bool ReferManager::isReferSelf(const std::string& uuid_path, const std::string& param) const
-    {
-        auto uuid_param = uuid_path + "/" + param;
-        auto referSelf = [uuid_param, this](const auto& referSelf, const std::string& key)->bool {
-            auto referedParams = getAllReferedParams(key);
-            for (auto& it : referedParams)
-            {
-                auto path = it.first + "/" + it.second;
-                if (path == uuid_param || referSelf(referSelf, path))
-                    return true;
-            }
-            return false;
-        };
-        return referSelf(referSelf, uuid_param);
-    }
-
 
     void ReferManager::updateDirty(const std::string& uuid_path_sourcenode, const std::string& param)
     {
@@ -306,14 +313,9 @@ namespace zeno {
             auto param_it = iter->second.find(param);
             if (param_it != iter->second.end())
             {
-                if (isReferSelf(uuid_path_sourcenode, param))
-                {
-                    zeno::log_error("{} refer loop", param);
-                    return;
-                }
                 for (auto& path : param_it->second)
                 {
-                    int idx = path.find_last_of("/");
+                    size_t idx = path.find_last_of("/");
                     auto nodePath = path.substr(0, idx);
                     auto param = path.substr(idx + 1, path.size() - idx);
                     auto objPath = zeno::strToObjPath(nodePath);

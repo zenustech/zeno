@@ -81,19 +81,22 @@ ZENO_API void Graph::completeNode(std::string const &node_name) {
 ZENO_API bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
+
+    if (this->visited.find(uuid) != this->visited.end()) {
+        throw makeError<UnimplError>("cycle reference occurs!");
+    }
+
+    this->visited.insert(uuid);
+    scope_exit sp([=] {this->visited.erase(uuid); });
+
     GraphException::translated([&] {
         node->doApply();
     }, node);
+
     return true;
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &nodes) {
-    ctx = std::make_unique<Context>();
-
-    scope_exit _{[&] {
-        ctx = nullptr;
-    }};
-
     for (auto const& node_name: nodes) {
         applyNode(node_name);
     }

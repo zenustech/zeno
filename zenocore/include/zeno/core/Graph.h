@@ -161,6 +161,9 @@ private:
 
     std::set<std::string> m_viewnodes;
     std::string m_name;
+
+    std::set<std::string> visited;  //check cycle reference
+
     const bool m_bAssets;
 };
 

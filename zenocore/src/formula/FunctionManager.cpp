@@ -1616,7 +1616,8 @@ namespace zeno {
 
                 idx = nodePath.find('.');
                 if (idx == std::string::npos) {
-                    throw makeError<UnimplError>("no param name when resolve ref path");
+                    zeno::log_warn("no param name when resolve ref path");
+                    return {};
                 }
                 std::string nodename = nodePath.substr(0, idx);
                 std::string parampath = nodePath.substr(idx + 1);
