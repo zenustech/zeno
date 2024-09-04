@@ -988,6 +988,9 @@ namespace zenoio
                         if constexpr (std::is_same_v<T, int>) {
                             writer.Int(arg);
                         }
+                        else if constexpr (std::is_same_v<T, std::string>) {
+                            writer.String(arg.c_str());
+                        }
                         else {
                             assert(false);
                             zeno::log_error("type error when writing param defl value");
@@ -1008,6 +1011,9 @@ namespace zenoio
                         using T = std::decay_t<decltype(arg)>;
                         if constexpr (std::is_same_v<T, float>) {
                             writer.Double(arg);
+                        }
+                        else if constexpr (std::is_same_v<T, std::string>) {
+                            writer.String(arg.c_str());
                         }
                         else {
                             assert(false);

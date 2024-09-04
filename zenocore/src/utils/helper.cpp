@@ -226,39 +226,56 @@ namespace zeno {
         if (anyType == gParamType_PrimVariant || anyType == gParamType_VecEdit)
             return true;
 
-        if (anyType != type)
-            return false;
-
         if (type == gParamType_Int) {
+            if (anyType == gParamType_String) {
+                val = PrimVar(any_cast<std::string>(val));
+                return true;
+            }
             val = PrimVar(any_cast<int>(val));
+            return true;
         }
         else if (type == gParamType_Float) {
+            if (anyType == gParamType_String) {
+                val = PrimVar(any_cast<std::string>(val));
+                return true;
+            }
             val = PrimVar(any_cast<float>(val));
+            return true;
         }
         else if (type == gParamType_Vec2f) {
             auto& vec2 = any_cast<vec2f>(val);
             val = vecvar{ vec2[0], vec2[1] };
+            return true;
         }
         else if (type == gParamType_Vec2i) {
             auto& vec2 = any_cast<vec2i>(val);
             val = vecvar{ vec2[0], vec2[1] };
+            return true;
         }
         else if (type == gParamType_Vec3i) {
             auto& vec3 = any_cast<vec3i>(val);
             val = vecvar{ vec3[0], vec3[1], vec3[2] };
+            return true;
         }
         else if (type == gParamType_Vec3f) {
             auto& vec3 = any_cast<vec3f>(val);
             val = vecvar{ vec3[0], vec3[1], vec3[2] };
+            return true;
         }
         else if (type == gParamType_Vec4i) {
             auto& vec4 = any_cast<vec4i>(val);
             val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
+            return true;
         }
         else if (type == gParamType_Vec4f) {
             auto& vec4 = any_cast<vec4f>(val);
             val = vecvar{ vec4[0], vec4[1], vec4[2], vec4[3] };
+            return true;
         }
+
+        if (anyType != type)
+            return false;
+
         return true;
     }
 
