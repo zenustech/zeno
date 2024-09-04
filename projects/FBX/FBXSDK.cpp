@@ -16,6 +16,8 @@
 #include "zeno/utils/scope_exit.h"
 #include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/utils/string.h"
+#include "zeno/utils/arrayindex.h"
+#include "zeno/utils/variantswitch.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -1475,7 +1477,82 @@ static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
     }
     return boneNames;
 }
+struct BoneSetAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("skeleton");
+        auto value = get_input<NumericObject>("value");
+        auto attr = get_input2<std::string>("attr");
+        auto type = get_input2<std::string>("type");
+        auto boneName = get_input2<std::string>("boneName");
+        auto boneNameMapping = getBoneNameMapping(prim.get());
+        auto index = boneNameMapping[boneName];
 
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              auto val = value->get<T>();
+              auto &attr_arr = prim->add_attr<T>(attr);
+              if (index < attr_arr.size()) {
+                  attr_arr[index] = val;
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(BoneSetAttr,
+{ /* inputs: */ {
+    "skeleton",
+    {"string", "boneName", ""},
+    {"int", "value", "0"},
+    {"string", "attr", ""},
+    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+}, /* outputs: */ {
+   "prim",
+}, /* params: */ {
+}, /* category: */ {
+   "FBXSDK",
+}});
+struct BoneGetAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("skeleton");
+        auto attr = get_input2<std::string>("attr");
+        auto type = get_input2<std::string>("type");
+        auto boneName = get_input2<std::string>("boneName");
+        auto boneNameMapping = getBoneNameMapping(prim.get());
+        auto index = boneNameMapping[boneName];
+
+        auto value = std::make_shared<NumericObject>();
+
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+              auto &attr_arr = prim->attr<T>(attr);
+              if (index < attr_arr.size()) {
+                  value->set<T>(attr_arr[index]);
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("value", std::move(value));
+    }
+};
+ZENDEFNODE(BoneGetAttr,
+{ /* inputs: */ {
+    "skeleton",
+    {"string", "boneName", ""},
+    {"string", "attr", ""},
+    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+}, /* outputs: */ {
+   "value",
+}, /* params: */ {
+}, /* category: */ {
+   "FBXSDK",
+}});
 static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zeno::PrimitiveObject* skeleton) {
     std::vector<int> ordering;
     std::set<int> ordering_set;
