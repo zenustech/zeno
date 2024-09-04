@@ -150,7 +150,7 @@ inline void createContext()
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
-inline uint CachedPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
