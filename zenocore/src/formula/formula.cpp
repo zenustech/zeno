@@ -84,11 +84,6 @@ float Formula::callRef(const std::string& ref) {
     std::string uuid_path = zeno::objPathToStr(pNode->get_uuid_path());
     std::regex rgx("(\\.x|\\.y|\\.z|\\.w)$");
     std::string paramName = std::regex_replace(param, rgx, "");
-    if (zeno::getSession().referManager->isReferSelf(uuid_path, paramName))
-    {
-        zeno::log_error("{} refer loop", path);
-        return NAN;
-    }
     if (pNode->requireInput(param))
     {
         //refer float
