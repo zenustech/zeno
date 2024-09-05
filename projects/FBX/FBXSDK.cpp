@@ -18,6 +18,7 @@
 #include "zeno/utils/string.h"
 #include "zeno/utils/arrayindex.h"
 #include "zeno/utils/variantswitch.h"
+#include "zeno/utils/eulerangle.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,6 +26,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include "DualQuaternion.h"
+#include "zeno/extra/TempNode.h"
+#include "magic_enum.hpp"
 
 #ifdef ZENO_FBXSDK
 #include <fbxsdk.h>
@@ -2701,6 +2704,9 @@ struct IkSolver : INode {
                     yLimit[index] = item->yLimit;
                     zLimit[index] = item->zLimit;
                 }
+                else {
+                    zeno::log_warn("joint limit: joint {} missing", item->boneName);
+                }
             }
         }
         std::vector<float> theta;
@@ -2825,6 +2831,86 @@ ZENDEFNODE(IkJointConstraints, {
     },
     {
         "Skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct PrimBindOneBone : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        prim->userData().set2("boneName_count", 1);
+        prim->userData().set2("boneName_0", get_input2<std::string>("boneName"));
+        auto &boneName_0 = prim->add_attr<int>("boneName_0");
+        std::fill(boneName_0.begin(), boneName_0.end(), 0);
+        auto &boneWeight_0 = prim->add_attr<float>("boneWeight_0");
+        std::fill(boneWeight_0.begin(), boneWeight_0.end(), 1.0f);
+        set_output2("prim", prim);
+    }
+};
+ZENDEFNODE(PrimBindOneBone, {
+    {
+        "prim",
+        {"string", "boneName", ""},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct PrimDeformByOneBone : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto skeleton = get_input2<PrimitiveObject>("skeleton");
+        auto boneName = get_input2<std::string>("boneName");
+        auto useCustomPivot = get_input2<bool>("useCustomPivot");
+        auto pivot = get_input2<vec3f>("pivot");
+        if (useCustomPivot == false) {
+            auto outs = zeno::TempNodeSimpleCaller("PrimReduction")
+                    .set2("prim", prim)
+                    .set2("attrName", "pos")
+                    .set2("op", "avg")
+                    .call();
+            pivot = outs.get2<zeno::vec3f>("result");
+        }
+        auto eularAngleXYZ = bit_cast<glm::vec3>(get_input2<vec3f>("rotation"));
+        glm::mat4 matRotate = EulerAngle::rotate(EulerAngle::RotationOrder::YXZ, EulerAngle::Measure::Degree, eularAngleXYZ);
+        glm::mat4 matTrans = glm::translate(-bit_cast<glm::vec3>(pivot));
+        auto nameMapping = getBoneNameMapping(skeleton.get());
+        auto boneMatrix = getBoneMatrix(skeleton.get());
+        glm::mat4 transform(1);
+        if (nameMapping.count(boneName)) {
+            auto mat = boneMatrix[nameMapping[boneName]];
+            transform = mat * matTrans * matRotate;
+            auto vert_count = prim->verts.size();
+            #pragma omp parallel for
+            for (auto i = 0; i < vert_count; i++) {
+                prim->verts[i] = transform_pos(transform, prim->verts[i]);
+            }
+            if (prim->verts.attr_is<vec3f>("nrm")) {
+                auto &nrms = prim->verts.attr<vec3f>("nrm");
+                #pragma omp parallel for
+                for (auto i = 0; i < vert_count; i++) {
+                    nrms[i] = transform_nrm(transform, nrms[i]);
+                }
+            }
+        }
+        set_output2("prim", prim);
+    }
+};
+ZENDEFNODE(PrimDeformByOneBone, {
+    {
+        "prim",
+        "skeleton",
+        {"string", "boneName", ""},
+        {"bool", "useCustomPivot", "0"},
+        {"vec3f", "pivot", "0, 0, 0"},
+        {"vec3f", "rotation", "0, 0, 0"},
+    },
+    {
+        "prim",
     },
     {},
     {"FBXSDK"},
