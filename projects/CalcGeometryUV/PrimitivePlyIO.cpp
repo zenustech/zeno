@@ -18,6 +18,7 @@
 
 static void readply(
     std::vector<zeno::vec3f> &verts,
+    std::vector<zeno::vec3f> &color,
     std::vector<zeno::vec3i> &zfaces,
     const std::string & filepath
 ) {
@@ -36,9 +37,18 @@ static void readply(
         tinyply::PlyFile file;
         file.parse_header(*file_stream);
 
-        std::shared_ptr<tinyply::PlyData> vertices, faces;
+        std::shared_ptr<tinyply::PlyData> vertices, r,g,b, faces;
 
         try { vertices = file.request_properties_from_element("vertex", { "x", "y", "z" }); }
+        catch (const std::exception & e) { std::cerr << "tinyply exception: " << e.what() << std::endl; }
+
+        try { r = file.request_properties_from_element("vertex", {"red"}); }
+        catch (const std::exception & e) { std::cerr << "tinyply exception: " << e.what() << std::endl; }
+
+        try { g = file.request_properties_from_element("vertex", {"green"}); }
+        catch (const std::exception & e) { std::cerr << "tinyply exception: " << e.what() << std::endl; }
+
+        try { b = file.request_properties_from_element("vertex", {"blue"}); }
         catch (const std::exception & e) { std::cerr << "tinyply exception: " << e.what() << std::endl; }
 
         try { faces = file.request_properties_from_element("face", { "vertex_indices" }, 3); }
@@ -59,6 +69,30 @@ static void readply(
                 verts.emplace_back(v[0], v[1], v[2]);
             }
         }
+
+        if(r->count>0)
+        {
+          color.resize(verts.size());
+          if(r->t == tinyply::Type::UINT8 || r->t ==  tinyply::Type::INT8)
+          {
+            std::vector<uint8_t> rr;
+            std::vector<uint8_t> gg;
+            std::vector<uint8_t> bb;
+            rr.resize(r->count);
+            gg.resize(g->count);
+            bb.resize(b->count);
+            std::memcpy(rr.data(), r->buffer.get(), r->count );
+            std::memcpy(gg.data(), g->buffer.get(), g->count );
+            std::memcpy(bb.data(), b->buffer.get(), b->count );
+
+            for(size_t i=0;i<rr.size();i++)
+            {
+              color[i] = zeno::vec3f(rr[i],gg[i],bb[i])/255.0f;
+            }
+          }
+        }
+
+
         const size_t numFacesBytes = faces->buffer.size_bytes();
         if (faces->t == tinyply::Type::INT32 || faces->t == tinyply::Type::UINT32) {
             zfaces.resize(faces->count);
@@ -89,8 +123,9 @@ struct ReadPlyPrimitive : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &pos = prim->verts;
+        auto &clr = prim->add_attr<zeno::vec3f>("clr");
         auto &tris = prim->tris;
-        readply(pos, tris, path);
+        readply(pos, clr, tris, path);
         prim->resize(pos.size());
         set_output("prim", std::move(prim));
     }
