@@ -1048,7 +1048,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     const auto& referMgr = getSession().referManager;
     std::string path = zeno::objPathToStr(spNode->get_path());
     auto objPath = zeno::objPathToStr(spNode->get_uuid_path());
-    referMgr->removeReference(path, objPath);
+    referMgr->removeReference(objPath);
     CALLBACK_NOTIFY(removeNode, name)
     return true;
 }

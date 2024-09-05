@@ -1625,8 +1625,9 @@ namespace zeno {
                 std::string nodeAbsPath = graphAbsPath + '/' + nodename;
                 std::shared_ptr<INode> spNode = zeno::getSession().mainGraph->getNodeByPath(nodeAbsPath);
                 if (!spNode) {
-                    //unresolve node.
-                    zeno::log_warn("unresolve node");
+                    //unresolve node. 也有一种可能，就是引用源调整名字，然后同步到各个引用节点，引用节点的参数还是
+                    // 旧的，所以在这里resolve不到。
+                    //zeno::log_warn("unresolve node");
                     return {};
                 }
 

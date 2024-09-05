@@ -12,6 +12,7 @@
 
 
 namespace zeno {
+
     ReferManager::ReferManager() : m_bModify(false)
     {
     }
@@ -20,136 +21,25 @@ namespace zeno {
     {
     }
 
-    void ReferManager::init(const std::shared_ptr<Graph>& pGraph)
-    {
-        for (auto& [key, spNode] : pGraph->m_nodes)
-        {
-            if (std::shared_ptr<SubnetNode> subnetNode = std::dynamic_pointer_cast<SubnetNode>(spNode))
-            {
-                init(subnetNode->subgraph);
-            }
-            auto objPath = spNode->get_uuid_path();
-            auto uuid_path = zeno::objPathToStr(objPath);
-            auto namePath = spNode->get_path();
-            namePath.pop_back();
-            auto currPath = zeno::objPathToStr(namePath);
-            auto params = spNode->get_input_primitive_params();
-            for (ParamPrimitive& param : params)
-            {
-                auto paths = referPaths(currPath, param.defl);
-                if (!paths.empty())
-                {
-                    auto uuid_param = uuid_path + "/" + param.name;
-                    addReferInfo(paths, uuid_param);
-                }
-            }
-        }
-    }
-
-    void zeno::ReferManager::removeReference(const std::string& path, const std::string& uuid_path, const std::string& param)
+    void ReferManager::removeReference(const std::string& uuid_path, const std::string& param)
     {
         //若删除的节点/参数被引用了
         std::set<std::string> updateParams;
         bool bRemoveNode = param.empty();
-        for (auto iter = m_referInfos.begin(); iter != m_referInfos.end();)
-        {
-            if ((bRemoveNode && !starts_with(iter->first, uuid_path)) || (!bRemoveNode && iter->first != uuid_path))
-            {
-                iter++;
-                continue;
-            }
-            if (bRemoveNode)
-            {
-                for (auto& [param_key, paths] : iter->second)
-                {
-                    updateParams.insert(paths.begin(), paths.end());
-                }
-                iter = m_referInfos.erase(iter);
-                continue;
-            }
-            else
-            {
-                auto param_it = iter->second.find(param);
-                if (param_it != iter->second.end())
-                {
-                    updateParams.insert(param_it->second.begin(), param_it->second.end());
-                    m_referInfos[iter->first].erase(param_it);
-                    if (m_referInfos[iter->first].empty())
-                    {
-                        iter = m_referInfos.erase(iter);
-                        continue;
-                    }
-                }
-            }
-            iter++;
-        }
-        for (auto& uuid_param : updateParams)
-        {
-            int idx = uuid_param.find_last_of("/");
-            auto path_str = uuid_param.substr(0, idx);
-            auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
-            auto objPath = zeno::strToObjPath(path_str);
-            auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
-            if (!spNode)
-                continue;
 
-            bool bExist = false;
-            ParamPrimitive paramprim = spNode->get_input_prim_param(param, &bExist);
-            if (!bExist)
-                continue;
+        auto iterSourceNode = m_referInfos.find(uuid_path);
+        if (iterSourceNode == m_referInfos.end())
+            return;
 
-            std::string currPath = zeno::objPathToStr(spNode->get_path());
-            currPath = currPath.substr(0, currPath.find_last_of("/"));
-            auto val = AnyToZVariant(paramprim.defl);
-            if (updateParamValue(path, "0", currPath, val))
-            {
-                spNode->update_param(param, paramprim.defl);
-                zeno::log_warn("the value of {} has been reseted", uuid_param);
-            }
+        if (bRemoveNode) {
+            m_referInfos.erase(iterSourceNode);
+            return;
         }
-        //若删除的节点/参数引用了其他参数
-        for (auto& iter = m_referInfos.begin(); iter != m_referInfos.end();)
+        else
         {
-            for (auto param_it = iter->second.begin(); param_it != iter->second.end();)
-            {
-                for (auto it = param_it->second.begin(); it != param_it->second.end();)
-                {
-                    std::string left_str = *it;
-                    std::string right_str;
-                    if (bRemoveNode)
-                    {
-                        left_str = left_str.substr(0, left_str.find_last_of("/"));
-                        right_str = uuid_path;
-                    }
-                    else
-                    {
-                        right_str = uuid_path + "/" + param;
-                    }
-                    if (starts_with(left_str, right_str))
-                    {
-                        it = m_referInfos[iter->first][param_it->first].erase(it);
-                    }
-                    else
-                    {
-                        it++;
-                    }
-                }
-                if (m_referInfos[iter->first][param_it->first].empty())
-                {
-                    param_it = m_referInfos[iter->first].erase(param_it);
-                }
-                else
-                {
-                    param_it++;
-                }
-            }
-            if (m_referInfos[iter->first].empty())
-            {
-                iter = m_referInfos.erase(iter);
-            }
-            else
-            {
-                iter++;
+            auto iterParam = iterSourceNode->second.find(param);
+            if (iterParam != iterSourceNode->second.end()) {
+                iterSourceNode->second.erase(iterParam);
             }
         }
     }
@@ -220,20 +110,14 @@ namespace zeno {
             auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
             auto objPath = zeno::strToObjPath(uuid_path);
             auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
-            if (!spNode)
-            {
-                continue;
-            }
+            assert(spNode);
             bool bExist = false;
             ParamPrimitive primparam = spNode->get_input_prim_param(param, &bExist);
-            if (!bExist) {
-                continue;
-            }
+            assert(bExist);
 
             std::string currentPath = zeno::objPathToStr(spNode->get_path());
-            currentPath = currentPath.substr(0, currentPath.find_last_of("/"));
-            auto val = AnyToZVariant(primparam.defl);
-            bool bUpate = updateParamValue(oldPath, newPath, currentPath, val);
+            std::string currGraph = currentPath.substr(0, currentPath.find_last_of("/"));
+            bool bUpate = updateParamValue(oldPath, newPath, currGraph, primparam.defl);
             if (bUpate)
             {
                 //update param value
@@ -320,85 +204,95 @@ namespace zeno {
                     auto param = path.substr(idx + 1, path.size() - idx);
                     auto objPath = zeno::strToObjPath(nodePath);
                     auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
-                    if (!spNode)
-                        continue;
+                    assert(spNode);
                     if (!spNode->is_dirty())
-                        spNode->mark_dirty(true);
-                    //该节点被其他参数引用的情况下，也要标脏
-                    updateDirty(nodePath, param);
-                }
-            }
-        }
-    }
-
-    std::set <std::pair<std::string, std::string>> ReferManager::referPaths(const std::string& currPath, const zeno::reflect::Any& val) const
-    {
-        std::set <std::pair<std::string, std::string>> res;
-        zvariant zvar = AnyToZVariant(val);
-        std::set<std::string> paths = zeno::getReferPaths(zvar);
-        for (auto& val : paths)
-        {
-            std::string absolutePath = zeno::absolutePath(currPath, val);
-            int idx = absolutePath.find_last_of("/");
-            std::string path = absolutePath.substr(0, idx);
-            std::string param = absolutePath.substr(idx + 1, val.size() - idx);
-            if (auto spNode = getSession().mainGraph->getNodeByPath(path))
-            {
-                path = zeno::objPathToStr(spNode->get_uuid_path());
-                res.emplace(std::make_pair(path, param));
-            }
-        }
-        return res;
-    }
-
-
-    bool ReferManager::updateParamValue(const std::string& oldVal, const std::string& newVal, const std::string& currentPath, zvariant& arg) const
-    {
-        bool bUpdate = false;
-        std::visit([oldVal, newVal, currentPath, &bUpdate](auto&& arg) {
-            auto updateValue = [oldVal, newVal, currentPath, &bUpdate](auto&& arg) {
-                auto matchs = zeno::getReferPath(arg);
-                for (const auto& str : matchs)
-                {
-                    std::string absolutePath = zeno::absolutePath(currentPath, str);
-                    if (absolutePath.find(oldVal) != std::string::npos)
                     {
-                        std::regex num_rgx("[0-9]+");
-                        //如果是数字，需要将整个refer替换
-                        if (std::regex_match(newVal, num_rgx))
-                        {
-                            arg = newVal;
-                            bUpdate = true;
-                            break;
-                        }
-                        else
-                        {
-                            std::regex pattern(oldVal);
-                            std::string format = regex_replace(absolutePath, pattern, newVal);
-                            //relative path
-                            if (absolutePath != str)
-                            {
-                                format = zeno::relativePath(currentPath, format);
-                            }
-                            std::regex rgx(str);
-                            arg = regex_replace(arg, rgx, format);
-                        }
-                        bUpdate = true;
+                        spNode->mark_dirty(true);
+                        //该节点被其他参数引用的情况下，也要标脏
+                        updateDirty(nodePath, param);
                     }
                 }
-            };
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, std::string>) {
-                updateValue(arg);
             }
-            else if constexpr (std::is_same_v<T, zeno::vec2s> || std::is_same_v<T, zeno::vec3s> || std::is_same_v<T, zeno::vec4s>)
+        }
+    }
+
+    bool ReferManager::updateParamValue(
+            const std::string& oldVal,
+            const std::string& newVal,
+            const std::string& currentPath,
+            zeno::reflect::Any& adjustParamVal) const
+    {
+        bool bUpdate = false;
+
+        auto fUpdateParamDefl = [oldVal, newVal, currentPath, &bUpdate](std::string& arg) {
+            auto matchs = zeno::getReferPath(arg);
+            for (const auto& str : matchs)
             {
-                for (int i = 0; i < arg.size(); i++)
+                std::string absolutePath = zeno::absolutePath(currentPath, str);
+                if (absolutePath.find(oldVal) != std::string::npos)
                 {
-                    updateValue(arg[i]);
+                    std::regex num_rgx("[0-9]+");
+                    //如果是数字，需要将整个refer替换
+                    if (std::regex_match(newVal, num_rgx))
+                    {
+                        arg = newVal;
+                        bUpdate = true;
+                        break;
+                    }
+                    else
+                    {
+                        std::regex pattern(oldVal);
+                        std::string format = regex_replace(absolutePath, pattern, newVal);
+                        //relative path
+                        if (absolutePath != str)
+                        {
+                            format = zeno::relativePath(currentPath, format);
+                        }
+                        std::regex rgx(str);
+                        arg = regex_replace(arg, rgx, format);
+                    }
+                    bUpdate = true;
                 }
             }
-            }, arg);
+        };
+
+        assert(adjustParamVal.has_value());
+        ParamType type = adjustParamVal.type().hash_code();
+        if (type == zeno::types::gParamType_PrimVariant) {
+            PrimVar& var = zeno::reflect::any_cast<PrimVar>(adjustParamVal);
+            std::visit([&](auto& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    fUpdateParamDefl(arg);
+                }
+                else {
+                    assert(false);
+                    zeno::log_warn("error param type");
+                }
+            }, var);
+            if (bUpdate) {
+                adjustParamVal = zeno::reflect::move(var);
+            }
+        }
+        else if (type == zeno::types::gParamType_VecEdit) {
+            vecvar var = zeno::reflect::any_cast<vecvar>(adjustParamVal);
+            for (PrimVar& elem : var)
+            {
+                std::visit([&](auto& arg) {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, std::string>) {
+                        fUpdateParamDefl(arg);
+                    }
+                }, elem);
+            }
+            if (bUpdate) {
+                adjustParamVal = zeno::reflect::move(var);
+            }
+        }
+        else {
+            assert(false);
+            zeno::log_error("unknown param type of refer param");
+        }
         return bUpdate;
     }
 }
