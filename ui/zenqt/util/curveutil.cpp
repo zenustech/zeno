@@ -237,12 +237,25 @@ namespace curve_util
             //curve.cycleType = 0;
         }
         float x = timeline->value();
+        int count = 0;
+        for (auto rit = curve.cpbases.rbegin(); rit != curve.cpbases.rend(); ++rit) {
+            if (*rit > x) {
+                count++;
+            } else {
+                break;
+            }
+        }
         CURVE_POINT point = { QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED };
-        curve.cpbases.push_back(x);
-
         zeno::CurveData::ControlPoint pt;
         pt.v = y;
-        curve.cpoints.push_back(pt);
+        if (count == 0) {
+            curve.cpbases.push_back(x);
+            curve.cpoints.push_back(pt);
+        }
+        else {
+            curve.cpbases.insert(curve.cpbases.end() - count, x);
+            curve.cpoints.insert(curve.cpoints.end() - count, pt);
+        }
         updateHandler(curve);
     }
 

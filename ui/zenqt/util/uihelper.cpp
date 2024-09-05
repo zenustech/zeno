@@ -1715,7 +1715,6 @@ zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid)
             zeno::PrimVar primvar = zeno::reflect::any_cast<zeno::PrimVar>(anyVal);
             if (std::holds_alternative<zeno::CurveData>(primvar)) {
                 if (bValid) *bValid = true;
-                zeno::CurvesData curves;
                 curves.keys.insert({"x", std::get<zeno::CurveData>(primvar)});
                 return zeno::reflect::any_cast<zeno::CurvesData>(curves);
             }

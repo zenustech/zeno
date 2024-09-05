@@ -1428,9 +1428,4 @@ void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
     if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(pContrl)) {
         lineEdit->serKeyFrameStyle(val);
     }
-    if (GraphModel* model = QVariantPtr<GraphModel>::asPtr(m_idx.data(ROLE_GRAPH))) {
-        if (std::shared_ptr<zeno::INode> node = model->getWpNode(m_idx.data(ROLE_NODE_NAME).toString()).lock()) {
-            node->mark_dirty(true);
-        }
-    }
 }

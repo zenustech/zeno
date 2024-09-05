@@ -474,9 +474,7 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
             ZASSERT_EXIT(timeline);
             for (int i = 0; i < curvesdata.cpbases.size(); i++) {
                 if (curvesdata.cpbases[i] == timeline->value()) {
-                    zeno::CurveData::ControlPoint pt;
-                    pt.v = var;
-                    curvesdata.cpoints[i] = pt;
+                    curvesdata.cpoints[i].v = var;
                     exist = true;
                     break;
                 }
@@ -507,10 +505,8 @@ void ZCoreParamLineEdit::setKeyFrame(const QStringList& keys)
         switch (m_targetType)
         {
             case gParamType_Int:
-                var = std::get<int>(m_var);
-                break;
             case gParamType_Float:
-                var = std::get<float>(m_var);
+                var = this->text().toFloat();
                 break;
             case gParamType_String:
                 //获取formula结果
@@ -635,7 +631,10 @@ void ZCoreParamLineEdit::serKeyFrameStyle(QVariant qvar)
         return;
 
     QString text = UiHelper::variantToString(newVal);
-    setText(text);
+    if (this->text() != text) {
+        setText(text);
+        emit valueChanged(m_var);
+    }
     QVector<QString> properties = curve_util::getKeyFrameProperty(qvar);
     setProperty(g_setKey, properties.first());
     this->style()->unpolish(this);
