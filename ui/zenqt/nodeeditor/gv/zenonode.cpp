@@ -793,20 +793,20 @@ void ZenoNode::onParamDataChanged(const QModelIndex& topLeft, const QModelIndex&
                         if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pWidget))
                         {
                             QVariant newVal = deflValue;
-                            bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                            bool bKeyFrame = curve_util::getCurveValue(newVal);
                             if (bKeyFrame)
                                 pEditor->setVec(newVal, true, pScene);
-                            QVector<QString> properties = AppHelper::getKeyFrameProperty(deflValue);
+                            QVector<QString> properties = curve_util::getKeyFrameProperty(deflValue);
                             pEditor->updateProperties(properties);
                         }
                     }
                     else if (QGraphicsTextItem* pTextItem = qgraphicsitem_cast<QGraphicsTextItem*>(pControl))
                     {
                         QVariant newVal = deflValue;
-                        bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                        bool bKeyFrame = curve_util::getCurveValue(newVal);
                         if (bKeyFrame)
                             pTextItem->setPlainText(UiHelper::variantToString(newVal));
-                        QVector<QString> properties = AppHelper::getKeyFrameProperty(deflValue);
+                        QVector<QString> properties = curve_util::getKeyFrameProperty(deflValue);
                         pTextItem->setProperty(g_setKey, properties.first());
                     }
                 }
@@ -1063,7 +1063,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(const QModelIndex& paramIdx)
     QVariant newVal = deflVal;
     if (bFloat)
     {
-        AppHelper::getCurveValue(newVal);
+        curve_util::getCurveValue(newVal);
     }
     auto scene = this->scene();
     QGraphicsItem* pControl = zenoui::createItemWidget(newVal, ctrl, sockType, cbSet, scene, ctrlProps);
@@ -1898,7 +1898,7 @@ void ZenoNode::updateWhole()
 void ZenoNode::onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val)
 {
     QVariant newVal = val;
-    if (!AppHelper::getCurveValue(newVal))
+    if (!curve_util::getCurveValue(newVal))
         return;
     //vec
     if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pContrl))
@@ -1906,14 +1906,14 @@ void ZenoNode::onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val)
         if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pWidget))
         {
             pEditor->setVec(newVal);
-            QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+            QVector<QString> properties = curve_util::getKeyFrameProperty(val);
             pEditor->updateProperties(properties);
         }
     }
     else if (QGraphicsTextItem* pTextItem = qgraphicsitem_cast<QGraphicsTextItem*>(pContrl))
     {
         pTextItem->setPlainText(UiHelper::variantToString(newVal));
-        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        QVector<QString> properties = curve_util::getKeyFrameProperty(val);
         pTextItem->setProperty(g_setKey, properties.first());
     }
 }

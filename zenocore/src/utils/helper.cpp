@@ -426,6 +426,20 @@ namespace zeno {
         else if (zeno::reflect::get_type<zeno::vec4s>() == var.type()) {
             return zeno::reflect::any_cast<zeno::vec4s>(var);
         }
+        //else if (get_type<zeno::vecvar>() == var.type()) {
+        //    return any_cast<zeno::vecvar>(var);
+        //}
+        else if (get_type<zeno::PrimVar>() == var.type()) {
+            zeno::PrimVar primvar= any_cast<zeno::PrimVar>(var);
+            if (std::holds_alternative<int>(primvar)) {
+                return std::get<int>(primvar);
+            } else if (std::holds_alternative<float>(primvar)) {
+                return std::get<float>(primvar);
+            } else if (std::holds_alternative<std::string>(primvar)) {
+                return std::get<std::string>(primvar);
+            }
+            return zvariant();
+        } else 
         return zvariant();
     }
 

@@ -367,7 +367,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
         {
            QVector<int> keys;
             for (const zeno::ParamPrimitive& info : item->params->getInputs()) {
-                if (info.type != zeno::types::gParamType_Curve) {
+                if (!info.defl.has_value()) {
                     continue;
                 }
                 const QVariant& value = QVariant::fromValue(info.defl);
@@ -375,7 +375,7 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 bool bValid = false;
                 zeno::CurvesData curves = UiHelper::getCurvesFromQVar(value, &bValid);
                 if (curves.empty() || !bValid) {
-                    return QVariant();
+                    continue;
                 }
 
                 for (auto& [_, curve] : curves.keys) {

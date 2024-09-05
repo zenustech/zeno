@@ -1711,9 +1711,14 @@ zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid)
     zeno::CurvesData curves;
     if (qvar.canConvert<zeno::reflect::Any>()) {
         const auto& anyVal = qvar.value<zeno::reflect::Any>();
-        if (anyVal.has_value() && zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
-            if (bValid) *bValid = true;
-            return zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+        if (anyVal.has_value() && zeno::reflect::get_type<zeno::PrimVar>() == anyVal.type()) {
+            zeno::PrimVar primvar = zeno::reflect::any_cast<zeno::PrimVar>(anyVal);
+            if (std::holds_alternative<zeno::CurveData>(primvar)) {
+                if (bValid) *bValid = true;
+                zeno::CurvesData curves;
+                curves.keys.insert({"x", std::get<zeno::CurveData>(primvar)});
+                return zeno::reflect::any_cast<zeno::CurvesData>(curves);
+            }
         }
     }
     if (bValid) *bValid = false;

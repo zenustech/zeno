@@ -1,5 +1,11 @@
 #include "curveutil.h"
 #include "model/curvemodel.h"
+#include "zenoapplication.h"
+#include "widgets/ztimeline.h"
+#include "zenomainwindow.h"
+#include "zassert.h"
+#include "widgets/zveceditor.h"
+#include "util/uihelper.h"
 
 
 namespace curve_util
@@ -120,6 +126,7 @@ namespace curve_util
         curve.rg.xTo = _curve.rg.xTo;
         curve.rg.yFrom = _curve.rg.yFrom;
         curve.rg.yTo = _curve.rg.yTo;
+        curve.visible = _curve.visible;
 
         for (const CURVE_POINT& cp : _curve.points)
         {
@@ -212,5 +219,291 @@ namespace curve_util
             }
         }
         return ret;
+    }
+
+    void getDelfCurveData(zeno::CurveData& curve, float y, bool visible, const QString& key) {
+        curve.visible = visible;
+        zeno::CurveData::Range& rg = curve.rg;
+        rg.yFrom = rg.yFrom > y ? y : rg.yFrom;
+        rg.yTo = rg.yTo > y ? rg.yTo : y;
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline);
+        QPair<int, int> fromTo = timeline->fromTo();
+        rg.xFrom = fromTo.first;
+        rg.xTo = fromTo.second;
+        if (curve.cpoints.empty()) {
+            //curve.cycleType = 0;
+        }
+        float x = timeline->value();
+        CURVE_POINT point = { QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED };
+        curve.cpbases.push_back(x);
+
+        zeno::CurveData::ControlPoint pt;
+        pt.v = y;
+        curve.cpoints.push_back(pt);
+        updateHandler(curve);
+    }
+
+    void updateHandler(zeno::CurveData & _curve)
+    {
+        CURVE_DATA curve = curve_util::toLegacyCurve(_curve);
+        if (curve.points.size() > 1) {
+            qSort(curve.points.begin(), curve.points.end(),
+                [](const CURVE_POINT& p1, const CURVE_POINT& p2) { return p1.point.x() < p2.point.x(); });
+            float preX = curve.points.at(0).point.x();
+            for (int i = 1; i < curve.points.size(); i++) {
+                QPointF p1 = curve.points.at(i - 1).point;
+                QPointF p2 = curve.points.at(i).point;
+                float distance = fabs(p1.x() - p2.x());
+                float handle = distance * 0.2;
+                if (i == 1) {
+                    curve.points[i - 1].leftHandler = QPointF(-handle, 0);
+                    curve.points[i - 1].rightHandler = QPointF(handle, 0);
+                }
+                if (p2.y() < p1.y() && (curve.points[i - 1].rightHandler.x() < 0)) {
+                    handle = -handle;
+                }
+                curve.points[i].leftHandler = QPointF(-handle, 0);
+                curve.points[i].rightHandler = QPointF(handle, 0);
+            }
+        }
+        _curve = curve_util::fromLegacyCurve(curve);
+    }
+
+    void updateTimelineKeys(const QVector<int>& keys)
+    {
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline);
+        timeline->updateKeyFrames(keys);
+    }
+
+    QStringList getKeys(const QObject* obj, QVariant qvar, QWidget* pControl, QLabel* pLabel)
+    {
+        QStringList keys;
+        if (ZLineEdit* lineEdit = qobject_cast<ZLineEdit*>(pControl))     //control float
+        {
+            keys << "x";
+        }
+        else if (pLabel == obj)
+        {  //control label
+            if (qvar.canConvert<UI_VECTYPE>()) {
+                UI_VECTYPE vec = qvar.value<UI_VECTYPE>();
+                for (int i = 0; i < vec.size(); i++) {
+                    QString key = curve_util::getCurveKey(i);
+                    if (!key.isEmpty())
+                        keys << key;
+                }
+            }
+            else if (qvar.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id())
+            {
+                bool bValid = false;
+                zeno::CurvesData val = UiHelper::getCurvesFromQVar(qvar, &bValid);
+                if (val.empty() || !bValid) {
+                    return keys;
+                }
+
+                QStringList _keys;
+                for (auto& [skey, _] : val.keys) {
+                    _keys.append(QString::fromStdString(skey));
+                }
+                keys << _keys;
+            }
+        }
+        else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(pControl)) //control vec
+        {
+            int idx = vecEdit->getCurrentEditor();
+            QString key = curve_util::getCurveKey(idx);
+            if (!key.isEmpty())
+                keys << key;
+        }
+        return keys;
+    }
+
+    zeno::CurvesData getCurvesData(const QPersistentModelIndex& perIdx, const QStringList& keys) {
+        bool bValid = false;
+        const auto& qvar = perIdx.data(ROLE_PARAM_VALUE);
+        zeno::CurvesData val = UiHelper::getCurvesFromQVar(qvar, &bValid);
+        if (val.empty() || !bValid) {
+            return val;
+        }
+
+
+        zeno::CurvesData curves;
+        for (auto key : keys) {
+            std::string skey = key.toStdString();
+            if (val.keys.find(skey) != val.keys.end()) {
+                curves.keys[skey] = val.keys[skey];
+            }
+        }
+        return curves;
+    }
+
+    int getKeyFrameSize(const zeno::CurvesData& curves)
+    {
+        int size = 0;
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, false);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, false);
+        int frame = timeline->value();
+        for (auto& [key, curve] : curves.keys) {
+            for (const auto& _x : curve.cpbases) {
+                int x = (int)_x;
+                if ((x == frame) && curve.visible) {
+                    size++;
+                    break;
+                }
+            }
+        }
+        return size;
+    }
+
+    QVector<QString> getKeyFrameProperty(const QVariant& val)
+    {
+        QVector<QString> ret;
+        bool bValid = false;
+        zeno::CurvesData curves = UiHelper::getCurvesFromQVar(val, &bValid);
+        if (curves.empty() || !bValid)
+            return ret;
+
+        ret.resize(curves.size());
+
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, ret);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, ret);
+        for (int i = 0; i < ret.size(); i++)
+        {
+            QString property = "null";
+            const QString& key = curve_util::getCurveKey(i);
+            const std::string& skey = key.toStdString();
+            if (curves.contains(skey))
+            {
+                CURVE_DATA data = curve_util::toLegacyCurve(curves[skey]);
+                if (data.visible)
+                {
+                    property = "false";
+                    int x = timeline->value();
+                    for (const auto& p : data.points) {
+                        int px = p.point.x();
+                        if (px == x) {
+                            property = "true";
+                            break;
+                        }
+                    }
+                }
+                curves[skey] = curve_util::fromLegacyCurve(data);
+            }
+            ret[i] = property;
+        }
+
+        if (ret.isEmpty())
+            ret << "null";
+        return ret;
+    }
+
+    bool getCurveValue(QVariant& val)
+    {
+        bool bValid = false;
+        zeno::CurvesData curves = UiHelper::getCurvesFromQVar(val, &bValid);
+        if (curves.empty() || !bValid)
+            return false;
+
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, false);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, false);
+        int nFrame = timeline->value();
+        if (curves.size() > 1)
+        {
+            UI_VECTYPE newVal;
+            newVal.resize(curves.size());
+            for (int i = 0; i < newVal.size(); i++)
+            {
+                const auto& key = curve_util::getCurveKey(i).toStdString();
+                if (curves.contains(key))
+                {
+                    newVal[i] = curves[key].eval(nFrame);
+                }
+            }
+            val = QVariant::fromValue(newVal);
+            return true;
+        }
+        else if (curves.contains("x") && !curves["x"].cpoints.empty())
+        {
+            if (curves["x"].cpbases.size() == 1) {
+                val = QVariant::fromValue(curves["x"].cpoints[0].v);
+            }
+            else {
+                for (int i = 0; i < curves["x"].cpbases.size(); i++) {
+                    if (curves["x"].cpbases[i] == nFrame) {
+                        val = QVariant::fromValue(curves["x"].cpoints[i].v);
+                        return true;
+                    }
+                }
+                val = QVariant::fromValue(curves["x"].eval(nFrame));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool updateCurve(QVariant oldVal, QVariant& newValue)
+    {
+        bool bValid = false;
+        zeno::CurvesData curves = UiHelper::getCurvesFromQVar(oldVal, &bValid);
+        if (curves.empty() || !bValid)
+            return true;
+
+        bool bUpdate = false;
+        UI_VECTYPE datas;
+        //vec
+        if (newValue.canConvert<UI_VECTYPE>())
+        {
+            datas = newValue.value<UI_VECTYPE>();
+        }
+        //float
+        else
+        {
+            datas << newValue.toFloat();
+        }
+        UI_VECSTRING oldVec;
+        if (oldVal.canConvert<UI_VECSTRING>())
+        {
+            oldVec = oldVal.value<UI_VECSTRING>();
+        }
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, false);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, false);
+        int nFrame = timeline->value();
+        for (int i = 0; i < datas.size(); i++) {
+            auto key = curve_util::getCurveKey(i).toStdString();
+            if (curves.contains(key))
+            {
+                QPointF pos(nFrame, datas.at(i));
+                CURVE_DATA _curve = curve_util::toLegacyCurve(curves[key]);
+                if (curve_util::updateCurve(pos, _curve)) {
+                    curves[key] = curve_util::fromLegacyCurve(_curve);
+                    bUpdate = true;
+                }
+            }
+            else if (oldVec.size() > i && oldVec[i].toFloat() != datas[i])
+            {
+                bUpdate = true;
+                oldVec[i] = QString::number(datas[i]);
+                oldVal = QVariant::fromValue(oldVec);
+            }
+        }
+        if (bUpdate)
+        {
+            const auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(curves);
+            newValue = QVariant::fromValue(anyVal);
+        }
+        return bUpdate;
     }
 }

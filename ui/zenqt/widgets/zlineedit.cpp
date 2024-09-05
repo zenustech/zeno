@@ -10,6 +10,7 @@
 #include <zeno/formula/formula.h>
 #include <util/log.h>
 #include <zeno/utils/helper.h>
+#include "util/apphelper.h"
 
 
 ZLineEdit::ZLineEdit(QWidget* parent)
@@ -402,7 +403,14 @@ void ZLineEdit::focusOutEvent(QFocusEvent* event)
         disconnect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
         disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
     }
-    QLineEdit::focusOutEvent(event);
+    //右键显示keyframemenu导致的focusout不发出editfinish信号
+    if (event->reason() == Qt::PopupFocusReason) {
+        BlockSignalScope scp(this);
+        QLineEdit::focusOutEvent(event);
+    }
+    else {
+        QLineEdit::focusOutEvent(event);
+    }
 }
 
 
@@ -454,9 +462,32 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
         else if (m_targetType == gParamType_String) {
             m_var = newText.toStdString();
         }
-        else {
-            //TODO: curve case
-            ZASSERT_EXIT(false);
+        else if (m_targetType == gParamType_Curve) {
+            std::string xKey = "x";
+            zeno::CurveData curvesdata = std::get<zeno::CurveData>(m_var);
+
+            float var = this->text().toFloat();
+            bool exist = false;
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(mainWin);
+            ZTimeline* timeline = mainWin->timeline();
+            ZASSERT_EXIT(timeline);
+            for (int i = 0; i < curvesdata.cpbases.size(); i++) {
+                if (curvesdata.cpbases[i] == timeline->value()) {
+                    zeno::CurveData::ControlPoint pt;
+                    pt.v = var;
+                    curvesdata.cpoints[i] = pt;
+                    exist = true;
+                    break;
+                }
+            }
+            if (exist) {
+                m_var = curvesdata;
+            }
+            else {
+                setText(QString::number(curvesdata.eval(timeline->value())));
+                return;
+            }
         }
         emit valueChanged(m_var);
     });
@@ -465,4 +496,149 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
 zeno::PrimVar ZCoreParamLineEdit::getPrimVariant() const
 {
     return m_var;
+}
+
+void ZCoreParamLineEdit::setKeyFrame(const QStringList& keys)
+{
+    std::string xKey = "x";
+    zeno::CurvesData curvesdata;
+    float var = 0;
+    if (m_targetType != gParamType_Curve) {
+        switch (m_targetType)
+        {
+            case gParamType_Int:
+                var = std::get<int>(m_var);
+                break;
+            case gParamType_Float:
+                var = std::get<float>(m_var);
+                break;
+            case gParamType_String:
+                //获取formula结果
+                break;
+            default:
+                break;
+        }
+        m_targetType = gParamType_Curve;
+        curvesdata.keys.insert({xKey, zeno::CurveData()});
+    }
+    else {
+        curvesdata.keys.insert({ xKey, std::get<zeno::CurveData>(m_var) });
+        var = this->text().toFloat();
+    }
+
+    curve_util::getDelfCurveData(curvesdata.keys[xKey], var, true, QString::fromStdString(xKey));
+    curve_util::updateRange(curvesdata);
+
+    curvesdata.keys[xKey].visible = true;
+    m_var = curvesdata.keys[xKey];
+
+    emit valueChanged(m_var);
+}
+
+void ZCoreParamLineEdit::delKeyFrame(const QStringList& keys)
+{
+    zeno::CurveData curve = std::get<zeno::CurveData>(m_var);
+
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    for (int i = 0; i < curve.cpbases.size(); i++) {
+        int x = static_cast<int>(curve.cpbases[i]);
+        if (x == timeline->value()) {
+            curve.cpbases.erase(curve.cpbases.begin() + i);
+            curve.cpoints.erase(curve.cpoints.begin() + i);
+            break;
+        }
+    }
+    if (curve.cpbases.empty()) {
+        bool bConvertInt = false, bConvertFloat = false;
+        int ival = text().toInt(&bConvertInt);
+        float fval = text().toFloat(&bConvertFloat);
+        if (bConvertInt) {
+            m_var = ival;
+            m_targetType = gParamType_Int;
+        } else if (bConvertFloat) {
+            m_var = fval;
+            m_targetType = gParamType_Float;
+        } else {
+            m_var = text().toStdString();
+            m_targetType = gParamType_String;
+        }
+        setProperty(g_setKey, "null");
+        this->style()->unpolish(this);
+        this->style()->polish(this);
+        update();
+    }
+    else {
+        m_var = curve;
+    }
+    emit valueChanged(m_var);
+}
+
+void ZCoreParamLineEdit::editKeyFrame(const QStringList& keys)
+{
+    std::string xKey = "x";
+    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+    connect(pEditor, &ZCurveMapEditor::finished, this, [&pEditor, &xKey, &keys, this](int result) {
+        zeno::CurvesData newCurves = pEditor->curves();
+        if (newCurves.contains(xKey)) {
+            m_var = newCurves[xKey];
+            emit valueChanged(m_var);
+        }
+        else {
+            clearKeyFrame(keys);
+        }
+    });
+    zeno::CurveData curve = std::get<zeno::CurveData>(m_var);
+    zeno::CurvesData curves;
+    curves.keys.insert({xKey, curve});
+    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+    pEditor->addCurves(curves);
+    CURVES_MODEL models = pEditor->getModel();
+    for (auto model : models) {
+        for (int i = 0; i < model->rowCount(); i++) {
+            model->setData(model->index(i, 0), true, ROLE_LOCKX);
+        }
+    }
+    pEditor->exec();
+}
+
+void ZCoreParamLineEdit::clearKeyFrame(const QStringList& keys)
+{
+    bool bConvertInt = false, bConvertFloat = false;
+    int ival = text().toInt(&bConvertInt);
+    float fval = text().toFloat(&bConvertFloat);
+    if (bConvertInt) {
+        m_var = ival;
+        m_targetType = gParamType_Int;
+    }
+    else if (bConvertFloat) {
+        m_var = fval;
+        m_targetType = gParamType_Float;
+    }
+    else {
+        m_var = text().toStdString();
+        m_targetType = gParamType_String;
+    }
+    setProperty(g_setKey, "null");
+    this->style()->unpolish(this);
+    this->style()->polish(this);
+    update();
+    emit valueChanged(m_var);
+}
+
+void ZCoreParamLineEdit::serKeyFrameStyle(QVariant qvar)
+{
+    QVariant newVal = qvar;
+    if (!curve_util::getCurveValue(newVal))
+        return;
+
+    QString text = UiHelper::variantToString(newVal);
+    setText(text);
+    QVector<QString> properties = curve_util::getKeyFrameProperty(qvar);
+    setProperty(g_setKey, properties.first());
+    this->style()->unpolish(this);
+    this->style()->polish(this);
+    update();
 }
