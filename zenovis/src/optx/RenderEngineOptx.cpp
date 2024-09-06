@@ -66,7 +66,7 @@ struct CppTimer {
 };
 
 static CppTimer timer, localTimer;
-void cleanMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &verts,
                std::vector<zeno::vec3f> &nrm,
                std::vector<zeno::vec3f> &clr,
@@ -672,7 +672,40 @@ struct GraphicsManager {
                         vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                     });
                     auto ts = (int const *)prim->tris.data();
-                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
+                    auto nvs = prim->verts.size();
+                    auto nts = prim->tris.size();
+//                    std::vector<zeno::vec3f> verts;
+//                    std::vector<zeno::vec3f> nrm;
+//                    std::vector<zeno::vec3f> clr;
+//                    std::vector<zeno::vec3f> tang;
+//                    std::vector<zeno::vec3f> uv;
+//                    std::vector<zeno::vec3i> idxBuffer;
+//                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer);
+//                    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
+//                    oPrim->verts.resize(verts.size());
+//                    oPrim->add_attr<zeno::vec3f>("nrm");
+//                    oPrim->add_attr<zeno::vec3f>("clr");
+//                    oPrim->add_attr<zeno::vec3f>("uv");
+//                    oPrim->add_attr<zeno::vec3f>("atang");
+//                    oPrim->tris.resize(idxBuffer.size());
+//
+//
+//                    oPrim->verts.attr<zeno::vec3f>("pos") = verts;
+//                    oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
+//                    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
+//                    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
+//                    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
+//                    oPrim->tris = idxBuffer;
+//
+//                    auto vs = (float const *)oPrim->verts.data();
+//                    std::map<std::string, std::pair<float const *, size_t>> vtab;
+//                    oPrim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+//                      vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
+//                    });
+//                    auto ts = (int const *)oPrim->tris.data();
+//                    auto nvs = oPrim->verts.size();
+//                    auto nts = oPrim->tris.size();
+
                     std::vector<std::string> matNameList(0);
                     if(matNum>0)
                     {
@@ -683,10 +716,9 @@ struct GraphicsManager {
                             matNameList.emplace_back(matName);
                         }
                     }
-                    auto nvs = prim->verts.size();
-                    auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
                     xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
                 }
             }

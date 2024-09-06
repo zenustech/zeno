@@ -2846,6 +2846,20 @@ struct DrawDat {
 };
 static std::map<std::string, DrawDat> drawdats;
 
+struct DrawDat2 {
+  std::vector<std::string>  mtlidList;
+  std::string mtlid;
+  std::string instID;
+  std::vector<zeno::vec3f> pos;
+  std::vector<zeno::vec3f> nrm;
+  std::vector<zeno::vec3f> tang;
+  std::vector<zeno::vec3f> clr;
+  std::vector<zeno::vec3f> uv;
+  std::vector<int> triMats;
+  std::vector<zeno::vec3i> triIdx;
+};
+static std::map<std::string, DrawDat2> drawdats2;
+
 std::set<std::string> uniqueMatsForMesh() {
 
     std::set<std::string> result;
@@ -3495,6 +3509,22 @@ static void updateDynamicDrawInstObjects()
             numVerts += dat.tris.size() / 3;
         }
     }
+}
+void load_object2(std::string const &key, std::string const &mtlid, const std::string &instID,
+                  zeno::PrimitiveObject* prim, std::vector<int> &matids,
+                  std::vector<std::string> const &matNameList)
+{
+  DrawDat2 &dat = drawdats2[key];
+  dat.triMats = matids;
+  dat.mtlidList = matNameList;
+  dat.mtlid = mtlid;
+  dat.instID = instID;
+  dat.pos = prim->verts;
+  dat.nrm = prim->verts.attr<zeno::vec3f>("nrm");
+  dat.uv = prim->verts.attr<zeno::vec3f>("uv");
+  dat.clr = prim->verts.attr<zeno::vec3f>("clr");
+  dat.tang = prim->verts.attr<zeno::vec3f>("atang");
+  dat.triIdx = prim->tris;
 }
 
 void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
