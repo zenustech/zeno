@@ -841,7 +841,7 @@ namespace  zeno  {
 
   case 22: // term: SUB exp
 #line 164 "parser.y"
-                        { yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value = -1 * std::get<float>(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()->value); yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > (); }
+                        { yylhs.value.as < std::shared_ptr<ZfxASTNode> > () = driver.makeNegativeNode(yystack_[0].value.as < std::shared_ptr<ZfxASTNode> > ()); }
 #line 846 "parser.cpp"
     break;
 

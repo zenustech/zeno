@@ -23,6 +23,7 @@ enum nodeType {
     BOOLTYPE,
     FUNC,               //函数
     FOUROPERATIONS,     //四则运算+ - * / %
+    NEGATIVE,           //取负号
     STRING,             //字符串
     ZENVAR,
     COMPOP,             //操作符
@@ -55,6 +56,7 @@ enum operatorVals {
     MOD,
     OR,
     AND,
+    NEG,    //取负
 
     //函数 nodeType对应FUNC
     SIN,

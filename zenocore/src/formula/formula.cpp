@@ -191,6 +191,16 @@ std::shared_ptr<ZfxASTNode> Formula::makeQuoteStringNode(std::string text)
     return spNode;
 }
 
+std::shared_ptr<ZfxASTNode> Formula::makeNegativeNode(std::shared_ptr<ZfxASTNode> exp)
+{
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = NEGATIVE;
+    spNode->opVal = NEG;
+    if (exp)
+        spNode->children.push_back(exp);
+    return spNode;
+}
+
 std::shared_ptr<ZfxASTNode> Formula::makeNewNumberNode(float value)
 {
     auto pNode = newNumberNode(value);

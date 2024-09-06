@@ -62,6 +62,7 @@ public:
     std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeZenVarNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
+    std::shared_ptr<ZfxASTNode> makeNegativeNode(std::shared_ptr<ZfxASTNode> exp);
     std::shared_ptr<ZfxASTNode> makeEmptyNode();
     void setASTResult(std::shared_ptr<ZfxASTNode> pNode);
     void debugASTNode(std::shared_ptr<ZfxASTNode> pNode);

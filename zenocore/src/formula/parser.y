@@ -161,7 +161,7 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
     | LITERAL           { $$ = driver.makeStringNode($1); }
     | UNCOMPSTR         { $$ = driver.makeQuoteStringNode($1); }
     | parencontent      { $$ = $1; }
-    | SUB exp %prec NEG { $2->value = -1 * std::get<float>($2->value); $$ = $2; }
+    | SUB exp %prec NEG { $$ = driver.makeNegativeNode($2); }
     | zenvar            { $$ = $1; }
     | FUNC func-content  { 
         $$ = $2;
