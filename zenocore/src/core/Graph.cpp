@@ -20,7 +20,6 @@
 #include <zeno/utils/helper.h>
 #include <iostream>
 #include <regex>
-#include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/core/typeinfo.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
@@ -352,13 +351,8 @@ ZENO_API void Graph::init(const GraphData& graph) {
     for (const auto& [nodename, refparams] : graph.references) {
         std::shared_ptr<INode> refNode = getNode(nodename);
         const auto& uuidpath = refNode->get_uuid_path();
-       
-        auto& refMgr = getSession().referManager;
         for (auto paramname : refparams) {
-            auto refSources = refNode->resolveReferSource(paramname);
-            if (!refSources.empty()) {
-                refMgr->registerRelations(uuidpath, paramname, refSources);
-            }
+            refNode->constructReference(paramname);
         }
     }
 }
@@ -729,7 +723,7 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
     }
 
     auto spNode = m_nodes[uuid];
-    std::string oldPath = zeno::objPathToStr(spNode->get_path());
+    std::string oldPath = spNode->get_path();
     std::string name = newName;
     if (m_name2uuid.find(name) != m_name2uuid.end()) {
         name = generateNewName(spNode->get_nodecls());
@@ -741,18 +735,9 @@ ZENO_API std::string Graph::updateNodeName(const std::string oldName, const std:
 
     sync_to_set(m_viewnodes, oldName, name);
 
-    //sync_to_set(frame_nodes, oldName, newName);
-    //sync_to_set(subnet_nodes, oldName, newName);
-    //sync_to_set(asset_nodes, oldName, newName);
-    //sync_to_set(subinput_nodes, oldName, newName);
-    //sync_to_set(suboutput_nodes, oldName, newName);
+    spNode->onNodeNameUpdated(oldName, name);
 
     CALLBACK_NOTIFY(updateNodeName, oldName, name)
-    //update refer
-    const auto& referMgr = getSession().referManager;
-    std::string newPath = zeno::objPathToStr(spNode->get_path());
-    std::string uuid_path = zeno::objPathToStr(spNode->get_uuid_path());
-    referMgr->updateReferParam(oldPath, newPath, uuid_path);
     return name;
 }
 
@@ -1036,6 +1021,8 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
 
     const std::string nodecls = spNode->get_nodecls();
 
+    spNode->on_node_about_to_remove();
+
     node_set[nodecls].erase(name);
     m_nodes.erase(uuid);
 
@@ -1044,11 +1031,7 @@ ZENO_API bool Graph::removeNode(std::string const& name) {
     asset_nodes.erase(uuid);
     m_viewnodes.erase(name);
     m_name2uuid.erase(name);
-    //remove refer info
-    const auto& referMgr = getSession().referManager;
-    std::string path = zeno::objPathToStr(spNode->get_path());
-    auto objPath = zeno::objPathToStr(spNode->get_uuid_path());
-    referMgr->removeReference(objPath);
+
     CALLBACK_NOTIFY(removeNode, name)
     return true;
 }

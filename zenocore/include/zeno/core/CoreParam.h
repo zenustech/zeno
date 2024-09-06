@@ -2,7 +2,6 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
-//#include <zeno/core/INode.h>
 #include <zeno/core/common.h>
 #include <variant>
 #include <memory>
@@ -27,22 +26,28 @@ struct ObjectLink {
     std::string targetParam;
 };
 
-
 struct PrimitiveLink {
     PrimitiveParam* fromparam = nullptr;
     PrimitiveParam* toparam = nullptr;
     std::string targetParam;
 };
 
+//引用连接，连接的双方都是基础类型的输入参数
+struct ReferLink {
+    PrimitiveParam* source_inparam = nullptr;
+    PrimitiveParam* dest_inparam = nullptr;
+};
+
+
 struct CoreParam {
     std::string name;
     std::weak_ptr<INode> m_wpNode;
+    std::string wildCardGroup;
     
     ParamType type = Param_Null;
     SocketType socketType = NoSocket;
     bool bInput = true;
     bool m_idModify = false;    //该output param输出的obj是新创建的(false)还是基于已有的修改(true)
-    std::string wildCardGroup;
 };
 
 struct ObjectParam : CoreParam {
@@ -56,6 +61,7 @@ struct PrimitiveParam : CoreParam {
     zeno::reflect::Any defl;
     zeno::reflect::Any result;
     std::list<std::shared_ptr<PrimitiveLink>> links;
+    std::list<std::shared_ptr<ReferLink>> reflinks;
     ParamControl control = NullControl;
     zeno::reflect::Any ctrlProps;
     bool bVisible = true;

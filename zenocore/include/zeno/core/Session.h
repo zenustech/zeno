@@ -39,7 +39,6 @@ struct UserData;
 struct CalcManager;
 struct ObjectManager;
 struct AssetsMgr;
-struct ReferManager;
 class FunctionManager;
 
 struct Session {
@@ -53,7 +52,6 @@ struct Session {
     std::unique_ptr<ObjectManager> const objsMan;
     std::shared_ptr<Graph> mainGraph;
     std::shared_ptr<AssetsMgr> assets;
-    std::unique_ptr<ReferManager> referManager;
     std::unique_ptr<GlobalVariableManager> globalVariableManager;
     std::unique_ptr<FunctionManager> funcManager;
 

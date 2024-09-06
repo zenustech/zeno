@@ -20,7 +20,6 @@
 #include "rapidjson/stringbuffer.h"
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
-#include <zeno/core/ReferManager.h>
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/core/FunctionManager.h>
 #include <regex>
@@ -650,7 +649,6 @@ ZENO_API Session::Session()
     , mainGraph(std::make_shared<Graph>("main"))
     , assets(std::make_shared<AssetsMgr>())
     , objsMan(std::make_unique<ObjectManager>())
-    , referManager(std::make_unique<ReferManager>())
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
     , funcManager(std::make_unique<FunctionManager>())
 {
@@ -864,8 +862,6 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
 ZENO_API void Session::resetMainGraph() {
     mainGraph.reset();
     mainGraph = std::make_shared<Graph>("main");
-    referManager.reset();
-    referManager = std::make_unique<ReferManager>();
     globalVariableManager.reset();
     globalVariableManager = std::make_unique<GlobalVariableManager>();
 }

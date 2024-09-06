@@ -28,7 +28,6 @@
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/formula/formula.h>
-#include <zeno/core/ReferManager.h>
 #include <zeno/core/FunctionManager.h>
 #include "reflect/type.hpp"
 #include <zeno/types/MeshObject.h>
@@ -67,7 +66,10 @@ void INode::initUuid(std::shared_ptr<Graph> pGraph, const std::string nodecls) {
     m_uuidPath = path;
 }
 
-ZENO_API INode::~INode() = default;
+ZENO_API INode::~INode() {
+    int j;
+    j = 0;
+}
 
 ZENO_API std::shared_ptr<Graph> INode::getThisGraph() const {
     return graph.lock();
@@ -327,8 +329,17 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
                     if (fromParam) {
                         auto fromNode = fromParam->m_wpNode.lock();
                         assert(fromNode);
-                        fromNode->mark_dirty(m_dirty);
+                        fromNode->mark_dirty(true);
                     }
+                }
+            }
+        }
+        for (auto& [name, param] : m_inputPrims) {
+            for (auto link : param.reflinks) {
+                if (link->dest_inparam != &param) {
+                    assert(link->dest_inparam);
+                    auto destNode = link->dest_inparam->m_wpNode.lock();
+                    destNode->mark_dirty(true);
                 }
             }
         }
@@ -339,7 +350,7 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
                 if (inParam) {
                     auto inNode = inParam->m_wpNode.lock();
                     assert(inNode);
-                    inNode->mark_dirty(m_dirty);
+                    inNode->mark_dirty(true);
                 }
             }
         }
@@ -350,7 +361,7 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
                 if (inParam) {
                     auto inNode = inParam->m_wpNode.lock();
                     assert(inNode);
-                    inNode->mark_dirty(m_dirty);
+                    inNode->mark_dirty(true);
                 }
             }
         }
@@ -625,16 +636,219 @@ ZENO_API void INode::registerObjToManager()
     }
 }
 
-std::set<std::pair<std::string, std::string>> INode::resolveReferSource(std::string const& primitive_param) {
+void INode::on_node_about_to_remove() {
+    //移除所有引用边的依赖关系
+    for (auto& [_, input_param] : m_inputPrims)
+    {
+        for (const std::shared_ptr<ReferLink>& reflink : input_param.reflinks) {
+            if (reflink->source_inparam == &input_param) {
+                //当前参数是引用源
+                auto& otherLinks = reflink->dest_inparam->reflinks;
+                otherLinks.erase(std::remove(otherLinks.begin(), otherLinks.end(), reflink));
+                //参数值也改掉吧，把ref(...)改为 inv_ref(...)
+                auto otherNode = reflink->dest_inparam->m_wpNode.lock();
+                assert(otherNode);
+
+                auto defl = reflink->dest_inparam->defl;
+                assert(defl.has_value());
+                ParamType type = defl.type().hash_code();
+                if (type == gParamType_PrimVariant) {
+                    PrimVar& var = any_cast<PrimVar>(defl);
+                    std::visit([&](auto& arg) {
+                        using T = std::decay_t<decltype(arg)>;
+                        if constexpr (std::is_same_v<T, std::string>) {
+                            arg.replace(arg.find("ref("), 4, "ref_not_exist(");
+                        }
+                    }, var);
+                    otherNode->update_param(reflink->dest_inparam->name, var);
+                }
+                else if (type == gParamType_VecEdit) {
+                    vecvar vec = any_cast<vecvar>(defl);
+                    for (auto& elem : vec) {
+                        std::visit([&](auto& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, std::string>) {
+                                arg.replace(arg.find("ref("), 4, "ref_not_exist(");
+                            }
+                        }, elem);
+                    }
+                    otherNode->update_param(reflink->dest_inparam->name, vec);
+                }
+
+                if (otherNode)
+                    otherNode->mark_dirty(true);
+            }
+            else {
+                //当前参数引用了别的节点参数
+                auto& otherLinks = reflink->source_inparam->reflinks;
+                otherLinks.erase(std::remove(otherLinks.begin(), otherLinks.end(), reflink));
+                auto otherNode = reflink->source_inparam->m_wpNode.lock();
+                if (otherNode)
+                    otherNode->mark_dirty(true);
+            }
+        }
+        input_param.reflinks.clear();
+    }
+}
+
+void INode::onNodeNameUpdated(const std::string& oldname, const std::string& newname) {
+    std::string graphpath = get_graph_path();
+    std::string oldpath = graphpath + '/' + oldname;
+    std::string newpath = graphpath + '/' + newname;
+
+    //检查所有reflink，将目标参数的引用名称调整一下
+    for (const auto& [_, param] : m_inputPrims) {
+        for (auto reflink : param.reflinks) {
+            if (reflink->dest_inparam != &param) {
+                //直接修改dest_inparam->defl.
+                bool bUpdate = false;
+
+                auto fUpdateParamDefl = [oldpath, newpath, graphpath, &bUpdate](std::string& arg) {
+                    auto matchs = zeno::getReferPath(arg);
+                    for (const auto& str : matchs)
+                    {
+                        std::string absolutePath = zeno::absolutePath(graphpath, str);
+                        if (absolutePath.find(oldpath) != std::string::npos)
+                        {
+                            std::regex num_rgx("[0-9]+");
+                            //如果是数字，需要将整个refer替换
+                            if (std::regex_match(newpath, num_rgx))
+                            {
+                                arg = newpath;
+                                bUpdate = true;
+                                break;
+                            }
+                            else
+                            {
+                                std::regex pattern(oldpath);
+                                std::string format = regex_replace(absolutePath, pattern, newpath);
+                                //relative path
+                                if (absolutePath != str)
+                                {
+                                    format = zeno::relativePath(graphpath, format);
+                                }
+                                std::regex rgx(str);
+                                arg = regex_replace(arg, rgx, format);
+                            }
+                            bUpdate = true;
+                        }
+                    }
+                };
+
+                zeno::reflect::Any adjustParamVal = reflink->dest_inparam->defl;
+
+                assert(adjustParamVal.has_value());
+                ParamType type = adjustParamVal.type().hash_code();
+                if (type == zeno::types::gParamType_PrimVariant) {
+                    PrimVar& var = zeno::reflect::any_cast<PrimVar>(adjustParamVal);
+                    std::visit([&](auto& arg) {
+                        using T = std::decay_t<decltype(arg)>;
+                        if constexpr (std::is_same_v<T, std::string>) {
+                            fUpdateParamDefl(arg);
+                        }
+                        else {
+                            assert(false);
+                            zeno::log_warn("error param type");
+                        }
+                        }, var);
+                    if (bUpdate) {
+                        adjustParamVal = zeno::reflect::move(var);
+                    }
+                }
+                else if (type == zeno::types::gParamType_VecEdit) {
+                    vecvar var = zeno::reflect::any_cast<vecvar>(adjustParamVal);
+                    for (PrimVar& elem : var)
+                    {
+                        std::visit([&](auto& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, std::string>) {
+                                fUpdateParamDefl(arg);
+                            }
+                            }, elem);
+                    }
+                    if (bUpdate) {
+                        adjustParamVal = zeno::reflect::move(var);
+                    }
+                }
+                else {
+                    assert(false);
+                    zeno::log_error("unknown param type of refer param");
+                }
+
+                if (bUpdate) {
+                    auto spDestNode = reflink->dest_inparam->m_wpNode.lock();
+                    spDestNode->update_param(reflink->dest_inparam->name, adjustParamVal);
+                }
+            }
+        }
+    }
+}
+
+void INode::constructReference(const std::string& param_name) {
+    auto iter = m_inputPrims.find(param_name);
+    if (iter == m_inputPrims.end())
+        return;
+
+    const Any& param_defl = iter->second.defl;
+    initReferLinks(&iter->second);
+}
+
+void INode::initReferLinks(PrimitiveParam* target_param) {
+    std::set<std::pair<std::string, std::string>> refSources = resolveReferSource(target_param->defl);
+    auto newAdded = refSources;
+
+    for (auto iter = target_param->reflinks.begin(); iter != target_param->reflinks.end(); )
+    {
+        bool bExist = false;
+        std::shared_ptr<ReferLink> spRefLink = (*iter);
+        PrimitiveParam* remote_source = spRefLink->source_inparam;
+        assert(remote_source);
+        if (remote_source == target_param) {
+            iter++;
+            continue;
+        }
+
+        //查看当前link在新的集合里是否还存在。
+        for (const auto& [source_node_uuidpath, source_param] : refSources)
+        {
+            auto spSrcNode = remote_source->m_wpNode.lock();
+            if (spSrcNode->get_uuid_path() == source_node_uuidpath) {
+                //已经有了
+                bExist = true;
+                newAdded.erase({ source_node_uuidpath, source_param });
+                break;
+            }
+        }
+
+        if (bExist) {
+            iter++;
+        }
+        else {
+            iter = target_param->reflinks.erase(iter);
+            std::remove(remote_source->reflinks.begin(), remote_source->reflinks.end(), spRefLink);
+        }
+    }
+
+    for (const auto& [source_node_uuidpath, source_param] : newAdded)
+    {
+        std::shared_ptr<INode> srcNode = getSession().mainGraph->getNodeByUuidPath(source_node_uuidpath);
+        auto iterSrcParam = srcNode->m_inputPrims.find(source_param);
+        if (iterSrcParam != srcNode->m_inputPrims.end()) {
+            PrimitiveParam& srcparam = iterSrcParam->second;
+            //构造reflink
+            std::shared_ptr<ReferLink> reflink = std::make_shared<ReferLink>();
+            reflink->source_inparam = &srcparam;
+            reflink->dest_inparam = target_param;
+            target_param->reflinks.push_back(reflink);
+            srcparam.reflinks.push_back(reflink);
+        }
+    }
+}
+
+std::set<std::pair<std::string, std::string>> INode::resolveReferSource(const Any& param_defl) {
 
     std::set<std::pair<std::string, std::string>> refSources;
-
-    auto iter = m_inputPrims.find(primitive_param);
-    if (iter == m_inputPrims.end())
-        return refSources;
-
     std::vector<std::string> refSegments;
-    const Any& param_defl = iter->second.defl;
 
     ParamType deflType = param_defl.type().hash_code();
     if (deflType == zeno::types::gParamType_String) {
@@ -854,22 +1068,7 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
         return nullptr;
     }
 
-    //观察参数是否存在引用参数
-    auto refSources = resolveReferSource(in_param->name);
-    //如果有，需要先执行，因为我们需要获得参数的实际计算值
-    for (auto refSource : refSources)
-    {
-        const std::string& source_node_uuidpath = refSource.first;
-        auto spNode = getSession().mainGraph->getNodeByUuidPath(source_node_uuidpath);
-        std::shared_ptr<Graph> spSrcGraph = spNode->graph.lock();
-        assert(spSrcGraph);
-        auto nodename = spNode->get_name();
-        spSrcGraph->applyNode(nodename);
-        //后续执行ref函数的时候，上述节点的计算结果已经出来了
-    }
-
     int frame = getGlobalState()->getFrameId();
-    //zany result;
 
     const ParamType type = in_param->type;
     const auto& defl = in_param->defl;
@@ -1052,6 +1251,26 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
         if (iter2 != m_inputPrims.end()) {
             PrimitiveParam* in_param = &iter2->second;
             if (in_param->links.empty()) {
+
+                std::list<std::shared_ptr<ReferLink>> depRefLinks;
+                for (auto reflink : in_param->reflinks) {
+                    if (reflink->source_inparam != in_param) {
+                        depRefLinks.push_back(reflink);
+                    }
+                }
+
+                if (!depRefLinks.empty()) {
+                    for (auto reflink : depRefLinks) {
+                        assert(reflink->source_inparam);
+                        auto spSrcNode = reflink->source_inparam->m_wpNode.lock();
+                        assert(spSrcNode);
+                        std::shared_ptr<Graph> spSrcGraph = spSrcNode->graph.lock();
+                        assert(spSrcGraph);
+                        auto nodename = spSrcNode->get_name();
+                        spSrcGraph->applyNode(nodename);
+                    }
+                }
+
                 in_param->result = processPrimitive(in_param);
                 //旧版本的requireInput指的是是否有连线，如果想兼容旧版本，这里可以返回false，但使用量不多，所以就修改它的定义。
             }
@@ -1607,33 +1826,15 @@ ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any n
     if (!isAnyEqual(spParam.defl, new_value))
     {
         auto old_value = spParam.defl;
-        auto oldRefSources = resolveReferSource(spParam.name);
-
         spParam.defl = new_value;
 
         std::shared_ptr<Graph> spGraph = graph.lock();
         assert(spGraph);
 
         spGraph->onNodeParamUpdated(&spParam, old_value, new_value);
+        initReferLinks(&spParam);
         CALLBACK_NOTIFY(update_param, param, old_value, new_value)
         mark_dirty(true);
-
-        auto& refMgr = getSession().referManager;
-        auto refSources = resolveReferSource(spParam.name);
-        if (!refSources.empty()) {
-            refMgr->registerRelations(m_uuidPath, spParam.name, refSources);
-        }
-        else if (!oldRefSources.empty()){
-            //如果之前已经注册了引用，就移除
-            for (auto oldRefSource : oldRefSources) {
-                auto sourcenode = oldRefSource.first;
-                auto sourceparam = oldRefSource.second;
-                refMgr->unregisterRelations(sourcenode, sourceparam, m_uuidPath, spParam.name);
-            }
-        }
-
-        //当前节点的这个参数可能被引用，需要找到所有引用者并标脏它们
-        refMgr->updateDirty(m_uuidPath, spParam.name);
         return true;
     }
     return false;
@@ -2035,13 +2236,6 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.bVisible = param.bVisible;
                 sparam.type = param.type;
-
-                //resolve引用关系
-                //auto& refMgr = getSession().referManager;
-                //auto refSources = resolveReferSource(sparam.name);
-                //if (!refSources.empty()) {
-                //    refMgr->registerRelations(m_uuidPath, sparam.name, refSources);
-                //}
 
                 //graph记录$F相关节点
                 if (std::shared_ptr<Graph> spGraph = graph.lock())

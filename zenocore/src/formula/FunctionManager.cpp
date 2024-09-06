@@ -1,5 +1,4 @@
 #include <zeno/core/FunctionManager.h>
-#include <zeno/core/ReferManager.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/Error.h>
@@ -104,7 +103,7 @@ namespace zeno {
         std::shared_ptr<INode> spNode = zeno::getSession().mainGraph->getNodeByPath(nodeAbsPath);
 
         if (!spNode) {
-            throw makeError<UnimplError>();
+            throw makeError<UnimplError>("the refer node doesn't exist, may be deleted before");
         }
 
         auto items = split_str(parampath, '.');
@@ -113,7 +112,7 @@ namespace zeno {
         bool bExist = false;
         ParamPrimitive paramData = spNode->get_input_prim_param(paramname, &bExist);
         if (!bExist)
-            throw makeError<UnimplError>();
+            throw makeError<UnimplError>("the refer param doesn't exist, may be deleted before");
 
         if (items.size() == 1) {
             //直接拿引用源的计算结果，所以本节点在执行前，引用源必须先执行，所以要在preApply的基础上作提前依赖计算

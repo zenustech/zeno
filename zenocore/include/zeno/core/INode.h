@@ -143,7 +143,9 @@ public:
     void mark_dirty_objs();
     std::vector<std::pair<std::string, bool>> getWildCardParams(const std::string& name, bool bPrim);
     void getParamTypeAndSocketType(const std::string& param_name, bool bPrim, bool bInput, ParamType& paramType, SocketType& socketType);
-    std::set<std::pair<std::string, std::string>> resolveReferSource(std::string const& primitive_param);
+    void constructReference(const std::string& param_name);
+    void onNodeNameUpdated(const std::string& oldname, const std::string& newname);
+    void on_node_about_to_remove();
 
 protected:
     ZENO_API virtual void complete();
@@ -173,6 +175,8 @@ private:
     void reportStatus(bool bDirty, NodeRunStatus status);
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> T resolveVec(const zeno::reflect::Any& defl, const ParamType type);
+    std::set<std::pair<std::string, std::string>> resolveReferSource(const zeno::reflect::Any& param_defl);
+    void initReferLinks(PrimitiveParam* target_param);
 
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。

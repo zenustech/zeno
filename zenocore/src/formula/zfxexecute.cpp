@@ -6,7 +6,6 @@
 #include "zfxscanner.h"
 #include "zfxparser.hpp"
 #include <regex>
-#include <zeno/core/ReferManager.h>
 #include <zeno/core/FunctionManager.h>
 
 

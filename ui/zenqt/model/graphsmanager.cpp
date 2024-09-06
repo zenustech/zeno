@@ -16,7 +16,6 @@
 #include "zassert.h"
 #include "variantptr.h"
 #include "model/parammodel.h"
-#include <zeno/core/ReferManager.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 
