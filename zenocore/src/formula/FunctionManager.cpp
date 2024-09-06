@@ -114,8 +114,14 @@ namespace zeno {
         if (!bExist)
             throw makeError<UnimplError>("the refer param doesn't exist, may be deleted before");
 
+        //直接拿引用源的计算结果，所以本节点在执行前，引用源必须先执行（比如引用源的数值也是依赖另一个节点），参考代码INode::requireInput
+        //，所以要在preApply的基础上作提前依赖计算
+
+        //如果取的是“静态值”，则不要求引用源必须执行，此时要拿的数据应该是defl.
+
+        //以上方案取决于产品设计。
+
         if (items.size() == 1) {
-            //直接拿引用源的计算结果，所以本节点在执行前，引用源必须先执行，所以要在preApply的基础上作提前依赖计算
             if (!paramData.result.has_value()) {
                 throw makeError<UnimplError>("there is no result on refer source, should calc the source first.");
             }
@@ -152,8 +158,8 @@ namespace zeno {
             }
             if (paramData.type == gParamType_Vec2f || paramData.type == gParamType_Vec2i) {
                 if (idx < 2) {
-                    return paramData.type == gParamType_Vec2f ? any_cast<vec2f>(paramData.defl)[idx] :
-                        any_cast<vec2i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec2f ? any_cast<vec2f>(paramData.result)[idx] :
+                        any_cast<vec2i>(paramData.result)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();
@@ -161,8 +167,8 @@ namespace zeno {
             }
             if (paramData.type == gParamType_Vec3f || paramData.type == gParamType_Vec3i) {
                 if (idx < 3) {
-                    return paramData.type == gParamType_Vec3f ? any_cast<vec3f>(paramData.defl)[idx] :
-                        any_cast<vec3i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec3f ? any_cast<vec3f>(paramData.result)[idx] :
+                        any_cast<vec3i>(paramData.result)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();
@@ -170,8 +176,8 @@ namespace zeno {
             }
             if (paramData.type == gParamType_Vec4f || paramData.type == gParamType_Vec4i) {
                 if (idx < 4) {
-                    return paramData.type == gParamType_Vec4f ? any_cast<vec4f>(paramData.defl)[idx] :
-                        any_cast<vec4i>(paramData.defl)[idx];
+                    return paramData.type == gParamType_Vec4f ? any_cast<vec4f>(paramData.result)[idx] :
+                        any_cast<vec4i>(paramData.result)[idx];
                 }
                 else {
                     throw makeError<UnimplError>();
