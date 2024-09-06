@@ -825,7 +825,8 @@ void INode::initReferLinks(PrimitiveParam* target_param) {
         }
         else {
             iter = target_param->reflinks.erase(iter);
-            std::remove(remote_source->reflinks.begin(), remote_source->reflinks.end(), spRefLink);
+            auto& other_links = remote_source->reflinks;
+            other_links.erase(std::remove(other_links.begin(), other_links.end(), spRefLink));
         }
     }
 
@@ -835,12 +836,15 @@ void INode::initReferLinks(PrimitiveParam* target_param) {
         auto iterSrcParam = srcNode->m_inputPrims.find(source_param);
         if (iterSrcParam != srcNode->m_inputPrims.end()) {
             PrimitiveParam& srcparam = iterSrcParam->second;
-            //构造reflink
-            std::shared_ptr<ReferLink> reflink = std::make_shared<ReferLink>();
-            reflink->source_inparam = &srcparam;
-            reflink->dest_inparam = target_param;
-            target_param->reflinks.push_back(reflink);
-            srcparam.reflinks.push_back(reflink);
+            if (&srcparam != target_param)  //排除直接引用自己的情况
+            {
+                //构造reflink
+                std::shared_ptr<ReferLink> reflink = std::make_shared<ReferLink>();
+                reflink->source_inparam = &srcparam;
+                reflink->dest_inparam = target_param;
+                target_param->reflinks.push_back(reflink);
+                srcparam.reflinks.push_back(reflink);
+            }
         }
     }
 }

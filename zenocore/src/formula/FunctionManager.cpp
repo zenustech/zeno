@@ -1647,7 +1647,7 @@ namespace zeno {
                 for (auto paramNode : root->children)
                 {
                     std::set<std::pair<std::string, std::string>> _paths = getReferSources(paramNode, pContext);
-                    if (_paths.empty()) {
+                    if (!_paths.empty()) {
                         paths.insert(_paths.begin(), _paths.end());
                     }
                 }
