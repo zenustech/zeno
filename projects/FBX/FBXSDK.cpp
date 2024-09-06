@@ -2883,6 +2883,16 @@ struct PrimDeformByOneBone : INode {
         glm::mat4 transform(1);
         if (nameMapping.count(boneName)) {
             auto mat = boneMatrix[nameMapping[boneName]];
+            if (get_input2<bool>("inheritRotation")) {
+                mat[0] = glm::normalize(mat[0]);
+                mat[1] = glm::normalize(mat[1]);
+                mat[2] = glm::normalize(mat[2]);
+            }
+            else {
+                mat[0] = {1, 0, 0, 0};
+                mat[1] = {0, 1, 0, 0};
+                mat[2] = {0, 0, 1, 0};
+            }
             transform = mat * matTrans * matRotate;
             auto vert_count = prim->verts.size();
             #pragma omp parallel for
@@ -2906,6 +2916,7 @@ ZENDEFNODE(PrimDeformByOneBone, {
         "skeleton",
         {"string", "boneName", ""},
         {"bool", "useCustomPivot", "0"},
+        {"bool", "inheritRotation", "0"},
         {"vec3f", "pivot", "0, 0, 0"},
         {"vec3f", "rotation", "0, 0, 0"},
     },
