@@ -1066,17 +1066,17 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                //TODO:
-                //QVariant newVal = value;
-                //bool bKeyFrame = AppHelper::getCurveValue(newVal);
                 ZASSERT_EXIT(value.type().hash_code() == gParamType_VecEdit);
-                
-                pVecEdit->setVec(any_cast<zeno::vecvar>(value), pVecEdit->isFloat());
-                if (pVecEdit->isFloat())
-                {
-                    //QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
-                    //if (!properties.empty())
-                    //    pVecEdit->updateProperties(properties);
+                QVariant newVal = qvarAny;
+                if (curve_util::getCurveValue(newVal)) {
+                    pVecEdit->setVec(newVal.value<zeno::vecvar>(), pVecEdit->isFloat());
+                    if (pVecEdit->isFloat()) {
+                        QVector<QString> properties = curve_util::getKeyFrameProperty(qvarAny);
+                        pVecEdit->updateProperties(properties);
+                    }
+                }
+                else {
+                    pVecEdit->setVec(any_cast<zeno::vecvar>(value), pVecEdit->isFloat());
                 }
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
@@ -1395,6 +1395,8 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 {
     if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(ctrl.pControl)) {
         lineEdit->setKeyFrame(keys);
+    } else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+        vecEdit->setKeyFrame(keys);
     }
     curve_util::updateTimelineKeys(m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>());
 }
@@ -1403,6 +1405,8 @@ void ZenoPropPanel::delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
 {
     if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(ctrl.pControl)) {
         lineEdit->delKeyFrame(keys);
+    } else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+        vecEdit->delKeyFrame(keys);
     }
     curve_util::updateTimelineKeys(m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>());
 }
@@ -1411,6 +1415,8 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
 {
     if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(ctrl.pControl)) {
         lineEdit->editKeyFrame(keys);
+    } else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+        vecEdit->editKeyFrame(keys);
     }
     curve_util::updateTimelineKeys(m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>());
 }
@@ -1419,13 +1425,24 @@ void ZenoPropPanel::clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList&
 {
     if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(ctrl.pControl)) {
         lineEdit->clearKeyFrame(keys);
+    } else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl)) {
+        vecEdit->clearKeyFrame(keys);
     }
     curve_util::updateTimelineKeys(m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>());
 }
 
 void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
 {
-    if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(pContrl)) {
-        lineEdit->serKeyFrameStyle(val);
+    if (ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))) {
+        if (ZCoreParamLineEdit* lineEdit = qobject_cast<ZCoreParamLineEdit*>(pContrl)) {
+            if (lineEdit->serKeyFrameStyle(val)) {
+                paramsModel->setData(m_idx, true, ROLE_NODE_DIRTY);
+            }
+        }
+        else if (ZVecEditor* vecEdit = qobject_cast<ZVecEditor*>(pContrl)) {
+            if (vecEdit->serKeyFrameStyle(val)) {
+                paramsModel->setData(m_idx, true, ROLE_NODE_DIRTY);
+            }
+        }
     }
 }

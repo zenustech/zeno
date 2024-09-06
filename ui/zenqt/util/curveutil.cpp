@@ -433,13 +433,24 @@ namespace curve_util
         int nFrame = timeline->value();
         if (curves.size() > 1)
         {
-            UI_VECTYPE newVal;
+            zeno::vecvar newVal;
             newVal.resize(curves.size());
             for (int i = 0; i < newVal.size(); i++)
             {
                 const auto& key = curve_util::getCurveKey(i).toStdString();
                 if (curves.contains(key))
                 {
+                    bool isKeyFrame = false;
+                    for (int j = 0; j < curves[key].cpbases.size(); j++) {
+                        if (curves[key].cpbases[j] == nFrame) {
+                            newVal[i] = curves[key].cpoints[j].v;
+                            isKeyFrame = true;
+                            break;
+                        }
+                    }
+                    if (isKeyFrame) {
+                        continue;
+                    }
                     newVal[i] = curves[key].eval(nFrame);
                 }
             }

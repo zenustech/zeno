@@ -536,4 +536,7 @@ Q_DECLARE_METATYPE(zeno::ObjPath)
 
 Q_DECLARE_METATYPE(zeno::CustomUI)
 
+Q_DECLARE_METATYPE(zeno::vecvar)
+Q_DECLARE_METATYPE(zeno::PrimVar)
+
 #endif

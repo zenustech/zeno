@@ -59,6 +59,7 @@ public:
     static bool parseVecType(const QString& type, int& dim, bool& bFloat);
     static QString anyToString(const zeno::reflect::Any& any);
     static QString variantToString(const QVariant& var);
+    static QString editVariantToQString(const zeno::PrimVar& var);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);
     static QString getSockNode(const QString& sockPath);

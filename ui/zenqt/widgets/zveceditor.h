@@ -20,6 +20,13 @@ public:
     void setNodeIdx(const QModelIndex& index);
     void setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescriptionLabel* descLabl);
 
+    //keyframe
+    void setKeyFrame(const QStringList& keys);
+    void delKeyFrame(const QStringList& keys);
+    void editKeyFrame(const QStringList& keys);
+    void clearKeyFrame(const QStringList& keys);
+    bool serKeyFrameStyle(QVariant qvar);
+
 signals:
     void valueChanged(zeno::vecvar);
     void editingFinished();

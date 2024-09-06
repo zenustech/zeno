@@ -462,9 +462,9 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
         else if (m_targetType == gParamType_String) {
             m_var = newText.toStdString();
         }
-        else if (m_targetType == gParamType_Curve) {
+        else if (m_targetType == gParamType_Curve) {    //k÷°œ‡πÿ
             std::string xKey = "x";
-            zeno::CurveData curvesdata = std::get<zeno::CurveData>(m_var);
+            zeno::CurveData curvedata = std::get<zeno::CurveData>(m_var);
 
             float var = this->text().toFloat();
             bool exist = false;
@@ -472,18 +472,18 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
             ZASSERT_EXIT(mainWin);
             ZTimeline* timeline = mainWin->timeline();
             ZASSERT_EXIT(timeline);
-            for (int i = 0; i < curvesdata.cpbases.size(); i++) {
-                if (curvesdata.cpbases[i] == timeline->value()) {
-                    curvesdata.cpoints[i].v = var;
+            for (int i = 0; i < curvedata.cpbases.size(); i++) {
+                if (curvedata.cpbases[i] == timeline->value()) {
+                    curvedata.cpoints[i].v = var;
                     exist = true;
                     break;
                 }
             }
             if (exist) {
-                m_var = curvesdata;
+                m_var = curvedata;
             }
             else {
-                setText(QString::number(curvesdata.eval(timeline->value())));
+                setText(QString::number(curvedata.eval(timeline->value())));
                 return;
             }
         }
@@ -624,20 +624,20 @@ void ZCoreParamLineEdit::clearKeyFrame(const QStringList& keys)
     emit valueChanged(m_var);
 }
 
-void ZCoreParamLineEdit::serKeyFrameStyle(QVariant qvar)
+bool ZCoreParamLineEdit::serKeyFrameStyle(QVariant qvar)
 {
     QVariant newVal = qvar;
     if (!curve_util::getCurveValue(newVal))
-        return;
+        return false;
 
     QString text = UiHelper::variantToString(newVal);
     if (this->text() != text) {
         setText(text);
-        emit valueChanged(m_var);
     }
     QVector<QString> properties = curve_util::getKeyFrameProperty(qvar);
     setProperty(g_setKey, properties.first());
     this->style()->unpolish(this);
     this->style()->polish(this);
     update();
+    return true;
 }
