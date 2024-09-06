@@ -205,6 +205,10 @@ QStandardItemModel* ParamsModel::constructProxyModel()
 {
     QStandardItemModel* pModel = new QStandardItemModel(this);
     connect(pModel, &QStandardItemModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex&, const QVector<int>& roles) {
+        bool bInput = topLeft.data(ROLE_ISINPUT).toBool();
+        if (!bInput)
+            return;
+
         for (int role : roles)
         {
             if (role != ROLE_PARAM_VALUE)
@@ -221,15 +225,25 @@ QStandardItemModel* ParamsModel::constructProxyModel()
         }
     });
     connect(this, &ParamsModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex&, const QVector<int>& roles) {
-        const QString& name = topLeft.data(ROLE_PARAM_NAME).toString();
-        Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
-        auto pItems = pModel->findItems(name, flags);
-        for (auto pItem : pItems)
+        bool bInput = topLeft.data(ROLE_ISINPUT).toBool();
+        if (!bInput)
+            return;
+
+        for (int role : roles)
         {
-            const QVariant& modelVal = topLeft.data(ROLE_PARAM_VALUE);
-            zeno::scope_exit sp([=] {pModel->blockSignals(false); });
-            pModel->blockSignals(true);
-            pItem->setData(modelVal, ROLE_PARAM_VALUE);
+            if (role != ROLE_PARAM_VALUE)
+                continue;
+
+            const QString& name = topLeft.data(ROLE_PARAM_NAME).toString();
+            Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
+            auto pItems = pModel->findItems(name, flags);
+            for (auto pItem : pItems)
+            {
+                const QVariant& modelVal = topLeft.data(ROLE_PARAM_VALUE);
+                zeno::scope_exit sp([=] {pModel->blockSignals(false); });
+                pModel->blockSignals(true);
+                pItem->setData(modelVal, ROLE_PARAM_VALUE);
+            }
         }
     });
     return pModel;
@@ -726,7 +740,7 @@ void ParamsModel::test_customparamsmodel() const
 void ParamsModel::updateParamData(const QString& name, const QVariant& val, int role, bool bInput)
 {
     for (int i = 0; i < m_items.size(); i++) {
-        if (m_items[i].name == name) {
+        if (m_items[i].name == name && m_items[i].bInput == bInput) {
             if (role == ROLE_PARAM_CONTROL)
                 m_items[i].control = (zeno::ParamControl)val.toInt();
             else if (role == ROLE_PARAM_TYPE)
@@ -757,7 +771,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
     auto pItems = m_customParamsM->findItems(name, flags);
     for (auto pItem : pItems)
     {
-        if (pItem->data(ROLE_ISINPUT).toBool() || role == ROLE_PARAM_VISIBLE) //更新输入，或更新输入/输出的visible时,更新customUiModel
+        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //更新输入，或更新输入/输出的visible时,更新customUiModel
         {
             pItem->setData(val, role);
         }

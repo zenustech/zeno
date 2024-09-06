@@ -459,6 +459,15 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
 
     zeno::reflect::Any anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+
+    //DEBUG:
+    if (0) {
+        bool bInput = paramItem->data(ROLE_ISINPUT).toBool();
+        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+        QModelIndex idxParam = paramsM->paramIdx(paramName, bInput);
+        paramsM->data(idxParam, ROLE_PARAM_VALUE);
+    }
+
     ZASSERT_EXIT(anyVal.has_value());
 
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
