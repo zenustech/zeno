@@ -1,8 +1,7 @@
-#ifdef ZENO_WITH_PYTHON3
+#ifdef ZENO_WITH_PYTHON
 #include <Python.h>
-#include <QtWidgets>
-#include "zeno/utils/log.h"
-#include "zeno/zeno.h"
+#include <zeno/utils/log.h>
+#include <zeno/zeno.h>
 #include "pythonenv.h"
 
 PyMODINIT_FUNC PyInit_zeno(void);
@@ -30,7 +29,7 @@ void initPythonEnv(const char* progName)
         fprintf(stderr, "Error: could not import module 'zeno'\n");
     }
 
-    QString tempCode;
+    std::string tempCode;
     tempCode = "import zeno; gra = zeno.graph('main')";
 
     //if (PyRun_SimpleString(tempCode.toUtf8()) < 0) {

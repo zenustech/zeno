@@ -1,42 +1,39 @@
-#ifdef ZENO_WITH_PYTHON3
+#ifdef ZENO_WITH_PYTHON
 #include "zenopyapi.h"
-#include <QtWidgets>
-#include "zenoapplication.h"
-#include "model/graphsmanager.h"
-//#include <zenomodel/include/enum.h>
-//#include <zenomodel/include/nodesmgr.h>
-#include "util/uihelper.h"
+
 
 //need refactor
-#if 0
-static QVariant parseValue(PyObject* v, const QString& type)
+namespace zeno{
+
+zeno::reflect::Any parseValueFromPyObject(PyObject* v, const ParamType type)
 {
-    QVariant val;
-    if (type == "string")
+    if (type == zeno::types::gParamType_String)
     {
         char* _val = nullptr;
         if (PyArg_Parse(v, "s", &_val))
         {
-            val = _val;
+            return std::string(_val);
         }
     }
-    else if (type == "int")
+    else if (type == zeno::types::gParamType_Int)
     {
         int _val;
         if (PyArg_Parse(v, "i", &_val))
         {
-            val = _val;
+            return _val;
         }
     }
-    else if (type == "float")
+    else if (type == zeno::types::gParamType_Float)
     {
         float _val;
         if (PyArg_Parse(v, "f", &_val))
         {
-            val = _val;
+            return _val;
         }
     }
-    else if (type.startsWith("vec"))
+#if 0
+    //TODO: vec type
+    else if (type == zeno::types::)
     {
         PyObject* obj;
         if (PyArg_Parse(v, "O", &obj))
@@ -90,13 +87,13 @@ static QVariant parseValue(PyObject* v, const QString& type)
             val = QVariant::fromValue(vec);
         }
     }
-    if (!val.isValid())
+#endif
+    else
     {
-        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_SetString(PyExc_Exception, "not support type");
         PyErr_WriteUnraisable(Py_None);
-        return val;
+        return zeno::reflect::Any();
     }
-    return val;
 }
 
 //init function
@@ -104,35 +101,34 @@ static int
 Graph_init(ZSubGraphObject* self, PyObject* args, PyObject* kwds)
 {
     static char* kwList[] = { "hGraph", NULL };
-    char* _subgName;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwList, &_subgName))
+    char* path;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwList, &path))
         return -1;
 
-    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-    if (!pModel)
+    std::string graphPath(path);
+    auto mainGraph = zeno::getSession().mainGraph;
+    if (!mainGraph)
     {
-        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_SetString(PyExc_Exception, "Current main graph is NULL");
         PyErr_WriteUnraisable(Py_None);
         return 0;
     }
 
-    self->subgIdx = pModel->index(QString::fromUtf8(_subgName));
+    self->subgIdx = mainGraph->getGraphByPath(graphPath);
     return 0;
 }
 
 static PyObject*
 Graph_name(ZSubGraphObject* self, PyObject* Py_UNUSED(ignored))
 {
-    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-    if (!pModel)
+    if (!zeno::getSession().mainGraph)
     {
         PyErr_SetString(PyExc_Exception, "Current Model is NULL");
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-
-    const QString& name = self->subgIdx.data(ROLE_CLASS_NAME).toString();
-    return PyUnicode_FromFormat(name.toUtf8());
+    auto spGraph = self->subgIdx.lock();
+    return PyUnicode_FromFormat(spGraph->getName().c_str());
 }
 
 static PyObject*
@@ -153,86 +149,75 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         return Py_None;
     }
 
-    const QString& subgName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
-    const QString& descName = QString::fromUtf8(nodeCls);
-    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-    const QString& ident = UiHelper::createNewNode(self->subgIdx, descName, QPointF(0, 0));
-    //set value
-    QModelIndex nodeIdx = pModel->nodeIndex(ident);
-    QAbstractItemModel* pSubModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-    if (!pSubModel)
+    auto spGraph = self->subgIdx.lock();
+    if (!spGraph)
     {
-        PyErr_SetString(PyExc_Exception, "Subgraph is null");
+        PyErr_SetString(PyExc_Exception, "graph is null");
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
+
+    std::shared_ptr<INode> spNode = spGraph->createNode(nodeCls);
+
     if (PyDict_Check(kw))
     {
         PyObject* key, * value;
         Py_ssize_t pos = 0;
-        INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+        PrimitiveParams input_prims = spNode->get_input_primitive_params();
+
         while (PyDict_Next(kw, &pos, &key, &value))
         {
             char* cKey = nullptr;
             if (!PyArg_Parse(key, "s", &cKey))
                 continue;
-            QString strKey= QString::fromUtf8(cKey);
+
+            std::string strKey(cKey);
             if (strKey == "view" || strKey == "mute" || strKey == "once")
             {
-                int options = nodeIdx.data(ROLE_NODE_STATUS).toInt();
                 if (strKey == "view")
                 {
                     bool view = false;
                     if (PyArg_Parse(value, "b", &view) && view)
-                        options |= OPT_VIEW;
+                    {
+                        spNode->set_view(true);
+                    }
                 }
                 else if (strKey == "mute")
                 {
                     bool mute = false;
                     if (PyArg_Parse(value, "b", &mute) && mute)
-                        options |= OPT_MUTE;
+                    {
+                        //TODO: mute
+                        //spNode->set_mute(true);
+                    }
                 }
-                else if (strKey == "once")
-                {
-                    bool once = false;
-                    if (PyArg_Parse(value, "b", &once) && once)
-                        options |= OPT_ONCE;
-                }
-                pSubModel->setData(nodeIdx, options, ROLE_NODE_STATUS);
-            }
-            else if (strKey == "fold")
-            {
-                bool fold = false;
-                if (PyArg_Parse(value, "b", &fold) && fold)
-                    pSubModel->setData(nodeIdx, fold, ROLE_COLLASPED);
             }
             else if (strKey == "pos")
             {
                 float x;
                 float y;
-                if (PyArg_ParseTuple(value, "ff", &x, &y))
-                    pSubModel->setData(nodeIdx, QPointF(x, y), ROLE_OBJPOS);
+                if (PyArg_ParseTuple(value, "ff", &x, &y)) {
+                    spNode->set_pos({ x, y });
+                }
             }
-            else if (inputs.contains(strKey))
+            else
             {
-                INPUT_SOCKET socket = inputs[strKey];
-                QVariant val = parseValue(value, socket.info.type);
-                if (!val.isValid())
-                    continue;
-                PARAM_UPDATE_INFO info;
-                info.name = strKey;
-                info.newValue = val;
-                info.oldValue = socket.info.defaultValue;
-                pModel->updateSocketDefl(socket.info.nodeid, info, self->subgIdx);
+                bool bExist = true;
+                ParamPrimitive primInfo = spNode->get_input_prim_param(strKey, &bExist);
+                if (!bExist) {
+                    //TODO:
+                    return Py_None;
+                }
+
+                auto val = parseValueFromPyObject(value, primInfo.type);
+                spNode->update_param(strKey, val);
             }
         }
     }
-    
-    //const QModelIndex& nodeIdx = pModel->index(ident, self->subgIdx);
-    std::string _subgName = subgName.toStdString();
-    std::string _ident = ident.toStdString();
-    PyObject* argList = Py_BuildValue("ss", _subgName.c_str(), _ident.c_str());
 
+    std::string full_uuid_path = spNode->get_uuid_path();
+    PyObject* argList = Py_BuildValue("s", full_uuid_path.c_str());
     PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
     Py_DECREF(argList);
     return result;
@@ -254,21 +239,27 @@ Graph_deleteNode(ZSubGraphObject* self, PyObject* arg)
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
-    IGraphsModel* pModel = zenoApp->graphsManager()->currentModel();
-    if (!pModel)
+
+    auto mainGraph = zeno::getSession().mainGraph;
+    if (!mainGraph)
     {
-        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
+        PyErr_SetString(PyExc_Exception, "Current main graph is NULL");
         PyErr_WriteUnraisable(Py_None);
+        return 0;
+    }
+
+    auto spGraph = self->subgIdx.lock();
+    if (!spGraph) {
+        PyErr_SetString(PyExc_Exception, "Current graph is NULL");
         return Py_None;
     }
-    pModel->removeNode(ident, self->subgIdx);
+    spGraph->removeNode(std::string(ident));
     return Py_None;
 }
 
 static PyObject*
 Graph_getNode(ZSubGraphObject* self, PyObject* arg)
 {
-    ZENO_HANDLE hGraph;
     //if (!PyArg_ParseTupleAndKeywords(arg, kwds, "i", kwList, &hGraph))
     //    return -1;
     PyObject* _arg = PyTuple_GET_ITEM(arg, 0);
@@ -286,9 +277,20 @@ Graph_getNode(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& subgName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
-    std::string _subgName = subgName.toStdString();
-    PyObject* argList = Py_BuildValue("ss", _subgName.c_str(), _ident);
+    auto spGraph = self->subgIdx.lock();
+    if (!spGraph) {
+        PyErr_SetString(PyExc_Exception, "Current graph is NULL");
+        return Py_None;
+    }
+
+    auto spNode = spGraph->getNode(std::string(_ident));
+    if (!spNode) {
+        PyErr_SetString(PyExc_Exception, "Current Node is NULL");
+        return Py_None;
+    }
+
+    std::string _uuidpath = spNode->get_uuid_path();
+    PyObject* argList = Py_BuildValue("ss", _uuidpath.c_str());
     PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
     Py_DECREF(argList);
     return result;
@@ -305,23 +307,30 @@ Graph_addLink(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& graphName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
-    const QString& outNode = QString::fromUtf8(_outNode);
-    const QString& outSock = QString::fromUtf8(_outSock);
-    const QString& inNode = QString::fromUtf8(_inNode);
-    const QString& inSock = QString::fromUtf8(_inSock);
-
-    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
-    if (!pModel)
-    {
-        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
-        PyErr_WriteUnraisable(Py_None);
+    auto spGraph = self->subgIdx.lock();
+    if (!spGraph) {
+        PyErr_SetString(PyExc_Exception, "Current graph is NULL");
         return Py_None;
     }
+
+    auto outNode = spGraph->getNode(std::string(_outNode));
+    if (!outNode) {
+        PyErr_SetString(PyExc_Exception, "OutNode is NULL");
+        return Py_None;
+    }
+
+    auto inNode = spGraph->getNode(std::string(_inNode));
+    if (!inNode) {
+        PyErr_SetString(PyExc_Exception, "inNode is NULL");
+        return Py_None;
+    }
+
     EdgeInfo edge;
-    edge.inSockPath = UiHelper::constructObjPath(graphName, inNode, "[node]/inputs/", inSock);
-    edge.outSockPath = UiHelper::constructObjPath(graphName, outNode, "[node]/outputs/", outSock);
-    pModel->addLink(self->subgIdx, edge);
+    edge.inNode = std::string(_inNode);
+    edge.outNode = std::string(_outNode);
+    edge.inParam = std::string(_inSock);
+    edge.outParam = std::string(_outSock);
+    spGraph->addLink(edge);
     return Py_None;
 }
 
@@ -336,48 +345,30 @@ Graph_removeLink(ZSubGraphObject* self, PyObject* arg)
         return Py_None;
     }
 
-    const QString& graphName = self->subgIdx.data(ROLE_CLASS_NAME).toString();
-    const QString& outNode = QString::fromUtf8(_outNode);
-    const QString& outSock = QString::fromUtf8(_outSock);
-    const QString& inNode = QString::fromUtf8(_inNode);
-    const QString& inSock = QString::fromUtf8(_inSock);
-
-    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
-    if (!pModel)
-    {
-        PyErr_SetString(PyExc_Exception, "Current Model is NULL");
-        PyErr_WriteUnraisable(Py_None);
-        return Py_None;
-    }
-    QModelIndex outIdx = pModel->nodeIndex(outNode);
-    if (!outIdx.isValid())
-    {
-        PyErr_SetString(PyExc_Exception, QString("Node '' is invalid").arg(outNode).toUtf8());
-        PyErr_WriteUnraisable(Py_None);
+    auto spGraph = self->subgIdx.lock();
+    if (!spGraph) {
+        PyErr_SetString(PyExc_Exception, "Current graph is NULL");
         return Py_None;
     }
 
-    QModelIndex inIdx = pModel->nodeIndex(inNode);
-    if (!inIdx.isValid())
-    {
-        PyErr_SetString(PyExc_Exception, QString("Node '' is invalid").arg(inNode).toUtf8());
-        PyErr_WriteUnraisable(Py_None);
+    auto outNode = spGraph->getNode(std::string(_outNode));
+    if (!outNode) {
+        PyErr_SetString(PyExc_Exception, "OutNode is NULL");
         return Py_None;
     }
 
-    QModelIndex subgIdx = pModel->index(graphName);
-    if (!subgIdx.isValid())
-    {
-        PyErr_SetString(PyExc_Exception, QString("Subgraph '' is invalid").arg(graphName).toUtf8());
-        PyErr_WriteUnraisable(Py_None);
+    auto inNode = spGraph->getNode(std::string(_inNode));
+    if (!inNode) {
+        PyErr_SetString(PyExc_Exception, "inNode is NULL");
         return Py_None;
     }
-    QModelIndex linkIdx = pModel->linkIndex(subgIdx,
-                                            outIdx.data(ROLE_NODE_NAME).toString(),
-                                            outSock,
-                                            inIdx.data(ROLE_NODE_NAME).toString(),
-                                            inSock);
-    pModel->removeLink(linkIdx);
+
+    EdgeInfo edge;
+    edge.inNode = std::string(_inNode);
+    edge.outNode = std::string(_outNode);
+    edge.inParam = std::string(_inSock);
+    edge.outParam = std::string(_outSock);
+    spGraph->removeLink(edge);
     return Py_None;
 }
 
@@ -438,6 +429,6 @@ PyTypeObject SubgraphType = {
         PyType_GenericNew,                  /* tp_new */
 };
 
-#endif
+}
 
 #endif

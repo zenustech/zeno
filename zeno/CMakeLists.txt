@@ -40,7 +40,7 @@ endif()
 #    zeno_dbg_msvc(zeno)
 #endif()
 
-if (ZENO_WITH_PYTHON3)
+if (ZENO_WITH_PYTHON)
     message(STATUS "python3 libraries for zenoedit: ${Python3_LIBRARIES}")
     message(STATUS "python3 include directories for zenoedit: ${Python3_INCLUDE_DIRS}")
     target_link_libraries(zeno PRIVATE ${Python3_LIBRARIES})
@@ -89,17 +89,28 @@ if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zeno PUBLIC -DZENO_ENABLE_MAGICENUM)
 endif()
 
+if (ZENO_WITH_PYTHON)
+    find_package(Python3 COMPONENTS Development REQUIRED)
+
+    message(STATUS "python3 libraries for zenqt: ${Python3_LIBRARIES}")
+    message(STATUS "python3 include directories for zenqt: ${Python3_INCLUDE_DIRS}")
+    target_link_libraries(zeno PRIVATE ${Python3_LIBRARIES})
+    target_include_directories(zeno PRIVATE ${Python3_INCLUDE_DIRS})
+
+    target_compile_definitions(zeno PRIVATE -DZENO_WITH_PYTHON)
+endif()
+
 if (ZENO_WITH_REFLECTOR)
     include(${CMAKE_SOURCE_DIR}/reflect/cmake/ReflectionUtils.cmake)
 
     set(GENERATE_ON_BUILD_DIR ON)
     set(REFLECT_TEMPLATE_INCLUDE "#include <zeno/types/ObjectDef.h>")
     set(INJA_TEMPLATE_DIR_PATH  ${CMAKE_BINARY_DIR}/intermediate)
-    #Í·ÎÄ¼ş°üº¬Ä¿Â¼
+    #å¤´æ–‡ä»¶åŒ…å«ç›®å½•
     set(CUSTOM_HEADER_INCLUDE_DIR ${CMAKE_BINARY_DIR}/intermediate)
 
-    #±éÀúÕû¸öÄ¿Â¼£¬²¢ÊÕ¼¯ËùÓĞ±êÓĞZRECORD»òÕßZPRIMITIVEµÄÀàµÄÎÄ¼ş£¬ÔİÊ±²»°üº¬projectÎÄ¼ş¼Ğ£¬ÒÔºó¿ÉÄÜ²å¼ş»¯
-    #Èç¹ûÓĞÊ²Ã´¶¯Ì¬Object»òÕßÀàĞÍ£¬ÏÖÔÚÕâÀïÌí¼ÓËÑË÷Ä¿Â¼£¨Èç¹ûÃ»ÓĞµÄ»°£©
+    #éå†æ•´ä¸ªç›®å½•ï¼Œå¹¶æ”¶é›†æ‰€æœ‰æ ‡æœ‰ZRECORDæˆ–è€…ZPRIMITIVEçš„ç±»çš„æ–‡ä»¶ï¼Œæš‚æ—¶ä¸åŒ…å«projectæ–‡ä»¶å¤¹ï¼Œä»¥åå¯èƒ½æ’ä»¶åŒ–
+    #å¦‚æœæœ‰ä»€ä¹ˆåŠ¨æ€Objectæˆ–è€…ç±»å‹ï¼Œç°åœ¨è¿™é‡Œæ·»åŠ æœç´¢ç›®å½•ï¼ˆå¦‚æœæ²¡æœ‰çš„è¯ï¼‰
     file(GLOB_RECURSE scan_source CONFIGURE_DEPENDS 
         ../projects/FBX/*.h
         ../projects/FBX/*.cpp
@@ -118,9 +129,9 @@ if (ZENO_WITH_REFLECTOR)
             list(APPEND REFLECTE_HEADER ${file_path})
         endif()
     endforeach()
-    list(POP_FRONT REFLECTE_HEADER)    #°Ñ×î¿ªÊ¼µÄÒÆ³ıµô
+    list(POP_FRONT REFLECTE_HEADER)    #æŠŠæœ€å¼€å§‹çš„ç§»é™¤æ‰
 
-    #ËÍÈëGenerator²¢Éú³É
+    #é€å…¥Generatorå¹¶ç”Ÿæˆ
     #zeno_declare_reflection_support(zeno "${REFLECTE_HEADER}" zeno_util)
 endif()
 

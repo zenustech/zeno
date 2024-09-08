@@ -23,7 +23,7 @@
 #include <zeno/utils/scope_exit.h>
 #include <numeric>
 
-#ifdef ZENO_WITH_PYTHON3
+#ifdef ZENO_WITH_PYTHON
     #include <Python.h>
 #endif
 
@@ -1442,7 +1442,7 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     {"alembic"},
 });
 
-#ifdef ZENO_WITH_PYTHON3
+#ifdef ZENO_WITH_PYTHON
 static PyObject * pycheck(PyObject *pResult) {
     if (pResult == nullptr) {
         PyErr_Print();

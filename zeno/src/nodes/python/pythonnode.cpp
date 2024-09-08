@@ -1,49 +1,14 @@
-#ifdef ZENO_WITH_PYTHON3
-    #include <Python.h>
-#endif
-#include "pythonnode.h"
-#include "zenoapplication.h"
-#include "zenomainwindow.h"
-#include "model/graphsmanager.h"
-#include "model/parammodel.h"
+#ifdef ZENO_WITH_PYTHON
+#include <Python.h>
+#include <zeno/zeno.h>
 #include <zeno/utils/log.h>
 #include "variantptr.h"
 #include "zassert.h"
 
 
-PythonNode::PythonNode(const NodeUtilParam& params, QGraphicsItem* parent)
-    : ZenoNodeNew(params, parent)
+#if 0
+void onExecuteClicked()
 {
-
-}
-
-PythonNode::~PythonNode()
-{
-}
-
-ZGraphicsLayout* PythonNode::initCustomParamWidgets()
-{
-    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
-
-    ZSimpleTextItem* pNameItem = new ZSimpleTextItem("    ");
-    pNameItem->setBrush(m_renderParams.socketClr.color());
-    pNameItem->setFont(m_renderParams.socketFont);
-    pNameItem->updateBoundingRect();
-
-    pHLayout->addItem(pNameItem);
-
-    pHLayout->addSpacing(48);
-
-    ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Execute", -1, QSizePolicy::Expanding);
-    pEditBtn->setMinimumHeight(32);
-    pHLayout->addItem(pEditBtn);
-    connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onExecuteClicked()));
-    return pHLayout;
-}
-
-void PythonNode::onExecuteClicked()
-{
-#ifdef ZENO_WITH_PYTHON3
     std::string stdOutErr =
         "import sys\n\
 class CatchOutErr:\n\
@@ -87,7 +52,10 @@ sys.stderr = catchOutErr\n\
             }
         }
     }
-#else
+
     zeno::log_warn("The option 'ZENO_WITH_PYTHON3' should be ON");
-#endif
+
 }
+#endif
+
+#endif

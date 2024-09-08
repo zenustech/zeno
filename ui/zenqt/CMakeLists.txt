@@ -3,10 +3,6 @@ find_package(Threads REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
-if (ZENO_WITH_PYTHON3)
-    find_package(Python3 COMPONENTS Development REQUIRED)
-endif()
-
 #add_custom_target(
 #    clean_resource_file
 #    COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_font.o
@@ -41,14 +37,6 @@ if (ZENO_DEBUG_MSVC)
 endif()
 
 
-if (ZENO_WITH_PYTHON3)
-message(STATUS "python3 libraries for zenqt: ${Python3_LIBRARIES}")
-message(STATUS "python3 include directories for zenqt: ${Python3_INCLUDE_DIRS}")
-target_link_libraries(zenqt PRIVATE ${Python3_LIBRARIES})
-target_include_directories(zenqt PRIVATE ${Python3_INCLUDE_DIRS})
-endif()
-
-
 target_link_libraries(zenqt PRIVATE Threads::Threads)
 target_link_libraries(zenqt PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Svg Qt5::Network Qt5::Quick qt5advanceddocking QCodeEditor)
 
@@ -59,9 +47,5 @@ endif()
 
 target_link_libraries(zenqt PRIVATE zenocore zenovis)
 target_include_directories(zenqt PRIVATE . ./include ../3rdparty/include ../3rdparty/Qt-Advanced-Docking-System/src)
-
-if (ZENO_WITH_PYTHON3)
-    target_compile_definitions(zenqt PRIVATE -DZENO_WITH_PYTHON3)
-endif()
 
 add_custom_command(TARGET zenqt PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)
