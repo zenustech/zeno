@@ -6,6 +6,7 @@
 #include <zeno/core/data.h>
 
 class CurveModel;
+class QLabel;
 
 namespace curve_util
 {
@@ -53,9 +54,21 @@ namespace curve_util
 	zeno::CurveData fromLegacyCurve(const CURVE_DATA& _curve);
 	zeno::CurvesData fromLegacyCurves(const CURVES_DATA& _curves);
 
-    void updateRange(zeno::CurvesData& curves);
     QString getCurveKey(int index);
     bool updateCurve(const QPointF& point, CURVE_DATA &curve);
+
+	//keyframe
+    void updateRange(zeno::CurvesData& curves);
+    void getDelfCurveData(zeno::CurveData& curve, float y, bool visible, const QString& key);
+    void updateHandler(zeno::CurveData& curve);
+    void updateTimelineKeys(const QVector<int>& keys);
+    QStringList getKeys(const QObject* obj, QVariant qvar, QWidget* pControl, QLabel* pLabel);
+    zeno::CurvesData getCurvesData(const QPersistentModelIndex& perIdx, const QStringList& keys);
+    int getKeyFrameSize(const zeno::CurvesData& curves);
+	//from apphelper
+    QVector<QString> getKeyFrameProperty(const QVariant& val);
+    bool getCurveValue(QVariant& val);
+    bool updateCurve(QVariant oldVal, QVariant& val);
 }
 
 #endif

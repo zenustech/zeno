@@ -37,6 +37,9 @@ public:
     QList<QPair<QString, QModelIndex>> linksNeedUpdate();
     QList<QModelIndex> linksNeedRemove();
     QString getInKeyFromOutnodeName(const QString& nodeNameParam);
+
+signals:
+    void keyUpdated(QList<QPair<QString, QModelIndex>>);
 private:
     int m_allowDragColumn;
     QList<QString> m_reorderedTexts;
@@ -53,7 +56,7 @@ class ZenoDictListLinksTable : public QTableView {
 
 public:
     ZenoDictListLinksTable(int allowDragColumn, QWidget* parent = nullptr);
-    void initDelegate();
+    void init();
 
     void addLink(const zeno::EdgeInfo& edge);
     void removeLink(const zeno::EdgeInfo& edge);

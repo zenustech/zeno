@@ -82,6 +82,13 @@ struct CurveData : private _CurveDataDetails {
         vec2f left_handler{0, 0};
         vec2f right_handler{0, 0};
         HANDLE_TYPE controlType = HDL_VECTOR;
+
+        bool operator==(const ControlPoint& other) const{
+            return v == other.v && cp_type == other.cp_type && 
+                left_handler[0] == other.left_handler[0] && left_handler[1] == other.left_handler[1] &&
+                right_handler[0] == other.right_handler[0] && right_handler[1] == other.right_handler[1] && 
+                controlType == other.controlType;
+        }
     };
 
     struct Range {

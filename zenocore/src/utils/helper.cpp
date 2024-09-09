@@ -454,6 +454,24 @@ namespace zeno {
         else if (get_type<zeno::vec4s>() == var.type()) {
             return any_cast<zeno::vec4s>(var);
         }
+        else if (get_type<zeno::PrimVar>() == var.type()) {
+            zeno::PrimVar primvar= any_cast<zeno::PrimVar>(var);
+            return std::visit([](zeno::PrimVar&& pvar) -> zvariant {
+                using T = std::decay_t<decltype(pvar)>;
+                if constexpr (std::is_same_v<int, T>) {
+                    return std::get<int>(pvar);
+                }
+                else if constexpr (std::is_same_v<float, T>) {
+                    return std::get<float>(pvar);
+                }
+                else if constexpr (std::is_same_v<std::string, T>) {
+                    return std::get<std::string>(pvar);
+                }
+                else {
+                    return zvariant();
+                }
+            }, primvar);
+        } else 
         return zvariant();
     }
 

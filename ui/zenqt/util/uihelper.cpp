@@ -1134,6 +1134,22 @@ QString UiHelper::variantToString(const QVariant& var)
     return value;
 }
 
+QString UiHelper::editVariantToQString(const zeno::PrimVar& var)
+{
+    return std::visit([](auto&& val) -> QString {
+        using T = std::decay_t<decltype(val)>;
+    if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+        return QString::number(val);
+    }
+    else if constexpr (std::is_same_v<T, std::string>) {
+        return QString::fromStdString(val);
+    }
+    else {
+        return "";
+    }
+        }, var);
+}
+
 float UiHelper::parseNumeric(const QVariant& val, bool castStr, bool& bSucceed)
 {
     float num = 0;
@@ -1711,9 +1727,25 @@ zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid)
     zeno::CurvesData curves;
     if (qvar.canConvert<zeno::reflect::Any>()) {
         const auto& anyVal = qvar.value<zeno::reflect::Any>();
-        if (anyVal.has_value() && zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
+        if (anyVal.has_value() && zeno::reflect::get_type<zeno::PrimVar>() == anyVal.type()) {  //只有一个curve
+            zeno::PrimVar primvar = zeno::reflect::any_cast<zeno::PrimVar>(anyVal);
+            if (std::holds_alternative<zeno::CurveData>(primvar)) {
+                if (bValid) *bValid = true;
+                curves.keys.insert({"x", std::get<zeno::CurveData>(primvar)});
+                return zeno::reflect::any_cast<zeno::CurvesData>(curves);
+            }
+        } else if (anyVal.has_value() && zeno::reflect::get_type<zeno::vecvar>() == anyVal.type()) {
+            zeno::vecvar vvar = zeno::reflect::any_cast<zeno::vecvar>(anyVal);
+            for (int i = 0; i < vvar.size(); i++) {
+                if (std::holds_alternative<zeno::CurveData>(vvar[i])) {
+                    curves.keys.insert({ curve_util::getCurveKey(i).toStdString(), std::get<zeno::CurveData>(vvar[i])});
+                } else {
+                    if (bValid) *bValid = false;
+                    return curves;
+                }
+            }
             if (bValid) *bValid = true;
-            return zeno::reflect::any_cast<zeno::CurvesData>(anyVal);
+            return curves;
         }
     }
     if (bValid) *bValid = false;

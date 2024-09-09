@@ -335,6 +335,13 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         return false;
     }
+    case ROLE_NODE_DIRTY:
+    {
+        if (auto spNode = m_wpNode.lock()) {
+            spNode->mark_dirty(value.toBool());
+            return true;
+        }
+    }
     default:
         return false;
     }

@@ -44,7 +44,7 @@ zeno::CurveData CurveModel::getItems() const {
 
         dat.cpbases[i] = pt.point.x();
         dat.cpoints[i].controlType = (zeno::CurveData::HANDLE_TYPE)pt.controlType;
-        //TODO: dat.cpoints[i].cp_type = ?
+        dat.cpoints[i].cp_type = (zeno::CurveData::PointType)pItem->data(ROLE_CPTYPE).toInt();
         dat.cpoints[i].v = pt.point.y();
         dat.cpoints[i].left_handler = {(float)pt.leftHandler.x(), (float)pt.leftHandler.y()};
         dat.cpoints[i].right_handler = { (float)pt.rightHandler.x(), (float)pt.rightHandler.y() };
@@ -65,12 +65,14 @@ void CurveModel::initItems(zeno::CurveData const& curvedat)
         QPointF leftOffset = { curvedat.cpoints[i].left_handler[0], curvedat.cpoints[i].left_handler[1] };
         QPointF rightOffset = { curvedat.cpoints[i].right_handler[0], curvedat.cpoints[i].right_handler[1] };
         int handleType = curvedat.cpoints[i].controlType;
+        int cp_type = curvedat.cpoints[i].cp_type;
 
         QStandardItem* pItem = new QStandardItem;
         pItem->setData(logicPos, ROLE_NODEPOS);
         pItem->setData(leftOffset, ROLE_LEFTPOS);
         pItem->setData(rightOffset, ROLE_RIGHTPOS);
         pItem->setData(handleType, ROLE_TYPE);
+        pItem->setData(cp_type, ROLE_CPTYPE);
         appendRow(pItem);
     }
      }

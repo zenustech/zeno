@@ -2234,6 +2234,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
                     continue;
                 }
                 auto& sparam = iter->second;
+                convertToEditVar(param.defl, param.type);
                 sparam.defl = param.defl;
                 convertToEditVar(sparam.defl, param.type);
                 sparam.control = param.control;
