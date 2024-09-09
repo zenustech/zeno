@@ -48,9 +48,29 @@ QVariant DragDropModel::data(const QModelIndex& index, int role) const
 
 bool DragDropModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    if (index.isValid() && role == Qt::DisplayRole) {
+    if (!index.isValid()) {
+        return false;
+    }
+    if (role == Qt::DisplayRole) {
         m_outNodesInkeyMap[value.toString()] = dataMatrix[index.row()][1];
         dataMatrix[index.row()][index.column()] = value.toString();
+        emit dataChanged(index, index);
+        return true;
+    } else if (role == Qt::EditRole) {
+        QString newkey = value.toString();
+        const auto& existkey = [this, &newkey]() -> bool {
+            for (int i = 0; i < dataMatrix.size(); i++) {
+                if (dataMatrix[i][1] == newkey)
+                    return true;
+            }
+            return false;
+        };
+        while (existkey()) {
+            newkey += "_duplicate";
+        }
+        m_outNodesInkeyMap[dataMatrix[index.row()][m_allowDragColumn]] = newkey;
+        dataMatrix[index.row()][index.column()] = newkey;
+        emit keyUpdated(linksNeedUpdate());
         emit dataChanged(index, index);
         return true;
     }
@@ -73,7 +93,12 @@ bool DragDropModel::removeRows(int row, int count, const QModelIndex& parent)
 Qt::ItemFlags DragDropModel::flags(const QModelIndex& index) const
 {
     if (!index.isValid()) return Qt::NoItemFlags;
-    return QAbstractTableModel::flags(index) | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+    if (index.column() == 1) {
+        return QAbstractTableModel::flags(index) | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | Qt::ItemIsEditable;
+    }
+    else {
+        return QAbstractTableModel::flags(index) | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+    }
 }
 
 QVariant DragDropModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -219,7 +244,7 @@ ZenoDictListLinksTable::ZenoDictListLinksTable(int allowDragColumn, QWidget* par
     connect(this, &QTableView::clicked, this, &ZenoDictListLinksTable::slt_clicked);
 }
 
-void ZenoDictListLinksTable::initDelegate()
+void ZenoDictListLinksTable::init()
 {
     QAbstractItemModel* m_model = model();
     //delegateIcon
@@ -232,6 +257,10 @@ void ZenoDictListLinksTable::initDelegate()
     if (m_model->columnCount() > 0) {
         horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
         horizontalHeader()->setSectionResizeMode(m_model->columnCount() - 1, QHeaderView::ResizeToContents);
+    }
+
+    if (DragDropModel* model = qobject_cast<DragDropModel*>(this->model())) {
+        connect(model, &DragDropModel::keyUpdated, this, &ZenoDictListLinksTable::linksUpdated);
     }
 }
 

@@ -71,6 +71,13 @@ public:
     ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType targetType, QWidget* parent = nullptr);
     zeno::PrimVar getPrimVariant() const;
 
+    //keyframe
+    void setKeyFrame(const QStringList& keys);
+    void delKeyFrame(const QStringList& keys);
+    void editKeyFrame(const QStringList& keys);
+    void clearKeyFrame(const QStringList& keys);
+    bool serKeyFrameStyle(QVariant qvar);
+
 signals:
     void valueChanged(zeno::PrimVar newVal);
 

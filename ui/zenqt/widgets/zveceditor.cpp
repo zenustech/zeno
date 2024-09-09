@@ -7,6 +7,10 @@
 #include "panel/zenoproppanel.h"
 #include "zassert.h"
 #include <zeno/core/IObject.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "widgets/ztimeline.h"
+#include "curvemap/zcurvemapeditor.h"
 
 
 ZVecEditor::ZVecEditor(const zeno::vecvar& vec, bool bFloat, QString styleCls, QWidget* parent)
@@ -163,20 +167,52 @@ void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
                 }
             }
             else {
-                bool bConvert = false;
-                float fval = newText.toFloat(&bConvert);
-                if (bConvert) {
-                    m_vec[i] = fval;
+                bool isCurves = std::holds_alternative<zeno::CurveData>(m_vec[i]);
+                if (isCurves) { //k帧相关
+                    std::string xKey = curve_util::getCurveKey(i).toStdString();
+                    zeno::CurveData curvedata = std::get<zeno::CurveData>(m_vec[i]);
+                    bool bConvert = false;
+                    float fval = newText.toFloat(&bConvert);
+                    if (!bConvert) {
+                        fval = newText.toInt(&bConvert);
+                        if (!bConvert) {    //string
+                        }
+                    } 
+                    bool exist = false;
+                    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(mainWin);
+                    ZTimeline* timeline = mainWin->timeline();
+                    ZASSERT_EXIT(timeline);
+                    for (int i = 0; i < curvedata.cpbases.size(); i++) {
+                        if (curvedata.cpbases[i] == timeline->value()) {
+                            curvedata.cpoints[i].v = fval;
+                            exist = true;
+                            break;
+                        }
+                    }
+                    if (exist) {
+                        m_vec[i] = curvedata;
+                    } else {
+                        m_editors[i]->setText(QString::number(curvedata.eval(timeline->value())));
+                        return;
+                    }
                 }
                 else {
-                    //可以尝试一下转int
-                    int ival = newText.toInt(&bConvert);
+                    bool bConvert = false;
+                    float fval = newText.toFloat(&bConvert);
                     if (bConvert) {
-                        fval = ival;
                         m_vec[i] = fval;
                     }
                     else {
-                        m_vec[i] = newText.toStdString();
+                        //可以尝试一下转int
+                        int ival = newText.toInt(&bConvert);
+                        if (bConvert) {
+                            fval = ival;
+                            m_vec[i] = fval;
+                        }
+                        else {
+                            m_vec[i] = newText.toStdString();
+                        }
                     }
                 }
             }
@@ -301,4 +337,190 @@ void ZVecEditor::setHintListWidget(ZenoHintListWidget* hintlist, ZenoFuncDescrip
         m_editors[i]->setHintListWidget(hintlist, descLabl);
     }
     connect(m_hintlist, &ZenoHintListWidget::clickOutSideHide, this, &ZVecEditor::showNoFocusLineEdits);
+}
+
+void ZVecEditor::setKeyFrame(const QStringList& keys)
+{
+    if (m_vec.empty()) {
+        return;
+    }
+    bool isCurves = std::holds_alternative<zeno::CurveData>(m_vec[0]);
+    zeno::CurvesData curvesdata;
+    if (!isCurves) {
+        for (int i = 0; i < m_editors.size(); i++) {
+            auto key = curve_util::getCurveKey(i).toStdString();
+            zeno::CurveData curve = zeno::CurveData();
+            bool visible = keys.contains(QString::fromStdString(key));
+            curve_util::getDelfCurveData(curve, m_editors[i]->text().toFloat(), visible, QString::fromStdString(key));
+            curve.visible = visible;
+            m_vec[i] = curve;
+            curvesdata.keys.insert({ key, curve });
+        }
+    } else {
+        for (int i = 0; i < m_editors.size(); i++) {
+            auto key = curve_util::getCurveKey(i).toStdString();
+            bool visible = keys.contains(QString::fromStdString(key));
+            zeno::CurveData curve = std::get<zeno::CurveData>(m_vec[i]);
+            if (visible) {
+                if (!curve.visible) {
+                    curve = zeno::CurveData();
+                }
+                curve_util::getDelfCurveData(curve, m_editors[i]->text().toFloat(), visible, QString::fromStdString(key));
+                curve.visible = visible;
+                m_vec[i] = curve;
+                curvesdata.keys.insert({ key, curve });
+            }
+        }
+    }
+    curve_util::updateRange(curvesdata);
+    emit valueChanged(m_vec);
+}
+
+void ZVecEditor::delKeyFrame(const QStringList& keys)
+{
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    zeno::vecvar tmpvar = m_vec;
+    int currEditorIdx = 0;
+    for (int i = 0; i < m_editors.size(); i++) {
+        if (keys.contains(curve_util::getCurveKey(i))) {
+            currEditorIdx = i;
+            break;
+        }
+    }
+    zeno::CurveData curve = std::get<zeno::CurveData>(m_vec[currEditorIdx]);
+    for (int i = 0; i < curve.cpbases.size(); i++) {
+        int x = static_cast<int>(curve.cpbases[i]);
+        if (x == timeline->value()) {
+            bool otherEditorHasCurve = false;
+            for (int i = 0; i < m_editors.size(); i++) {
+                if (i != currEditorIdx) {
+                    if (std::get<zeno::CurveData>(m_vec[i]).visible) {
+                        otherEditorHasCurve = true;
+                        break;
+                    }
+                }
+            }
+            if (curve.cpbases.size() > 1) {
+                curve.cpbases.erase(curve.cpbases.begin() + i);
+                curve.cpoints.erase(curve.cpoints.begin() + i);
+                tmpvar[currEditorIdx] = curve;
+                m_vec[currEditorIdx] = curve;
+            }
+            else {
+                if (!otherEditorHasCurve) {
+                    for (int i = 0; i < m_editors.size(); i++) {
+                        zeno::CurveData c = std::get<zeno::CurveData>(m_vec[i]);
+                        c.visible = false;
+                        tmpvar[i] = c;
+                        m_vec[i] = m_editors[i]->text().toFloat();
+                    }
+                } else {
+                    zeno::CurveData c = std::get<zeno::CurveData>(m_vec[currEditorIdx]);
+                    c.visible = false;
+                    tmpvar[currEditorIdx] = c;
+                    m_vec[currEditorIdx] = c;
+                }
+            }
+            break;
+        }
+    }
+    updateProperties(curve_util::getKeyFrameProperty(QVariant::fromValue(zeno::reflect::make_any<zeno::vecvar>(tmpvar))));
+    emit valueChanged(m_vec);
+}
+
+void ZVecEditor::editKeyFrame(const QStringList& keys)
+{
+    if (keys.empty())
+        return;
+    std::string key = keys[0].toStdString();
+    zeno::CurveData curve;
+    int curveIdx = 0;
+    for (int i = 0; i < m_vec.size(); i++) {
+        if (key == curve_util::getCurveKey(i).toStdString()) {
+            curveIdx = i;
+            curve = std::get<zeno::CurveData>(m_vec[i]);
+            break;
+        }
+    }
+    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+    connect(pEditor, &ZCurveMapEditor::finished, this, [&pEditor, &key, &keys, &curveIdx, this](int result) {
+        zeno::CurvesData newCurves = pEditor->curves();
+        if (newCurves.contains(key)) {
+            m_vec[curveIdx] = newCurves[key];
+            emit valueChanged(m_vec);
+        }
+        else {
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(mainWin);
+            ZTimeline* timeline = mainWin->timeline();
+            ZASSERT_EXIT(timeline);
+            zeno::CurveData curve = std::get<zeno::CurveData>(m_vec[curveIdx]);
+            auto point = curve.cpoints[0];
+            point.v = m_editors[curveIdx]->text().toFloat();
+            curve.cpbases.clear();
+            curve.cpoints.clear();
+            curve.cpbases.push_back(timeline->value());
+            curve.cpoints.push_back(point);
+            curve.visible = false;
+            m_vec[curveIdx] = curve;
+            updateProperties(curve_util::getKeyFrameProperty(QVariant::fromValue(zeno::reflect::make_any<zeno::vecvar>(m_vec))));
+            emit valueChanged(m_vec);
+        }
+    });
+    zeno::CurvesData curves;
+    curves.keys.insert({ key, curve });
+    pEditor->setAttribute(Qt::WA_DeleteOnClose);
+    pEditor->addCurves(curves);
+    CURVES_MODEL models = pEditor->getModel();
+    for (auto model : models) {
+        for (int i = 0; i < model->rowCount(); i++) {
+            model->setData(model->index(i, 0), true, ROLE_LOCKX);
+        }
+    }
+    pEditor->exec();
+}
+
+void ZVecEditor::clearKeyFrame(const QStringList& keys)
+{
+    QVector<QString> properties;
+    for (int i = 0; i < m_editors.size(); i++) {
+        if (keys.contains(curve_util::getCurveKey(i))) {
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(mainWin);
+            ZTimeline* timeline = mainWin->timeline();
+            ZASSERT_EXIT(timeline);
+            zeno::CurveData curve = std::get<zeno::CurveData>(m_vec[i]);
+            auto point = curve.cpoints[0];
+            point.v = m_editors[i]->text().toFloat();
+            curve.cpbases.clear();
+            curve.cpoints.clear();
+            curve.cpbases.push_back(timeline->value());
+            curve.cpoints.push_back(point);
+            curve.visible = false;
+            m_vec[i] = curve;
+        }
+    }
+    updateProperties(curve_util::getKeyFrameProperty(QVariant::fromValue(zeno::reflect::make_any<zeno::vecvar>(m_vec))));
+    emit valueChanged(m_vec);
+}
+
+bool ZVecEditor::serKeyFrameStyle(QVariant qvar)
+{
+    QVariant newVal = qvar;
+    if (!curve_util::getCurveValue(newVal))
+        return false;
+    zeno::vecvar vvar = newVal.value<zeno::vecvar>();
+
+    for (int i = 0; i < m_editors.size(); i++) {
+        QString text = UiHelper::editVariantToQString(vvar[i]);
+        if (m_editors[i]->text() != text) {
+            BlockSignalScope blkScop(m_editors[i]);
+            m_editors[i]->setText(text);
+        }
+    }
+    updateProperties(curve_util::getKeyFrameProperty(qvar));
+    return true;
 }
