@@ -158,7 +158,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
 
     std::shared_ptr<INode> spNode = spGraph->createNode(nodeCls);
 
-    if (PyDict_Check(kw))
+    if (kw && PyDict_Check(kw))
     {
         PyObject* key, * value;
         Py_ssize_t pos = 0;

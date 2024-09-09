@@ -2,6 +2,9 @@
 #define PY_SSIZE_T_CLEAN
 #include "zenopyapi.h"
 
+
+namespace zeno {
+
 //get graph by path
 static PyObject*
 zeno_getGraph(PyObject* self, PyObject* args)
@@ -122,4 +125,6 @@ PyInit_zeno(void)
     }
 
     return m;
+}
+
 }

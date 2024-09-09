@@ -28,9 +28,10 @@ namespace zeno {
     } ZNodeObject;
 
     zeno::reflect::Any parseValueFromPyObject(PyObject* v, const ParamType type);
+
+    extern PyTypeObject ZNodeType;
+    extern PyTypeObject SubgraphType;
 }
 
-extern PyTypeObject ZNodeType;
-extern PyTypeObject SubgraphType;
 #endif
 #endif

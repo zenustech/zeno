@@ -4,6 +4,10 @@
 #include <zeno/zeno.h>
 #include "pythonenv.h"
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
 PyMODINIT_FUNC PyInit_zeno(void);
 
 void initPythonEnv(const char* progName)
@@ -32,10 +36,10 @@ void initPythonEnv(const char* progName)
     std::string tempCode;
     tempCode = "import zeno; gra = zeno.graph('main')";
 
-    //if (PyRun_SimpleString(tempCode.toUtf8()) < 0) {
-    //    zeno::log_warn("Failed to initialize Python module");
-    //    return;
-    //}
+    if (PyRun_SimpleString(tempCode.c_str()) < 0) {
+        zeno::log_warn("Failed to initialize Python module");
+        return;
+    }
 
     PyMem_RawFree(program);
 }
@@ -43,7 +47,13 @@ void initPythonEnv(const char* progName)
 struct _SGlobal_initPythonEnv
 {
     _SGlobal_initPythonEnv() {
+#ifdef WIN32
+        char filename[MAX_PATH];
+        DWORD size = GetModuleFileNameA(NULL, filename, MAX_PATH);
+        initPythonEnv(filename);
+#else
         initPythonEnv("");
+#endif
     }
 };
 
