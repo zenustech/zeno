@@ -8,7 +8,6 @@
 #include "zeno/utils/log.h"
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
-#include "startup/pythonenv.h"
 
 
 /* debug cutsom layout: ZGraphicsLayout */

@@ -2,7 +2,6 @@
 #include "zenopyapi.h"
 
 
-//need refactor
 namespace zeno{
 
 zeno::reflect::Any parseValueFromPyObject(PyObject* v, const ParamType type)

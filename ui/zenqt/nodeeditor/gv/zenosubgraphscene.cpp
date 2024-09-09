@@ -3,7 +3,6 @@
 #include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
-#include "pythonnode.h"
 #include "zenolink.h"
 #include <zeno/io/zsg2reader.h>
 #include <zeno/io/zenwriter.h>
@@ -257,14 +256,6 @@ ZenoNodeBase* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUt
     {
         return new CameraNode(params, 1);
     }
-    else if (descName == "PythonNode")
-    {
-        return new PythonNode(params);
-    }
-    //else if (descName == "PythonMaterialNode")
-    //{     //TODO:
-    //    return new PythonMaterialNode(params);
-    //}
     else
     {
         return new ZenoNodeNew(params);

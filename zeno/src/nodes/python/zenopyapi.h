@@ -5,6 +5,7 @@
 
 #include <Python.h>
 #include <zeno/core/Graph.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
 
 namespace zeno {
 

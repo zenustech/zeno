@@ -2,8 +2,6 @@
 #include <Python.h>
 #include <zeno/zeno.h>
 #include <zeno/utils/log.h>
-#include "variantptr.h"
-#include "zassert.h"
 
 
 #if 0

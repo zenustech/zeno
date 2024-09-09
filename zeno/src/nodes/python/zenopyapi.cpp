@@ -95,27 +95,19 @@ static PyModuleDef zenomodule = {
 };
 #endif
 
-static PyModuleDef zenomodule = {
-    PyModuleDef_HEAD_INIT,
-    "zeno",
-    "Example module that creates an extension type.",
-    -1
-};
-
 PyMODINIT_FUNC
 PyInit_zeno(void)
 {
-    //if (PyType_Ready(&SubgraphType) < 0)
-    //    return NULL;
+    if (PyType_Ready(&SubgraphType) < 0)
+        return NULL;
 
-    //if (PyType_Ready(&ZNodeType) < 0)
-    //    return NULL;
+    if (PyType_Ready(&ZNodeType) < 0)
+        return NULL;
 
     PyObject* m = PyModule_Create(&zenomodule);
     if (m == NULL)
         return NULL;
 
-    /*
     Py_INCREF(&SubgraphType);
     if (PyModule_AddObject(m, "Graph", (PyObject*)&SubgraphType) < 0) {
         Py_DECREF(&SubgraphType);
@@ -128,7 +120,6 @@ PyInit_zeno(void)
         Py_DECREF(m);
         return NULL;
     }
-    */
 
     return m;
 }

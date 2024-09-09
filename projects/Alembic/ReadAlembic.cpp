@@ -1512,10 +1512,10 @@ struct PrimsFilterInUserdataPython: INode {
 ZENDEFNODE(PrimsFilterInUserdataPython, {
     {
         {gParamType_List, "list"},
-        {gParamType_String, "py_code", "result = len(ud['label']) > 2", Socket_Primitve, Multiline},
+        {gParamType_String, "py_code", "result = len(ud['label']) > 2", Socket_Primitve, CodeEditor},
     },
     {
-        {"out"},
+        {gParamType_List, "out"},
     },
     {},
     {"alembic"},

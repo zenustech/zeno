@@ -39,4 +39,15 @@ void initPythonEnv(const char* progName)
 
     PyMem_RawFree(program);
 }
+
+struct _SGlobal_initPythonEnv
+{
+    _SGlobal_initPythonEnv() {
+        initPythonEnv("");
+    }
+};
+
+static _SGlobal_initPythonEnv _inst;
+
+
 #endif
