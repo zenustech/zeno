@@ -94,6 +94,7 @@ void ZenoApplication::initMetaTypes()
 {
     QMetaType::registerEqualsComparator<UI_VECTYPE>();
     QMetaType::registerEqualsComparator<CURVES_DATA>();
+    QMetaType::registerEqualsComparator<zeno::reflect::Any>();
     qRegisterMetaType<NodeState>();
     qRegisterMetaType<zeno::ObjPath>();
     qRegisterMetaType<zeno::CustomUI>();

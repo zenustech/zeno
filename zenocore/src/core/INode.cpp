@@ -1827,7 +1827,7 @@ ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any n
         zeno::log_error("cannot convert to edit variable");
         return false;
     }
-    if (!isAnyEqual(spParam.defl, new_value))
+    if (spParam.defl != new_value)
     {
         auto old_value = spParam.defl;
         spParam.defl = new_value;
