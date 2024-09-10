@@ -96,9 +96,14 @@ struct ReflectNodeClass : INodeClass {
 
     //整理customui层级
     void adjustCustomUiStructure(std::shared_ptr<INode> spNode,
-        std::map<std::string, ParamPrimitive>& inputPrims, std::map<std::string, ParamObject>& inputObjs,
-        std::map<std::string, ParamPrimitive>& outputPrims, std::map<std::string, ParamObject>& outputObjs,
-        std::set<std::string>& anyInputs, std::set<std::string>& anyOutputs) {
+        std::map<std::string, ParamPrimitive>& inputPrims,
+        std::map<std::string, ParamObject>& inputObjs,
+        std::map<std::string, ParamPrimitive>& outputPrims,
+        std::map<std::string, ParamObject>& outputObjs,
+        std::variant<ParamObject, ParamPrimitive>& retInfo,
+        std::set<std::string>& anyInputs,
+        std::set<std::string>& anyOutputs)
+    {
         const auto& makeWildCardPrimParam = [](const std::string& name, bool bInput, const std::string& wildCardGroup) {
             ParamPrimitive wildCardPrim;
             wildCardPrim.name = name;
@@ -136,6 +141,7 @@ struct ReflectNodeClass : INodeClass {
                         tab.groups.push_back(std::move(group));
                     }
                     m_customui.inputPrims.tabs.push_back(std::move(tab));
+
                     for (auto& reflectInputObj : reflectCustomUi.inputObjs.objs) {
                         if (anyInputs.find(reflectInputObj.mapTo) != anyInputs.end()) {
                             ParamObject wildCardObj;
@@ -148,12 +154,43 @@ struct ReflectNodeClass : INodeClass {
                             anyInputs.erase(reflectInputObj.mapTo);
                         }
                         else if (inputObjs.find(reflectInputObj.mapTo) != inputObjs.end()) {
-                            inputObjs[reflectInputObj.mapTo].name = reflectInputObj.dispName;
-                            inputObjs[reflectInputObj.mapTo].socketType = reflectInputObj.type;
-                            m_customui.inputObjs.push_back(std::move(inputObjs[reflectInputObj.mapTo]));
+                            auto& ObjSetting = inputObjs[reflectInputObj.mapTo];
+                            ObjSetting.name = reflectInputObj.dispName;
+                            if (ObjSetting.socketType != Socket_ReadOnly) {
+                                //如果出现了只读，说明是函数签名施加的，因以此为主，否则就由info决定
+                                ObjSetting.socketType = reflectInputObj.type;
+                            }
+                            m_customui.inputObjs.push_back(ObjSetting);
                             inputObjs.erase(reflectInputObj.mapTo);
                         }
                     }
+
+                    //查看返回值的输出信息：
+                    if (!reflectCustomUi.retInfo.dispName.empty())
+                    {
+                        std::visit([&](auto&& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, ParamObject>) {
+                                ParamObject outputObj;
+                                outputObj.bInput = false;
+                                outputObj.name = reflectCustomUi.retInfo.dispName;
+                                outputObj.socketType = reflectCustomUi.retInfo.type;
+                                outputObj.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
+                                outputObj.type = arg.type;
+                                m_customui.outputObjs.emplace_back(outputObj);
+                            }
+                            else if constexpr (std::is_same_v<T, ParamPrimitive>) {
+                                ParamPrimitive outputPrim;
+                                outputPrim.bInput = false;
+                                outputPrim.bVisible = false;
+                                outputPrim.name = reflectCustomUi.retInfo.dispName;
+                                outputPrim.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
+                                outputPrim.type = arg.type;
+                                m_customui.outputPrims.emplace_back(outputPrim);
+                            }
+                        }, retInfo);
+                    }
+
                     for (auto& reflectOutputObj : reflectCustomUi.outputObjs.objs) {
                         if (anyOutputs.find(reflectOutputObj.mapTo) != anyOutputs.end()) {
                             ParamObject wildCardObj;
@@ -170,7 +207,8 @@ struct ReflectNodeClass : INodeClass {
                             outputObjs[reflectOutputObj.mapTo].socketType = reflectOutputObj.type == Socket_Owning ? Socket_Output : reflectOutputObj.type;
                             m_customui.outputObjs.push_back(std::move(outputObjs[reflectOutputObj.mapTo]));
                             outputObjs.erase(reflectOutputObj.mapTo);
-                        }else if (reflectOutputObj.mapTo.empty()) {
+                        }
+                        else if (reflectOutputObj.mapTo.empty()) {
                             if (outputObjs.find("result") != outputObjs.end()) {    //空串mapping到返回值,返回值名为"result"
                                 outputObjs["result"].name = reflectOutputObj.dispName;
                                 outputObjs["result"].socketType = reflectOutputObj.type;
@@ -197,6 +235,7 @@ struct ReflectNodeClass : INodeClass {
                             outputPrims.erase(reflectOutputPrim.mapTo);
                         }
                     }
+
                     //若有剩余(是成员变量或apply中有,但ReflectCustomUI没有的参数)，再将剩余加入
                     if (m_customui.inputPrims.tabs.empty()) {
                         zeno::ParamTab tab;
@@ -205,11 +244,13 @@ struct ReflectNodeClass : INodeClass {
                         group.name = "Group1";
                         tab.groups.emplace_back(group);
                         m_customui.inputPrims.tabs.emplace_back(tab);
-                    } else if (m_customui.inputPrims.tabs[0].groups.empty()) {
+                    }
+                    else if (m_customui.inputPrims.tabs[0].groups.empty()) {
                         zeno::ParamGroup group;
                         group.name = "Group1";
                         m_customui.inputPrims.tabs[0].groups.emplace_back(group);
                     }
+
                     for (auto& [name, primParam] : inputPrims)
                         m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(primParam));
                     for (auto& [name, objParam] : inputObjs)
@@ -268,6 +309,7 @@ struct ReflectNodeClass : INodeClass {
         std::map<std::string, ParamPrimitive> outputPrims;
         std::map<std::string, ParamObject> inputObjs;
         std::map<std::string, ParamObject> outputObjs;
+        std::variant<ParamObject, ParamPrimitive> retInfo;
         std::set<std::string> anyInputs;
         std::set<std::string> anyOutputs;
 
@@ -470,6 +512,7 @@ struct ReflectNodeClass : INodeClass {
                 int idx = 1;
                 std::string param_name = "result";
 
+                //TODO: 返回值不该支持Any类型，会使得parse更为复杂
                 std::regex matchAny(R"(zeno::reflect::Any)");
                 if (std::regex_search(ret_type.name(), matchAny)) {   //判断Any类型，后续处理
                     anyOutputs.insert(param_name);
@@ -485,8 +528,7 @@ struct ReflectNodeClass : INodeClass {
                     outputObj.socketType = Socket_Output;
                     outputObj.type = type;
 
-                    outputObjs.insert({ param_name, outputObj });
-                    reg_outputobjs.insert(param_name);
+                    retInfo = outputObj;
                 }
                 else {
                     while (reg_outputprims.find(param_name) != reg_outputprims.end()) {
@@ -500,8 +542,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bVisible = false;
                     outPrim.wildCardGroup;
 
-                    outputPrims.insert({ param_name, outPrim });
-                    reg_outputprims.insert(param_name);
+                    retInfo = outPrim;
                 }
             }
 
@@ -615,7 +656,7 @@ struct ReflectNodeClass : INodeClass {
             }
         }
 
-        adjustCustomUiStructure(spNode, inputPrims, inputObjs, outputPrims, outputObjs, anyInputs, anyOutputs);
+        adjustCustomUiStructure(spNode, inputPrims, inputObjs, outputPrims, outputObjs, retInfo, anyInputs, anyOutputs);
 
         //init all params, and set defl value
         for (const ParamObject& param : m_customui.inputObjs)

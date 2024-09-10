@@ -955,6 +955,7 @@ namespace zeno {
     {
         //目前TF_IsObject只是标识Object子类，不包括IObject，如果需要后者，可以判断TF_IsIObject.
         //const 也可以用generator搞
+        isConstPtr = type.has_flags(TF_IsConst);
         return type.has_flags(TF_IsObject);
     }
 
@@ -1016,10 +1017,17 @@ namespace zeno {
         }
     }
 
-    void getFieldNameParamNameMapByReflectCustomUi(reflect::TypeBase* typeBase, std::shared_ptr<INode> node,
-        std::map<std::string, std::string>& inputPrims, std::map<std::string, std::string>& outputPrims, 
-        std::map<std::string, std::string>& inputObjs, std::map<std::string, std::string>& outputObjs)
+    void getFieldNameParamNameMapByReflectCustomUi(
+        reflect::TypeBase* typeBase,
+        std::shared_ptr<INode> node,
+        std::map<std::string, std::string>& inputPrims,
+        std::map<std::string, std::string>& outputPrims, 
+        std::map<std::string, std::string>& inputObjs,
+        std::map<std::string, std::string>& outputObjs,
+        zeno::_ObjectParam& retInfo   //要么是customui上的，如果前者没有构造，就是返回值上构造一个临时值
+        )
     {
+        retInfo.dispName = "";
         if (!typeBase || !node) {
             return;
         }
@@ -1042,9 +1050,13 @@ namespace zeno {
                     for (auto& obj : reflectCustomUi.outputObjs.objs) {
                         outputObjs.insert({ obj.mapTo, obj.dispName });
                     }
+                    retInfo = reflectCustomUi.retInfo;
                 }
                 break;
             }
+        }
+        if (retInfo.dispName.empty()) {
+            //只能从返回值拿信息了
         }
     }
 

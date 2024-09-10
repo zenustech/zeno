@@ -43,6 +43,7 @@ namespace zeno {
     {
         _ObjectGroup inputObjs;
         _ObjectGroup outputObjs;
+        _ObjectParam retInfo;       //也可以标识数值类型
         _ParamTab inputPrims;
         _ParamGroup outputPrims;
     };

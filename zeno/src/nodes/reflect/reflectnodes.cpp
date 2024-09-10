@@ -62,11 +62,15 @@ namespace zeno
                     _ObjectParam {"input_obj", "Input Object", Socket_Owning},
                 }
             },
+            //以下填的是以参数形式返回的外部引用
             _ObjectGroup {
                 {
                     //空字符串默认mapping到 apply的输出值
-                    _ObjectParam {"output_obj", "Output Object", Socket_Output},
                 }
+            },
+            //返回值信息：
+            _ObjectParam {
+                "", "Output Object", Socket_Output
             },
             _ParamTab {
                 "Tab1",
@@ -92,13 +96,13 @@ namespace zeno
         };
 
         std::shared_ptr<zeno::PrimitiveObject> apply(
-            std::shared_ptr<zeno::PrimitiveObject> input_obj,
+            std::shared_ptr<const zeno::PrimitiveObject> input_obj,
             const std::string& name1 = "a16",
             const std::string& name2 = "a24",
             int a = 234,
             float b = 456.234)
         {
-            std::shared_ptr<zeno::PrimitiveObject> res = std::make_shared<zeno::PrimitiveObject>();
+            std::shared_ptr<zeno::PrimitiveObject> res = std::const_pointer_cast<zeno::PrimitiveObject>(input_obj);
             return res;
         }
     };

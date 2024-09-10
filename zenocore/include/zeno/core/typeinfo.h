@@ -13,7 +13,7 @@ using namespace zeno::types;
 #define STR_CONCATE(s1, objectname, s2) s1##objectname##s2
 
 #define registerObjectTypeHash(ObjectName, Name) \
-        constexpr uint64_t gParamType_##Name = zeno::reflect::hash_64_typename(STRINGIZE(STR_CONCATE(class std::shared_ptr<struct zeno::, ObjectName, >)));
+        constexpr uint64_t gParamType_##Name = zeno::reflect::hash_64_typename(STRINGIZE(STR_CONCATE(shared_ptr<, ObjectName, >)));
 
 #define registerObjectTypeUIInfo(ObjectName, Name, Color) \
         struct _Sclass_registor_##ObjectName {\

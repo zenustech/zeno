@@ -9,6 +9,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
@@ -51,9 +52,14 @@ namespace zeno {
     bool isSameDimensionNumericVecType(zeno::ParamType left, zeno::ParamType right);
     ZENO_API bool outParamTypeCanConvertInParamType(zeno::ParamType outType, zeno::ParamType inType);
 
-    void getFieldNameParamNameMapByReflectCustomUi(zeno::reflect::TypeBase* typeBase, std::shared_ptr<INode> node,
-        std::map<std::string, std::string>& inputPrims, std::map<std::string, std::string>& outputPrims,
-        std::map<std::string, std::string>& inputObjs, std::map<std::string, std::string>& outputObjs);
+    void getFieldNameParamNameMapByReflectCustomUi(
+        zeno::reflect::TypeBase* typeBase,
+        std::shared_ptr<INode> node,
+        std::map<std::string, std::string>& inputPrims,
+        std::map<std::string, std::string>& outputPrims,
+        std::map<std::string, std::string>& inputObjs,
+        std::map<std::string, std::string>& outputObjs,
+        zeno::_ObjectParam& retInfo);
 }
 
 

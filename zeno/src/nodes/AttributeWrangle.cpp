@@ -21,8 +21,10 @@ namespace zeno
             _ObjectGroup {
                 {
                     //空字符串默认mapping到 apply的输出值
-                    _ObjectParam {"", "Output Object", Socket_Output},
                 }
+            },
+            _ObjectParam {
+                "", "Output Object", Socket_Output
             },
             _ParamTab {
                 "Tab1",

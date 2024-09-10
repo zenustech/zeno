@@ -32,6 +32,7 @@
 #include "reflect/type.hpp"
 #include <zeno/types/MeshObject.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
+#include <zeno/core/reflectdef.h>
 
 
 using namespace zeno::reflect;
@@ -428,7 +429,8 @@ ZENO_API void INode::reflecNode_apply()
             if (funcname == "apply") {
                 //根据ReflectCustomUI获取fieldName到displayName映射
                 std::map<std::string, std::string> inputPrims, outputPrims, inputObjs, outputObjs;
-                getFieldNameParamNameMapByReflectCustomUi(m_pTypebase, shared_from_this(), inputPrims, outputPrims, inputObjs, outputObjs);
+                zeno::_ObjectParam retInfoOnReflectUI;
+                getFieldNameParamNameMapByReflectCustomUi(m_pTypebase, shared_from_this(), inputPrims, outputPrims, inputObjs, outputObjs, retInfoOnReflectUI);
                 const auto& getOutputParamNameFromFieldName = [&outputPrims, &outputObjs](std::string paramname, bool isPrim) -> std::string {
                     if (!isPrim) {
                         return outputObjs.find(paramname) == outputObjs.end() ? paramname : outputObjs[paramname];
@@ -541,34 +543,38 @@ ZENO_API void INode::reflecNode_apply()
                         }
                     }
                 }
-                const zeno::reflect::RTTITypeInfo& rtti = func->get_return_rtti();
-                ParamType _type = rtti.get_decayed_hash() == 0 ? rtti.hash_code() : rtti.get_decayed_hash();
+                const zeno::reflect::RTTITypeInfo& ret_rtti = func->get_return_rtti();
+                ParamType _type = ret_rtti.get_decayed_hash() == 0 ? ret_rtti.hash_code() : ret_rtti.get_decayed_hash();
                 bool bConstPtr = false;
-                if (zeno::isObjectType(rtti, bConstPtr)) {
-                    //apply函数的返回值没法用命名表达，所以应该是空字符串
-                    auto iter = outputObjs.find("");
-                    if (iter != outputObjs.end()) {
-                        auto _iter = m_outputObjs.find(iter->second);
-                        if (_iter != m_outputObjs.end()) {
-                            _iter->second.spObject = any_cast<zany>(res);
+                if (zeno::isObjectType(ret_rtti, bConstPtr)) {
+                    if (!retInfoOnReflectUI.dispName.empty()) {
+                        auto iter = m_outputObjs.find(retInfoOnReflectUI.dispName);
+                        if (iter != m_outputObjs.end()) {
+                            iter->second.spObject = any_cast<zany>(res);
+                        }
+                        else {
+                            assert(false);
                         }
                     }
                     else {
-                        zeno::log_warn("invalid output object name");
+                        zeno::log_error("invalid output object name");
                     }
                 }
                 else {
-                    auto iter = outputPrims.find("");
-                    if (iter != outputPrims.end()) {
-                        auto _iter = m_outputPrims.find(iter->second);
-                        if (_iter != m_outputPrims.end()) {
-                            _iter->second.result = res;
+                    if (!retInfoOnReflectUI.dispName.empty()) {
+                        auto iter = m_outputPrims.find(retInfoOnReflectUI.dispName);
+                        if (iter != m_outputPrims.end()) {
+                            iter->second.result = res;
+                        }
+                        else {
+                            assert(false);
                         }
                     }
                     else {
-                        zeno::log_warn("invalid output prim name");
+                        zeno::log_error("invalid output object name");
                     }
                 }
+
                 //从成员变量到输入
                 for (zeno::reflect::IMemberField* field : m_pTypebase->get_member_fields()) {
                     if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
