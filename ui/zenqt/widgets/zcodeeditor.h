@@ -13,13 +13,16 @@ class ZCodeEditor : public QCodeEditor
 public:
     explicit ZCodeEditor(const QString& text, QWidget* parent = nullptr);
     void setFuncDescLabel(ZenoFuncDescriptionLabel* descLabel);
+
 signals:
     void editFinished(const QString& text);
+
 protected:
     void focusOutEvent(QFocusEvent* e) override;
 
 private slots:
     void slt_showFuncDesc();
+
 private:
   void initUI();
   QSyntaxStyle* loadStyle(const QString& path);

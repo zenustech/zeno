@@ -59,12 +59,6 @@ void ZLineEdit::sltSetFocus()
 
 void ZLineEdit::init()
 {
-    connect(this, &ZLineEdit::editingFinished, this, [=]() {
-        zeno::Formula fmla(text().toStdString(), "");
-        int ret = fmla.parse();
-        fmla.printSyntaxTree();
-        emit textEditFinished();
-    });
     connect(this, &QLineEdit::textChanged, this, [&](const QString& text) {
         if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList && m_nodeIdx.isValid())
         {
@@ -406,12 +400,15 @@ void ZLineEdit::focusOutEvent(QFocusEvent* event)
         disconnect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus);
         disconnect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus);
     }
+
+    Qt::FocusReason reason = event->reason();
     //右键显示keyframemenu导致的focusout不发出editfinish信号
-    if (event->reason() == Qt::PopupFocusReason) {
+    if (reason == Qt::PopupFocusReason) {
         BlockSignalScope scp(this);
         QLineEdit::focusOutEvent(event);
     }
-    else {
+    else if (reason != Qt::ActiveWindowFocusReason) {
+        //切换windows让widget不要发editFinished信号。
         QLineEdit::focusOutEvent(event);
     }
 }
@@ -423,8 +420,9 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
     , m_var(var)
     , m_targetType(targetType)
 {
-    connect(this, &ZLineEdit::textEditFinished, this, [=]() {
+    connect(this, &ZLineEdit::editingFinished, this, [=]() {
         QString newText = this->text();
+        zeno::PrimVar old_var = m_var;
         if (m_targetType == gParamType_Int) {
             bool bConvert = false;
             int ival = newText.toInt(&bConvert);
@@ -490,7 +488,8 @@ ZCoreParamLineEdit::ZCoreParamLineEdit(zeno::PrimVar var, zeno::ParamType target
                 return;
             }
         }
-        emit valueChanged(m_var);
+        if (old_var != m_var)
+            emit valueChanged(m_var);
     });
 }
 

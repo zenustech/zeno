@@ -103,7 +103,7 @@ namespace zenoui
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
-                QObject::connect(pathLineEdit, &ZLineEdit::textEditFinished, [=]() {
+                QObject::connect(pathLineEdit, &ZLineEdit::editingFinished, [=]() {
                     const std::string& path = pathLineEdit->text().toStdString();
                     cbSet.cbEditFinished(path);
                 });

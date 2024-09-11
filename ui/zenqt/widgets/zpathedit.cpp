@@ -79,7 +79,7 @@ void ZPathEdit::initUI()
         if (!zsgDir.isEmpty() && path.indexOf(zsgDir) != -1)
             path.replace(zsgDir, "=$ZSG");
         setText(path);
-        emit textEditFinished();
+        emit editingFinished();
         clearFocus();
         zenoApp->getMainWindow()->setInDlgEventLoop(false);
     });

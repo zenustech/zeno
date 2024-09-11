@@ -241,7 +241,7 @@ void DockContent_Parameter::initConnections()
     ZenoPropPanel* prop = qobject_cast<ZenoPropPanel*>(m_pWidget);
     connect(m_pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
 
-    connect(m_pNameLineEdit, &ZLineEdit::textEditFinished, this, [=]() {
+    connect(m_pNameLineEdit, &ZLineEdit::editingFinished, this, [=]() {
         QString value = m_pNameLineEdit->text();
         QString oldValue;
         if (!prop->updateCustomName(value, oldValue)) 

@@ -32,7 +32,9 @@ void ZCodeEditor::setFuncDescLabel(ZenoFuncDescriptionLabel* descLabel)
 void ZCodeEditor::focusOutEvent(QFocusEvent* e)
 {
     QCodeEditor::focusOutEvent(e);
-    emit editFinished(toPlainText());
+    Qt::FocusReason reason = e->reason();
+    if (reason != Qt::ActiveWindowFocusReason)
+        emit editFinished(toPlainText());
 }
 
 void ZCodeEditor::slt_showFuncDesc()

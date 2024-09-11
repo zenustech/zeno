@@ -35,7 +35,6 @@ protected:
 
 signals:
     void btnClicked();
-    void textEditFinished();
 
 public slots:
     void sltHintSelected(QString itemSelected);
