@@ -118,6 +118,7 @@ namespace zeno {
         std::string nickname;
         std::string iconResPath;
         std::string doc;
+        std::string refltctReturnName;      //the name of return value on reflected function.
     };
 
     struct ParamUpdateInfo {

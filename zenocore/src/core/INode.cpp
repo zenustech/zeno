@@ -421,7 +421,7 @@ ZENO_API void INode::apply() {
 
 }
 
-ZENO_API void INode::reflecNode_apply()
+ZENO_API void INode::reflectNode_apply()
 {
     if (m_pTypebase) {
         for (zeno::reflect::IMemberFunction* func : m_pTypebase->get_member_functions()) {
@@ -547,17 +547,21 @@ ZENO_API void INode::reflecNode_apply()
                 ParamType _type = ret_rtti.get_decayed_hash() == 0 ? ret_rtti.hash_code() : ret_rtti.get_decayed_hash();
                 bool bConstPtr = false;
                 if (zeno::isObjectType(ret_rtti, bConstPtr)) {
+                    std::string returnParamName;
                     if (!retInfoOnReflectUI.dispName.empty()) {
-                        auto iter = m_outputObjs.find(retInfoOnReflectUI.dispName);
-                        if (iter != m_outputObjs.end()) {
-                            iter->second.spObject = any_cast<zany>(res);
-                        }
-                        else {
-                            assert(false);
-                        }
+                        returnParamName = retInfoOnReflectUI.dispName;
                     }
                     else {
-                        zeno::log_error("invalid output object name");
+                        returnParamName = this->nodeClass->m_customui.refltctReturnName;
+                    }
+
+                    auto iter = m_outputObjs.find(returnParamName);
+                    if (iter != m_outputObjs.end()) {
+                        iter->second.spObject = any_cast<zany>(res);
+                    }
+                    else {
+                        assert(false);
+                        zeno::log_error("invalid output object name `{}` from return value", returnParamName);
                     }
                 }
                 else {
@@ -1337,7 +1341,7 @@ ZENO_API void INode::doApply() {
             apply();
         }
         else {
-            reflecNode_apply();
+            reflectNode_apply();
         }
     }
     log_debug("==> leave {}", m_name);

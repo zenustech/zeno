@@ -165,28 +165,20 @@ struct ReflectNodeClass : INodeClass {
                         }
                     }
 
-                    //查看返回值的输出信息：
+                    //查看返回值的输出信息，如果有映射，就修改返回值的名称信息：
                     if (!reflectCustomUi.retInfo.dispName.empty())
                     {
-                        std::visit([&](auto&& arg) {
+                        std::visit([&](auto& arg) {
                             using T = std::decay_t<decltype(arg)>;
                             if constexpr (std::is_same_v<T, ParamObject>) {
-                                ParamObject outputObj;
-                                outputObj.bInput = false;
-                                outputObj.name = reflectCustomUi.retInfo.dispName;
-                                outputObj.socketType = reflectCustomUi.retInfo.type;
-                                outputObj.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
-                                outputObj.type = arg.type;
-                                m_customui.outputObjs.emplace_back(outputObj);
+                                arg.name = reflectCustomUi.retInfo.dispName;
+                                arg.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
+                                m_customui.refltctReturnName = arg.name;
                             }
                             else if constexpr (std::is_same_v<T, ParamPrimitive>) {
-                                ParamPrimitive outputPrim;
-                                outputPrim.bInput = false;
-                                outputPrim.bVisible = false;
-                                outputPrim.name = reflectCustomUi.retInfo.dispName;
-                                outputPrim.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
-                                outputPrim.type = arg.type;
-                                m_customui.outputPrims.emplace_back(outputPrim);
+                                arg.name = reflectCustomUi.retInfo.dispName;
+                                arg.wildCardGroup = reflectCustomUi.retInfo.wildCardGroup;
+                                m_customui.refltctReturnName = arg.name;
                             }
                         }, retInfo);
                     }
@@ -250,23 +242,23 @@ struct ReflectNodeClass : INodeClass {
                         group.name = "Group1";
                         m_customui.inputPrims.tabs[0].groups.emplace_back(group);
                     }
-
-                    for (auto& [name, primParam] : inputPrims)
-                        m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(primParam));
-                    for (auto& [name, objParam] : inputObjs)
-                        m_customui.inputObjs.push_back(std::move(objParam));
-                    for (auto& [name, primParam] : outputPrims)
-                        m_customui.outputPrims.push_back(std::move(primParam));
-                    for (auto& [name, objParam] : outputObjs)
-                        m_customui.outputObjs.push_back(std::move(objParam));
-                    for (auto& name : anyInputs)
-                        m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(makeWildCardPrimParam(name, true, "")));
-                    for (auto& name : anyOutputs)
-                        m_customui.outputPrims.push_back(std::move(makeWildCardPrimParam(name, false, "")));
-                    return;
                 }
             }
         }
+
+        //处理返回值信息：
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, ParamObject>) {
+                if (!arg.name.empty())
+                    m_customui.outputObjs.emplace_back(arg);
+            }
+            else if constexpr (std::is_same_v<T, ParamPrimitive>) {
+                if (!arg.name.empty())
+                    m_customui.outputPrims.emplace_back(arg);
+            }
+        }, retInfo);
+
         //如果没有定义ReflectCustomUI类型成员变量，使用默认
         if (m_customui.inputPrims.tabs.empty())
         {
@@ -276,11 +268,13 @@ struct ReflectNodeClass : INodeClass {
             group.name = "Group1";
             tab.groups.emplace_back(group);
             m_customui.inputPrims.tabs.emplace_back(tab);
-        } else if (m_customui.inputPrims.tabs[0].groups.empty()) {
+        }
+        else if (m_customui.inputPrims.tabs[0].groups.empty()) {
             zeno::ParamGroup group;
             group.name = "Group1";
             m_customui.inputPrims.tabs[0].groups.emplace_back(group);
         }
+
         for (auto& [name, primParam] : inputPrims)
             m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(primParam));
         for (auto& [name, objParam] : inputObjs)
@@ -289,10 +283,13 @@ struct ReflectNodeClass : INodeClass {
             m_customui.outputPrims.push_back(std::move(primParam));
         for (auto& [name, objParam] : outputObjs)
             m_customui.outputObjs.push_back(std::move(objParam));
+        for (auto& name : anyInputs)
+            m_customui.inputPrims.tabs[0].groups[0].params.push_back(std::move(makeWildCardPrimParam(name, true, "")));
+        for (auto& name : anyOutputs)
+            m_customui.outputPrims.push_back(std::move(makeWildCardPrimParam(name, false, "")));
     }
-        
-    std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) override {
 
+    std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) override {
         std::shared_ptr<INode> spNode = ctor();
         spNode->initUuid(pGraph, classname);
         spNode->set_name(name);
@@ -309,7 +306,7 @@ struct ReflectNodeClass : INodeClass {
         std::map<std::string, ParamPrimitive> outputPrims;
         std::map<std::string, ParamObject> inputObjs;
         std::map<std::string, ParamObject> outputObjs;
-        std::variant<ParamObject, ParamPrimitive> retInfo;
+        std::variant<ParamObject, ParamPrimitive> retInfo;  //函数返回值的信息（只有返回值存在类型时才赋值）
         std::set<std::string> anyInputs;
         std::set<std::string> anyOutputs;
 
@@ -529,6 +526,8 @@ struct ReflectNodeClass : INodeClass {
                     outputObj.type = type;
 
                     retInfo = outputObj;
+                    //返回值未必就是这个名字，后续如果存在ui参数映射（参考ReflectCustomUI），会调整这个名称值（给INode::apply用）
+                    m_customui.refltctReturnName = param_name;
                 }
                 else {
                     while (reg_outputprims.find(param_name) != reg_outputprims.end()) {
@@ -543,6 +542,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.wildCardGroup;
 
                     retInfo = outPrim;
+                    m_customui.refltctReturnName = param_name;
                 }
             }
 

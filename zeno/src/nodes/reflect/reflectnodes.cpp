@@ -41,16 +41,16 @@ namespace zeno
         zeno::vec3f outvec;
     };
 
-    struct ZDEFNODE(DisplayName = "IsImplNode") SimpleReflect : zeno::INode
+    struct ZDEFNODE() SimpleReflect : zeno::INode
     {
         SimpleReflect() = default;
 
-        std::string apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf = "abc", zeno::vec3f c = zeno::vec3f({ 0,1,0 })/*, float& ret1, std::shared_ptr<zeno::IObject>&output_obj*/) {
+        std::shared_ptr<zeno::PrimitiveObject> apply(std::shared_ptr<zeno::PrimitiveObject> input_obj, std::string wtf = "abc", zeno::vec3f c = zeno::vec3f({ 0,1,0 })/*, float& ret1, std::shared_ptr<zeno::IObject>&output_obj*/) {
             //ret1 = 8;
             zeno::reflect::Any vec = zeno::reflect::make_any<zeno::vec3f>(zeno::vec3f({ 0.,1.0,2. }));
             zeno::reflect::any_cast<zeno::vec3f>(vec);
             vec.type();
-            return "";
+            return input_obj;
         }
     };
 
