@@ -311,6 +311,7 @@ struct ReflectNodeClass : INodeClass {
         std::set<std::string> anyOutputs;
 
         //先遍历所有成员，收集所有参数，目前假定所有成员变量都作为节点的参数存在，后续看情况可以指定
+#if 0
         for (IMemberField* field : typebase->get_member_fields()) {
             // 找到我们要的
             std::string field_name(field->get_name().c_str());
@@ -491,7 +492,7 @@ struct ReflectNodeClass : INodeClass {
                 }
             }
         }
-
+#endif
         //通过寻找apply函数上的参数和返回值，为节点添加参数，不过ZenoReflect还没支持参数名称的反射，只有类型信息
         for (IMemberFunction* func : typebase->get_member_functions())
         {

@@ -44,7 +44,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         [this](const std::string& name, zeno::reflect::Any old_value, zeno::reflect::Any new_value) {
             for (int i = 0; i < m_items.size(); i++) {
                 if (m_items[i].name.toStdString() == name) {
-                    if (!zeno::isAnyEqual(m_items[i].value, new_value))
+                    if (m_items[i].value != new_value)
                     {
                         QModelIndex idx = createIndex(i, 0);
                         setData(idx, QVariant::fromValue(new_value), ROLE_PARAM_VALUE);
@@ -295,8 +295,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     case ROLE_PARAM_VALUE:
     {
         const zeno::reflect::Any& anyVal = value.value<zeno::reflect::Any>();
-        assert(anyVal.has_value());
-        if (zeno::isAnyEqual(anyVal, param.value)) {
+        if (anyVal == param.value) {
             return false;
         }
         param.value = anyVal;

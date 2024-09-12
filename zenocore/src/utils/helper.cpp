@@ -524,6 +524,10 @@ namespace zeno {
         {
             return nullptr;
         }
+        else if (type == Param_Wildcard)
+        {
+            return Any();
+        }
         return Any();
     }
 

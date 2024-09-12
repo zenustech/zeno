@@ -1884,10 +1884,14 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
             {
                 auto& spParam = prim->second;
                 if (type != spParam.type)
-    {
+                {
                     spParam.type = type;
+                    //默认值也要更新
+                    zeno::reflect::Any defl = initAnyDeflValue(type);
+                    convertToEditVar(defl, type);
                     CALLBACK_NOTIFY(update_param_type, param, type)
-                        return true;
+                    update_param(spParam.name, defl);
+                    return true;
                 }
             }
         }
@@ -1903,7 +1907,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                     spParam.type = type;
                     CALLBACK_NOTIFY(update_param_type, param, type)
                     return true;
-    }
+                }
             }
         }
     return false;

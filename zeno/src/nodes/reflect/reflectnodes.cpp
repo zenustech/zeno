@@ -111,6 +111,47 @@ namespace zeno
     {
 
     };
+
+    struct ZDEFNODE() WildcardNode : zeno::INode
+    {
+        ReflectCustomUI m_uilayout = {
+            _ObjectGroup {
+                {
+                    _ObjectParam {"input_obj", "Input Object", Socket_Owning},
+                }
+            },
+            //以下填的是以参数形式返回的外部引用
+            _ObjectGroup {
+                {
+                    //空字符串默认mapping到 apply的输出值
+                }
+            },
+            //返回值信息：
+            _ObjectParam {
+                "", "Output Data", Socket_Primitve
+            },
+            _ParamTab {
+                "Tab1",
+                {
+                    _ParamGroup {
+                        "Group1",
+                        {
+                            _Param { "name1", "Name 1", "a1" },
+                            _Param { "name2", "Name 2", "a2" },
+                        }
+                    }
+                }
+            },
+            _ParamGroup {
+
+            }
+        };
+
+        int apply(zeno::reflect::Any name1, zeno::reflect::Any name2)
+        {
+            return 233;
+        }
+    };
 }
 
 REFLECT_REGISTER_RTTI_TYPE_WITH_NAME(INode, INode)

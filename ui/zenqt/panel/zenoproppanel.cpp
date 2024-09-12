@@ -459,6 +459,7 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     const QString& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
 
     zeno::reflect::Any anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+    const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
 
     //DEBUG:
     if (0) {
@@ -468,11 +469,10 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
         paramsM->data(idxParam, ROLE_PARAM_VALUE);
     }
 
-    ZASSERT_EXIT(anyVal.has_value());
+    ZASSERT_EXIT(type == Param_Wildcard || anyVal.has_value());
 
     zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
 
-    const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
     const zeno::reflect::Any& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
     QPersistentModelIndex perIdx(paramItem->index());
