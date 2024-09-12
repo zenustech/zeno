@@ -490,7 +490,7 @@ namespace zeno {
         }
         else if (type == gParamType_Bool)
         {
-            return (int)0;
+            return false;
         }
         else if (type == gParamType_Vec2i)
         {
