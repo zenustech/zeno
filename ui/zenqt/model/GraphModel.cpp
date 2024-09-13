@@ -939,7 +939,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
 
         zeno::NodeData node;
 
-        if (nodedata.cls == "Subnet" || cate == "assets") {
+        if (zeno::isDerivedFromSubnetNodeName(nodedata.cls) || cate == "assets") {
             QString nodeName = QString::fromStdString(spNode->get_name());
             QString uuid = m_name2uuid[nodeName];
             ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), zeno::NodeData());
@@ -961,7 +961,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                 {
                     for (auto& [name, nodedata] : nodedata.subgraph.value().nodes)
                     {
-                        if (nodedata.cls == "Subnet") {   //if is subnet, create recursively
+                        if (zeno::isDerivedFromSubnetNodeName(nodedata.cls)) {   //if is subnet, create recursively
                             QStringList cur = currentPath();
                             cur.append(QString::fromStdString(spNode->get_name()));
                             GraphModel* model = GraphsManager::instance().getGraph(cur);

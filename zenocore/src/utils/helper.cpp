@@ -1048,6 +1048,14 @@ namespace zeno {
         }
     }
 
+    ZENO_API bool isDerivedFromSubnetNodeName(const std::string& clsname)
+    {
+        if (clsname == "Subnet" || clsname == "DopNetwork") {
+            return true;
+        }
+        return false;
+    }
+
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
         return false;
     }

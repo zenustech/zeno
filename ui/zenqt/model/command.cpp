@@ -1,5 +1,6 @@
 #include "command.h"
 #include "variantptr.h"
+#include <zeno/utils/helper.h>
 
 
 AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath)
@@ -10,7 +11,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
     , m_pos(nodedata.uipos)
     , m_cate(cate)
 {
-    if (m_nodeData.cls == "Subnet") //init subnet default socket
+    if (zeno::isDerivedFromSubnetNodeName(m_nodeData.cls)) //init subnet default socket
     {
         zeno::ParamTab tab;
         zeno::ParamGroup default;

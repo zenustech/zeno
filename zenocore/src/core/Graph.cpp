@@ -318,7 +318,7 @@ ZENO_API void Graph::init(const GraphData& graph) {
                 spNode->update_param("heatmap", json);
             }
         }
-        else if (node.cls == "Subnet")
+        else if (zeno::isDerivedFromSubnetNodeName(node.cls))
         {
             if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode))
                 sbn->setCustomUi(node.customUi);
@@ -469,7 +469,7 @@ void Graph::updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph,
             }
         }
     } 
-    else if (spNode->get_nodecls() == "Subnet") {  //通过inputObj传入子图
+    else if (zeno::isDerivedFromSubnetNodeName(spNode->get_nodecls())) {  //通过inputObj传入子图
         spNode->update_param_type(paramName, bPrim, bInput, newtype);
         if (std::shared_ptr<SubnetNode> subnet = std::dynamic_pointer_cast<SubnetNode>(spNode)) {
             for (auto& link : subnet->getLinksByParam(bInput, paramName)) {
@@ -628,7 +628,7 @@ void Graph::resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INod
                     }
                 }
             }
-            else if (node->get_nodecls() == "Subnet") {
+            else if (zeno::isDerivedFromSubnetNodeName(node->get_nodecls())) {
                 if (std::shared_ptr<SubnetNode> subnet = std::dynamic_pointer_cast<SubnetNode>(node)) {
                     if (auto innerNode = subnet->subgraph->getNode(paramName)) {
                         std::vector<std::string> inparamNames;
@@ -801,7 +801,7 @@ ZENO_API std::shared_ptr<INode> Graph::createNode(std::string const& cls, const 
     if (cls == "CameraNode") {   //相机相关节点和帧相关
         frame_nodes.insert(uuid);
     }
-    if (cls == "Subnet") {
+    if (zeno::isDerivedFromSubnetNodeName(cls)) {
         subnet_nodes.insert(uuid);
     }
     if (cls == "SubInput") {
