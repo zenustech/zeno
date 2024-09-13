@@ -66,7 +66,125 @@ struct CppTimer {
 };
 
 static CppTimer timer, localTimer;
+static void cleanMesh(zeno::PrimitiveObject* prim,
+               std::vector<zeno::vec3f> &verts,
+               std::vector<zeno::vec3f> &nrm,
+               std::vector<zeno::vec3f> &clr,
+               std::vector<zeno::vec3f> &tang,
+               std::vector<zeno::vec3f> &uv,
+               std::vector<zeno::vec3i> &idxBuffer)
+{
+  //first pass, scan the prim to see if verts require duplication
+  std::vector<std::vector<zeno::vec3f>> vert_uv;
+  std::vector<std::vector<zeno::vec2i>> idx_mapping;
+  vert_uv.resize(prim->verts.size());
+  idx_mapping.resize(prim->verts.size());
+  int count = 0;
+  for(int i=0;i<prim->tris.size();i++)
+  {
+    //so far, all value has already averaged on verts, except uv
+    zeno::vec3i idx = prim->tris[i];
+    for(int j=0;j<3;j++)
+    {
+      std::string uv_name;
+      uv_name = "uv" + std::to_string(j);
+      auto vid = idx[j];
+      if(vert_uv[vid].size()==0)
+      {
+        vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+        //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+        //count++;
+      }
+      else
+      {
+        zeno::vec3f uv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+        bool have = false;
+        for(int k=0;k<vert_uv[vid].size();k++)
+        {
+          auto & tester = vert_uv[vid][k];
+          if(tester[0] == uv[0] && tester[1] == uv[1] && tester[2] == uv[2] )
+          {
+            have = true;
+          }
+        }
+        if(have == false)
+        {
+          //need a push_back
+          vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+          //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+          //count++;
+        }
+      }
+    }
+  }
+  count = 0;
+  for(int i=0;i<vert_uv.size();i++) {
+    for(int j=0;j<vert_uv[i].size();j++) {
+      idx_mapping[i].push_back(zeno::vec2i(i, count));
+      count++;
+    }
+  }
+  //first pass done
 
+  // [old_idx, new_idx ] = idx_mapping[vid][k] tells index mapping of old and new vert
+
+  //run a pass to assemble new data
+  verts.resize(0);
+  nrm.resize(0);
+  clr.resize(0);
+  uv.resize(0);
+  tang.resize(0);
+  verts.reserve(count);
+  nrm.reserve(count);
+  clr.reserve(count);
+  uv.reserve(count);
+  tang.reserve(count);
+  for(int i=0;i<vert_uv.size();i++)
+  {
+    for(int j=0;j<vert_uv[i].size();j++)
+    {
+      auto vid = idx_mapping[i][j][0];
+      auto uvt = vert_uv[i][j];
+      auto v  = prim->verts[vid];
+      auto n  = prim->verts.attr<zeno::vec3f>("nrm")[vid];
+      auto c  = prim->verts.attr<zeno::vec3f>("clr")[vid];
+      auto t  = prim->verts.attr<zeno::vec3f>("atang")[vid];
+      verts.push_back(v);
+      nrm.push_back(n);
+      clr.push_back(c);
+      tang.push_back(t);
+      uv.push_back(uvt);
+    }
+  }
+
+  idxBuffer.resize(prim->tris.size());
+  //third pass: assemble new idx map
+  for(int i=0;i<prim->tris.size();i++)
+  {
+    zeno::vec3i idx = prim->tris[i];
+    for(int j=0;j<3;j++) {
+
+      auto old_vid = idx[j];
+      if(idx_mapping[old_vid].size()==1)
+      {
+        idxBuffer[i][j] = idx_mapping[old_vid][0][1];
+      }
+      else
+      {
+        std::string uv_name = "uv" + std::to_string(j);
+        auto &tuv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+        for(int k=0;k<vert_uv[old_vid].size();k++)
+        {
+          auto &vuv = vert_uv[old_vid][k];
+          if(vuv[0] == tuv[0] && vuv[1] == tuv[1] && vuv[2] == tuv[2])
+          {
+            idxBuffer[i][j] = idx_mapping[old_vid][k][1];
+          }
+        }
+      }
+    }
+  }
+}
 struct GraphicsManager {
     Scene *scene;
 
@@ -554,7 +672,40 @@ struct GraphicsManager {
                         vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                     });
                     auto ts = (int const *)prim->tris.data();
-                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
+                    auto nvs = prim->verts.size();
+                    auto nts = prim->tris.size();
+//                    std::vector<zeno::vec3f> verts;
+//                    std::vector<zeno::vec3f> nrm;
+//                    std::vector<zeno::vec3f> clr;
+//                    std::vector<zeno::vec3f> tang;
+//                    std::vector<zeno::vec3f> uv;
+//                    std::vector<zeno::vec3i> idxBuffer;
+//                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer);
+//                    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
+//                    oPrim->verts.resize(verts.size());
+//                    oPrim->add_attr<zeno::vec3f>("nrm");
+//                    oPrim->add_attr<zeno::vec3f>("clr");
+//                    oPrim->add_attr<zeno::vec3f>("uv");
+//                    oPrim->add_attr<zeno::vec3f>("atang");
+//                    oPrim->tris.resize(idxBuffer.size());
+//
+//
+//                    oPrim->verts.attr<zeno::vec3f>("pos") = verts;
+//                    oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
+//                    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
+//                    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
+//                    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
+//                    oPrim->tris = idxBuffer;
+//
+//                    auto vs = (float const *)oPrim->verts.data();
+//                    std::map<std::string, std::pair<float const *, size_t>> vtab;
+//                    oPrim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+//                      vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
+//                    });
+//                    auto ts = (int const *)oPrim->tris.data();
+//                    auto nvs = oPrim->verts.size();
+//                    auto nts = oPrim->tris.size();
+
                     std::vector<std::string> matNameList(0);
                     if(matNum>0)
                     {
@@ -565,10 +716,9 @@ struct GraphicsManager {
                             matNameList.emplace_back(matName);
                         }
                     }
-                    auto nvs = prim->verts.size();
-                    auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
+                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
                     xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
                 }
             }

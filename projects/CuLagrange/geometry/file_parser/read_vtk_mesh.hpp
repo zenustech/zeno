@@ -3,6 +3,7 @@
 #include <cassert>
 #include <array>
 #include <cstdio>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cstring>
@@ -543,7 +544,200 @@ namespace zeno {
         printf("finish reading polydata\n");
         return true;
     }
+    bool stringReplace(std::string &in, std::string del, std::string add)
+    {
+      size_t start_pos = in.find(del);
+      if(start_pos == std::string::npos)
+        return false;
+      in.replace(start_pos, del.length(), add);
+      return true;
+    }
+    bool read_unstructured_grid_to_points(std::string file_name, std::shared_ptr<zeno::PrimitiveObject>& prim)
+    {
+      std::ifstream file;
+      file.open(file_name.c_str());
+      int num_points;
+      int num_field_data;
+      std::string readtype;
+      while(!file.eof())
+      {
+        std::string line_str;
+        std::getline(file,line_str);
+        if(line_str == "BINARY")
+        {
+          readtype = "BINARY";
+        }
+        if(line_str == "ASCII")
+        {
+          readtype = "ASCII";
+        }
+        if(line_str.find("POINTS ")!=std::string::npos)
+        {
+          std::string a;
+          std::string type;
+          std::stringstream ss;
+          ss<<line_str;
+          ss>>a>>num_points>>type;
+          prim->verts.resize(num_points);
+          if(readtype == "ASCII") {
+            for (int i = 0; i < num_points; i++) {
+              for (int j = 0; j < 3; j++)
+                file >> prim->verts[i][j];
+            }
+          }else if(readtype == "BINARY")
+          {
+            //read chunck of buffer
+          }
+        }
+        else if(line_str.find("Velocity ")!=std::string::npos)
+        {
+          prim->verts.add_attr<zeno::vec3f>("Velocity");
+          if(readtype == "ASCII") {
+            for (int i = 0; i < num_points; i++) {
+              for (int j = 0; j < 3; j++)
+                file >> prim->verts.attr<zeno::vec3f>("Velocity")[i][j];
+            }
+          }else if(readtype == "BINARY"){
 
+          }
+        }
+        else if(line_str.find("FieldData "))
+        {
+          std::string a;
+          std::string b;
+          std::stringstream ss;
+          ss<<line_str;
+          ss>>a>>b>>num_field_data;
+        }
+        if(num_field_data>0) {
+          std::vector<std::string> strs;
+          std::string a;
+          std::stringstream ss;
+          ss<<line_str;
+          while(ss>>a)
+          {
+            strs.push_back(a);
+          }
+          std::string varname;
+          if(strs.size()==4 && std::stoi(strs[2]) == num_points)
+          {
+            varname = strs[0];
+            while(stringReplace(varname, ".", "_"));
+            while(stringReplace(varname, "-", "_"));
+            if(strs[1] == "1") {
+              prim->verts.add_attr<float>(varname);
+              if(readtype == "ASCII") {
+                for (int i = 0; i < num_points; i++) {
+                  file >> prim->verts.attr<float>(varname)[i];
+                }
+              }else if(readtype == "BINARY")
+              {
+
+              }
+            }else if(strs[1] == "3")
+            {
+              prim->verts.add_attr<zeno::vec3f>(varname);
+              if(readtype == "ASCII") {
+                for (int i = 0; i < num_points; i++) {
+                  for (int j = 0; j < 3; j++)
+                    file >> prim->verts.attr<zeno::vec3f>(varname)[i][j];
+                }
+              }else if(readtype == "BINARY")
+              {
+
+              }
+            }
+          }
+
+
+//          if (line_str.find("SpeciesDensity ") != std::string::npos) {
+//            prim->verts.add_attr<float>("SpeciesDensity");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("SpeciesDensity")[i];
+//            }
+//          }
+//          else if (line_str.find("ViscosityEddy ") != std::string::npos) {
+//            prim->verts.add_attr<float>("ViscosityEddy");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("ViscosityEddy")[i];
+//            }
+//          }
+//          else if (line_str.find("Mach ") != std::string::npos) {
+//            prim->verts.add_attr<float>("Mach");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("Mach")[i];
+//            }
+//          }
+//          else if (line_str.find("MachNumberinStnFrame ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("MachNumberinStnFrame");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("MachNumberinStnFrame")[i];
+//            }
+//          }
+//          else if (line_str.find("Pressure ") != std::string::npos) {
+//            prim->verts.add_attr<float>("Pressure");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("Pressure")[i];
+//            }
+//          }
+//          else if (line_str.find("Temperature ") != std::string::npos) {
+//            prim->verts.add_attr<float>("Temperature");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("Temperature")[i];
+//            }
+//          }
+//          else if (line_str.find("PressureStagnation ") != std::string::npos) {
+//            prim->verts.add_attr<float>("PressureStagnation");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("PressureStagnation")[i];
+//            }
+//          }
+//          else if (line_str.find("TotalPressureinStnFrame ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("TotalPressureinStnFrame");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("TotalPressureinStnFrame")[i];
+//            }
+//          }
+//          else if (line_str.find("TemperatureStagnation ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("TemperatureStagnation");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("TemperatureStagnation")[i];
+//            }
+//          }
+//          else if (line_str.find("TotalTemperatureinStnFrame ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("TotalTemperatureinStnFrame");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("TotalTemperatureinStnFrame")[i];
+//            }
+//          }
+//          else if (line_str.find("TurbulenceEddyFrequency ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("TurbulenceEddyFrequency");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("TurbulenceEddyFrequency")[i];
+//            }
+//          }
+//          else if (line_str.find("TurbulentEnergyKinetic ") !=
+//                   std::string::npos) {
+//            prim->verts.add_attr<float>("TurbulentEnergyKinetic");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("TurbulentEnergyKinetic")[i];
+//            }
+//          }
+//          else if (line_str.find("VelocityinStnFrame ") != std::string::npos) {
+//            prim->verts.add_attr<float>("VelocityinStnFrame");
+//            for (int i = 0; i < num_points; i++) {
+//              file >> prim->verts.attr<float>("VelocityinStnFrame")[i];
+//            }
+//          }
+        }
+      }
+      file.close();
+    }
     // DATASET UNSTRUCTURED_GRID
     // POINTS n dataType
     // p0x p0y p0z
@@ -564,6 +758,7 @@ namespace zeno {
     // type2
     // ...
     // typen-1
+
     constexpr char unstructured_grid[] = "UNSTRUCTURED_GRID";
     bool read_unstructured_grid(FILE *fp,std::shared_ptr<zeno::PrimitiveObject>& prim,int& line_count) {
         char *bufferp;
