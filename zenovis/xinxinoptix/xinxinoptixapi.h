@@ -62,9 +62,8 @@ void optixupdatebegin();
 void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut);
 void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut);
 void UpdateInst();
-void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut);
-void UpdateDynamicInstMesh(const std::map<std::string, int> &mtlidlut);
-void CopyInstMeshToGlobalMesh();
+void UpdateInstMesh(const std::map<std::string, int> &mtlidlut);
+
 void UpdateMeshGasAndIas(bool staticNeedUpdate);
 void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders, 
                     bool requireTriangObj, bool requireTriangLight, 

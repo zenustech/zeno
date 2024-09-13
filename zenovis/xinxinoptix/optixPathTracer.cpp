@@ -162,101 +162,8 @@ typedef Record<MissData>     MissRecord;
 typedef Record<HitGroupData> HitGroupRecord;
 typedef Record<EmptyData>   CallablesRecord;
 
-
-//struct Vertex
-//{
-    //float x, y, z, pad;
-//};
-
-
-//struct IndexedTriangle
-//{
-    //uint32_t v1, v2, v3, pad;
-//};
-
-//struct Instance
-//{
-    //float transform[12];
-//};
-#ifdef USE_SHORT_COMPACT
-uchar4 toRGBA8(float4 in)
-{
-  return make_uchar4((unsigned char)(in.x*256.0),
-                     (unsigned char)(in.y*256.0),
-                     (unsigned char)(in.z*256.0),
-                     (unsigned char)(in.w*256.0));
-}
-ushort2 rgba8ToUshort2(uchar4 in)
-{
-    uchar4 rgba = toRGBA8(in);
-    unsigned short x = rgba.x;
-    x = x<<16 + rgba.y;
-    unsigned short y = rgba.z<<16 + rgba.w;
-}
-ushort2 toHalfColor(float4 in)
-{
-  return make_ushort3((unsigned short)(in.x*65536.0f),
-                      (unsigned short)(in.y*65536.0f),
-                      (unsigned short)(in.z*65536.0f));
-}
-
-ushort2 toHalf(float4 in)
-{
-  return make_ushort3((unsigned short)(in.x*65536.0f),
-                      (unsigned short)(in.y*65536.0f),
-                      (unsigned short)(in.z*65536.0f));
-}
-
-ushort2 halfNormal(float4 in)
-{
-  float3 val = make_float3((in.x + 1.0f)/2.0f,
-                           (in.y + 1.0f)/2.0f,
-                           (in.z + 1.0f)/2.0f);
-
-  return make_ushort3((unsigned short)(val.x*65536.0f),
-                      (unsigned short)(val.y*65536.0f),
-                      (unsigned short)(val.z*65536.0f));
-}
-#else
-  #ifdef USE_SHORT
-    ushort3 toHalfColor(float4 in)
-    {
-        
-      return make_ushort3((unsigned short)(in.x*65536.0f),
-                          (unsigned short)(in.y*65536.0f),
-                          (unsigned short)(in.z*65536.0f));
-    }
-
-    ushort3 halfNormal(float4 in)
-    {
-      float3 val = make_float3((in.x + 1.0f)/2.0f,
-                               (in.y + 1.0f)/2.0f,
-                               (in.z + 1.0f)/2.0f);
-      //val = normalize(val);
-
-      return make_ushort3((unsigned short)(val.x*65536.0f),
-                          (unsigned short)(val.y*65536.0f),
-                          (unsigned short)(val.z*65536.0f));
-    }
-  #else
-    float4 toHalfColor(float4 in)
-    {
-      return in;
-    }
-    float4 toHalf(float4 in)
-    {
-      return in;
-    }
-
-    float4 halfNormal(float4 in)
-    {
-      return in;
-    }
-  #endif
-#endif
-
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-using Vertex = float4;
+using Vertex = float3;
 
 struct PathTracerState
 {
@@ -267,16 +174,9 @@ struct PathTracerState
 
     OptixTraversableHandle         meshHandleIAS;
     raii<CUdeviceptr>              meshBufferIAS;
-
-    raii<CUdeviceptr>              d_vertices;
-    raii<CUdeviceptr>              d_clr;
-    raii<CUdeviceptr>              d_nrm;
-    raii<CUdeviceptr>              d_uv;
-    raii<CUdeviceptr>              d_tan;
-    raii<CUdeviceptr>              d_lightMark;
-    raii<CUdeviceptr>              d_mat_indices;
-
-    raii<CUdeviceptr>              vertexAuxOffsetGlobal;
+    
+    raii<CUdeviceptr>              _meshAux;
+    raii<CUdeviceptr>              _instToMesh;
     
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
@@ -284,8 +184,6 @@ struct PathTracerState
     raii<CUdeviceptr>              d_instClr;
     raii<CUdeviceptr>              d_instTang;
     raii<CUdeviceptr>              d_uniforms;
-
-    raii<OptixModule>              ptx_module;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
@@ -318,106 +216,80 @@ struct PathTracerState
 PathTracerState state;
 
 struct smallMesh{
-    std::vector<Vertex> verts;
-    std::vector<uint32_t> mat_idx;
-    std::vector<uint3>     idx;
-    OptixTraversableHandle            gas_handle = 0;
-    raii<CUdeviceptr>        d_gas_output_buffer;
-    raii<CUdeviceptr>                     dverts;
-    raii<CUdeviceptr>                      dmats;
-    raii<CUdeviceptr>                       didx;
-    smallMesh(){idx.resize(0);verts.resize(0);mat_idx.resize(0);}
-    ~smallMesh(){d_gas_output_buffer.reset(); dverts.reset(); dmats.reset(); 
-        didx.reset();}
+
+    std::vector<Vertex> vertices {};
+    std::vector<uint3>  indices {};
+    std::vector<uint>   mat_idx {};
+
+    std::vector<ushort3>      g_uv;
+    std::vector<ushort3>     g_clr;
+    std::vector<ushort3>     g_nrm;
+    std::vector<ushort3>     g_tan;
+
+    raii<CUdeviceptr>         d_uv;
+    raii<CUdeviceptr>        d_clr;
+    raii<CUdeviceptr>        d_nrm;
+    raii<CUdeviceptr>        d_tan;
+
+    raii<CUdeviceptr>        d_idx;
+
+    OptixTraversableHandle       gas_handle {};
+    CUdeviceptr                  gas_buffer {};
+
+    smallMesh() = default;
+    //smallMesh(smallMesh&& m) = default;
+
+    void resize(size_t n) {
+        mat_idx.resize(n);
+
+        vertices.resize(n*3);
+        g_nrm.resize(n*3);
+        g_tan.resize(n*3);
+        g_clr.resize(n*3);
+        g_uv.resize(n*3);
+    }
+
+    void upload() {
+
+        {
+            auto byte_size = sizeof(ushort3) * g_uv.size();
+            d_uv.resize(byte_size);
+            cudaMemcpy((void*)d_uv.handle, g_uv.data(), byte_size, cudaMemcpyHostToDevice);
+        }
+        {
+            auto byte_size = sizeof(ushort3) * g_clr.size();
+            d_clr.resize(byte_size);
+            cudaMemcpy((void*)d_clr.handle, g_clr.data(), byte_size, cudaMemcpyHostToDevice);
+        }
+        {
+            auto byte_size = sizeof(ushort3) * g_nrm.size();
+            d_nrm.resize(byte_size);
+            cudaMemcpy((void*)d_nrm.handle, g_nrm.data(), byte_size, cudaMemcpyHostToDevice);
+        }
+        {
+            auto byte_size = sizeof(ushort3) * g_tan.size();
+            d_tan.resize(byte_size);
+            cudaMemcpy((void*)d_tan.handle, g_tan.data(), byte_size, cudaMemcpyHostToDevice);
+        }
+    }
+
+    std::vector<CUdeviceptr> aux() {
+        return std::vector { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+    }
+
+    ~smallMesh() {
+
+        if (gas_buffer != 0) {
+            cudaFree((void*)gas_buffer);
+        }
+
+        gas_buffer = 0u;
+        gas_handle = 0u;
+    }
 };
 
-//------------------------------------------------------------------------------
-//
-// Scene data
-//
-//------------------------------------------------------------------------------
-
-//const int32_t TRIANGLE_COUNT = 32;
-//const int32_t MAT_COUNT      = 5;
-#ifdef USE_SHORT
-    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
-        {
-            {0,0,0},
-            {0,0,0},
-            {0,0,0},
-    };
-    static std::vector<ushort3> g_clr= // TRIANGLE_COUNT*3
-        {
-            {0,0,0},
-            {0,0,0},
-            {0,0,0},
-    };
-    static std::vector<ushort3> g_nrm= // TRIANGLE_COUNT*3
-        {
-            {0,0,0},
-            {0,0,0},
-            {0,0,0},
-    };
-    static std::vector<ushort3> g_uv= // TRIANGLE_COUNT*3
-        {
-            {0,0,0},
-            {0,0,0},
-            {0,0,0},
-    };
-    static std::vector<ushort3> g_tan= // TRIANGLE_COUNT*3
-        {
-            {0,0,0},
-            {0,0,0},
-            {0,0,0},
-    };
-    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
-        {
-            0,0,0,
-    };
-    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
-        {
-            0
-    };
-#else
-    static std::vector<Vertex> g_vertices= // TRIANGLE_COUNT*3
-    {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-    };
-    static std::vector<Vertex> g_clr= // TRIANGLE_COUNT*3
-    {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-    };
-    static std::vector<Vertex> g_nrm= // TRIANGLE_COUNT*3
-    {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-    };
-    static std::vector<Vertex> g_uv= // TRIANGLE_COUNT*3
-    {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-    };
-    static std::vector<Vertex> g_tan= // TRIANGLE_COUNT*3
-    {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-    };
-    static std::vector<uint32_t> g_mat_indices= // TRIANGLE_COUNT
-    {
-        0,0,0,
-    };
-    static std::vector<uint16_t> g_lightMark = //TRIANGLE_COUNT
-    {
-        0
-    };
-#endif
+std::shared_ptr<smallMesh> StaticMeshes {};
+std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 
 static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
     using id_t = unsigned int;
@@ -466,8 +338,8 @@ static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib,
 }
 
 struct LightsWrapper {
-    std::vector<Vertex> _planeLightGeo;
-    std::vector<Vertex> _sphereLightGeo;
+    std::vector<float3> _planeLightGeo;
+    std::vector<float4> _sphereLightGeo;
     std::vector<float3> _triangleLightGeo;
     std::vector<GenericLight> g_lights;
 
@@ -495,20 +367,11 @@ std::map<std::string, int> g_mtlidlut; // MAT_COUNT
 
 struct InstData
 {
-    std::vector<Vertex> vertices = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    std::vector<Vertex> clr = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    std::vector<Vertex> nrm = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    std::vector<Vertex> uv = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    std::vector<Vertex> tan = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    std::vector<uint32_t> mat_indices = {0, 0, 0};
-    std::vector<uint16_t> lightMark = {0};
-
-    std::size_t staticMeshNum = 0;
-    std::size_t staticVertNum = 0;
-
-    std::vector<std::shared_ptr<smallMesh>> meshPieces;
+    std::shared_ptr<smallMesh> mesh{};
 };
+
 static std::map<std::string, InstData> g_instLUT;
+
 std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatsLUT;
 std::unordered_map<std::string, std::vector<float>> g_instScaleLUT;
 struct InstAttr
@@ -520,15 +383,6 @@ struct InstAttr
     std::vector<float3> tang;
 };
 std::unordered_map<std::string, InstAttr> g_instAttrsLUT;
-
-
-
-
-//static void scrollCallback( GLFWwindow* window, double xscroll, double yscroll )
-//{
-    //if( trackball.wheelEvent( (int)yscroll ) )
-        //camera_changed = true;
-//}
 
 
 //------------------------------------------------------------------------------
@@ -847,33 +701,37 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
-static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<smallMesh> mesh)
+static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> mesh )
 {
-    //
-    // copy mesh data to device
-    //
-    const size_t vertices_size_in_bytes = mesh->verts.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dverts.reset() ), vertices_size_in_bytes ) );
+    if (mesh == nullptr || mesh->vertices.empty()) { return; }
+
+    raii<CUdeviceptr> dverts {};
+    raii<CUdeviceptr> dmats {};
+    auto& didx = mesh->d_idx;
+    didx.reset();
+
+    const size_t vertices_size_in_bytes = mesh->vertices.size() * sizeof( Vertex );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dverts ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)mesh->dverts ),
-                mesh->verts.data(), vertices_size_in_bytes,
+                reinterpret_cast<void*>( (CUdeviceptr&)dverts ),
+                mesh->vertices.data(), vertices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
 
-    const size_t mat_indices_size_in_bytes = mesh->mat_idx.size() * sizeof( uint32_t );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dmats.reset() ), mat_indices_size_in_bytes ) );
+    const size_t mat_indices_size_in_bytes = mesh->mat_idx.size() * sizeof( uint );
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dmats ), mat_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)mesh->dmats ),
+                reinterpret_cast<void*>( (CUdeviceptr)dmats ),
                 mesh->mat_idx.data(),
                 mat_indices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
 
-    const size_t idx_indices_size_in_bytes = mesh->idx.size() * sizeof(uint3);
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->didx.reset() ), idx_indices_size_in_bytes ) );
+    const size_t idx_indices_size_in_bytes = mesh->indices.size() * sizeof(uint3);
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &didx ), idx_indices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)mesh->didx ),
-                mesh->idx.data(),
+                reinterpret_cast<void*>( (CUdeviceptr)didx ),
+                mesh->indices.data(),
                 idx_indices_size_in_bytes,
                 cudaMemcpyHostToDevice
                 ) );
@@ -887,121 +745,145 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
-    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->verts.size() );
-    triangle_input.triangleArray.vertexBuffers               = g_vertices.empty() ? nullptr : & mesh->dverts;
+    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->vertices.size() );
+    triangle_input.triangleArray.vertexBuffers               = mesh->vertices.empty() ? nullptr : &dverts;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = g_vertices.empty() ? 1 : g_mtlidlut.size();
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = mesh->dmats;
-    triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-    triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
-    triangle_input.triangleArray.numIndexTriplets            = mesh->idx.size();
-    triangle_input.triangleArray.indexBuffer                 = mesh->didx;
-
+    triangle_input.triangleArray.numSbtRecords               = mesh->vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
+    
+    // triangle_input.triangleArray.indexBuffer                 = didx;
+    // triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    // triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
+    // triangle_input.triangleArray.numIndexTriplets            = mesh->vertex_indices.size();
+
 
     OptixAccelBuildOptions accel_options = {};
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    buildXAS(OptixUtil::context, accel_options, triangle_input, mesh->d_gas_output_buffer, mesh->gas_handle);
-    
-    mesh->dverts.reset();
-    mesh->dmats.reset(); 
-    mesh->didx.reset();
+    buildXAS(OptixUtil::context, accel_options, triangle_input, mesh->gas_buffer, mesh->gas_handle);
+
+    mesh->upload();
 }
 
-static size_t g_staticMeshNum = 0;
-static size_t g_staticVertNum = 0;
-static size_t g_staticAndDynamicMeshNum = 0;
-static size_t g_staticAndDynamicVertNum = 0;
+static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>>& m_meshes) {
 
-static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes) {
-    std::cout<<"IAS begin"<<std::endl;
     timer.tick();
 
-    const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+    const float mat3r4c[12] = {1,0,0,0,
+                               0,1,0,0,
+                               0,0,1,0};
 
     float3 defaultInstPos = {0, 0, 0};
     float3 defaultInstNrm = {0, 1, 0};
     float3 defaultInstUv = {0, 0, 0};
     float3 defaultInstClr = {1, 1, 1};
     float3 defaultInstTang = {1, 0, 0};
-    std::size_t num_instances = g_staticAndDynamicMeshNum;
+
+    std::size_t num_meshes = (StaticMeshes != nullptr)? 1:0 + g_meshPieces.size();
+    std::size_t num_instances = num_meshes;
+
     for (const auto &[instID, instData] : g_instLUT)
     {
         auto it = g_instMatsLUT.find(instID);
-        if (it != g_instMatsLUT.end())
-        {
-            num_instances += it->second.size() * instData.meshPieces.size();
-        }
-        else
-        {
-            num_instances += instData.meshPieces.size();
+        size_t count = it != g_instMatsLUT.end()? it->second.size() : 1;
+
+        if (instData.mesh != nullptr) {
+            num_meshes += 1;
+            num_instances += it->second.size();
         }
     }
 
     std::vector<OptixInstance> optix_instances( num_instances );
     memset( optix_instances.data(), 0, sizeof( OptixInstance ) * num_instances );
-
-    for (auto& ins : optix_instances ) {
-        ins.sbtOffset = 0;
-        ins.visibilityMask = DefaultMatMask;
-    }
-
-    std::vector<uint32_t> vertexAuxOffsetGlobal(num_instances);
-    uint32_t vertexAuxOffset = 0u;
+    
 #ifdef USE_SHORT
-    std::vector<ushort3> instPos(num_instances);
-    std::vector<ushort3> instNrm(num_instances);
-    std::vector<ushort3> instUv(num_instances);
-    std::vector<ushort3> instClr(num_instances);
-    std::vector<ushort3> instTang(num_instances);
+    using AuxType = ushort3; 
 #else
-    std::vector<float3> instPos(num_instances);
-    std::vector<float3> instNrm(num_instances);
-    std::vector<float3> instUv(num_instances);
-    std::vector<float3> instClr(num_instances);
-    std::vector<float3> instTang(num_instances);
+    using AuxType = float3; 
 #endif
+    std::vector<AuxType> instPos(num_instances);
+    std::vector<AuxType> instNrm(num_instances);
+    std::vector<AuxType> instUv(num_instances);
+    std::vector<AuxType> instClr(num_instances);
+    std::vector<AuxType> instTang(num_instances);
+
     size_t sbt_offset = 0;
+    size_t instanceID = 0;
+    size_t meshID = 0;
 
-    for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
-    {
-        auto  mesh = m_meshes[i];
-        auto& optix_instance = optix_instances[i];
-        memset( &optix_instance, 0, sizeof( OptixInstance ) );
+    std::vector<void *> meshAux(4 * num_meshes, 0);
+    std::vector<uint> instanceLut(num_instances, 0);
 
-        optix_instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
-        optix_instance.instanceId        = static_cast<unsigned int>( i );
-        //optix_instance.sbtOffset         = 0;
-        optix_instance.visibilityMask    = DefaultMatMask;
-        optix_instance.traversableHandle = mesh->gas_handle;
-        memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
+    auto appendMeshAux = [&meshAux](std::shared_ptr<smallMesh> mesh, uint meshID){
+        auto tmpAux = mesh->aux();
+        auto src_ptr = (void*)tmpAux.data();
+        auto dst_ptr = (void*)(meshAux.data()+meshID*4);
 
-        vertexAuxOffsetGlobal[i] = vertexAuxOffset;
-        vertexAuxOffset += mesh->verts.size(); 
+        memcpy(dst_ptr, src_ptr, sizeof(void*)*tmpAux.size() );
+    };
 
-        instPos[i] = toHalf({0,0,0,0});
-        instNrm[i] = toHalf({0,0,0,0});;
-        instUv[i] = toHalf({0,0,0,0});;
-        instClr[i] = toHalf({0,0,0,0});;
-        instTang[i] = toHalf({0,0,0,0});;
+    auto appendInstAux = [&instanceLut](uint instanceID, uint meshID){
+        instanceLut[instanceID] = meshID;
+    };
+
+    if ( StaticMeshes != nullptr ) {
+
+        auto& mesh = StaticMeshes;
+        auto& instance = optix_instances[instanceID];
+        memset( &instance, 0, sizeof( OptixInstance ) );
+
+        appendInstAux(instanceID, meshID);
+        appendMeshAux(mesh, meshID++);
+
+        instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
+        instance.instanceId        = instanceID++;
+        instance.sbtOffset         = 0;
+        instance.visibilityMask    = DefaultMatMask;
+        instance.traversableHandle = mesh->gas_handle;
+        memcpy( instance.transform, mat3r4c, sizeof( float ) * 12 );
     }
 
-    std::size_t instanceId = g_staticAndDynamicMeshNum;
-    std::size_t meshesOffset = g_staticAndDynamicMeshNum;
+    for( size_t i=0; i<g_meshPieces.size(); ++i )
+    {
+        auto& mesh = g_meshPieces[i];
+        auto& instance = optix_instances[instanceID];
+        memset( &instance, 0, sizeof( OptixInstance ) );
+
+        appendInstAux(instanceID, meshID);
+        appendMeshAux(mesh, meshID++);
+
+        instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
+        instance.instanceId        = instanceID++;
+        instance.sbtOffset         = 0;
+        instance.visibilityMask    = DefaultMatMask;
+        instance.traversableHandle = mesh->gas_handle;
+        memcpy( instance.transform, mat3r4c, sizeof( float ) * 12 );
+    }
+
     for (auto &[instID, instData] : g_instLUT)
     {
-        auto it = g_instMatsLUT.find(instID);
-        if (it != g_instMatsLUT.end())
-        {
-            const auto &instMats = it->second;
+            auto& matrix_list = g_instMatsLUT[instID]; // has matrix
+
+            const auto &instMats = matrix_list.empty()? 
+            [](){
+                return std::vector{ glm::mat4(1.0) };
+            }() : matrix_list;
+
             const auto &instScales = g_instScaleLUT[instID];
             const auto &instAttrs = g_instAttrsLUT[instID];
-            for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
+
+            for (auto& mesh : {instData.mesh}) 
             {
-                auto mesh = m_meshes[meshesOffset];
+                if (mesh == nullptr) { continue; }
+
+                if (mesh->gas_handle == 0) {
+                    buildMeshAccel(state, mesh);
+                }
+
+
                 for (std::size_t k = 0; k < instMats.size(); ++k)
                 {
                     const auto &instMat = instMats[k];
@@ -1010,65 +892,46 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                         instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
                         instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
                         instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
-                    auto& optix_instance = optix_instances[instanceId];
-                    optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-                    optix_instance.instanceId = static_cast<unsigned int>(instanceId);
-                    optix_instance.visibilityMask = DefaultMatMask;
-                    optix_instance.traversableHandle = mesh->gas_handle;
-                    memcpy(optix_instance.transform, instMat3r4c, sizeof(float) * 12);
-
-                    vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
+                    auto& instance = optix_instances[instanceID];
+                    instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+                    instance.instanceId = instanceID;
+                    instance.visibilityMask = DefaultMatMask;
+                    instance.traversableHandle = mesh->gas_handle;
+                    memcpy(instance.transform, instMat3r4c, sizeof(float) * 12);
                     
-                    instPos[instanceId] = toHalf(instAttrs.pos[k]);
-                    instNrm[instanceId] = toHalf(instAttrs.nrm[k]);
-                    instUv[instanceId] = toHalf(instAttrs.uv[k]);
-                    instClr[instanceId] = toHalf(instAttrs.clr[k]);
-                    instTang[instanceId] = toHalf(instAttrs.tang[k]);
+                    instPos[instanceID] = toHalf(instAttrs.pos[k]);
+                    instNrm[instanceID] = toHalf(instAttrs.nrm[k]);
+                    instUv[instanceID] = toHalf(instAttrs.uv[k]);
+                    instClr[instanceID] = toHalf(instAttrs.clr[k]);
+                    instTang[instanceID] = toHalf(instAttrs.tang[k]);
 
-                    ++instanceId;
+                    appendInstAux(instanceID, meshID);
+                    instanceID++;
                 }
-                vertexAuxOffset += mesh->verts.size();
-                ++meshesOffset;
+                appendMeshAux(mesh, meshID++);
             }
-        }
-        else
-        {
-            for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
-            {
-                auto mesh = m_meshes[meshesOffset];
-                auto &optix_instance = optix_instances[instanceId];
-                optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-                optix_instance.instanceId = static_cast<unsigned int>(instanceId);
-                optix_instance.visibilityMask = DefaultMatMask;
-                optix_instance.traversableHandle = mesh->gas_handle;
-                memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
-
-                vertexAuxOffsetGlobal[instanceId] = vertexAuxOffset; 
-
-                instPos[instanceId] = toHalf({0,0,0,0});;
-                instNrm[instanceId] = toHalf({0,0,0,0});;
-                instUv[instanceId] = toHalf({0,0,0,0});;
-                instClr[instanceId] = toHalf({0,0,0,0});;
-                instTang[instanceId] = toHalf({0,0,0,0});;
-                
-                ++instanceId;
-                ++meshesOffset;
-
-                vertexAuxOffset += mesh->verts.size();
-            }
-        }
     }
 
-    state.vertexAuxOffsetGlobal.resize(sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(), 0);
+    state._meshAux.resize(sizeof(void*) * meshAux.size());
     CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.vertexAuxOffsetGlobal ),
-                vertexAuxOffsetGlobal.data(),
-                sizeof(vertexAuxOffsetGlobal[0]) * vertexAuxOffsetGlobal.size(),
+                reinterpret_cast<void*>( (CUdeviceptr)state._meshAux.handle ),
+                meshAux.data(),
+                sizeof(meshAux[0]) * meshAux.size(),
                 cudaMemcpyHostToDevice
                 ) );
-    
+    state.params.meshAux = (void*)state._meshAux.handle;
+
+    state._instToMesh.resize(sizeof(instanceLut[0]) * instanceLut.size());
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state._instToMesh.handle ),
+                instanceLut.data(),
+                sizeof(instanceLut[0]) * instanceLut.size(),
+                cudaMemcpyHostToDevice
+                ) );
+
+    state.params.instToMesh = (void*)state._instToMesh.handle;
+
     state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instPos.reset() ), sizeof(instPos[0]) * instPos.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_instPos ),
                 instPos.data(),
@@ -1076,7 +939,6 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 cudaMemcpyHostToDevice
                 ) );
     state.d_instNrm.resize(sizeof(instNrm[0]) * instNrm.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instNrm.reset() ), sizeof(instNrm[0]) * instNrm.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_instNrm ),
                 instNrm.data(),
@@ -1084,7 +946,6 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 cudaMemcpyHostToDevice
                 ) );
     state.d_instUv.resize(sizeof(instUv[0]) * instUv.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instUv.reset() ), sizeof(instUv[0]) * instUv.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_instUv ),
                 instUv.data(),
@@ -1092,7 +953,6 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 cudaMemcpyHostToDevice
                 ) );
     state.d_instClr.resize(sizeof(instClr[0]) * instClr.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instClr.reset() ), sizeof(instClr[0]) * instClr.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_instClr ),
                 instClr.data(),
@@ -1100,14 +960,12 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 cudaMemcpyHostToDevice
                 ) );
     state.d_instTang.resize(sizeof(instTang[0]) * instTang.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instTang.reset() ), sizeof(instTang[0]) * instTang.size()) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.d_instTang ),
                 instTang.data(),
                 sizeof(instTang[0]) * instTang.size(),
                 cudaMemcpyHostToDevice
                 ) );
-
 
     OptixAccelBuildOptions accel_options{};
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
@@ -1432,21 +1290,8 @@ static void createSBT( PathTracerState& state )
         if (!has_vdb) {
 
             hitgroup_records[sbt_idx] = {};
-
             hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
-#ifdef USE_SHORT
-            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_uv );
-            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_nrm );
-            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_clr );
-            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_tan );
-#else
-            hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
-            hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
-            hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
-            hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
-#endif
-            hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
-            hitgroup_records[sbt_idx].data.auxOffset       = reinterpret_cast<uint32_t*>( (CUdeviceptr)state.vertexAuxOffsetGlobal );
+
 #ifdef USE_SHORT
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instNrm );
@@ -1738,303 +1583,58 @@ void updateVolume(uint volume_shader_offset) {
     OptixUtil::logInfoVRAM("After Volume GAS");
 }
 
-//static std::string get_content(std::string const &path) {
-    //std::ifstream ifs("/home/bate/zeno/zenovis/xinxinoptix/" + path);
-    //if (!ifs) throw std::runtime_error("cannot open file: " + path);
-    //std::string res;
-    //std::copy(std::istreambuf_iterator<char>(ifs),
-              //std::istreambuf_iterator<char>(),
-              //std::back_inserter(res));
-    //return res;
-//}
+
 void splitMesh(std::vector<Vertex> & verts, 
 std::vector<uint32_t> &mat_idx, 
 std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStart);
-std::vector<std::shared_ptr<smallMesh>> g_StaticMeshPieces;
-std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
+
 static void updateDynamicDrawObjects();
 static void updateStaticDrawObjects();
-static void updateStaticDrawInstObjects();
+static void updateInstObjects();
 static void updateDynamicDrawInstObjects();
+
 void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updateStaticDrawObjects();
-    g_staticMeshNum = 0;
-    g_staticVertNum = 0;
+
     {
-        splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
-        g_staticMeshNum = g_meshPieces.size();
+        auto& g_mat_indices = StaticMeshes->mat_idx;
+        auto& g_vertices = StaticMeshes->vertices;
 
-        size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
-        vertSize = std::min(g_vertices.size(), vertSize);
+        auto& g_clr = StaticMeshes->g_clr;
+        auto& g_nrm = StaticMeshes->g_nrm;
+        auto& g_tan = StaticMeshes->g_tan;
+        auto& g_uv = StaticMeshes->g_uv;
 
-        g_staticVertNum = vertSize;
-        g_vertices.resize(vertSize);
-        g_clr.resize(vertSize);
-        g_nrm.resize(vertSize);
-        g_tan.resize(vertSize);
-        g_uv.resize(vertSize);
-        g_mat_indices.resize(vertSize/3);
-        g_lightMark.resize(vertSize/3);
+        //splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
+
+        //size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
+        //vertSize = std::min(g_vertices.size(), vertSize);
     }
 }
 void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updateDynamicDrawObjects();
-    {
-        splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
-        g_staticAndDynamicMeshNum = g_meshPieces.size();
-
-        size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
-        vertSize = std::min(g_vertices.size(), vertSize);
-
-        g_staticAndDynamicVertNum = vertSize;
-        g_vertices.resize(vertSize);
-        g_clr.resize(vertSize);
-        g_nrm.resize(vertSize);
-        g_tan.resize(vertSize);
-        g_uv.resize(vertSize);
-        g_mat_indices.resize(vertSize/3);
-        g_lightMark.resize(vertSize/3);
-    }
 }
-void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
+
+void UpdateInstMesh(const std::map<std::string, int> &mtlidlut)
 {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
-    updateStaticDrawInstObjects();
-    for (auto &[_, instData] : g_instLUT)
-    {
-        instData.staticMeshNum = 0;
-        instData.staticVertNum = 0;
-    }
-
-        for (auto &[instID, instData] : g_instLUT)
-        {
-            auto &vertices = instData.vertices;
-            auto &clr = instData.clr;
-            auto &nrm = instData.nrm;
-            auto &uv = instData.uv;
-            auto &tan = instData.tan;
-            auto &mat_indices = instData.mat_indices;
-            auto &lightMark = instData.lightMark;
-            auto &staticMeshNum = instData.staticMeshNum;
-            auto &staticVertNum = instData.staticVertNum;
-            auto &meshPieces = instData.meshPieces;
-
-            splitMesh(vertices, mat_indices, meshPieces, 0, 0);
-            staticMeshNum = meshPieces.size();
-
-            std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
-            vertSize = std::min(vertices.size(), vertSize);
-            
-            staticVertNum = vertSize;
-            vertices.resize(vertSize);
-            clr.resize(vertSize);
-            nrm.resize(vertSize);
-            tan.resize(vertSize);
-            uv.resize(vertSize);
-            mat_indices.resize(vertSize / 3);
-            lightMark.resize(vertSize / 3);
-        }
-}
-void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
-{
-    camera_changed = true;
-    g_mtlidlut = mtlidlut;
-    updateDynamicDrawInstObjects();
-    
-        for (auto &[instID, instData] : g_instLUT)
-        {
-            auto &vertices = instData.vertices;
-            auto &clr = instData.clr;
-            auto &nrm = instData.nrm;
-            auto &uv = instData.uv;
-            auto &tan = instData.tan;
-            auto &mat_indices = instData.mat_indices;
-            auto &lightMark = instData.lightMark;
-            auto &staticMeshNum = instData.staticMeshNum;
-            auto &staticVertNum = instData.staticVertNum;
-            auto &meshPieces = instData.meshPieces;
-
-            splitMesh(vertices, mat_indices, meshPieces, staticMeshNum, staticVertNum);
-            
-            std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
-            vertSize = std::min(vertices.size(), vertSize);
-
-            vertices.resize(vertSize);
-            clr.resize(vertSize);
-            nrm.resize(vertSize);
-            tan.resize(vertSize);
-            uv.resize(vertSize);
-            mat_indices.resize(vertSize / 3);
-            lightMark.resize(vertSize / 3);
-        }
-}
-
-void CopyInstMeshToGlobalMesh()
-{
-        auto numVerts = g_staticAndDynamicVertNum;
-        auto numMeshPieces = g_staticAndDynamicMeshNum;
-        for (auto &[_, instData] : g_instLUT)
-        {
-            numVerts += instData.vertices.size();
-            numMeshPieces += instData.meshPieces.size();
-        }
-        g_vertices.resize(numVerts);
-        g_clr.resize(numVerts);
-        g_nrm.resize(numVerts);
-        g_tan.resize(numVerts);
-        g_uv.resize(numVerts);
-        g_mat_indices.resize(numVerts / 3);
-        g_lightMark.resize(numVerts / 3);
-        g_meshPieces.resize(numMeshPieces);
-
-        auto vertsOffset = g_staticAndDynamicVertNum;
-        auto meshPiecesOffset = g_staticAndDynamicMeshNum;
-        for (auto &[_, instData] : g_instLUT)
-        {
-            auto &vertices = instData.vertices;
-            auto &clr = instData.clr;
-            auto &nrm = instData.nrm;
-            auto &uv = instData.uv;
-            auto &tan = instData.tan;
-            auto &mat_indices = instData.mat_indices;
-            auto &lightMark = instData.lightMark;
-            auto &meshPieces = instData.meshPieces;
-
-            for (size_t i = 0; i < vertices.size(); ++i)
-            {
-                g_vertices[vertsOffset + i] = vertices[i];
-#ifdef USE_SHORT
-                g_clr[vertsOffset + i] = toHalf(clr[i]);
-                g_nrm[vertsOffset + i] = halfNormal(nrm[i]);
-                g_uv[vertsOffset + i]  = toHalf(uv[i]);
-                g_tan[vertsOffset + i] = halfNormal(tan[i]);
-#else
-                g_clr[vertsOffset + i] = clr[i];
-                g_nrm[vertsOffset + i] = nrm[i];
-                g_uv[vertsOffset + i] = uv[i];
-                g_tan[vertsOffset + i] = tan[i];
-#endif
-            }
-            for (size_t i = 0; i < vertices.size() / 3; ++i)
-            {
-                g_mat_indices[vertsOffset / 3 + i] = mat_indices[i];
-                g_lightMark[vertsOffset / 3 + i] = lightMark[i];
-            }
-            for (size_t i = 0; i < meshPieces.size(); ++i)
-            {
-                g_meshPieces[meshPiecesOffset + i] = meshPieces[i];
-            }
-
-            vertsOffset += vertices.size();
-            meshPiecesOffset += meshPieces.size();
-        }
+    updateInstObjects();
 }
 
 void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
-        for(int i=0;i<g_meshPieces.size();i++)
-        {
-            buildMeshAccelSplitMesh(state, g_meshPieces[i]);
-        }
-#define WXL 1
-        std::cout << "begin copy\n";
-        timer.tick();
-#ifdef USE_SHORT
-        size_t vertices_size_in_bytes = g_vertices.size() * sizeof(ushort3);
-        size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(ushort3);
-#else
-        size_t vertices_size_in_bytes = g_vertices.size() * sizeof(Vertex);
-        size_t static_vertices_size_in_bytes = g_staticVertNum * sizeof(Vertex);
-#endif
-        size_t dynamic_vertices_size_in_bytes = vertices_size_in_bytes - static_vertices_size_in_bytes;
-        bool realloced;
-        size_t offset = 0;
-        size_t numBytes = vertices_size_in_bytes;
-        auto updateRange = [&vertices_size_in_bytes, &dynamic_vertices_size_in_bytes, &realloced, &offset,
-                            &numBytes]() {
-            if (!realloced && WXL) {
-#ifdef USE_SHORT
-              offset = g_staticVertNum * sizeof(ushort3);
-#else
-                offset = g_staticVertNum * sizeof(Vertex);
-#endif
-                numBytes = dynamic_vertices_size_in_bytes;
-            } else {
-                offset = 0;
-                numBytes = vertices_size_in_bytes;
-            }
-        };
-#if WXL
-        //realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        state.d_clr.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        state.d_uv.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        size_t reservedCap = state.d_clr.capacity - vertices_size_in_bytes;
-        if (reservedCap > 0) {
-            // CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
-            //                           vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) +
-                                      vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) +
-                                      vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) +
-                                      vertices_size_in_bytes, 0, reservedCap));
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) +
-                                      vertices_size_in_bytes, 0, reservedCap));
-        }
-#else
-        //CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_clr.reset()), vertices_size_in_bytes));
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_uv.reset()), vertices_size_in_bytes));
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_nrm.reset()), vertices_size_in_bytes));
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
-#endif
-        updateRange();
-        // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
-        //                       (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) + offset, (char *)g_clr.data() + offset,
-                              numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) + offset, (char *)g_uv.data() + offset,
-                              numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm) + offset, (char *)g_nrm.data() + offset,
-                              numBytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) + offset, (char *)g_tan.data() + offset,
-                              numBytes, cudaMemcpyHostToDevice));
-        if (staticNeedUpdate && offset != 0) {
-            // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
-            //                       (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data(),
-                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data(),
-                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_nrm), (char *)g_nrm.data(),
-                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan), (char *)g_tan.data(),
-                                  static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
-        }
+    buildMeshAccel(state, StaticMeshes);
 
-        const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof(uint32_t);
-        const size_t light_mark_size_in_bytes = g_lightMark.size() * sizeof(unsigned short);
-#if WXL
-        state.d_mat_indices.resize(mat_indices_size_in_bytes);
-        state.d_lightMark.resize(light_mark_size_in_bytes);
-#else
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_mat_indices.reset()), mat_indices_size_in_bytes));
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_lightMark.reset()), light_mark_size_in_bytes));
-#endif
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_mat_indices), g_mat_indices.data(),
-                              mat_indices_size_in_bytes, cudaMemcpyHostToDevice));
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_lightMark), g_lightMark.data(),
-                              light_mark_size_in_bytes, cudaMemcpyHostToDevice));
-        timer.tock("done dynamic mesh update");
-        std::cout << "end copy\n";
-        buildMeshIAS(state, 2, g_meshPieces);
+    tbb::parallel_for(static_cast<size_t>(0), g_meshPieces.size(), [](size_t i){
+        buildMeshAccel(state, g_meshPieces[i]);
+    });
+
+    buildMeshIAS(state, 2, g_meshPieces);
 }
 
 static std::map<std::string, LightDat> lightdats;
@@ -2211,18 +1811,18 @@ static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 
     auto& geo = lightsWrapper._planeLightGeo;
 
-    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
-    geo.push_back(make_float4(vert1.x, vert1.y, vert1.z, 0.f));
-    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
+    geo.push_back(make_float3(vert0.x, vert0.y, vert0.z));
+    geo.push_back(make_float3(vert1.x, vert1.y, vert1.z));
+    geo.push_back(make_float3(vert3.x, vert3.y, vert3.z));
    
-    geo.push_back(make_float4(vert0.x, vert0.y, vert0.z, 0.f));
-    geo.push_back(make_float4(vert3.x, vert3.y, vert3.z, 0.f));
-    geo.push_back(make_float4(vert2.x, vert2.y, vert2.z, 0.f));
+    geo.push_back(make_float3(vert0.x, vert0.y, vert0.z));
+    geo.push_back(make_float3(vert3.x, vert3.y, vert3.z));
+    geo.push_back(make_float3(vert2.x, vert2.y, vert2.z));
 }
 
 static void addLightSphere(float3 center, float radius) 
 {
-    Vertex vt {center.x, center.y, center.z, radius};
+    float4 vt {center.x, center.y, center.z, radius};
     lightsWrapper._sphereLightGeo.push_back(vt);
 }
 
@@ -2269,7 +1869,7 @@ static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& li
     triangle_input.triangleArray.vertexBuffers               = lightMesh.empty() ? nullptr : &d_lightMesh;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
     triangle_input.triangleArray.numSbtRecords               = 1; // g_lightMesh.empty() ? 1 : g_mtlidlut.size();
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = 0;//state.d_mat_indices;
+    triangle_input.triangleArray.sbtIndexOffsetBuffer        = 0;
     // triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     // triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
 
@@ -2280,7 +1880,7 @@ static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& li
     buildXAS(OptixUtil::context, accel_options, triangle_input, bufferGas, handleGas);
 }
 
-static void buildLightSpheresGAS( PathTracerState& state, std::vector<Vertex>& lightSpheres, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas) {
+static void buildLightSpheresGAS( PathTracerState& state, std::vector<float4>& lightSpheres, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas) {
 
     if (lightSpheres.empty()) {
         handleGas = 0;
@@ -2834,6 +2434,7 @@ struct DrawDat {
     std::vector<float> verts;
     std::vector<int> tris;
     std::vector<int> triMats;
+
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
@@ -2873,627 +2474,238 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStar
         {
             size_t idx = i*tris_per_mesh + j;
             if(idx<num_tri){
-                m->verts.emplace_back(verts[vertsStart + idx*3+0]);
-                m->verts.emplace_back(verts[vertsStart + idx*3+1]);
-                m->verts.emplace_back(verts[vertsStart + idx*3+2]);
+                m->vertices.emplace_back(verts[vertsStart + idx*3+0]);
+                m->vertices.emplace_back(verts[vertsStart + idx*3+1]);
+                m->vertices.emplace_back(verts[vertsStart + idx*3+2]);
                 m->mat_idx.emplace_back(mat_idx[vertsStart/3 + idx]);
-                m->idx.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
+                m->indices.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
             }
         }
-        if(m->verts.size()>0)
+        if(m->vertices.size()>0)
             oMeshes.push_back(std::move(m));
     }
 }
 static void updateStaticDrawObjects() {
-    g_vertices.clear();
-    g_clr.clear();
-    g_nrm.clear();
-    g_uv.clear();
-    g_tan.clear();
-    g_mat_indices.clear();
-    g_lightMark.clear();
+    
     size_t n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos && dat.instID == "Default")
-            n += dat.tris.size()/3;
-    }
-    g_vertices.resize(n * 3);
-    g_clr.resize(n*3);
-    g_nrm.resize(n*3);
-    g_uv.resize(n*3);
-    g_tan.resize(n*3);
-    g_mat_indices.resize(n);
-    g_lightMark.resize(n);
-    n = 0;
+
+    std::vector<uint> offsets;
+    std::vector<const DrawDat*> candidates;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")!=key.npos && dat.instID == "Default") {
-            //auto it = g_mtlidlut.find(dat.mtlid);
-            // mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
-            //#pragma omp parallel for
-            for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-                int mtidx = dat.triMats[i];
-                int mtlindex = 0;
-                if(mtidx!=-1) {
-                    auto matName = dat.mtlidList[mtidx];
-                    auto it = g_mtlidlut.find(matName);
-                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-                }
-                g_mat_indices[n + i] = mtlindex;
-                g_lightMark[n + i] = 0;
-                g_vertices[(n + i) * 3 + 0] = {
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                g_vertices[(n + i) * 3 + 1] = {
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                g_vertices[(n + i) * 3 + 2] = {
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                g_clr[(n + i) * 3 + 0] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_clr[(n + i) * 3 + 1] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_clr[(n + i) * 3 + 2] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_nrm[(n + i) * 3 + 0] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_nrm[(n + i) * 3 + 1] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_nrm[(n + i) * 3 + 2] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_uv[(n + i) * 3 + 0] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_uv[(n + i) * 3 + 1] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_uv[(n + i) * 3 + 2] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_tan[(n + i) * 3 + 0] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_tan[(n + i) * 3 + 1] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_tan[(n + i) * 3 + 2] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-            }
-            n += dat.tris.size() / 3;
+            candidates.push_back(&dat);
+            offsets.push_back(n);
+            n += dat.tris.size()/3;
         }
     }
-}
-static void updateDynamicDrawObjects() {
-    size_t n = 0;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")==key.npos && dat.instID == "Default")
-            n += dat.tris.size()/3;
+
+    if ( n > 0 ) {
+        StaticMeshes = std::make_shared<smallMesh>();
+        StaticMeshes->resize(n);
+    } else {
+        StaticMeshes = nullptr;
+        return;
     }
 
-    g_vertices.resize(g_staticVertNum + n * 3);
-    g_clr.resize(g_staticVertNum + n * 3);
-    g_nrm.resize(g_staticVertNum + n * 3);
-    g_uv.resize(g_staticVertNum + n * 3);
-    g_tan.resize(g_staticVertNum + n * 3);
-    g_mat_indices.resize(g_staticVertNum/3 + n);
-    g_lightMark.resize(g_staticVertNum/3 + n);
     n = 0;
+    for (const auto* dat_ptr : candidates) {
+
+        auto& dat = *dat_ptr;
+
+        std::vector<uint32_t> global_matidx(dat.mtlidList.size());
+
+        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
+            auto matName = dat.mtlidList[j];
+            auto it = g_mtlidlut.find(matName);
+            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
+        }
+
+        tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
+
+            int mtidx = dat.triMats[i];
+            StaticMeshes->mat_idx[n + i] = global_matidx[mtidx];
+
+            StaticMeshes->vertices[(n + i) * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
+            StaticMeshes->vertices[(n + i) * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
+            StaticMeshes->vertices[(n + i) * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
+
+            auto& uvAttr = dat.getAttr("uv");
+
+            StaticMeshes->g_uv[(n + i) * 3 + 0] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 0] * 3] );
+            StaticMeshes->g_uv[(n + i) * 3 + 1] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 1] * 3] ); 
+            StaticMeshes->g_uv[(n + i) * 3 + 2] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 2] * 3] );
+
+            auto& clrAttr = dat.getAttr("clr");
+
+            StaticMeshes->g_clr[(n + i) * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
+            StaticMeshes->g_clr[(n + i) * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
+            StaticMeshes->g_clr[(n + i) * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
+
+            auto& nrmAttr = dat.getAttr("nrm");
+            StaticMeshes->g_nrm[(n + i) * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
+            StaticMeshes->g_nrm[(n + i) * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
+            StaticMeshes->g_nrm[(n + i) * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
+
+            auto& tangAttr = dat.getAttr("tang");
+            StaticMeshes->g_tan[(n + i) * 3 + 0] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 0] * 3] );
+            StaticMeshes->g_tan[(n + i) * 3 + 1] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 1] * 3] );
+            StaticMeshes->g_tan[(n + i) * 3 + 2] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 2] * 3] );
+        });
+        n += dat.tris.size() / 3;
+    }
+}
+
+static void updateDynamicDrawObjects() {
+
+    std::vector<const DrawDat*> candidates;
+
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")==key.npos && dat.instID == "Default") {
-//            auto it = g_mtlidlut.find(dat.mtlid);
-//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
-            //#pragma omp parallel for
-            for (size_t i = 0; i < dat.tris.size() / 3; i++) {
-                int mtidx = dat.triMats[i];
-                int mtlindex = 0;
-                if(mtidx!=-1) {
-                    auto matName = dat.mtlidList[mtidx];
-                    auto it = g_mtlidlut.find(matName);
-                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-                }
-                g_mat_indices[g_staticVertNum/3 + n + i] = mtlindex;
-                g_lightMark[g_staticVertNum/3 + n + i] = 0;
-                g_vertices[g_staticVertNum + (n + i) * 3 + 0] = {
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                g_vertices[g_staticVertNum + (n + i) * 3 + 1] = {
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                g_vertices[g_staticVertNum + (n + i) * 3 + 2] = {
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                g_clr[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_clr[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_clr[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_nrm[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_nrm[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_nrm[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_uv[g_staticVertNum + (n + i) * 3 + 0] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_uv[g_staticVertNum + (n + i) * 3 + 1] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_uv[g_staticVertNum + (n + i) * 3 + 2] = toHalf({
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-
-                g_tan[g_staticVertNum + (n + i) * 3 + 0] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                });
-                g_tan[g_staticVertNum + (n + i) * 3 + 1] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                });
-                g_tan[g_staticVertNum + (n + i) * 3 + 2] = halfNormal({
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                });
-            }
-            n += dat.tris.size() / 3;
+            candidates.push_back(&dat);
         }
     }
-//    size_t ltris = g_lightMesh.size()/3;
-//    for(int l=0;l<ltris;l++)
-//    {
-//        g_vertices.push_back(g_lightMesh[l*3+0]);
-//        g_vertices.push_back(g_lightMesh[l*3+1]);
-//        g_vertices.push_back(g_lightMesh[l*3+2]);
-//        auto l1 = g_lightMesh[l*3+1] - g_lightMesh[l*3+0];
-//        auto l2 = g_lightMesh[l*3+2] - g_lightMesh[l*3+0];
-//        auto zl1= zeno::vec3f(l1.x, l1.y, l1.z);
-//        auto zl2= zeno::vec3f(l2.x, l2.y, l2.z);
-//        auto normal = zeno::normalize(zeno::cross(zl1,zl2));
-//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-//        g_nrm.push_back(make_float4(normal[0], normal[1], normal[2],0));
-//        g_tan.push_back(make_float4(0));
-//        g_tan.push_back(make_float4(0));
-//        g_tan.push_back(make_float4(0));
-//        g_uv.push_back( make_float4(0));
-//        g_uv.push_back( make_float4(0));
-//        g_uv.push_back( make_float4(0));
-//        g_mat_indices.push_back(0);
-//        g_lightMark.push_back(1);
-//    }
 
+    g_meshPieces = {};
+    g_meshPieces.resize(candidates.size());
+
+    for (size_t i=0; i<candidates.size(); ++i) {
+
+        auto& mesh = g_meshPieces[i];
+        auto& dat = *candidates[i];
+
+        mesh = std::make_shared<smallMesh>();
+        auto n = dat.tris.size()/3;
+        mesh->resize(n);
+
+        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1));
+
+        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
+            auto matName = dat.mtlidList[j];
+            auto it = g_mtlidlut.find(matName);
+            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
+        }
+
+        tbb::parallel_for(size_t(0), n, [&](size_t i) {
+
+            int mtidx = max(0, dat.triMats[i]);
+            mesh->mat_idx[i] = global_matidx[mtidx];
+
+            mesh->vertices[i * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
+            mesh->vertices[i * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
+            mesh->vertices[i * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
+
+            auto& uvAttr = dat.getAttr("uv");
+
+            mesh->g_uv[i * 3 + 0] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 0] * 3]) );
+            mesh->g_uv[i * 3 + 1] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 1] * 3]) ); 
+            mesh->g_uv[i * 3 + 2] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 2] * 3]) );
+
+            auto& clrAttr = dat.getAttr("clr");
+
+            mesh->g_clr[i * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh->g_clr[i * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
+            mesh->g_clr[i * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
+
+            auto& nrmAttr = dat.getAttr("nrm");
+            mesh->g_nrm[i * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh->g_nrm[i * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
+            mesh->g_nrm[i * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
+
+            auto& attrTang = dat.getAttr("tang");
+            mesh->g_tan[i * 3 + 0] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 0] * 3] );
+            mesh->g_tan[i * 3 + 1] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 1] * 3] );
+            mesh->g_tan[i * 3 + 2] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 2] * 3] );
+        });
+    }
 
 }
-static void updateStaticDrawInstObjects()
+static void updateInstObjects()
 {
     g_instLUT.clear();
-    std::unordered_map<std::string, std::size_t> numVertsLUT;
+
+    std::vector<const DrawDat*> candidates;
+    std::vector<size_t> offset_candidates;
+
+    std::unordered_map<std::string, std::size_t> numVerticesInstID {};
+
     for (const auto &[key, dat] : drawdats)
     {
-        if (key.find(":static:") != key.npos && dat.instID != "Default")
-        {
-            numVertsLUT[dat.instID] += dat.tris.size() / 3;
+        if ("Default" == dat.instID) { continue; }
+        
+        //auto findStatic = key.find(":static:") != key.npos;
+        //if (needStatic != findStatic) { continue; }
+
+        auto& num = numVerticesInstID[dat.instID];
+        
+        candidates.push_back(&dat);
+        offset_candidates.push_back(num);
+
+        num += dat.tris.size() / 3;   
+    }
+
+    for (auto& [key, val] : numVerticesInstID) {
+        
+        auto num = numVerticesInstID[key];
+        auto& instData = g_instLUT[key];
+        auto& mesh_ref = instData.mesh;
+        if (mesh_ref == nullptr) { mesh_ref = std::make_shared<smallMesh>(); }
+
+        mesh_ref->resize(num);  
+    }
+
+    for (size_t k=0; k<candidates.size(); ++k) {
+
+        auto &dat = *candidates[k];
+        auto &candi_offset = offset_candidates[k];
+
+        auto &instData = g_instLUT[dat.instID];
+        auto &mesh_ref = instData.mesh;
+
+        std::vector<uint32_t> global_matidx(dat.mtlidList.size());
+
+        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
+            auto matName = dat.mtlidList[j];
+            auto it = g_mtlidlut.find(matName);
+            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
         }
+
+        tbb::parallel_for(size_t(0), dat.tris.size() / 3, [&](size_t i) {
+
+            auto offset = candi_offset + i;
+
+            int mtidx = dat.triMats[i];
+            mesh_ref->mat_idx[offset] = global_matidx[mtidx];
+            
+            mesh_ref->vertices[offset * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
+            mesh_ref->vertices[offset * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
+            mesh_ref->vertices[offset * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
+
+            auto& uvAttr = dat.getAttr("uv");
+
+            mesh_ref->g_uv[offset * 3 + 0] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh_ref->g_uv[offset * 3 + 1] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 1] * 3] ); 
+            mesh_ref->g_uv[offset * 3 + 2] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 2] * 3] );
+
+            auto& clrAttr = dat.getAttr("clr");
+
+            mesh_ref->g_clr[offset * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh_ref->g_clr[offset * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
+            mesh_ref->g_clr[offset * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
+
+            auto& nrmAttr = dat.getAttr("nrm");
+            mesh_ref->g_nrm[offset * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh_ref->g_nrm[offset * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
+            mesh_ref->g_nrm[offset * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
+
+            auto& tangAttr = dat.getAttr("tang");
+            mesh_ref->g_tan[offset * 3 + 0] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 0] * 3] );
+            mesh_ref->g_tan[offset * 3 + 1] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 1] * 3] );
+            mesh_ref->g_tan[offset * 3 + 2] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 2] * 3] );
+        });
     }
-    for (auto &[instID, numVerts] : numVertsLUT)
-    {
-        auto& instData = g_instLUT[instID];
-        auto &vertices = instData.vertices;
-        auto &clr = instData.clr;
-        auto &nrm = instData.nrm;
-        auto &uv = instData.uv;
-        auto &tan = instData.tan;
-        auto &mat_indices = instData.mat_indices;
-        auto &lightMark = instData.lightMark;
 
-        vertices.resize(numVerts * 3);
-        clr.resize(numVerts * 3);
-        nrm.resize(numVerts * 3);
-        uv.resize(numVerts * 3);
-        tan.resize(numVerts * 3);
-        mat_indices.resize(numVerts);
-        lightMark.resize(numVerts);
-
-        numVerts = 0;
-    }
-    for (const auto &[key, dat] : drawdats)
-    {
-        if (key.find(":static:") != key.npos && dat.instID != "Default")
-        {
-            auto &numVerts = numVertsLUT[dat.instID];
-            auto &instData = g_instLUT[dat.instID];
-            auto &vertices = instData.vertices;
-            auto &clr = instData.clr;
-            auto &nrm = instData.nrm;
-            auto &uv = instData.uv;
-            auto &tan = instData.tan;
-            auto &mat_indices = instData.mat_indices;
-            auto &lightMark = instData.lightMark;
-
-//            auto it = g_mtlidlut.find(dat.mtlid);
-//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
-            //#pragma omp parallel for
-            for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
-            {
-                int mtidx = dat.triMats[i];
-                int mtlindex = 0;
-                if(mtidx!=-1) {
-                    auto matName = dat.mtlidList[mtidx];
-                    auto it = g_mtlidlut.find(matName);
-                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-                }
-                mat_indices[numVerts + i] = mtlindex;
-                lightMark[numVerts + i] = 0;
-                vertices[(numVerts + i) * 3 + 0] = {
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                vertices[(numVerts + i) * 3 + 1] = {
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                vertices[(numVerts + i) * 3 + 2] = {
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                clr[(numVerts + i) * 3 + 0] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                clr[(numVerts + i) * 3 + 1] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                clr[(numVerts + i) * 3 + 2] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                nrm[(numVerts + i) * 3 + 0] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                nrm[(numVerts + i) * 3 + 1] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                nrm[(numVerts + i) * 3 + 2] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                uv[(numVerts+ i) * 3 + 0] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                uv[(numVerts + i) * 3 + 1] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                uv[(numVerts + i) * 3 + 2] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                tan[(numVerts + i) * 3 + 0] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                tan[(numVerts + i) * 3 + 1] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                tan[(numVerts + i) * 3 + 2] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-            }
-            numVerts += dat.tris.size() / 3;
-        }
-    }
-}
-static void updateDynamicDrawInstObjects()
-{
-    std::unordered_map<std::string, std::size_t> numVertsLUT;
-    for (const auto &[key, dat] : drawdats)
-    {
-        if (key.find(":static:") == key.npos && dat.instID != "Default")
-        {
-            numVertsLUT[dat.instID] += dat.tris.size() / 3;
-        }
-    }
-    for (auto &[instID, numVerts] : numVertsLUT)
-    {
-        auto& instData = g_instLUT[instID];
-        auto &vertices = instData.vertices;
-        auto &clr = instData.clr;
-        auto &nrm = instData.nrm;
-        auto &uv = instData.uv;
-        auto &tan = instData.tan;
-        auto &mat_indices = instData.mat_indices;
-        auto &lightMark = instData.lightMark;
-        auto &staticVertNum = instData.staticVertNum;
-
-        vertices.resize(staticVertNum + numVerts * 3);
-        clr.resize(staticVertNum + numVerts * 3);
-        nrm.resize(staticVertNum + numVerts * 3);
-        uv.resize(staticVertNum + numVerts * 3);
-        tan.resize(staticVertNum + numVerts * 3);
-        mat_indices.resize(staticVertNum / 3 + numVerts);
-        lightMark.resize(staticVertNum / 3 + numVerts);
-
-        numVerts = 0;
-    }
-    for (const auto &[key, dat] : drawdats)
-    {
-        if (key.find(":static:") == key.npos && dat.instID != "Default")
-        {
-            auto &numVerts = numVertsLUT[dat.instID];
-            auto &instData = g_instLUT[dat.instID];
-            auto &vertices = instData.vertices;
-            auto &clr = instData.clr;
-            auto &nrm = instData.nrm;
-            auto &uv = instData.uv;
-            auto &tan = instData.tan;
-            auto &mat_indices = instData.mat_indices;
-            auto &lightMark = instData.lightMark;
-            auto &staticVertNum = instData.staticVertNum;
-
-//            auto it = g_mtlidlut.find(dat.mtlid);
-//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-            //zeno::log_error("{} {}", dat.mtlid, mtlindex);
-            //#pragma omp parallel for
-            for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
-            {
-                int mtidx = dat.triMats[i];
-                int mtlindex = 0;
-                if(mtidx!=-1) {
-                    auto matName = dat.mtlidList[mtidx];
-                    auto it = g_mtlidlut.find(matName);
-                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
-                }
-                mat_indices[staticVertNum / 3 + numVerts + i] = mtlindex;
-                lightMark[staticVertNum / 3 + numVerts + i] = 0;
-                vertices[staticVertNum + (numVerts + i) * 3 + 0] = {
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                vertices[staticVertNum + (numVerts + i) * 3 + 1] = {
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                vertices[staticVertNum + (numVerts + i) * 3 + 2] = {
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.verts[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                clr[staticVertNum + (numVerts + i) * 3 + 0] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                clr[staticVertNum + (numVerts + i) * 3 + 1] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                clr[staticVertNum + (numVerts + i) * 3 + 2] = {
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("clr")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                nrm[staticVertNum + (numVerts + i) * 3 + 0] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                nrm[staticVertNum + (numVerts + i) * 3 + 1] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                nrm[staticVertNum + (numVerts + i) * 3 + 2] = {
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("nrm")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                uv[staticVertNum + (numVerts+ i) * 3 + 0] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                uv[staticVertNum + (numVerts + i) * 3 + 1] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                uv[staticVertNum + (numVerts + i) * 3 + 2] = {
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("uv")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-
-                tan[staticVertNum + (numVerts + i) * 3 + 0] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 0] * 3 + 2],
-                    0,
-                };
-                tan[staticVertNum + (numVerts + i) * 3 + 1] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 1] * 3 + 2],
-                    0,
-                };
-                tan[staticVertNum + (numVerts + i) * 3 + 2] = {
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 0],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 1],
-                    dat.getAttr("tang")[dat.tris[i * 3 + 2] * 3 + 2],
-                    0,
-                };
-            }
-            numVerts += dat.tris.size() / 3;
-        }
+    for (auto& [key, instData] : g_instLUT) {
+        buildMeshAccel(state, instData.mesh);
     }
 }
 
@@ -3591,7 +2803,6 @@ void UpdateInst()
         auto& instAttr = g_instAttrsLUT[instID];
         auto& instScale = g_instScaleLUT[instID];
 
-
         const auto& numInstMats = instTrs.pos.size() / 3;
         instMat.resize(numInstMats);
         instScale.resize(numInstMats);
@@ -3600,9 +2811,9 @@ void UpdateInst()
         instAttr.uv.resize(numInstMats);
         instAttr.clr.resize(numInstMats);
         instAttr.tang.resize(numInstMats);
-#pragma omp parallel for
-        for (int i = 0; i < numInstMats; ++i)
-        {
+        
+        tbb::parallel_for(static_cast<std::size_t>(0), numInstMats, [&, &instTrs=instTrs](std::size_t i) {
+
             auto translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
 
             zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
@@ -3612,98 +2823,27 @@ void UpdateInst()
             zeno::vec3f t2;
             zeno::guidedPixarONB(t0, t1, t2);
             glm::mat4x4 rotateMat(1);
-            if (instTrs.onbType == "XYZ")
-            {
-                rotateMat[0][0] = t2[0];
-                rotateMat[0][1] = t2[1];
-                rotateMat[0][2] = t2[2];
-                rotateMat[1][0] = t1[0];
-                rotateMat[1][1] = t1[1];
-                rotateMat[1][2] = t1[2];
-                rotateMat[2][0] = t0[0];
-                rotateMat[2][1] = t0[1];
-                rotateMat[2][2] = t0[2];
-            }
-            else if (instTrs.onbType == "YXZ")
-            {
-                rotateMat[0][0] = t1[0];
-                rotateMat[0][1] = t1[1];
-                rotateMat[0][2] = t1[2];
-                rotateMat[1][0] = t2[0];
-                rotateMat[1][1] = t2[1];
-                rotateMat[1][2] = t2[2];
-                rotateMat[2][0] = t0[0];
-                rotateMat[2][1] = t0[1];
-                rotateMat[2][2] = t0[2];
-            }
-            else if (instTrs.onbType == "YZX")
-            {
-                rotateMat[0][0] = t1[0];
-                rotateMat[0][1] = t1[1];
-                rotateMat[0][2] = t1[2];
-                rotateMat[1][0] = t0[0];
-                rotateMat[1][1] = t0[1];
-                rotateMat[1][2] = t0[2];
-                rotateMat[2][0] = t2[0];
-                rotateMat[2][1] = t2[1];
-                rotateMat[2][2] = t2[2];
-            }
-            else if (instTrs.onbType == "ZYX")
-            {
-                rotateMat[0][0] = t0[0];
-                rotateMat[0][1] = t0[1];
-                rotateMat[0][2] = t0[2];
-                rotateMat[1][0] = t1[0];
-                rotateMat[1][1] = t1[1];
-                rotateMat[1][2] = t1[2];
-                rotateMat[2][0] = t2[0];
-                rotateMat[2][1] = t2[1];
-                rotateMat[2][2] = t2[2];
-            }
-            else if (instTrs.onbType == "ZXY")
-            {
-                rotateMat[0][0] = t0[0];
-                rotateMat[0][1] = t0[1];
-                rotateMat[0][2] = t0[2];
-                rotateMat[1][0] = t2[0];
-                rotateMat[1][1] = t2[1];
-                rotateMat[1][2] = t2[2];
-                rotateMat[2][0] = t1[0];
-                rotateMat[2][1] = t1[1];
-                rotateMat[2][2] = t1[2];
-            }
-            else
-            {
-                rotateMat[0][0] = t2[0];
-                rotateMat[0][1] = t2[1];
-                rotateMat[0][2] = t2[2];
-                rotateMat[1][0] = t0[0];
-                rotateMat[1][1] = t0[1];
-                rotateMat[1][2] = t0[2];
-                rotateMat[2][0] = t1[0];
-                rotateMat[2][1] = t1[1];
-                rotateMat[2][2] = t1[2];
+
+            const auto ABC = std::vector{t2, t1, t0};
+
+            for (int c=0; c<3; ++c) {
+                auto ci = instTrs.onbType[c] - 'X'; // X, Y, Z
+                auto ve = ABC[ci];
+
+                rotateMat[c] = glm::vec4(ve[0], ve[1], ve[2], 0.0);
             }
 
             auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
             instScale[i] = pScale;
-            instAttr.pos[i].x = instTrs.pos[3 * i + 0];
-            instAttr.pos[i].y = instTrs.pos[3 * i + 1];
-            instAttr.pos[i].z = instTrs.pos[3 * i + 2];
-            instAttr.nrm[i].x = instTrs.nrm[3 * i + 0];
-            instAttr.nrm[i].y = instTrs.nrm[3 * i + 1];
-            instAttr.nrm[i].z = instTrs.nrm[3 * i + 2];
-            instAttr.uv[i].x = instTrs.uv[3 * i + 0];
-            instAttr.uv[i].y = instTrs.uv[3 * i + 1];
-            instAttr.uv[i].z = instTrs.uv[3 * i + 2];
-            instAttr.clr[i].x = instTrs.clr[3 * i + 0];
-            instAttr.clr[i].y = instTrs.clr[3 * i + 1];
-            instAttr.clr[i].z = instTrs.clr[3 * i + 2];
-            instAttr.tang[i].x = instTrs.tang[3 * i + 0];
-            instAttr.tang[i].y = instTrs.tang[3 * i + 1];
-            instAttr.tang[i].z = instTrs.tang[3 * i + 2];
-        }
+
+            instAttr.pos[i] = *(float3*)&instTrs.pos[3 * i];
+            instAttr.nrm[i] = *(float3*)&instTrs.nrm[3 * i];
+            
+            instAttr.uv[i]   = *(float3*)&instTrs.uv[3 * i];
+            instAttr.clr[i]  = *(float3*)&instTrs.clr[3 * i];
+            instAttr.tang[i] = *(float3*)&instTrs.tang[3 * i];
+        });
     }
 }
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
@@ -4115,7 +3255,7 @@ void optixCleanup() {
     OptixUtil::g_vdb_cached_map.clear();
     OptixUtil::g_ies.clear();
 
-    g_StaticMeshPieces.clear();
+    StaticMeshes = {};
     g_meshPieces.clear();
 
     cleanupHairs();

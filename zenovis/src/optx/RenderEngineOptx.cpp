@@ -1621,9 +1621,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 OptixUtil::logInfoVRAM("After update Sphere");
                 xinxinoptix::updateCurves();
 
-                xinxinoptix::UpdateStaticInstMesh(meshMatLUT);
-                xinxinoptix::UpdateDynamicInstMesh(meshMatLUT);
-                xinxinoptix::CopyInstMeshToGlobalMesh();
+                xinxinoptix::UpdateInstMesh(meshMatLUT);
+                
                 xinxinoptix::UpdateMeshGasAndIas(staticNeedUpdate);
             
                 xinxinoptix::cleanupSpheresCPU();

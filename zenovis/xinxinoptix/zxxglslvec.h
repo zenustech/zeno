@@ -1370,7 +1370,7 @@ __forceinline__ __device__ float3 decodeNormal(uchar3 c)
   return make_float3(cout.x, cout.y, cout.z);
 }
 
-__forceinline__ __device__ float3 decodeColor(ushort3 c)
+__forceinline__ __device__ float3 decodeHalf(ushort3 c)
 {
   half& hx = reinterpret_cast<half&>(c.x);
   half& hy = reinterpret_cast<half&>(c.y);
@@ -1378,11 +1378,7 @@ __forceinline__ __device__ float3 decodeColor(ushort3 c)
 
   return { __half2float(hx), __half2float(hy), __half2float(hz) };
 }
-__forceinline__ __device__ float3 decodeNormal(ushort3 c)
-{
-  vec3 cout = vec3((float)(c.x), (float)(c.y), (float)(c.z)) / 65536.0f * 2.0f - 1.0f;
-  return make_float3(cout.x, cout.y, cout.z);
-}
+
 __forceinline__ __device__ float3 decodeColor(float4 c)
 {
   return make_float3(c.x, c.y, c.z);
