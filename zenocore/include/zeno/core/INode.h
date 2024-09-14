@@ -80,6 +80,7 @@ public:
     ZENO_API ParamObject get_input_obj_param(std::string const& name, bool* pExist = nullptr) const;
     ZENO_API ParamPrimitive get_output_prim_param(std::string const& name, bool* pExist = nullptr) const;
     ZENO_API ParamObject get_output_obj_param(std::string const& name, bool* pExist = nullptr) const;
+    ZENO_API zeno::reflect::Any get_defl_value(std::string const& name);
 
     ZENO_API std::string get_viewobject_output_param() const;
     ZENO_API virtual NodeData exportInfo() const;

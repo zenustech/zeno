@@ -75,6 +75,7 @@ namespace zeno {
         Socket_Editable,
         Socket_MultiInput,
         Socket_Legacy,
+        Socket_Disable,
     };
     ENUM_FLAGS(SocketProperty)
 

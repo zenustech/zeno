@@ -45,7 +45,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
 {
     QString sockName;
     QString toolTip;
-    int sockProp = 0;
+    zeno::SocketProperty sockProp = zeno::Socket_Normal;
     bool bEnableNode = false;
     if (!m_paramIdx.isValid())
     {
@@ -55,7 +55,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     else
     {
         sockName = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        sockProp = m_paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+        sockProp = m_paramIdx.data(ROLE_PARAM_SOCKPROP).value<zeno::SocketProperty>();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
         toolTip = m_paramIdx.data(ROLE_PARAM_TOOLTIP).toString();
 
@@ -72,7 +72,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     QSizeF szSocket(14, 14);//(10, 20);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
     zeno::SocketType sockType = (zeno::SocketType)m_paramIdx.data(ROLE_SOCKET_TYPE).toInt();
-    m_socket->setVisible(sockType != zeno::NoSocket);
+    m_socket->setVisible(sockType != zeno::NoSocket && sockProp != zeno::Socket_Disable);
     m_socket->setZValue(ZVALUE_ELEMENT);
     m_socket->setEnabled(bEnableNode);
     if (bEnableNode) {

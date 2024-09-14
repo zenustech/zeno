@@ -115,6 +115,7 @@ void ParamsModel::initParamItems()
             item.connectProp = spParam.socketType;
             item.bVisible = spParam.bVisible;
             item.group = zeno::Role_InputPrimitive;
+            item.sockProp = spParam.prop;
             m_items.append(item);
         }
     }
@@ -327,6 +328,8 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
     }
     case ROLE_PARAM_VISIBLE:
     {
+        if (param.sockProp == zeno::Socket_Disable)
+            return false;
         auto spNode = m_wpNode.lock();
         if (spNode) {
             spNode->update_param_visible(param.name.toStdString(), value.toBool(), param.bInput);
@@ -364,10 +367,7 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     case ROLE_ISINPUT:          return param.bInput;
     case ROLE_NODEIDX:          return m_nodeIdx;
     case ROLE_LINKS:            return QVariant::fromValue(param.links);
-    case ROLE_PARAM_SOCKPROP: {
-        //TODO: based on core data `ParamInfo.prop`
-        break;
-    }
+    case ROLE_PARAM_SOCKPROP:   return param.sockProp;
     case ROLE_PARAM_CTRL_PROPERTIES: {
         if (param.optCtrlprops.has_value())
             return QVariant::fromValue(param.optCtrlprops);
@@ -396,7 +396,11 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
         return m_nodeIdx.data(ROLE_NODE_NAME);
     }
     case ROLE_PARAM_VISIBLE:
+    {
+        if (param.sockProp == zeno::Socket_Disable)
+            return false;
         return param.bVisible;
+    }
     case ROLE_PARAM_GROUP:
         return param.group;
     }

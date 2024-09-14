@@ -64,6 +64,7 @@ struct PrimitiveParam : CoreParam {
     std::list<std::shared_ptr<ReferLink>> reflinks;
     ParamControl control = NullControl;
     zeno::reflect::Any ctrlProps;
+    zeno::SocketProperty sockprop = zeno::Socket_Normal;
     bool bVisible = true;
 
     ParamPrimitive exportParam() const;

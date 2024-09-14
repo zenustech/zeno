@@ -29,6 +29,7 @@ namespace zeno {
         param.ctrlProps = ctrlProps;
         param.bVisible = bVisible;
         param.wildCardGroup = wildCardGroup;
+        param.prop = sockprop;
         for (auto spLink : links) {
             param.links.push_back(getEdgeInfo(spLink));
         }

@@ -21,6 +21,7 @@ namespace zeno {
     ZENO_API zvariant str2var(std::string const& defl, ParamType const& type);
     ZENO_API zeno::reflect::Any str2any(std::string const& defl, ParamType const& type);
     ZENO_API bool convertToEditVar(zeno::reflect::Any& var, const ParamType type);
+    ZENO_API bool convertToOriginalVar(zeno::reflect::Any& editvar, const ParamType type);
     ZENO_API zvariant initDeflValue(ParamType const& type);
     ZENO_API zeno::reflect::Any initAnyDeflValue(ParamType const& type);
     ZENO_API zvariant AnyToZVariant(zeno::reflect::Any const& var);
@@ -50,7 +51,7 @@ namespace zeno {
     bool isNumericType(zeno::ParamType type);
     bool isNumericVecType(zeno::ParamType type);
     bool isSameDimensionNumericVecType(zeno::ParamType left, zeno::ParamType right);
-    ZENO_API bool outParamTypeCanConvertInParamType(zeno::ParamType outType, zeno::ParamType inType);
+    ZENO_API bool outParamTypeCanConvertInParamType(zeno::ParamType outType, zeno::ParamType inType, NodeDataGroup outGroup, NodeDataGroup inGroup);
 
     void getFieldNameParamNameMapByReflectCustomUi(
         zeno::reflect::TypeBase* typeBase,

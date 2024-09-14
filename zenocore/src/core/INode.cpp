@@ -1495,6 +1495,20 @@ ZENO_API ParamObject INode::get_output_obj_param(std::string const& name, bool* 
     return param;
 }
 
+ZENO_API zeno::reflect::Any INode::get_defl_value(std::string const& name) {
+    //向量情况也挺麻烦的，因为可能存在公式
+    ParamPrimitive param;
+    auto iter = m_inputPrims.find(name);
+    if (iter != m_inputPrims.end()) {
+        zeno::reflect::Any defl = iter->second.defl;
+        //不支持取公式，因为公式要引发计算，很麻烦
+        convertToOriginalVar(defl, iter->second.type);
+        return defl;
+    }else{
+        return zeno::reflect::Any();
+    }
+}
+
 bool INode::add_input_prim_param(ParamPrimitive param) {
     if (m_inputPrims.find(param.name) != m_inputPrims.end()) {
         return false;
@@ -1511,6 +1525,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.ctrlProps = param.ctrlProps;
     sparam.bVisible = param.bVisible;
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.sockprop = param.prop;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -2251,10 +2266,12 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 convertToEditVar(param.defl, param.type);
                 sparam.defl = param.defl;
                 convertToEditVar(sparam.defl, param.type);
-                sparam.control = param.control;
-                sparam.ctrlProps = param.ctrlProps;
+
+                // 普通子图的控件及参数类型，是由定义处决定的，而非IO值。
+                //sparam.control = param.control;
+                //sparam.ctrlProps = param.ctrlProps;
+                //sparam.type = param.type;
                 sparam.bVisible = param.bVisible;
-                sparam.type = param.type;
 
                 //graph记录$F相关节点
                 if (std::shared_ptr<Graph> spGraph = graph.lock())
@@ -2271,7 +2288,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
         }
         auto& sparam = iter->second;
         sparam.bVisible = param.bVisible;
-        sparam.type = param.type;
+        //sparam.type = param.type;
     }
     for (const ParamObject& paramObj : dat.customUi.outputObjs)
     {

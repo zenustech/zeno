@@ -281,6 +281,10 @@ Q_DECLARE_METATYPE(PARAM_LINKS)
 
 Q_DECLARE_METATYPE(QLinearGradient)
 
+Q_DECLARE_METATYPE(zeno::NodeDataGroup)
+
+Q_DECLARE_METATYPE(zeno::SocketProperty)
+
 class GraphModel;
 struct SEARCH_RESULT
 {

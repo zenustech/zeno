@@ -15,6 +15,8 @@ namespace zeno {
         zeno::reflect::Any defl;
         std::string wildCardGroup;
         ParamControl ctrl;
+        bool bInnerParam = false;
+        zeno::reflect::Any ctrlProps;
     };
 
     struct _ObjectParam

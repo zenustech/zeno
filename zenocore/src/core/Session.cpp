@@ -130,11 +130,19 @@ struct ReflectNodeClass : INodeClass {
                                 anyInputs.erase(param.mapTo);
                             }
                             else if (inputPrims.find(param.mapTo) != inputPrims.end()) { //按照ReflectCustomUI的信息更新ParamPrimitive并放入对应的group
-                                inputPrims[param.mapTo].name = param.dispName;
-                                inputPrims[param.mapTo].defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
-                                convertToEditVar(inputPrims[param.mapTo].defl, param.defl.type().hash_code());
-                                inputPrims[param.mapTo].control = param.ctrl;
-                                group.params.push_back(std::move(inputPrims[param.mapTo]));
+                                auto& inprim = inputPrims[param.mapTo];
+                                inprim.name = param.dispName;
+                                inprim.defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
+                                convertToEditVar(inprim.defl, param.defl.type().hash_code());
+                                if (param.bInnerParam) {
+                                    inprim.control = NullControl;
+                                    inprim.prop = Socket_Disable;
+                                }
+                                else if (param.ctrl != NullControl) {
+                                    inprim.control = param.ctrl;
+                                }
+                                inprim.ctrlProps = param.ctrlProps;
+                                group.params.push_back(inprim);
                                 inputPrims.erase(param.mapTo);
                             }
                         }
@@ -311,7 +319,6 @@ struct ReflectNodeClass : INodeClass {
         std::set<std::string> anyOutputs;
 
         //先遍历所有成员，收集所有参数，目前假定所有成员变量都作为节点的参数存在，后续看情况可以指定
-#if 0
         for (IMemberField* field : typebase->get_member_fields()) {
             // 找到我们要的
             std::string field_name(field->get_name().c_str());
@@ -492,7 +499,7 @@ struct ReflectNodeClass : INodeClass {
                 }
             }
         }
-#endif
+
         //通过寻找apply函数上的参数和返回值，为节点添加参数，不过ZenoReflect还没支持参数名称的反射，只有类型信息
         for (IMemberFunction* func : typebase->get_member_functions())
         {
@@ -593,7 +600,7 @@ struct ReflectNodeClass : INodeClass {
                             prim.defl = func->init_param_default_value(idxParam);
                             prim.tooltip;
                             prim.wildCardGroup;
-                            m_customui.outputPrims.emplace_back(prim);
+                            //m_customui.outputPrims.emplace_back(prim);
 
                             outputPrims.insert({ param_name, prim });
                             reg_outputprims.insert(param_name);

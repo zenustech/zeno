@@ -1071,7 +1071,9 @@ bool zeno::Graph::isLinkValid(const EdgeInfo& edge)
 
     if (inParamType != outParamType)
     {
-        if (outParamTypeCanConvertInParamType(outParamType, inParamType)) {
+        NodeDataGroup outGroup = bOutputPrim ? Role_OutputPrimitive : Role_OutputObject;
+        NodeDataGroup inGroup = bInputPrim ? Role_InputPrimitive : Role_InputObject;
+        if (outParamTypeCanConvertInParamType(outParamType, inParamType, outGroup, inGroup)) {
         }
         else {
             zeno::log_warn("param type no match.");

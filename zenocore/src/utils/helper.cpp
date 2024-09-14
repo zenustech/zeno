@@ -218,6 +218,27 @@ namespace zeno {
         }
     }
 
+    ZENO_API bool convertToOriginalVar(zeno::reflect::Any& editvar, const ParamType type) {
+        if (!editvar.has_value()) return false;
+
+        ParamType anyType = editvar.type().hash_code();
+        if (anyType == gParamType_PrimVariant) {
+            PrimVar var = any_cast<PrimVar>(editvar);
+            std::visit([&](auto&& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, int> ||
+                              std::is_same_v<T, float> ||
+                              std::is_same_v<T, std::string>) {
+                    editvar = arg;
+                }
+            }, var);
+        }
+        else if (anyType == gParamType_VecEdit) {
+            //TODO
+        }
+        return editvar;
+    }
+
     ZENO_API bool convertToEditVar(Any& val, const ParamType type) {
         if (!val.has_value()) return false;
 
@@ -1002,7 +1023,7 @@ namespace zeno {
         return false;
     }
 
-    ZENO_API bool outParamTypeCanConvertInParamType(ParamType outType, ParamType inType)
+    ZENO_API bool outParamTypeCanConvertInParamType(ParamType outType, ParamType inType, NodeDataGroup outGroup, NodeDataGroup inGroup)
     {
         if (isNumericType(outType) && isNumericVecType(inType)) {   //数值连数值vec
             return true;
@@ -1013,7 +1034,7 @@ namespace zeno {
         else if (inType == gParamType_Dict || inType == gParamType_List) {
             return true;
         }
-        else if (gParamType_IObject == inType && isObjectType(outType)) {    //outType的Obj类型可以转IObject
+        else if (gParamType_IObject == inType && outGroup == Role_OutputObject) {    //outType的Obj类型可以转IObject
             return true;
         }
         else{
