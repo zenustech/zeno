@@ -236,13 +236,13 @@ namespace zenoio
         JsonObjScope scope(writer);
 
         //property
-        if (param.prop != zeno::Socket_Normal)
+        if (param.sockProp != zeno::Socket_Normal)
         {
             writer.Key("property");
-            if (param.prop & zeno::Socket_Editable) {
+            if (param.sockProp & zeno::Socket_Editable) {
                 writer.String("editable");
             }
-            else if (param.prop & zeno::Socket_Legacy) {
+            else if (param.sockProp & zeno::Socket_Legacy) {
                 writer.String("legacy");
             }
             else {

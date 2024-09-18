@@ -1525,7 +1525,8 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.ctrlProps = param.ctrlProps;
     sparam.bVisible = param.bVisible;
     sparam.wildCardGroup = param.wildCardGroup;
-    sparam.sockprop = param.prop;
+    sparam.sockprop = param.sockProp;
+    sparam.bInnerParam = param.bInnerParam;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1846,6 +1847,11 @@ ZENO_API NodeData INode::exportInfo() const
 
 ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any new_value) {
     CORE_API_BATCH
+    return update_param_impl(param, new_value);
+}
+
+ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::Any new_value)
+{
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
     bool isvalid = convertToEditVar(new_value, spParam.type);
     if (!isvalid) {
@@ -2516,6 +2522,14 @@ float INode::resolve(const std::string& expression, const ParamType type)
 void INode::initTypeBase(zeno::reflect::TypeBase* pTypeBase)
 {
     m_pTypebase = pTypeBase;
+}
+
+ZENO_API bool INode::is_continue_to_run() {
+    return false;
+}
+
+ZENO_API void INode::increment() {
+
 }
 
 std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const std::string& param_name, bool bPrim)

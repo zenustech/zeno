@@ -13,8 +13,6 @@ namespace zeno
 {
     struct ZDEFNODE() ForEachBegin : INode
     {
-        friend struct ForEachEnd;
-
         ReflectCustomUI m_uilayout = {
             _ObjectGroup {
                 {
@@ -36,20 +34,6 @@ namespace zeno
             _ParamGroup {
             }
         };
-
-
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Fetch Method", Control = zeno::Combobox, ComboBoxItems = ("Initial Object", "From Last Feedback", "Element of Object"))
-        std::string m_fetch_mehod;
-
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "ForEachEnd Path")
-        std::string m_foreach_end_path;
-
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Current Iteration")
-        int m_current_iteration = 0;
-
-        ZPROPERTY(Role = zeno::Role_OutputPrimitive, DisplayName = "Current Iteration")
-        int _out_iteration = 0;
-
 
         std::shared_ptr<IObject> apply(std::shared_ptr<IObject> init_object) {
             _out_iteration = m_current_iteration;
@@ -78,6 +62,31 @@ namespace zeno
             }
             return nullptr;
         }
+
+        int get_current_iteration() {
+            int current_iteration = zeno::reflect::any_cast<int>(get_defl_value("Current Iteration"));
+            return current_iteration;
+        }
+
+        void update_iteration(int new_iteration) {
+            m_current_iteration = new_iteration;
+            //不能引发事务重新执行，执行权必须由外部Graph发起
+            update_param_impl("Current Iteration", m_current_iteration);
+        }
+
+    //private:
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Fetch Method", Control = zeno::Combobox, ComboBoxItems = ("Initial Object", "From Last Feedback", "Element of Object"))
+        std::string m_fetch_mehod = "From Last Feedback";
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "ForEachEnd Path")
+        std::string m_foreach_end_path;
+
+        //当前迭代值外部不可修改，但可被其他参数引用，因此还是作为正式参数，当然有另一种可能，就是支持引用output参数，但当前并没有这个打算
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Current Iteration", InnerSocket = 1)
+        int m_current_iteration = 0;
+
+        ZPROPERTY(Role = zeno::Role_OutputPrimitive, DisplayName = "Current Iteration")
+        int _out_iteration = 0;
     };
 
     struct ZDEFNODE() ForEachEnd : INode
@@ -99,67 +108,69 @@ namespace zeno
                 "", "Output Object", Socket_Output
             },
             _ParamTab {
-                "Tab1",
-                {
-                    _ParamGroup {
-                        "Group1",
-                        {
-                            _Param { "iterate_method", "Iterate Method", "By Count", "", Combobox, false,
-                                        std::vector<std::string>{"By Count", "By Object Container"}},
-                            _Param { "collect_method", "Collect Method", "Feedback to Begin", "", Combobox, false,
-                                        std::vector<std::string>{"Feedback to Begin", "Gather Each Iteration"}},
-                            _Param { "iterations", "Iterations", 10 },
-                            _Param { "start_value", "Start Value", 0 },
-                            _Param { "increment", "Increment", 1},
-                            _Param { "foreach_begin_path", "ForEachBegin Path", "" },
-                            _Param { "stop_condition", "Stop Condition", 0 },
-                        }
-                    },
-                }
             },
             _ParamGroup {
             }
         };
 
-        void update_func() const {
-
-        }
-
-
-        std::shared_ptr<IObject> apply(
-            std::shared_ptr<IObject> iterate_object,
-            std::string iterate_method,    /*1.iterate_by_count   2.iterate_by_geometry(TODO) */
-            std::string collect_method,    /*1.feedback_to_next_begin  2.gather all iterated result*/
-            int iterations,
-            int start_value,
-            int increment,
-            std::string foreach_begin_path,
-            int stop_condition
-        ) {
-            std::shared_ptr<IObject> res;
-
+        std::shared_ptr<ForEachBegin> get_foreach_begin() {
+            //这里不能用m_foreach_begin_path，因为可能还没从基类数据同步过来，后者需要apply操作前才会同步
+            std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(get_defl_value("ForEachBegin Path"));
             std::shared_ptr<Graph> graph = this->getGraph().lock();
             std::shared_ptr<ForEachBegin> foreach_begin = std::dynamic_pointer_cast<ForEachBegin>(graph->getNode(foreach_begin_path));
+            return foreach_begin;
+        }
+
+        ZENO_API bool is_continue_to_run() override {
+            std::shared_ptr<Graph> graph = this->getGraph().lock();
+            std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
             if (!foreach_begin) {
                 throw makeError<KeyError>("foreach_begin_path", "the path of foreach_begin_path is not exist");
             }
 
-            int curr_iter = zeno::reflect::any_cast<int>(foreach_begin->get_defl_value("Current Iteration"));
-            if (curr_iter >= iterations) {
+            if (foreach_begin->get_current_iteration() >= m_iterations) {
+                //TODO: stop conditon
+                return false;
+            }
+            return true;
+        }
+
+        ZENO_API void increment() override {
+            if (m_iterate_method == "By Count") {
+                std::shared_ptr<Graph> graph = this->getGraph().lock();
+                std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
+                int current_iter = foreach_begin->get_current_iteration();
+                int new_iter = current_iter + m_increment;
+                foreach_begin->update_iteration(new_iter);
+            }
+            else {
+                //TODO: by object container
+            }
+        }
+
+        std::shared_ptr<IObject> apply(std::shared_ptr<IObject> iterate_object)
+        {
+            std::shared_ptr<IObject> res;
+
+            std::shared_ptr<Graph> graph = this->getGraph().lock();
+            std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
+            if (!foreach_begin) {
+                throw makeError<KeyError>("foreach_begin_path", "the path of foreach_begin_path is not exist");
+            }
+
+            int curr_iter = foreach_begin->get_current_iteration();
+            if (curr_iter >= m_iterations) {
                 //TODO: stop_condition
                 return iterate_object;
             }
 
             //construct the `result` object
-            if (iterate_method == "By Count") {
-                if (collect_method == "Feedback to Begin") {
-                    //当前更新操作肯定在scope里，不需要防止提交事务
-                    foreach_begin->m_current_iteration = curr_iter + increment;
-                    graph->applyNode(foreach_begin_path);
-
+            if (m_iterate_method == "By Count") {
+                if (m_collect_method == "Feedback to Begin") {
+                    return iterate_object;
                 }
-                else if (collect_method == "Gather Each Iteration") {
-
+                else if (m_collect_method == "Gather Each Iteration") {
+                    //TODO: list
                 }
                 else {
                     assert(false);
@@ -169,9 +180,29 @@ namespace zeno
             else {
                 //by object container
             }
-
-
-            return res;
+            return nullptr;
         }
+
+    //private:
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "ForEachBegin Path")
+        std::string m_foreach_begin_path;
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterations")
+        int m_iterations = 10;
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Increment")
+        int m_increment = 1;
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Start Value")
+        int m_start_value = 0;
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Stop Condition")
+        int m_stop_condition = 1;
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterate Method", Control = zeno::Combobox, ComboBoxItems = ("By Count", "By Object Container"))
+        std::string m_iterate_method = "By Count";
+
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Collect Method", Control = zeno::Combobox, ComboBoxItems = ("Feedback to Begin", "Gather Each Iteration"))
+        std::string m_collect_method = "Feedback to Begin";
     };
 }

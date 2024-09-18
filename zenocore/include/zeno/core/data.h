@@ -82,11 +82,12 @@ namespace zeno {
         zeno::reflect::Any ctrlProps;
 
         std::vector<EdgeInfo> links;
-        SocketProperty prop = Socket_Normal;
+        SocketProperty sockProp = Socket_Normal;
 
         std::string tooltip;
         bool bInput = true;
         bool bVisible = false;
+        bool bInnerParam = false;   //内部参数的标识，即，不可被外部ui所编辑，只能引用其当前的值。
         std::string wildCardGroup;
     };
 

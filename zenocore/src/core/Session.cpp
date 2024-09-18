@@ -134,9 +134,10 @@ struct ReflectNodeClass : INodeClass {
                                 inprim.name = param.dispName;
                                 inprim.defl = param.defl.type() == zeno::reflect::type_info<const char*>() ? (std::string)zeno::reflect::any_cast<const char*>(param.defl) : param.defl;
                                 convertToEditVar(inprim.defl, param.defl.type().hash_code());
+                                inprim.bInnerParam = param.bInnerParam;
                                 if (param.bInnerParam) {
                                     inprim.control = NullControl;
-                                    inprim.prop = Socket_Disable;
+                                    inprim.sockProp = Socket_Disable;
                                 }
                                 else if (param.ctrl != NullControl) {
                                     inprim.control = param.ctrl;
@@ -417,6 +418,7 @@ struct ReflectNodeClass : INodeClass {
                     ParamPrimitive prim;
 
                     ParamControl ctrl = getDefaultControl(type);
+                    bool bInnerParam = false;
                     //control:
                     if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Control")) {
                         ctrl = (ParamControl)value->as_int();
@@ -463,17 +465,27 @@ struct ReflectNodeClass : INodeClass {
                             }
                         }
                     }
+
+                    //观察是否内部参数：
+                    if (const zeno::reflect::IMetadataValue* value = metadata->get_value("InnerSocket")) {
+                        bInnerParam = value->as_int() != 0;
+                        prim.sockProp = Socket_Disable;
+                        ctrl = NullControl;
+                    }
+
                     prim.name = param_name;
                     prim.type = type;
                     prim.bInput = true;
-                    prim.bVisible = true;
+                    prim.bVisible = false;
                     prim.control = ctrl;
                     prim.ctrlProps = controlProps;
                     prim.defl = defl;
                     convertToEditVar(prim.defl, prim.type);
                     prim.socketType = Socket_Primitve;
+                    //TODO:
                     prim.tooltip;
                     prim.wildCardGroup;
+                    prim.bInnerParam = bInnerParam;
 
                     //缓存在inputrims，后面再移动到正确层级
                     inputPrims.insert({ field_name, prim});
@@ -488,9 +500,10 @@ struct ReflectNodeClass : INodeClass {
                     ParamPrimitive prim;
                     prim.name = param_name;
                     prim.bInput = false;
-                    prim.bVisible = true;
+                    prim.bVisible = false;
                     prim.control = NullControl;
                     prim.socketType = Socket_Primitve;
+                    //TODO:
                     prim.tooltip;
                     prim.wildCardGroup;
 
@@ -743,7 +756,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             if (param.type != Param_Null && param.control == NullControl)
                 param.control = getDefaultControl(param.type);
             param.tooltip = param_desc.doc;
-            param.prop = Socket_Normal;
+            param.sockProp = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
             param.bVisible = false;
             default.params.emplace_back(std::move(param));
@@ -807,7 +820,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
                 param.socketType = param_desc.socketType;
             param.control = NullControl;
             param.tooltip = param_desc.doc;
-            param.prop = Socket_Normal;
+            param.sockProp = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
             param.bVisible = false;
             ui.outputPrims.emplace_back(std::move(param));

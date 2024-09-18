@@ -125,6 +125,9 @@ public:
     ZENO_API bool in_asset_file() const;
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
 
+    ZENO_API virtual bool is_continue_to_run();
+    ZENO_API virtual void increment();    //foreach
+
     void onInterrupted();
     void mark_previous_ref_dirty();
 
@@ -167,6 +170,8 @@ protected:
             return nullptr;
         return zeno::reflect::any_cast<T>(&iter->second.defl);
     }
+
+    ZENO_API bool update_param_impl(const std::string& param, zeno::reflect::Any new_value);
 
 private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);

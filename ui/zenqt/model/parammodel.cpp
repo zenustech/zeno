@@ -115,7 +115,7 @@ void ParamsModel::initParamItems()
             item.connectProp = spParam.socketType;
             item.bVisible = spParam.bVisible;
             item.group = zeno::Role_InputPrimitive;
-            item.sockProp = spParam.prop;
+            item.sockProp = spParam.sockProp;
             m_items.append(item);
         }
     }

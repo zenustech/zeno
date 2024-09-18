@@ -77,6 +77,21 @@ ZENO_API void Graph::completeNode(std::string const &node_name) {
     safe_at(m_nodes, uuid, "node name")->doComplete();
 }
 
+void Graph::foreachApply(INode* foreach_end) {
+    std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(foreach_end->get_defl_value("ForEachBegin Path"));
+    auto foreach_begin = getNode(foreach_begin_path);
+    if (!foreach_begin) {
+        throw makeError<KeyError>("foreach_begin_path", "the path of foreach_begin_path is not exist");
+    }
+
+    while (foreach_end->is_continue_to_run())
+    {
+        foreach_begin->mark_dirty(true);
+        foreach_end->doApply();
+        foreach_end->increment();
+    }
+}
+
 ZENO_API bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
@@ -89,7 +104,12 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
     scope_exit sp([=] {this->visited.erase(uuid); });
 
     GraphException::translated([&] {
-        node->doApply();
+        if ("ForEachEnd" == node->get_nodecls()) {
+            foreachApply(node);
+        }
+        else {
+            node->doApply();
+        }
     }, node);
 
     return true;

@@ -408,7 +408,7 @@ namespace zenoio
             param.ctrlProps = ctrlProps;
             param.defl = defl;
             param.name = sockName;
-            param.prop = prop;
+            param.sockProp = prop;
             param.socketType = socketType;
             param.tooltip = tooltip;
             param.type = paramType;

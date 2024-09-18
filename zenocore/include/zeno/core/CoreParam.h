@@ -66,6 +66,7 @@ struct PrimitiveParam : CoreParam {
     zeno::reflect::Any ctrlProps;
     zeno::SocketProperty sockprop = zeno::Socket_Normal;
     bool bVisible = true;
+    bool bInnerParam = false;
 
     ParamPrimitive exportParam() const;
 };

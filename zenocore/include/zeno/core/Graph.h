@@ -146,6 +146,7 @@ private:
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
     bool isLinkValid(const EdgeInfo& edge);
+    void foreachApply(INode* foreach_end);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
