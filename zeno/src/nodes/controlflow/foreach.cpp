@@ -121,6 +121,10 @@ namespace zeno
             }
         };
 
+        void update_func() const {
+
+        }
+
 
         std::shared_ptr<IObject> apply(
             std::shared_ptr<IObject> iterate_object,
