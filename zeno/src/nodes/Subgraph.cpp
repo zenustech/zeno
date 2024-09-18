@@ -60,8 +60,6 @@ ZENDEFNODE(SubOutput, {
 });
 
 struct DopNetwork : zeno::SubnetNode {
-    virtual void apply() override {
-    }
 };
 
 ZENDEFNODE(DopNetwork, {

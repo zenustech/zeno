@@ -13,6 +13,7 @@ class IGraphsModel;
 class ZExpandableSection;
 class ZScrollArea;
 class ZenoDictListLinksTable;
+class zenoDopNetworkPanel;
 
 class ZenoPropPanel : public QWidget
 {
@@ -96,6 +97,8 @@ private:
     QWidget* m_outputWidget;                //output
     //MakeDict/MakeList节点
     ZenoDictListLinksTable* m_dictListLinksTable;   //显示makeDict/makeList输入边
+    //DopNetwork
+    zenoDopNetworkPanel* m_dopNetworkPanel;
     //subnet节点
     QTabWidget* m_tabWidget;                //子图节点input使用
     //普通节点

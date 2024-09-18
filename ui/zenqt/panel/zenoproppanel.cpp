@@ -29,6 +29,7 @@
 #include "zassert.h"
 #include "widgets/zcheckbox.h"
 #include "ZenoDictListLinksPanel.h"
+#include "zenoDopNetworkPanel.h"
 
 
 using namespace zeno::reflect;
@@ -57,6 +58,7 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     , m_normalNodeInputWidget(nullptr)
     , m_outputWidget(nullptr)
     , m_dictListLinksTable(nullptr)
+    , m_dopNetworkPanel(nullptr)
     , m_hintlist(new ZenoHintListWidget)
     , m_descLabel(new ZenoFuncDescriptionLabel)
 {
@@ -134,8 +136,15 @@ void ZenoPropPanel::clearLayout()
     else {
         int nodeType = m_idx.data(ROLE_NODETYPE).toInt();
         if (nodeType == zeno::Node_SubgraphNode || nodeType == zeno::Node_AssetInstance) {
-            m_tabWidget = nullptr;
-            m_outputWidget = nullptr;
+            QString clsname = m_idx.data(ROLE_CLASS_NAME).toString();
+            if (clsname == "Subnet") {
+                m_tabWidget = nullptr;
+                m_outputWidget = nullptr;
+            }
+            else if (clsname == "DopNetwork") {
+                m_dopNetworkPanel = nullptr;
+                m_outputWidget = nullptr;
+            }
         } else {
             m_normalNodeInputWidget = nullptr;
             m_outputWidget = nullptr;
@@ -398,7 +407,16 @@ void ZenoPropPanel::clearMakeDictMakeListLayout()
 QWidget* ZenoPropPanel::resetDopNetworkLayout()
 {
     if (QWidget* wid = resetSubnetLayout()) {
-
+        m_dopNetworkPanel = new zenoDopNetworkPanel(wid, this);
+        m_dopNetworkPanel->tabBar()->setProperty("cssClass", "propanel");
+        m_dopNetworkPanel->setDocumentMode(true);
+        m_dopNetworkPanel->setTabsClosable(false);
+        m_dopNetworkPanel->setMovable(false);
+        QFont font = QApplication::font();
+        font.setWeight(QFont::Medium);
+        m_dopNetworkPanel->setFont(font); //bug in qss font setting.
+        m_dopNetworkPanel->tabBar()->setDrawBase(false);
+        return m_dopNetworkPanel;
     }
     return nullptr;
 }
