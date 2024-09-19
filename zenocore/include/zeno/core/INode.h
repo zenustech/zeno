@@ -92,7 +92,7 @@ public:
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
     ZENO_API bool update_param_type(const std::string& name, bool bPrim, bool bInput, ParamType type);
-    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
+    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType, bool)
 
     ZENO_API bool update_param_control(const std::string& name, ParamControl control);
     CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)

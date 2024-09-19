@@ -1068,7 +1068,7 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
 
 zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
 {
-    if (!in_param) {
+    if (!in_param || in_param->type == Param_Wildcard) {
         return nullptr;
     }
 
@@ -1196,6 +1196,13 @@ bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType ou
     else if (in_param->socketType == Socket_ReadOnly) {
         in_param->spObject = outputObj;
         //TODO: readonly property on object.
+    }
+    else if (in_param->socketType == Socket_WildCard) {
+        if (std::shared_ptr<zeno::INode> node = in_param->m_wpNode.lock()) {
+            if (node->get_nodecls() == "SubOutput") {
+                in_param->spObject = outputObj;
+            }
+        }
     }
     return true;
 }
@@ -1876,7 +1883,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
     {
                     spParam.type = type;
-                    CALLBACK_NOTIFY(update_param_type, param, type)
+                    CALLBACK_NOTIFY(update_param_type, param, type, bInput)
                         return true;
                 }
             }
@@ -1891,7 +1898,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
                 {
                     spParam.type = type;
-                    CALLBACK_NOTIFY(update_param_type, param, type)
+                    CALLBACK_NOTIFY(update_param_type, param, type, bInput)
                     return true;
     }
             }
