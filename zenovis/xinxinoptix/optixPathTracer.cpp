@@ -221,7 +221,7 @@ struct smallMesh{
     std::vector<uint3>  indices {};
     std::vector<uint>   mat_idx {};
 
-    std::vector<ushort3>      g_uv;
+    std::vector<ushort2>      g_uv;
     std::vector<ushort3>     g_clr;
     std::vector<ushort3>     g_nrm;
     std::vector<ushort3>     g_tan;
@@ -239,43 +239,50 @@ struct smallMesh{
     smallMesh() = default;
     //smallMesh(smallMesh&& m) = default;
 
-    void resize(size_t n) {
-        mat_idx.resize(n);
+    void resize(size_t tri_num, size_t vert_num) {
 
-        vertices.resize(n*3);
-        g_nrm.resize(n*3);
-        g_tan.resize(n*3);
-        g_clr.resize(n*3);
-        g_uv.resize(n*3);
+        indices.resize(tri_num);
+        mat_idx.resize(tri_num);
+
+        vertices.resize(vert_num);
+        g_nrm.resize(vert_num);
+        g_tan.resize(vert_num);
+        g_clr.resize(vert_num);
+        g_uv.resize(vert_num);
     }
 
     void upload() {
 
-        {
-            auto byte_size = sizeof(ushort3) * g_uv.size();
+        if (!g_uv.empty()) {
+            auto byte_size = sizeof(g_uv[0]) * g_uv.size();
             d_uv.resize(byte_size);
             cudaMemcpy((void*)d_uv.handle, g_uv.data(), byte_size, cudaMemcpyHostToDevice);
-        }
-        {
-            auto byte_size = sizeof(ushort3) * g_clr.size();
+        } else { d_uv.reset(); }
+
+        if (!g_clr.empty()) {
+            auto byte_size = sizeof(g_clr[0]) * g_clr.size();
             d_clr.resize(byte_size);
             cudaMemcpy((void*)d_clr.handle, g_clr.data(), byte_size, cudaMemcpyHostToDevice);
-        }
-        {
-            auto byte_size = sizeof(ushort3) * g_nrm.size();
+        } else { d_clr.reset(); }
+
+        if (!g_nrm.empty()) {
+            auto byte_size = sizeof(g_nrm[0]) * g_nrm.size();
             d_nrm.resize(byte_size);
             cudaMemcpy((void*)d_nrm.handle, g_nrm.data(), byte_size, cudaMemcpyHostToDevice);
-        }
-        {
-            auto byte_size = sizeof(ushort3) * g_tan.size();
+        } else { d_nrm.reset(); }
+
+        if (!g_tan.empty()) {
+            auto byte_size = sizeof(g_tan[0]) * g_tan.size();
             d_tan.resize(byte_size);
             cudaMemcpy((void*)d_tan.handle, g_tan.data(), byte_size, cudaMemcpyHostToDevice);
-        }
+        } else { d_tan.reset(); }
     }
 
     std::vector<CUdeviceptr> aux() {
-        return std::vector { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+        return std::vector { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
     }
+
+    static const uint auxCout = 5;
 
     ~smallMesh() {
 
@@ -753,11 +760,10 @@ static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> m
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
     
-    // triangle_input.triangleArray.indexBuffer                 = didx;
-    // triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-    // triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
-    // triangle_input.triangleArray.numIndexTriplets            = mesh->vertex_indices.size();
-
+    triangle_input.triangleArray.indexBuffer                 = didx;
+    triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
+    triangle_input.triangleArray.numIndexTriplets            = mesh->indices.size();
 
     OptixAccelBuildOptions accel_options = {};
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
@@ -814,13 +820,13 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     size_t instanceID = 0;
     size_t meshID = 0;
 
-    std::vector<void *> meshAux(4 * num_meshes, 0);
+    std::vector<void*> meshAux(smallMesh::auxCout * num_meshes, 0);
     std::vector<uint> instanceLut(num_instances, 0);
 
     auto appendMeshAux = [&meshAux](std::shared_ptr<smallMesh> mesh, uint meshID){
         auto tmpAux = mesh->aux();
         auto src_ptr = (void*)tmpAux.data();
-        auto dst_ptr = (void*)(meshAux.data()+meshID*4);
+        auto dst_ptr = (void*)(meshAux.data() + meshID * smallMesh::auxCout);
 
         memcpy(dst_ptr, src_ptr, sizeof(void*)*tmpAux.size() );
     };
@@ -1597,22 +1603,8 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
     updateStaticDrawObjects();
-
-    {
-        auto& g_mat_indices = StaticMeshes->mat_idx;
-        auto& g_vertices = StaticMeshes->vertices;
-
-        auto& g_clr = StaticMeshes->g_clr;
-        auto& g_nrm = StaticMeshes->g_nrm;
-        auto& g_tan = StaticMeshes->g_tan;
-        auto& g_uv = StaticMeshes->g_uv;
-
-        //splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
-
-        //size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
-        //vertSize = std::min(g_vertices.size(), vertSize);
-    }
 }
+
 void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     camera_changed = true;
     g_mtlidlut = mtlidlut;
@@ -2432,7 +2424,7 @@ struct DrawDat {
     std::string mtlid;
     std::string instID;
     std::vector<float> verts;
-    std::vector<int> tris;
+    std::vector<uint> tris;
     std::vector<int> triMats;
 
     std::map<std::string, std::vector<float>> vertattrs;
@@ -2501,27 +2493,30 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStar
 }
 static void updateStaticDrawObjects() {
     
-    size_t n = 0;
+    size_t tri_num = 0;
+    size_t ver_num = 0;
 
-    std::vector<uint> offsets;
     std::vector<const DrawDat*> candidates;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")!=key.npos && dat.instID == "Default") {
             candidates.push_back(&dat);
-            offsets.push_back(n);
-            n += dat.tris.size()/3;
+
+            tri_num += dat.tris.size()/3;
+            ver_num += dat.verts.size()/3;
         }
     }
 
-    if ( n > 0 ) {
+    if ( tri_num > 0 ) {
         StaticMeshes = std::make_shared<smallMesh>();
-        StaticMeshes->resize(n);
+        StaticMeshes->resize(tri_num, ver_num);
     } else {
         StaticMeshes = nullptr;
         return;
     }
 
-    n = 0;
+    size_t tri_offset = 0;
+    size_t ver_offset = 0;
+
     for (const auto* dat_ptr : candidates) {
 
         auto& dat = *dat_ptr;
@@ -2535,37 +2530,30 @@ static void updateStaticDrawObjects() {
         }
 
         tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
-
             int mtidx = dat.triMats[i];
-            StaticMeshes->mat_idx[n + i] = global_matidx[mtidx];
+            StaticMeshes->mat_idx[tri_offset + i] = global_matidx[mtidx];
 
-            StaticMeshes->vertices[(n + i) * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
-            StaticMeshes->vertices[(n + i) * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
-            StaticMeshes->vertices[(n + i) * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
-
-            auto& uvAttr = dat.getAttr("uv");
-
-            StaticMeshes->g_uv[(n + i) * 3 + 0] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 0] * 3] );
-            StaticMeshes->g_uv[(n + i) * 3 + 1] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 1] * 3] ); 
-            StaticMeshes->g_uv[(n + i) * 3 + 2] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 2] * 3] );
-
-            auto& clrAttr = dat.getAttr("clr");
-
-            StaticMeshes->g_clr[(n + i) * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
-            StaticMeshes->g_clr[(n + i) * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
-            StaticMeshes->g_clr[(n + i) * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
-
-            auto& nrmAttr = dat.getAttr("nrm");
-            StaticMeshes->g_nrm[(n + i) * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
-            StaticMeshes->g_nrm[(n + i) * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
-            StaticMeshes->g_nrm[(n + i) * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
-
-            auto& tangAttr = dat.getAttr("tang");
-            StaticMeshes->g_tan[(n + i) * 3 + 0] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 0] * 3] );
-            StaticMeshes->g_tan[(n + i) * 3 + 1] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 1] * 3] );
-            StaticMeshes->g_tan[(n + i) * 3 + 2] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 2] * 3] );
+            StaticMeshes->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
         });
-        n += dat.tris.size() / 3;
+
+        memcpy(StaticMeshes->vertices.data()+ver_offset, dat.verts.data(), sizeof(float)*dat.verts.size() );
+
+        auto& uvAttr = dat.getAttr("uv");
+        auto& clrAttr = dat.getAttr("clr");
+        auto& nrmAttr = dat.getAttr("nrm");
+        auto& tangAttr = dat.getAttr("atang");
+
+        tbb::parallel_for(size_t(0), dat.verts.size()/3, [&](size_t i) {
+
+            StaticMeshes->g_uv[ver_offset + i] = toHalf( *(float2*)&uvAttr[i * 3] );
+            StaticMeshes->g_clr[ver_offset + i] = toHalf( *(float3*)&clrAttr[i * 3] );
+
+            StaticMeshes->g_nrm[ver_offset + i] = toHalf( *(float3*)&nrmAttr[i * 3] );
+            StaticMeshes->g_tan[ver_offset + i] = toHalf( *(float3*)&tangAttr[i * 3] );
+        });
+
+        tri_offset += dat.tris.size() / 3;
+        ver_offset += dat.verts.size() / 3;
     }
 }
 
@@ -2588,8 +2576,7 @@ static void updateDynamicDrawObjects() {
         auto& dat = *candidates[i];
 
         mesh = std::make_shared<smallMesh>();
-        auto n = dat.tris.size()/3;
-        mesh->resize(n);
+        mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
 
         std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1));
 
@@ -2599,36 +2586,29 @@ static void updateDynamicDrawObjects() {
             global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
         }
 
-        tbb::parallel_for(size_t(0), n, [&](size_t i) {
+        for (size_t i=0; i<dat.tris.size()/3; ++i) {
 
             int mtidx = max(0, dat.triMats[i]);
             mesh->mat_idx[i] = global_matidx[mtidx];
+        }
 
-            mesh->vertices[i * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
-            mesh->vertices[i * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
-            mesh->vertices[i * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
+        memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
+        memcpy(mesh->vertices.data(), dat.verts.data(), sizeof(float)*dat.verts.size() );
 
-            auto& uvAttr = dat.getAttr("uv");
+        auto ver_count = dat.verts.size()/3;
 
-            mesh->g_uv[i * 3 + 0] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 0] * 3]) );
-            mesh->g_uv[i * 3 + 1] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 1] * 3]) ); 
-            mesh->g_uv[i * 3 + 2] = toHalf( *(float3*)&(uvAttr[dat.tris[i * 3 + 2] * 3]) );
+        auto& uvAttr = dat.getAttr("uv");
+        auto& clrAttr = dat.getAttr("clr");
+        auto& nrmAttr = dat.getAttr("nrm");
+        auto& tangAttr = dat.getAttr("atang");
 
-            auto& clrAttr = dat.getAttr("clr");
+        tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
+            
+            mesh->g_uv[i] = toHalf( *(float2*)&(uvAttr[i * 3]) );
+            mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
 
-            mesh->g_clr[i * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh->g_clr[i * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
-            mesh->g_clr[i * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
-
-            auto& nrmAttr = dat.getAttr("nrm");
-            mesh->g_nrm[i * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh->g_nrm[i * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
-            mesh->g_nrm[i * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
-
-            auto& attrTang = dat.getAttr("tang");
-            mesh->g_tan[i * 3 + 0] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 0] * 3] );
-            mesh->g_tan[i * 3 + 1] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 1] * 3] );
-            mesh->g_tan[i * 3 + 2] = toHalf( *(float3*)&attrTang[dat.tris[i * 3 + 2] * 3] );
+            mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
+            mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
         });
     }
 
@@ -2638,9 +2618,9 @@ static void updateInstObjects()
     g_instLUT.clear();
 
     std::vector<const DrawDat*> candidates;
-    std::vector<size_t> offset_candidates;
 
-    std::unordered_map<std::string, std::size_t> numVerticesInstID {};
+    std::unordered_map<std::string, size_t> numIndicesInstID {};
+    std::unordered_map<std::string, size_t> numVerticesInstID {};
 
     for (const auto &[key, dat] : drawdats)
     {
@@ -2649,29 +2629,32 @@ static void updateInstObjects()
         //auto findStatic = key.find(":static:") != key.npos;
         //if (needStatic != findStatic) { continue; }
 
-        auto& num = numVerticesInstID[dat.instID];
-        
         candidates.push_back(&dat);
-        offset_candidates.push_back(num);
 
-        num += dat.tris.size() / 3;   
+        numIndicesInstID[dat.instID] += dat.tris.size() / 3;
+        numVerticesInstID[dat.instID] += dat.verts.size() / 3;   
     }
 
     for (auto& [key, val] : numVerticesInstID) {
-        
-        auto num = numVerticesInstID[key];
+    
         auto& instData = g_instLUT[key];
+
         auto& mesh_ref = instData.mesh;
         if (mesh_ref == nullptr) { mesh_ref = std::make_shared<smallMesh>(); }
 
-        mesh_ref->resize(num);  
+        auto ver_num = numVerticesInstID[key];
+        auto tri_num = numIndicesInstID[key];
+
+        mesh_ref->resize(tri_num, ver_num);  
     }
+
+    std::map<std::string, size_t> ver_offsets;
+    std::map<std::string, size_t> tri_offsets;
 
     for (size_t k=0; k<candidates.size(); ++k) {
 
         auto &dat = *candidates[k];
-        auto &candi_offset = offset_candidates[k];
-
+        
         auto &instData = g_instLUT[dat.instID];
         auto &mesh_ref = instData.mesh;
 
@@ -2683,64 +2666,47 @@ static void updateInstObjects()
             global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
         }
 
-        tbb::parallel_for(size_t(0), dat.tris.size() / 3, [&](size_t i) {
+        auto tri_num = dat.tris.size() / 3;
+        auto ver_num = dat.verts.size() / 3;
 
-            auto offset = candi_offset + i;
+        auto& tri_offset = tri_offsets[dat.instID];
+        auto& ver_offset = ver_offsets[dat.instID];
+
+        memcpy(mesh_ref->vertices.data()+ver_offset, dat.verts.data(), sizeof(dat.verts[0])*dat.verts.size() );
+
+        tbb::parallel_for(size_t(0), tri_num, [&](size_t i) {
 
             int mtidx = dat.triMats[i];
-            mesh_ref->mat_idx[offset] = global_matidx[mtidx];
-            
-            mesh_ref->vertices[offset * 3 + 0] = *(float3*)&dat.verts[dat.tris[i * 3 + 0] * 3];
-            mesh_ref->vertices[offset * 3 + 1] = *(float3*)&dat.verts[dat.tris[i * 3 + 1] * 3];
-            mesh_ref->vertices[offset * 3 + 2] = *(float3*)&dat.verts[dat.tris[i * 3 + 2] * 3];
-
-            auto& uvAttr = dat.getAttr("uv");
-
-            mesh_ref->g_uv[offset * 3 + 0] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh_ref->g_uv[offset * 3 + 1] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 1] * 3] ); 
-            mesh_ref->g_uv[offset * 3 + 2] = toHalf( *(float3*)&uvAttr[dat.tris[i * 3 + 2] * 3] );
-
-            auto& clrAttr = dat.getAttr("clr");
-
-            mesh_ref->g_clr[offset * 3 + 0] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh_ref->g_clr[offset * 3 + 1] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 1] * 3] ); 
-            mesh_ref->g_clr[offset * 3 + 2] = toHalf( *(float3*)&clrAttr[dat.tris[i * 3 + 2] * 3] ); 
-
-            auto& nrmAttr = dat.getAttr("nrm");
-            mesh_ref->g_nrm[offset * 3 + 0] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh_ref->g_nrm[offset * 3 + 1] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 1] * 3] );
-            mesh_ref->g_nrm[offset * 3 + 2] = toHalf( *(float3*)&nrmAttr[dat.tris[i * 3 + 2] * 3] );
-
-            auto& tangAttr = dat.getAttr("tang");
-            mesh_ref->g_tan[offset * 3 + 0] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 0] * 3] );
-            mesh_ref->g_tan[offset * 3 + 1] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 1] * 3] );
-            mesh_ref->g_tan[offset * 3 + 2] = toHalf( *(float3*)&tangAttr[dat.tris[i * 3 + 2] * 3] );
+            mesh_ref->mat_idx[tri_offset+i] = global_matidx[mtidx];
+            mesh_ref->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
         });
+
+        auto& uvAttr = dat.getAttr("uv");
+        auto& clrAttr = dat.getAttr("clr");
+        auto& nrmAttr = dat.getAttr("nrm");
+        auto& tangAttr = dat.getAttr("atang");
+
+        tbb::parallel_for(size_t(0), ver_num, [&](size_t i) {
+
+            auto offset = ver_offset + i;
+
+            mesh_ref->g_uv[offset] = toHalf( *(float2*)&uvAttr[i * 3] );
+            mesh_ref->g_clr[offset] = toHalf( *(float3*)&clrAttr[i * 3] );
+            mesh_ref->g_nrm[offset] = toHalf( *(float3*)&nrmAttr[i * 3] );
+            mesh_ref->g_tan[offset] = toHalf( *(float3*)&tangAttr[i * 3] );
+        });
+
+        tri_offset += tri_num;
+        ver_offset += ver_num;
     }
 
     for (auto& [key, instData] : g_instLUT) {
         buildMeshAccel(state, instData.mesh);
     }
 }
-void load_object2(std::string const &key, std::string const &mtlid, const std::string &instID,
-                  zeno::PrimitiveObject* prim, std::vector<int> &matids,
-                  std::vector<std::string> const &matNameList)
-{
-  DrawDat2 &dat = drawdats2[key];
-  dat.triMats = matids;
-  dat.mtlidList = matNameList;
-  dat.mtlid = mtlid;
-  dat.instID = instID;
-  dat.pos = prim->verts;
-  dat.nrm = prim->verts.attr<zeno::vec3f>("nrm");
-  dat.uv = prim->verts.attr<zeno::vec3f>("uv");
-  dat.clr = prim->verts.attr<zeno::vec3f>("clr");
-  dat.tang = prim->verts.attr<zeno::vec3f>("atang");
-  dat.triIdx = prim->tris;
-}
 
 void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
-                 float const *verts, size_t numverts, int const *tris, size_t numtris,
+                 float const *verts, size_t numverts, uint const *tris, size_t numtris,
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
                  int const *matids, std::vector<std::string> const &matNameList) {
     DrawDat &dat = drawdats[key];

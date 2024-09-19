@@ -118,18 +118,21 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #else
 
     size_t inst_idx = optixGetInstanceId();
-    auto vertex_idx = primIdx*3;
-    // { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+    
     auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
     auto meshID = instToMesh[inst_idx];
 
     auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
-    aux_ptr = aux_ptr + (meshID*4);
+    aux_ptr = aux_ptr + (meshID*5);
 
-    auto uv_ptr  = reinterpret_cast<ushort3*>(aux_ptr[0]);
-    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[1]);
-    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
-    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
+
+    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
+    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+
+    auto vertex_idx = idx_ptr[primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -143,11 +146,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
 
-    float3 n0 = normalize( decodeHalf(nrm_ptr[vertex_idx+0]) );
+    float3 n0 = normalize( decodeHalf(nrm_ptr[vertex_idx.x]) );
     n0 = dot(n0, N_Local)>0.8f?n0:N_Local;
-    float3 n1 = normalize( decodeHalf(nrm_ptr[vertex_idx+1]) );
+    float3 n1 = normalize( decodeHalf(nrm_ptr[vertex_idx.y]) );
     n1 = dot(n1, N_Local)>0.8f?n1:N_Local;
-    float3 n2 = normalize( decodeHalf(nrm_ptr[vertex_idx+2]) );
+    float3 n2 = normalize( decodeHalf(nrm_ptr[vertex_idx.z]) );
     n2 = dot(n2, N_Local)>0.8f?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
@@ -163,17 +166,18 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    const float3 uv0  = decodeHalf( uv_ptr[ vertex_idx+0 ]   );
-    const float3 uv1  = decodeHalf( uv_ptr[ vertex_idx+1 ]   );
-    const float3 uv2  = decodeHalf( uv_ptr[ vertex_idx+2 ]   );
-    const float3 clr0 = decodeHalf( clr_ptr[ vertex_idx+0 ]  );
-    const float3 clr1 = decodeHalf( clr_ptr[ vertex_idx+1 ]  );
-    const float3 clr2 = decodeHalf( clr_ptr[ vertex_idx+2 ]  );
-    const float3 tan0 = decodeHalf( tan_ptr[ vertex_idx+0 ] );
-    const float3 tan1 = decodeHalf( tan_ptr[ vertex_idx+1 ] );
-    const float3 tan2 = decodeHalf( tan_ptr[ vertex_idx+2 ] );
+    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
+    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
+    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
+    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
+    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
+    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
+    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
+    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
 
-    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    auto _uv_ = interp(barys, uv0, uv1, uv2);
+    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
@@ -423,8 +427,6 @@ extern "C" __global__ void __closesthit__radiance()
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
 
-    //printf("Triangle hit \n");
-    
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
@@ -454,34 +456,38 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
 
     size_t inst_idx = optixGetInstanceId();
-    auto vertex_idx = primIdx*3;
+    
     // { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
     auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
     auto meshID = instToMesh[inst_idx];
 
     auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
-    aux_ptr = aux_ptr + (meshID*4);
+    aux_ptr = aux_ptr + (meshID*5);
 
-    auto uv_ptr  = reinterpret_cast<ushort3*>(aux_ptr[0]);
-    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[1]);
-    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
-    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
+
+    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
+    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+
+    auto vertex_idx = idx_ptr[primIdx];
     
-    const float3 uv0  = decodeHalf( uv_ptr[ vertex_idx+0 ] );
-    const float3 uv1  = decodeHalf( uv_ptr[ vertex_idx+1 ] );
-    const float3 uv2  = decodeHalf( uv_ptr[ vertex_idx+2 ] );
+    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
+    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
+    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
 
-    const float3 clr0 = decodeHalf( clr_ptr[ vertex_idx+0 ] );
-    const float3 clr1 = decodeHalf( clr_ptr[ vertex_idx+1 ] );
-    const float3 clr2 = decodeHalf( clr_ptr[ vertex_idx+2 ] );
-    const float3 tan0 = decodeHalf( tan_ptr[ vertex_idx+0 ] );
-    const float3 tan1 = decodeHalf( tan_ptr[ vertex_idx+1 ] );
-    const float3 tan2 = decodeHalf( tan_ptr[ vertex_idx+2 ] );
+    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
+    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
+    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
+    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
+    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
+    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
 
     float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
-    float uv_area = length(cross(uv1 - uv0, uv2-uv0));
-    estimation = uv_area * 4096.0f*4096.0f / (tri_area + 1e-6);
-        attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    
+    auto _uv_ = interp(barys, uv0, uv1, uv2);
+    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
@@ -494,9 +500,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.rayLength = optixGetRayTmax();
 
-    float3 n0 = normalize( decodeHalf(nrm_ptr[ vertex_idx+0 ]) );
-    float3 n1 = normalize( decodeHalf(nrm_ptr[ vertex_idx+1 ]) );
-    float3 n2 = normalize( decodeHalf(nrm_ptr[ vertex_idx+2 ]) );
+    float3 n0 = normalize( decodeHalf(nrm_ptr[ vertex_idx.x ]) );
+    float3 n1 = normalize( decodeHalf(nrm_ptr[ vertex_idx.y ]) );
+    float3 n2 = normalize( decodeHalf(nrm_ptr[ vertex_idx.z ]) );
 
     auto N_smooth = normalize(interp(barys, n0, n1, n2));
     attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
@@ -561,12 +567,7 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
-    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
-//    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
-//           sqrt(estimation), term, prd->pixel_area);
-    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
-    //end of material computation
-    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
+  
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
     if(length(attrs.tang)>0)
     {
