@@ -1370,6 +1370,14 @@ __forceinline__ __device__ float3 decodeNormal(uchar3 c)
   return make_float3(cout.x, cout.y, cout.z);
 }
 
+__forceinline__ __device__ float2 decodeHalf(ushort2 c)
+{
+  half& hx = reinterpret_cast<half&>(c.x);
+  half& hy = reinterpret_cast<half&>(c.y);
+
+  return { __half2float(hx), __half2float(hy) };
+}
+
 __forceinline__ __device__ float3 decodeHalf(ushort3 c)
 {
   half& hx = reinterpret_cast<half&>(c.x);

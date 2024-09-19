@@ -648,8 +648,9 @@ struct GraphicsManager {
                     }
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
-                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
-                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
+                    auto& matids = prim_in->tris.attr<int>("matid");
+                    
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
