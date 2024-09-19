@@ -83,6 +83,7 @@ struct Session {
     ZENO_API void endApiCall();
     ZENO_API void setDisableRunning(bool bOn);
     ZENO_API void switchToFrame(int frameid);
+    ZENO_API void updateFrameRange(int start, int end);
     ZENO_API int registerObjId(const std::string& objprefix);
     ZENO_API void registerRunTrigger(std::function<void()> func);
     ZENO_API void registerNodeCallback(F_NodeStatus func);

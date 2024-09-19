@@ -300,6 +300,26 @@ void INode::mark_previous_ref_dirty() {
     */
 }
 
+ZENO_API bool INode::isInDopnetwork()
+{
+    std::shared_ptr<Graph> parentGraph = graph.lock();
+    while (parentGraph)
+    {
+        if (SubnetNode* subnet = parentGraph->optParentSubgNode.value()) {
+            if (DopNetwork* dop = dynamic_cast<DopNetwork*>(subnet)) {
+                return true;
+            }
+            else {
+                parentGraph = subnet->getGraph().lock();
+            }
+        }
+        else {
+            break;
+        }
+    }
+    return false;
+}
+
 void INode::onInterrupted() {
     mark_dirty(true);
     mark_previous_ref_dirty();
@@ -371,6 +391,9 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
     {
         if (bWholeSubnet)
             pSubnetNode->mark_subnetdirty(bOn);
+        if (DopNetwork* pDop = dynamic_cast<DopNetwork*>(pSubnetNode)) {
+            pDop->resetFrameState();
+        }
     }
 
     std::shared_ptr<Graph> spGraph = graph.lock();
@@ -1343,8 +1366,16 @@ ZENO_API void INode::doApply() {
     }
     log_debug("==> leave {}", m_name);
 
-    registerObjToManager();
-    reportStatus(false, Node_RunSucceed);
+    //DopNetwork
+    if (DopNetwork* dop = dynamic_cast<DopNetwork*>(this)) {
+        reportStatus(true, Node_Running);
+        registerObjToManager();
+        reportStatus(true, Node_DirtyReadyToRun);
+    }
+    else {
+        registerObjToManager();
+        reportStatus(false, Node_RunSucceed);
+    }
 }
 
 ZENO_API ObjectParams INode::get_input_object_params() const

@@ -4,11 +4,20 @@
 #include "widgets/zlineedit.h"
 #include "style/zenostyle.h"
 #include "nodeeditor/gv/zitemfactory.h"
+#include <zeno/core/INode.h>
+#include <zeno/extra/SubnetNode.h>
+#include "model/GraphModel.h"
+#include "variantptr.h"
 
-zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent)
+
+zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent, QPersistentModelIndex& idx)
     : QTabWidget(parent)
+    , m_nodeIdx(idx)
 {
-    int defaultMemSize = 5000;
+    int defaultMemSize = m_nodeIdx.data(ROLE_DOPNETWORK_MEM).toInt();
+    int defaultMaxMemSize = m_nodeIdx.data(ROLE_DOPNETWORK_MAXMEM).toInt();
+    bool enableCache = m_nodeIdx.data(ROLE_DOPNETWORK_ENABLECACHE).toBool();
+    bool allowCacheToDisk = m_nodeIdx.data(ROLE_DOPNETWORK_CACHETODISK).toBool();
     this->insertTab(0, inputsWidget, "inputs");
 
     ZScrollArea* scrollArea = new ZScrollArea(this);
@@ -30,20 +39,25 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent)
     font.setWeight(QFont::Light);
 
     QCheckBox* enableCacheCheckBox = new QCheckBox(pWidget);
+    enableCacheCheckBox->setChecked(enableCache);
     ZTextLabel* enableCacheLabel = new ZTextLabel("Enable Cache");
     enableCacheLabel->setFont(font);
     enableCacheLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     enableCacheLabel->setHoverCursor(Qt::ArrowCursor);
     pLayout->addWidget(enableCacheLabel, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
     pLayout->addWidget(enableCacheCheckBox, 0, 1, Qt::AlignVCenter);
-    connect(enableCacheCheckBox, &QCheckBox::stateChanged, [](int state) {
+    connect(enableCacheCheckBox, &QCheckBox::stateChanged, [this](int state) {
         bool bChecked = (state == Qt::Checked);
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        {
+            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_ENABLECACHE, bChecked);
+        }
     });
 
     ZLineEdit* cacheMemoryLineEdit = new ZLineEdit(QString::number(defaultMemSize));
     cacheMemoryLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
     cacheMemoryLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-    QIntValidator* intValidator = new QIntValidator(0, defaultMemSize, cacheMemoryLineEdit);
+    QIntValidator* intValidator = new QIntValidator(1, INT_MAX, cacheMemoryLineEdit);
     cacheMemoryLineEdit->setValidator(intValidator);
     ZTextLabel* cacheMemoryLabel = new ZTextLabel("Cache Memory");
     cacheMemoryLabel->setFont(font);
@@ -72,29 +86,42 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent)
     pSlider->setValue(defaultMemSize);
     SLIDER_INFO sliderInfo;
     sliderInfo.min = 0;
-    sliderInfo.max = defaultMemSize;
+    sliderInfo.max = defaultMaxMemSize;
     sliderInfo.step = 3;
     pSlider->setSingleStep(sliderInfo.step);
     pSlider->setRange(sliderInfo.min, sliderInfo.max);
     pLayout->addWidget(cacheMemoryLabel, 1, 0, Qt::AlignLeft | Qt::AlignVCenter);
     pLayout->addWidget(cacheMemoryLineEdit, 1, 1, Qt::AlignLeft | Qt::AlignVCenter);
     pLayout->addWidget(pSlider, 1, 2, Qt::AlignVCenter);
-    connect(cacheMemoryLineEdit, &ZLineEdit::returnPressed, [pSlider, cacheMemoryLineEdit]() {
+    connect(cacheMemoryLineEdit, &ZLineEdit::returnPressed, [pSlider, cacheMemoryLineEdit, this]() {
         pSlider->setRange(0, cacheMemoryLineEdit->text().toInt());
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        {
+            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_MAXMEM, cacheMemoryLineEdit->text().toInt());
+        }
     });
-    connect(pSlider, &QSlider::valueChanged, [cacheMemoryLineEdit](int newVal) {
+    connect(pSlider, &QSlider::valueChanged, [cacheMemoryLineEdit, this](int newVal) {
         cacheMemoryLineEdit->setText(QString::number(newVal));
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        {
+            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_MEM, newVal);
+        }
     });
 
     QCheckBox* allowCacheToDiskCheckBox = new QCheckBox(pWidget);
+    allowCacheToDiskCheckBox->setChecked(allowCacheToDisk);
     ZTextLabel* allowCacheToDiskLable = new ZTextLabel("Allow Cache To Disk");
     allowCacheToDiskLable->setFont(font);
     allowCacheToDiskLable->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     allowCacheToDiskLable->setHoverCursor(Qt::ArrowCursor);
     pLayout->addWidget(allowCacheToDiskLable, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
     pLayout->addWidget(allowCacheToDiskCheckBox, 2, 1, Qt::AlignVCenter);
-    connect(allowCacheToDiskCheckBox, &QCheckBox::stateChanged, [](int state) {
+    connect(allowCacheToDiskCheckBox, &QCheckBox::stateChanged, [this](int state) {
         bool bChecked = (state == Qt::Checked);
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        {
+            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_CACHETODISK, bChecked);
+        }
     });
 
     this->insertTab(1, scrollArea, "cache");

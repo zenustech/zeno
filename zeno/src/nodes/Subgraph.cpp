@@ -59,15 +59,5 @@ ZENDEFNODE(SubOutput, {
     {"subgraph"},
 });
 
-struct DopNetwork : zeno::SubnetNode {
-};
-
-ZENDEFNODE(DopNetwork, {
-    {},
-    {},
-    {},
-    {"dop"},
-    });
-
 }
 }

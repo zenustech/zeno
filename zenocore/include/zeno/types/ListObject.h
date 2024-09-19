@@ -78,6 +78,10 @@ struct ListObject : IObjectClone<ListObject> {
       return m_objects.size();
   }
 
+  size_t dirtyIndiceSize() {
+      return dirtyIndice.size();
+  }
+
   void emplace_back(zany&& obj) {
       append(obj);
   }

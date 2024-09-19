@@ -107,6 +107,18 @@ void ZSlider::updateKeyFrames(const QVector<int> &keys)
     update();
 }
 
+void ZSlider::updateDopnetworkFrameCached(int frame)
+{
+    m_dopNetworkframes.insert(frame);
+    repaint();
+}
+
+void ZSlider::updateDopnetworkFrameRemoved(int frame)
+{
+    m_dopNetworkframes.remove(frame);
+    repaint();
+}
+
 int ZSlider::_getframes()
 {
     //todo
@@ -217,6 +229,16 @@ void ZSlider::paintEvent(QPaintEvent* event)
     int right = width() - m_sHMargin;
     painter.drawLine(QPointF(left, height() - 1), QPointF(right, height() - 1));
     drawSlideHandle(&painter, scaleH);
+
+    //draw dopnetwork cached frames
+    for (auto frame : m_dopNetworkframes) {
+        int x = _frameToPos(frame - m_from) + painter.pen().width();
+        int h = ZenoStyle::dpiScaled(scaleH);
+        int y = height() - h;
+        int w = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
+        QRect rec(x, y, w, h);
+        painter.fillRect(rec, QColor("#8A2BE2"));
+    }
 
     //draw keyframes
     for (auto frame : m_keyframes) {

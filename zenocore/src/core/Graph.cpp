@@ -361,7 +361,9 @@ ZENO_API void Graph::init(const GraphData& graph) {
 void Graph::markDirtyWhenFrameChanged()
 {
     for (const std::string& uuid : frame_nodes) {
-        m_nodes[uuid]->mark_dirty(true);
+        if (!m_nodes[uuid]->isInDopnetwork()) {//不在dop节点中才markDirty
+            m_nodes[uuid]->mark_dirty(true);
+        }
     }
     std::set<std::string> nodes = subnet_nodes;
     nodes.insert(asset_nodes.begin(), asset_nodes.end());
