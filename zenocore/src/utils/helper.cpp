@@ -1037,6 +1037,11 @@ namespace zeno {
         else if (gParamType_IObject == inType && outGroup == Role_OutputObject) {    //outType的Obj类型可以转IObject
             return true;
         }
+        else if (gParamType_IObject == outType && inGroup == Role_InputObject) {
+            //由于一些特殊节点，比如foreachbegin，出来的是IObject，但需要连到其他的特定object节点，
+            //同时又不能用wildcard（因为要和foreachend对应），这种情况允许向下转换，错误让节点自己报
+            return true;
+        }
         else{
             return false;
         }

@@ -84,12 +84,13 @@ void Graph::foreachApply(INode* foreach_end) {
         throw makeError<KeyError>("foreach_begin_path", "the path of foreach_begin_path is not exist");
     }
 
-    while (foreach_end->is_continue_to_run())
+    for (foreach_end->reset_forloop_settings(); foreach_end->is_continue_to_run(); foreach_end->increment())
     {
         foreach_begin->mark_dirty(true);
         foreach_end->doApply();
-        foreach_end->increment();
     }
+    foreach_end->registerObjToManager();
+    //foreach_end->reportStatus(false, Node_RunSucceed);
 }
 
 ZENO_API bool Graph::applyNode(std::string const &node_name) {
@@ -104,7 +105,7 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
     scope_exit sp([=] {this->visited.erase(uuid); });
 
     GraphException::translated([&] {
-        if ("ForEachEnd" == node->get_nodecls()) {
+        if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
             foreachApply(node);
         }
         else {

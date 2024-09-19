@@ -617,7 +617,7 @@ ZENO_API void INode::reflectNode_apply()
     }
 }
 
-ZENO_API void INode::registerObjToManager()
+void INode::registerObjToManager()
 {
     for (auto const& [name, param] : m_outputObjs)
     {
@@ -1346,8 +1346,10 @@ ZENO_API void INode::doApply() {
     }
     log_debug("==> leave {}", m_name);
 
-    registerObjToManager();
-    reportStatus(false, Node_RunSucceed);
+    if (m_nodecls != "ForEachEnd") {
+        registerObjToManager();
+        reportStatus(false, Node_RunSucceed);
+    }
 }
 
 ZENO_API ObjectParams INode::get_input_object_params() const
@@ -1847,10 +1849,16 @@ ZENO_API NodeData INode::exportInfo() const
 
 ZENO_API bool INode::update_param(const std::string& param, zeno::reflect::Any new_value) {
     CORE_API_BATCH
-    return update_param_impl(param, new_value);
+    zeno::reflect::Any old_value;
+    bool ret = update_param_impl(param, new_value, old_value);
+    if (ret) {
+        CALLBACK_NOTIFY(update_param, param, old_value, new_value)
+        mark_dirty(true);
+    }
+    return ret;
 }
 
-ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::Any new_value)
+ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::Any new_value, zeno::reflect::Any& old_value)
 {
     auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
     bool isvalid = convertToEditVar(new_value, spParam.type);
@@ -1860,7 +1868,7 @@ ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::
     }
     if (spParam.defl != new_value)
     {
-        auto old_value = spParam.defl;
+        old_value = spParam.defl;
         spParam.defl = new_value;
 
         std::shared_ptr<Graph> spGraph = graph.lock();
@@ -1868,8 +1876,7 @@ ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::
 
         spGraph->onNodeParamUpdated(&spParam, old_value, new_value);
         initReferLinks(&spParam);
-        CALLBACK_NOTIFY(update_param, param, old_value, new_value)
-        mark_dirty(true);
+        
         return true;
     }
     return false;
@@ -2530,6 +2537,14 @@ ZENO_API bool INode::is_continue_to_run() {
 
 ZENO_API void INode::increment() {
 
+}
+
+ZENO_API void INode::reset_forloop_settings() {
+
+}
+
+ZENO_API std::shared_ptr<IObject> INode::get_iterate_object() {
+    return nullptr;
 }
 
 std::vector<std::pair<std::string, bool>> zeno::INode::getWildCardParams(const std::string& param_name, bool bPrim)

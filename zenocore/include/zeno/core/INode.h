@@ -125,11 +125,15 @@ public:
     ZENO_API bool in_asset_file() const;
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
 
+    //foreachÌØ¹©
     ZENO_API virtual bool is_continue_to_run();
-    ZENO_API virtual void increment();    //foreach
+    ZENO_API virtual void increment();
+    ZENO_API virtual void reset_forloop_settings();
+    ZENO_API virtual std::shared_ptr<IObject> get_iterate_object();
 
     void onInterrupted();
     void mark_previous_ref_dirty();
+    void registerObjToManager();
 
     //END new api
     bool add_input_prim_param(ParamPrimitive param);
@@ -157,7 +161,7 @@ protected:
     ZENO_API virtual void preApply();
     ZENO_API virtual void apply();
     ZENO_API void reflectNode_apply();
-    ZENO_API virtual void registerObjToManager();
+
     ZENO_API virtual void initParams(const NodeData& dat);
     ZENO_API bool set_primitive_input(std::string const& id, const zeno::reflect::Any& val);
     ZENO_API bool set_primitive_output(std::string const& id, const zeno::reflect::Any& val);
@@ -171,7 +175,7 @@ protected:
         return zeno::reflect::any_cast<T>(&iter->second.defl);
     }
 
-    ZENO_API bool update_param_impl(const std::string& param, zeno::reflect::Any new_value);
+    ZENO_API bool update_param_impl(const std::string& param, zeno::reflect::Any new_value, zeno::reflect::Any& oldVal);
 
 private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
