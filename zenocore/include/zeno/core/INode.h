@@ -45,6 +45,8 @@ public:
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
+    //preApply是先解决所有输入参数（上游）的求值问题
+    ZENO_API virtual void preApply();
     ZENO_API void doComplete();
     ZENO_API void doApply();
     ZENO_API void doOnlyApply();
@@ -157,8 +159,6 @@ public:
 
 protected:
     ZENO_API virtual void complete();
-    //preApply是先解决所有输入参数（依赖）的求值问题
-    ZENO_API virtual void preApply();
     ZENO_API virtual void apply();
     ZENO_API void reflectNode_apply();
 

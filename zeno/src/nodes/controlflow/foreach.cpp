@@ -35,17 +35,46 @@ namespace zeno
             }
         };
 
+        std::shared_ptr<INode> get_foreachend() {
+            std::shared_ptr<Graph> graph = this->getGraph().lock();
+            std::shared_ptr<INode> foreach_end = graph->getNode(m_foreach_end_path);
+            if (!foreach_end) {
+                throw makeError<KeyError>("foreach_end_path", "the path of foreach_end_path is not exist");
+            }
+            return foreach_end;
+        }
+
         std::shared_ptr<IObject> apply(std::shared_ptr<IObject> init_object) {
             _out_iteration = m_current_iteration;
+            auto foreach_end = get_foreachend();
+
             if (m_fetch_mehod == "Initial Object") {
-                return init_object;
+                //看foreachend是迭代object还是container,如果是container，就得取element元素
+                std::string itemethod = zeno::reflect::any_cast<std::string>(foreach_end->get_defl_value("Iterate Method"));
+                if (itemethod == "By Count") {
+                    return init_object;
+                }
+                else if (itemethod == "By Container") {
+                    //TODO: 目前只支持list，后续可支持dict
+                    if (auto spList = std::dynamic_pointer_cast<ListObject>(init_object)) {
+                        int n = spList->size();
+                        if (m_current_iteration >= 0 && m_current_iteration < n) {
+                            zany elemObj = spList->get(m_current_iteration);
+                            return elemObj;
+                        }
+                        else {
+                            throw makeError<UnimplError>("current iteration on foreach begin exceeds the range of Listobject");
+                        }
+                    }
+                    else {
+                        throw makeError<UnimplError>("Only support ListObject on Initial Object when select `By Container` mode in foreach_end");
+                    }
+                }
+                else {
+                    throw makeError<UnimplError>("Only support `By Count` and `By Container` mode.");
+                }
             }
             else if (m_fetch_mehod == "From Last Feedback") {
-                std::shared_ptr<Graph> graph = this->getGraph().lock();
-                std::shared_ptr<INode> foreach_end = graph->getNode(m_foreach_end_path);
-                if (!foreach_end) {
-                    throw makeError<KeyError>("foreach_end_path", "the path of foreach_end_path is not exist");
-                }
                 int startValue = zeno::reflect::any_cast<int>(foreach_end->get_defl_value("Start Value"));
                 if (startValue == m_current_iteration) {
                     return init_object;
@@ -138,24 +167,47 @@ namespace zeno
         }
 
         ZENO_API bool is_continue_to_run() override {
-            std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
+            std::string iter_method = zeno::reflect::any_cast<std::string>(get_defl_value("Iterate Method"));
 
-            if (foreach_begin->get_current_iteration() >= m_iterations) {
-                //TODO: stop conditon
+            std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
+            int current_iter = foreach_begin->get_current_iteration();
+
+            if (iter_method == "By Count") {
+                if (current_iter >= m_iterations) {
+                    //TODO: stop conditon
+                    return false;
+                }
+                return true;
+            }
+            else if (iter_method == "By Container") {
+                zany initobj = foreach_begin->get_input("Initial Object");
+                if (!initobj && foreach_begin->is_dirty()) {
+                    //可能上游还没算，先把上游的依赖解了
+                    foreach_begin->preApply();
+                    initobj = foreach_begin->get_input("Initial Object");
+                }
+                if (auto spList = std::dynamic_pointer_cast<ListObject>(initobj)) {
+                    int n = spList->size();
+                    return current_iter >= 0 && current_iter < n;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
                 return false;
             }
-            return true;
         }
 
         ZENO_API void increment() override {
-            if (m_iterate_method == "By Count") {
+            if (m_iterate_method == "By Count" || m_iterate_method == "By Container") {
                 std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
                 int current_iter = foreach_begin->get_current_iteration();
                 int new_iter = current_iter + m_increment;
                 foreach_begin->update_iteration(new_iter);
             }
             else {
-                //TODO: by object container
+                //TODO: By Container
             }
         }
 
@@ -166,7 +218,7 @@ namespace zeno
         std::shared_ptr<IObject> apply(std::shared_ptr<IObject> iterate_object) {
             //construct the `result` object
             m_iterate_object = iterate_object;
-            if (m_iterate_method == "By Count") {
+            if (m_iterate_method == "By Count" || m_iterate_method == "By Container") {
                 if (m_collect_method == "Feedback to Begin") {
                     return m_iterate_object;
                 }
@@ -181,7 +233,7 @@ namespace zeno
                 }
             }
             else {
-                //by object container
+                throw makeError<UnimplError>("only support By Count or By Container at ForeachEnd");
             }
             return nullptr;
         }
@@ -201,13 +253,13 @@ namespace zeno
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Stop Condition")
         int m_stop_condition = 1;
 
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterate Method", Control = zeno::Combobox, ComboBoxItems = ("By Count", "By Object Container"))
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterate Method", Control = zeno::Combobox, ComboBoxItems = ("By Count", "By Container", "By Geometry Point", "By Geometry Face"))
         std::string m_iterate_method = "By Count";
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Collect Method", Control = zeno::Combobox, ComboBoxItems = ("Feedback to Begin", "Gather Each Iteration"))
         std::string m_collect_method = "Feedback to Begin";
 
         std::shared_ptr<IObject> m_iterate_object;
-        std::shared_ptr<ListObject> m_collect_objs;
+        std::shared_ptr<ListObject> m_collect_objs;     //TODO: 如果foreach的对象是Dict，但这里收集的结果将会以list返回出去，以后再支持Dict的收集
     };
 }
