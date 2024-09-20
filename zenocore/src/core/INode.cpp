@@ -1101,7 +1101,9 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
                     return arg;
                 }
                 else if constexpr (std::is_same_v<T, std::string>) {
-                    return resolve(arg, type);
+                    float res = resolve(arg, type);
+                    return (type == gParamType_Int) ? zeno::reflect::make_any<int>(res) : 
+                        zeno::reflect::make_any<float>(res);
                 }
                 else if constexpr (std::is_same_v<T, CurveData>) {
                     int frame = getGlobalState()->getFrameId();
