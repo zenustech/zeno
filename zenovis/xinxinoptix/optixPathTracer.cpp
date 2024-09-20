@@ -2521,7 +2521,7 @@ static void updateStaticDrawObjects() {
 
         auto& dat = *dat_ptr;
 
-        std::vector<uint32_t> global_matidx(dat.mtlidList.size());
+        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
         for (size_t j=0; j<dat.mtlidList.size(); ++j) {
             auto matName = dat.mtlidList[j];
@@ -2578,7 +2578,7 @@ static void updateDynamicDrawObjects() {
         mesh = std::make_shared<smallMesh>();
         mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
 
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1));
+        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
         for (size_t j=0; j<dat.mtlidList.size(); ++j) {
             auto matName = dat.mtlidList[j];
@@ -2658,7 +2658,7 @@ static void updateInstObjects()
         auto &instData = g_instLUT[dat.instID];
         auto &mesh_ref = instData.mesh;
 
-        std::vector<uint32_t> global_matidx(dat.mtlidList.size());
+        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
         for (size_t j=0; j<dat.mtlidList.size(); ++j) {
             auto matName = dat.mtlidList[j];
