@@ -33,6 +33,7 @@
 #include <zeno/types/MeshObject.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
 #include <zeno/core/reflectdef.h>
+#include <zeno/formula/zfxexecute.h>
 
 
 using namespace zeno::reflect;
@@ -646,6 +647,10 @@ void INode::registerObjToManager()
     }
 }
 
+void INode::on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded) {
+    checkParamsConstrain();
+}
+
 void INode::on_node_about_to_remove() {
     //移除所有引用边的依赖关系
     for (auto& [_, input_param] : m_inputPrims)
@@ -801,6 +806,31 @@ void INode::constructReference(const std::string& param_name) {
 
     const Any& param_defl = iter->second.defl;
     initReferLinks(&iter->second);
+}
+
+void INode::checkParamsConstrain() {
+    //ZfxContext
+    auto& funcMgr = zeno::getSession().funcManager;
+    ZfxContext ctx;
+    ctx.spNode = shared_from_this();
+    //对于所有带有约束的输入参数，调整其可见和可用情况
+    for (const auto& [name, param] : m_inputObjs) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.constrain_param = name;
+            ZfxExecute zfx(ctx.code, ctx);
+            zfx.execute();
+            //TODO: how to return the execution result.
+        }
+    }
+    for (const auto& [name, param] : m_inputPrims) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.constrain_param = name;
+            ZfxExecute zfx(ctx.code, ctx);
+            zfx.execute();
+        }
+    }
 }
 
 void INode::initReferLinks(PrimitiveParam* target_param) {
@@ -1531,6 +1561,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.wildCardGroup = param.wildCardGroup;
     sparam.sockprop = param.sockProp;
     sparam.bInnerParam = param.bInnerParam;
+    sparam.constrain = param.constrain;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1546,6 +1577,7 @@ bool INode::add_input_obj_param(ParamObject param) {
     sparam.socketType = param.socketType;
     sparam.m_wpNode = shared_from_this();
     sparam.wildCardGroup = param.wildCardGroup;
+    sparam.constrain = param.constrain;
     m_inputObjs.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1878,7 +1910,7 @@ ZENO_API bool INode::update_param_impl(const std::string& param, zeno::reflect::
 
         spGraph->onNodeParamUpdated(&spParam, old_value, new_value);
         initReferLinks(&spParam);
-        
+        checkParamsConstrain();
         return true;
     }
     return false;

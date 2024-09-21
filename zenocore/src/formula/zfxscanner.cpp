@@ -340,8 +340,8 @@ int yyFlexLexer::yylex()
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 43
-#define YY_END_OF_BUFFER 44
+#define YY_NUM_RULES 44
+#define YY_END_OF_BUFFER 45
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -349,15 +349,15 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static const flex_int16_t yy_accept[62] =
+static const flex_int16_t yy_accept[65] =
     {   0,
-        0,    0,   44,   42,    3,    4,   42,   22,   32,    9,
-       42,   10,   11,    7,    5,   12,    6,   15,    8,    1,
-       14,   26,   34,   27,   36,   13,   20,   25,   18,   19,
-       16,   42,   17,   39,   22,   33,   41,   29,   23,   28,
-       24,   30,    1,    2,   31,    1,    1,    0,   35,   38,
-       37,   25,   40,   21,    0,    2,    0,    1,    0,    1,
-        0
+        0,    0,   45,   43,    3,    4,   43,   23,   33,    9,
+       43,   43,   10,   11,    7,    5,   12,    6,   15,    8,
+        1,   14,   27,   35,   28,   37,   13,   20,   26,   18,
+       19,   16,   43,   17,   40,   23,   34,   42,    0,   30,
+       24,   29,   25,   31,    1,    2,   32,    1,    1,    0,
+       36,   39,   38,   26,   41,   21,   22,    0,    2,    0,
+        1,    0,    1,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -365,17 +365,17 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    2,    4,    5,    1,    6,    7,    8,    1,    9,
-       10,   11,   12,   13,   14,   15,   16,   17,   17,   17,
-       17,   17,   17,   17,   17,   17,   17,   18,   19,   20,
-       21,   22,   23,   24,   25,   25,   25,   25,   26,   25,
-       25,   25,   25,   25,   25,   25,   25,   25,   25,   25,
-       25,   25,   25,   25,   25,   25,   25,   25,   25,   25,
-       27,    1,   28,    1,   29,    1,   25,   25,   25,   25,
+        1,    2,    4,    5,    1,    6,    7,    8,    9,   10,
+       11,   12,   13,   14,   15,   16,   17,   18,   18,   18,
+       18,   18,   18,   18,   18,   18,   18,   19,   20,   21,
+       22,   23,   24,   25,   26,   26,   26,   26,   27,   26,
+       26,   26,   26,   26,   26,   26,   26,   26,   26,   26,
+       26,   26,   26,   26,   26,   26,   26,   26,   26,   26,
+       28,    1,   29,    1,   30,    1,   26,   26,   26,   26,
 
-       26,   25,   25,   25,   25,   25,   25,   25,   25,   25,
-       25,   25,   25,   25,   25,   25,   25,   25,   25,   25,
-       25,   25,   30,   31,   32,    1,    1,    1,    1,    1,
+       27,   26,   26,   26,   26,   26,   26,   26,   26,   26,
+       26,   26,   26,   26,   26,   26,   26,   26,   26,   26,
+       26,   26,   31,   32,   33,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -392,68 +392,70 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static const YY_CHAR yy_meta[33] =
+static const YY_CHAR yy_meta[34] =
     {   0,
-        1,    1,    2,    1,    3,    1,    1,    1,    1,    1,
+        1,    1,    2,    1,    3,    1,    1,    1,    4,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1
+        1,    1,    1
     } ;
 
-static const flex_int16_t yy_base[64] =
+static const flex_int16_t yy_base[68] =
     {   0,
-        0,    0,   83,   84,   84,   84,   61,    0,    8,   84,
-       73,   84,   84,   59,   23,   84,   22,   61,   24,   24,
-       84,   84,   54,   53,   50,   84,   84,   29,   84,   84,
-       84,   39,   84,   84,   62,   22,   84,   84,   84,   84,
-       84,   84,   35,    0,   84,   36,   42,   46,   84,   84,
-       84,   47,   84,   84,   52,    0,   48,   39,   32,   25,
-       84,   37,   76
+        0,    0,   89,   90,   90,   90,   64,    0,    8,   90,
+       75,    0,   90,   90,   58,   23,   90,   22,   61,   24,
+       24,   90,   90,   54,   53,   50,   90,   90,   29,   90,
+       90,   90,   39,   90,   90,   63,   22,   90,   57,   90,
+       90,   90,   90,   90,   35,    0,   90,   36,   42,   46,
+       90,   90,   90,   47,   90,   90,   90,   52,    0,   39,
+       32,   25,   21,   90,   77,   81,   84
     } ;
 
-static const flex_int16_t yy_def[64] =
+static const flex_int16_t yy_def[68] =
     {   0,
-       61,    1,   61,   61,   61,   61,   61,   62,   61,   61,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   62,   61,   61,   61,   61,   61,
-       61,   61,   61,   63,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   63,   61,   61,   61,   61,
-        0,   61,   61
+       64,    1,   64,   64,   64,   64,   64,   65,   64,   64,
+       64,   66,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64,   64,   64,   65,   64,   64,   66,   64,
+       64,   64,   64,   64,   64,   67,   64,   64,   64,   64,
+       64,   64,   64,   64,   64,   64,   64,   64,   67,   64,
+       64,   64,   64,    0,   64,   64,   64
     } ;
 
-static const flex_int16_t yy_nxt[117] =
+static const flex_int16_t yy_nxt[124] =
     {   0,
         4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
        14,   15,   16,   17,   18,   19,   20,   21,   22,   23,
-       24,   25,   26,   27,   28,   28,   29,   30,    4,   31,
-       32,   33,   36,   36,   39,   41,   36,   35,   46,   44,
-       47,   60,   42,   40,   45,   52,   36,   36,   60,   48,
-       36,   43,   43,   52,   52,   58,   46,   52,   47,   57,
-       55,   48,   58,   52,   58,   59,   54,   48,   60,   53,
-       51,   52,   52,   50,   49,   52,   56,   43,   56,   38,
-       37,   34,   61,    3,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
+       24,   25,   26,   27,   28,   29,   29,   30,   31,    4,
+       32,   33,   34,   37,   37,   41,   43,   37,   63,   48,
+       46,   49,   63,   44,   42,   47,   54,   37,   37,   61,
+       50,   37,   45,   45,   54,   54,   61,   48,   54,   49,
+       60,   58,   50,   61,   54,   57,   62,   56,   50,   63,
+       55,   53,   54,   54,   52,   51,   54,   36,   45,   40,
+       36,   39,   38,   39,   59,   35,   59,   59,   64,    3,
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
 
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64
     } ;
 
-static const flex_int16_t yy_chk[117] =
+static const flex_int16_t yy_chk[124] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    9,    9,   15,   17,    9,   62,   20,   19,
-       20,   60,   17,   15,   19,   28,   36,   36,   59,   20,
-       36,   43,   46,   28,   28,   58,   47,   28,   47,   48,
-       43,   46,   48,   52,   57,   55,   35,   47,   55,   32,
-       25,   52,   52,   24,   23,   52,   63,   18,   63,   14,
-       11,    7,    3,   61,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
+        1,    1,    1,    9,    9,   16,   18,    9,   63,   21,
+       20,   21,   62,   18,   16,   20,   29,   37,   37,   61,
+       21,   37,   45,   48,   29,   29,   60,   49,   29,   49,
+       50,   45,   48,   50,   54,   39,   58,   36,   49,   58,
+       33,   26,   54,   54,   25,   24,   54,   65,   19,   15,
+       65,   66,   11,   66,   67,    7,   67,   67,    3,   64,
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
 
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64,   64,   64,   64,   64,   64,   64,   64,
+       64,   64,   64
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -494,10 +496,10 @@ static const flex_int16_t yy_chk[117] =
     //
     // Location class can be found in location.hh and posistion.hh files. It's just a bit too much
     // boilerplate for this small example. Bummer.
-#line 497 "zfxscanner.cpp"
+#line 499 "zfxscanner.cpp"
 /*正则式的各种简写，使程序有层次感而显得明晰 */
 /*name    (\$)({alpha}|{dig}|[_.\-/$])*/
-#line 500 "zfxscanner.cpp"
+#line 502 "zfxscanner.cpp"
 
 #define INITIAL 0
 
@@ -629,15 +631,15 @@ YY_DECL
 		}
 
 	{
-#line 64 "zfxscanner.l"
+#line 65 "zfxscanner.l"
 
 
-#line 67 "zfxscanner.l"
+#line 68 "zfxscanner.l"
   // C++ 兼容的词法分析器的规则，step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
   loc.step();
 
 
-#line 640 "zfxscanner.cpp"
+#line 642 "zfxscanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -664,13 +666,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 62 )
+				if ( yy_current_state >= 65 )
 					yy_c = yy_meta[yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 84 );
+		while ( yy_base[yy_current_state] != 90 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -696,16 +698,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 71 "zfxscanner.l"
+#line 72 "zfxscanner.l"
 {
                 return ZfxParser::make_NUMBER(std::strtof(yytext,0),loc); // strtof函数将字符串转换为浮点数
             }
 	YY_BREAK
 case 2:
-#line 76 "zfxscanner.l"
+#line 77 "zfxscanner.l"
 case 3:
 YY_RULE_SETUP
-#line 76 "zfxscanner.l"
+#line 77 "zfxscanner.l"
 {
             /* 跳过注释和空白符号 */
             // step函数把位置的起始值设置为与结束值相等，这样位置就指向了上一个极少的结束位置。
@@ -716,7 +718,7 @@ YY_RULE_SETUP
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 83 "zfxscanner.l"
+#line 84 "zfxscanner.l"
 {
             loc.lines(yyleng);  //使用lines函数来更新位置信息中的符号
             loc.step();
@@ -725,107 +727,112 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 89 "zfxscanner.l"
+#line 90 "zfxscanner.l"
 { return zeno::ZfxParser::make_ADD(loc); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 90 "zfxscanner.l"
+#line 91 "zfxscanner.l"
 { return zeno::ZfxParser::make_SUB(loc); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 91 "zfxscanner.l"
+#line 92 "zfxscanner.l"
 { return zeno::ZfxParser::make_MUL(loc); }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 92 "zfxscanner.l"
+#line 93 "zfxscanner.l"
 { return zeno::ZfxParser::make_DIV(loc); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 93 "zfxscanner.l"
+#line 94 "zfxscanner.l"
 { return zeno::ZfxParser::make_MOD(loc); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 94 "zfxscanner.l"
+#line 95 "zfxscanner.l"
 { return zeno::ZfxParser::make_LPAREN(yytext,loc); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 95 "zfxscanner.l"
+#line 96 "zfxscanner.l"
 { return zeno::ZfxParser::make_RPAREN(yytext,loc); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 96 "zfxscanner.l"
+#line 97 "zfxscanner.l"
 { return zeno::ZfxParser::make_COMMA(loc); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 97 "zfxscanner.l"
+#line 98 "zfxscanner.l"
 { return zeno::ZfxParser::make_QUESTION(yytext,loc); }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 98 "zfxscanner.l"
+#line 99 "zfxscanner.l"
 { return zeno::ZfxParser::make_COLON(yytext,loc); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 99 "zfxscanner.l"
+#line 100 "zfxscanner.l"
 { return zeno::ZfxParser::make_DOT(yytext,loc); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 100 "zfxscanner.l"
+#line 101 "zfxscanner.l"
 { return zeno::ZfxParser::make_LBRACKET(yytext,loc); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 101 "zfxscanner.l"
+#line 102 "zfxscanner.l"
 { return zeno::ZfxParser::make_RBRACKET(yytext,loc); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 102 "zfxscanner.l"
+#line 103 "zfxscanner.l"
 { return zeno::ZfxParser::make_LSQBRACKET(yytext,loc); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 103 "zfxscanner.l"
+#line 104 "zfxscanner.l"
 { return zeno::ZfxParser::make_RSQBRACKET(yytext,loc); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 104 "zfxscanner.l"
+#line 105 "zfxscanner.l"
 { return zeno::ZfxParser::make_ATTRAT(yytext, loc); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 105 "zfxscanner.l"
+#line 106 "zfxscanner.l"
 { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 106 "zfxscanner.l"
-{ return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
+#line 107 "zfxscanner.l"
+{ return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 107 "zfxscanner.l"
-{ return zeno::ZfxParser::make_AUTOINC(yytext, loc); }
+#line 108 "zfxscanner.l"
+{ return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 108 "zfxscanner.l"
-{ return zeno::ZfxParser::make_AUTODEC(yytext, loc); }
+#line 109 "zfxscanner.l"
+{ return zeno::ZfxParser::make_AUTOINC(yytext, loc); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 109 "zfxscanner.l"
+#line 110 "zfxscanner.l"
+{ return zeno::ZfxParser::make_AUTODEC(yytext, loc); }
+	YY_BREAK
+case 26:
+YY_RULE_SETUP
+#line 111 "zfxscanner.l"
 { 
         if (strcmp(yytext, "return") == 0) {
             return zeno::ZfxParser::make_RETURN(yytext, loc);
@@ -864,103 +871,103 @@ YY_RULE_SETUP
         return zeno::ZfxParser::make_VARNAME(yytext, loc);
 }
 	YY_BREAK
-case 26:
-YY_RULE_SETUP
-#line 146 "zfxscanner.l"
-{ return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
-	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 147 "zfxscanner.l"
-{ return zeno::ZfxParser::make_ASSIGNTO(yytext, loc); }
+#line 148 "zfxscanner.l"
+{ return zeno::ZfxParser::make_SEMICOLON(yytext, loc); }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 148 "zfxscanner.l"
-{ return zeno::ZfxParser::make_ADDASSIGN(yytext, loc); }
+#line 149 "zfxscanner.l"
+{ return zeno::ZfxParser::make_ASSIGNTO(yytext, loc); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 149 "zfxscanner.l"
-{ return zeno::ZfxParser::make_MULASSIGN(yytext, loc); }
+#line 150 "zfxscanner.l"
+{ return zeno::ZfxParser::make_ADDASSIGN(yytext, loc); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 150 "zfxscanner.l"
-{ return zeno::ZfxParser::make_SUBASSIGN(yytext, loc); }
+#line 151 "zfxscanner.l"
+{ return zeno::ZfxParser::make_MULASSIGN(yytext, loc); }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 151 "zfxscanner.l"
-{ return zeno::ZfxParser::make_DIVASSIGN(yytext, loc); }
+#line 152 "zfxscanner.l"
+{ return zeno::ZfxParser::make_SUBASSIGN(yytext, loc); }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 152 "zfxscanner.l"
-{ return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
+#line 153 "zfxscanner.l"
+{ return zeno::ZfxParser::make_DIVASSIGN(yytext, loc); }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 153 "zfxscanner.l"
-{ return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
+#line 154 "zfxscanner.l"
+{ return zeno::ZfxParser::make_DOLLAR(yytext, loc); }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 154 "zfxscanner.l"
-{ return zeno::ZfxParser::make_LESSTHAN(yytext, loc); }
+#line 155 "zfxscanner.l"
+{ return zeno::ZfxParser::make_DOLLARVARNAME(yytext, loc); }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 155 "zfxscanner.l"
-{ return zeno::ZfxParser::make_LESSEQUAL(yytext, loc); }
+#line 156 "zfxscanner.l"
+{ return zeno::ZfxParser::make_LESSTHAN(yytext, loc); }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 156 "zfxscanner.l"
-{ return zeno::ZfxParser::make_GREATTHAN(yytext, loc); }
+#line 157 "zfxscanner.l"
+{ return zeno::ZfxParser::make_LESSEQUAL(yytext, loc); }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 157 "zfxscanner.l"
-{ return zeno::ZfxParser::make_GREATEQUAL(yytext, loc); }
+#line 158 "zfxscanner.l"
+{ return zeno::ZfxParser::make_GREATTHAN(yytext, loc); }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 158 "zfxscanner.l"
-{ return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
+#line 159 "zfxscanner.l"
+{ return zeno::ZfxParser::make_GREATEQUAL(yytext, loc); }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 159 "zfxscanner.l"
-{ return zeno::ZfxParser::make_NOTEQUAL(yytext, loc); }
+#line 160 "zfxscanner.l"
+{ return zeno::ZfxParser::make_EQUALTO(yytext, loc); }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 160 "zfxscanner.l"
-{ return zeno::ZfxParser::make_OR(yytext, loc); }
+#line 161 "zfxscanner.l"
+{ return zeno::ZfxParser::make_NOTEQUAL(yytext, loc); }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 161 "zfxscanner.l"
-{ return zeno::ZfxParser::make_AND(yytext, loc); }
-	YY_BREAK
-case YY_STATE_EOF(INITIAL):
 #line 162 "zfxscanner.l"
-{ return yyterminate(); }
+{ return zeno::ZfxParser::make_OR(yytext, loc); }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 163 "zfxscanner.l"
+{ return zeno::ZfxParser::make_AND(yytext, loc); }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+#line 164 "zfxscanner.l"
+{ return yyterminate(); }
+	YY_BREAK
+case 43:
+YY_RULE_SETUP
+#line 165 "zfxscanner.l"
 {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;
           }
 	YY_BREAK
-case 43:
+case 44:
 YY_RULE_SETUP
-#line 167 "zfxscanner.l"
+#line 169 "zfxscanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 963 "zfxscanner.cpp"
+#line 970 "zfxscanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1375,7 +1382,7 @@ int yyFlexLexer::yy_get_next_buffer()
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 62 )
+			if ( yy_current_state >= 65 )
 				yy_c = yy_meta[yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
@@ -1403,11 +1410,11 @@ int yyFlexLexer::yy_get_next_buffer()
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 62 )
+		if ( yy_current_state >= 65 )
 			yy_c = yy_meta[yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
-	yy_is_jam = (yy_current_state == 61);
+	yy_is_jam = (yy_current_state == 64);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -1921,6 +1928,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 167 "zfxscanner.l"
+#line 169 "zfxscanner.l"
 
 

@@ -51,6 +51,29 @@ namespace zeno {
 
 namespace {
 
+    static void initCoreParams(std::shared_ptr<INode> spNode, CustomUI customui)
+    {
+        //init all params, and set defl value
+        for (const ParamObject& param : customui.inputObjs)
+        {
+            spNode->add_input_obj_param(param);
+        }
+        for (const ParamPrimitive& param : customUiToParams(customui.inputPrims))
+        {
+            spNode->add_input_prim_param(param);
+        }
+        for (const ParamPrimitive& param : customui.outputPrims)
+        {
+            spNode->add_output_prim_param(param);
+        }
+        for (const ParamObject& param : customui.outputObjs)
+        {
+            spNode->add_output_obj_param(param);
+        }
+        //根据customui上的约束信息调整所有控件的可见可用情况
+        spNode->checkParamsConstrain();
+    }
+
 struct ImplNodeClass : INodeClass {
     std::shared_ptr<INode>(*ctor)();
 
@@ -61,24 +84,7 @@ struct ImplNodeClass : INodeClass {
         std::shared_ptr<INode> spNode = ctor();
         spNode->initUuid(pGraph, classname);
         spNode->set_name(name);
-
-        //init all params, and set defl value
-        for (const ParamObject& param : m_customui.inputObjs)
-        {
-            spNode->add_input_obj_param(param);
-        }
-        for (const ParamPrimitive& param : customUiToParams(m_customui.inputPrims))
-        {
-            spNode->add_input_prim_param(param);
-        }
-        for (const ParamPrimitive& param : m_customui.outputPrims)
-        {
-            spNode->add_output_prim_param(param);
-        }
-        for (const ParamObject& param : m_customui.outputObjs)
-        {
-            spNode->add_output_obj_param(param);
-        }
+        initCoreParams(spNode, m_customui);
         return spNode;
     }
 };
@@ -678,24 +684,7 @@ struct ReflectNodeClass : INodeClass {
         }
 
         adjustCustomUiStructure(spNode, inputPrims, inputObjs, outputPrims, outputObjs, retInfo, anyInputs, anyOutputs);
-
-        //init all params, and set defl value
-        for (const ParamObject& param : m_customui.inputObjs)
-        {
-            spNode->add_input_obj_param(param);
-        }
-        for (const ParamPrimitive& param : customUiToParams(m_customui.inputPrims))
-        {
-            spNode->add_input_prim_param(param);
-        }
-        for (const ParamPrimitive& param : m_customui.outputPrims)
-        {
-            spNode->add_output_prim_param(param);
-        }
-        for (const ParamObject& param : m_customui.outputObjs)
-        {
-            spNode->add_output_obj_param(param);
-        }
+        initCoreParams(spNode, m_customui);
         return spNode;
     }
 };

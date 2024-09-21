@@ -25,6 +25,7 @@ namespace zeno {
         std::string dispName;
         SocketType type;
         std::string wildCardGroup;
+        std::string constrain;
     };
 
     struct _ParamGroup {

@@ -241,7 +241,8 @@ namespace zeno
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "ForEachBegin Path")
         std::string m_foreach_begin_path;
 
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterations")
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterations", 
+                Constrain = "visible = Param('Iterate Method').value = 'By Count'")
         int m_iterations = 10;
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Increment")

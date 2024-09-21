@@ -1236,6 +1236,9 @@ ZENO_API bool Graph::addLink(const EdgeInfo& edge) {
         updateWildCardParamTypeRecursive(shared_from_this(), inNode, edge.inParam, bInputPrim, true, outParamType);
     }
 
+    inNode->on_link_added_removed(true, edge.inParam, true);
+    outNode->on_link_added_removed(false, edge.outParam, true);
+
     CALLBACK_NOTIFY(addLink, adjustEdge);
     return true;
 }
@@ -1288,6 +1291,9 @@ ZENO_API bool Graph::removeLink(const EdgeInfo& edge) {
             }
         }
     }
+
+    inNode->on_link_added_removed(true, edge.inParam, false);
+    outNode->on_link_added_removed(false, edge.outParam, false);
 
     CALLBACK_NOTIFY(removeLink, edge)
     return true;

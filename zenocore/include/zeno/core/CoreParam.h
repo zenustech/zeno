@@ -43,7 +43,8 @@ struct CoreParam {
     std::string name;
     std::weak_ptr<INode> m_wpNode;
     std::string wildCardGroup;
-    
+    std::string constrain;
+
     ParamType type = Param_Null;
     SocketType socketType = NoSocket;
     bool bInput = true;

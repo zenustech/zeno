@@ -41,6 +41,7 @@
 
 /*正则式的各种简写，使程序有层次感而显得明晰 */
 string  \"[^\n"]+\"
+singlequote '[^\n']+'
 uncompstring \"[^\n"]*
 ws      [ \t]+
 alpha   [A-Za-z]
@@ -102,6 +103,7 @@ equalto \=
 "\]"       { return zeno::ZfxParser::make_RSQBRACKET(yytext,loc); }
 "@"       { return zeno::ZfxParser::make_ATTRAT(yytext, loc); }
 {string}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
+{singlequote}  { return zeno::ZfxParser::make_LITERAL(yytext, loc); }
 {uncompstring} { return zeno::ZfxParser::make_UNCOMPSTR(yytext, loc); }
 {autoinc} { return zeno::ZfxParser::make_AUTOINC(yytext, loc); }
 {autodec} { return zeno::ZfxParser::make_AUTODEC(yytext, loc); }

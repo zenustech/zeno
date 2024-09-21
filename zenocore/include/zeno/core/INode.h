@@ -156,6 +156,8 @@ public:
     void constructReference(const std::string& param_name);
     void onNodeNameUpdated(const std::string& oldname, const std::string& newname);
     void on_node_about_to_remove();
+    void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //参数名包括对象输入和数值输入，不可重名
+    void checkParamsConstrain();
 
 protected:
     ZENO_API virtual void complete();
