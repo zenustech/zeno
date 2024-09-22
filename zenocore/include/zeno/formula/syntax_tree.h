@@ -19,20 +19,20 @@ namespace zeno {
 
 enum nodeType {
     UNDEFINE = 0,
-    NUMBER,             //Êı×Ö
+    NUMBER,             //æ•°å­—
     BOOLTYPE,
-    FUNC,               //º¯Êı
-    FOUROPERATIONS,     //ËÄÔòÔËËã+ - * / %
-    NEGATIVE,           //È¡¸ººÅ
-    STRING,             //×Ö·û´®
+    FUNC,               //å‡½æ•°
+    FOUROPERATIONS,     //å››åˆ™è¿ç®—+ - * / %
+    NEGATIVE,           //å–è´Ÿå·
+    STRING,             //å­—ç¬¦ä¸²
     ZENVAR,
     ATTR_VAR,           //attr value
-    COMPOP,             //²Ù×÷·û
-    CONDEXP,            //Ìõ¼ş±í´ïÊ½
+    COMPOP,             //æ“ä½œç¬¦
+    CONDEXP,            //æ¡ä»¶è¡¨è¾¾å¼
     ARRAY,
     PLACEHOLDER,
-    DECLARE,            //±äÁ¿¶¨Òå
-    ASSIGNMENT,           //¸³Öµ
+    DECLARE,            //å˜é‡å®šä¹‰
+    ASSIGNMENT,           //èµ‹å€¼
     ATTR_VISIT,      //a.x, a.y, a.z, param("...").value  ref("./node").x
     IF,
     FOR,
@@ -41,16 +41,16 @@ enum nodeType {
     EACH_ATTRS,
     WHILE,
     DOWHILE,
-    CODEBLOCK,          //¶à¸öÓï·¨Ê÷×÷ÎªchildrenµÄ´úÂë¿é
+    CODEBLOCK,          //å¤šä¸ªè¯­æ³•æ ‘ä½œä¸ºchildrençš„ä»£ç å—
     JUMP,
-    VARIABLETYPE,       //±äÁ¿ÀàĞÍ£¬±ÈÈçint vector3 float stringµÈ
+    VARIABLETYPE,       //å˜é‡ç±»å‹ï¼Œæ¯”å¦‚int vector3 float stringç­‰
 };
 
 enum operatorVals {
     UNDEFINE_OP = 0,
     DEFAULT_FUNCVAL,
 
-    //ËÄÔòÔËËã nodeType¶ÔÓ¦FOUROPERATIONS
+    //å››åˆ™è¿ç®— nodeTypeå¯¹åº”FOUROPERATIONS
     PLUS,
     MINUS,
     MUL,
@@ -58,16 +58,16 @@ enum operatorVals {
     MOD,
     OR,
     AND,
-    NEG,    //È¡¸º
+    NEG,    //å–è´Ÿ
 
-    //º¯Êı nodeType¶ÔÓ¦FUNC
+    //å‡½æ•° nodeTypeå¯¹åº”FUNC
     SIN,
     SINH,
     COS,
     COSH,
     ABS,
 
-    //±È½Ï·ûºÅ
+    //æ¯”è¾ƒç¬¦å·
     Less,
     LessEqual,
     Greater,
@@ -75,7 +75,7 @@ enum operatorVals {
     Equal,
     NotEqual,
 
-    //ÒÔÏÂ½öÕë¶Ô±äÁ¿
+    //ä»¥ä¸‹ä»…é’ˆå¯¹å˜é‡
     AssignTo,
     AddAssign,
     MulAssign,
@@ -87,7 +87,7 @@ enum operatorVals {
     JUMP_BREAK,
 
     TYPE_INT,
-    TYPE_INT_ARR,   //½öÕë¶ÔÒ»Î¬Êı×é
+    TYPE_INT_ARR,   //ä»…é’ˆå¯¹ä¸€ç»´æ•°ç»„
     TYPE_FLOAT,
     TYPE_FLOAT_ARR,
     TYPE_STRING,
@@ -159,11 +159,11 @@ struct ZfxASTNode {
     bool isParenthesisNode = false;
     bool isParenthesisNodeComplete = false;
     bool bCompleted = false;
-    bool AttrAssociateVar = false;      //ÊôĞÔÏà¹Ø±äÁ¿µÄ¸³Öµ£¬±ÈÈçint a = @P.y,  b=  @N.x; ºóĞøÒª±»ÌŞ³ı¡£
-    bool bOverridedStmt = false;        //»á±»ifÌõ¼ş¸²¸ÇµÄstmt£¬²»»áÇ¶Èëµ½foreachÊôĞÔÑ­»·Àï¡£
-    bool bOverridedIfLoop = false;      //»á±»ifÌõ¼ş¸²¸ÇµÄif/while/forÓï¾ä¡£
-    bool bAttr = false;                 //ÊôĞÔÖµ£¬@P @N @Cd
-    int sortOrderNum = 0;               //ÓÃÓÚÏÈºóË³ĞòÅÅĞòµÄÖµ
+    bool AttrAssociateVar = false;      //å±æ€§ç›¸å…³å˜é‡çš„èµ‹å€¼ï¼Œæ¯”å¦‚int a = @P.y,  b=  @N.x; åç»­è¦è¢«å‰”é™¤ã€‚
+    bool bOverridedStmt = false;        //ä¼šè¢«ifæ¡ä»¶è¦†ç›–çš„stmtï¼Œä¸ä¼šåµŒå…¥åˆ°foreachå±æ€§å¾ªç¯é‡Œã€‚
+    bool bOverridedIfLoop = false;      //ä¼šè¢«ifæ¡ä»¶è¦†ç›–çš„if/while/forè¯­å¥ã€‚
+    bool bAttr = false;                 //å±æ€§å€¼ï¼Œ@P @N @Cd
+    int sortOrderNum = 0;               //ç”¨äºå…ˆåé¡ºåºæ’åºçš„å€¼
 };
 
 struct ZfxContext
@@ -172,7 +172,7 @@ struct ZfxContext
     /* in */ std::weak_ptr<INode> spNode;
     /* in */ std::string code;
     /* in */ ZfxRunOver runover = RunOver_Points;
-    /* in */ std::string constrain_param;      /*×¨ÃÅÓÃÓÚ²ÎÊıuiÔ¼Êøµ÷ÕûµÄ³¡¾°£¬Èç¹û²»Îª¿Õ£¬¼´ÎªÒªÔ¼ÊøµÄ²ÎÊı*/
+    /* in */ std::string constrain_param;      /*ä¸“é—¨ç”¨äºå‚æ•°uiçº¦æŸè°ƒæ•´çš„åœºæ™¯ï¼Œå¦‚æœä¸ä¸ºç©ºï¼Œå³ä¸ºè¦çº¦æŸçš„å‚æ•°*/
     /* out */ std::string printContent;
     /* out */ operatorVals jumpFlag;
 };
@@ -190,7 +190,7 @@ float calc_syntax_tree(std::shared_ptr<ZfxASTNode> root);
 
 void printSyntaxTree(std::shared_ptr<ZfxASTNode> root, std::string original_code);
 
-void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos);  //µ±Ç°º¯ÊıÃû¼°´¦ÓÚµÚ¼¸¸ö²ÎÊı
+void currFuncNamePos(std::shared_ptr<ZfxASTNode> root, std::string& name, int& pos);  //å½“å‰å‡½æ•°ååŠå¤„äºç¬¬å‡ ä¸ªå‚æ•°
 void preOrderVec(std::shared_ptr<ZfxASTNode> root, std::vector<std::shared_ptr<ZfxASTNode>>& tmplist);
 
 bool checkparentheses(std::string& exp, int& addleft, int& addright);

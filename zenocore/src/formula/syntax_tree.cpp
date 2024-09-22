@@ -308,7 +308,7 @@ namespace zeno {
                 }
             }
             else if (root->type == FUNC) {
-                //TODO: ¶àÔªº¯ÊýµÄÇé¿ö
+                //TODO: å¤šå…ƒå‡½æ•°çš„æƒ…å†µ
                 float leftRes = calc_syntax_tree(root->children[0]);
                 switch (root->opVal)
                 {
@@ -341,7 +341,7 @@ namespace zeno {
                 std::string candidate = getOperatorString(last->type, last->opVal);
                 if (candidate != "") {
                     name = candidate;
-                    pos = NAN;  //µ±Ç°½¹µãÔÚº¯ÊýÃûÉÏ
+                    pos = NAN;  //å½“å‰ç„¦ç‚¹åœ¨å‡½æ•°åä¸Š
                     return;
                 }
             }
@@ -399,7 +399,7 @@ namespace zeno {
                 }
             }
             else {
-                //ÕÒÒÀÀµ±äÁ¿Ö»ÊÇÎªÁËÕÒÊôÐÔÒÀÀµ£¬²»ÄÜ¿çÔ½blockµÄ·¶Î§¡£
+                //æ‰¾ä¾èµ–å˜é‡åªæ˜¯ä¸ºäº†æ‰¾å±žæ€§ä¾èµ–ï¼Œä¸èƒ½è·¨è¶Šblockçš„èŒƒå›´ã€‚
                 if (spChild->type != CODEBLOCK)
                     findAllZenVar(spChild, vars);
             }

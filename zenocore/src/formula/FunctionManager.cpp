@@ -114,12 +114,12 @@ namespace zeno {
         if (!bExist)
             throw makeError<UnimplError>("the refer param doesn't exist, may be deleted before");
 
-        //Ö±½ÓÄÃÒıÓÃÔ´µÄ¼ÆËã½á¹û£¬ËùÒÔ±¾½ÚµãÔÚÖ´ĞĞÇ°£¬ÒıÓÃÔ´±ØĞëÏÈÖ´ĞĞ£¨±ÈÈçÒıÓÃÔ´µÄÊıÖµÒ²ÊÇÒÀÀµÁíÒ»¸ö½Úµã£©£¬²Î¿¼´úÂëINode::requireInput
-        //£¬ËùÒÔÒªÔÚpreApplyµÄ»ù´¡ÉÏ×÷ÌáÇ°ÒÀÀµ¼ÆËã
+        //ç›´æ¥æ‹¿å¼•ç”¨æºçš„è®¡ç®—ç»“æœï¼Œæ‰€ä»¥æœ¬èŠ‚ç‚¹åœ¨æ‰§è¡Œå‰ï¼Œå¼•ç”¨æºå¿…é¡»å…ˆæ‰§è¡Œï¼ˆæ¯”å¦‚å¼•ç”¨æºçš„æ•°å€¼ä¹Ÿæ˜¯ä¾èµ–å¦ä¸€ä¸ªèŠ‚ç‚¹ï¼‰ï¼Œå‚è€ƒä»£ç INode::requireInput
+        //ï¼Œæ‰€ä»¥è¦åœ¨preApplyçš„åŸºç¡€ä¸Šä½œæå‰ä¾èµ–è®¡ç®—
 
-        //Èç¹ûÈ¡µÄÊÇ¡°¾²Ì¬Öµ¡±£¬Ôò²»ÒªÇóÒıÓÃÔ´±ØĞëÖ´ĞĞ£¬´ËÊ±ÒªÄÃµÄÊı¾İÓ¦¸ÃÊÇdefl.
+        //å¦‚æœå–çš„æ˜¯â€œé™æ€å€¼â€ï¼Œåˆ™ä¸è¦æ±‚å¼•ç”¨æºå¿…é¡»æ‰§è¡Œï¼Œæ­¤æ—¶è¦æ‹¿çš„æ•°æ®åº”è¯¥æ˜¯defl.
 
-        //ÒÔÉÏ·½°¸È¡¾öÓÚ²úÆ·Éè¼Æ¡£
+        //ä»¥ä¸Šæ–¹æ¡ˆå–å†³äºäº§å“è®¾è®¡ã€‚
 
         if (items.size() == 1) {
             if (!paramData.result.has_value()) {
@@ -365,7 +365,7 @@ namespace zeno {
                         return method(E(lval), rval);
                     }
                     else {
-                        //Ôİ²»¿¼ÂÇÒ»¸öÔªËØºÍÒ»¸ö¾ØÕóÏà¼ÓµÄÇé¿ö¡£
+                        //æš‚ä¸è€ƒè™‘ä¸€ä¸ªå…ƒç´ å’Œä¸€ä¸ªçŸ©é˜µç›¸åŠ çš„æƒ…å†µã€‚
                         throw UnimplError("");
                     }
                 }
@@ -423,7 +423,7 @@ namespace zeno {
                     }
                     else if constexpr (std::is_same_v<Op, std::multiplies<>>)
                     {
-                        //glmµÄÊµÏÖÀï£¬³Ë·¨ÊÇË³ĞòÏà·´µÄ£¬±ÈÈçA*B, ÆäÊµÊÇÎÒÃÇÀí½âµÄB * A.
+                        //glmçš„å®ç°é‡Œï¼Œä¹˜æ³•æ˜¯é¡ºåºç›¸åçš„ï¼Œæ¯”å¦‚A*B, å…¶å®æ˜¯æˆ‘ä»¬ç†è§£çš„B * A.
                         return method(rval, lval);
                     }
                     else if constexpr (std::is_same_v<Op, std::logical_or<>>) {
@@ -479,7 +479,7 @@ namespace zeno {
             std::visit([idx](auto& arr, auto& value) {
                 using T = std::decay_t<decltype(arr)>;
                 using V = std::decay_t<decltype(value)>;
-                //matÈ¡Ò»²ãË÷Òı¿ÉÄÜ¾ÍÊÇvec...
+                //matå–ä¸€å±‚ç´¢å¼•å¯èƒ½å°±æ˜¯vec...
                 if constexpr ((std::is_same_v<T, zfxintarr> || std::is_same_v<T, zfxfloatarr>) &&
                     std::is_arithmetic_v<V>) {
                     arr[idx] = value;
@@ -773,12 +773,12 @@ namespace zeno {
     }
 
     ZfxVariable FunctionManager::parseArray(std::shared_ptr<ZfxASTNode> pNode, ZfxElemFilter& filter, ZfxContext* pContext) {
-        //Ä¿Ç°ÔİÊ±Ö»¿¼ÂÇ {1,2,3}  {{x1, y1, z1}, {x2,y2,z2}}ÕâÖÖ£¬Èç¹ûÔÙËãÉÏÊôĞÔÖµÀ©Õ¹£¬±È½ÏÂé·³£¬¶øÇÒÉÙ¼û¡£
+        //ç›®å‰æš‚æ—¶åªè€ƒè™‘ {1,2,3}  {{x1, y1, z1}, {x2,y2,z2}}è¿™ç§ï¼Œå¦‚æœå†ç®—ä¸Šå±æ€§å€¼æ‰©å±•ï¼Œæ¯”è¾ƒéº»çƒ¦ï¼Œè€Œä¸”å°‘è§ã€‚
         std::vector<ZfxVariable> args = process_args(pNode, filter, pContext);
-        //ÓÉÓÚ²»Çå³şÀàĞÍ£¬ËùÒÔÏÈ¸ù¾İÖµÀàĞÍ¹¹ÔìÒ»¸özfxvariant·µ»Ø³öÈ¥£¬ÔÙÓÉÍâ²¿ÀàĞÍ¶¨Òå/¸³ÖµÀ´´¦Àí
-        //ÓÉÓÚzfxvariant²¢Ã»ÓĞ¶àÎ¬Êı×é£¬Òò´ËÓöµ½¶àÎ¬Êı×é£¬Ö±½Ó¹¹Ôì¾ØÕó£¨Èç¹û¹¹ÔìÊ§°Ü£¬ÄÇ¾Íthrow£©
+        //ç”±äºä¸æ¸…æ¥šç±»å‹ï¼Œæ‰€ä»¥å…ˆæ ¹æ®å€¼ç±»å‹æ„é€ ä¸€ä¸ªzfxvariantè¿”å›å‡ºå»ï¼Œå†ç”±å¤–éƒ¨ç±»å‹å®šä¹‰/èµ‹å€¼æ¥å¤„ç†
+        //ç”±äºzfxvariantå¹¶æ²¡æœ‰å¤šç»´æ•°ç»„ï¼Œå› æ­¤é‡åˆ°å¤šç»´æ•°ç»„ï¼Œç›´æ¥æ„é€ çŸ©é˜µï¼ˆå¦‚æœæ„é€ å¤±è´¥ï¼Œé‚£å°±throwï¼‰
         if (args.empty()) {
-            //Ö±½Ó·µ»ØÄ¬ÈÏµÄ
+            //ç›´æ¥è¿”å›é»˜è®¤çš„
             return ZfxVariable();
         }
 
@@ -825,7 +825,7 @@ namespace zeno {
                     arr.push_back(std::get<std::string>(arg.value[0]));
                 }
             }
-            //²»¿¼ÂÇintarr£¬ÒòÎªglmµÄvector/matrix¶¼ÊÇ´¢´æfloat
+            //ä¸è€ƒè™‘intarrï¼Œå› ä¸ºglmçš„vector/matrixéƒ½æ˜¯å‚¨å­˜float
             else if (std::holds_alternative<zfxfloatarr>(arg.value[0])) {
                 if (dataType != UNDEFINE_OP && dataType != TYPE_MATRIX2 && dataType != TYPE_MATRIX3 && dataType != TYPE_MATRIX4) {
                     throw makeError<UnimplError>("data type inconsistent");
@@ -1083,7 +1083,7 @@ namespace zeno {
                 return var;
             }
             case ZENVAR: {
-                //ÕâÀïÖ¸µÄÊÇÈ¡zenvarµÄÖµÓÃÓÚÉÏ²ãµÄ¼ÆËã»òÕßÊä³ö£¬¸³Öµ²¢²»»á×ßµ½ÕâÀï
+                //è¿™é‡ŒæŒ‡çš„æ˜¯å–zenvarçš„å€¼ç”¨äºä¸Šå±‚çš„è®¡ç®—æˆ–è€…è¾“å‡ºï¼Œèµ‹å€¼å¹¶ä¸ä¼šèµ°åˆ°è¿™é‡Œ
                 const std::string& varname = get_zfxvar<std::string>(root->value);
                 ZfxVariable& var = getVariableRef(varname, pContext);
 
@@ -1132,7 +1132,7 @@ namespace zeno {
                     return var;
                 }
                 case AutoIncreaseLast:
-                case AutoDecreaseLast:  //ÔÚÍâÃæÔÙ×ÔÔö/¼õ
+                case AutoDecreaseLast:   //åœ¨å¤–é¢å†è‡ªå¢/å‡
                 {
                     selfIncOrDec(var, AutoIncreaseLast == root->opVal);
                     if (root->bAttr)
@@ -1145,7 +1145,7 @@ namespace zeno {
                 }
             }
             case ASSIGNMENT: {
-                //¸³Öµ
+                //èµ‹å€¼
                 if (root->children.size() != 2) {
                     throw makeError<UnimplError>("assign variable failed.");
                 }
@@ -1174,7 +1174,7 @@ namespace zeno {
                 }
 
                 {
-                    //ÄÜ¸³ÖµµÄ±äÁ¿Ö»ÓĞ£º1.ÆÕÍ¨zfx¶¨ÒåµÄ±äÁ¿    2.²ÎÊıÔ¼ÊøµÄ²ÎÊı±äÁ¿
+                    //èƒ½èµ‹å€¼çš„å˜é‡åªæœ‰ï¼š1.æ™®é€šzfxå®šä¹‰çš„å˜é‡    2.å‚æ•°çº¦æŸçš„å‚æ•°å˜é‡
                     std::string nodeparam = pContext->constrain_param;
                     if (!nodeparam.empty()) {
                         auto spNode = pContext->spNode.lock();
@@ -1189,13 +1189,13 @@ namespace zeno {
                         return ZfxVariable();
                     }
 
-                    //Ö±½Ó½âÎö±äÁ¿
+                    //ç›´æ¥è§£æå˜é‡
                     ZfxVariable& var = getVariableRef(targetvar, pContext);
 
                     if (root->bAttr)
                         var.bAttrUpdated = true;
 
-                    //ÏÈ¸³Öµ½áÊøºóÖ±½ÓÌá½»µ½primÉÏÃæ£¨¿É·ñÔÚ½áÊøµÄÊ±ºòÌá½»£¿ºÃÏñÒ²ĞĞ£¬»¹ÄÜÍ³Ò»²Ù×÷£©
+                    //å…ˆèµ‹å€¼ç»“æŸåç›´æ¥æäº¤åˆ°primä¸Šé¢ï¼ˆå¯å¦åœ¨ç»“æŸçš„æ—¶å€™æäº¤ï¼Ÿå¥½åƒä¹Ÿè¡Œï¼Œè¿˜èƒ½ç»Ÿä¸€æ“ä½œï¼‰
                     scope_exit sp([&]() {
                         if (zenvarNode->bAttr) {
                             commitToPrim(targetvar, var, filter, pContext);
@@ -1209,7 +1209,7 @@ namespace zeno {
                         }
                         const ZfxVariable& idx = execute(zenvarNode->children[0], filter, pContext);
                         set_array_element(var, idx, res);
-                        return ZfxVariable();  //ÎŞĞè·µ»ØÊ²Ã´¾ßÌåµÄÖµ
+                        return ZfxVariable();  //æ— éœ€è¿”å›ä»€ä¹ˆå…·ä½“çš„å€¼
                     }
                     case COMPVISIT: {
                         if (zenvarNode->children.size() != 1) {
@@ -1220,8 +1220,8 @@ namespace zeno {
                         return ZfxVariable();
                     }
                     case BulitInVar: {
-                        //TODO: Ê²Ã´Çé¿öÏÂĞèÒªĞŞ¸ÄÕâÖÖ±äÁ¿
-                        //$F $TÕâĞ©Ã²ËÆ²»ÄÜÍ¨¹ı½Å±¾È¥¸Ä£¬houdiniÒ²ÊÇÕâÑù£¬²»ÖªµÀÓĞÃ»ÓĞÀıÍâ
+                        //TODO: ä»€ä¹ˆæƒ…å†µä¸‹éœ€è¦ä¿®æ”¹è¿™ç§å˜é‡
+                        //$F $Tè¿™äº›è²Œä¼¼ä¸èƒ½é€šè¿‡è„šæœ¬å»æ”¹ï¼Œhoudiniä¹Ÿæ˜¯è¿™æ ·ï¼Œä¸çŸ¥é“æœ‰æ²¡æœ‰ä¾‹å¤–
                         throw makeError<UnimplError>("Read-only variable cannot be modified.");
                     }
                     case AutoDecreaseFirst:
@@ -1229,12 +1229,12 @@ namespace zeno {
                     case AutoIncreaseLast:
                     case AutoDecreaseLast:
                     default: {
-                        //ÏÈ×ÔÔö/¼õ,ÔÙ¸³Öµ£¬ËÆºõÃ»ÓĞÒâÒå£¬ËùÒÔºöÂÔ
+                        //å…ˆè‡ªå¢/å‡,å†èµ‹å€¼ï¼Œä¼¼ä¹æ²¡æœ‰æ„ä¹‰ï¼Œæ‰€ä»¥å¿½ç•¥
                         if (zenvarNode->bAttr) {
-                            //ÊôĞÔµÄ¸³Öµ²»ÄÜĞŞ¸ÄÆäÔ­À´µÄÎ¬¶È¡£
+                            //å±æ€§çš„èµ‹å€¼ä¸èƒ½ä¿®æ”¹å…¶åŸæ¥çš„ç»´åº¦ã€‚
                             assert(res.value.size() <= var.value.size());
                             if (res.value.size() < var.value.size()) {
-                                //Èç¹ûÓÒ±ßµÄÖµµÄÈİÆ÷´óĞ¡±Èµ±Ç°¸³ÖµÊôĞÔÒªĞ¡£¬ºÜ¿ÉÄÜÊÇµ¥Öµ£¬ÏÈÖ»¿¼ÂÇÕâÖÖÇé¿ö¡£
+                                //å¦‚æœå³è¾¹çš„å€¼çš„å®¹å™¨å¤§å°æ¯”å½“å‰èµ‹å€¼å±æ€§è¦å°ï¼Œå¾ˆå¯èƒ½æ˜¯å•å€¼ï¼Œå…ˆåªè€ƒè™‘è¿™ç§æƒ…å†µã€‚
                                 assert(res.value.size() == 1);
                                 std::fill(var.value.begin(), var.value.end(), res.value[0]);
                             }
@@ -1253,7 +1253,7 @@ namespace zeno {
                 break;
             }
             case DECLARE: {
-                //±äÁ¿¶¨Òå
+                //å˜é‡å®šä¹‰
                 int nChildren = root->children.size();
                 if (nChildren != 2 && nChildren != 3) {
                     throw makeError<UnimplError>("args of DECLARE");
@@ -1310,7 +1310,7 @@ namespace zeno {
                 }
 
                 std::string varname = get_zfxvar<std::string>(nameNode->value);
-                //ÔİÊ±²»¿¼ÂÇ×Ô¶¨Òå½á¹¹Ìå
+                //æš‚æ—¶ä¸è€ƒè™‘è‡ªå®šä¹‰ç»“æ„ä½“
                 bool bret = declareVariable(varname);
                 if (!bret) {
                     throw makeError<UnimplError>("assign variable failed.");
@@ -1325,14 +1325,14 @@ namespace zeno {
                 break;
             }
             case FUNC: {
-                //º¯Êı
+                //å‡½æ•°
                 std::vector<ZfxVariable> args = process_args(root, filter, pContext);
                 const std::string& funcname = get_zfxvar<std::string>(root->value);
                 ZfxVariable result = eval(funcname, args, filter, pContext);
                 return result;
             }
             case FOUROPERATIONS: {
-                //ËÄÔòÔËËã+ - * / %
+                //å››åˆ™è¿ç®—+ - * / %
                 std::vector<ZfxVariable> args = process_args(root, filter, pContext);
                 if (args.size() != 2) {
                     throw makeError<UnimplError>("op args");
@@ -1401,7 +1401,7 @@ namespace zeno {
                 return res;
             }
             case COMPOP: {
-                //²Ù×÷·û
+                //æ“ä½œç¬¦
                 std::vector<ZfxVariable> args = process_args(root, filter, pContext);
                 if (args.size() != 2) {
                     throw makeError<UnimplError>("compare op args");
@@ -1424,7 +1424,7 @@ namespace zeno {
                 return ZfxVariable();
             }
             case CONDEXP: {
-                //Ìõ¼ş±í´ïÊ½
+                //æ¡ä»¶è¡¨è¾¾å¼
                 std::vector<ZfxVariable> args = process_args(root, filter, pContext);
                 if (args.size() != 3) {
                     throw makeError<UnimplError>("cond exp args");
@@ -1464,11 +1464,11 @@ namespace zeno {
                 auto forStep = root->children[2];
                 auto loopContent = root->children[3];
 
-                //Ñ¹Õ»
+                //å‹æ ˆ
                 pushStack();
                 scope_exit sp([this]() {this->popStack(); });
 
-                //²é¿´beginÓï¾äÀïÊÇ·ñÓĞ¶¨ÒåÓï¾ä£¬¸³ÖµÓï¾ä
+                //æŸ¥çœ‹beginè¯­å¥é‡Œæ˜¯å¦æœ‰å®šä¹‰è¯­å¥ï¼Œèµ‹å€¼è¯­å¥
                 switch (forBegin->type)
                 {
                 case DECLARE:
@@ -1483,7 +1483,7 @@ namespace zeno {
                 }
                 case PLACEHOLDER:
                 default:
-                    //ÌîÆäËû¶«Î÷Ã»ÓĞÒâÒå£¬ÉõÖÁ¿ÉÄÜµ¼ÖÂ½âÎö³ö´í¡£
+                    //å¡«å…¶ä»–ä¸œè¥¿æ²¡æœ‰æ„ä¹‰ï¼Œç”šè‡³å¯èƒ½å¯¼è‡´è§£æå‡ºé”™ã€‚
                     execute(forBegin, filter, pContext);
                     break;
                 }
@@ -1492,7 +1492,7 @@ namespace zeno {
                 ZfxElemFilter newFilter;
                 while (hasTrue(cond, filter, newFilter)) {
                     //TODO: check the passed element and mark in the newFilter.
-                    execute(loopContent, newFilter, pContext);     //CodeBlockÀïÃæ¿ÉÄÜ»á¶àÑ¹Õ»Ò»´Î£¬Ã»¹ØÏµ£¬±äÁ¿¶¼ÊÇ¿´µÃµ½µÄ
+                    execute(loopContent, newFilter, pContext);     //CodeBlocké‡Œé¢å¯èƒ½ä¼šå¤šå‹æ ˆä¸€æ¬¡ï¼Œæ²¡å…³ç³»ï¼Œå˜é‡éƒ½æ˜¯çœ‹å¾—åˆ°çš„
 
                     if (pContext->jumpFlag == JUMP_BREAK)
                         break;
@@ -1507,11 +1507,11 @@ namespace zeno {
                 break;
             }
             case FOREACH:{
-                //¶ÔÓ¦ÎÄ·¨£ºFOREACH LPAREN foreach-step COLON zenvar RPAREN code-block
-                //foreach-step ¿ÉÄÜÓĞÒ»¸ö»òÁ½¸ö×Ó³ÉÔ±£¬²¢·µ»Øvec<ASTNode>
+                //å¯¹åº”æ–‡æ³•ï¼šFOREACH LPAREN foreach-step COLON zenvar RPAREN code-block
+                //foreach-step å¯èƒ½æœ‰ä¸€ä¸ªæˆ–ä¸¤ä¸ªå­æˆå‘˜ï¼Œå¹¶è¿”å›vec<ASTNode>
                 int nChild = root->children.size();
                 if (nChild == 3 || nChild == 4) {
-                    //Ã»ÓĞË÷Òı
+                    //æ²¡æœ‰ç´¢å¼•
                     auto idxNode = nChild == 3 ? nullptr : root->children[0];
                     auto varNode = nChild == 3 ? root->children[0] : root->children[1];
                     auto arrNode = nChild == 3 ? root->children[1] : root->children[2];
@@ -1521,12 +1521,12 @@ namespace zeno {
 
                     const ZfxVariable& arr = execute(arrNode, filter, pContext);
 
-                    //Ñ¹Õ»
+                    //å‹æ ˆ
                     pushStack();
                     scope_exit sp([this]() {this->popStack(); });
 
-                    //¶¨ÒåidxNodeËùÖ¸ÏòµÄÃû³ÆÎªÖµ i
-                    //¶¨ÒåvarNodeËùÖ¸ÏòµÄÃû³ÆÎªÖµ arrtest[i]
+                    //å®šä¹‰idxNodeæ‰€æŒ‡å‘çš„åç§°ä¸ºå€¼ i
+                    //å®šä¹‰varNodeæ‰€æŒ‡å‘çš„åç§°ä¸ºå€¼ arrtest[i]
                     std::string idxName;
                     if (idxNode) {
                         idxName = get_zfxvar<std::string>(idxNode->value);
@@ -1544,7 +1544,7 @@ namespace zeno {
                                 std::is_same_v<T, zfxstringarr>) {
 
                                 for (int i = 0; i < val.size(); i++) {
-                                    //ĞŞ¸Ä±äÁ¿ºÍË÷ÒıµÄÖµÎªi, arrtest[i];
+                                    //ä¿®æ”¹å˜é‡å’Œç´¢å¼•çš„å€¼ä¸ºi, arrtest[i];
                                     if (idxNode) {
                                         ZfxVariable zfxvar;
                                         zfxvar.value.push_back(i);
@@ -1555,10 +1555,10 @@ namespace zeno {
                                     zfxvar.value.push_back(val[i]);
                                     assignVariable(varName, zfxvar, pContext);
 
-                                    //ĞŞ¸Ä¶¨Òåºó£¬ÔÙ´ÎÔËĞĞcode
+                                    //ä¿®æ”¹å®šä¹‰åï¼Œå†æ¬¡è¿è¡Œcode
                                     execute(codeSeg, filter, pContext);
 
-                                    //¼ì²éÊÇ·ñÓĞÌø×ª, continueÔÚexecuteÄÚ²¿ÒÑ¾­Ìø³öÁË£¬ÕâÀï²»ĞèÒª´¦Àí
+                                    //æ£€æŸ¥æ˜¯å¦æœ‰è·³è½¬, continueåœ¨executeå†…éƒ¨å·²ç»è·³å‡ºäº†ï¼Œè¿™é‡Œä¸éœ€è¦å¤„ç†
                                     if (pContext->jumpFlag == JUMP_BREAK ||
                                         pContext->jumpFlag == JUMP_RETURN) {
                                         return;
@@ -1570,7 +1570,7 @@ namespace zeno {
                                 std::is_same_v<T, glm::vec4>) {
 
                                 for (int i = 0; i < val.length(); i++) {
-                                    //ĞŞ¸Ä±äÁ¿ºÍË÷ÒıµÄÖµÎªi, arrtest[i];
+                                    //ä¿®æ”¹å˜é‡å’Œç´¢å¼•çš„å€¼ä¸ºi, arrtest[i];
                                     if (idxNode) {
                                         ZfxVariable zfxvar;
                                         zfxvar.value.push_back(i);
@@ -1581,10 +1581,10 @@ namespace zeno {
                                     zfxvar.value.push_back(val[i]);
                                     assignVariable(varName, zfxvar, pContext);
 
-                                    //ĞŞ¸Ä¶¨Òåºó£¬ÔÙ´ÎÔËĞĞcode
+                                    //ä¿®æ”¹å®šä¹‰åï¼Œå†æ¬¡è¿è¡Œcode
                                     execute(codeSeg, filter, pContext);
 
-                                    //¼ì²éÊÇ·ñÓĞÌø×ª, continueÔÚexecuteÄÚ²¿ÒÑ¾­Ìø³öÁË£¬ÕâÀï²»ĞèÒª´¦Àí
+                                    //æ£€æŸ¥æ˜¯å¦æœ‰è·³è½¬, continueåœ¨executeå†…éƒ¨å·²ç»è·³å‡ºäº†ï¼Œè¿™é‡Œä¸éœ€è¦å¤„ç†
                                     if (pContext->jumpFlag == JUMP_BREAK ||
                                         pContext->jumpFlag == JUMP_RETURN) {
                                         return;
@@ -1611,14 +1611,14 @@ namespace zeno {
                 auto forCond = root->children[0];
                 auto loopContent = root->children[1];
 
-                //Ñ¹Õ»
+                //å‹æ ˆ
                 pushStack();
                 scope_exit sp([this]() {this->popStack(); });
 
                 auto cond = execute(forCond, filter, pContext);
                 ZfxElemFilter newFilter;
                 while (hasTrue(cond, filter, newFilter)) {
-                    execute(loopContent, newFilter, pContext);     //CodeBlockÀïÃæ¿ÉÄÜ»á¶àÑ¹Õ»Ò»´Î£¬Ã»¹ØÏµ£¬±äÁ¿¶¼ÊÇ¿´µÃµ½µÄ
+                    execute(loopContent, newFilter, pContext);     //CodeBlocké‡Œé¢å¯èƒ½ä¼šå¤šå‹æ ˆä¸€æ¬¡ï¼Œæ²¡å…³ç³»ï¼Œå˜é‡éƒ½æ˜¯çœ‹å¾—åˆ°çš„
 
                     if (pContext->jumpFlag == JUMP_BREAK)
                         break;
@@ -1639,7 +1639,7 @@ namespace zeno {
                 auto forCond = root->children[1];
                 auto loopContent = root->children[0];
 
-                //Ñ¹Õ»
+                //??
                 pushStack();
                 scope_exit sp([this]() {this->popStack(); });
                 ZfxVariable cond;
@@ -1649,7 +1649,7 @@ namespace zeno {
 
                 do {
                     newFilter = newFilter2;
-                    execute(loopContent, newFilter, pContext);     //CodeBlockÀïÃæ¿ÉÄÜ»á¶àÑ¹Õ»Ò»´Î£¬Ã»¹ØÏµ£¬±äÁ¿¶¼ÊÇ¿´µÃµ½µÄ
+                    execute(loopContent, newFilter, pContext);     //CodeBlocké‡Œé¢å¯èƒ½ä¼šå¤šå‹æ ˆä¸€æ¬¡ï¼Œæ²¡å…³ç³»ï¼Œå˜é‡éƒ½æ˜¯çœ‹å¾—åˆ°çš„
 
                     if (pContext->jumpFlag == JUMP_BREAK)
                         break;
@@ -1663,8 +1663,8 @@ namespace zeno {
                 break;
             }
             case CODEBLOCK:{
-                //¶à¸öÓï·¨Ê÷×÷ÎªchildrenµÄ´úÂë¿é
-                //Ñ¹Õ»£¬½áÊøºóÍËÕ»¡£
+                //??????????children??????
+                //???????????????
                 pushStack();
                 scope_exit sp([this]() {this->popStack(); });
                 for (auto pSegment : root->children) {
@@ -1682,7 +1682,7 @@ namespace zeno {
                 break;
             }
             case VARIABLETYPE:{
-                //±äÁ¿ÀàĞÍ£¬±ÈÈçint vector3 float stringµÈ
+                //å˜é‡ç±»å‹ï¼Œæ¯”å¦‚int vector3 float stringç­‰
             }
             default: {
                 break;
@@ -1735,7 +1735,7 @@ namespace zeno {
                 if (root->children.size() != 1)
                     throw makeError<UnimplError>();
                 const std::string ref = std::get<std::string>(calc(root->children[0], pContext));
-                //ÊÕ¼¯refĞÅÏ¢Ô´£¬°üÀ¨Ô´½ÚµãºÍ²ÎÊı
+                //æ”¶é›†refä¿¡æ¯æºï¼ŒåŒ…æ‹¬æºèŠ‚ç‚¹å’Œå‚æ•°
 
                 std::string fullPath, graphAbsPath;
 
@@ -1774,8 +1774,8 @@ namespace zeno {
                 std::string nodeAbsPath = graphAbsPath + '/' + nodename;
                 std::shared_ptr<INode> spNode = zeno::getSession().mainGraph->getNodeByPath(nodeAbsPath);
                 if (!spNode) {
-                    //unresolve node. Ò²ÓĞÒ»ÖÖ¿ÉÄÜ£¬¾ÍÊÇÒıÓÃÔ´µ÷ÕûÃû×Ö£¬È»ºóÍ¬²½µ½¸÷¸öÒıÓÃ½Úµã£¬ÒıÓÃ½ÚµãµÄ²ÎÊı»¹ÊÇ
-                    // ¾ÉµÄ£¬ËùÒÔÔÚÕâÀïresolve²»µ½¡£
+                    //unresolve node. ä¹Ÿæœ‰ä¸€ç§å¯èƒ½ï¼Œå°±æ˜¯å¼•ç”¨æºè°ƒæ•´åå­—ï¼Œç„¶ååŒæ­¥åˆ°å„ä¸ªå¼•ç”¨èŠ‚ç‚¹ï¼Œå¼•ç”¨èŠ‚ç‚¹çš„å‚æ•°è¿˜æ˜¯
+                    // æ—§çš„ï¼Œæ‰€ä»¥åœ¨è¿™é‡Œresolveä¸åˆ°ã€‚
                     //zeno::log_warn("unresolve node");
                     return {};
                 }
@@ -1793,7 +1793,7 @@ namespace zeno {
                 paths.insert(std::make_pair(uuidpath, paramname));
             }
             else {
-                //º¯Êı²ÎÊıÒ²¿ÉÄÜµ÷ÓÃÒıÓÃ£º
+                //å‡½æ•°å‚æ•°ä¹Ÿå¯èƒ½è°ƒç”¨å¼•ç”¨ï¼š
                 for (auto paramNode : root->children)
                 {
                     std::set<std::pair<std::string, std::string>> _paths = getReferSources(paramNode, pContext);
@@ -1900,7 +1900,7 @@ namespace zeno {
                     return res;
                 }
                 else {
-                    //ÏÈ¼òµ¥Æ¥Åäµ÷ÓÃ
+                    //å…ˆç®€å•åŒ¹é…è°ƒç”¨
                     if (funcname == "sin") {
                         if (root->children.size() != 1) throw makeError<UnimplError>();
                         float val = std::get<float>(calc(root->children[0], pContext));
@@ -2003,15 +2003,15 @@ namespace zeno {
             std::vector<ZfxVariable> _args = args;
             _args.erase(_args.begin());
 
-            //ÓĞ¿ÉÄÜÊÇ£º log("format", 2, @P.x, b);  //ÕâÀïµÄ_argsµÄÔªËØ£¬¿ÉÄÜÊÇÒ»¸ö»ò¶à¸ö¡£
+            //æœ‰å¯èƒ½æ˜¯ï¼š log("format", 2, @P.x, b);  //è¿™é‡Œçš„_argsçš„å…ƒç´ ï¼Œå¯èƒ½æ˜¯ä¸€ä¸ªæˆ–å¤šä¸ªã€‚
             int maxSize = 1;
             for (auto& arg : _args) {
                 maxSize = max(maxSize, arg.value.size());
             }
 
-            //Öğ¸öµ÷ÓÃÊä³ö
+            //é€ä¸ªè°ƒç”¨è¾“å‡º
             if (maxSize > 1) {
-                //ÊôĞÔ»òÏà¹Ø±äÁ¿µÄµ÷ÓÃ
+                //å±æ€§æˆ–ç›¸å…³å˜é‡çš„è°ƒç”¨
                 for (int i = 0; i < maxSize; i++) {
                     if (!filter[i]) continue;
                     std::vector<zfxvariant> formatargs;
@@ -2041,7 +2041,7 @@ namespace zeno {
             return ZfxVariable();
         }
         else {
-            //ÏÈ¼òµ¥Æ¥Åäµ÷ÓÃ
+            //å…ˆç®€å•åŒ¹é…è°ƒç”¨
             if (funcname == "sin") {
                 if (args.size() != 1)
                     throw makeError<UnimplError>();
@@ -2116,7 +2116,7 @@ namespace zeno {
                 if (args.size() == 1) {
                     const auto& arg = args[0];
                     if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
-                        //ÔİÊ±Ö»¿¼ÂÇÒ»¸öµã
+                        //æš‚æ—¶åªè€ƒè™‘ä¸€ä¸ªç‚¹
                         int ptnum = spGeo->addpoint(arg.value[0]);
                         ZfxVariable res;
                         res.value.push_back(ptnum);
@@ -2128,7 +2128,7 @@ namespace zeno {
                 }
                 else if (args.empty()) {
                     if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
-                        //ÔİÊ±Ö»¿¼ÂÇÒ»¸öµã
+                        //æš‚æ—¶åªè€ƒè™‘ä¸€ä¸ªç‚¹
                         int ptnum = spGeo->addpoint();
                         ZfxVariable res;
                         res.value.push_back(ptnum);
@@ -2171,9 +2171,9 @@ namespace zeno {
                     int currrem = get_zfxvar<int>(arg.value[0]);
                     bSucceed = removePoint(currrem, pContext);
                     if (bSucceed) {
-                        //Òªµ÷Õûfilter£¬ÒÆ³ıµôµÚcurrremÎ»ÖÃµÄÔªËØ
+                        //è¦è°ƒæ•´filterï¼Œç§»é™¤æ‰ç¬¬currremä½ç½®çš„å…ƒç´ 
                         filter.erase(filter.begin() + currrem);
-                        //ËùÓĞ´¢´æÔÚm_globalAttrCachedÀïµÄÊôĞÔ¶¼ÒÆ³ıµÚcurrremºÅÔªËØ£¬Èç¹ûÓĞptnum£¬Ò²Òªµ÷Õû
+                        //æ‰€æœ‰å‚¨å­˜åœ¨m_globalAttrCachedé‡Œçš„å±æ€§éƒ½ç§»é™¤ç¬¬currremå·å…ƒç´ ï¼Œå¦‚æœæœ‰ptnumï¼Œä¹Ÿè¦è°ƒæ•´
                         afterRemovePoint(currrem);
                     }
                     else {
@@ -2196,11 +2196,11 @@ namespace zeno {
                         remPoints.pop_front();
                         bSucceed = removePoint(currrem, pContext);
                         if (bSucceed) {
-                            //Òªµ÷Õûfilter£¬ÒÆ³ıµôµÚcurrremÎ»ÖÃµÄÔªËØ
+                            //è¦è°ƒæ•´filterï¼Œç§»é™¤æ‰ç¬¬currremä½ç½®çš„å…ƒç´ 
                             filter.erase(filter.begin() + currrem);
-                            //ËùÓĞ´¢´æÔÚm_globalAttrCachedÀïµÄÊôĞÔ¶¼ÒÆ³ıµÚcurrremºÅÔªËØ£¬Èç¹ûÓĞptnum£¬Ò²Òªµ÷Õû
+                            //æ‰€æœ‰å‚¨å­˜åœ¨m_globalAttrCachedé‡Œçš„å±æ€§éƒ½ç§»é™¤ç¬¬currremå·å…ƒç´ ï¼Œå¦‚æœæœ‰ptnumï¼Œä¹Ÿè¦è°ƒæ•´
                             afterRemovePoint(currrem);
-                            //×îºó½«µ±Ç°ËùÓĞÊ£ÏÂµÄÉ¾³ıµãµÄĞòºÅÔÙ×Ô¼õ
+                            //æœ€åå°†å½“å‰æ‰€æœ‰å‰©ä¸‹çš„åˆ é™¤ç‚¹çš„åºå·å†è‡ªå‡
                             for (auto iter = remPoints.begin(); iter != remPoints.end(); iter++) {
                                 *iter -= 1;
                             }
@@ -2244,7 +2244,7 @@ namespace zeno {
 
                 bSucceed = spGeo->remove_faces(remfaces, bIncludePoints);
                 if (bSucceed) {
-                    //Òªµ÷Õûfilter£¬ÒÆ³ıµôµÚcurrremÎ»ÖÃµÄÔªËØ
+                    //è¦è°ƒæ•´filterï¼Œç§»é™¤æ‰ç¬¬currremä½ç½®çš„å…ƒç´ 
                     removeElemsByIndice(filter, remfaces);
                     afterRemoveElements(remfaces);
                 }
@@ -2260,7 +2260,7 @@ namespace zeno {
     }
 
     bool FunctionManager::removePoint(int pointnum, ZfxContext* pContext) {
-        /* É¾³ıpointnumµÄµã£¬Èç¹û³É¹¦£¬¾Í·µ»ØÔ­À´ÏÂÒ»¸öµãµÄpointnum(Ó¦¸Ã¾ÍÊÇpointnum)£¬Ê§°Ü¾Í·µ»Ø-1 */
+        /* åˆ é™¤pointnumçš„ç‚¹ï¼Œå¦‚æœæˆåŠŸï¼Œå°±è¿”å›åŸæ¥ä¸‹ä¸€ä¸ªç‚¹çš„pointnum(åº”è¯¥å°±æ˜¯pointnum)ï¼Œå¤±è´¥å°±è¿”å›-1 */
         if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(pContext->spObject)) {
             return spGeo->remove_point(pointnum);
         }

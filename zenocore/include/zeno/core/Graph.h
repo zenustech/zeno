@@ -115,7 +115,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
 
-    //ÈİÒ×ÓĞÆçÒå£ºÕâ¸öinputÊÇdefl value£¬»¹ÊÇÊµÖÊµÄ¶ÔÏó£¿°´Ô­À´zenoµÄÓïÒå£¬ÊÇÖ¸defl value
+    //å®¹æ˜“æœ‰æ­§ä¹‰ï¼šè¿™ä¸ªinputæ˜¯defl valueï¼Œè¿˜æ˜¯å®è´¨çš„å¯¹è±¡ï¼ŸæŒ‰åŸæ¥zenoçš„è¯­ä¹‰ï¼Œæ˜¯æŒ‡defl value
     ZENO_API void setNodeInput(std::string const &id, std::string const &par, zany const &val);
 
     ZENO_API void setKeyFrame(std::string const &id, std::string const &par, zany const &val);
@@ -140,7 +140,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
 
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
-    //Ôö/É¾±ßÖ®ºó¸üĞÂwildCard¶Ë¿ÚµÄÀàĞÍ
+    //å¢/åˆ è¾¹ä¹‹åæ›´æ–°wildCardç«¯å£çš„ç±»å‹
     void updateWildCardParamTypeRecursive(std::shared_ptr<Graph> spCurrGarph, std::shared_ptr<INode> spNode, std::string paramName, bool bPrim, bool bInput, ParamType newtype);
     void removeLinkWhenUpdateWildCardParam(const std::string& outNode, const std::string& inNode, EdgeInfo& edge);
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);

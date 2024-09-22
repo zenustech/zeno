@@ -19,13 +19,13 @@ namespace zeno
                     _ObjectParam {"init_object", "Initial Object", Socket_Clone},
                 }
             },
-            //ÒÔÏÂÌîµÄÊÇÒÔ²ÎÊıĞÎÊ½·µ»ØµÄÍâ²¿ÒıÓÃ
+            //ä»¥ä¸‹å¡«çš„æ˜¯ä»¥å‚æ•°å½¢å¼è¿”å›çš„å¤–éƒ¨å¼•ç”¨
             _ObjectGroup {
                 {
-                    //¿Õ×Ö·û´®Ä¬ÈÏmappingµ½ applyµÄÊä³öÖµ
+                    //ç©ºå­—ç¬¦ä¸²é»˜è®¤mappingåˆ° applyçš„è¾“å‡ºå€¼
                 }
             },
-            //·µ»ØÖµĞÅÏ¢£º
+            //è¿”å›å€¼ä¿¡æ¯ï¼š
             _ObjectParam {
                 "", "Output Object", Socket_Output
             },
@@ -49,13 +49,13 @@ namespace zeno
             auto foreach_end = get_foreachend();
 
             if (m_fetch_mehod == "Initial Object") {
-                //¿´foreachendÊÇµü´úobject»¹ÊÇcontainer,Èç¹ûÊÇcontainer£¬¾ÍµÃÈ¡elementÔªËØ
+                //çœ‹foreachendæ˜¯è¿­ä»£objectè¿˜æ˜¯container,å¦‚æœæ˜¯containerï¼Œå°±å¾—å–elementå…ƒç´ 
                 std::string itemethod = zeno::reflect::any_cast<std::string>(foreach_end->get_defl_value("Iterate Method"));
                 if (itemethod == "By Count") {
                     return init_object;
                 }
                 else if (itemethod == "By Container") {
-                    //TODO: Ä¿Ç°Ö»Ö§³Ölist£¬ºóĞø¿ÉÖ§³Ödict
+                    //TODO: ç›®å‰åªæ”¯æŒlistï¼Œåç»­å¯æ”¯æŒdict
                     if (auto spList = std::dynamic_pointer_cast<ListObject>(init_object)) {
                         int n = spList->size();
                         if (m_current_iteration >= 0 && m_current_iteration < n) {
@@ -99,7 +99,7 @@ namespace zeno
 
         void update_iteration(int new_iteration) {
             m_current_iteration = new_iteration;
-            //²»ÄÜÒı·¢ÊÂÎñÖØĞÂÖ´ĞĞ£¬Ö´ĞĞÈ¨±ØĞëÓÉÍâ²¿Graph·¢Æğ
+            //ä¸èƒ½å¼•å‘äº‹åŠ¡é‡æ–°æ‰§è¡Œï¼Œæ‰§è¡Œæƒå¿…é¡»ç”±å¤–éƒ¨Graphå‘èµ·
             zeno::reflect::Any oldvalue;
             update_param_impl("Current Iteration", m_current_iteration, oldvalue);
         }
@@ -110,7 +110,7 @@ namespace zeno
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "ForEachEnd Path")
         std::string m_foreach_end_path;
 
-        //µ±Ç°µü´úÖµÍâ²¿²»¿ÉĞŞ¸Ä£¬µ«¿É±»ÆäËû²ÎÊıÒıÓÃ£¬Òò´Ë»¹ÊÇ×÷ÎªÕıÊ½²ÎÊı£¬µ±È»ÓĞÁíÒ»ÖÖ¿ÉÄÜ£¬¾ÍÊÇÖ§³ÖÒıÓÃoutput²ÎÊı£¬µ«µ±Ç°²¢Ã»ÓĞÕâ¸ö´òËã
+        //å½“å‰è¿­ä»£å€¼å¤–éƒ¨ä¸å¯ä¿®æ”¹ï¼Œä½†å¯è¢«å…¶ä»–å‚æ•°å¼•ç”¨ï¼Œå› æ­¤è¿˜æ˜¯ä½œä¸ºæ­£å¼å‚æ•°ï¼Œå½“ç„¶æœ‰å¦ä¸€ç§å¯èƒ½ï¼Œå°±æ˜¯æ”¯æŒå¼•ç”¨outputå‚æ•°ï¼Œä½†å½“å‰å¹¶æ²¡æœ‰è¿™ä¸ªæ‰“ç®—
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Current Iteration", InnerSocket = 1)
         int m_current_iteration = 0;
 
@@ -127,13 +127,13 @@ namespace zeno
                     _ObjectParam {"iterate_object", "Iterate Object", Socket_Clone},
                 }
             },
-            //ÒÔÏÂÌîµÄÊÇÒÔ²ÎÊıĞÎÊ½·µ»ØµÄÍâ²¿ÒıÓÃ
+            //ä»¥ä¸‹å¡«çš„æ˜¯ä»¥å‚æ•°å½¢å¼è¿”å›çš„å¤–éƒ¨å¼•ç”¨
             _ObjectGroup {
                 {
-                    //¿Õ×Ö·û´®Ä¬ÈÏmappingµ½ applyµÄÊä³öÖµ
+                    //ç©ºå­—ç¬¦ä¸²é»˜è®¤mappingåˆ° applyçš„è¾“å‡ºå€¼
                 }
             },
-            //·µ»ØÖµĞÅÏ¢£º
+            //è¿”å›å€¼ä¿¡æ¯ï¼š
             _ObjectParam {
                 "", "Output Object", Socket_Output
             },
@@ -148,7 +148,7 @@ namespace zeno
         }
 
         std::shared_ptr<ForEachBegin> get_foreach_begin() {
-            //ÕâÀï²»ÄÜÓÃm_foreach_begin_path£¬ÒòÎª¿ÉÄÜ»¹Ã»´Ó»ùÀàÊı¾İÍ¬²½¹ıÀ´£¬ºóÕßĞèÒªapply²Ù×÷Ç°²Å»áÍ¬²½
+            //è¿™é‡Œä¸èƒ½ç”¨m_foreach_begin_pathï¼Œå› ä¸ºå¯èƒ½è¿˜æ²¡ä»åŸºç±»æ•°æ®åŒæ­¥è¿‡æ¥ï¼Œåè€…éœ€è¦applyæ“ä½œå‰æ‰ä¼šåŒæ­¥
             std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(get_defl_value("ForEachBegin Path"));
             std::shared_ptr<Graph> graph = this->getGraph().lock();
             std::shared_ptr<ForEachBegin> foreach_begin = std::dynamic_pointer_cast<ForEachBegin>(graph->getNode(foreach_begin_path));
@@ -162,7 +162,7 @@ namespace zeno
             m_collect_objs->clear();
             std::shared_ptr<ForEachBegin> foreach_begin = get_foreach_begin();
             int start_value = zeno::reflect::any_cast<int>(get_defl_value("Start Value"));
-            //Í¦¿É±¯µÄ£¬Ã÷Ã÷ÓĞÒ»¸öm_start_value£¬µ«ÒòÎªuiĞŞ¸ÄµÄÊ±ºòÃ»À´µÃ¼°Í¬²½¹ıÀ´£¬¶øÄÃ²»ÁË
+            //æŒºå¯æ‚²çš„ï¼Œæ˜æ˜æœ‰ä¸€ä¸ªm_start_valueï¼Œä½†å› ä¸ºuiä¿®æ”¹çš„æ—¶å€™æ²¡æ¥å¾—åŠåŒæ­¥è¿‡æ¥ï¼Œè€Œæ‹¿ä¸äº†
             foreach_begin->update_iteration(/*m*/start_value);
         }
 
@@ -182,7 +182,7 @@ namespace zeno
             else if (iter_method == "By Container") {
                 zany initobj = foreach_begin->get_input("Initial Object");
                 if (!initobj && foreach_begin->is_dirty()) {
-                    //¿ÉÄÜÉÏÓÎ»¹Ã»Ëã£¬ÏÈ°ÑÉÏÓÎµÄÒÀÀµ½âÁË
+                    //å¯èƒ½ä¸Šæ¸¸è¿˜æ²¡ç®—ï¼Œå…ˆæŠŠä¸Šæ¸¸çš„ä¾èµ–è§£äº†
                     foreach_begin->preApply();
                     initobj = foreach_begin->get_input("Initial Object");
                 }
@@ -261,6 +261,6 @@ namespace zeno
         std::string m_collect_method = "Feedback to Begin";
 
         std::shared_ptr<IObject> m_iterate_object;
-        std::shared_ptr<ListObject> m_collect_objs;     //TODO: Èç¹ûforeachµÄ¶ÔÏóÊÇDict£¬µ«ÕâÀïÊÕ¼¯µÄ½á¹û½«»áÒÔlist·µ»Ø³öÈ¥£¬ÒÔºóÔÙÖ§³ÖDictµÄÊÕ¼¯
+        std::shared_ptr<ListObject> m_collect_objs;     //TODO: å¦‚æœforeachçš„å¯¹è±¡æ˜¯Dictï¼Œä½†è¿™é‡Œæ”¶é›†çš„ç»“æœå°†ä¼šä»¥listè¿”å›å‡ºå»ï¼Œä»¥åå†æ”¯æŒDictçš„æ”¶é›†
     };
 }

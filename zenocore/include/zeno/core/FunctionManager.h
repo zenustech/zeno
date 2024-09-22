@@ -13,9 +13,9 @@ namespace zeno {
 
     struct ZfxVariable
     {
-        std::vector<zfxvariant> value;  //Èç¹ûÊÇÊôĞÔ±äÁ¿(bAttr=true)£¬ÄÇÕâ¸öÈİÆ÷µÄ´óĞ¡¾ÍÊÇrunover£¨µãÏßÃæ£©µÄÔªËØ¸öÊı£¬·ñÔò¾ÍÊÇsize=1
-        bool bAttr = false;     //ÊÇ·ñÓëÊôĞÔ¹ØÁª£¨ºÃÏñÃ»Ê²Ã´ÓÃ£©
-        bool bAttrUpdated = false;      //ZfxVariableÒ²¼ÇÂ¼ÊôĞÔÖµ£¨±ÈÈç@P, @N @ptnumµÈ£©£¬´Ë±ê¼Ç¼ÇÂ¼ÔÚzfxÖ´ĞĞÖĞ£¬ÊôĞÔÖµÊÇ·ñĞŞ¸ÄÁË
+        std::vector<zfxvariant> value;  //å¦‚æœæ˜¯å±æ€§å˜é‡(bAttr=true)ï¼Œé‚£è¿™ä¸ªå®¹å™¨çš„å¤§å°å°±æ˜¯runoverï¼ˆç‚¹çº¿é¢ï¼‰çš„å…ƒç´ ä¸ªæ•°ï¼Œå¦åˆ™å°±æ˜¯size=1
+        bool bAttr = false;     //æ˜¯å¦ä¸å±æ€§å…³è”ï¼ˆå¥½åƒæ²¡ä»€ä¹ˆç”¨ï¼‰
+        bool bAttrUpdated = false;      //ZfxVariableä¹Ÿè®°å½•å±æ€§å€¼ï¼ˆæ¯”å¦‚@P, @N @ptnumç­‰ï¼‰ï¼Œæ­¤æ ‡è®°è®°å½•åœ¨zfxæ‰§è¡Œä¸­ï¼Œå±æ€§å€¼æ˜¯å¦ä¿®æ”¹äº†
 
         ZfxVariable() {}
         ZfxVariable(zfxvariant&& var) {
@@ -44,7 +44,7 @@ namespace zeno {
         void executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* ctx);
         zfxvariant calc(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
 
-        //µÃµ½ËùÓĞµÄÒıÓÃÔ´ĞÅÏ¢£¬Ã¿Ò»ÏîÊÇ < ½Úµãuuid-path, ²ÎÊıÃû >
+        //å¾—åˆ°æ‰€æœ‰çš„å¼•ç”¨æºä¿¡æ¯ï¼Œæ¯ä¸€é¡¹æ˜¯ < èŠ‚ç‚¹uuid-path, å‚æ•°å >
         std::set<std::pair<std::string, std::string>>
             getReferSources(std::shared_ptr<ZfxASTNode> root, ZfxContext* pContext);
 

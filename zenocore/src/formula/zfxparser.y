@@ -50,11 +50,11 @@
     using namespace zeno;
 }
 
-/*¶¨Òåparser´«¸øscannerµÄ²ÎÊı*/
+/*å®šä¹‰parserä¼ ç»™scannerçš„å‚æ•°*/
 %lex-param { zeno::ZfxScanner &scanner }
 %lex-param { zeno::ZfxExecute &driver }
 
-/*¶¨Òådriver´«¸øparserµÄ²ÎÊı*/
+/*å®šä¹‰driverä¼ ç»™parserçš„å‚æ•°*/
 %parse-param { zeno::ZfxScanner &scanner }
 %parse-param { zeno::ZfxExecute &driver }
 
@@ -62,7 +62,7 @@
 %define parse.trace
 %define parse.error verbose
 
-/*Í¨¹ızeno::ZfxParser::make_XXX(loc)¸øtokenÌí¼ÓÇ°×º*/
+/*é€šè¿‡zeno::ZfxParser::make_XXX(loc)ç»™tokenæ·»åŠ å‰ç¼€*/
 %define api.token.prefix {TOKEN_}
 
 %token RPAREN
@@ -123,7 +123,7 @@
 %left DIV "/"
 %left MOD "%"
 
-%nonassoc NEG // ¸ººÅ¾ßÓĞ×î¸ßÓÅÏÈ¼¶µ«Ã»ÓĞ½áºÏĞÔ
+%nonassoc NEG // è´Ÿå·å…·æœ‰æœ€é«˜ä¼˜å…ˆçº§ä½†æ²¡æœ‰ç»“åˆæ€§
 
 %left <string>LPAREN
 
@@ -162,7 +162,7 @@ general-statement: declare-statement SEMICOLON { $$ = $1; }
     | if-statement { $$ = $1; }
     | loop-statement { $$ = $1; }
     | jump-statement SEMICOLON { $$ = $1; }
-    | exp-statement SEMICOLON { $$ = $1; }      /*¿É²ÎÓëËÄÔòÔËËã£¬ÒÔ¼°ÆÕÍ¨µÄº¯Êıµ÷ÓÃ¡£ | code-block { $$ = $1; }*/
+    | exp-statement SEMICOLON { $$ = $1; }      /*å¯å‚ä¸å››åˆ™è¿ç®—ï¼Œä»¥åŠæ™®é€šçš„å‡½æ•°è°ƒç”¨ã€‚ | code-block { $$ = $1; }*/
     | code-block { $$ = $1; }
     ;
 
@@ -236,7 +236,7 @@ if-statement: IF LPAREN exp-statement RPAREN code-block {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
             $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
         }
-    /*  ´¦Àí²»´øÖĞÀ¨ºÅµÄ´úÂë¶ÎºÜÂé·³£¬ÏÈ²»Ö§³Ö
+    /*  å¤„ç†ä¸å¸¦ä¸­æ‹¬å·çš„ä»£ç æ®µå¾ˆéº»çƒ¦ï¼Œå…ˆä¸æ”¯æŒ
     | IF LPAREN exp-statement RPAREN general-statement {
             std::vector<std::shared_ptr<ZfxASTNode>> children({$3, $5});
             $$ = driver.makeNewNode(IF, DEFAULT_FUNCVAL, children);
@@ -264,7 +264,7 @@ foreach-step: VARNAME {
             $$ = std::vector<std::shared_ptr<ZfxASTNode>>({varNode});
         }
     | TYPE VARNAME {
-            /* ÀàĞÍ²»ÊÇ±ØÒªµÄ£¬Ö»ÊÇÎªÁË¼æÈİÒ»Ğ©±à³ÌÏ°¹ß£¬±ÈÈçforeach(int a : arr)*/
+            /* ç±»å‹ä¸æ˜¯å¿…è¦çš„ï¼Œåªæ˜¯ä¸ºäº†å…¼å®¹ä¸€äº›ç¼–ç¨‹ä¹ æƒ¯ï¼Œæ¯”å¦‚foreach(int a : arr)*/
             auto varNode = driver.makeZfxVarNode($2);
             $$ = std::vector<std::shared_ptr<ZfxASTNode>>({varNode});
         }
@@ -397,7 +397,7 @@ funcargs: %empty { $$ = std::vector<std::shared_ptr<ZfxASTNode>>(); }
     | funcargs COMMA exp-statement { $1.push_back($3); $$ = $1; }
     ;
 
-/* Ôİ²»¿¼ÂÇ²»ÍêÕûÆ¥ÅäµÄÇé¿ö */
+/* æš‚ä¸è€ƒè™‘ä¸å®Œæ•´åŒ¹é…çš„æƒ…å†µ */
 func-content: LPAREN funcargs RPAREN { 
         $$ = driver.makeNewNode(FUNC, DEFAULT_FUNCVAL, $2);
         $$->isParenthesisNodeComplete = true;

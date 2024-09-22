@@ -103,7 +103,7 @@ void ZfxExecute::markZfxAttr(std::shared_ptr<ZfxASTNode> pVarNode) {
     if (varname.empty()) {
         return;
     }
-    //ÊôĞÔ±äÁ¿±ØĞëÒª´øÉÏ@¡£
+    //å±æ€§å˜é‡å¿…é¡»è¦å¸¦ä¸Š@ã€‚
     if (varname.at(0) != '@') {
         varname.insert(varname.begin(), '@');
     }
