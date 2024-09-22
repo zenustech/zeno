@@ -36,6 +36,9 @@ ZENO_API int ZfxExecute::parse() {
 
 ZENO_API int ZfxExecute::execute() {
     int ret = parse();
+    if (!ret) {
+        return ret;
+    }
     //TODO: error exception catch.
     if (m_root) {
         auto& funcMgr = zeno::getSession().funcManager;
@@ -85,6 +88,14 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::string text, operato
     return spNode;
 }
 
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeZfxVarNode(std::shared_ptr<ZfxASTNode> func_call) {
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = ZENVAR;
+    spNode->value = "";
+    spNode->children.push_back(func_call);
+    return spNode;
+}
+
 void ZfxExecute::markZfxAttr(std::shared_ptr<ZfxASTNode> pVarNode) {
     pVarNode->bAttr = true;
     std::string& varname = std::get<std::string>(pVarNode->value);
@@ -131,11 +142,16 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArr
     return spNode;
 }
 
-std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component) {
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pExpression, std::string component) {
+
     std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
     childNode->value = component;
-    pVarNode->children.push_back(childNode);
-    return pVarNode;
+
+    std::shared_ptr<ZfxASTNode> visitNode = std::make_shared<ZfxASTNode>();
+    visitNode->type = ATTR_VISIT;
+    visitNode->children.push_back(pExpression);
+    visitNode->children.push_back(childNode);
+    return visitNode;
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {

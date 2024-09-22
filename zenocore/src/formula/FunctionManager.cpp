@@ -1026,13 +1026,13 @@ namespace zeno {
                     ZfxVariable elemvar = get_array_element(var, idx);
                     return elemvar;
                 }
-                case COMPVISIT: {
-                    if (root->children.size() != 1) {
-                        throw makeError<UnimplError>("Indexing Error on NameVisit");
-                    }
-                    std::string component = get_zfxvar<std::string>(root->children[0]->value);
-                    return get_element_by_name(var, component);
-                }
+                //case COMPVISIT: {
+                //    if (root->children.size() != 1) {
+                //        throw makeError<UnimplError>("Indexing Error on NameVisit");
+                //    }
+                //    std::string component = get_zfxvar<std::string>(root->children[0]->value);
+                //    return get_element_by_name(var, component);
+                //}
                 case BulitInVar: {
                     std::string attrname = get_zfxvar<std::string>(root->value);
                     if (attrname.size() < 2 || attrname[0] != '$') {
@@ -1263,6 +1263,12 @@ namespace zeno {
                 default:
                     throw makeError<UnimplError>("op error");
                 }
+            }
+            case ATTR_VISIT: {
+                if (root->children.size() != 2) {
+                    throw makeError<UnimplError>("op args at attr visit");
+                }
+                root->children[0];
             }
             case COMPOP: {
                 //²Ù×÷·û

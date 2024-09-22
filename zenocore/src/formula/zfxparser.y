@@ -369,10 +369,6 @@ zenvar: DOLLARVARNAME   { $$ = driver.makeZfxVarNode($1, BulitInVar); }
             $$ = $2;
             driver.markZfxAttr($$);
         }
-    | zenvar DOT VARNAME {
-            $$ = driver.makeComponentVisit($1, $3);
-            $$->opVal = COMPVISIT;
-        }
     | zenvar LSQBRACKET exp-statement RSQBRACKET {
             $$ = $1;
             $$->opVal = Indexing;
@@ -423,6 +419,9 @@ term: NUMBER            { $$ = driver.makeNewNumberNode($1); }
         $$->type = FUNC;
         $$->value = $1;
         $$->isParenthesisNode = true;
+    }
+    | term DOT VARNAME {
+        $$ = driver.makeComponentVisit($1, $3);
     }
     ;
 

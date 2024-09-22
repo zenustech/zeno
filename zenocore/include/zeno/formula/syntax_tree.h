@@ -32,6 +32,7 @@ enum nodeType {
     PLACEHOLDER,
     DECLARE,            //变量定义
     ASSIGNMENT,           //赋值
+    ATTR_VISIT,      //a.x, a.y, a.z, param("...").value  ref("./node").x
     IF,
     FOR,
     FOREACH,

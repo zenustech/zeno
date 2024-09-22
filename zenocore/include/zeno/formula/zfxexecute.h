@@ -24,6 +24,7 @@ public:
     std::shared_ptr<ZfxASTNode> makeBoolNode(bool bVal);
     std::shared_ptr<ZfxASTNode> makeStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::string text, operatorVals op = UNDEFINE_OP);
+    std::shared_ptr<ZfxASTNode> makeZfxVarNode(std::shared_ptr<ZfxASTNode> func_call);
     void markZfxAttr(std::shared_ptr<ZfxASTNode> pVarNode);
     std::shared_ptr<ZfxASTNode> makeQuoteStringNode(std::string text);
     std::shared_ptr<ZfxASTNode> makeComponentVisit(std::shared_ptr<ZfxASTNode> pVarNode, std::string component);

@@ -330,6 +330,7 @@ struct ReflectNodeClass : INodeClass {
             // 找到我们要的
             std::string field_name(field->get_name().c_str());
             std::string param_name;
+            std::string constrain;
             if (const zeno::reflect::IRawMetadata* metadata = field->get_metadata()) {
 
                 //name:
@@ -340,6 +341,11 @@ struct ReflectNodeClass : INodeClass {
                     param_name = field_name;
                 }
                 //TODO: 名称合法性判断
+
+                //参数约束：
+                if (const zeno::reflect::IMetadataValue* value = metadata->get_value("Constrain")) {
+                    constrain = value->as_string();
+                }
 
                 //根据类型判断一下是object还是primitive
                 zeno::reflect::TypeHandle fieldType = field->get_field_type();
@@ -398,6 +404,7 @@ struct ReflectNodeClass : INodeClass {
                     inputObj.name = param_name;
                     inputObj.type = type;
                     inputObj.socketType = socketProp;
+                    inputObj.constrain = constrain;
 
                     inputObjs.insert({ field_name,inputObj });
                     reg_inputobjs.insert(param_name);
@@ -488,6 +495,7 @@ struct ReflectNodeClass : INodeClass {
                     prim.defl = defl;
                     convertToEditVar(prim.defl, prim.type);
                     prim.socketType = Socket_Primitve;
+                    prim.constrain = constrain;
                     //TODO:
                     prim.tooltip;
                     prim.wildCardGroup;
