@@ -489,7 +489,7 @@ struct ReflectNodeClass : INodeClass {
                     prim.name = param_name;
                     prim.type = type;
                     prim.bInput = true;
-                    prim.bVisible = false;
+                    prim.bSocketVisible = false;
                     prim.control = ctrl;
                     prim.ctrlProps = controlProps;
                     prim.defl = defl;
@@ -514,7 +514,7 @@ struct ReflectNodeClass : INodeClass {
                     ParamPrimitive prim;
                     prim.name = param_name;
                     prim.bInput = false;
-                    prim.bVisible = false;
+                    prim.bSocketVisible = false;
                     prim.control = NullControl;
                     prim.socketType = Socket_Primitve;
                     //TODO:
@@ -573,7 +573,7 @@ struct ReflectNodeClass : INodeClass {
                     outPrim.bInput = false;
                     outPrim.socketType = Socket_Primitve;
                     outPrim.type = type;
-                    outPrim.bVisible = false;
+                    outPrim.bSocketVisible = false;
                     outPrim.wildCardGroup;
 
                     retInfo = outPrim;
@@ -620,7 +620,7 @@ struct ReflectNodeClass : INodeClass {
                             ParamPrimitive prim;
                             prim.name = param_name;
                             prim.bInput = false;
-                            prim.bVisible = false;
+                            prim.bSocketVisible = false;
                             prim.control = NullControl;
                             prim.socketType = Socket_Primitve;
                             prim.type = type;
@@ -679,7 +679,7 @@ struct ReflectNodeClass : INodeClass {
                             convertToEditVar(inPrim.defl, inPrim.type);
 
                             inPrim.control = getDefaultControl(type);
-                            inPrim.bVisible = false;
+                            inPrim.bSocketVisible = false;
                             inPrim.wildCardGroup;
 
                             //缓存在inputrims，后面再移动到正确层级
@@ -755,7 +755,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.tooltip = param_desc.doc;
             param.sockProp = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
-            param.bVisible = false;
+            param.bSocketVisible = false;
             default.params.emplace_back(std::move(param));
         }
         else
@@ -801,7 +801,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         if (param.type != Param_Null && param.control == NullControl)
             param.control = getDefaultControl(param.type);
         param.tooltip = param_desc.doc;
-        param.bVisible = false;
+        param.bSocketVisible = false;
         default.params.emplace_back(std::move(param));
     }
     for (const SocketDescriptor& param_desc : desc.outputs) {
@@ -819,7 +819,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             param.tooltip = param_desc.doc;
             param.sockProp = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
-            param.bVisible = false;
+            param.bSocketVisible = false;
             ui.outputPrims.emplace_back(std::move(param));
         }
         else

@@ -337,7 +337,7 @@ namespace zenoio
             writer.String(iotags::params::socket_none);
         }
         writer.Key("visible");
-        writer.Bool(param.bVisible);
+        writer.Bool(param.bSocketVisible);
 
         if (!param.tooltip.empty())
         {

@@ -16,6 +16,11 @@ namespace zeno {
         std::vector<zfxvariant> value;  //如果是属性变量(bAttr=true)，那这个容器的大小就是runover（点线面）的元素个数，否则就是size=1
         bool bAttr = false;     //是否与属性关联（好像没什么用）
         bool bAttrUpdated = false;      //ZfxVariable也记录属性值（比如@P, @N @ptnum等），此标记记录在zfx执行中，属性值是否修改了
+
+        ZfxVariable() {}
+        ZfxVariable(zfxvariant&& var) {
+            value.emplace_back(var);
+        }
     };
 
     using VariableTable = std::map<std::string, ZfxVariable>;

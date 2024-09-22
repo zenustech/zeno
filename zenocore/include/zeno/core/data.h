@@ -87,7 +87,9 @@ namespace zeno {
 
         std::string tooltip;
         bool bInput = true;
-        bool bVisible = false;
+        bool bSocketVisible = false;
+        bool bVisible = true;       //在参数面板是否可见
+        bool bEnable = true;        //在参数面板是否可用
         bool bInnerParam = false;   //内部参数的标识，即，不可被外部ui所编辑，只能引用其当前的值。
         std::string wildCardGroup;
         std::string constrain;

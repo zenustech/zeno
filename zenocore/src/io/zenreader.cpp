@@ -412,7 +412,7 @@ namespace zenoio
             param.socketType = socketType;
             param.tooltip = tooltip;
             param.type = paramType;
-            param.bVisible = bVisible;
+            param.bSocketVisible = bVisible;
             param.wildCardGroup = wildCardGroup;
             if (bInput) {
                 //老zsg没有层级结构，直接用默认就行
@@ -473,7 +473,7 @@ namespace zenoio
                 if (paramValue.HasMember("tooltip"))
                     paramInfo.tooltip = paramValue["tooltip"].GetString();
                 if (paramValue.HasMember("visible"))
-                    paramInfo.bVisible = paramValue["visible"].GetBool();
+                    paramInfo.bSocketVisible = paramValue["visible"].GetBool();
                 //link:
                 if (paramValue.HasMember("links") && paramValue["links"].IsArray())
                 {

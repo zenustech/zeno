@@ -27,7 +27,7 @@ namespace zeno {
         param.result = result;
         param.control = control;
         param.ctrlProps = ctrlProps;
-        param.bVisible = bVisible;
+        param.bSocketVisible = bSocketVisible;
         param.wildCardGroup = wildCardGroup;
         param.sockProp = sockprop;
         for (auto spLink : links) {

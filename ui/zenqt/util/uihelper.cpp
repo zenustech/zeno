@@ -1944,7 +1944,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
                 paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-                paramItem->setData(param.bVisible, ROLE_PARAM_VISIBLE);
+                paramItem->setData(param.bSocketVisible, ROLE_PARAM_VISIBLE);
                 if (param.ctrlProps.has_value())
                     paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
                 paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
@@ -2047,7 +2047,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
         paramItem->setData(param.type, ROLE_PARAM_TYPE);
         paramItem->setData(true, ROLE_ISINPUT);
         paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-        paramItem->setData(param.bVisible, ROLE_PARAM_VISIBLE);
+        paramItem->setData(param.bSocketVisible, ROLE_PARAM_VISIBLE);
         if (param.ctrlProps.has_value())
             paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
         paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);

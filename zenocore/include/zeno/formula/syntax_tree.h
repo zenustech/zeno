@@ -26,6 +26,7 @@ enum nodeType {
     NEGATIVE,           //取负号
     STRING,             //字符串
     ZENVAR,
+    ATTR_VAR,           //attr value
     COMPOP,             //操作符
     CONDEXP,            //条件表达式
     ARRAY,
@@ -111,7 +112,20 @@ using zfxintarr = std::vector<int>;
 using zfxfloatarr = std::vector<float>;
 using zfxstringarr = std::vector<std::string>;
 
-using zfxvariant = std::variant<int, float, std::string,
+
+enum LValueType {
+    LVal_NodeParam,
+    LVal_Dollar,
+    LVal_ZfxVar
+};
+
+struct ZfxLValue {
+    std::string name;
+    std::variant<ParamPrimitive, ParamObject> var;  //only for LVal_NodeParam
+    LValueType type;
+};
+
+using zfxvariant = std::variant<int, float, std::string, ZfxLValue,
     zfxintarr, zfxfloatarr, zfxstringarr,
     glm::vec2, glm::vec3, glm::vec4, 
     glm::mat2, glm::mat3, glm::mat4>;

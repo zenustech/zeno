@@ -78,7 +78,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
     });
 
-    spNode->register_update_param_visible(
+    spNode->register_update_param_socket_visible(
         [this](const std::string& name, bool bVisible, bool bInput) {
         updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE, bInput);
     });
@@ -113,7 +113,7 @@ void ParamsModel::initParamItems()
             item.type = spParam.type;
             item.value = spParam.defl;
             item.connectProp = spParam.socketType;
-            item.bVisible = spParam.bVisible;
+            item.bVisible = spParam.bSocketVisible;
             item.group = zeno::Role_InputPrimitive;
             item.sockProp = spParam.sockProp;
             m_items.append(item);
@@ -139,7 +139,7 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
-        item.bVisible = param.bVisible;
+        item.bVisible = param.bSocketVisible;
         m_items.append(item);
     }
 
@@ -332,7 +332,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
             return false;
         auto spNode = m_wpNode.lock();
         if (spNode) {
-            spNode->update_param_visible(param.name.toStdString(), value.toBool(), param.bInput);
+            spNode->update_param_socket_visible(param.name.toStdString(), value.toBool(), param.bInput);
             return true;
         }
         return false;

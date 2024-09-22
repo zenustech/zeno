@@ -36,7 +36,8 @@ ZENO_API int ZfxExecute::parse() {
 
 ZENO_API int ZfxExecute::execute() {
     int ret = parse();
-    if (!ret) {
+    if (ret != 0) {
+        zeno::log_error("parse error!");
         return ret;
     }
     //TODO: error exception catch.
@@ -145,6 +146,7 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArr
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pExpression, std::string component) {
 
     std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
+    childNode->type = ATTR_VAR;
     childNode->value = component;
 
     std::shared_ptr<ZfxASTNode> visitNode = std::make_shared<ZfxASTNode>();

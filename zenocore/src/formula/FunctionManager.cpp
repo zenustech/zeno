@@ -224,12 +224,77 @@ namespace zeno {
 
     void FunctionManager::executeZfx(std::shared_ptr<ZfxASTNode> root, ZfxContext* pCtx) {
         //printSyntaxTree(root, pCtx->code);
-        assert(pCtx->spObject);
         if (pCtx->spObject) {
             int nFilterSize = getElementCount(pCtx->spObject, pCtx->runover);
             ZfxElemFilter filter(nFilterSize, 1);
             scope_exit sp([&] {m_globalAttrCached.clear(); });
             execute(root, filter, pCtx);
+        }
+        else if (!pCtx->constrain_param.empty()) {
+            ZfxElemFilter filter(1, 1);
+            execute(root, filter, pCtx);
+        }
+        else {
+            throw makeError<UnimplError>("no object or param constrain when executing zfx");
+        }
+    }
+
+    static zfxvariant anyToZfxVariant(Any const& var) {
+        if (!var.has_value())
+            return zfxvariant();
+        if (get_type<int>() == var.type()) {
+            return any_cast<int>(var);
+        }
+        else if (get_type<float>() == var.type()) {
+            return any_cast<float>(var);
+        }
+        else if (get_type<std::string>() == var.type()) {
+            return any_cast<std::string>(var);
+        }
+        else if (get_type<zeno::vec2i>() == var.type()) {
+            auto vec = any_cast<zeno::vec2i>(var);
+            return glm::vec2{ vec[0], vec[1] };
+        }
+        else if (get_type<zeno::vec3i>() == var.type()) {
+            auto vec = any_cast<zeno::vec3i>(var);
+            return glm::vec3{ vec[0], vec[1], vec[2] };
+        }
+        else if (get_type<zeno::vec4i>() == var.type()) {
+            auto vec = any_cast<zeno::vec4i>(var);
+            return glm::vec4{ vec[0], vec[1], vec[2], vec[3] };
+        }
+        else if (get_type<zeno::vec2f>() == var.type()) {
+            auto vec = any_cast<zeno::vec2f>(var);
+            return glm::vec2{ vec[0], vec[1] };
+        }
+        else if (get_type<zeno::vec3f>() == var.type()) {
+            auto vec = any_cast<zeno::vec3f>(var);
+            return glm::vec3{ vec[0], vec[1], vec[2] };
+        }
+        else if (get_type<zeno::vec4f>() == var.type()) {
+            auto vec = any_cast<zeno::vec4f>(var);
+            return glm::vec4{ vec[0], vec[1], vec[2], vec[3] };
+        }
+        else if (get_type<zeno::PrimVar>() == var.type()) {
+            zeno::PrimVar primvar = any_cast<zeno::PrimVar>(var);
+            return std::visit([](zeno::PrimVar&& pvar) -> zfxvariant {
+                using T = std::decay_t<decltype(pvar)>;
+                if constexpr (std::is_same_v<int, T>) {
+                    return std::get<int>(pvar);
+                }
+                else if constexpr (std::is_same_v<float, T>) {
+                    return std::get<float>(pvar);
+                }
+                else if constexpr (std::is_same_v<std::string, T>) {
+                    return std::get<std::string>(pvar);
+                }
+                else {
+                    return zfxvariant();
+                }
+                }, primvar);
+        }
+        else {
+            return zfxvariant();
         }
     }
 
@@ -371,7 +436,11 @@ namespace zeno {
                         return method(lval, rval);
                     }
                 }
-                else {
+                else if constexpr ((std::is_same_v<Op, std::equal_to<>> || std::is_same_v<Op, std::not_equal_to<>>) &&
+                    std::is_same_v<T, std::string> && std::is_same_v<T, E>) {
+                    return method(lval, rval);
+                }
+                else{
                     throw UnimplError("");
                 }
             }, _lhs, _rhs);
@@ -1007,6 +1076,7 @@ namespace zeno {
         {
             case NUMBER:
             case STRING:
+            case ATTR_VAR:
             case BOOLTYPE: {
                 ZfxVariable var;
                 var.value.push_back(root->value);
@@ -1104,6 +1174,21 @@ namespace zeno {
                 }
 
                 {
+                    //能赋值的变量只有：1.普通zfx定义的变量    2.参数约束的参数变量
+                    std::string nodeparam = pContext->constrain_param;
+                    if (!nodeparam.empty()) {
+                        auto spNode = pContext->spNode.lock();
+                        bool bVal = get_zfxvar<int>(res.value[0]);
+                        bool ret = false;
+                        if (targetvar == "visible") {
+                            ret = spNode->update_param_visible(nodeparam, bVal);
+                        }
+                        else if (targetvar == "enable") {
+                            ret = spNode->update_param_enable(nodeparam, bVal);
+                        }
+                        return ZfxVariable();
+                    }
+
                     //直接解析变量
                     ZfxVariable& var = getVariableRef(targetvar, pContext);
 
@@ -1268,7 +1353,52 @@ namespace zeno {
                 if (root->children.size() != 2) {
                     throw makeError<UnimplError>("op args at attr visit");
                 }
-                root->children[0];
+                std::vector<ZfxVariable> args = process_args(root, filter, pContext);
+                std::string visit_attr = get_zfxvar<std::string>(args[1].value[0]);
+
+                zfxvariant res = std::visit([&](auto&& arg) -> zfxvariant {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, ZfxLValue>) {
+                        return std::visit([&](auto&& nodeparam) -> zfxvariant {
+                            using E = std::decay_t<decltype(nodeparam)>;
+                            if constexpr (std::is_same_v<E, ParamPrimitive>) {
+                                if (visit_attr == "value") {
+                                    return anyToZfxVariant(nodeparam.defl);
+                                }
+                                else if (visit_attr == "connected") {
+                                    return !nodeparam.links.empty();
+                                }
+                                else if (visit_attr == "x") {
+                                    //TODO
+                                }
+                                else if (visit_attr == "y") {
+
+                                }
+                                else if (visit_attr == "z") {
+
+                                }
+                                else if (visit_attr == "w") {
+
+                                }
+                                //unknown attr
+                                throw makeError<UnimplError>("unknown attr when visit nodeparam");
+                            }
+                            else if constexpr (std::is_same_v<E, ParamObject>) {
+                                if (visit_attr == "connected") {
+
+                                }
+                                else {
+                                    throw makeError<UnimplError>("unknown attr when visit nodeparam");
+                                }
+                            }
+                        }, arg.var);
+                    }
+                    else {
+                        throw makeError<UnimplError>("only support visit attr for ZfxLvalue");
+                    }
+                }, args[0].value[0]);
+
+                return res;
             }
             case COMPOP: {
                 //操作符
@@ -1839,6 +1969,28 @@ namespace zeno {
             ZfxVariable varres;
             varres.value.push_back(res);
             return varres;
+        }
+        else if (funcname == "param" || funcname == "parameter") {
+            if (args.size() != 1) {
+                throw makeError<UnimplError>("error number of args on param(...)");
+            }
+            if (pContext->constrain_param.empty()) {
+                throw makeError<UnimplError>("only support indexing param for param constrain");
+            }
+            const std::string& param = get_zfxvar<std::string>(args[0].value[0]);
+            auto pnode = pContext->spNode.lock();
+            ZfxLValue lval;
+            bool bExist = false;
+            lval.var = pnode->get_input_obj_param(param, &bExist);
+            if (bExist) {
+                return lval;
+            }
+            else {
+                lval.var = pnode->get_input_prim_param(param, &bExist);
+                if (bExist)
+                    return lval;
+            }
+            throw makeError<UnimplError>("the param does not exist when calling param(...)");
         }
         else if (funcname == "log") {
             if (args.empty()) {

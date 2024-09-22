@@ -1435,7 +1435,7 @@ ZENO_API PrimitiveParams INode::get_input_primitive_params() const {
         param.control = spParamObj.control;
         param.ctrlProps = spParamObj.ctrlProps;
         param.defl = spParamObj.defl;
-        param.bVisible = spParamObj.bVisible;
+        param.bSocketVisible = spParamObj.bSocketVisible;
         for (auto spLink : spParamObj.links) {
             param.links.push_back(getEdgeInfo(spLink));
         }
@@ -1557,7 +1557,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.socketType = param.socketType;
     sparam.type = param.type;
     sparam.ctrlProps = param.ctrlProps;
-    sparam.bVisible = param.bVisible;
+    sparam.bSocketVisible = param.bSocketVisible;
     sparam.wildCardGroup = param.wildCardGroup;
     sparam.sockprop = param.sockProp;
     sparam.bInnerParam = param.bInnerParam;
@@ -1596,7 +1596,7 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam.type = param.type;
     sparam.ctrlProps = param.ctrlProps;
     sparam.wildCardGroup = param.wildCardGroup;
-    sparam.bVisible = param.bVisible;
+    sparam.bSocketVisible = param.bSocketVisible;
     m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1997,25 +1997,47 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, z
         return true;
 }
 
-ZENO_API bool zeno::INode::update_param_visible(const std::string& param, bool bVisible, bool bInput)
+ZENO_API bool INode::update_param_visible(const std::string& name, bool bOn, bool bInput) {
+    if (bInput) {
+        auto iter = m_inputObjs.find(name);
+        if (iter != m_inputObjs.end()) {
+            auto& paramObj = iter->second;
+
+        }
+        else {
+
+        }
+    }
+    else {
+
+    }
+
+
+    return true;
+}
+
+ZENO_API bool INode::update_param_enable(const std::string& name, bool bOn, bool bInput) {
+    return true;
+}
+
+ZENO_API bool zeno::INode::update_param_socket_visible(const std::string& param, bool bVisible, bool bInput)
 {
     CORE_API_BATCH
     if (bInput) {
-    auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
-
-        if (spParam.bVisible != bVisible)
-    {
-            spParam.bVisible = bVisible;
-            CALLBACK_NOTIFY(update_param_visible, param, bVisible, bInput)
-            return true;
-    }
-    } else {
-        auto& spParam = safe_at(m_outputPrims, param, "miss output param `" + param + "` on node `" + m_name + "`");
-
-        if (spParam.bVisible != bVisible)
+        auto& spParam = safe_at(m_inputPrims, param, "miss input param `" + param + "` on node `" + m_name + "`");
+        if (spParam.bSocketVisible != bVisible)
         {
-            spParam.bVisible = bVisible;
-            CALLBACK_NOTIFY(update_param_visible, param, bVisible, bInput)
+            spParam.bSocketVisible = bVisible;
+            CALLBACK_NOTIFY(update_param_socket_visible, param, bVisible, bInput)
+            return true;
+        }
+    }
+    else {
+        auto& spParam = safe_at(m_outputPrims, param, "miss output param `" + param + "` on node `" + m_name + "`");
+        if (spParam.bSocketVisible != bVisible)
+        {
+            spParam.bSocketVisible = bVisible;
+            CALLBACK_NOTIFY(update_param_socket_visible, param, bVisible, bInput)
                 return true;
         }
     }
@@ -2149,7 +2171,7 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
                 sparam.ctrlProps = param.ctrlProps;
                 sparam.socketType = param.socketType;
                 sparam.m_wpNode = shared_from_this();
-                sparam.bVisible = param.bVisible;
+                sparam.bSocketVisible = param.bSocketVisible;
                 in_outputs[newname] = std::move(sparam);
 
                 new_params.insert(newname);
@@ -2318,7 +2340,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
                 //sparam.control = param.control;
                 //sparam.ctrlProps = param.ctrlProps;
                 //sparam.type = param.type;
-                sparam.bVisible = param.bVisible;
+                sparam.bSocketVisible = param.bSocketVisible;
 
                 //graph记录$F相关节点
                 if (std::shared_ptr<Graph> spGraph = graph.lock())
@@ -2334,7 +2356,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
             continue;
         }
         auto& sparam = iter->second;
-        sparam.bVisible = param.bVisible;
+        sparam.bSocketVisible = param.bSocketVisible;
         //sparam.type = param.type;
     }
     for (const ParamObject& paramObj : dat.customUi.outputObjs)

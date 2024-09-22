@@ -49,6 +49,7 @@ struct CoreParam {
     SocketType socketType = NoSocket;
     bool bInput = true;
     bool m_idModify = false;    //该output param输出的obj是新创建的(false)还是基于已有的修改(true)
+    bool bEnable = true;        //参数是否可用
 };
 
 struct ObjectParam : CoreParam {
@@ -66,7 +67,7 @@ struct PrimitiveParam : CoreParam {
     ParamControl control = NullControl;
     zeno::reflect::Any ctrlProps;
     zeno::SocketProperty sockprop = zeno::Socket_Normal;
-    bool bVisible = true;
+    bool bSocketVisible = true;
     bool bInnerParam = false;
 
     ParamPrimitive exportParam() const;
