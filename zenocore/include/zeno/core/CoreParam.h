@@ -14,63 +14,64 @@
 
 namespace zeno {
 
-class INode;
-class ObjectParam;
-class PrimitiveParam;
+    class INode;
+    class ObjectParam;
+    class PrimitiveParam;
 
-struct ObjectLink {
-    ObjectParam* fromparam = nullptr;  //IParam stored as unique ptr in the INode, so we need no smart pointer.
-    ObjectParam* toparam = nullptr;
-    std::string fromkey;    //for dict/list ¶ÔÓÚlistÀ´Ëµ£¬keyNameºÃÏñ²»ºÏÊÊ£¬²»¹ıILink±¾À´¾Í´æÔÚÓÚlinksÀïÃæ£¬ÒÑ¾­ÊÇÁĞ±í´¢´æÁË¡£
-    std::string tokey;
-    std::string targetParam;
-};
+    struct ObjectLink {
+        ObjectParam* fromparam = nullptr;  //IParam stored as unique ptr in the INode, so we need no smart pointer.
+        ObjectParam* toparam = nullptr;
+        std::string fromkey;    //for dict/list å¯¹äºlistæ¥è¯´ï¼ŒkeyNameå¥½åƒä¸åˆé€‚ï¼Œä¸è¿‡ILinkæœ¬æ¥å°±å­˜åœ¨äºlinksé‡Œé¢ï¼Œå·²ç»æ˜¯åˆ—è¡¨å‚¨å­˜äº†ã€‚
+        std::string tokey;
+        std::string targetParam;
+    };
 
-struct PrimitiveLink {
-    PrimitiveParam* fromparam = nullptr;
-    PrimitiveParam* toparam = nullptr;
-    std::string targetParam;
-};
+    struct PrimitiveLink {
+        PrimitiveParam* fromparam = nullptr;
+        PrimitiveParam* toparam = nullptr;
+        std::string targetParam;
+    };
 
-//ÒıÓÃÁ¬½Ó£¬Á¬½ÓµÄË«·½¶¼ÊÇ»ù´¡ÀàĞÍµÄÊäÈë²ÎÊı
-struct ReferLink {
-    PrimitiveParam* source_inparam = nullptr;
-    PrimitiveParam* dest_inparam = nullptr;
-};
+    //å¼•ç”¨è¿æ¥ï¼Œè¿æ¥çš„åŒæ–¹éƒ½æ˜¯åŸºç¡€ç±»å‹çš„è¾“å…¥å‚æ•°
+    struct ReferLink {
+        PrimitiveParam* source_inparam = nullptr;
+        PrimitiveParam* dest_inparam = nullptr;
+    };
 
 
-struct CoreParam {
-    std::string name;
-    std::weak_ptr<INode> m_wpNode;
-    std::string wildCardGroup;
-    std::string constrain;
+    struct CoreParam {
+        std::string name;
+        std::weak_ptr<INode> m_wpNode;
+        std::string wildCardGroup;
+        std::string constrain;
 
-    ParamType type = Param_Null;
-    SocketType socketType = NoSocket;
-    bool bInput = true;
-    bool m_idModify = false;    //¸Ãoutput paramÊä³öµÄobjÊÇĞÂ´´½¨µÄ(false)»¹ÊÇ»ùÓÚÒÑÓĞµÄĞŞ¸Ä(true)
-    bool bEnable = true;        //²ÎÊıÊÇ·ñ¿ÉÓÃ
-};
+        ParamType type = Param_Null;
+        SocketType socketType = NoSocket;
+        bool bInput = true;
+        bool m_idModify = false;    //è¯¥output paramè¾“å‡ºçš„objæ˜¯æ–°åˆ›å»ºçš„(false)è¿˜æ˜¯åŸºäºå·²æœ‰çš„ä¿®æ”¹(true)
+        bool bEnable = true;        //å‚æ•°æ˜¯å¦å¯ç”¨
+        bool bVisible = true;       //å‚æ•°æ˜¯å¦å¯è§ï¼Œå¹¶éåªæŒ‡Socketå¯è§ï¼Œä¸è¿‡å¯¹äºå¯¹è±¡å‚æ•°æ¥è¯´ä¹Ÿå°±æ˜¯socket
+    };
 
-struct ObjectParam : CoreParam {
-    std::list<std::shared_ptr<ObjectLink>> links;
-    zany /*zeno::reflect::Any*/ spObject;        //Ö»´¢´æ»ùÀàÖ¸Õë£¬ÆäÊµÒÑ¾­ÊÇÒ»ÖÖ"any"ÁË¡£
+    struct ObjectParam : CoreParam {
+        std::list<std::shared_ptr<ObjectLink>> links;
+        zany /*zeno::reflect::Any*/ spObject;        //åªå‚¨å­˜åŸºç±»æŒ‡é’ˆï¼Œå…¶å®å·²ç»æ˜¯ä¸€ç§"any"äº†ã€‚
 
-    ParamObject exportParam() const;
-};
+        ParamObject exportParam() const;
+    };
 
-struct PrimitiveParam : CoreParam {
-    zeno::reflect::Any defl;
-    zeno::reflect::Any result;
-    std::list<std::shared_ptr<PrimitiveLink>> links;
-    std::list<std::shared_ptr<ReferLink>> reflinks;
-    ParamControl control = NullControl;
-    zeno::reflect::Any ctrlProps;
-    zeno::SocketProperty sockprop = zeno::Socket_Normal;
-    bool bSocketVisible = true;
-    bool bInnerParam = false;
+    struct PrimitiveParam : CoreParam {
+        zeno::reflect::Any defl;
+        zeno::reflect::Any result;
+        std::list<std::shared_ptr<PrimitiveLink>> links;
+        std::list<std::shared_ptr<ReferLink>> reflinks;
+        ParamControl control = NullControl;
+        zeno::reflect::Any ctrlProps;
+        zeno::SocketProperty sockprop = zeno::Socket_Normal;
+        bool bSocketVisible = true;
+        bool bInnerParam = false;
 
-    ParamPrimitive exportParam() const;
-};
+        ParamPrimitive exportParam() const;
+    };
 
 }

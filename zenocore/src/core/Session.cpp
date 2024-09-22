@@ -771,10 +771,10 @@ static CustomUI descToCustomui(const Descriptor& desc) {
 
             //dict和list允许多连接口，且不限定对象类型（但只能是对象，暂不接收primitive，否则就违反了对象和primitive分开连的设计了）
             if (type == gParamType_Dict || type == gParamType_List) {
-                param.prop = Socket_MultiInput;
+                param.sockProp = Socket_MultiInput;
             }
             else {
-                param.prop = Socket_Normal;
+                param.sockProp = Socket_Normal;
             }
 
             ui.inputObjs.emplace_back(std::move(param));
@@ -833,7 +833,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             if (param.socketType != zeno::Socket_WildCard)  //输出可能是wildCard
                 param.socketType = Socket_Output;
             param.bInput = false;
-            param.prop = Socket_Normal;
+            param.sockProp = Socket_Normal;
             param.wildCardGroup = param_desc.wildCard;
             ui.outputObjs.emplace_back(std::move(param));
         }

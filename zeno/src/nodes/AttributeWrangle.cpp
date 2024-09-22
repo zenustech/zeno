@@ -20,7 +20,7 @@ namespace zeno
             },
             _ObjectGroup {
                 {
-                    //¿Õ×Ö·û´®Ä¬ÈÏmappingµ½ applyµÄÊä³öÖµ
+                    //ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½mappingï¿½ï¿½ applyï¿½ï¿½ï¿½ï¿½ï¿½Öµ
                 }
             },
             _ObjectParam {
@@ -49,7 +49,7 @@ namespace zeno
             ctx.spNode = shared_from_this();
             ctx.spObject = out_prim;
             ctx.code = zfxCode;
-            ZfxExecute zfx(zfxCode, ctx);
+            ZfxExecute zfx(zfxCode, &ctx);
             zfx.execute();
 
             if (auto spGeo = std::dynamic_pointer_cast<GeometryObject>(ctx.spObject)) {

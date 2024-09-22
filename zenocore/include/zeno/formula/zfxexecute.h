@@ -13,7 +13,7 @@ namespace zeno {
 class ZfxExecute
 {
 public:
-    ZENO_API ZfxExecute(const std::string& code, const ZfxContext& ctx);
+    ZENO_API ZfxExecute(const std::string& code, ZfxContext* ctx);
     ZENO_API ~ZfxExecute();
 
     ZENO_API int parse();
@@ -41,7 +41,7 @@ public:
 private:
     unsigned int m_location;          // Used by scanner
     std::string m_code;
-    ZfxContext m_context;
+    ZfxContext* m_context;
     std::shared_ptr<ZfxASTNode> m_root;
 };
 

@@ -245,10 +245,12 @@ namespace zeno
                 Constrain = "visible = parameter('Iterate Method').value == 'By Count';")
         int m_iterations = 10;
 
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Increment")
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Increment",
+                Constrain = "visible = parameter('Iterate Method').value == 'By Count';")
         int m_increment = 1;
 
-        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Start Value")
+        ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Start Value",
+                Constrain = "visible = parameter('Iterate Method').value == 'By Count';")
         int m_start_value = 0;
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Stop Condition")

@@ -27,13 +27,15 @@ struct ParamItem
     zeno::NodeDataGroup group;
     zeno::reflect::Any optCtrlprops;
     QList<QPersistentModelIndex> links;
+    bool bSocketVisible = true;
     bool bVisible = true;
+    bool bEnable = true;
 };
 
 class ParamsModel : public QAbstractListModel
 {
     Q_OBJECT
-    QML_ELEMENT
+        QML_ELEMENT
 
 public:
     ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent = nullptr);
@@ -74,11 +76,12 @@ signals:
     void linkAboutToBeInserted(const zeno::EdgeInfo& link);
     void linkAboutToBeRemoved(const zeno::EdgeInfo& link);
     void portTypeChanged(const QModelIndex& idx, bool bPrime);
+    void enabledVisibleChanged();
 
 private:
     void initParamItems();
     void initCustomUI(const zeno::CustomUI& customui);
-    void updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui); //增量更新m_customParamsM，防止zenoproppanl接收不到数据
+    void updateCustomUiModelIncremental(const zeno::params_change_info& params, const zeno::CustomUI& customui); //澧為噺鏇存柊m_customParamsM锛岄槻姝enoproppanl鎺ユ敹涓嶅埌鏁版嵁
     GraphModel* parentGraph() const;
     void test_customparamsmodel() const;
     void updateParamData(const QString& name, const QVariant& val, int role, bool bInput = true);

@@ -808,31 +808,6 @@ void INode::constructReference(const std::string& param_name) {
     initReferLinks(&iter->second);
 }
 
-void INode::checkParamsConstrain() {
-    //ZfxContext
-    auto& funcMgr = zeno::getSession().funcManager;
-    ZfxContext ctx;
-    ctx.spNode = shared_from_this();
-    //对于所有带有约束的输入参数，调整其可见和可用情况
-    for (const auto& [name, param] : m_inputObjs) {
-        if (!param.constrain.empty()) {
-            ctx.code = param.constrain;
-            ctx.constrain_param = name;
-            ZfxExecute zfx(ctx.code, ctx);
-            zfx.execute();
-            //TODO: how to return the execution result.
-        }
-    }
-    for (const auto& [name, param] : m_inputPrims) {
-        if (!param.constrain.empty()) {
-            ctx.code = param.constrain;
-            ctx.constrain_param = name;
-            ZfxExecute zfx(ctx.code, ctx);
-            zfx.execute();
-        }
-    }
-}
-
 void INode::initReferLinks(PrimitiveParam* target_param) {
     std::set<std::pair<std::string, std::string>> refSources = resolveReferSource(target_param->defl);
     auto newAdded = refSources;
@@ -1382,6 +1357,28 @@ ZENO_API void INode::doApply() {
         registerObjToManager();
         reportStatus(false, Node_RunSucceed);
     }
+}
+
+ZENO_API CommonParam INode::get_input_param(std::string const& name, bool* bExist) {
+    auto primparam = get_input_prim_param(name, bExist);
+    if (bExist && *bExist)
+        return primparam;
+    auto objparam = get_input_obj_param(name, bExist);
+    if (bExist && *bExist)
+        return objparam;
+    if (bExist)
+        *bExist = false;
+}
+
+ZENO_API CommonParam INode::get_output_param(std::string const& name, bool* bExist) {
+    auto primparam = get_output_prim_param(name, bExist);
+    if (bExist && *bExist)
+        return primparam;
+    auto objparam = get_output_obj_param(name, bExist);
+    if (bExist && *bExist)
+        return objparam;
+    if (bExist)
+        *bExist = false;
 }
 
 ZENO_API ObjectParams INode::get_input_object_params() const
@@ -1999,25 +1996,123 @@ ZENO_API bool zeno::INode::update_param_control_prop(const std::string& param, z
 
 ZENO_API bool INode::update_param_visible(const std::string& name, bool bOn, bool bInput) {
     if (bInput) {
-        auto iter = m_inputObjs.find(name);
-        if (iter != m_inputObjs.end()) {
+        if (auto iter = m_inputObjs.find(name); iter != m_inputObjs.end()) {
             auto& paramObj = iter->second;
-
+            if (paramObj.bVisible != bOn) {
+                paramObj.bVisible = bOn;
+                return true;
+            }
         }
-        else {
-
+        else if (auto iter = m_inputPrims.find(name); iter != m_inputPrims.end()){
+            auto& paramPrim = iter->second;
+            if (paramPrim.bVisible != bOn) {
+                paramPrim.bVisible = bOn;
+                return true;
+            }
         }
     }
     else {
+        if (auto iter = m_outputObjs.find(name); iter != m_outputObjs.end()) {
+            auto& paramObj = iter->second;
+            if (paramObj.bVisible != bOn) {
+                paramObj.bVisible = bOn;
+                return true;
+            }
+        }
+        else if (auto iter = m_outputPrims.find(name); iter != m_outputPrims.end()) {
+            auto& paramPrim = iter->second;
+            if (paramPrim.bVisible != bOn) {
+                paramPrim.bVisible = bOn;
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
+void INode::checkParamsConstrain() {
+    //ZfxContext
+    auto& funcMgr = zeno::getSession().funcManager;
+    ZfxContext ctx;
+    ctx.spNode = shared_from_this();
+    //对于所有带有约束的输入参数，调整其可见和可用情况
+
+    std::set<std::string> adjInputs, adjOutputs;
+
+    bool bParamPropChanged = false;
+    for (const auto& [name, param] : m_inputObjs) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.constrain_param = name;
+            ZfxExecute zfx(ctx.code, &ctx);
+            zfx.execute();
+            if (ctx.update_nodeparam_prop) {
+                bParamPropChanged = true;
+                adjInputs.insert(name);
+            }
+        }
+    }
+    for (const auto& [name, param] : m_inputPrims) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.constrain_param = name;
+            ZfxExecute zfx(ctx.code, &ctx);
+            zfx.execute();
+            if (ctx.update_nodeparam_prop) {
+                bParamPropChanged = true;
+                adjInputs.insert(name);
+            }
+        }
     }
 
+    //TODO: output
 
-    return true;
+    if (bParamPropChanged) {
+        //通知上层UI去统一更新
+        CALLBACK_NOTIFY(update_visable_enable, this, adjInputs, adjOutputs)
+    }
 }
 
 ZENO_API bool INode::update_param_enable(const std::string& name, bool bOn, bool bInput) {
-    return true;
+    if (bInput) {
+        if (auto iter = m_inputObjs.find(name); iter != m_inputObjs.end()) {
+            auto& paramObj = iter->second;
+            if (paramObj.bEnable != bOn) {
+                paramObj.bEnable = bOn;
+                return true;
+            }
+        }
+        else if (auto iter = m_inputPrims.find(name); iter != m_inputPrims.end()) {
+            auto& paramPrim = iter->second;
+            if (paramPrim.bEnable != bOn) {
+                paramPrim.bEnable = bOn;
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        if (auto iter = m_outputObjs.find(name); iter != m_outputObjs.end()) {
+            auto& paramObj = iter->second;
+            if (paramObj.bEnable != bOn) {
+                paramObj.bEnable = bOn;
+                return true;
+            }
+        }
+        else if (auto iter = m_outputPrims.find(name); iter != m_outputPrims.end()) {
+            auto& paramPrim = iter->second;
+            if (paramPrim.bEnable != bOn) {
+                paramPrim.bEnable = bOn;
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    return false;
 }
 
 ZENO_API bool zeno::INode::update_param_socket_visible(const std::string& param, bool bVisible, bool bInput)

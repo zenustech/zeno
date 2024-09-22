@@ -656,14 +656,14 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
     {
         if (role != ROLE_PARAM_NAME
             && role != ROLE_PARAM_TOOLTIP
-            && role != ROLE_PARAM_VISIBLE
+            && role != ROLE_PARAM_SOCKET_VISIBLE
             && role != ROLE_PARAM_GROUP)
             return;
 
         const bool bInput = paramIdx.data(ROLE_ISINPUT).toBool();
         const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
 
-        if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP || role == ROLE_PARAM_VISIBLE)
+        if (role == ROLE_PARAM_NAME || role == ROLE_PARAM_TOOLTIP || role == ROLE_PARAM_SOCKET_VISIBLE)
         {
             QVector<ZSocketLayout*> layouts = getSocketLayouts(bInput);
             for (int i = 0; i < layouts.size(); i++)
@@ -676,9 +676,9 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
                         pSocketLayout->updateSockName(paramName);   //only update name on control.
                     else if (role == ROLE_PARAM_TOOLTIP)
                         pSocketLayout->updateSockNameToolTip(paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
-                    else if (role == ROLE_PARAM_VISIBLE)
+                    else if (role == ROLE_PARAM_SOCKET_VISIBLE)
                     {
-                        auto bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+                        auto bVisible = paramIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
                         pSocketLayout->setVisible(bVisible);
                         pSocketLayout->setSocketVisible(bVisible);
                         //layout上面的那个SocketBackground也得设为可见
@@ -691,8 +691,8 @@ void ZenoNodeNew::onParamDataChanged(const QModelIndex& topLeft, const QModelInd
                 }
             }
 
-            if (role == ROLE_PARAM_VISIBLE) {
-                bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+            if (role == ROLE_PARAM_SOCKET_VISIBLE) {
+                bool bVisible = paramIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
                 if (bVisible) {
                     setVisibleForParams(true);
                 }
@@ -842,7 +842,7 @@ SocketBackgroud* ZenoNodeNew::addSocket(const QModelIndex& paramIdx, bool bInput
 
     pMiniLayout->initUI(cbSocket);
     pMiniLayout->setDebugName(sockName);
-    bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).toBool();
+    bool bVisible = paramIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
     pMiniLayout->setVisible(bVisible);
     pMiniLayout->setSocketVisible(bVisible);
 
@@ -1091,7 +1091,7 @@ QPointF ZenoNodeNew::getSocketPos(const QModelIndex& sockIdx, const QString keyN
             return QPointF(pSocket->center().x(), pSocket->sceneBoundingRect().bottom());
     }
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
-    bool bVisible = sockIdx.data(ROLE_PARAM_VISIBLE).toBool();
+    bool bVisible = sockIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
     if (bCollasped || !bVisible)
     {
         //zeno::log_warn("socket pos error");

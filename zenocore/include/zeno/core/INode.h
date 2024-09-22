@@ -74,6 +74,9 @@ public:
     ZENO_API bool is_dirty() const { return m_dirty; }
     ZENO_API NodeRunStatus get_run_status() const { return m_status; }
 
+    ZENO_API CommonParam get_input_param(std::string const& name, bool* bExist = nullptr);
+    ZENO_API CommonParam get_output_param(std::string const& name, bool* bExist = nullptr);
+
     ZENO_API ObjectParams get_input_object_params() const;
     ZENO_API ObjectParams get_output_object_params() const;
     ZENO_API PrimitiveParams get_input_primitive_params() const;
@@ -160,7 +163,9 @@ public:
     void onNodeNameUpdated(const std::string& oldname, const std::string& newname);
     void on_node_about_to_remove();
     void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //参数名包括对象输入和数值输入，不可重名
+
     void checkParamsConstrain();
+    CALLBACK_REGIST(update_visable_enable, void, zeno::INode*, std::set<std::string>, std::set<std::string>)
 
 protected:
     ZENO_API virtual void complete();

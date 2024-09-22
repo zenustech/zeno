@@ -756,8 +756,8 @@ QStringList UiHelper::getAllControls()
 
 QString UiHelper::getTypeDesc(zeno::ParamType type)
 {
-    //ÕâÀïÈç¹ûÄÜÍ¨¹ýÕâÐ©hashÂë£¬ÄÃµ½¶ÔÓ¦µÄtype_info£¬¶øtype_infoÀï¼ÇÂ¼ÁË
-    //ËùÓÐmetadata£¬°üÀ¨£¨1.ÊÇ·ñÎªobject 2.Ãû³Æ¼ò³Æ £©µÈ×ÊÔ´£¬ÄÇÊÇ×î×ÔÈ»µÄ·½Ê½ÁË¡£
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ð©hashï¿½ë£¬ï¿½Ãµï¿½ï¿½ï¿½Ó¦ï¿½ï¿½type_infoï¿½ï¿½ï¿½ï¿½type_infoï¿½ï¿½ï¿½Â¼ï¿½ï¿½
+    //ï¿½ï¿½ï¿½ï¿½metadataï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1.ï¿½Ç·ï¿½Îªobject 2.ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½Ä·ï¿½Ê½ï¿½Ë¡ï¿½
     switch (type)
     {
     case zeno::types::gParamType_String:    return "string";
@@ -1727,7 +1727,7 @@ zeno::CurvesData UiHelper::getCurvesFromQVar(const QVariant& qvar, bool* bValid)
     zeno::CurvesData curves;
     if (qvar.canConvert<zeno::reflect::Any>()) {
         const auto& anyVal = qvar.value<zeno::reflect::Any>();
-        if (anyVal.has_value() && zeno::reflect::get_type<zeno::PrimVar>() == anyVal.type()) {  //Ö»ÓÐÒ»¸öcurve
+        if (anyVal.has_value() && zeno::reflect::get_type<zeno::PrimVar>() == anyVal.type()) {  //Ö»ï¿½ï¿½Ò»ï¿½ï¿½curve
             zeno::PrimVar primvar = zeno::reflect::any_cast<zeno::PrimVar>(anyVal);
             if (std::holds_alternative<zeno::CurveData>(primvar)) {
                 if (bValid) *bValid = true;
@@ -1944,7 +1944,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
                 paramItem->setData(param.type, ROLE_PARAM_TYPE);
                 paramItem->setData(true, ROLE_ISINPUT);
                 paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-                paramItem->setData(param.bSocketVisible, ROLE_PARAM_VISIBLE);
+                paramItem->setData(param.bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
                 if (param.ctrlProps.has_value())
                     paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
                 paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
@@ -2047,7 +2047,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
         paramItem->setData(param.type, ROLE_PARAM_TYPE);
         paramItem->setData(true, ROLE_ISINPUT);
         paramItem->setData(param.socketType, ROLE_SOCKET_TYPE);
-        paramItem->setData(param.bSocketVisible, ROLE_PARAM_VISIBLE);
+        paramItem->setData(param.bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
         if (param.ctrlProps.has_value())
             paramItem->setData(QVariant::fromValue(param.ctrlProps), ROLE_PARAM_CTRL_PROPERTIES);
         paramItem->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
@@ -2373,9 +2373,9 @@ QString UiHelper::getTypeNameFromRtti(zeno::ParamType type)
     else {
         const zeno::reflect::RTTITypeInfo& typeInfo = zeno::reflect::ReflectionRegistry::get().getRttiMap()->get(type);
         std::vector<std::regex> patterns = {
-            std::regex(R"(std::shared_ptr\s*<\s*(?:const)?\s*struct\s*zeno::(.*?)\s*>)"),    //ÌáÈ¡objÃû
-            std::regex(R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))"),   //ÌáÈ¡vecÃû
-            std::regex(R"(std::basic_(.*?)\s*<\s*char\s*>)")                    //ÌáÈ¡string
+            std::regex(R"(std::shared_ptr\s*<\s*(?:const)?\s*struct\s*zeno::(.*?)\s*>)"),    //ï¿½ï¿½È¡objï¿½ï¿½
+            std::regex(R"(struct\s*zeno::_impl_vec::(vec\s*<\s*[^>]+\s*>))"),   //ï¿½ï¿½È¡vecï¿½ï¿½
+            std::regex(R"(std::basic_(.*?)\s*<\s*char\s*>)")                    //ï¿½ï¿½È¡string
         };
         std::string rttiname = typeInfo.name();
         typeStr = QString::fromStdString(rttiname);

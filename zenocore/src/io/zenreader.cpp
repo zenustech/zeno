@@ -68,7 +68,7 @@ namespace zenoio
     }
 
     zeno::NodeData ZenReader::_parseNode(
-        const std::string& subgPath,    //Ò²ÐíÎÞÓÃÁË£¬ÒòÎª±ßÐÅÏ¢²»ÔÙÒÔpathµÄ·½Ê½´¢´æ£¨½âÎöÂé·³£©£¬ÏÈ±£Áô×Å
+        const std::string& subgPath,    //Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½pathï¿½Ä·ï¿½Ê½ï¿½ï¿½ï¿½æ£¨ï¿½ï¿½ï¿½ï¿½ï¿½é·³ï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½ï¿½ï¿½ï¿½ï¿½
         const std::string& nodeid,
         const rapidjson::Value& nodeObj,
         const zeno::AssetsData& assets,
@@ -90,7 +90,7 @@ namespace zenoio
         retNode.cls = cls;
         retNode.type = zeno::Node_Normal;
 
-        //ÒªÏÈparse customuiÒÔ»ñµÃÕû¸ö²ÎÊýÊ÷½á¹¹¡£
+        //Òªï¿½ï¿½parse customuiï¿½Ô»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½
         if (objValue.HasMember("subnet-customUi")) {
             retNode.customUi = _parseCustomUI(nodeid, objValue["subnet-customUi"], links);
         }
@@ -415,7 +415,7 @@ namespace zenoio
             param.bSocketVisible = bVisible;
             param.wildCardGroup = wildCardGroup;
             if (bInput) {
-                //ÀÏzsgÃ»ÓÐ²ã¼¶½á¹¹£¬Ö±½ÓÓÃÄ¬ÈÏ¾ÍÐÐ
+                //ï¿½ï¿½zsgÃ»ï¿½Ð²ã¼¶ï¿½á¹¹ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¾ï¿½ï¿½ï¿½
                 if (ret.customUi.inputPrims.tabs.empty())
                 {
                     zeno::ParamTab tab;
@@ -436,7 +436,7 @@ namespace zenoio
             zeno::ParamObject param;
             param.bInput = bInput;
             param.name = sockName;
-            param.prop = prop;
+            param.sockProp = prop;
             param.socketType = socketType;
             param.tooltip = tooltip;
             param.type = paramType;

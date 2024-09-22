@@ -60,7 +60,7 @@ bool Zsg2Reader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData
         sharedSubg[graphName].templateName = graphName;
     }
 
-    //zsg3.0ÒÔÏÂµÄ¸ñÊ½£¬×ÓÍ¼Ö±½Ó³ÉÎªSubnetµÝ¹éÕ¹¿ª
+    //zsg3.0ï¿½ï¿½ï¿½ÂµÄ¸ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Í¼Ö±ï¿½Ó³ï¿½ÎªSubnetï¿½Ý¹ï¿½Õ¹ï¿½ï¿½
     for (const auto& subgraph : graph.GetObject())
     {
         const std::string& graphName = subgraph.name.GetString();
@@ -311,7 +311,7 @@ void Zsg2Reader::_parseSocket(
     }
     else {
         if (bInput) {
-            //ÕâÖÖÇé¿ö´ó¸ÅÂÊÊÇÁ¬¶ÔÏó£¬Ä¬ÈÏ¸³ÓèOwing¶Ë¿Ú°É
+            //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¸ï¿½ï¿½ï¿½Owingï¿½Ë¿Ú°ï¿½
             socketType = zeno::Socket_Owning;
         }
         else {
@@ -373,7 +373,7 @@ void Zsg2Reader::_parseSocket(
         param.tooltip = tooltip;
         param.type = paramType;
         if (bInput) {
-            //ÀÏzsgÃ»ÓÐ²ã¼¶½á¹¹£¬Ö±½ÓÓÃÄ¬ÈÏ¾ÍÐÐ
+            //ï¿½ï¿½zsgÃ»ï¿½Ð²ã¼¶ï¿½á¹¹ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¾ï¿½ï¿½ï¿½
             if (ret.customUi.inputPrims.tabs.empty())
             {
                 zeno::ParamTab tab;
@@ -394,7 +394,7 @@ void Zsg2Reader::_parseSocket(
         zeno::ParamObject param;
         param.bInput = bInput;
         param.name = sockName;
-        param.prop = prop;
+        param.sockProp = prop;
         param.socketType = socketType;
         param.tooltip = tooltip;
         param.type = paramType;
@@ -478,9 +478,9 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
                 param.type = zeno::convertToType(valueObj["type"].GetString());
             }
 
-            //Ëü²»ÖªµÀ»á²»»áºÍSubInputµÄtype²ÎÊý³åÍ»£¬Õâ¸öºÜÌÖÑá£¬ÕâÀïÖ±½Ó½âÎöËãÁË£¬·ÅÆúÀúÊ·°ü¸¤
+            //ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½ï¿½á²»ï¿½ï¿½ï¿½SubInputï¿½ï¿½typeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á£¬ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê·ï¿½ï¿½ï¿½ï¿½
             param.defl = zenoio::jsonValueToAny(valueObj[iotags::params::params_valueKey], param.type);
-            param.socketType = zeno::NoSocket; //ÒÔÇ°µÄ¶¨ÒåÊÇ²»°üº¬Õâ¸öµÄ¡£
+            param.socketType = zeno::NoSocket; //ï¿½ï¿½Ç°ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½
 
             if (valueObj.HasMember("control"))
             {

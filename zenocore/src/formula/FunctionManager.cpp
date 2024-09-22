@@ -1179,12 +1179,11 @@ namespace zeno {
                     if (!nodeparam.empty()) {
                         auto spNode = pContext->spNode.lock();
                         bool bVal = get_zfxvar<int>(res.value[0]);
-                        bool ret = false;
                         if (targetvar == "visible") {
-                            ret = spNode->update_param_visible(nodeparam, bVal);
+                            pContext->update_nodeparam_prop = spNode->update_param_visible(nodeparam, bVal);
                         }
                         else if (targetvar == "enable") {
-                            ret = spNode->update_param_enable(nodeparam, bVal);
+                            pContext->update_nodeparam_prop = spNode->update_param_enable(nodeparam, bVal);
                         }
                         return ZfxVariable();
                     }

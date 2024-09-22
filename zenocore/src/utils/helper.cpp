@@ -17,7 +17,9 @@ namespace zeno {
     ZENO_API ParamType convertToType(std::string const& type, const std::string_view& param_name) {
         //TODO: deprecated literal representation.
         if (type == "string" || type == "readpath" || type == "writepath" || type == "diratory" || type == "multiline_string")
-        { return gParamType_String; }
+        {
+            return gParamType_String;
+        }
         else if (type == "bool") { return gParamType_Bool; }
         else if (type == "int") { return gParamType_Int; }
         else if (type == "float") { return gParamType_Float; }
@@ -40,21 +42,21 @@ namespace zeno {
         else if (type == "LightObject") { return gParamType_Light; }
         else if (type == "FunctionObject") { return gParamType_IObject; }
         else if (type == "object" ||
-                type == "IObject" || 
-                type == "zany" || 
-                type == "material" ||
-                type == "texture" ||
-                type == "instancing" ||
-                type == "shader" ||
-                type == "MaterialObject" ||
-                type == "LBvh") {
-            return gParamType_IObject; 
-    }
+            type == "IObject" ||
+            type == "zany" ||
+            type == "material" ||
+            type == "texture" ||
+            type == "instancing" ||
+            type == "shader" ||
+            type == "MaterialObject" ||
+            type == "LBvh") {
+            return gParamType_IObject;
+        }
         else if (type == "VDBGrid") {
             return gParamType_IObject;
         }
-        else if (type == ""){
-            //ÀàĞÍÃû×ÖÎª¿ÕÊ±£¬Ö»ÄÜ¸ù¾İ²ÎÊıÃû×ÖÈ¥²Â²â
+        else if (type == "") {
+            //ç±»å‹åå­—ä¸ºç©ºæ—¶ï¼Œåªèƒ½æ ¹æ®å‚æ•°åå­—å»çŒœæµ‹
             if (param_name == "prim") {
                 return gParamType_Primitive;
             }
@@ -70,17 +72,17 @@ namespace zeno {
                 return gParamType_Light;
             }
             else if (param_name == "FOR" || param_name == "FUNC" || param_name == "function") {
-                return gParamType_IObject;    //Ö»ÄÜ¸øObjectÁË£¬²»È»¾ÍÒªÔÙ·ÖÅäÒ»¸öÃ¶¾ÙÖµ
+                return gParamType_IObject;    //åªèƒ½ç»™Objectäº†ï¼Œä¸ç„¶å°±è¦å†åˆ†é…ä¸€ä¸ªæšä¸¾å€¼
             }
             else if (param_name == "true" ||
-                    param_name == "false" ||
-                    param_name == "result" ||
-                    param_name == "SRC" ||
-                    param_name == "DST" ||
-                    param_name == "json" ||
-                    param_name == "port" ||
-                    param_name == "data" ||
-                    param_name == "mtl") {
+                param_name == "false" ||
+                param_name == "result" ||
+                param_name == "SRC" ||
+                param_name == "DST" ||
+                param_name == "json" ||
+                param_name == "port" ||
+                param_name == "data" ||
+                param_name == "mtl") {
                 return gParamType_IObject;
             }
             else if (param_name == "VDBGrid" || param_name == "grid") {
@@ -98,17 +100,18 @@ namespace zeno {
         }
         else if (type == "paramWildcard") {
             return Param_Wildcard;
-        } else if (type == "objWildcard") {
+        }
+        else if (type == "objWildcard") {
             return Obj_Wildcard;
         }
         else
-            return gParamType_IObject;    //zeno¸÷¸öÄ£¿é¶¨ÒåµÄÀàĞÍ²»¹æ·¶³Ì¶ÈºÜ´ó£¬¶øÇÒ»ıÀÛÁËºÜ¶à£¬ºÜÄÑÒ»ÏÂ×Ó¸ÄºÃ£¬ËùÒÔ²»Ã÷ÀàĞÍ¶¼×ª³Éobj
+            return gParamType_IObject;    //zenoå„ä¸ªæ¨¡å—å®šä¹‰çš„ç±»å‹ä¸è§„èŒƒç¨‹åº¦å¾ˆå¤§ï¼Œè€Œä¸”ç§¯ç´¯äº†å¾ˆå¤šï¼Œå¾ˆéš¾ä¸€ä¸‹å­æ”¹å¥½ï¼Œæ‰€ä»¥ä¸æ˜ç±»å‹éƒ½è½¬æˆobj
     }
 
     ZENO_API bool isAnyEqual(const Any& lhs, const Any& rhs)
     {
         if (lhs.type() != rhs.type() || lhs.has_value() != rhs.has_value())
-            return false;       //¶ÔÓÚintºÍfloatµÄÍ¬µÈÖµ£¬¿ÉÄÜ»áÂ©
+            return false;       //å¯¹äºintå’Œfloatçš„åŒç­‰å€¼ï¼Œå¯èƒ½ä¼šæ¼
 
         if (!lhs.has_value())
             return true;    //null
@@ -192,7 +195,7 @@ namespace zeno {
 
     ZENO_API std::string paramTypeToString(ParamType type)
     {
-        //TODO: ×Ô¶¨ÒåÀàĞÍµÄ´¦Àí·½Ê½£¿
+        //TODO: è‡ªå®šä¹‰ç±»å‹çš„å¤„ç†æ–¹å¼ï¼Ÿ
         switch (type)
         {
         case Param_Null:    return "null";
@@ -227,11 +230,11 @@ namespace zeno {
             std::visit([&](auto&& arg) {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, int> ||
-                              std::is_same_v<T, float> ||
-                              std::is_same_v<T, std::string>) {
+                    std::is_same_v<T, float> ||
+                    std::is_same_v<T, std::string>) {
                     editvar = arg;
                 }
-            }, var);
+                }, var);
         }
         else if (anyType == gParamType_VecEdit) {
             //TODO
@@ -243,7 +246,7 @@ namespace zeno {
         if (!val.has_value()) return false;
 
         ParamType anyType = val.type().hash_code();
-        //²¿·ÖÀàĞÍ¿ÉÒÔÔÊĞíkÖ¡£¬¹«Ê½£¬Òò´ËÒª×ª»»Îª¡°±à¼­¡±ÀàĞÍ
+        //éƒ¨åˆ†ç±»å‹å¯ä»¥å…è®¸kå¸§ï¼Œå…¬å¼ï¼Œå› æ­¤è¦è½¬æ¢ä¸ºâ€œç¼–è¾‘â€ç±»å‹
         if (anyType == gParamType_PrimVariant || anyType == gParamType_VecEdit)
             return true;
 
@@ -476,7 +479,7 @@ namespace zeno {
             return any_cast<zeno::vec4s>(var);
         }
         else if (get_type<zeno::PrimVar>() == var.type()) {
-            zeno::PrimVar primvar= any_cast<zeno::PrimVar>(var);
+            zeno::PrimVar primvar = any_cast<zeno::PrimVar>(var);
             return std::visit([](zeno::PrimVar&& pvar) -> zvariant {
                 using T = std::decay_t<decltype(pvar)>;
                 if constexpr (std::is_same_v<int, T>) {
@@ -491,15 +494,16 @@ namespace zeno {
                 else {
                     return zvariant();
                 }
-            }, primvar);
-        } else 
-        return zvariant();
+                }, primvar);
+        }
+        else
+            return zvariant();
     }
 
     ZENO_API Any initAnyDeflValue(ParamType const& type)
     {
         if (type == gParamType_String) {
-            return std::string("");     //Òª×¢ÒâºÍchar*³£Á¿Çø·Ö£¬any::get_typeµÄÊ±ºòÊÇ²»Ò»ÑùµÄ
+            return std::string("");     //è¦æ³¨æ„å’Œchar*å¸¸é‡åŒºåˆ†ï¼Œany::get_typeçš„æ—¶å€™æ˜¯ä¸ä¸€æ ·çš„
         }
         else if (type == gParamType_Float)
         {
@@ -640,7 +644,7 @@ namespace zeno {
         const std::string& outParam = spOutParam->name;
         const std::string& inNode = spInNode->get_name();
         const std::string& inParam = spInParam->name;
-        edge = { outNode, outParam, "", inNode, inParam, "", spLink->targetParam, false};
+        edge = { outNode, outParam, "", inNode, inParam, "", spLink->targetParam, false };
         return edge;
     }
 
@@ -685,11 +689,11 @@ namespace zeno {
                     info.socketType = param.socketType;
                     info.ctrlProps = param.ctrlProps;
                     infos.push_back({ info, "" });
-                    }
                 }
             }
+        }
         for (const zeno::ParamPrimitive& param : customui.outputPrims)
-            {
+        {
             zeno::ParamPrimitive info;
             info.bInput = false;
             info.control = param.control;
@@ -700,7 +704,7 @@ namespace zeno {
             info.socketType = param.socketType;
             info.ctrlProps = param.ctrlProps;
             infos.push_back({ info, "" });
-            }
+        }
         for (const zeno::ParamObject& param : customui.inputObjs)
         {
             zeno::ParamObject info;
@@ -712,7 +716,7 @@ namespace zeno {
             infos.push_back({ info, "" });
         }
         for (const zeno::ParamObject& param : customui.outputObjs)
-            {
+        {
             zeno::ParamObject info;
             info.bInput = false;
             info.type = param.type;
@@ -720,8 +724,8 @@ namespace zeno {
             info.tooltip = param.tooltip;
             info.socketType = param.socketType;
             infos.push_back({ info, "" });
-            }
         }
+    }
 
     void initControlsByType(CustomUI& ui) {
         for (ParamTab& tab : ui.inputPrims.tabs)
@@ -754,7 +758,7 @@ namespace zeno {
                 }
             }
             return paths;
-        }, val);
+            }, val);
     }
 
     formula_tip_info getNodesByPath(const std::string& nodeabspath, const std::string& graphpath, const std::string& node_part)
@@ -769,7 +773,7 @@ namespace zeno {
         if (graphpath.front() == '.' || graphpath.front() == '..') {
             auto graphparts = split_str(graphpath, '/', false);
             auto nodeparts = split_str(nodeabspath, '/', false);
-            nodeparts.pop_back();   //ÏÈÈ¥µô½Úµã±¾Éí£¬Ê£ÏÂµÄ¾ÍÊÇ½ÚµãËù´¦µÄÍ¼µÄ¾ø¶ÔÂ·¾¶¡£
+            nodeparts.pop_back();   //å…ˆå»æ‰èŠ‚ç‚¹æœ¬èº«ï¼Œå‰©ä¸‹çš„å°±æ˜¯èŠ‚ç‚¹æ‰€å¤„çš„å›¾çš„ç»å¯¹è·¯å¾„ã€‚
             nodeparts.insert(nodeparts.end(), graphparts.begin(), graphparts.end());
             fullabspath = '/' + join_str(nodeparts, '/');
         }
@@ -884,7 +888,7 @@ namespace zeno {
                             else {
                                 ret.type = FMLA_TIP_REFERENCE;
                                 ret.prefix = param_part;
-                                ret.ref_candidates.push_back({ param.name, "" /*icon*/});
+                                ret.ref_candidates.push_back({ param.name, "" /*icon*/ });
                             }
                         }
                     }
@@ -978,8 +982,8 @@ namespace zeno {
 
     bool isObjectType(const RTTITypeInfo& type, bool& isConstPtr)
     {
-        //Ä¿Ç°TF_IsObjectÖ»ÊÇ±êÊ¶Object×ÓÀà£¬²»°üÀ¨IObject£¬Èç¹ûĞèÒªºóÕß£¬¿ÉÒÔÅĞ¶ÏTF_IsIObject.
-        //const Ò²¿ÉÒÔÓÃgenerator¸ã
+        //ç›®å‰TF_IsObjectåªæ˜¯æ ‡è¯†Objectå­ç±»ï¼Œä¸åŒ…æ‹¬IObjectï¼Œå¦‚æœéœ€è¦åè€…ï¼Œå¯ä»¥åˆ¤æ–­TF_IsIObject.
+        //const ä¹Ÿå¯ä»¥ç”¨generatoræ
         isConstPtr = type.has_flags(TF_IsConst);
         return type.has_flags(TF_IsObject);
     }
@@ -1008,7 +1012,7 @@ namespace zeno {
         if (isNumericType(type))
             return true;
         else if (type == types::gParamType_Vec2f || type == types::gParamType_Vec2i ||
-            type == types::gParamType_Vec3f || type == types::gParamType_Vec3i || 
+            type == types::gParamType_Vec3f || type == types::gParamType_Vec3i ||
             type == types::gParamType_Vec4f || type == types::gParamType_Vec4i)
             return true;
         return false;
@@ -1025,24 +1029,24 @@ namespace zeno {
 
     ZENO_API bool outParamTypeCanConvertInParamType(ParamType outType, ParamType inType, NodeDataGroup outGroup, NodeDataGroup inGroup)
     {
-        if (isNumericType(outType) && isNumericVecType(inType)) {   //ÊıÖµÁ¬ÊıÖµvec
+        if (isNumericType(outType) && isNumericVecType(inType)) {   //æ•°å€¼è¿æ•°å€¼vec
             return true;
         }
-        else if (isSameDimensionNumericVecType(outType, inType)) { //Í¬Î¬¶ÈÊıÖµvec»¥Á¬
+        else if (isSameDimensionNumericVecType(outType, inType)) { //åŒç»´åº¦æ•°å€¼vecäº’è¿
             return true;
         }
         else if (inType == gParamType_Dict || inType == gParamType_List) {
             return true;
         }
-        else if (gParamType_IObject == inType && outGroup == Role_OutputObject) {    //outTypeµÄObjÀàĞÍ¿ÉÒÔ×ªIObject
+        else if (gParamType_IObject == inType && outGroup == Role_OutputObject) {    //outTypeçš„Objç±»å‹å¯ä»¥è½¬IObject
             return true;
         }
         else if (gParamType_IObject == outType && inGroup == Role_InputObject) {
-            //ÓÉÓÚÒ»Ğ©ÌØÊâ½Úµã£¬±ÈÈçforeachbegin£¬³öÀ´µÄÊÇIObject£¬µ«ĞèÒªÁ¬µ½ÆäËûµÄÌØ¶¨object½Úµã£¬
-            //Í¬Ê±ÓÖ²»ÄÜÓÃwildcard£¨ÒòÎªÒªºÍforeachend¶ÔÓ¦£©£¬ÕâÖÖÇé¿öÔÊĞíÏòÏÂ×ª»»£¬´íÎóÈÃ½Úµã×Ô¼º±¨
+            //ç”±äºä¸€äº›ç‰¹æ®ŠèŠ‚ç‚¹ï¼Œæ¯”å¦‚foreachbeginï¼Œå‡ºæ¥çš„æ˜¯IObjectï¼Œä½†éœ€è¦è¿åˆ°å…¶ä»–çš„ç‰¹å®šobjectèŠ‚ç‚¹ï¼Œ
+            //åŒæ—¶åˆä¸èƒ½ç”¨wildcardï¼ˆå› ä¸ºè¦å’Œforeachendå¯¹åº”ï¼‰ï¼Œè¿™ç§æƒ…å†µå…è®¸å‘ä¸‹è½¬æ¢ï¼Œé”™è¯¯è®©èŠ‚ç‚¹è‡ªå·±æŠ¥
             return true;
         }
-        else{
+        else {
             return false;
         }
     }
@@ -1051,11 +1055,11 @@ namespace zeno {
         reflect::TypeBase* typeBase,
         std::shared_ptr<INode> node,
         std::map<std::string, std::string>& inputPrims,
-        std::map<std::string, std::string>& outputPrims, 
+        std::map<std::string, std::string>& outputPrims,
         std::map<std::string, std::string>& inputObjs,
         std::map<std::string, std::string>& outputObjs,
-        zeno::_ObjectParam& retInfo   //ÒªÃ´ÊÇcustomuiÉÏµÄ£¬Èç¹ûÇ°ÕßÃ»ÓĞ¹¹Ôì£¬¾ÍÊÇ·µ»ØÖµÉÏ¹¹ÔìÒ»¸öÁÙÊ±Öµ
-        )
+        zeno::_ObjectParam& retInfo   //è¦ä¹ˆæ˜¯customuiä¸Šçš„ï¼Œå¦‚æœå‰è€…æ²¡æœ‰æ„é€ ï¼Œå°±æ˜¯è¿”å›å€¼ä¸Šæ„é€ ä¸€ä¸ªä¸´æ—¶å€¼
+    )
     {
         retInfo.dispName = "";
         if (!typeBase || !node) {
@@ -1086,7 +1090,7 @@ namespace zeno {
             }
         }
         if (retInfo.dispName.empty()) {
-            //Ö»ÄÜ´Ó·µ»ØÖµÄÃĞÅÏ¢ÁË
+            //åªèƒ½ä»è¿”å›å€¼æ‹¿ä¿¡æ¯äº†
         }
     }
 
@@ -1095,7 +1099,7 @@ namespace zeno {
     }
 
     bool isPrimitiveType(const ParamType type) {
-        //Õâ¸öÊÇ¸ø¾ÉÊ½¶¨Òå½ÚµãÊ¹ÓÃµÄ£¬ĞÂµÄ·´Éä¶¨Òå·½Ê½²»ÔÙÊ¹ÓÃ£¬Æä³õÊ¼»¯¹ı³ÌÒ²²»»á×ßµ½ÕâÀïÅĞ¶Ï¡£
+        //è¿™ä¸ªæ˜¯ç»™æ—§å¼å®šä¹‰èŠ‚ç‚¹ä½¿ç”¨çš„ï¼Œæ–°çš„åå°„å®šä¹‰æ–¹å¼ä¸å†ä½¿ç”¨ï¼Œå…¶åˆå§‹åŒ–è¿‡ç¨‹ä¹Ÿä¸ä¼šèµ°åˆ°è¿™é‡Œåˆ¤æ–­ã€‚
         return type == gParamType_String || type == gParamType_Int || type == gParamType_Float || type == gParamType_Vec2i ||
             type == gParamType_Vec3i || type == gParamType_Vec4i || type == gParamType_Vec2f || type == gParamType_Vec3f ||
             type == gParamType_Vec4f || type == gParamType_Bool || type == gParamType_Heatmap || type == gParamType_Curve ||
@@ -1202,7 +1206,7 @@ namespace zeno {
             {
                 return false;
             }
-        }, lhs, rhs);
+            }, lhs, rhs);
     }
 
     ZENO_API std::string editVariantToStr(const PrimVar& var)
@@ -1221,7 +1225,7 @@ namespace zeno {
             else {
                 return "";
             }
-        }, var);
+            }, var);
     }
 
     ZENO_API zeno::ParamControl getDefaultControl(const zeno::ParamType type)
@@ -1293,7 +1297,7 @@ namespace zeno {
         case zeno::SpinBoxSlider:       return "SpinBoxSlider";
         case zeno::Seperator:           return "group-line";
         case zeno::PythonEditor:        return "PythonEditor";
-        case zeno::CodeEditor:        return "CodeEditor";
+        case zeno::CodeEditor:          return "CodeEditor";
         default:
             return "";
         }

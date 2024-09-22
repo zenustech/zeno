@@ -146,7 +146,7 @@ void ZenoPropPanel::clearLayout()
         m_outputWidget = nullptr;
         m_inputControls.clear();
         m_outputControls.clear();
-        m_floatColtrols.clear();
+        m_floatControls.clear();
 
         if (m_idx.isValid())
         {
@@ -202,19 +202,21 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
         }
     }
     else {
-        QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-        if (!paramsModel)
+        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+        ZASSERT_EXIT(paramsM);
+        QStandardItemModel* treeModel = paramsM->customParamModel();
+        if (!treeModel)
             return;
 
-        connect(paramsModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
-        connect(paramsModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
-        connect(paramsModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
-        connect(paramsModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
-        connect(paramsModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
+        connect(treeModel, &QStandardItemModel::rowsInserted, this, &ZenoPropPanel::onViewParamInserted);
+        connect(treeModel, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoPropPanel::onViewParamAboutToBeRemoved);
+        connect(treeModel, &QStandardItemModel::dataChanged, this, &ZenoPropPanel::onCustomParamDataChanged);
+        connect(treeModel, &QStandardItemModel::rowsMoved, this, &ZenoPropPanel::onViewParamsMoved);
+        connect(treeModel, &QStandardItemModel::modelAboutToBeReset, this, [=]() {
             //clear all
             m_inputControls.clear();
         m_outputControls.clear();
-        m_floatColtrols.clear();
+        m_floatControls.clear();
         if (m_tabWidget)
         {
             while (m_tabWidget->count() > 0)
@@ -235,14 +237,9 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
             });
 
         connect(m_model, &GraphModel::nodeRemoved, this, &ZenoPropPanel::onNodeRemoved, Qt::UniqueConnection);
-        //connect(pModel, &IGraphsModel::_rowsRemoved, this, [=]() {
-        //    clearLayout();
-        //});
-        //connect(pModel, &IGraphsModel::modelClear, this, [=]() {
-        //    clearLayout();
-        //});
+        connect(paramsM, &ParamsModel::enabledVisibleChanged, this, &ZenoPropPanel::onUpdateParamsVisbleEnabled);
 
-        QStandardItem* root = paramsModel->invisibleRootItem();
+        QStandardItem* root = treeModel->invisibleRootItem();
         if (!root) return;
 
         QStandardItem* pInputs = root->child(0);
@@ -259,7 +256,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
             nodeType != zeno::Node_AssetInstance &&
             pInputs->rowCount() == 1 &&
             pInputs->child(0)->rowCount() == 1)
-        {   //ÆÕÍ¨½Úµã²¼¾Ö
+        {   //æ™®é€šèŠ‚ç‚¹å¸ƒå±€
             ZScrollArea* scrollArea = new ZScrollArea(this);
             scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             scrollArea->setMinimumHeight(0);
@@ -286,7 +283,7 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
             m_hintlist->resetSize();
             m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_normalNodeInputWidget->mapToGlobal(QPoint(0, 0)); });
             m_descLabel->setParent(m_normalNodeInputWidget);
-        } else {    //×ÓÍ¼½Úµã²¼¾Ö
+        } else {    //å­å›¾èŠ‚ç‚¹å¸ƒå±€
             m_tabWidget = new QTabWidget(this);
             m_tabWidget->tabBar()->setProperty("cssClass", "propanel");
             m_tabWidget->setDocumentMode(true);
@@ -356,7 +353,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (newItem->data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
         if (!m_idx.isValid())
             return;
-        //subnet½Úµã£¬¿ÉÄÜÓÐ¶à¸ötab
+        //subnetèŠ‚ç‚¹ï¼Œå¯èƒ½æœ‰å¤šä¸ªtab
         if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
             ZASSERT_EXIT(m_tabWidget);
 
@@ -416,7 +413,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
                 }
             }
         }
-        else {  //ÆÕÍ¨½Úµã£¬µ¥¸ötab
+        else {  //æ™®é€šèŠ‚ç‚¹ï¼Œå•ä¸ªtab
             ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
             QStandardItem* pTabItem = parentItem->parent();
             ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
@@ -443,6 +440,29 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (pModel && !newItem->data(ROLE_VPARAM_IS_COREPARAM).toBool())
         pModel->markDirty();
     */
+}
+
+void ZenoPropPanel::onUpdateParamsVisbleEnabled()
+{
+    bool bUpdate = false;
+    for (auto& [_, tab] : m_inputControls) {
+        for (auto& [_, group] : tab) {
+            for (auto& [_, control] : group) {
+                bool bEnable = control.m_viewIdx.data(ROLE_PARAM_ENABLE).toBool();
+                bool bVisible = control.m_viewIdx.data(ROLE_PARAM_VISIBLE).toBool();
+                if (control.pControl->isVisible() != bVisible) {
+                    control.pControl->setVisible(bVisible);
+                    bUpdate = true;
+                }
+                if (control.pControl->isEnabled() != bEnable) {
+                    control.pControl->setEnabled(bEnable);
+                    bUpdate = true;
+                }
+            }
+        }
+    }
+    if (bUpdate)
+        update();
 }
 
 void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pGroupItem, int row)
@@ -510,14 +530,16 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     //pLabel->setProperty("cssClass", "proppanel");
 
     bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
+    bool bEnable = paramItem->data(ROLE_PARAM_ENABLE).toBool();
+    bool bSocketVisible = paramItem->data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
         ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
-    pIcon->toggle(bVisible);
+    pIcon->toggle(bSocketVisible);
     connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_SOCKET_VISIBLE);
     });
     pLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
@@ -540,10 +562,15 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     panelCtrl.m_viewIdx = perIdx;
     panelCtrl.pControl = pControl;
 
+    pIcon->setVisible(bVisible);
+    pLabel->setVisible(bVisible);
+    pControl->setVisible(bVisible);
+    pControl->setEnabled(bEnable);
+
     m_inputControls[tabName][groupName][paramName] = panelCtrl;
 
     if (bFloat && pControl) {
-        m_floatColtrols << panelCtrl;
+        m_floatControls << panelCtrl;
         pLabel->installEventFilter(this);
         pControl->installEventFilter(this);
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
@@ -578,7 +605,7 @@ void ZenoPropPanel::addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayou
     pLabel->setHoverCursor(Qt::ArrowCursor);
     //pLabel->setProperty("cssClass", "proppanel");
 
-    bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
+    bool bVisible = paramItem->data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
         ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
@@ -586,7 +613,7 @@ void ZenoPropPanel::addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayou
     connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), false);
-        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_SOCKET_VISIBLE);
     });
 
     pLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
@@ -639,7 +666,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
                 //return;
             //}
             QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-            BlockSignalScope scope(paramsModel); //setDataÊ±ÐèÆÁ±ÎdataChangeÐÅºÅ
+            BlockSignalScope scope(paramsModel); //setDataæ—¶éœ€å±è”½dataChangeä¿¡å·
             paramsModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
         }
         */
@@ -672,7 +699,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
     //pLabel->setProperty("cssClass", "proppanel");
-    bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
+    bool bVisible = paramItem->data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
 
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
@@ -681,7 +708,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
         ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_VISIBLE);
+        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_SOCKET_VISIBLE);
     });
     pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
@@ -709,7 +736,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     m_inputControls[tabName][groupName][paramName] = panelCtrl;
 
     if (bFloat && pControl) {
-        m_floatColtrols << panelCtrl;
+        m_floatControls << panelCtrl;
         pLabel->installEventFilter(this);
         pControl->installEventFilter(this);   
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
@@ -811,7 +838,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     if (removeItem->data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
         if (!m_idx.isValid())
             return;
-        //subnet½Úµã£¬¿ÉÄÜÓÐ¶à¸ötab
+        //subnetèŠ‚ç‚¹ï¼Œå¯èƒ½æœ‰å¤šä¸ªtab
         if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
             int vType = removeItem->data(ROLE_ELEMENT_TYPE).toInt();
     const QString& name = removeItem->data(ROLE_PARAM_NAME).toString();
@@ -881,7 +908,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
         }
     }
         }
-        else {  //ÆÕÍ¨½Úµã
+        else {  //æ™®é€šèŠ‚ç‚¹
             ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
             QStandardItem* pTabItem = parentItem->parent();
             ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
@@ -953,7 +980,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
     ZASSERT_EXIT(paramItem);
 
     if (topLeft.data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
-        //ÏÖÔÚÒ»°ã¶¼ÊÇ¸Äname»òÕßvalue£¬ÔÝÊ±²»Çø·ÖsubnetºÍÆÕÍ¨½Úµã
+        //çŽ°åœ¨ä¸€èˆ¬éƒ½æ˜¯æ”¹nameæˆ–è€…valueï¼Œæš‚æ—¶ä¸åŒºåˆ†subnetå’Œæ™®é€šèŠ‚ç‚¹
     QStandardItem* groupItem = paramItem->parent();
     ZASSERT_EXIT(groupItem);
 
@@ -1313,7 +1340,7 @@ void ZenoPropPanel::onSettings()
 bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event) 
 {
     if (event->type() == QEvent::ContextMenu) {
-        for (auto ctrl : m_floatColtrols) {
+        for (auto ctrl : m_floatControls) {
             if (ctrl.pControl == obj || ctrl.pLabel == obj) {
                 //get curves
                 QStringList keys = curve_util::getKeys(obj, ctrl.m_viewIdx.data(ROLE_PARAM_VALUE), ctrl.pControl, ctrl.pLabel);

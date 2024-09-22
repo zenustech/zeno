@@ -324,7 +324,7 @@ namespace zenoio
             }
 #endif
         }
-        //输出现在也可能有Socket_WildCard类型，需记录socket_type
+        //锟斤拷锟斤拷锟斤拷锟揭诧拷锟斤拷锟斤拷锟絊ocket_WildCard锟斤拷锟酵ｏ拷锟斤拷锟铰約ocket_type
         writer.Key("socket-type");
         switch (param.socketType)
         {

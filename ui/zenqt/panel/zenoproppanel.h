@@ -36,7 +36,7 @@ public:
     void reset(GraphModel* subgraph, const QModelIndexList& nodes, bool select);
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
-    bool updateCustomName(const QString &value, QString &oldValue);
+    bool updateCustomName(const QString& value, QString& oldValue);
 
     ZenoHintListWidget* getHintListInstance();
     ZenoFuncDescriptionLabel* getFuncDescriptionInstance();
@@ -45,7 +45,7 @@ public slots:
     void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-    void onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow);
+    void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int destRow);
     //dict/list links table
     void onLinkAdded(const zeno::EdgeInfo& link);
     void onLinkRemoved(const zeno::EdgeInfo& link);
@@ -55,11 +55,12 @@ public slots:
     void onSettings();
 
 protected:
-    bool eventFilter(QObject *obj, QEvent *event);
+    bool eventFilter(QObject* obj, QEvent* event);
     void paintEvent(QPaintEvent* event) override;
 
 private slots:
     void onNodeRemoved(QString nodeName);
+    void onUpdateParamsVisbleEnabled();
 
 private:
     void clearLayout();
@@ -67,11 +68,11 @@ private:
     bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
     bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
-    void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
-    void delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
-    void editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    void setKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
+    void delKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
+    void editKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
     void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
+    void onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val);
     void normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pItem, int row);
     void addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pOutputItem, int row);
 
@@ -79,17 +80,17 @@ private:
     GraphModel* m_model;
     QPersistentModelIndex m_idx;
 
-    QWidget* m_normalNodeInputWidget;       //∆’Õ®Ω⁄µ„input π”√
-    QTabWidget* m_tabWidget;                //◊”ÕºΩ⁄µ„input π”√
+    QWidget* m_normalNodeInputWidget;       //ÊôÆÈÄöËäÇÁÇπinput‰ΩøÁî®
+    QTabWidget* m_tabWidget;                //Â≠êÂõæËäÇÁÇπinput‰ΩøÁî®
     QWidget* m_outputWidget;                //output
 
-    ZenoDictListLinksTable* m_dictListLinksTable;   //œ‘ æmakeDict/makeList ‰»Î±ﬂ
+    ZenoDictListLinksTable* m_dictListLinksTable;   //ÊòæÁ§∫makeDict/makeListËæìÂÖ•Ëæπ
 
     bool m_bReentry;
 
     PANEL_TABS m_inputControls;
     PANEL_GROUP m_outputControls;
-    QList<_PANEL_CONTROL> m_floatColtrols;
+    QList<_PANEL_CONTROL> m_floatControls;
 
     QScopedPointer<ZenoHintListWidget> m_hintlist;
     QScopedPointer<ZenoFuncDescriptionLabel> m_descLabel;

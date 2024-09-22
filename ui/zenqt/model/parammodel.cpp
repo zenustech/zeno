@@ -16,7 +16,7 @@ class CustomUIProxyModel : public QStandardItemModel
 public:
     CustomUIProxyModel(ParamsModel* parent = nullptr) : QStandardItemModel(parent), m_baseM(parent) {}
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override {
-        if (role == ROLE_PARAM_VALUE) { 
+        if (role == ROLE_PARAM_VALUE) {
             QString paramName = index.data(ROLE_PARAM_NAME).toString();
             QModelIndex idxparam = m_baseM->paramIdx(paramName, true);
             QVariant wtf = idxparam.data(ROLE_PARAM_VALUE);
@@ -52,46 +52,60 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                     break;
                 }
             }
-            //∏˘æ›–Ë“™∏¸–¬Ω⁄µ„≤ºæ÷
+            //Ê†πÊçÆÈúÄË¶ÅÊõ¥Êñ∞ËäÇÁÇπÂ∏ÉÂ±Ä
             auto spNode = m_wpNode.lock();
             ZASSERT_EXIT(spNode);
             spNode->trigger_update_params(name, false, zeno::params_change_info());
-    });
+        });
 
     spNode->register_update_param_socket_type(
         [this](const std::string& name, zeno::SocketType type) {
-        updateParamData(QString::fromStdString(name), type, ROLE_SOCKET_TYPE);
-    });
+            updateParamData(QString::fromStdString(name), type, ROLE_SOCKET_TYPE);
+        });
 
     spNode->register_update_param_type(
         [this](const std::string& name, zeno::ParamType type) {
-        updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE);
-    });
+            updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE);
+        });
 
     spNode->register_update_param_control(
         [this](const std::string& name, zeno::ParamControl control) {
-        updateParamData(QString::fromStdString(name), control, ROLE_PARAM_CONTROL);
-    });
+            updateParamData(QString::fromStdString(name), control, ROLE_PARAM_CONTROL);
+        });
 
     spNode->register_update_param_control_prop(
         [this](const std::string& name, zeno::reflect::Any controlProps) {
-        updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
-    });
+            updateParamData(QString::fromStdString(name), QVariant::fromValue(controlProps), ROLE_PARAM_CTRL_PROPERTIES);
+        });
 
     spNode->register_update_param_socket_visible(
-        [this](const std::string& name, bool bVisible, bool bInput) {
-        updateParamData(QString::fromStdString(name), bVisible, ROLE_PARAM_VISIBLE, bInput);
+        [this](const std::string& name, bool bSocketVisible, bool bInput) {
+            updateParamData(QString::fromStdString(name), bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE, bInput);
+        });
+
+    spNode->register_update_visable_enable([this](zeno::INode* pNode, std::set<std::string> adjInputs, std::set<std::string> adjOutputs) {
+        //Êâ´‰∏ÄÈÅçÔºåÊõ¥Êñ∞‰∏Ä‰∏ãÁºìÂ≠òÂÄº
+        for (ParamItem& item : m_items) {
+            std::string name = item.name.toStdString();
+            //if (adjInputs.find(name) != adjInputs.end() && item.bInput) {
+            //    bool bExist = false;
+            //    updateParamData(item.name, !item.bVisible, ROLE_PARAM_VISIBLE, true);
+            //}
+            //if (adjOutputs.find(name) != adjOutputs.end() && !item.bInput) {
+            //}
+        }
+        emit enabledVisibleChanged();
     });
 
     spNode->register_update_param_color(
         [this](const std::string& name, std::string& clr) {
-        updateParamData(QString::fromStdString(name), QString::fromStdString(clr), ROLE_PARAM_SOCKET_CLR);
-    });
+            updateParamData(QString::fromStdString(name), QString::fromStdString(clr), ROLE_PARAM_SOCKET_CLR);
+        });
 
     spNode->register_update_layout(
         [this](zeno::params_change_info& changes) {
-        updateUiLinksSockets(changes);
-    });
+            updateUiLinksSockets(changes);
+        });
 }
 
 void ParamsModel::initParamItems()
@@ -113,7 +127,9 @@ void ParamsModel::initParamItems()
             item.type = spParam.type;
             item.value = spParam.defl;
             item.connectProp = spParam.socketType;
-            item.bVisible = spParam.bSocketVisible;
+            item.bSocketVisible = spParam.bSocketVisible;
+            item.bVisible = spParam.bVisible;
+            item.bEnable = spParam.bEnable;
             item.group = zeno::Role_InputPrimitive;
             item.sockProp = spParam.sockProp;
             m_items.append(item);
@@ -139,7 +155,9 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputPrimitive;
-        item.bVisible = param.bSocketVisible;
+        item.bSocketVisible = param.bSocketVisible;
+        item.bVisible = param.bVisible;
+        item.bEnable = param.bEnable;
         m_items.append(item);
     }
 
@@ -168,7 +186,7 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
     }
     UiHelper::newCustomModel(m_customParamsM, customui);
 
-    //m_customParamsM¥¥Ω®∫Û–Ë∏¸–¬≥ı º÷µ
+    //m_customParamsMÂàõÂª∫ÂêéÈúÄÊõ¥Êñ∞ÂàùÂßãÂÄº
     m_customParamsM->blockSignals(true);
     zeno::scope_exit sp([=] {m_customParamsM->blockSignals(false); });
 
@@ -187,7 +205,9 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
                 if (row != -1)
                 {
                     paramItem->setData(QVariant::fromValue(m_items[row].value), ROLE_PARAM_VALUE);
+                    paramItem->setData(m_items[row].bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
                     paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
+                    paramItem->setData(m_items[row].bEnable, ROLE_PARAM_ENABLE);
                 }
             }
         }
@@ -198,7 +218,9 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
         auto paramItem = pOutputsRoot->child(i);
         auto& paramName = paramItem->data(ROLE_PARAM_NAME).toString();
         int row = indexFromName(paramName, false);
+        paramItem->setData(m_items[row].bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
         paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
+        paramItem->setData(m_items[row].bEnable, ROLE_PARAM_ENABLE);
     }
 }
 
@@ -212,19 +234,20 @@ QStandardItemModel* ParamsModel::constructProxyModel()
 
         for (int role : roles)
         {
-            if (role != ROLE_PARAM_VALUE)
-                continue;
+            //if (role != ROLE_PARAM_VALUE)
+            //    continue;
 
-            QVariant newValue = topLeft.data(ROLE_PARAM_VALUE);
+            QVariant newValue = topLeft.data(role);
             QString name = topLeft.data(ROLE_PARAM_NAME).toString();
             bool input = topLeft.data(ROLE_ISINPUT).toBool();
             const QModelIndex& paramIdx = this->paramIdx(name, input);
 
             zeno::scope_exit sp([=] {this->blockSignals(false); });
             this->blockSignals(true);
-            setData(paramIdx, newValue, ROLE_PARAM_VALUE);
+            setData(paramIdx, newValue, role);
         }
-    });
+        });
+
     connect(this, &ParamsModel::dataChanged, [=](const QModelIndex& topLeft, const QModelIndex&, const QVector<int>& roles) {
         bool bInput = topLeft.data(ROLE_ISINPUT).toBool();
         if (!bInput)
@@ -232,21 +255,21 @@ QStandardItemModel* ParamsModel::constructProxyModel()
 
         for (int role : roles)
         {
-            if (role != ROLE_PARAM_VALUE)
-                continue;
+            //if (role != ROLE_PARAM_VALUE)
+            //    continue;
 
             const QString& name = topLeft.data(ROLE_PARAM_NAME).toString();
             Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
             auto pItems = pModel->findItems(name, flags);
             for (auto pItem : pItems)
             {
-                const QVariant& modelVal = topLeft.data(ROLE_PARAM_VALUE);
+                const QVariant& modelVal = topLeft.data(role);
                 zeno::scope_exit sp([=] {pModel->blockSignals(false); });
                 pModel->blockSignals(true);
-                pItem->setData(modelVal, ROLE_PARAM_VALUE);
+                pItem->setData(modelVal, role);
             }
         }
-    });
+        });
     return pModel;
 }
 
@@ -259,7 +282,7 @@ void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info&
         m_customParamsM = constructProxyModel();
         UiHelper::newCustomModel(m_customParamsM, customui);
     }
-    //m_customParamsM¥¥Ω®∫Û–Ë∏¸–¬≥ı º÷µ
+    //m_customParamsMÂàõÂª∫ÂêéÈúÄÊõ¥Êñ∞ÂàùÂßãÂÄº
     QStandardItem* pInputsRoot = m_customParamsM->item(0);
     for (int i = 0; i < pInputsRoot->rowCount(); i++)
     {
@@ -274,7 +297,7 @@ void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info&
                 if (row != -1)
                 {
                     paramItem->setData(QVariant::fromValue(m_items[row].value), ROLE_PARAM_VALUE);
-                    paramItem->setData(m_items[row].bVisible, ROLE_PARAM_VISIBLE);
+                    paramItem->setData(m_items[row].bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
                 }
             }
         }
@@ -326,7 +349,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         }
         return false;
     }
-    case ROLE_PARAM_VISIBLE:
+    case ROLE_PARAM_SOCKET_VISIBLE:
     {
         if (param.sockProp == zeno::Socket_Disable)
             return false;
@@ -397,9 +420,17 @@ QVariant ParamsModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_PARAM_VISIBLE:
     {
+        return param.bVisible;
+    }
+    case ROLE_PARAM_ENABLE:
+    {
+        return param.bEnable;
+    }
+    case ROLE_PARAM_SOCKET_VISIBLE:
+    {
         if (param.sockProp == zeno::Socket_Disable)
             return false;
-        return param.bVisible;
+        return param.bSocketVisible;
     }
     case ROLE_PARAM_GROUP:
         return param.group;
@@ -592,7 +623,7 @@ QStandardItemModel* ParamsModel::customParamModel()
 
 void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 {
-    //if (params.empty())   //ø…ƒ‹ «…æ≥˝µΩø’µƒ«Èøˆ£¨Œﬁ–Ëreturn
+    //if (params.empty())   //ÂèØËÉΩÊòØÂà†Èô§Âà∞Á©∫ÁöÑÊÉÖÂÜµÔºåÊó†ÈúÄreturn
     //    return;
 
     auto spNode = m_wpNode.lock();
@@ -647,7 +678,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
     m_items.clear();
     //reconstruct params.
     initParamItems();
-    if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)){
+    if (std::shared_ptr<zeno::SubnetNode> sbn = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode)) {
         updateCustomUiModelIncremental(changes, sbn->get_customui());
     }
     else {
@@ -665,7 +696,7 @@ void ParamsModel::updateUiLinksSockets(zeno::params_change_info& changes)
             if (!bExist)
                 continue;
             links = paramPrim.links;
-            
+
         }
         else if (group == zeno::Role_InputObject)
         {
@@ -759,11 +790,17 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
                 m_items[i].connectProp = (zeno::SocketType)val.toInt();
             else if (role == ROLE_PARAM_CTRL_PROPERTIES)
                 m_items[i].optCtrlprops = val.value<zeno::reflect::Any>();
-            else if (role == ROLE_PARAM_VISIBLE) {
+            else if (role == ROLE_PARAM_SOCKET_VISIBLE) {
                 if (m_items[i].bInput == bInput)
-                    m_items[i].bVisible = val.toBool();
+                    m_items[i].bSocketVisible = val.toBool();
                 else
                     continue;
+            }
+            else if (role == ROLE_PARAM_ENABLE) {
+                m_items[i].bEnable = val.toBool();
+            }
+            else if (role == ROLE_PARAM_VISIBLE) {
+                m_items[i].bVisible = val.toBool();
             }
             else if (role == ROLE_PARAM_GROUP)
                 m_items[i].group = (zeno::NodeDataGroup)val.toInt();
@@ -781,7 +818,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
     auto pItems = m_customParamsM->findItems(name, flags);
     for (auto pItem : pItems)
     {
-        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //∏¸–¬ ‰»Î£¨ªÚ∏¸–¬ ‰»Î/ ‰≥ˆµƒvisible ±,∏¸–¬customUiModel
+        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //Êõ¥Êñ∞ËæìÂÖ•ÔºåÊàñÊõ¥Êñ∞ËæìÂÖ•/ËæìÂá∫ÁöÑvisibleÊó∂,Êõ¥Êñ∞customUiModel
         {
             pItem->setData(val, role);
         }
@@ -817,7 +854,7 @@ void ParamsModel::getDegrees(int& inDegrees, int& outDegrees) {
 
 bool ParamsModel::hasVisiblePrimParam() const {
     for (auto item : m_items) {
-        if (item.bVisible &&
+        if (item.bSocketVisible &&
             (item.group == zeno::Role_InputPrimitive || item.group == zeno::Role_OutputPrimitive))
         {
             return true;

@@ -60,37 +60,35 @@ namespace zeno {
         }
     };
 
-    struct ParamObject {
+    struct CommonParam {
         std::string name;
         ParamType type = Param_Null;
-        SocketType socketType = Socket_ReadOnly;    //ÎªÁË¼æÈİzenoÀÏ°æ±¾µÄÊ¹ÓÃÏ°¹ß£¬clone¿ÉÄÜÓĞÄÚ´æĞÔÄÜ·çÏÕ£¬owning¿ÉÄÜ¸ÅÄî²»Ã÷
-        std::vector<EdgeInfo> links;
-        SocketProperty prop = Socket_Normal;
-        std::string tooltip;
-        bool bInput = true;
+        SocketType socketType = Socket_ReadOnly;    //ä¸ºäº†å…¼å®¹zenoè€ç‰ˆæœ¬çš„ä½¿ç”¨ä¹ æƒ¯ï¼Œcloneå¯èƒ½æœ‰å†…å­˜æ€§èƒ½é£é™©ï¼Œowningå¯èƒ½æ¦‚å¿µä¸æ˜
+        SocketProperty sockProp = Socket_Normal;
         std::string wildCardGroup;
         std::string constrain;
+        std::string tooltip;
+        std::vector<EdgeInfo> links;
+
+        bool bInput = true;
+        bool bSocketVisible = false;
+        bool bVisible = true;       //åœ¨å‚æ•°é¢æ¿æ˜¯å¦å¯è§
+        bool bEnable = true;        //åœ¨å‚æ•°é¢æ¿æ˜¯å¦å¯ç”¨
+    };
+
+    struct ParamObject : CommonParam {
+
     };
 
     //primitive
-    struct ParamPrimitive {
-        std::string name;
-        ParamType type = Param_Null;
-        SocketType socketType = Socket_Primitve;
+    struct ParamPrimitive : CommonParam {
         zeno::reflect::Any defl;
         zeno::reflect::Any result;    //run result.
         ParamControl control = NullControl;
         zeno::reflect::Any ctrlProps;
 
-        std::vector<EdgeInfo> links;
-        SocketProperty sockProp = Socket_Normal;
-
-        std::string tooltip;
         bool bInput = true;
-        bool bSocketVisible = false;
-        bool bVisible = true;       //ÔÚ²ÎÊıÃæ°åÊÇ·ñ¿É¼û
-        bool bEnable = true;        //ÔÚ²ÎÊıÃæ°åÊÇ·ñ¿ÉÓÃ
-        bool bInnerParam = false;   //ÄÚ²¿²ÎÊıµÄ±êÊ¶£¬¼´£¬²»¿É±»Íâ²¿uiËù±à¼­£¬Ö»ÄÜÒıÓÃÆäµ±Ç°µÄÖµ¡£
+        bool bInnerParam = false;   //å†…éƒ¨å‚æ•°çš„æ ‡è¯†ï¼Œå³ï¼Œä¸å¯è¢«å¤–éƒ¨uiæ‰€ç¼–è¾‘ï¼Œåªèƒ½å¼•ç”¨å…¶å½“å‰çš„å€¼ã€‚
         std::string wildCardGroup;
         std::string constrain;
     };
@@ -225,7 +223,7 @@ namespace zeno {
                 else {
                     throw;
                 }
-            }, container);
+                }, container);
         }
         else if constexpr (std::is_same_v<E, zeno::reflect::Any>) {
             if (zeno::reflect::get_type<T>() == container.type()) {
@@ -262,7 +260,7 @@ namespace zeno {
                 else {
                     return false;
                 }
-            }, container);
+                }, container);
         }
         else if constexpr (std::is_same_v<T, zeno::reflect::Any>) {
             if (zeno::reflect::get_type<E>() == container.type()) {
@@ -317,7 +315,7 @@ namespace zeno {
         std::vector<ref_tip_info> ref_candidates;
     };
 
-    //¿ÉÒÔÊÇ¹«Ê½£¬ÇúÏß£¬ÊıÖµ£¬×Ö·û´®ÖĞµÄÒ»ÖÖ£¬ÊÊÓÃÓÚËùÓĞÊıÖµÀàĞÍºÍÏòÁ¿ÀàĞÍ
+    //å¯ä»¥æ˜¯å…¬å¼ï¼Œæ›²çº¿ï¼Œæ•°å€¼ï¼Œå­—ç¬¦ä¸²ä¸­çš„ä¸€ç§ï¼Œé€‚ç”¨äºæ‰€æœ‰æ•°å€¼ç±»å‹å’Œå‘é‡ç±»å‹
     using PrimVar = std::variant<int, float, std::string, CurveData>;
     using vecvar = std::vector<zeno::PrimVar>;
 }

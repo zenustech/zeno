@@ -12,7 +12,7 @@
 namespace zeno
 {
 
-ZENO_API ZfxExecute::ZfxExecute(const std::string& code, const ZfxContext& ctx)
+ZENO_API ZfxExecute::ZfxExecute(const std::string& code, ZfxContext* ctx)
     : m_location(0)
     , m_code(code)
     , m_context(ctx)
@@ -43,7 +43,7 @@ ZENO_API int ZfxExecute::execute() {
     //TODO: error exception catch.
     if (m_root) {
         auto& funcMgr = zeno::getSession().funcManager;
-        funcMgr->executeZfx(m_root, &m_context);
+        funcMgr->executeZfx(m_root, m_context);
     }
     else {
 

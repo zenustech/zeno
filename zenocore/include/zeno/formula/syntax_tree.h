@@ -175,6 +175,7 @@ struct ZfxContext
     /* in */ std::string constrain_param;      /*专门用于参数ui约束调整的场景，如果不为空，即为要约束的参数*/
     /* out */ std::string printContent;
     /* out */ operatorVals jumpFlag;
+    /* out */ bool update_nodeparam_prop = false;      //参数属性是否更新了，比如可见性可用性
 };
 
 std::string getOperatorString(nodeType type, operatorVals op);
