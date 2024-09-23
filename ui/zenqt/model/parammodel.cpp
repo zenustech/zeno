@@ -87,12 +87,28 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         //扫一遍，更新一下缓存值
         for (ParamItem& item : m_items) {
             std::string name = item.name.toStdString();
-            //if (adjInputs.find(name) != adjInputs.end() && item.bInput) {
-            //    bool bExist = false;
-            //    updateParamData(item.name, !item.bVisible, ROLE_PARAM_VISIBLE, true);
-            //}
-            //if (adjOutputs.find(name) != adjOutputs.end() && !item.bInput) {
-            //}
+            if (adjInputs.find(name) != adjInputs.end() && item.bInput) {
+                bool bExist = false;
+                zeno::CommonParam param = pNode->get_input_param(name, &bExist);
+                ZASSERT_EXIT(bExist);
+                if (param.bEnable != item.bEnable) {
+                    updateParamData(item.name, param.bEnable, ROLE_PARAM_ENABLE, true);
+                }
+                if (param.bVisible != item.bVisible) {
+                    updateParamData(item.name, param.bVisible, ROLE_PARAM_VISIBLE, true);
+                }
+            }
+            if (adjOutputs.find(name) != adjOutputs.end() && !item.bInput) {
+                bool bExist = false;
+                zeno::CommonParam param = pNode->get_output_param(name, &bExist);
+                ZASSERT_EXIT(bExist);
+                if (param.bEnable != item.bEnable) {
+                    updateParamData(item.name, param.bEnable, ROLE_PARAM_ENABLE, false);
+                }
+                if (param.bVisible != item.bVisible) {
+                    updateParamData(item.name, param.bVisible, ROLE_PARAM_VISIBLE, false);
+                }
+            }
         }
         emit enabledVisibleChanged();
     });

@@ -444,20 +444,20 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
 
 void ZenoPropPanel::onUpdateParamsVisbleEnabled()
 {
-    bool bUpdate = false;
+    bool bUpdate = true;
     for (auto& [_, tab] : m_inputControls) {
         for (auto& [_, group] : tab) {
             for (auto& [_, control] : group) {
-                bool bEnable = control.m_viewIdx.data(ROLE_PARAM_ENABLE).toBool();
-                bool bVisible = control.m_viewIdx.data(ROLE_PARAM_VISIBLE).toBool();
-                if (control.pControl->isVisible() != bVisible) {
-                    control.pControl->setVisible(bVisible);
-                    bUpdate = true;
-                }
-                if (control.pControl->isEnabled() != bEnable) {
-                    control.pControl->setEnabled(bEnable);
-                    bUpdate = true;
-                }
+                bool bEnable = control.m_coreparamIdx.data(ROLE_PARAM_ENABLE).toBool();
+                bool bVisible = control.m_coreparamIdx.data(ROLE_PARAM_VISIBLE).toBool();
+
+                control.pControl->setVisible(bVisible);
+                control.pIconLabel->setVisible(bVisible);
+                control.pLabel->setVisible(bVisible);
+
+                control.pControl->setEnabled(bEnable);
+                control.pIconLabel->setEnabled(bEnable);
+                control.pLabel->setEnabled(bEnable);
             }
         }
     }
@@ -481,21 +481,16 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     zeno::reflect::Any anyVal = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
     const zeno::ParamType type = (zeno::ParamType)paramItem->data(ROLE_PARAM_TYPE).toLongLong();
 
-    //DEBUG:
-    if (0) {
-        bool bInput = paramItem->data(ROLE_ISINPUT).toBool();
-        ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
-        QModelIndex idxParam = paramsM->paramIdx(paramName, bInput);
-        paramsM->data(idxParam, ROLE_PARAM_VALUE);
-    }
+    bool bInput = paramItem->data(ROLE_ISINPUT).toBool();
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
+    QPersistentModelIndex idxCoreParam = paramsM->paramIdx(paramName, bInput);
 
     ZASSERT_EXIT(type == Param_Wildcard || anyVal.has_value());
 
-    zeno::ParamControl ctrl = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
+    zeno::ParamControl ctrl = (zeno::ParamControl)idxCoreParam.data(ROLE_PARAM_CONTROL).toInt();
 
-    const zeno::reflect::Any& pros = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    const zeno::reflect::Any& pros = idxCoreParam.data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
-    QPersistentModelIndex perIdx(paramItem->index());
     CallbackCollection cbSet;
 
     bool bFloat = UiHelper::isFloatType(type);
@@ -506,7 +501,7 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
     };
     cbSet.cbGetIndexData = [=]() -> QVariant {
-        return perIdx.isValid() ? paramItem->data(ROLE_PARAM_VALUE) : QVariant();
+        return idxCoreParam.isValid() ? idxCoreParam.data(ROLE_PARAM_VALUE) : QVariant();
     };
 
     //key frame
@@ -523,23 +518,21 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     QFont font = QApplication::font();
     font.setWeight(QFont::Light);
     pLabel->setFont(font);
-    pLabel->setToolTip(paramItem->data(ROLE_PARAM_TOOLTIP).toString());
+    pLabel->setToolTip(idxCoreParam.data(ROLE_PARAM_TOOLTIP).toString());
 
     pLabel->setTextColor(QColor(255, 255, 255, 255 * 0.7));
     pLabel->setHoverCursor(Qt::ArrowCursor);
     //pLabel->setProperty("cssClass", "proppanel");
 
-    bool bVisible = paramItem->data(ROLE_PARAM_VISIBLE).toBool();
-    bool bEnable = paramItem->data(ROLE_PARAM_ENABLE).toBool();
-    bool bSocketVisible = paramItem->data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
+    bool bVisible = idxCoreParam.data(ROLE_PARAM_VISIBLE).toBool();
+    bool bEnable = idxCoreParam.data(ROLE_PARAM_ENABLE).toBool();
+    bool bSocketVisible = idxCoreParam.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
     ZIconLabel* pIcon = new ZIconLabel();
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(26, 26)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg",
         ":/icons/parameter_key-frame_correct.svg", ":/icons/parameter_key-frame_correct.svg");
     pIcon->toggle(bSocketVisible);
     connect(pIcon, &ZIconLabel::toggled, this, [=](bool toggled) {
-        ParamsModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS));
-        const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
-        UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_SOCKET_VISIBLE);
+        UiHelper::qIndexSetData(idxCoreParam, toggled, ROLE_PARAM_SOCKET_VISIBLE);
     });
     pLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
@@ -559,7 +552,7 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     panelCtrl.controlLayout = pLayout;
     panelCtrl.pLabel = pLabel;
     panelCtrl.pIconLabel = pIcon;
-    panelCtrl.m_viewIdx = perIdx;
+    panelCtrl.m_coreparamIdx = idxCoreParam;
     panelCtrl.pControl = pControl;
 
     pIcon->setVisible(bVisible);
@@ -577,12 +570,12 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
         ZASSERT_EXIT(mainWin);
         ZTimeline* timeline = mainWin->timeline();
         ZASSERT_EXIT(timeline);
-        onUpdateFrame(pControl, timeline->value(), paramItem->data(ROLE_PARAM_VALUE));
+        onUpdateFrame(pControl, timeline->value(), idxCoreParam.data(ROLE_PARAM_VALUE));
         connect(timeline, &ZTimeline::sliderValueChanged, pControl, [=](int nFrame) {
-                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+                onUpdateFrame(pControl, nFrame, idxCoreParam.data(ROLE_PARAM_VALUE));
         }, Qt::UniqueConnection);
         connect(mainWin, &ZenoMainWindow::visFrameUpdated, pControl, [=](bool bGLView, int nFrame) {
-                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+                onUpdateFrame(pControl, nFrame, idxCoreParam.data(ROLE_PARAM_VALUE));
         }, Qt::UniqueConnection);
     }
 }
@@ -623,7 +616,7 @@ void ZenoPropPanel::addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayou
     panelCtrl.controlLayout = pLayout;
     panelCtrl.pLabel = pLabel;
     panelCtrl.pIconLabel = pIcon;
-    panelCtrl.m_viewIdx = perIdx;
+    panelCtrl.m_coreparamIdx = perIdx;
     panelCtrl.pControl = nullptr;
 
     m_outputControls[paramName] = panelCtrl;
@@ -730,7 +723,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     panelCtrl.controlLayout = pGroupLayout;
     panelCtrl.pLabel = pLabel;
     panelCtrl.pIconLabel = pIcon;
-    panelCtrl.m_viewIdx = perIdx;
+    panelCtrl.m_coreparamIdx = perIdx;
     panelCtrl.pControl = pControl;
 
     m_inputControls[tabName][groupName][paramName] = panelCtrl;
@@ -1001,9 +994,9 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
         {
             for (auto it = group.begin(); it != group.end(); it++)
             {
-                if (it->second.m_viewIdx == param->index())
+                if (it->second.m_coreparamIdx == param->index())
                 {
-                    const QString& newName = it->second.m_viewIdx.data(ROLE_PARAM_NAME).toString();
+                    const QString& newName = it->second.m_coreparamIdx.data(ROLE_PARAM_NAME).toString();
                     it->second.pLabel->setText(newName);
                     it->first = newName;
                     break;
@@ -1189,9 +1182,9 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
         {
                 for (auto it = group.begin(); it != group.end(); it++)
             {
-                    if (it->second.m_viewIdx == param->index())
+                    if (it->second.m_coreparamIdx == param->index())
                 {
-                    const QString &newTip = it->second.m_viewIdx.data(ROLE_PARAM_TOOLTIP).toString();
+                    const QString &newTip = it->second.m_coreparamIdx.data(ROLE_PARAM_TOOLTIP).toString();
                     it->second.pLabel->setToolTip(newTip);
                     break;
                 }
@@ -1206,8 +1199,8 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
         for (int r = topLeft.row(); r <= bottomRight.row(); r++) {
             if (role == ROLE_PARAM_NAME) {
                 for (auto it = m_outputControls.begin(); it != m_outputControls.end(); it++) {
-                    if (it->second.m_viewIdx == paramItem->index()) {
-                        const QString& newName = it->second.m_viewIdx.data(ROLE_PARAM_NAME).toString();
+                    if (it->second.m_coreparamIdx == paramItem->index()) {
+                        const QString& newName = it->second.m_coreparamIdx.data(ROLE_PARAM_NAME).toString();
                         it->second.pLabel->setText(newName);
                         it->first = newName;
                         break;
@@ -1343,8 +1336,8 @@ bool ZenoPropPanel::eventFilter(QObject *obj, QEvent *event)
         for (auto ctrl : m_floatControls) {
             if (ctrl.pControl == obj || ctrl.pLabel == obj) {
                 //get curves
-                QStringList keys = curve_util::getKeys(obj, ctrl.m_viewIdx.data(ROLE_PARAM_VALUE), ctrl.pControl, ctrl.pLabel);
-                zeno::CurvesData curves = curve_util::getCurvesData(ctrl.m_viewIdx, keys);
+                QStringList keys = curve_util::getKeys(obj, ctrl.m_coreparamIdx.data(ROLE_PARAM_VALUE), ctrl.pControl, ctrl.pLabel);
+                zeno::CurvesData curves = curve_util::getCurvesData(ctrl.m_coreparamIdx, keys);
                 //show menu
                 QMenu *menu = new QMenu;
                 QAction setAction(tr("Set KeyFrame"));

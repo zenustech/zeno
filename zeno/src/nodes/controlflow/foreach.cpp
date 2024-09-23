@@ -242,11 +242,11 @@ namespace zeno
         std::string m_foreach_begin_path;
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Iterations", 
-                Constrain = "visible = parameter('Iterate Method').value == 'By Count';")
+                Constrain = "enabled = parameter('Iterate Method').value == 'By Count';")
         int m_iterations = 10;
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Increment",
-                Constrain = "visible = parameter('Iterate Method').value == 'By Count';")
+                Constrain = "enabled = parameter('Iterate Method').value == 'By Count';")
         int m_increment = 1;
 
         ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "Start Value",

@@ -1182,7 +1182,7 @@ namespace zeno {
                         if (targetvar == "visible") {
                             pContext->update_nodeparam_prop = spNode->update_param_visible(nodeparam, bVal);
                         }
-                        else if (targetvar == "enable") {
+                        else if (targetvar == "enabled") {
                             pContext->update_nodeparam_prop = spNode->update_param_enable(nodeparam, bVal);
                         }
                         return ZfxVariable();

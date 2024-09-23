@@ -23,7 +23,7 @@ class ZenoPropPanel : public QWidget
         QLabel* pLabel;
         QLabel* pIconLabel;
         QLayout* controlLayout;
-        QPersistentModelIndex m_viewIdx;    //compare when rename.
+        QPersistentModelIndex m_coreparamIdx;    //compare when rename.
         _PANEL_CONTROL() : pControl(nullptr), pLabel(nullptr), pIconLabel(nullptr), controlLayout(nullptr) {}
     };
     typedef QKeyList<QString, _PANEL_CONTROL> PANEL_GROUP;
