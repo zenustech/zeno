@@ -55,11 +55,16 @@ struct NemoPlay : INode {
             frame = get_input<NumericObject>("frameid")->get<float>();
         }
         evaluator->evaluator->evaluate(frame);
+        bool skipHiddenPrim = get_input2<bool>("skipHiddenPrim");
 
         auto prims = std::make_shared<zeno::ListObject>();
         std::map<unsigned, std::string> meshes;
         for (unsigned mesh_id = 0; mesh_id != evaluator->evaluator->meshes.size(); ++mesh_id) {
             unsigned plug_id = evaluator->evaluator->meshes[mesh_id];
+            if (skipHiddenPrim && evaluator->evaluator->isVisible(plug_id) == 0) {
+                continue;
+            }
+
             std::string path = evaluator->evaluator->LUT_path.at(plug_id);
             boost::algorithm::replace_all(path, "|", "/");
             meshes[plug_id] = path;
@@ -93,6 +98,7 @@ struct NemoPlay : INode {
                 }
             }
             prim_set_abcpath(sub_prim.get(), "/ABC"+path);
+            sub_prim->userData().set2("vis", int(evaluator->evaluator->isVisible(plug_id)));
             prims->arr.emplace_back(sub_prim);
         }
 
@@ -105,6 +111,7 @@ ZENDEFNODE(NemoPlay, {
     {
         { "Evaluator" },
         { "frame" },
+        { "bool", "skipHiddenPrim", "1" },
     },
     {
         "prims",

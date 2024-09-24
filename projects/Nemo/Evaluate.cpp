@@ -1,8 +1,31 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2024 wuzhen
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * 1. The above copyright notice and this permission notice shall be included in
+ *    all copies or substantial portions of the Software.
+ *
+ * 2. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *    SOFTWARE.
+ */
+
 #include "Evaluate.h"
 #include "zeno/utils/log.h"
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
-#include <boost/algorithm/string.hpp>
 
 namespace glm {
 inline void from_json(const nlohmann::json &j, mat4 &mat) {
@@ -69,6 +92,11 @@ void Evaluator::load_topology(const nlohmann::json &root) {
       }
     }
 
+    auto jVisibility = element.at("visibility");
+    if (!jVisibility.is_null()) {
+      LUT_visible[plug_id] = std::make_pair(jVisibility.at("data_id"), jVisibility.at("data_type"));
+    }
+
     auto jTransform = element.at("transform");
     if (jTransform.is_null())
       LUT_transform[plug_id] = glm::identity<glm::mat4>();
@@ -116,6 +144,20 @@ void Evaluator::update_inputs(float frame) {
       throw std::runtime_error("unknown input type: " + info.dataTypeStr);
     }
   }
+}
+
+bool Evaluator::isVisible(unsigned plug_id) const {
+  auto [data_id, data_type] = LUT_visible.at(plug_id);
+  if ("Bool" == data_type)
+    return runtime.data.getBool(data_id);
+  else if ("Decimal" == data_type)
+    return runtime.singlePrecision ? runtime.data.getFloat(data_id) : runtime.data.getDouble(data_id);
+  else if ("Int" == data_type)
+    return runtime.data.getInt(data_id);
+  else if ("Angle" == data_type)
+    return runtime.singlePrecision ? runtime.data.getFloat(data_id) : runtime.data.getDouble(data_id);
+  else
+    return true;
 }
 
 std::vector<glm::vec3> Evaluator::getPoints(unsigned plug_id) const {
