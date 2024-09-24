@@ -74,6 +74,10 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &uv,
                std::vector<zeno::vec3i> &idxBuffer)
 {
+    if(prim->has_attr("clr")==false)
+    {
+        prim->verts.add_attr<zeno::vec3f>("clr");
+    }
   //first pass, scan the prim to see if verts require duplication
   std::vector<std::vector<zeno::vec3f>> vert_uv;
   std::vector<std::vector<zeno::vec2i>> idx_mapping;
@@ -571,6 +575,12 @@ struct GraphicsManager {
 //                    /// WXL
 
                     bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    if(has_uv == false)
+                    {
+                        prim_in->tris.add_attr<zeno::vec3f>("uv0");
+                        prim_in->tris.add_attr<zeno::vec3f>("uv1");
+                        prim_in->tris.add_attr<zeno::vec3f>("uv2");
+                    }
                     if(prim_in->has_attr("uv") && has_uv == false)
                     {
                         auto &uv = prim_in->attr<zeno::vec3f>("uv");
@@ -594,117 +604,37 @@ struct GraphicsManager {
                     }
                     computeTrianglesTangent(prim_in);
                     computeVertexTangent(prim_in);
-                    auto prim = std::make_shared<zeno::PrimitiveObject>();
+                    
+                    std::vector<zeno::vec3f> verts;
+                    std::vector<zeno::vec3f> nrm;
+                    std::vector<zeno::vec3f> clr;
+                    std::vector<zeno::vec3f> tang;
+                    std::vector<zeno::vec3f> uv;
+                    std::vector<zeno::vec3i> idxBuffer;
+                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer);
+                    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
+                    oPrim->verts.resize(verts.size());
+                    oPrim->add_attr<zeno::vec3f>("nrm");
+                    oPrim->add_attr<zeno::vec3f>("clr");
+                    oPrim->add_attr<zeno::vec3f>("uv");
+                    oPrim->add_attr<zeno::vec3f>("atang");
+                    oPrim->tris.resize(idxBuffer.size());
 
-                    prim->verts.resize(prim_in->tris.size()*3);
-                    prim->tris.resize(prim_in->tris.size());
-                    auto &att_clr = prim->add_attr<zeno::vec3f>("clr");
-                    auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
-                    auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
-                    auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
-                    has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    oPrim->verts.attr<zeno::vec3f>("pos") = verts;
+                    oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
+                    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
+                    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
+                    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
+                    oPrim->tris = idxBuffer;
 
-                    std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
-                    auto &in_pos   = prim_in->verts;
-                    auto &in_tan   = prim_in->attr<zeno::vec3f>("atang");
-                    auto &in_nrm   = prim_in->add_attr<zeno::vec3f>("nrm");
-                    auto &in_uv    = prim_in->attr<zeno::vec3f>("uv");
-                    const zeno::vec3f* uv_data0 = nullptr;
-                    const zeno::vec3f* uv_data1 = nullptr;
-                    const zeno::vec3f* uv_data2 = nullptr;
-
-                    if(has_uv) {
-                        uv_data0 = prim_in->tris.attr<zeno::vec3f>("uv0").data();
-                        uv_data1 = prim_in->tris.attr<zeno::vec3f>("uv1").data();
-                        uv_data2 = prim_in->tris.attr<zeno::vec3f>("uv2").data();
-
-                        for (size_t tid = 0; tid < prim_in->tris.size(); tid++) {
-                            //std::cout<<tid<<std::endl;
-                            size_t vid = tid * 3;
-                            prim->verts[vid] = in_pos[prim_in->tris[tid][0]];
-                            prim->verts[vid + 1] = in_pos[prim_in->tris[tid][1]];
-                            prim->verts[vid + 2] = in_pos[prim_in->tris[tid][2]];
-                            att_nrm[vid] = in_nrm[prim_in->tris[tid][0]];
-                            att_nrm[vid + 1] = in_nrm[prim_in->tris[tid][1]];
-                            att_nrm[vid + 2] = in_nrm[prim_in->tris[tid][2]];
-                            att_uv[vid] = uv_data0[tid];
-                            att_uv[vid + 1] = uv_data1[tid];
-                            att_uv[vid + 2] = uv_data2[tid];
-                            att_tan[vid] = in_tan[prim_in->tris[tid][0]];
-                            att_tan[vid + 1] = in_tan[prim_in->tris[tid][1]];
-                            att_tan[vid + 2] = in_tan[prim_in->tris[tid][2]];
-                            prim->tris[tid] = zeno::vec3i(vid, vid + 1, vid + 2);
-                        }
-                    } else
-                    {
-                        for (size_t tid = 0; tid < prim_in->tris.size(); tid++) {
-                            //std::cout<<tid<<std::endl;
-                            size_t vid = tid * 3;
-                            prim->verts[vid] = in_pos[prim_in->tris[tid][0]];
-                            prim->verts[vid + 1] = in_pos[prim_in->tris[tid][1]];
-                            prim->verts[vid + 2] = in_pos[prim_in->tris[tid][2]];
-                            att_nrm[vid] = in_nrm[prim_in->tris[tid][0]];
-                            att_nrm[vid + 1] = in_nrm[prim_in->tris[tid][1]];
-                            att_nrm[vid + 2] = in_nrm[prim_in->tris[tid][2]];
-                            att_uv[vid] = in_uv[prim_in->tris[tid][0]];
-                            att_uv[vid + 1] = in_uv[prim_in->tris[tid][1]];
-                            att_uv[vid + 2] = in_uv[prim_in->tris[tid][2]];
-                            att_tan[vid] = in_tan[prim_in->tris[tid][0]];
-                            att_tan[vid + 1] = in_tan[prim_in->tris[tid][1]];
-                            att_tan[vid + 2] = in_tan[prim_in->tris[tid][2]];
-                            prim->tris[tid] = zeno::vec3i(vid, vid + 1, vid + 2);
-                        }
-                    }
-                    if (prim_in->has_attr("clr")) {
-                        auto &in_clr   = prim_in->add_attr<zeno::vec3f>("clr");
-                        for(size_t tid=0;tid<prim_in->tris.size();tid++) {
-                            size_t vid = tid*3;
-                            att_clr[vid]         = in_clr[prim_in->tris[tid][0]];
-                            att_clr[vid+1]       = in_clr[prim_in->tris[tid][1]];
-                            att_clr[vid+2]       = in_clr[prim_in->tris[tid][2]];
-                        }
-                    }
-                    //flatten here, keep the rest of codes unchanged.
-
-                    auto vs = (float const *)prim->verts.data();
+                    auto vs = (float const *)oPrim->verts.data();
                     std::map<std::string, std::pair<float const *, size_t>> vtab;
-                    prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+                    oPrim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
                         vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                     });
-                    auto ts = (int const *)prim->tris.data();
-                    auto nvs = prim->verts.size();
-                    auto nts = prim->tris.size();
-//                    std::vector<zeno::vec3f> verts;
-//                    std::vector<zeno::vec3f> nrm;
-//                    std::vector<zeno::vec3f> clr;
-//                    std::vector<zeno::vec3f> tang;
-//                    std::vector<zeno::vec3f> uv;
-//                    std::vector<zeno::vec3i> idxBuffer;
-//                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer);
-//                    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
-//                    oPrim->verts.resize(verts.size());
-//                    oPrim->add_attr<zeno::vec3f>("nrm");
-//                    oPrim->add_attr<zeno::vec3f>("clr");
-//                    oPrim->add_attr<zeno::vec3f>("uv");
-//                    oPrim->add_attr<zeno::vec3f>("atang");
-//                    oPrim->tris.resize(idxBuffer.size());
-//
-//
-//                    oPrim->verts.attr<zeno::vec3f>("pos") = verts;
-//                    oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
-//                    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
-//                    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
-//                    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
-//                    oPrim->tris = idxBuffer;
-//
-//                    auto vs = (float const *)oPrim->verts.data();
-//                    std::map<std::string, std::pair<float const *, size_t>> vtab;
-//                    oPrim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
-//                      vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
-//                    });
-//                    auto ts = (int const *)oPrim->tris.data();
-//                    auto nvs = oPrim->verts.size();
-//                    auto nts = oPrim->tris.size();
+                    auto ts = (uint const *)oPrim->tris.data();
+                    auto nvs = oPrim->verts.size();
+                    auto nts = oPrim->tris.size();
 
                     std::vector<std::string> matNameList(0);
                     if(matNum>0)
@@ -718,8 +648,9 @@ struct GraphicsManager {
                     }
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
-                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
-                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
+                    auto& matids = prim_in->tris.attr<int>("matid");
+                    
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
@@ -1771,9 +1702,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 OptixUtil::logInfoVRAM("After update Sphere");
                 xinxinoptix::updateCurves();
 
-                xinxinoptix::UpdateStaticInstMesh(meshMatLUT);
-                xinxinoptix::UpdateDynamicInstMesh(meshMatLUT);
-                xinxinoptix::CopyInstMeshToGlobalMesh();
+                xinxinoptix::UpdateInstMesh(meshMatLUT);
+                
                 xinxinoptix::UpdateMeshGasAndIas(staticNeedUpdate);
             
                 xinxinoptix::cleanupSpheresCPU();

@@ -191,6 +191,9 @@ struct Params
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
 
+    void* meshAux;
+    void* instToMesh;
+
     uint32_t hairInstOffset;
     void* hairAux;
 
@@ -277,29 +280,6 @@ struct HitGroupData
     bool equiangular  = false;
     bool multiscatter = false;
 
-    //float4* vertices;
-#ifdef USE_SHORT_COMPACT
-    ushort2* uv;
-    ushort2* nrm;
-    ushort2* clr;
-    ushort2* tan;
-#else
-
-  #ifdef USE_SHORT
-      ushort3* uv;
-      ushort3* nrm;
-      ushort3* clr;
-      ushort3* tan;
-  #else
-      float4* uv;
-      float4* nrm;
-      float4* clr;
-      float4* tan;
-  #endif
-
-#endif
-    unsigned short* lightMark;
-    uint32_t* auxOffset;
 #ifdef USE_SHORT
     ushort3* instPos;
     ushort3* instNrm;
