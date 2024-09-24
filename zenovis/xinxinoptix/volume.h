@@ -14,6 +14,8 @@ struct VolumeIn {
     float3 pos_world;
     float3 pos_view;
 
+    bool isShadowRay;
+
     float sigma_t;
     uint32_t* seed;
 
