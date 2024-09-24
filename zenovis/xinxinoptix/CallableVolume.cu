@@ -105,8 +105,11 @@ struct VolumeIn2 {
     float3 pos_world;
     float3 pos_view;
 
+    bool isShadowRay;
+
 	float sigma_t;
 	uint32_t* seed;
+
     
     void* sbt_ptr;
     float* world2object;
@@ -237,6 +240,8 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
     auto zenotex = sbt_data->textures;
     auto vdb_grids = sbt_data->vdb_grids;
     auto vdb_max_v = sbt_data->vdb_max_v;
+
+    auto att_isShadowRay = attrs.isShadowRay ? 1.0f:0.0f;
 
 #ifndef _FALLBACK_
 
