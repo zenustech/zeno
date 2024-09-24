@@ -274,7 +274,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
-        prd.max_depth = 6;
+        prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -349,13 +349,16 @@ extern "C" __global__ void __raygen__rg()
             }
 
             //if(prd.depth>prd.max_depth) {
-            float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth) {
-                prd.done=true;
-            } else {
-                prd.attenuation = prd.attenuation / RRprob;
+
+            if(prd.depth > prd.max_depth){
+                float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
+                RRprob = min(RRprob, 0.99f);
+                if(rnd(prd.seed) > RRprob) {
+                    prd.done=true;
+                } else {
+                    prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
+                }
             }
-            //}
             if(prd.countEmitted == true)
                 prd.passed = true;
 

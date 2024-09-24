@@ -7,8 +7,8 @@ namespace BRDFBasics{
 static __inline__ __device__
 float PowerHeuristic(float a, float b)
 {
-  float t = a * a;
-  return t / (b * b + t + 1e-6);
+  //float t = a * a;
+  return b>10.0f*a?(a/(a + b + 1e-6)) : (a*a/(a*a + b*b + 1e-6));
 }
 static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);

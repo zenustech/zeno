@@ -343,7 +343,7 @@ struct ZSPrimitiveToSparseGrid : INode {
                             for (int d = 0; d < nchns; ++d) {
                                 auto wd = spg(wOffset + d, cellno);
                                 if (wd > detail::deduce_numeric_epsilon<float>() * 10) {
-                                    spg(tagDstOffset + d, cellno) /= wd;
+                                    spg(tagDstOffset + d, cellno) /= wd + 0.0001;
                                 }
                             }
                         });
@@ -355,7 +355,7 @@ struct ZSPrimitiveToSparseGrid : INode {
                             auto w = spg(wOffset, cellno);
                             if (w > detail::deduce_numeric_epsilon<float>() * 10) {
                                 for (int d = 0; d < nchns; ++d)
-                                    spg(tagDstOffset + d, cellno) /= w;
+                                    spg(tagDstOffset + d, cellno) /= w + 0.0001;
                             }
                         });
         }
