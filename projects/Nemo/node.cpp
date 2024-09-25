@@ -52,10 +52,24 @@ struct NemoPlay : INode {
         }
         float frame = getGlobalState()->frameid;
         if (has_input("frameid")) {
-            frame = get_input<NumericObject>("frameid")->get<float>();
+            frame = get_input2<float>("frameid");
         }
         evaluator->evaluator->evaluate(frame);
         bool skipHiddenPrim = get_input2<bool>("skipHiddenPrim");
+        std::map<int, std::vector<int>> mapping_mesh_to_faceset;
+        int test_count = evaluator->evaluator->facesets.size();
+        auto readFaceset = get_input2<bool>("readFaceset");
+        if (readFaceset) {
+            for (auto i = 0; i < evaluator->evaluator->facesets.size(); i++) {
+                auto const &faceset = evaluator->evaluator->facesets[i];
+                for (auto [mesh_id, _]: faceset.members) {
+                    if (mapping_mesh_to_faceset.count(mesh_id) == 0) {
+                        mapping_mesh_to_faceset[mesh_id] = {};
+                    }
+                    mapping_mesh_to_faceset[mesh_id].push_back(i);
+                }
+            }
+        }
 
         auto prims = std::make_shared<zeno::ListObject>();
         std::map<unsigned, std::string> meshes;
@@ -68,7 +82,6 @@ struct NemoPlay : INode {
             std::string path = evaluator->evaluator->LUT_path.at(plug_id);
             boost::algorithm::replace_all(path, "|", "/");
             meshes[plug_id] = path;
-            zeno::log_info("path: {}", path);
             std::vector<glm::vec3> points = evaluator->evaluator->getPoints(plug_id);
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             sub_prim->verts.resize(points.size());
@@ -97,6 +110,26 @@ struct NemoPlay : INode {
                     sub_prim->uvs.emplace_back(uValues[i], vValues[i]);
                 }
             }
+            if (readFaceset) {
+                auto &faceset_attr = sub_prim->polys.add_attr<int>("faceset");
+                std::fill(faceset_attr.begin(), faceset_attr.end(), -1);
+                std::vector<std::string> faceSetNames;
+                if (mapping_mesh_to_faceset.count(plug_id)) {
+                    for (auto fi: mapping_mesh_to_faceset[plug_id]) {
+                        auto &faceset = evaluator->evaluator->facesets[fi];
+                        auto cur_index = faceSetNames.size();
+                        faceSetNames.push_back(faceset.name);
+                        for (auto i: faceset.members[plug_id]) {
+                            faceset_attr[i] = cur_index;
+                        }
+                    }
+                }
+                for (auto i = 0; i < faceSetNames.size(); i++) {
+                    auto n = faceSetNames[i];
+                    sub_prim->userData().set2(zeno::format("faceset_{}", i), n);
+                }
+                sub_prim->userData().set2("faceset_count", int(faceSetNames.size()));
+            }
             prim_set_abcpath(sub_prim.get(), "/ABC"+path);
             sub_prim->userData().set2("vis", int(evaluator->evaluator->isVisible(plug_id)));
             prims->arr.emplace_back(sub_prim);
@@ -112,6 +145,7 @@ ZENDEFNODE(NemoPlay, {
         { "Evaluator" },
         { "frame" },
         { "bool", "skipHiddenPrim", "1" },
+        { "bool", "readFaceset", "1" },
     },
     {
         "prims",

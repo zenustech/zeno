@@ -42,28 +42,36 @@ struct Evaluator {
   // value: input id
   std::vector<unsigned> inputs;
 
-  // value: plug id
+  // value: mesh id
   std::vector<unsigned> meshes;
 
-  // key: output id of mesh
+  // key: mesh id
   // value: full path
   std::map<unsigned, std::string> LUT_path;
 
-  // key: output id
+  // key: mesh id
   // value: topology
   std::map<unsigned, unsigned> LUT_topology;
 
-  // key: output id
+  // key: mesh id
   // value: uvs
   std::map<unsigned, std::vector<std::pair<std::string, unsigned>>> LUT_uvsets;
 
-  // key: mesh out plug id
+  // key: mesh id
   // value: (dataLocation(-1 if constant), type)
   std::map<unsigned, std::pair<int, std::string>> LUT_visible;
 
-  // key: mesh out plug id
+  // key: mesh id
   // value: dataLocation(dynamic) or worldMatrix(static)
   std::map<unsigned, std::variant<unsigned, glm::mat4>> LUT_transform;
+
+  struct FaceSet {
+    std::string name;
+    // key: mesh_id
+    // value: faces(full if empty)
+    std::map<unsigned, std::vector<unsigned>> members;
+  };
+  std::vector<FaceSet> facesets;
 
 public:
   Evaluator(std::string path_config, std::string path_anim);
@@ -86,6 +94,8 @@ private:
   void load_plugs(const nlohmann::json &root);
 
   void load_topology(const nlohmann::json &root);
+
+  void load_faceset(const nlohmann::json &root);
 
   void update_inputs(float frame);
 };

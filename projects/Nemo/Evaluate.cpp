@@ -23,7 +23,7 @@
  */
 
 #include "Evaluate.h"
-#include "zeno/utils/log.h"
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -45,6 +45,15 @@ Evaluator::Evaluator(std::string path_config, std::string path_anim) {
     runtime.init(config, path_config);
     load_plugs(config);
     load_topology(config);
+  }
+
+  // try load material
+  {
+    std::string path_material = path_config;
+    boost::algorithm::replace_last(path_material, "__CONFIG", "__MAT");
+    std::ifstream fin(path_material);
+    if (fin.is_open())
+      load_faceset(nlohmann::json::parse(fin));
   }
 
   // load anim
@@ -107,6 +116,50 @@ void Evaluator::load_topology(const nlohmann::json &root) {
   }
 }
 
+void Evaluator::load_faceset(const nlohmann::json &root) {
+  for (auto [groupName, members] : root.items()) {
+    FaceSet group;
+    group.name = groupName;
+
+    for (std::string x : members) {
+      std::string shape = x;
+      if (x.find('.') != std::string::npos) {
+        shape = x.substr(0, x.find('.'));
+      }
+      int shapeId = 0;
+      for (const auto &[meshId, meshPath] : LUT_path) {
+        if (boost::algorithm::ends_with(meshPath, shape)) {
+          shapeId = meshId;
+          break;
+        }
+      }
+      if (shapeId < 0)
+        break;
+
+      std::size_t pos_dot = x.find('.');
+      if (pos_dot == std::string::npos) {
+        group.members.insert(std::make_pair(shapeId, std::vector<unsigned>{}));
+        continue;
+      }
+
+      std::string components = x.substr(pos_dot);
+      unsigned beg = components.find('[') + 1;
+      unsigned end = components.rfind(']');
+      components = components.substr(beg, end - beg);
+
+      if (components.find(':') == std::string::npos)
+        group.members[shapeId].push_back(std::stoi(components));
+      else {
+        unsigned first = std::stoi(components.substr(0, components.find(':')));
+        unsigned last = std::stoi(components.substr(components.find(':') + 1));
+        for (unsigned face = first; face <= last; ++face)
+          group.members[shapeId].push_back(face);
+      }
+    }
+    facesets.push_back(group);
+  }
+}
+
 void Evaluator::update_inputs(float frame) {
   for (unsigned channel_id = 0; channel_id != inputs.size(); ++channel_id) {
     unsigned plug_id = inputs[channel_id];
@@ -147,6 +200,9 @@ void Evaluator::update_inputs(float frame) {
 }
 
 bool Evaluator::isVisible(unsigned plug_id) const {
+  if (!LUT_visible.count(plug_id))
+    return true;
+
   auto [data_id, data_type] = LUT_visible.at(plug_id);
   if ("Bool" == data_type)
     return runtime.data.getBool(data_id);
