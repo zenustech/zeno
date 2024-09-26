@@ -162,6 +162,7 @@ void ZTimeline::onFrameEditted()
         }
     }
     m_ui->timeliner->setFromTo(frameFrom, frameTo);
+    emit sliderRangeChanged(frameFrom, frameTo);
 }
 
 void ZTimeline::initStyleSheet()
@@ -319,6 +320,7 @@ void ZTimeline::initFromTo(int frameFrom, int frameTo)
     m_ui->editTo->setText(QString::number(frameTo));
     if (frameTo >= frameFrom)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
+    emit sliderRangeChanged(frameFrom, frameTo);
 }
 
 void ZTimeline::initFps(int fps)
@@ -350,6 +352,16 @@ bool ZTimeline::isPlayToggled() const
 void ZTimeline::updateKeyFrames(const QVector<int>& keys) 
 {
     m_ui->timeliner->updateKeyFrames(keys);
+}
+
+void ZTimeline::updateDopnetworkFrameCached(int frame)
+{
+    m_ui->timeliner->updateDopnetworkFrameCached(frame);
+}
+
+void ZTimeline::updateDopnetworkFrameRemoved(int frame)
+{
+    m_ui->timeliner->updateDopnetworkFrameRemoved(frame);
 }
 
 void ZTimeline::updateCachedFrame()

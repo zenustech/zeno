@@ -928,6 +928,12 @@ ZENO_API void Session::switchToFrame(int frameid)
     globalState->updateFrameId(frameid);
 }
 
+ZENO_API void Session::updateFrameRange(int start, int end)
+{
+    CORE_API_BATCH
+    globalState->updateFrameRange(start, end);
+}
+
 ZENO_API void Session::interrupt() {
     m_bInterrupted = true;
 }

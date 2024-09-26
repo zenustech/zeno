@@ -973,6 +973,10 @@ void ZenoMainWindow::initTimeline()
     auto pCalcMgr = zenoApp->calculationMgr();
     connect(m_pTimeline, &ZTimeline::playForward, pCalcMgr, &CalculationMgr::onPlayTriggered);
     connect(m_pTimeline, &ZTimeline::sliderValueChanged, pCalcMgr, &CalculationMgr::onFrameSwitched);
+    connect(m_pTimeline, &ZTimeline::sliderRangeChanged, [](int start, int end) {
+        auto& sess = zeno::getSession();
+        sess.updateFrameRange(start, end);
+    });
 }
 
 ZTimeline* ZenoMainWindow::timeline() const

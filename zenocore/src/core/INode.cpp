@@ -300,6 +300,26 @@ void INode::mark_previous_ref_dirty() {
     */
 }
 
+ZENO_API bool INode::isInDopnetwork()
+{
+    std::shared_ptr<Graph> parentGraph = graph.lock();
+    while (parentGraph)
+    {
+        if (SubnetNode* subnet = parentGraph->optParentSubgNode.value()) {
+            if (DopNetwork* dop = dynamic_cast<DopNetwork*>(subnet)) {
+                return true;
+            }
+            else {
+                parentGraph = subnet->getGraph().lock();
+            }
+        }
+        else {
+            break;
+        }
+    }
+    return false;
+}
+
 void INode::onInterrupted() {
     mark_dirty(true);
     mark_previous_ref_dirty();
@@ -371,6 +391,9 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
     {
         if (bWholeSubnet)
             pSubnetNode->mark_subnetdirty(bOn);
+        if (DopNetwork* pDop = dynamic_cast<DopNetwork*>(pSubnetNode)) {
+            pDop->resetFrameState();
+        }
     }
 
     std::shared_ptr<Graph> spGraph = graph.lock();
@@ -1068,7 +1091,7 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
 
 zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
 {
-    if (!in_param) {
+    if (!in_param || in_param->type == Param_Wildcard) {
         return nullptr;
     }
 
@@ -1196,6 +1219,13 @@ bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType ou
     else if (in_param->socketType == Socket_ReadOnly) {
         in_param->spObject = outputObj;
         //TODO: readonly property on object.
+    }
+    else if (in_param->socketType == Socket_WildCard) {
+        if (std::shared_ptr<zeno::INode> node = in_param->m_wpNode.lock()) {
+            if (node->get_nodecls() == "SubOutput") {
+                in_param->spObject = outputObj;
+            }
+        }
     }
     return true;
 }
@@ -1336,8 +1366,16 @@ ZENO_API void INode::doApply() {
     }
     log_debug("==> leave {}", m_name);
 
-    registerObjToManager();
-    reportStatus(false, Node_RunSucceed);
+    //DopNetwork
+    if (DopNetwork* dop = dynamic_cast<DopNetwork*>(this)) {
+        reportStatus(true, Node_Running);
+        registerObjToManager();
+        reportStatus(true, Node_DirtyReadyToRun);
+    }
+    else {
+        registerObjToManager();
+        reportStatus(false, Node_RunSucceed);
+    }
 }
 
 ZENO_API ObjectParams INode::get_input_object_params() const
@@ -1876,7 +1914,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
     {
                     spParam.type = type;
-                    CALLBACK_NOTIFY(update_param_type, param, type)
+                    CALLBACK_NOTIFY(update_param_type, param, type, bInput)
                         return true;
                 }
             }
@@ -1891,7 +1929,7 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
                 {
                     spParam.type = type;
-                    CALLBACK_NOTIFY(update_param_type, param, type)
+                    CALLBACK_NOTIFY(update_param_type, param, type, bInput)
                     return true;
     }
             }

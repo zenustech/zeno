@@ -8,6 +8,10 @@
 #include <zeno/core/Assets.h>
 #include <zeno/utils/helper.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
+#include <zeno/zeno.h>
+#include <zeno/funcs/ObjectCodec.h>
+#include <zeno/utils/Timer.h>
+#include <zeno/types/MaterialObject.h>
 
 
 namespace zeno {
@@ -197,5 +201,188 @@ ZENO_API void SubnetNode::setCustomUi(const CustomUI& ui)
 {
     m_customUi = ui;
 }
+
+
+DopNetwork::DopNetwork() : m_bEnableCache(true), m_bAllowCacheToDisk(false), m_maxCacheMemoryMB(5000), m_currCacheMemoryMB(5000), m_totalCacheSizeByte(0)
+{
+}
+
+ZENO_API void DopNetwork::apply()
+{
+    auto& sess = zeno::getSession();
+    int startFrame = sess.globalState->getStartFrame();
+    int currentFarme = sess.globalState->getFrameId();
+    zeno::scope_exit sp([&currentFarme, &sess]() {
+        sess.globalState->updateFrameId(currentFarme);
+    });
+    //重新计算
+    for (int i = startFrame; i <= currentFarme; i++) {
+        if (m_frameCaches.find(i) == m_frameCaches.end()) {
+            sess.globalState->updateFrameId(i);
+            subgraph->markDirtyAll();
+            zeno::SubnetNode::apply();
+
+            const ObjectParams& outputObjs = get_output_object_params();
+            size_t currentFrameCacheSize = 0;
+            for (auto const& objparam : outputObjs) {
+                currentFrameCacheSize += getObjSize(get_output_obj(objparam.name));
+            }
+            while (((m_totalCacheSizeByte + currentFrameCacheSize) / 1024 / 1024) > m_currCacheMemoryMB) {
+                if (!m_frameCaches.empty()) {
+                    auto lastIter = --m_frameCaches.end();
+                    if (lastIter->first > currentFarme) {//先从最后一帧删
+
+                        m_totalCacheSizeByte = m_totalCacheSizeByte - m_frameCacheSizes[lastIter->first];
+                        CALLBACK_NOTIFY(dopnetworkFrameRemoved, lastIter->first)
+                        m_frameCaches.erase(lastIter);
+                        m_frameCacheSizes.erase(--m_frameCacheSizes.end());
+                    } else {
+                        m_totalCacheSizeByte = m_totalCacheSizeByte - m_frameCacheSizes.begin()->second;
+                        CALLBACK_NOTIFY(dopnetworkFrameRemoved, m_frameCaches.begin()->first)
+                        m_frameCaches.erase(m_frameCaches.begin());
+                        m_frameCacheSizes.erase(m_frameCacheSizes.begin());
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            for (auto const& objparam : outputObjs) {
+                m_frameCaches[i].insert({ objparam.name, get_output_obj(objparam.name) });
+            }
+            m_frameCacheSizes[i] = currentFrameCacheSize;
+            m_totalCacheSizeByte += currentFrameCacheSize;
+            CALLBACK_NOTIFY(dopnetworkFrameCached, i)
+        }
+        else {
+            if (i == currentFarme) {
+                for (auto const& [name, obj] : m_frameCaches[i]) {
+                    if (obj) {
+                        bool ret = set_output(name, obj);
+                        assert(ret);
+                    }
+                }
+            }
+        }
+    }
+}
+
+ZENO_API void DopNetwork::setEnableCache(bool enable)
+{
+    m_bEnableCache = enable;
+}
+
+ZENO_API void DopNetwork::setAllowCacheToDisk(bool enable)
+{
+    m_bAllowCacheToDisk = enable;
+}
+
+ZENO_API void DopNetwork::setMaxCacheMemoryMB(int size)
+{
+    m_maxCacheMemoryMB = size;
+}
+
+ZENO_API void DopNetwork::setCurrCacheMemoryMB(int size)
+{
+    m_currCacheMemoryMB = size;
+}
+
+template <class T0>
+size_t getAttrVectorSize(zeno::AttrVector<T0> const& arr) {
+    size_t totalSize = 0;
+    totalSize += sizeof(arr);
+    totalSize += sizeof(T0) * arr.values.size();
+    for (const auto& pair : arr.attrs) {
+        totalSize += sizeof(pair.first) + pair.first.capacity();
+        std::visit([&totalSize](auto& val) {
+            if (!val.empty()) {
+                using T = std::decay_t<decltype(val[0])>;
+                totalSize += sizeof(T) * val.size();
+            }
+        }, pair.second);
+    }
+    return totalSize;
+};
+
+size_t DopNetwork::getObjSize(std::shared_ptr<IObject> obj)
+{
+    size_t totalSize = 0;
+    if (std::shared_ptr<PrimitiveObject> spPrimObj = std::dynamic_pointer_cast<PrimitiveObject>(obj)) {
+        PrimitiveObject* primobj = spPrimObj.get();
+        totalSize += sizeof(*primobj);
+        totalSize += getAttrVectorSize(primobj->verts);
+        totalSize += getAttrVectorSize(primobj->points);
+        totalSize += getAttrVectorSize(primobj->lines);
+        totalSize += getAttrVectorSize(primobj->tris);
+        totalSize += getAttrVectorSize(primobj->quads);
+        totalSize += getAttrVectorSize(primobj->loops);
+        totalSize += getAttrVectorSize(primobj->polys);
+        totalSize += getAttrVectorSize(primobj->edges);
+        totalSize += getAttrVectorSize(primobj->uvs);
+        if (MaterialObject* mtlPtr = primobj->mtl.get()) {
+            totalSize += sizeof(*mtlPtr);
+            totalSize += mtlPtr->serializeSize();
+        }
+        if (InstancingObject* instPtr = primobj->inst.get()) {
+            totalSize += sizeof(*instPtr);
+            totalSize += instPtr->serializeSize();
+        }
+    }
+    else if (std::shared_ptr<NumericObject> spobj = std::dynamic_pointer_cast<NumericObject>(obj)) {
+        NumericObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        std::visit([&totalSize](auto const& val) {
+            using T = std::decay_t<decltype(val)>;
+            totalSize += sizeof(val);
+        }, obj->value);
+    }
+    else if (std::shared_ptr<StringObject> spobj = std::dynamic_pointer_cast<StringObject>(obj)) {
+        StringObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        totalSize += sizeof(obj->value.size());
+    }
+    else if (std::shared_ptr<CameraObject> spobj = std::dynamic_pointer_cast<CameraObject>(obj)) {
+        CameraObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        totalSize += sizeof(CameraData);
+    }
+    else if (std::shared_ptr<LightObject> spobj = std::dynamic_pointer_cast<LightObject>(obj)) {
+        LightObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        totalSize += sizeof(LightData);
+    }
+    else if (std::shared_ptr<MaterialObject> spobj = std::dynamic_pointer_cast<MaterialObject>(obj)) {
+        MaterialObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        totalSize += obj->serializeSize();
+    }
+    else if (std::shared_ptr<ListObject> spobj = std::dynamic_pointer_cast<ListObject>(obj)) {
+        ListObject* obj = spobj.get();
+        totalSize += sizeof(*obj);
+        totalSize += obj->dirtyIndiceSize() * sizeof(int);
+        for (int i = 0; i > obj->size(); i++) {
+            totalSize += getObjSize(obj->get(i));
+        }
+    }
+    else {//dummy obj
+    }
+    return totalSize;
+}
+
+void DopNetwork::resetFrameState()
+{
+    for (auto& [idx, _] : m_frameCaches) {
+        CALLBACK_NOTIFY(dopnetworkFrameRemoved, idx)
+    }
+    m_frameCaches.clear();
+    m_frameCacheSizes.clear();
+}
+
+ZENDEFNODE(DopNetwork, {
+    {},
+    {},
+    {},
+    {"dop"},
+});
 
 }

@@ -92,7 +92,7 @@ public:
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
     ZENO_API bool update_param_type(const std::string& name, bool bPrim, bool bInput, ParamType type);
-    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
+    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType, bool)
 
     ZENO_API bool update_param_control(const std::string& name, ParamControl control);
     CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
@@ -111,7 +111,7 @@ public:
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
-   //由param这个参数值的变化触发节点params重置
+    //由param这个参数值的变化触发节点params重置
     ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
 
     ZENO_API void set_name(const std::string& name);
@@ -123,6 +123,7 @@ public:
 
     ZENO_API bool in_asset_file() const;
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
+    ZENO_API bool isInDopnetwork();
 
     void onInterrupted();
     void mark_previous_ref_dirty();

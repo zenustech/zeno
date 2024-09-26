@@ -30,6 +30,9 @@ public:
 
     std::string m_cbSetPos;
     std::string m_cbSetView;
+    //for DopnetWork
+    std::string m_cbFrameCached;
+    std::string m_cbFrameRemoved;
 
     std::weak_ptr<zeno::INode> m_wpNode;
     ParamsModel* params = nullptr;

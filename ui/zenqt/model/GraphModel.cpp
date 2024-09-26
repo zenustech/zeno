@@ -12,6 +12,8 @@
 #include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
+#include "widgets/ztimeline.h"
+#include "zenomainwindow.h"
 
 
 NodeItem::NodeItem(QObject* parent) : QObject(parent)
@@ -31,6 +33,14 @@ void NodeItem::unregister()
         ZASSERT_EXIT(ret);
         ret = spNode->unregister_set_view(m_cbSetView);
         ZASSERT_EXIT(ret);
+        //DopNetwork
+        if (std::shared_ptr<zeno::DopNetwork> subnetnode = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode))
+        {
+            bool ret = subnetnode->unregister_dopnetworkFrameRemoved(m_cbFrameRemoved);
+            ZASSERT_EXIT(ret);
+            ret = subnetnode->unregister_dopnetworkFrameCached(m_cbFrameCached);
+            ZASSERT_EXIT(ret);
+        }
     }
     m_cbSetPos = "";
     m_cbSetView = "";
@@ -73,6 +83,24 @@ void NodeItem::init(GraphModel* pGraphM, std::shared_ptr<zeno::INode> spNode)
                 pModel->setLocked(true);
         }
         this->optSubgraph = pModel;
+    }
+    //DopNetwork
+    if (std::shared_ptr<zeno::DopNetwork> subnetnode = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode))
+    {
+        m_cbFrameRemoved = subnetnode->register_dopnetworkFrameRemoved([](int frame) {
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(mainWin);
+            ZTimeline* timeline = mainWin->timeline();
+            ZASSERT_EXIT(timeline);
+            timeline->updateDopnetworkFrameRemoved(frame);
+        });
+        m_cbFrameCached = subnetnode->register_dopnetworkFrameCached([](int frame) {
+            ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(mainWin);
+            ZTimeline* timeline = mainWin->timeline();
+            ZASSERT_EXIT(timeline);
+            timeline->updateDopnetworkFrameCached(frame);
+        });
     }
 }
 
@@ -389,6 +417,35 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
             keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
             return QVariant::fromValue(keys);
         }
+        //Dopnetwork
+        case ROLE_DOPNETWORK_ENABLECACHE: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    return spDop->m_bEnableCache;
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_CACHETODISK: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    return spDop->m_bAllowCacheToDisk;
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_MAXMEM: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    return spDop->m_maxCacheMemoryMB;
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_MEM: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    return spDop->m_currCacheMemoryMB;
+                }
+            }
+        }
         default:
             return QVariant();
     }
@@ -450,6 +507,35 @@ bool GraphModel::setData(const QModelIndex& index, const QVariant& value, int ro
                 item->params->setData(idx, QVariant::fromValue(param.defl), ROLE_PARAM_VALUE);
             }
             return true;
+        }
+        //Dopnetwork
+        case ROLE_DOPNETWORK_ENABLECACHE: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    spDop->setEnableCache(value.toBool());
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_CACHETODISK: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    spDop->setAllowCacheToDisk(value.toBool());
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_MAXMEM: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    spDop->setMaxCacheMemoryMB(value.toInt());
+                }
+            }
+        }
+        case ROLE_DOPNETWORK_MEM: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::DopNetwork> spDop = std::dynamic_pointer_cast<zeno::DopNetwork>(spNode)) {
+                    spDop->setCurrCacheMemoryMB(value.toInt());
+                }
+            }
         }
     }
     return false;
@@ -939,7 +1025,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
 
         zeno::NodeData node;
 
-        if (nodedata.cls == "Subnet" || cate == "assets") {
+        if (zeno::isDerivedFromSubnetNodeName(nodedata.cls) || cate == "assets") {
             QString nodeName = QString::fromStdString(spNode->get_name());
             QString uuid = m_name2uuid[nodeName];
             ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end(), zeno::NodeData());
@@ -961,7 +1047,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                 {
                     for (auto& [name, nodedata] : nodedata.subgraph.value().nodes)
                     {
-                        if (nodedata.cls == "Subnet") {   //if is subnet, create recursively
+                        if (zeno::isDerivedFromSubnetNodeName(nodedata.cls)) {   //if is subnet, create recursively
                             QStringList cur = currentPath();
                             cur.append(QString::fromStdString(spNode->get_name()));
                             GraphModel* model = GraphsManager::instance().getGraph(cur);

@@ -270,7 +270,7 @@ namespace zenoio
             }
             else if (inputObj.IsObject())
             {
-                bool bSubnet = ret.cls == "Subnet";
+                bool bSubnet = zeno::isDerivedFromSubnetNodeName(ret.cls);
                 _parseSocket(true, bSubnet, bObjectParam, id, nodeCls, inSock, inputObj, ret, links, refs);
             }
             else

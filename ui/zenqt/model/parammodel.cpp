@@ -64,8 +64,8 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
     });
 
     spNode->register_update_param_type(
-        [this](const std::string& name, zeno::ParamType type) {
-        updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE);
+        [this](const std::string& name, zeno::ParamType type, bool bInput) {
+        updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE, bInput);
     });
 
     spNode->register_update_param_control(
