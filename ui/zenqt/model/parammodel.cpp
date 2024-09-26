@@ -159,6 +159,8 @@ void ParamsModel::initParamItems()
         item.type = spParam.type;
         item.connectProp = spParam.socketType;
         item.group = zeno::Role_InputObject;
+        item.bVisible = spParam.bVisible;
+        item.bEnable = spParam.bEnable;
         m_items.append(item);
     }
 
@@ -185,6 +187,8 @@ void ParamsModel::initParamItems()
         item.type = param.type;
         item.connectProp = param.socketType;
         item.group = zeno::Role_OutputObject;
+        item.bVisible = param.bVisible;
+        item.bEnable = param.bEnable;
         m_items.append(item);
     }
 
@@ -258,8 +262,8 @@ QStandardItemModel* ParamsModel::constructProxyModel()
             bool input = topLeft.data(ROLE_ISINPUT).toBool();
             const QModelIndex& paramIdx = this->paramIdx(name, input);
 
-            zeno::scope_exit sp([=] {this->blockSignals(false); });
-            this->blockSignals(true);
+            //zeno::scope_exit sp([=] {this->blockSignals(false); });
+            //this->blockSignals(true);
             setData(paramIdx, newValue, role);
         }
         });

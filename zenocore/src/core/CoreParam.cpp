@@ -12,6 +12,7 @@ namespace zeno {
         objparam.socketType = socketType;
         objparam.bVisible = bVisible;
         objparam.bEnable = bEnable;
+        objparam.constrain = constrain;
         for (auto spLink : links) {
             objparam.links.push_back(getEdgeInfo(spLink));
         }
@@ -32,6 +33,7 @@ namespace zeno {
         param.bSocketVisible = bSocketVisible;
         param.wildCardGroup = wildCardGroup;
         param.sockProp = sockprop;
+        param.constrain = constrain;
         param.bEnable = bEnable;
         param.bVisible = bVisible;
         for (auto spLink : links) {

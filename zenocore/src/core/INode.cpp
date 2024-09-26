@@ -154,11 +154,44 @@ ZENO_API ObjPath INode::get_graph_path() const {
 
 ZENO_API CustomUI INode::export_customui() const
 {
-    return nodeClass->m_customui;
-    //Why do these:?
     std::set<std::string> intputPrims, outputPrims, inputObjs, outputObjs;
     zeno::CustomUI origin = nodeClass->m_customui;
-    zeno::CustomUI exportui;
+    zeno::CustomUI exportui = origin;
+
+    for (auto& input_param : exportui.inputObjs) {
+        std::string name = input_param.name;
+        auto iterObj = m_inputObjs.find(name);
+        assert(iterObj != m_inputObjs.end());
+        input_param = iterObj->second.exportParam();
+    }
+
+    for (auto& tab : exportui.inputPrims) {
+        for (auto& group : tab.groups) {
+            for (auto& input_param : group.params) {
+                std::string name = input_param.name;
+                auto iterPrim = m_inputPrims.find(name);
+                assert(iterPrim != m_inputPrims.end());
+                input_param = iterPrim->second.exportParam();
+            }
+        }
+    }
+
+    for (auto& output_param : exportui.outputObjs) {
+        std::string name = output_param.name;
+        auto iterObj = m_outputObjs.find(name);
+        assert(iterObj != m_outputObjs.end());
+        output_param = iterObj->second.exportParam();
+    }
+
+    for (auto& output_param : exportui.outputPrims) {
+        std::string name = output_param.name;
+        auto iterPrim = m_outputPrims.find(name);
+        assert(iterPrim != m_outputPrims.end());
+        output_param = iterPrim->second.exportParam();
+    }
+    return exportui;
+
+
     exportui.nickname = origin.nickname;
     exportui.iconResPath = origin.iconResPath;
     exportui.doc = origin.doc;
@@ -1597,6 +1630,7 @@ bool INode::add_output_prim_param(ParamPrimitive param) {
     sparam.ctrlProps = param.ctrlProps;
     sparam.wildCardGroup = param.wildCardGroup;
     sparam.bSocketVisible = param.bSocketVisible;
+    sparam.constrain = param.constrain;
     m_outputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
 }
@@ -1610,6 +1644,7 @@ bool INode::add_output_obj_param(ParamObject param) {
     sparam.name = param.name;
     sparam.type = param.type;
     sparam.socketType = param.socketType;
+    sparam.constrain = param.constrain;
     sparam.m_wpNode = shared_from_this();
     sparam.wildCardGroup = param.wildCardGroup;
     m_outputObjs.insert(std::make_pair(param.name, std::move(sparam)));
@@ -2046,10 +2081,11 @@ void INode::checkParamsConstrain() {
     for (const auto& [name, param] : m_inputObjs) {
         if (!param.constrain.empty()) {
             ctx.code = param.constrain;
-            ctx.constrain_param = name;
+            ctx.param_constrain.constrain_param = name;
+            ctx.param_constrain.bInput = true;
             ZfxExecute zfx(ctx.code, &ctx);
             zfx.execute();
-            if (ctx.update_nodeparam_prop) {
+            if (ctx.param_constrain.update_nodeparam_prop) {
                 bParamPropChanged = true;
                 adjInputs.insert(name);
             }
@@ -2058,17 +2094,42 @@ void INode::checkParamsConstrain() {
     for (const auto& [name, param] : m_inputPrims) {
         if (!param.constrain.empty()) {
             ctx.code = param.constrain;
-            ctx.constrain_param = name;
+            ctx.param_constrain.constrain_param = name;
+            ctx.param_constrain.bInput = true;
             ZfxExecute zfx(ctx.code, &ctx);
             zfx.execute();
-            if (ctx.update_nodeparam_prop) {
+            if (ctx.param_constrain.update_nodeparam_prop) {
                 bParamPropChanged = true;
                 adjInputs.insert(name);
             }
         }
     }
-
-    //TODO: output
+    for (const auto& [name, param] : m_outputPrims) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.param_constrain.constrain_param = name;
+            ctx.param_constrain.bInput = false;
+            ZfxExecute zfx(ctx.code, &ctx);
+            zfx.execute();
+            if (ctx.param_constrain.update_nodeparam_prop) {
+                bParamPropChanged = true;
+                adjOutputs.insert(name);
+            }
+        }
+    }
+    for (const auto& [name, param] : m_outputObjs) {
+        if (!param.constrain.empty()) {
+            ctx.code = param.constrain;
+            ctx.param_constrain.constrain_param = name;
+            ctx.param_constrain.bInput = false;
+            ZfxExecute zfx(ctx.code, &ctx);
+            zfx.execute();
+            if (ctx.param_constrain.update_nodeparam_prop) {
+                bParamPropChanged = true;
+                adjOutputs.insert(name);
+            }
+        }
+    }
 
     if (bParamPropChanged) {
         //通知上层UI去统一更新

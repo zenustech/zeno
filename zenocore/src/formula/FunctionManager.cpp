@@ -230,7 +230,7 @@ namespace zeno {
             scope_exit sp([&] {m_globalAttrCached.clear(); });
             execute(root, filter, pCtx);
         }
-        else if (!pCtx->constrain_param.empty()) {
+        else if (!pCtx->param_constrain.constrain_param.empty()) {
             ZfxElemFilter filter(1, 1);
             execute(root, filter, pCtx);
         }
@@ -242,7 +242,11 @@ namespace zeno {
     static zfxvariant anyToZfxVariant(Any const& var) {
         if (!var.has_value())
             return zfxvariant();
-        if (get_type<int>() == var.type()) {
+        if (get_type<bool>() == var.type()) {
+            int res = any_cast<bool>(var);
+            return res;
+        }
+        else if (get_type<int>() == var.type()) {
             return any_cast<int>(var);
         }
         else if (get_type<float>() == var.type()) {
@@ -1175,15 +1179,16 @@ namespace zeno {
 
                 {
                     //能赋值的变量只有：1.普通zfx定义的变量    2.参数约束的参数变量
-                    std::string nodeparam = pContext->constrain_param;
+                    std::string nodeparam = pContext->param_constrain.constrain_param;
                     if (!nodeparam.empty()) {
                         auto spNode = pContext->spNode.lock();
+                        bool bInputParam = pContext->param_constrain.bInput;
                         bool bVal = get_zfxvar<int>(res.value[0]);
                         if (targetvar == "visible") {
-                            pContext->update_nodeparam_prop = spNode->update_param_visible(nodeparam, bVal);
+                            pContext->param_constrain.update_nodeparam_prop = spNode->update_param_visible(nodeparam, bVal, bInputParam);
                         }
                         else if (targetvar == "enabled") {
-                            pContext->update_nodeparam_prop = spNode->update_param_enable(nodeparam, bVal);
+                            pContext->param_constrain.update_nodeparam_prop = spNode->update_param_enable(nodeparam, bVal, bInputParam);
                         }
                         return ZfxVariable();
                     }
@@ -1973,7 +1978,7 @@ namespace zeno {
             if (args.size() != 1) {
                 throw makeError<UnimplError>("error number of args on param(...)");
             }
-            if (pContext->constrain_param.empty()) {
+            if (pContext->param_constrain.constrain_param.empty()) {
                 throw makeError<UnimplError>("only support indexing param for param constrain");
             }
             const std::string& param = get_zfxvar<std::string>(args[0].value[0]);

@@ -399,11 +399,11 @@ namespace zeno {
         }
 
         for (auto& [name, objParam] : paramsMapping.inputObjs)
-            customui.inputObjs.push_back(std::move(objParam));
+            customui.inputObjs.emplace_back(std::move(objParam));
         for (auto& [name, primParam] : paramsMapping.outputPrims)
-            customui.outputPrims.push_back(std::move(primParam));
+            customui.outputPrims.emplace_back(std::move(primParam));
         for (auto& [name, objParam] : paramsMapping.outputObjs)
-            customui.outputObjs.push_back(std::move(objParam));
+            customui.outputObjs.emplace_back(std::move(objParam));
         for (auto& name : paramsMapping.anyInputs)
             customui.inputPrims[0].groups[0].params.push_back(std::move(makeWildCardPrimParam(name, true, "")));
         for (auto& name : paramsMapping.anyOutputs)

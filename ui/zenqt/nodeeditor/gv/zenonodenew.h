@@ -79,6 +79,7 @@ private slots:
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
     void onLayoutChanged();
+    void onUpdateParamsVisbleEnabled();
 
 private:
     ZLayoutBackground* initBodyWidget();

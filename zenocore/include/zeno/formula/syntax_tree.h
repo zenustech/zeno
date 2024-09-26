@@ -166,16 +166,22 @@ struct ZfxASTNode {
     int sortOrderNum = 0;               //用于先后顺序排序的值
 };
 
+struct ZfxParamConstrain
+{
+    std::string constrain_param;    /*专门用于参数ui约束调整的场景，如果不为空，即为要约束的参数*/
+    bool bInput = true;
+    bool update_nodeparam_prop = false;      //参数属性是否更新了，比如可见性可用性
+};
+
 struct ZfxContext
 {
     /* in */ std::shared_ptr<IObject> spObject;
     /* in */ std::weak_ptr<INode> spNode;
     /* in */ std::string code;
     /* in */ ZfxRunOver runover = RunOver_Points;
-    /* in */ std::string constrain_param;      /*专门用于参数ui约束调整的场景，如果不为空，即为要约束的参数*/
+    /* inout */ ZfxParamConstrain param_constrain;
     /* out */ std::string printContent;
     /* out */ operatorVals jumpFlag;
-    /* out */ bool update_nodeparam_prop = false;      //参数属性是否更新了，比如可见性可用性
 };
 
 std::string getOperatorString(nodeType type, operatorVals op);

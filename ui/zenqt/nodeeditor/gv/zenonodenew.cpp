@@ -199,6 +199,29 @@ void ZenoNodeNew::initLayout()
     setLayout(mainLayout);
     setColors(false, QColor(0, 0, 0, 0));
     updateWhole();
+
+    ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS));
+    ZASSERT_EXIT(paramsM);
+    connect(paramsM, &ParamsModel::enabledVisibleChanged, this, &ZenoNodeNew::onUpdateParamsVisbleEnabled);
+}
+
+void ZenoNodeNew::onUpdateParamsVisbleEnabled()
+{
+    for (ZenoSocketItem* pSocket : getObjSocketItems(true)) {
+        QModelIndex paramIdx = pSocket->paramIndex();
+        bool bEnable = paramIdx.data(ROLE_PARAM_ENABLE).value<bool>();
+        bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).value<bool>();
+        pSocket->setVisible(bVisible);
+        pSocket->setEnabled(bEnable);
+    }
+    for (ZenoSocketItem* pSocket : getObjSocketItems(false)) {
+        QModelIndex paramIdx = pSocket->paramIndex();
+        bool bEnable = paramIdx.data(ROLE_PARAM_ENABLE).value<bool>();
+        bool bVisible = paramIdx.data(ROLE_PARAM_VISIBLE).value<bool>();
+        pSocket->setVisible(bVisible);
+        pSocket->setEnabled(bEnable);
+    }
+    updateWhole();
 }
 
 ZGraphicsLayout* ZenoNodeNew::initVerticalSockets(bool bInput)
@@ -502,13 +525,13 @@ void ZenoNodeNew::addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QM
 
     QString name = paramIdx.data(ROLE_PARAM_NAME).toString();
     QFontMetrics fontMetrics(font());
-    qreal xmargin = ZenoStyle::dpiScaled(10);
-    qreal ymargin = ZenoStyle::dpiScaled(0);
+    qreal xmargin = 10;
+    qreal ymargin = 0;
     QSizeF szSocket(fontMetrics.width(name) + xmargin, fontMetrics.height() + ymargin);
     ZenoSocketItem* socket = new ZenoObjSocketItem(paramIdx, ZenoStyle::dpiScaledSize(szSocket));
     socket->setBrush(QColor("#CCA44E"), QColor("#ee9922"));
     pSocketLayout->addItem(socket);
-    pSocketLayout->addSpacing(16);
+    pSocketLayout->addSpacing(ZenoStyle::dpiScaled(16));
 
     if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_index.data(ROLE_PARAMS))) {
         QObject::connect(paramsM, &QStandardItemModel::dataChanged, socket, &ZenoSocketItem::onCustomParamDataChanged);

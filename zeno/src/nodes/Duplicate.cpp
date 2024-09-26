@@ -19,7 +19,7 @@ namespace zeno
             //Êä³ö£º
             _Group {
                 {"", ParamObject("Duplicated Object", Socket_Output)},
-                {"", ParamObject("Original Object", Socket_Output, "", "param('keepModifyOriginal').value == 1;")},
+                {"", ParamObject("Original Object", Socket_Output, "", "visible = param('Keep Modify Original').value == 1;")},
             }
         };
 
