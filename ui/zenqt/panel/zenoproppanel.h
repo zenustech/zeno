@@ -13,6 +13,7 @@ class IGraphsModel;
 class ZExpandableSection;
 class ZScrollArea;
 class ZenoDictListLinksTable;
+class zenoDopNetworkPanel;
 
 class ZenoPropPanel : public QWidget
 {
@@ -42,11 +43,12 @@ public:
     ZenoFuncDescriptionLabel* getFuncDescriptionInstance();
 
 public slots:
+    //subnet/∆’Õ®Ω⁄µ„
     void onCustomParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int destRow);
-    //dict/list links table
+    //MakeDict/MakeList
     void onLinkAdded(const zeno::EdgeInfo& link);
     void onLinkRemoved(const zeno::EdgeInfo& link);
     void onDictListTableUpdateLink(QList<QPair<QString, QModelIndex>> links);
@@ -64,27 +66,44 @@ private slots:
 
 private:
     void clearLayout();
+
+    QWidget* resetOutputs();
+    //MakeDict/MakeListΩ⁄µ„
+    QWidget* resetMakeDictMakeListLayout();
+    void clearMakeDictMakeListLayout();
+    //DopNetworkΩ⁄µ„
+    QWidget* resetDopNetworkLayout();
+    void clearDopNetworkLayout();
+    //subnetΩ⁄µ„
+    QWidget* resetSubnetLayout();
     bool syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout* pGroupLayout, QStandardItem* paramItem, int row);
     bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
     bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
-    void setKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    void delKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    void editKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
-    void onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val);
+    //∆’Õ®Ω⁄µ„
+    QWidget* resetNormalNodeLayout();
     void normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pItem, int row);
     void addOutputWidget(ZScrollArea* scrollArea, QGridLayout* pLayout, QStandardItem* pOutputItem, int row);
+    //keyframe
+    void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
+    void delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    void editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
+    void onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val);
 
 
     GraphModel* m_model;
     QPersistentModelIndex m_idx;
 
-    QWidget* m_normalNodeInputWidget;       //ÊôÆÈÄöËäÇÁÇπinput‰ΩøÁî®
-    QTabWidget* m_tabWidget;                //Â≠êÂõæËäÇÁÇπinput‰ΩøÁî®
     QWidget* m_outputWidget;                //output
-
-    ZenoDictListLinksTable* m_dictListLinksTable;   //ÊòæÁ§∫makeDict/makeListËæìÂÖ•Ëæπ
+    //MakeDict/MakeListΩ⁄µ„
+    ZenoDictListLinksTable* m_dictListLinksTable;   //œ‘ æmakeDict/makeList ‰»Î±ﬂ
+    //DopNetwork
+    zenoDopNetworkPanel* m_dopNetworkPanel;
+    //subnetΩ⁄µ„
+    QTabWidget* m_tabWidget;                //◊”ÕºΩ⁄µ„input π”√
+    //∆’Õ®Ω⁄µ„
+    QWidget* m_normalNodeInputWidget;       //∆’Õ®Ω⁄µ„input π”√
 
     bool m_bReentry;
 

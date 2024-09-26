@@ -52,7 +52,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
                     break;
                 }
             }
-            //æ ¹æ®éœ€è¦æ›´æ–°èŠ‚ç‚¹å¸ƒå±€
+            //¸ù¾ÝÐèÒª¸üÐÂ½Úµã²¼¾Ö
             auto spNode = m_wpNode.lock();
             ZASSERT_EXIT(spNode);
             spNode->trigger_update_params(name, false, zeno::params_change_info());
@@ -64,8 +64,8 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         });
 
     spNode->register_update_param_type(
-        [this](const std::string& name, zeno::ParamType type) {
-            updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE);
+        [this](const std::string& name, zeno::ParamType type, bool bInput) {
+        updateParamData(QString::fromStdString(name), type, ROLE_PARAM_TYPE, bInput);
         });
 
     spNode->register_update_param_control(
@@ -84,7 +84,7 @@ ParamsModel::ParamsModel(std::shared_ptr<zeno::INode> spNode, QObject* parent)
         });
 
     spNode->register_update_visable_enable([this](zeno::INode* pNode, std::set<std::string> adjInputs, std::set<std::string> adjOutputs) {
-        //æ‰«ä¸€éï¼Œæ›´æ–°ä¸€ä¸‹ç¼“å­˜å€¼
+        //É¨Ò»±é£¬¸üÐÂÒ»ÏÂ»º´æÖµ
         for (ParamItem& item : m_items) {
             std::string name = item.name.toStdString();
             if (adjInputs.find(name) != adjInputs.end() && item.bInput) {
@@ -206,7 +206,7 @@ void ParamsModel::initCustomUI(const zeno::CustomUI& customui)
     }
     UiHelper::newCustomModel(m_customParamsM, customui);
 
-    //m_customParamsMåˆ›å»ºåŽéœ€æ›´æ–°åˆå§‹å€¼
+    //m_customParamsM´´½¨ºóÐè¸üÐÂ³õÊ¼Öµ
     m_customParamsM->blockSignals(true);
     zeno::scope_exit sp([=] {m_customParamsM->blockSignals(false); });
 
@@ -302,7 +302,7 @@ void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info&
         m_customParamsM = constructProxyModel();
         UiHelper::newCustomModel(m_customParamsM, customui);
     }
-    //m_customParamsMåˆ›å»ºåŽéœ€æ›´æ–°åˆå§‹å€¼
+    //m_customParamsM´´½¨ºóÐè¸üÐÂ³õÊ¼Öµ
     QStandardItem* pInputsRoot = m_customParamsM->item(0);
     for (int i = 0; i < pInputsRoot->rowCount(); i++)
     {
@@ -643,7 +643,7 @@ QStandardItemModel* ParamsModel::customParamModel()
 
 void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 {
-    //if (params.empty())   //å¯èƒ½æ˜¯åˆ é™¤åˆ°ç©ºçš„æƒ…å†µï¼Œæ— éœ€return
+    //if (params.empty())   //¿ÉÄÜÊÇÉ¾³ýµ½¿ÕµÄÇé¿ö£¬ÎÞÐèreturn
     //    return;
 
     auto spNode = m_wpNode.lock();
@@ -838,7 +838,7 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
     auto pItems = m_customParamsM->findItems(name, flags);
     for (auto pItem : pItems)
     {
-        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //æ›´æ–°è¾“å…¥ï¼Œæˆ–æ›´æ–°è¾“å…¥/è¾“å‡ºçš„visibleæ—¶,æ›´æ–°customUiModel
+        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //¸üÐÂÊäÈë£¬»ò¸üÐÂÊäÈë/Êä³öµÄvisibleÊ±,¸üÐÂcustomUiModel
         {
             pItem->setData(val, role);
         }

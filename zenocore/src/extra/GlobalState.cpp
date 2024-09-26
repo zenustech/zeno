@@ -66,6 +66,24 @@ ZENO_API void GlobalState::updateFrameId(float frame) {
     //frameid = frame;
 }
 
+ZENO_API void GlobalState::updateFrameRange(int start, int end)
+{
+    getSession().globalVariableManager->updateVariable(GVariable("startFarme", zeno::reflect::make_any<int>(start)));
+    getSession().globalVariableManager->updateVariable(GVariable("endFrame", zeno::reflect::make_any<int>(end)));
+}
+
+ZENO_API int GlobalState::getStartFrame() const
+{
+    zeno::reflect::Any start = getSession().globalVariableManager->getVariable("startFarme");
+    return start.has_value() ? zeno::reflect::any_cast<int>(start) : 0;
+}
+
+ZENO_API int GlobalState::getEndFrame() const
+{
+    zeno::reflect::Any end = getSession().globalVariableManager->getVariable("endFrame");
+    return end.has_value() ? zeno::reflect::any_cast<int>(end) : 0;
+}
+
 ZENO_API bool GlobalState::is_working() const {
     std::lock_guard lk(mtx);
     return m_working;

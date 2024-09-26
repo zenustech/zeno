@@ -24,6 +24,8 @@ public:
     int value() const;
     bool isPlayToggled() const;
     void updateKeyFrames(const QVector<int>& keys);
+    void updateDopnetworkFrameCached(int frame);
+    void updateDopnetworkFrameRemoved(int frame);
     void updateCachedFrame();
 
 protected:
@@ -34,6 +36,7 @@ signals:
     void playForwardOneFrame();
     void playForwardLastFrame();
     void sliderValueChanged(int);
+    void sliderRangeChanged(int, int);
 
 public slots:
     void onTimelineUpdate(int frameid);

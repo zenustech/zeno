@@ -35,7 +35,7 @@ int DragDropModel::rowCount(const QModelIndex& parent) const
 
 int DragDropModel::columnCount(const QModelIndex& parent) const
 {
-    return dataMatrix.isEmpty() ? 0 : dataMatrix.first().size();
+    return dataMatrix.isEmpty() ? 4 : dataMatrix.first().size();
 }
 
 QVariant DragDropModel::data(const QModelIndex& index, int role) const

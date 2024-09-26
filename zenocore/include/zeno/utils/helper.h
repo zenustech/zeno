@@ -59,6 +59,7 @@ namespace zeno {
         std::shared_ptr<INode> node,
         std::map<std::string, std::string>& inputParams,
         std::vector<std::string>& outputParams);
+    ZENO_API bool isDerivedFromSubnetNodeName(const std::string& clsname);    //判断clsname是否为继承自subnetNode的节点
 }
 
 

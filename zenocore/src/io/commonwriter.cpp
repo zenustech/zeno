@@ -111,7 +111,7 @@ namespace zenoio
         else if (node.cls == "Group") {
             // TODO
         }
-        else if (node.cls == "Subnet")
+        else if (zeno::isDerivedFromSubnetNodeName(node.cls))
         {
             dumpCustomUI(node.customUi, writer);
         }

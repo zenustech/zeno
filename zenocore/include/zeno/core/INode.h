@@ -45,7 +45,7 @@ public:
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
-    //preApplyæ˜¯å…ˆè§£å†³æ‰€æœ‰è¾“å…¥å‚æ•°ï¼ˆä¸Šæ¸¸ï¼‰çš„æ±‚å€¼é—®é¢˜
+    //preApplyÊÇÏÈ½â¾öËùÓĞÊäÈë²ÎÊı£¨ÉÏÓÎ£©µÄÇóÖµÎÊÌâ
     ZENO_API virtual void preApply();
     ZENO_API void doComplete();
     ZENO_API void doApply();
@@ -57,8 +57,8 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
-    ZENO_API virtual CustomUI get_customui() const;     //ç”±èŠ‚ç‚¹é»˜è®¤å®šä¹‰å¯¼å‡ºçš„customUi
-    ZENO_API CustomUI export_customui() const;          //ç”±æ­¤åˆ»å®é™…å­˜åœ¨çš„èŠ‚ç‚¹è¾“å…¥è¾“å‡ºå¯¼å‡ºçš„customUi
+    ZENO_API virtual CustomUI get_customui() const;     //ÓÉ½ÚµãÄ¬ÈÏ¶¨Òåµ¼³öµÄcustomUi
+    ZENO_API CustomUI export_customui() const;          //ÓÉ´Ë¿ÌÊµ¼Ê´æÔÚµÄ½ÚµãÊäÈëÊä³öµ¼³öµÄcustomUi
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_graph_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
@@ -98,7 +98,7 @@ public:
     CALLBACK_REGIST(update_param_socket_type, void, const std::string&, SocketType)
 
     ZENO_API bool update_param_type(const std::string& name, bool bPrim, bool bInput, ParamType type);
-    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType)
+    CALLBACK_REGIST(update_param_type, void, const std::string&, ParamType, bool)
 
     ZENO_API bool update_param_control(const std::string& name, ParamControl control);
     CALLBACK_REGIST(update_param_control, void, const std::string&, ParamControl)
@@ -120,7 +120,7 @@ public:
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
-   //ç”±paramè¿™ä¸ªå‚æ•°å€¼çš„å˜åŒ–è§¦å‘èŠ‚ç‚¹paramsé‡ç½®
+   //ÓÉparamÕâ¸ö²ÎÊıÖµµÄ±ä»¯´¥·¢½ÚµãparamsÖØÖÃ
     ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
 
     ZENO_API void set_name(const std::string& name);
@@ -132,8 +132,9 @@ public:
 
     ZENO_API bool in_asset_file() const;
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
+    ZENO_API bool isInDopnetwork();
 
-    //foreachç‰¹ä¾›
+    //foreachÌØ¹©
     ZENO_API virtual bool is_continue_to_run();
     ZENO_API virtual void increment();
     ZENO_API virtual void reset_forloop_settings();
@@ -162,7 +163,7 @@ public:
     void constructReference(const std::string& param_name);
     void onNodeNameUpdated(const std::string& oldname, const std::string& newname);
     void on_node_about_to_remove();
-    void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //å‚æ•°ååŒ…æ‹¬å¯¹è±¡è¾“å…¥å’Œæ•°å€¼è¾“å…¥ï¼Œä¸å¯é‡å
+    void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //²ÎÊıÃû°üÀ¨¶ÔÏóÊäÈëºÍÊıÖµÊäÈë£¬²»¿ÉÖØÃû
 
     void checkParamsConstrain();
     CALLBACK_REGIST(update_visable_enable, void, zeno::INode*, std::set<std::string>, std::set<std::string>)
@@ -199,7 +200,7 @@ private:
     void initReferLinks(PrimitiveParam* target_param);
 
 public:
-    //ä¸ºåä¸ºdsçš„è¾“å…¥å‚æ•°ï¼Œæ±‚å¾—è¿™ä¸ªå‚æ•°åœ¨ä¾èµ–è¾¹çš„æ±‚å€¼ä¸‹çš„å€¼ï¼Œæˆ–è€…æ²¡æœ‰ä¾èµ–è¾¹ä¸‹çš„é»˜è®¤å€¼ã€‚
+    //ÎªÃûÎªdsµÄÊäÈë²ÎÊı£¬ÇóµÃÕâ¸ö²ÎÊıÔÚÒÀÀµ±ßµÄÇóÖµÏÂµÄÖµ£¬»òÕßÃ»ÓĞÒÀÀµ±ßÏÂµÄÄ¬ÈÏÖµ¡£
     ZENO_API bool requireInput(std::string const &ds);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;

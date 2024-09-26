@@ -13,6 +13,8 @@ public:
     void setFromTo(int from, int to);
     int value() const;
     void updateKeyFrames(const QVector<int> &keys);
+    void updateDopnetworkFrameCached(int frame);
+    void updateDopnetworkFrameRemoved(int frame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -44,6 +46,7 @@ private:
     int m_lengthUnit[3] = {1, 2, 5};
     int getCellLength(int total);
     QVector<int> m_keyframes;
+    QSet<int> m_dopNetworkframes;
 };
 
 #endif
