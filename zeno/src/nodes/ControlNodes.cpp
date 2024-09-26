@@ -391,7 +391,7 @@ ZENDEFNODE(TimeShift, {
     {"control"},
     });
 
-struct Duplicate : INode {
+struct Duplicate_deprecated : INode {
     virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changinfo) {
         if (param == "duplicate") {
             ParamsUpdateInfo params;
@@ -429,7 +429,7 @@ struct Duplicate : INode {
         set_output("owning", inputObj->move_clone());
     }
 };
-ZENDEFNODE(Duplicate,
+ZENDEFNODE(Duplicate_deprecated,
     {
         {
             {gParamType_IObject, "input", "", Socket_Owning},

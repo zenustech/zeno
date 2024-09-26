@@ -8,7 +8,7 @@
 
 namespace zeno
 {
-    struct ZDEFNODE() Duplicate2 : INode
+    struct ZDEFNODE() Duplicate : INode
     {
         ReflectCustomUI m_uilayout = {
             // ‰»Î£∫
@@ -25,7 +25,12 @@ namespace zeno
 
         std::pair<zany, zany> apply(zany input_object, bool keepModifyOriginal)
         {
-            return std::make_pair<zany, zany>(nullptr, nullptr);
+            auto res = std::make_pair<zany, zany>(nullptr, nullptr);
+            res.first = input_object->clone();
+            if (keepModifyOriginal) {
+                res.second = input_object;
+            }
+            return res;
         }
     };
 

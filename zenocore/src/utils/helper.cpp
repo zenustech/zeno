@@ -1060,18 +1060,13 @@ namespace zeno {
         }
     }
 
-    void getFieldNameParamNameMapByReflectCustomUi(
+    void getNameMappingFromReflectUI(
         reflect::TypeBase* typeBase,
         std::shared_ptr<INode> node,
-        std::map<std::string, std::string>& inputPrims,
-        std::map<std::string, std::string>& outputPrims,
-        std::map<std::string, std::string>& inputObjs,
-        std::map<std::string, std::string>& outputObjs,
-        zeno::_ObjectParam& retInfo   //要么是customui上的，如果前者没有构造，就是返回值上构造一个临时值
+        std::map<std::string, std::string>& inputParams,
+        std::vector<std::string>& outputParams
     )
     {
-#if 0
-        retInfo.dispName = "";
         if (!typeBase || !node) {
             return;
         }
@@ -1080,29 +1075,32 @@ namespace zeno {
                 Any reflectCustomUiAny = field->get_field_value(node.get());
                 if (reflectCustomUiAny.has_value()) {
                     ReflectCustomUI reflectCustomUi = any_cast<ReflectCustomUI>(reflectCustomUiAny);
-                    for (auto& group : reflectCustomUi.inputPrims.groups) {
-                        for (auto& param : group.params) {
-                            inputPrims.insert({ param.mapTo, param.dispName });
-                        }
+                    for (_CommonParam& param : reflectCustomUi.inputParams) {
+                        std::visit([&](auto&& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, ParamObject>) {
+                                inputParams.insert(std::make_pair(param.mapTo, arg.name));
+                            }
+                            else if constexpr (std::is_same_v<T, ParamPrimitive>) {
+                                inputParams.insert(std::make_pair(param.mapTo, arg.name));
+                            }
+                        }, param.param);
                     }
-                    for (auto& param : reflectCustomUi.outputPrims.params) {
-                        outputPrims.insert({ param.mapTo, param.dispName });
+                    for (_CommonParam& param : reflectCustomUi.outputParams) {
+                        std::visit([&](auto&& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+                            if constexpr (std::is_same_v<T, ParamObject>) {
+                                outputParams.push_back(arg.name);
+                            }
+                            else if constexpr (std::is_same_v<T, ParamPrimitive>) {
+                                outputParams.push_back(arg.name);
+                            }
+                        }, param.param);
                     }
-                    for (auto& obj : reflectCustomUi.inputObjs.objs) {
-                        inputObjs.insert({ obj.mapTo, obj.dispName });
-                    }
-                    for (auto& obj : reflectCustomUi.retParams.objs) {
-                        outputObjs.insert({ obj.mapTo, obj.dispName });
-                    }
-                    retInfo = reflectCustomUi.retInfo;
                 }
                 break;
             }
         }
-        if (retInfo.dispName.empty()) {
-            //只能从返回值拿信息了
-        }
-#endif
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
