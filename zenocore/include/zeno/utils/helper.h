@@ -33,6 +33,7 @@ namespace zeno {
     EdgeInfo getEdgeInfo(std::shared_ptr<ObjectLink> spLink);
     EdgeInfo getEdgeInfo(std::shared_ptr<PrimitiveLink> spLink);
     std::string generateObjKey(std::shared_ptr<IObject> spObject);
+    std::string uniqueName(std::string prefix, std::set<std::string> existing);
     ZENO_API std::string objPathToStr(ObjPath path);
     ObjPath strToObjPath(const std::string& str);
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs);

@@ -1,6 +1,7 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
+#include <zeno/core/INodeClass.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/utils/log.h>

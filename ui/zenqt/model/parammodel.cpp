@@ -130,8 +130,8 @@ void ParamsModel::initParamItems()
     ZASSERT_EXIT(spNode);
     //primitive inputs
     const zeno::CustomUI& customui = spNode->export_customui();
-    if (!customui.inputPrims.tabs.empty() && !customui.inputPrims.tabs[0].groups.empty()) {
-        auto inputs = customui.inputPrims.tabs[0].groups[0].params;
+    if (!customui.inputPrims.empty() && !customui.inputPrims[0].groups.empty()) {
+        auto inputs = customui.inputPrims[0].groups[0].params;
         for (const zeno::ParamPrimitive& spParam : inputs) {
             ParamItem item;
             item.bInput = true;

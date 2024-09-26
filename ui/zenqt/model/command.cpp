@@ -44,7 +44,7 @@ AddNodeCommand::AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QS
         objOutput.socketType = zeno::Socket_WildCard;
 
         tab.groups.emplace_back(std::move(default));
-        m_nodeData.customUi.inputPrims.tabs.emplace_back(std::move(tab));
+        m_nodeData.customUi.inputPrims.emplace_back(std::move(tab));
         m_nodeData.customUi.inputObjs.push_back(objInput);
         m_nodeData.customUi.outputPrims.push_back(outputparam);
         m_nodeData.customUi.outputObjs.push_back(objOutput);

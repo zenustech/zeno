@@ -57,41 +57,42 @@ namespace zeno
     struct ZDEFNODE() ReadOnlyNode : zeno::INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {
-                {
-                    _ObjectParam {"input_obj", "Input Object", Socket_Owning},
-                }
+            //输入：
+            _Group {
+                    {"input_obj", ParamObject("Input Object", Socket_Owning) },
+                    {"name1",     ParamPrimitive("Name 1")},
+                    {"name2",     ParamPrimitive("Name 2")},
+                    {"a", ParamPrimitive("A")},
+                    {"b", ParamPrimitive("B")},
             },
-            //以下填的是以参数形式返回的外部引用
-            _ObjectGroup {
-                {
-                    //空字符串默认mapping到 apply的输出值
-                }
+            //输出：
+            _Group {
+                    {"", ParamObject("Output Object", Socket_Owning)},
             },
-            //返回值信息：
-            _ObjectParam {
-                "", "Output Object", Socket_Output
-            },
-            _ParamTab {
-                "Tab1",
-                {
-                    _ParamGroup {
-                        "Group1",
-                        {
-                            _Param { "name1", "Name 1", "a1" },
-                            _Param { "name2", "Name 2", "a2" },
-                        }
-                    },
-                    _ParamGroup {
-                        "Group2",
-                        {
-                            _Param { "a1", "A1", 345}
-                        }
-                    },
-                }
-            },
-            _ParamGroup {
-
+            //数值参数布局：
+            CustomUIParams {
+                ParamTab {
+                    "CustomTab1",
+                    {
+                        ParamGroup {
+                            "Group1",
+                            {
+                                ParamPrimitive("Name 1"),
+                                ParamPrimitive("Name 2"),
+                            }
+                        },
+                        ParamGroup {
+                            "Group2",
+                            {
+                                ParamPrimitive("A"),
+                                ParamPrimitive("B"),
+                            }
+                        },
+                    }
+                },
+                ParamTab {
+                    "Tab2",
+                },
             }
         };
 
@@ -115,35 +116,17 @@ namespace zeno
     struct ZDEFNODE() WildcardNode : zeno::INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {
-                {
-                    _ObjectParam {"input_obj", "Input Object", Socket_Owning},
-                }
+            //输入：
+            _Group {
+                    {"input_obj", ParamObject("Input Object", Socket_Owning)},
+                    {"name1", ParamPrimitive("Name 1")},
+                    {"name2", ParamPrimitive("Name 2")},
+                    {"a", ParamPrimitive("A")},
+                    {"b", ParamPrimitive("B")},
             },
-            //以下填的是以参数形式返回的外部引用
-            _ObjectGroup {
-                {
-                    //空字符串默认mapping到 apply的输出值
-                }
-            },
-            //返回值信息：
-            _ObjectParam {
-                "", "Output Data", Socket_Primitve
-            },
-            _ParamTab {
-                "Tab1",
-                {
-                    _ParamGroup {
-                        "Group1",
-                        {
-                            _Param { "name1", "Name 1", "a1" },
-                            _Param { "name2", "Name 2", "a2" },
-                        }
-                    }
-                }
-            },
-            _ParamGroup {
-
+            //输出：
+            _Group {
+                    {"", ParamObject("Output Object", Socket_Owning)},
             }
         };
 

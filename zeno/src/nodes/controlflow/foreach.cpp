@@ -14,24 +14,12 @@ namespace zeno
     struct ZDEFNODE() ForEachBegin : INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {
-                {
-                    _ObjectParam {"init_object", "Initial Object", Socket_Clone},
-                }
+            _Group {
+                _CommonParam {"init_object", ParamObject("Initial Object", Socket_Clone)},
             },
-            //以下填的是以参数形式返回的外部引用
-            _ObjectGroup {
-                {
-                    //空字符串默认mapping到 apply的输出值
-                }
-            },
-            //返回值信息：
-            _ObjectParam {
-                "", "Output Object", Socket_Output
-            },
-            _ParamTab {
-            },
-            _ParamGroup {
+            //输出：
+            _Group {
+                _CommonParam {"", ParamObject("Output Object")},
             }
         };
 
@@ -122,24 +110,12 @@ namespace zeno
     struct ZDEFNODE() ForEachEnd : INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {
-                {
-                    _ObjectParam {"iterate_object", "Iterate Object", Socket_Clone},
-                }
+            _Group {
+                {"iterate_object", ParamObject("Iterate Object", Socket_Clone)},
             },
-            //以下填的是以参数形式返回的外部引用
-            _ObjectGroup {
-                {
-                    //空字符串默认mapping到 apply的输出值
-                }
-            },
-            //返回值信息：
-            _ObjectParam {
-                "", "Output Object", Socket_Output
-            },
-            _ParamTab {
-            },
-            _ParamGroup {
+            //输出：
+            _Group {
+                {"", ParamObject("Output Object")},
             }
         };
 

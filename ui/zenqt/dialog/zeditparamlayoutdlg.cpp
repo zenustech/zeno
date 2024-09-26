@@ -1168,7 +1168,7 @@ void ZEditParamLayoutDlg::onApply()
             }
             tabInfo.groups.push_back(groupInfo);
         }
-        m_customUi.inputPrims.tabs.push_back(tabInfo);
+        m_customUi.inputPrims.push_back(tabInfo);
     }
     m_customUi.outputPrims = outputs;
 

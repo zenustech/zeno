@@ -555,10 +555,14 @@ void ZenoPropPanel::normalNodeAddInputWidget(ZScrollArea* scrollArea, QGridLayou
     panelCtrl.m_coreparamIdx = idxCoreParam;
     panelCtrl.pControl = pControl;
 
-    pIcon->setVisible(bVisible);
-    pLabel->setVisible(bVisible);
-    pControl->setVisible(bVisible);
-    pControl->setEnabled(bEnable);
+    if (pIcon)
+        pIcon->setVisible(bVisible);
+    if (pLabel)
+        pLabel->setVisible(bVisible);
+    if (pControl) {
+        pControl->setVisible(bVisible);
+        pControl->setEnabled(bEnable);
+    }
 
     m_inputControls[tabName][groupName][paramName] = panelCtrl;
 

@@ -11,12 +11,14 @@ namespace zeno
     struct ZDEFNODE() Switch : INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {{{"input_objects", "Input Objects", Socket_Clone},}},
-            //以下填的是以参数形式返回的外部引用
-            {},
-            //返回值信息：
-            _ObjectParam {"", "Output Object", Socket_Output},
-            {}, {}
+            //输入：
+            _Group {
+                    {"input_objects", ParamObject("Input Objects", Socket_Clone) }
+            },
+            //输出：
+            _Group {
+                    {"", ParamObject("Output Object")},
+            }
         };
 
         std::shared_ptr<IObject> apply(std::shared_ptr<ListObject> input_objects, int switch_num) {
@@ -31,7 +33,7 @@ namespace zeno
     };
 
     //TODO:
-    //struct ZDEFNODE() SwitchIf : INode
-    //{
-    //};
+    struct ZDEFNODE() SwitchIf : INode
+    {
+    };
 }

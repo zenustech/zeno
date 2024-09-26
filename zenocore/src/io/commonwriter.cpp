@@ -152,7 +152,7 @@ namespace zenoio
         writer.Key("tabs");
         {
             JsonObjScope scopetabs(writer);
-            for (const zeno::ParamTab& tab : customUi.inputPrims.tabs)
+            for (const zeno::ParamTab& tab : customUi.inputPrims)
             {
                 writer.Key(tab.name.c_str());
                 JsonObjScope scopetab(writer);

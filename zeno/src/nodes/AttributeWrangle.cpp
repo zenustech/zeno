@@ -13,32 +13,14 @@ namespace zeno
     struct ZDEFNODE() AttributeWrangle : zeno::INode
     {
         ReflectCustomUI m_uilayout = {
-            _ObjectGroup {
-                {
-                    _ObjectParam {"prim", "Input Object", Socket_Clone},
-                }
+            //输入：
+            _Group {
+                {"prim", ParamObject("Input Object", Socket_Clone)},
+                {"zfxCode", ParamPrimitive("Zfx Code", "", CodeEditor)},
             },
-            _ObjectGroup {
-                {
-                    //���ַ���Ĭ��mapping�� apply�����ֵ
-                }
-            },
-            _ObjectParam {
-                "", "Output Object", Socket_Output
-            },
-            _ParamTab {
-                "Tab1",
-                {
-                    _ParamGroup {
-                        "Group1",
-                        {
-                            _Param { "zfxCode", "Zfx Code", "", "", CodeEditor},
-                        }
-                    }
-                }
-            },
-            _ParamGroup {
-
+            //输出：
+            _Group {
+                {"", ParamObject("Output Object")},
             }
         };
 

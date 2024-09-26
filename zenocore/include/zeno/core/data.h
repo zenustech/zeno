@@ -74,10 +74,32 @@ namespace zeno {
         bool bSocketVisible = false;
         bool bVisible = true;       //在参数面板是否可见
         bool bEnable = true;        //在参数面板是否可用
+
+        CommonParam() {}
+        CommonParam(std::string name) : name(name) {}
+        CommonParam(std::string name, SocketType socketType, std::string wildCardGroup = "", std::string constrain = "", std::string tooltip = "")
+            : name(name)
+            , socketType(socketType)
+            , wildCardGroup(wildCardGroup)
+            , constrain(constrain)
+            , tooltip(tooltip)
+        {
+        }
+        CommonParam(std::string name, SocketType socketType, SocketProperty sockProp)
+            : name(name)
+            , socketType(socketType)
+            , sockProp(sockProp)
+        {
+        }
     };
 
     struct ParamObject : CommonParam {
-
+        ParamObject() {}
+        ParamObject(std::string name) : CommonParam(name) {}
+        ParamObject(std::string name, SocketType socketType)
+            : CommonParam(name, socketType) {}
+        ParamObject(std::string name, SocketType socketType, std::string wildGrp, std::string constrain)
+            : CommonParam(name, socketType, wildGrp, constrain) {}
     };
 
     //primitive
@@ -87,10 +109,13 @@ namespace zeno {
         ParamControl control = NullControl;
         zeno::reflect::Any ctrlProps;
 
-        bool bInput = true;
-        bool bInnerParam = false;   //内部参数的标识，即，不可被外部ui所编辑，只能引用其当前的值。
-        std::string wildCardGroup;
-        std::string constrain;
+        ParamPrimitive() {}
+        ParamPrimitive(std::string name, zeno::reflect::Any defl = zeno::reflect::Any(), ParamControl control = NullControl, zeno::reflect::Any ctrlProps = zeno::reflect::Any())
+            : CommonParam(name)
+            , defl(defl)
+            , control(control)
+            , ctrlProps(ctrlProps)
+        {}
     };
 
     using ObjectParams = std::vector<ParamObject>;
@@ -106,9 +131,7 @@ namespace zeno {
         std::vector<ParamGroup> groups;
     };
 
-    struct CustomUIParams {
-        std::vector<ParamTab> tabs;   //custom ui for input primitive params
-    };
+    using CustomUIParams = std::vector<ParamTab>;   //custom ui for input primitive params
 
     //CustomUI is structure for input params of primitive types, like vec3f int string, etc.
     struct CustomUI {

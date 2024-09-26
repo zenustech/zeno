@@ -9,6 +9,7 @@
 #include <zeno/core/Assets.h>
 #include <zeno/core/data.h>
 #include <zeno/core/CoreParam.h>
+#include <zeno/core/INodeClass.h>
 #include <zeno/utils/helper.h>
 #include "util/uihelper.h"
 #include "util/jsonhelper.h"
@@ -696,7 +697,7 @@ void GraphModel::_initLink()
             }
         }
         //primitives links init
-        for (auto tab : nodedata.customUi.inputPrims.tabs) {
+        for (auto tab : nodedata.customUi.inputPrims) {
             for (auto group : tab.groups) {
                 for (auto param : group.params) {
                     for (auto link : param.links) {
@@ -917,7 +918,7 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
     }
     else {
         auto updateInputs = [](zeno::NodeData& nodedata, std::shared_ptr<zeno::INode> spNode) {
-            for (auto& tab : nodedata.customUi.inputPrims.tabs)
+            for (auto& tab : nodedata.customUi.inputPrims)
             {
                 for (auto& group : tab.groups)
                 {

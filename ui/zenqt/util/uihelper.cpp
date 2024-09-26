@@ -1914,7 +1914,7 @@ void UiHelper::newCustomModel(QStandardItemModel* customParamsM, const zeno::Cus
 
     QStandardItem* pInputs = new QStandardItem("prim_inputs");
     pInputs->setEditable(false);
-    for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
+    for (const zeno::ParamTab& tab : customui.inputPrims)
     {
         const QString& tabName = QString::fromStdString(tab.name);
         QStandardItem* pTab = new QStandardItem(tabName);
@@ -2028,7 +2028,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
         return;
     if (!pInputsRoot->hasChildren() || !pInputsRoot->child(0)->hasChildren())
         return;
-    if (customui.inputPrims.tabs.empty() || customui.inputPrims.tabs[0].groups.empty())
+    if (customui.inputPrims.empty() || customui.inputPrims[0].groups.empty())
         return;
     auto const& renameItem = [](QStandardItem* item, const std::string& name) {
         item->setData(QString::fromStdString(name), Qt::DisplayRole);
@@ -2073,10 +2073,10 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
     };
     //inputPrims
     std::unordered_set<std::string> tabnames, groupnames;
-    for (int tabCount = 0; tabCount < customui.inputPrims.tabs.size(); tabCount++) {
-        for (int groupCount = 0; groupCount < customui.inputPrims.tabs[tabCount].groups.size(); groupCount++)
-            groupnames.insert(customui.inputPrims.tabs[tabCount].groups[groupCount].name);
-        tabnames.insert(customui.inputPrims.tabs[tabCount].name);
+    for (int tabCount = 0; tabCount < customui.inputPrims.size(); tabCount++) {
+        for (int groupCount = 0; groupCount < customui.inputPrims[tabCount].groups.size(); groupCount++)
+            groupnames.insert(customui.inputPrims[tabCount].groups[groupCount].name);
+        tabnames.insert(customui.inputPrims[tabCount].name);
     }
     for (int tabCount = pInputsRoot->rowCount() - 1; tabCount >= 0; tabCount--) {
         QStandardItem* tabitem = pInputsRoot->child(tabCount);
@@ -2092,15 +2092,15 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
         if (tabitem->rowCount() == 0 && !tabnames.count(tabitem->data(ROLE_PARAM_NAME).toString().toStdString()))
             pInputsRoot->removeRow(tabCount);
     }
-    for (int tabCount = 0; tabCount < customui.inputPrims.tabs.size(); tabCount++) {
+    for (int tabCount = 0; tabCount < customui.inputPrims.size(); tabCount++) {
         const auto& tabItem = pInputsRoot->child(tabCount);
-        const auto& tabName = customui.inputPrims.tabs[tabCount].name;
+        const auto& tabName = customui.inputPrims[tabCount].name;
         if (pInputsRoot->rowCount() < tabCount + 1) {
             QStandardItem* pTab = new QStandardItem(QString::fromStdString(tabName));
             pTab->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
             pTab->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
             pTab->setData(QString::fromStdString(tabName), ROLE_PARAM_NAME);
-            for (const zeno::ParamGroup& group : customui.inputPrims.tabs[tabCount].groups) {
+            for (const zeno::ParamGroup& group : customui.inputPrims[tabCount].groups) {
                 const QString& groupName = QString::fromStdString(group.name);
                 QStandardItem* pGroup = new QStandardItem(groupName);
                 pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
@@ -2116,15 +2116,15 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
         else {
             if (tabItem->data(ROLE_PARAM_NAME).toString().toStdString() != tabName)
                 renameItem(tabItem, tabName);
-            for (int groupCount = 0; groupCount < customui.inputPrims.tabs[tabCount].groups.size(); groupCount++) {
+            for (int groupCount = 0; groupCount < customui.inputPrims[tabCount].groups.size(); groupCount++) {
                 const auto& groupItem = tabItem->child(groupCount);
-                const auto& groupName = customui.inputPrims.tabs[tabCount].groups[groupCount].name;
+                const auto& groupName = customui.inputPrims[tabCount].groups[groupCount].name;
                 if (tabItem->rowCount() < groupCount + 1) {
                     QStandardItem* pGroup = new QStandardItem(QString::fromStdString(groupName));
                     pGroup->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
                     pGroup->setData(zeno::Role_InputPrimitive, ROLE_PARAM_GROUP);
                     pGroup->setData(QString::fromStdString(groupName), ROLE_PARAM_NAME);
-                    for (const zeno::ParamPrimitive& param : customui.inputPrims.tabs[tabCount].groups[groupCount].params) {
+                    for (const zeno::ParamPrimitive& param : customui.inputPrims[tabCount].groups[groupCount].params) {
                         pGroup->appendRow(makeInputPrimItem(param));
                     }
                     tabItem->appendRow(pGroup);
@@ -2132,7 +2132,7 @@ void UiHelper::udpateCustomModelIncremental(QStandardItemModel* customParamsM, c
                 else {
                     if (groupItem->data(ROLE_PARAM_NAME).toString().toStdString() != groupName)
                         renameItem(groupItem, groupName);
-                    updateGroup(groupItem, customui.inputPrims.tabs[tabCount].groups[groupCount].params);
+                    updateGroup(groupItem, customui.inputPrims[tabCount].groups[groupCount].params);
                 }
             }
         }

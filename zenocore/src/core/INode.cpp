@@ -4,6 +4,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/Assets.h>
 #include <zeno/core/ObjectManager.h>
+#include <zeno/core/INodeClass.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
@@ -153,6 +154,8 @@ ZENO_API ObjPath INode::get_graph_path() const {
 
 ZENO_API CustomUI INode::export_customui() const
 {
+    return nodeClass->m_customui;
+    //Why do these:?
     std::set<std::string> intputPrims, outputPrims, inputObjs, outputObjs;
     zeno::CustomUI origin = nodeClass->m_customui;
     zeno::CustomUI exportui;
@@ -164,13 +167,13 @@ ZENO_API CustomUI INode::export_customui() const
 
     zeno::ParamGroup exportgroup;
     zeno::ParamTab exporttab;
-    if (!origin.inputPrims.tabs.empty()) {
-        exporttab.name = origin.inputPrims.tabs[0].name;
-        if (!origin.inputPrims.tabs[0].groups.empty()) {
-            exportgroup.name = origin.inputPrims.tabs[0].groups[0].name;
+    if (!origin.inputPrims.empty()) {
+        exporttab.name = origin.inputPrims[0].name;
+        if (!origin.inputPrims[0].groups.empty()) {
+            exportgroup.name = origin.inputPrims[0].groups[0].name;
         }
     }
-    for (const zeno::ParamTab& tab : origin.inputPrims.tabs) {
+    for (const zeno::ParamTab& tab : origin.inputPrims) {
         for (const zeno::ParamGroup& group : tab.groups) {
             for (const zeno::ParamPrimitive& param : group.params) {
                 auto iter = m_inputPrims.find(param.name);
@@ -203,10 +206,10 @@ ZENO_API CustomUI INode::export_customui() const
         }
     }
     exporttab.groups.emplace_back(std::move(exportgroup));
-    exportui.inputPrims.tabs.emplace_back(std::move(exporttab));
+    exportui.inputPrims.emplace_back(std::move(exporttab));
     for (auto& [key, param] : m_inputPrims) {
         if (intputPrims.find(key) == intputPrims.end())
-            exportui.inputPrims.tabs[0].groups[0].params.push_back(param.exportParam());
+            exportui.inputPrims[0].groups[0].params.push_back(param.exportParam());
     }
     for (auto& [key, param] : m_outputPrims) {
         if (outputPrims.find(key) == outputPrims.end())
@@ -1557,7 +1560,7 @@ bool INode::add_input_prim_param(ParamPrimitive param) {
     sparam.bSocketVisible = param.bSocketVisible;
     sparam.wildCardGroup = param.wildCardGroup;
     sparam.sockprop = param.sockProp;
-    sparam.bInnerParam = param.bInnerParam;
+    //sparam.bInnerParam = param.bInnerParam;
     sparam.constrain = param.constrain;
     m_inputPrims.insert(std::make_pair(param.name, std::move(sparam)));
     return true;
@@ -1842,14 +1845,14 @@ ZENO_API NodeData INode::exportInfo() const
         node.customUi.inputObjs.push_back(paramObj.exportParam());
     }
     if (m_nodecls == "SubOutput") {     //SubOutput节点tabs-groups-params为空，需单独导出primitiveInputs
-        if (!node.customUi.inputPrims.tabs.empty() && !node.customUi.inputPrims.tabs[0].groups.empty()) {
+        if (!node.customUi.inputPrims.empty() && !node.customUi.inputPrims[0].groups.empty()) {
             for (auto& [name, paramPrimitive] : m_inputPrims) {
-                node.customUi.inputPrims.tabs[0].groups[0].params.push_back(paramPrimitive.exportParam());
+                node.customUi.inputPrims[0].groups[0].params.push_back(paramPrimitive.exportParam());
             }
         }
     }
     else {
-    for (auto &tab : node.customUi.inputPrims.tabs)
+    for (auto &tab : node.customUi.inputPrims)
     {
         for (auto &group : tab.groups)
         {
@@ -2415,7 +2418,7 @@ ZENO_API void INode::initParams(const NodeData& dat)
             sparam.socketType = paramObj.socketType;
         }
     }
-    for (auto tab : dat.customUi.inputPrims.tabs)
+    for (auto tab : dat.customUi.inputPrims)
     {
         for (auto group : tab.groups)
         {

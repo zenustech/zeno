@@ -416,16 +416,16 @@ namespace zenoio
             param.wildCardGroup = wildCardGroup;
             if (bInput) {
                 //��zsgû�в㼶�ṹ��ֱ����Ĭ�Ͼ���
-                if (ret.customUi.inputPrims.tabs.empty())
+                if (ret.customUi.inputPrims.empty())
                 {
                     zeno::ParamTab tab;
                     tab.name = "Tab1";
                     zeno::ParamGroup group;
                     group.name = "Group1";
                     tab.groups.emplace_back(group);
-                    ret.customUi.inputPrims.tabs.emplace_back(tab);
+                    ret.customUi.inputPrims.emplace_back(tab);
                 }
-                auto& group = ret.customUi.inputPrims.tabs[0].groups[0];
+                auto& group = ret.customUi.inputPrims[0].groups[0];
                 group.params.emplace_back(param);
             }
             else {
@@ -535,7 +535,7 @@ namespace zenoio
                             paramTab.groups.push_back(paramGroup);
                         }
                    }
-                   ui.inputPrims.tabs.push_back(paramTab);
+                   ui.inputPrims.push_back(paramTab);
                 }
             }
 

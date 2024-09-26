@@ -652,6 +652,15 @@ namespace zeno {
         return "";    //TODO
     }
 
+    std::string uniqueName(std::string prefix, std::set<std::string> existing) {
+        std::string param_name = prefix;
+        int idx = 1;
+        while (existing.find(param_name) != existing.end()) {
+            param_name = prefix + std::to_string(idx++);
+        }
+        return param_name;
+    }
+
     ZENO_API std::string objPathToStr(ObjPath path) {
         return path;
     }
@@ -663,7 +672,7 @@ namespace zeno {
 
     PrimitiveParams customUiToParams(const CustomUIParams& customparams) {
         PrimitiveParams params;
-        for (auto tab : customparams.tabs) {
+        for (auto tab : customparams) {
             for (auto group : tab.groups) {
                 params.insert(params.end(), group.params.begin(), group.params.end());
             }
@@ -673,7 +682,7 @@ namespace zeno {
 
     ZENO_API void parseUpdateInfo(const CustomUI& customui, ParamsUpdateInfo& infos)
     {
-        for (const zeno::ParamTab& tab : customui.inputPrims.tabs)
+        for (const zeno::ParamTab& tab : customui.inputPrims)
         {
             for (const zeno::ParamGroup& group : tab.groups)
             {
@@ -728,7 +737,7 @@ namespace zeno {
     }
 
     void initControlsByType(CustomUI& ui) {
-        for (ParamTab& tab : ui.inputPrims.tabs)
+        for (ParamTab& tab : ui.inputPrims)
         {
             for (ParamGroup& group : tab.groups)
             {
@@ -1061,6 +1070,7 @@ namespace zeno {
         zeno::_ObjectParam& retInfo   //要么是customui上的，如果前者没有构造，就是返回值上构造一个临时值
     )
     {
+#if 0
         retInfo.dispName = "";
         if (!typeBase || !node) {
             return;
@@ -1081,7 +1091,7 @@ namespace zeno {
                     for (auto& obj : reflectCustomUi.inputObjs.objs) {
                         inputObjs.insert({ obj.mapTo, obj.dispName });
                     }
-                    for (auto& obj : reflectCustomUi.outputObjs.objs) {
+                    for (auto& obj : reflectCustomUi.retParams.objs) {
                         outputObjs.insert({ obj.mapTo, obj.dispName });
                     }
                     retInfo = reflectCustomUi.retInfo;
@@ -1092,6 +1102,7 @@ namespace zeno {
         if (retInfo.dispName.empty()) {
             //只能从返回值拿信息了
         }
+#endif
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {

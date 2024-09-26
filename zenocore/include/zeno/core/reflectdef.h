@@ -28,27 +28,30 @@ namespace zeno {
         std::string constrain;
     };
 
+    struct _CommonParam
+    {
+        std::string mapTo;
+        std::variant<ParamObject, ParamPrimitive> param;
+    };
+
     struct _ParamGroup {
         std::string name = "Group1";
         std::vector<_Param> params;
     };
 
-    struct _ObjectGroup {
-        std::vector<_ObjectParam> objs;
-    };
+    using _Group = std::vector<_CommonParam>;
 
     struct _ParamTab {
         std::string name = "Tab1";
         std::vector<_ParamGroup> groups;
     };
 
+    //只处理函数签名上的参数的映射信息，不包括以成员变量定义的参数的情况
     struct ReflectCustomUI
     {
-        _ObjectGroup inputObjs;
-        _ObjectGroup outputObjs;
-        _ObjectParam retInfo;       //也可以标识数值类型
-        _ParamTab inputPrims;
-        _ParamGroup outputPrims;
+        _Group inputParams;
+        _Group outputParams;
+        CustomUIParams customUI;    //针对输入数值型参数的自定义布局
     };
 
 }

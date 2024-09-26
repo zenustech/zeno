@@ -20,17 +20,8 @@ struct Graph;
 struct Session;
 struct INode;
 struct GlobalVariableManager;
-
-struct INodeClass {
-    CustomUI m_customui;
-    std::string classname;
-
-    ZENO_API INodeClass(CustomUI const &customui, std::string const& classname);
-    ZENO_API virtual ~INodeClass();
-    virtual std::shared_ptr<INode> new_instance(std::shared_ptr<Graph> pGraph, std::string const &classname) = 0;
-};
-
 struct IObject;
+struct INodeClass;
 struct GlobalState;
 struct GlobalComm;
 struct GlobalError;

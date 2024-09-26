@@ -1,6 +1,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
+#include <zeno/core/INodeClass.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/scope_exit.h>
