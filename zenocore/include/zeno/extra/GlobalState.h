@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <set>
+#include <map>
+#include <zeno/core/common.h>
 
 namespace zeno {
 
@@ -63,11 +66,18 @@ struct GlobalState {
     ZENO_API void set_working(bool working);
     ZENO_API bool is_working() const;
 
+    //变量传播dirty相关
+    ZENO_API void addGlobalVarNode(std::string var, ObjPath nodeUUid);
+    ZENO_API void removeGlobalVarNode(std::string var, ObjPath nodeUUid);
+    ZENO_API std::set<ObjPath> getDenpendentNodes(std::string var);
+
 private:
     int frameid = 0;
     bool m_working = false;
     CalcObjStatus m_status = Finished;
     mutable std::mutex mtx;
+
+    std::map<std::string, std::set<ObjPath>> globalVarNodesMap; //<变量，依赖该变量的节点集合>
 };
 
 }

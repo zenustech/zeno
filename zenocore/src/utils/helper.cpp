@@ -7,7 +7,8 @@
 #include <zeno/core/reflectdef.h>
 #include <regex>
 #include <zeno/core/typeinfo.h>
-
+#include <zeno/core/Graph.h>
+#include <zeno/extra/SubnetNode.h>
 
 using namespace zeno::types;
 using namespace zeno::reflect;
@@ -1109,6 +1110,194 @@ namespace zeno {
             return true;
         }
         return false;
+    }
+
+    void propagateDirty(std::shared_ptr<INode> spCurrNode, std::string varName)
+    {
+        std::set<ObjPath> depNodes = getSession().globalState->getDenpendentNodes(varName);
+        std::set<ObjPath> upstreamDepNodes;
+        std::set<ObjPath> upstreams;
+        if (spCurrNode) {
+            getUpstreamNodes(spCurrNode, depNodes, upstreamDepNodes, upstreams);
+            for (auto& objPath : upstreamDepNodes) {
+                if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
+                    mark_dirty_by_dependNodes(node, true, upstreams);
+                }
+            }
+        }
+    }
+
+    void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreamDepNodes, std::set<ObjPath>& upstreams, std::string outParamName)
+    {
+        auto it = depNodes.find(spCurrNode->get_uuid_path());
+        if (it != depNodes.end()) {
+            upstreamDepNodes.insert(spCurrNode->get_uuid_path());
+        }
+
+        if (upstreams.find(spCurrNode->get_uuid_path()) != upstreams.end()) {
+            return;
+        }
+        if (std::shared_ptr<SubnetNode> pSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spCurrNode))
+        {
+            auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &upstreamDepNodes, &upstreams](std::string paramName) {
+                if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
+                    getUpstreamNodes(suboutput, depNodes, upstreamDepNodes, upstreams);
+                    upstreams.insert(suboutput->get_uuid_path());
+                }
+            };
+            if (outParamName != "") {
+                suboutoutGetUpstreamFunc(outParamName);
+            }
+            else {
+                for (auto& param : pSubnetNode->get_output_primitive_params()) {
+                    suboutoutGetUpstreamFunc(param.name);
+                }
+                for (auto& param : pSubnetNode->get_output_object_params()) {
+                    suboutoutGetUpstreamFunc(param.name);
+                }
+            }
+            upstreams.insert(pSubnetNode->get_uuid_path());
+        }
+        else {
+            auto spGraph = spCurrNode->getGraph().lock();
+            for (auto& param : spCurrNode->get_input_primitive_params()) {
+                for (auto link : param.links) {
+                    if (spGraph)
+                    {
+                        auto outParam = link.outParam;
+                        std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
+                        assert(outNode);
+                        getUpstreamNodes(outNode, depNodes, upstreamDepNodes, upstreams, outParam);
+                        upstreams.insert(outNode->get_uuid_path());
+                    }
+                }
+            }
+            for (auto& param : spCurrNode->get_input_object_params()) {
+                for (auto link : param.links) {
+                    if (spGraph)
+                    {
+                        auto outParam = link.outParam;
+                        std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
+                        assert(outNode);
+                        getUpstreamNodes(outNode, depNodes, upstreams, upstreamDepNodes, outParam);
+                        upstreams.insert(outNode->get_uuid_path());
+                    }
+                }
+            }
+            upstreams.insert(spCurrNode->get_uuid_path());
+        }
+        std::shared_ptr<Graph> spGraph = spCurrNode->getGraph().lock();
+        assert(spGraph);
+        if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubInput")
+        {
+            upstreams.insert(spGraph->optParentSubgNode.value()->get_uuid_path());
+            auto parentSubgNode = spGraph->optParentSubgNode.value();
+            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &upstreamDepNodes, &parentSubgNode](std::string outNode, std::string outParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> node = graph->getNode(outNode);
+                    assert(node);
+                    getUpstreamNodes(node, depNodes, upstreams, upstreamDepNodes, outParam);
+                    upstreams.insert(node->get_uuid_path());
+                }
+            };
+            bool find = false;
+            const auto& parentSubgNodePrimsInput = parentSubgNode->get_input_prim_param(spCurrNode->get_name(), &find);
+            if (find) {
+                for (auto link : parentSubgNodePrimsInput.links) {
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
+                }
+            }
+            bool find2 = false;
+            const auto& parentSubgNodeObjsInput = parentSubgNode->get_input_obj_param(spCurrNode->get_name(), &find2);
+            if (find2) {
+                for (auto link : parentSubgNodeObjsInput.links) {
+                    parentSubgNodeGetUpstreamFunc(link.outNode, link.outParam);
+                }
+            }
+        }
+    }
+
+    void mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName /*= ""*/)
+    {
+        if (!nodesRange.empty()) {
+            if (nodesRange.find(spCurrNode->get_uuid_path()) == nodesRange.end()) {
+                return;
+            }
+        }
+
+        if (spCurrNode->is_dirty())
+            return;
+        spCurrNode->mark_dirty(true, true, false);
+
+        if (bOn) {
+            auto spGraph = spCurrNode->getGraph().lock();
+            for (auto& param : spCurrNode->get_output_primitive_params()) {
+                for (auto link : param.links) {
+                    if (spGraph) {
+                        auto inParam = link.inParam;
+                        std::shared_ptr<INode> inNode = spGraph->getNode(link.inNode);
+                        assert(inNode);
+                        mark_dirty_by_dependNodes(inNode, bOn, nodesRange, inParam);
+                    }
+                }
+            }
+            for (auto& param : spCurrNode->get_output_object_params()) {
+                for (auto link : param.links) {
+                    if (spGraph) {
+                        auto inParam = link.inParam;
+                        std::shared_ptr<INode> inNode = spGraph->getNode(link.inNode);
+                        assert(inNode);
+                        mark_dirty_by_dependNodes(inNode, bOn, nodesRange, inParam);
+                    }
+                }
+            }
+        }
+
+        if (std::shared_ptr<SubnetNode> pSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spCurrNode))
+        {
+            auto subinputMarkDirty = [&pSubnetNode, &nodesRange](bool dirty, std::string paramName) {
+                if (auto subinput = pSubnetNode->subgraph->getNode(paramName))
+                    mark_dirty_by_dependNodes(subinput, dirty, nodesRange);
+            };
+            if (inParamName != "") {
+                subinputMarkDirty(bOn, inParamName);
+            }
+            else {
+                for (auto& param : pSubnetNode->get_input_primitive_params())
+                    subinputMarkDirty(bOn, param.name);
+                for (auto& param : pSubnetNode->get_input_object_params())
+                    subinputMarkDirty(bOn, param.name);
+            }
+        }
+
+        std::shared_ptr<Graph> spGraph = spCurrNode->getGraph().lock();
+        assert(spGraph);
+        if (spGraph->optParentSubgNode.has_value() && spCurrNode->get_nodecls() == "SubOutput")
+        {
+            auto parentSubgNode = spGraph->optParentSubgNode.value();
+            auto parentSubgNodeMarkDirty = [&nodesRange, &parentSubgNode](std::string innode, std::string inParam) {
+                if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
+                    std::shared_ptr<INode> inNode = graph->getNode(innode);
+                    assert(inNode);
+                    mark_dirty_by_dependNodes(inNode, true, nodesRange, inParam);
+                }
+            };
+            bool find = false;
+            const auto& parentSubgNodeOutputPrim = parentSubgNode->get_output_prim_param(spCurrNode->get_name(), &find);
+            if (find) {
+                for (auto link : parentSubgNodeOutputPrim.links) {
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
+                }
+            }
+            bool find2 = false;
+            const auto& parentSubgNodeOutputObjs = parentSubgNode->get_output_obj_param(spCurrNode->get_name(), &find2);
+            if (find2) {
+                for (auto link : parentSubgNodeOutputObjs.links) {
+                    parentSubgNodeMarkDirty(link.inNode, link.inParam);
+                }
+            }
+            spGraph->optParentSubgNode.value()->mark_dirty(true, true, false);
+        }
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {

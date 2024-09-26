@@ -7,6 +7,7 @@
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/core/GlobalVariable.h>
+#include <zeno/utils/helper.h>
 
 
 namespace zeno {
@@ -366,16 +367,6 @@ ZENDEFNODE(IfElse, {
 
 //test
 struct TimeShift : zeno::INode {
-    virtual void preApply() override {
-        ParamPrimitive param = get_input_prim_param("offset");
-        int offset = zeno_get<int>(param.defl);
-        //∏≤∏«$F
-        zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
-        float currFrame = (frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0) + offset;
-        auto globalOverride = GlobalVariableOverride(shared_from_this(), "$F", zeno::reflect::make_any<float>(currFrame));
-        //º∆À„…œ”Œ
-        INode::preApply();
-    }
     virtual void apply() override {
         auto prim = get_input2<zeno::PrimitiveObject>("prim");
         set_output("prim", std::move(prim));
