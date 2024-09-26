@@ -348,8 +348,6 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            //if(prd.depth>prd.max_depth) {
-
             if(prd.depth > prd.max_depth){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
@@ -478,7 +476,7 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
