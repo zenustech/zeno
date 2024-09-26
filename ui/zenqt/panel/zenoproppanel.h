@@ -8,7 +8,6 @@
 #include "widgets/zlineedit.h"
 #include "widgets/zlabel.h"
 
-class IGraphsModel;
 
 class ZExpandableSection;
 class ZScrollArea;
