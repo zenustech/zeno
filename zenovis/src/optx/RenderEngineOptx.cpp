@@ -1063,6 +1063,15 @@ struct GraphicsManager {
                     }
                 }
 
+                if (0) {
+                    auto& ud = obj->userData();
+                    if (ud.has("stamp_mode")) {
+                        std::string stamp_mode = ud.get2<std::string>("stamp_mode");
+                        if (!stamp_mode.empty()) {
+                        }
+                    }
+                }
+
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
 
                 zeno::log_info("load_object: loaded graphics to {}", ig.get());
