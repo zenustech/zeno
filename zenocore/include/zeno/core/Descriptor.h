@@ -34,7 +34,8 @@ struct SocketDescriptor {
       SocketType connProp = NoSocket,
       ParamControl ctrl = NullControl,
       std::string const&wildCard = {},
-      std::string const &doc = {});
+      std::string const &doc = {},
+      std::string const& cboxitems = "");
 
   //兼容以前 `enum [items]`这种写法
   ZENO_API SocketDescriptor(

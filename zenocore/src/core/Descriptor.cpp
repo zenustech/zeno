@@ -3,20 +3,22 @@
 
 namespace zeno {
 
-SocketDescriptor::SocketDescriptor(
+    SocketDescriptor::SocketDescriptor(
         size_t type,
         std::string const &name,
         std::string const &defl,
         SocketType connProp,
         ParamControl ctrl,
         std::string const& wildCard,
-        std::string const &doc)
+        std::string const& doc,
+        std::string const& cboxitems)
         : type(type)
         , name(name)
         , defl(defl)
         , doc(doc)
         , wildCard(wildCard)
         , socketType(connProp)
+        , comboxitems(cboxitems)
         , control(ctrl) {}
 
 SocketDescriptor::SocketDescriptor(std::string const& comboitemsDesc, std::string const& name, std::string const& defl)

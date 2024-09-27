@@ -114,6 +114,22 @@ ZENO_API bool Graph::applyNode(std::string const &node_name) {
             auto defl = node->get_input_prim_param("offset").defl;
             zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
             int newFrame = oldFrame + std::get<int>(offset);
+            //clamp
+            auto clampDefl = node->get_input_prim_param("Clamp").defl;
+            std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
+            int startFrame = getSession().globalState->getStartFrame();
+            int endFrame = getSession().globalState->getEndFrame();
+            if (clamp == "Clamp to First") {
+                newFrame = newFrame < startFrame ? startFrame : newFrame;
+            } else if (clamp == "Clamp to Last") {
+                newFrame = newFrame > endFrame ? endFrame : newFrame;
+            } else if (clamp == "Clamp to Both") {
+                if (newFrame < startFrame) {
+                    newFrame = startFrame;
+                }else if (newFrame > endFrame) {
+                    newFrame = endFrame;
+                }
+            }
             getSession().globalState->updateFrameId(newFrame);
             //propaget dirty
             std::shared_ptr<INode> spnode = safe_at(m_nodes, uuid, "node name");
