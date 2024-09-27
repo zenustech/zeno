@@ -342,8 +342,8 @@ namespace zeno {
             using ParamType = NodeParameterType;
 
             std::unique_ptr<NodeParameterType> AutoParameter = nullptr;
-
-            void preApply() override {
+#if 0
+            void preApply(CalcContext* pContext) override {
                 for (auto const &[ds, bound]: inputBounds) {
                     requireInput(ds);
                 }
@@ -362,6 +362,7 @@ namespace zeno {
                 AutoParameter.reset();
                 log_debug("==> leave {}", name);
             }
+#endif
         };
 
         template<typename NodeType>

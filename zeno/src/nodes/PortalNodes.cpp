@@ -8,6 +8,7 @@
 
 namespace zeno {
 
+#if 0
 struct PortalIn : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
@@ -50,6 +51,7 @@ ZENDEFNODE(PortalOut, {
     {{gParamType_String, "name", "RenameMe!"}},
     {"layout"},
 });
+#endif
 
 
 struct Route : zeno::INode {

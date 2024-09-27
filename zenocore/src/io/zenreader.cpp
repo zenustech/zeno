@@ -68,7 +68,7 @@ namespace zenoio
     }
 
     zeno::NodeData ZenReader::_parseNode(
-        const std::string& subgPath,    //Ҳ�������ˣ���Ϊ����Ϣ������path�ķ�ʽ���棨�����鷳�����ȱ�����
+        const std::string& subgPath,     //也许无用了，因为边信息不再以path的方式储存（解析麻烦），先保留着
         const std::string& nodeid,
         const rapidjson::Value& nodeObj,
         const zeno::AssetsData& assets,
@@ -90,7 +90,7 @@ namespace zenoio
         retNode.cls = cls;
         retNode.type = zeno::Node_Normal;
 
-        //Ҫ��parse customui�Ի�������������ṹ��
+        //要先parse customui以获得整个参数树结构。
         if (objValue.HasMember("subnet-customUi")) {
             retNode.customUi = _parseCustomUI(nodeid, objValue["subnet-customUi"], links);
         }
@@ -415,7 +415,7 @@ namespace zenoio
             param.bSocketVisible = bVisible;
             param.wildCardGroup = wildCardGroup;
             if (bInput) {
-                //��zsgû�в㼶�ṹ��ֱ����Ĭ�Ͼ���
+                //老zsg没有层级结构，直接用默认就行
                 if (ret.customUi.inputPrims.empty())
                 {
                     zeno::ParamTab tab;

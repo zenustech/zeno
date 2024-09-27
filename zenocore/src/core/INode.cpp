@@ -35,6 +35,7 @@
 #include "zeno_types/reflect/reflection.generated.hpp"
 #include <zeno/core/reflectdef.h>
 #include <zeno/formula/zfxexecute.h>
+#include <zeno/extra/CalcContext.h>
 
 
 using namespace zeno::reflect;
@@ -458,7 +459,7 @@ void INode::mark_dirty_objs()
 
 ZENO_API void INode::complete() {}
 
-ZENO_API void INode::preApply() {
+void INode::preApply(CalcContext* pContext) {
     if (!m_dirty)
         return;
 
@@ -466,12 +467,12 @@ ZENO_API void INode::preApply() {
 
     //TODO: the param order should be arranged by the descriptors.
     for (const auto& [name, param] : m_inputObjs) {
-        bool ret = requireInput(name);
+        bool ret = requireInput(name, pContext);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
     for (const auto& [name, param] : m_inputPrims) {
-        bool ret = requireInput(name);
+        bool ret = requireInput(name, pContext);
         if (!ret)
             zeno::log_warn("the param {} may not be initialized", name);
     }
@@ -850,7 +851,8 @@ void INode::initReferLinks(PrimitiveParam* target_param) {
         for (const auto& [source_node_uuidpath, source_param] : refSources)
         {
             auto spSrcNode = remote_source->m_wpNode.lock();
-            if (spSrcNode->get_uuid_path() == source_node_uuidpath) {
+            if (spSrcNode->get_uuid_path() == source_node_uuidpath &&
+                remote_source->name == source_param) {
                 //已经有了
                 bExist = true;
                 newAdded.erase({ source_node_uuidpath, source_param });
@@ -954,7 +956,7 @@ std::set<std::pair<std::string, std::string>> INode::resolveReferSource(const An
     return refSources;
 }
 
-std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
+std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param, CalcContext* pContext) {
     std::shared_ptr<DictObject> spDict;
     //连接的元素是list还是list of list的规则，参照Graph::addLink下注释。
     bool bDirecyLink = false;
@@ -970,7 +972,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
             bDirecyLink = true;
             if (outNode->is_dirty()) {
                 GraphException::translated([&] {
-                    outNode->doApply();
+                    outNode->doApply(pContext);
                     }, outNode.get());
 
                 auto outResult = outNode->get_output_obj(out_param->name);
@@ -1008,7 +1010,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
 
             if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
                 GraphException::translated([&] {
-                    outNode->doApply();
+                    outNode->doApply(pContext);
                     }, outNode.get());
             }
 
@@ -1031,7 +1033,7 @@ std::shared_ptr<DictObject> INode::processDict(ObjectParam* in_param) {
     return spDict;
 }
 
-std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
+std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param, CalcContext* pContext) {
     std::shared_ptr<ListObject> spList;
     bool bDirectLink = false;
     if (in_param->links.size() == 1)
@@ -1045,8 +1047,8 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
 
             if (outNode->is_dirty()) {
                 GraphException::translated([&] {
-                    outNode->doApply();
-                    }, outNode.get());
+                    outNode->doApply(pContext);
+                }, outNode.get());
 
                 auto outResult = outNode->get_output_obj(out_param->name);
                 assert(outResult);
@@ -1082,8 +1084,8 @@ std::shared_ptr<ListObject> INode::processList(ObjectParam* in_param) {
             std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
             if (outNode->is_dirty()) {  //list中的元素是dirty的，重新计算并加入list
                 GraphException::translated([&] {
-                    outNode->doApply();
-                    }, outNode.get());
+                    outNode->doApply(pContext);
+                }, outNode.get());
             }
             auto outResult = outNode->get_output_obj(out_param->name);
             assert(outResult);
@@ -1247,7 +1249,7 @@ bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType ou
     return true;
 }
 
-ZENO_API bool INode::requireInput(std::string const& ds) {
+ZENO_API bool INode::requireInput(std::string const& ds, CalcContext* pContext) {
     // 目前假设输入对象和输入数值，不能重名（不难实现，老节点直接改）。
     auto iter = m_inputObjs.find(ds);
     if (iter != m_inputObjs.end()) {
@@ -1262,13 +1264,13 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
             {
                 case gParamType_Dict:
                 {
-                    std::shared_ptr<DictObject> outDict = processDict(in_param);
+                    std::shared_ptr<DictObject> outDict = processDict(in_param, pContext);
                     receiveOutputObj(in_param, outDict, gParamType_Dict);
                     break;
                 }
                 case gParamType_List:
                 {
-                    std::shared_ptr<ListObject> outList = processList(in_param);
+                    std::shared_ptr<ListObject> outList = processList(in_param, pContext);
                     receiveOutputObj(in_param, outList, gParamType_List);
                     break;
                 }
@@ -1285,7 +1287,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                         std::shared_ptr<INode> outNode = out_param->m_wpNode.lock();
 
                         GraphException::translated([&] {
-                            outNode->doApply();
+                            outNode->doApply(pContext);
                         }, outNode.get());
 
                         if (out_param->spObject)
@@ -1317,8 +1319,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                         assert(spSrcNode);
                         std::shared_ptr<Graph> spSrcGraph = spSrcNode->graph.lock();
                         assert(spSrcGraph);
-                        auto nodename = spSrcNode->get_name();
-                        spSrcGraph->applyNode(nodename);
+                        spSrcNode->doApply_Parameter(reflink->source_inparam->name, pContext);
                     }
                 }
 
@@ -1331,7 +1332,7 @@ ZENO_API bool INode::requireInput(std::string const& ds) {
                     std::shared_ptr<INode> outNode = spLink->fromparam->m_wpNode.lock();
 
                     GraphException::translated([&] {
-                        outNode->doApply();
+                        outNode->doApply(pContext);
                     }, outNode.get());
                     //数值基本类型，直接复制。
                     in_param->result = spLink->fromparam->result;
@@ -1348,21 +1349,38 @@ ZENO_API void INode::doOnlyApply() {
     apply();
 }
 
-ZENO_API void INode::doApply() {
+void INode::doApply_Parameter(std::string const& name, CalcContext* pContext) {
+    if (!m_dirty) {
+        return;
+    }
+
+    std::string uuid_path = get_uuid_path() + "/" + name;
+    if (pContext->uuid_node_params.find(uuid_path) != pContext->uuid_node_params.end()) {
+        throw makeError<UnimplError>("cycle reference occurs when refer paramters!");
+    }
+
+    scope_exit scope_apply_param([&]() { pContext->uuid_node_params.erase(uuid_path); });
+    pContext->uuid_node_params.insert(uuid_path);
+
+    requireInput(name, pContext);
+}
+
+ZENO_API void INode::doApply(CalcContext* pContext) {
 
     if (!m_dirty) {
         registerObjToManager();//如果只是打view，也是需要加到manager的。
         return;
     }
 
-    /*
-    zeno::scope_exit spe([&] {//apply时根据情况将IParam标记为modified，退出时将所有IParam标记为未modified
-        for (auto const& [name, param] : m_outputs)
-            param.m_idModify = false;
-        });
-    */
+    assert(pContext);
+    std::string uuid_path = get_uuid_path();
+    if (pContext->visited_nodes.find(uuid_path) != pContext->visited_nodes.end()) {
+        throw makeError<UnimplError>("cycle reference occurs!");
+    }
+    pContext->visited_nodes.insert(uuid_path);
+    scope_exit spUuidRecord([=] {pContext->visited_nodes.erase(uuid_path); });
 
-    preApply();
+    preApply(pContext);
 
     if (zeno::getSession().is_interrupted()) {
         throw makeError<InterruputError>(m_uuidPath);

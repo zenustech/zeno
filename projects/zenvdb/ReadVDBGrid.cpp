@@ -46,12 +46,13 @@ static std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
 }
 
 
+#if 0
 struct CacheVDBGrid : zeno::INode {
     int m_framecounter = 0;
 
-    virtual void preApply() override {
+    virtual void preApply(CalcContext* pContext) override {
         if (get_param<bool>("mute")) {
-            requireInput("inGrid");
+            requireInput("inGrid", pContext);
             set_output("outGrid", get_input("inGrid"));
             return;
         }
@@ -63,14 +64,14 @@ struct CacheVDBGrid : zeno::INode {
         }
         int fno = m_framecounter++;
         if (has_input("frameNum")) {
-            requireInput("frameNum");
+            requireInput("frameNum", pContext);
             fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
         }
         char buf[512];
         sprintf(buf, "%s%06d.vdb", prefix.c_str(), fno);
         auto path = (std::filesystem::path(dir) / buf).generic_string();
         if (ignore || !std::filesystem::exists(path)) {
-            requireInput("inGrid");
+            requireInput("inGrid", pContext);
             auto grid = get_input<VDBGrid>("inGrid");
             printf("dumping cache to [%s]\n", path.c_str());
             grid->output(path);
@@ -100,6 +101,7 @@ ZENDEFNODE(CacheVDBGrid,
     }, /* category: */ {
     "deprecated",
     }});
+#endif
 
 static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {

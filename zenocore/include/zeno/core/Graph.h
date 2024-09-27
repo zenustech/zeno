@@ -38,15 +38,12 @@ struct Context {
 struct Graph : std::enable_shared_from_this<Graph> {
     Session* session = nullptr;
 
-    std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.
-    std::set<std::string> nodesToExec;
     int beginFrameNumber = 0, endFrameNumber = 0;  // only use by runnermain.cpp
 
     std::map<std::string, std::string> portalIns;   //todo: deprecated, but need to keep compatible with old zsg.
     std::map<std::string, zany> portals;
 
     std::unique_ptr<Context> ctx;
-    std::unique_ptr<DirtyChecker> dirtyChecker;
 
     std::optional<SubnetNode*> optParentSubgNode;
 
@@ -101,16 +98,12 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API bool isAssets() const;
     ZENO_API std::set<std::string> searchByClass(const std::string& name) const;
 
-    //END
-
-    ZENO_API DirtyChecker &getDirtyChecker();
     ZENO_API void clearNodes();
     ZENO_API void runGraph();
     ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
     ZENO_API Graph *addSubnetNode(std::string const &id);
     ZENO_API Graph *getSubnetGraph(std::string const &id) const;
-    ZENO_API bool applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
@@ -122,7 +115,6 @@ struct Graph : std::enable_shared_from_this<Graph> {
     ZENO_API void setFormula(std::string const &id, std::string const &par, zany const &val);
     ZENO_API void addNodeOutput(std::string const &id, std::string const &par);
     ZENO_API zany getNodeInput(std::string const &sn, std::string const &ss) const;
-    ZENO_API void loadGraph(const char *json);
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string, zany> const &val);  /* to be deprecated */
     ZENO_API std::map<std::string, zany> callSubnetNode(std::string const &id,
@@ -146,7 +138,12 @@ private:
     void resetWildCardParamsType(SocketType& socketType, std::shared_ptr<INode>& node, const std::string& paramName, const bool& bPrimType, const bool& bInput);
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
     bool isLinkValid(const EdgeInfo& edge);
-    void foreachApply(INode* foreach_end);
+    bool applyNode(std::string const& id);
+    void foreachApply(INode* foreach_end, CalcContext* pContext);
+
+
+    std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.
+    std::set<std::string> nodesToExec;
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
@@ -162,8 +159,6 @@ private:
 
     std::set<std::string> m_viewnodes;
     std::string m_name;
-
-    std::set<std::string> visited;  //check cycle reference
 
     const bool m_bAssets;
 };

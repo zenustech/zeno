@@ -45,7 +45,7 @@ ZENO_CAPI Zeno_Error Zeno_GraphGetSubGraph(Zeno_Graph graph_, Zeno_Graph *retGra
 
 ZENO_CAPI Zeno_Error Zeno_GraphLoadJson(Zeno_Graph graph_, const char *jsonStr_) ZENO_CAPI_NOEXCEPT {
     return PyZeno::lastError.catched([=] {
-        PyZeno::lutGraph.access(graph_)->loadGraph(jsonStr_);
+        //PyZeno::lutGraph.access(graph_)->loadGraph(jsonStr_);
     });
 }
 

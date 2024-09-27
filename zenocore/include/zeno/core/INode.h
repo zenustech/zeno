@@ -33,6 +33,7 @@ struct PrimitiveParam;
 struct ObjectLink;
 struct PrimitiveLink;
 struct SubnetNode;
+struct CalcContext;
 
 
 class INode : public std::enable_shared_from_this<INode>
@@ -45,10 +46,9 @@ public:
     ZENO_API INode();
     ZENO_API virtual ~INode();
 
-    //preApply是先解决所有输入参数（上游）的求值问题
-    ZENO_API virtual void preApply();
     ZENO_API void doComplete();
-    ZENO_API void doApply();
+    ZENO_API void doApply(CalcContext* pContext);
+    void doApply_Parameter(std::string const &name, CalcContext* pContext); //引入数值输入参数，并不计算整个节点
     ZENO_API void doOnlyApply();
 
     //BEGIN new api
@@ -190,8 +190,8 @@ protected:
 
 private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
-    std::shared_ptr<DictObject> processDict(ObjectParam* in_param);
-    std::shared_ptr<ListObject> processList(ObjectParam* in_param);
+    std::shared_ptr<DictObject> processDict(ObjectParam* in_param, CalcContext* pContext);
+    std::shared_ptr<ListObject> processList(ObjectParam* in_param, CalcContext* pContext);
     bool receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType outobj_type);
     void reportStatus(bool bDirty, NodeRunStatus status);
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
@@ -199,9 +199,12 @@ private:
     std::set<std::pair<std::string, std::string>> resolveReferSource(const zeno::reflect::Any& param_defl);
     void initReferLinks(PrimitiveParam* target_param);
 
+    //preApply是先解决所有输入参数（上游）的求值问题
+    void preApply(CalcContext* pContext);
+
 public:
     //为名为ds的输入参数，求得这个参数在依赖边的求值下的值，或者没有依赖边下的默认值。
-    ZENO_API bool requireInput(std::string const &ds);
+    ZENO_API bool requireInput(std::string const &ds, CalcContext* pContext);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;
     ZENO_API Session *getThisSession() const;

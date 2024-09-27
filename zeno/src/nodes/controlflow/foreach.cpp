@@ -159,7 +159,8 @@ namespace zeno
                 zany initobj = foreach_begin->get_input("Initial Object");
                 if (!initobj && foreach_begin->is_dirty()) {
                     //可能上游还没算，先把上游的依赖解了
-                    foreach_begin->preApply();
+                    //foreach_begin->preApply(nullptr);
+                    foreach_begin->doApply(nullptr);
                     initobj = foreach_begin->get_input("Initial Object");
                 }
                 if (auto spList = std::dynamic_pointer_cast<ListObject>(initobj)) {

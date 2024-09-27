@@ -14,6 +14,7 @@
 #include <zeno/extra/GlobalError.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/extra/DirtyChecker.h>
+#include <zeno/extra/CalcContext.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <zeno/core/CoreParam.h>
@@ -78,7 +79,7 @@ ZENO_API void Graph::completeNode(std::string const &node_name) {
     safe_at(m_nodes, uuid, "node name")->doComplete();
 }
 
-void Graph::foreachApply(INode* foreach_end) {
+void Graph::foreachApply(INode* foreach_end, CalcContext* pContext) {
     std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(foreach_end->get_defl_value("ForEachBegin Path"));
     auto foreach_begin = getNode(foreach_begin_path);
     if (!foreach_begin) {
@@ -88,29 +89,24 @@ void Graph::foreachApply(INode* foreach_end) {
     for (foreach_end->reset_forloop_settings(); foreach_end->is_continue_to_run(); foreach_end->increment())
     {
         foreach_begin->mark_dirty(true);
-        foreach_end->doApply();
+        foreach_end->doApply(pContext);
     }
     foreach_end->registerObjToManager();
     //foreach_end->reportStatus(false, Node_RunSucceed);
 }
 
-ZENO_API bool Graph::applyNode(std::string const &node_name) {
+bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
 
-    if (this->visited.find(uuid) != this->visited.end()) {
-        throw makeError<UnimplError>("cycle reference occurs!");
-    }
-
-    this->visited.insert(uuid);
-    scope_exit sp([=] {this->visited.erase(uuid); });
+    CalcContext ctx;
 
     GraphException::translated([&] {
         if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
-            foreachApply(node);
+            foreachApply(node, &ctx);
         }
         else {
-            node->doApply();
+            node->doApply(&ctx);
         }
     }, node);
 
@@ -278,12 +274,6 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
             setNodeInput(id, parid, objectFromLiterial(val));
         }
     }, val);
-}
-
-ZENO_API DirtyChecker &Graph::getDirtyChecker() {
-    if (!dirtyChecker) 
-        dirtyChecker = std::make_unique<DirtyChecker>();
-    return *dirtyChecker;
 }
 
 ZENO_API void Graph::init(const GraphData& graph) {
@@ -786,7 +776,6 @@ ZENO_API void Graph::clear()
 
     optParentSubgNode = std::nullopt;
     ctx.reset();
-    dirtyChecker.reset();
 
     CALLBACK_NOTIFY(clear)
 }

@@ -69,6 +69,8 @@ void Formula::callFunction(const std::string& funcname) {
 }
 
 float Formula::callRef(const std::string& ref) {
+    return 0.;
+#if 0
     //the refer param
     int sPos = ref.find_last_of('/');
     std::string param = ref.substr(sPos + 1, ref.size() - sPos - 2);
@@ -140,6 +142,7 @@ float Formula::callRef(const std::string& ref) {
     }
     zeno::log_error("reference {} error", path);
     return NAN;
+#endif
 }
 
 void Formula::increaseLocation(unsigned int loc, char* txt) {
