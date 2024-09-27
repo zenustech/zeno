@@ -1114,11 +1114,10 @@ namespace zeno {
 
     void propagateDirty(std::shared_ptr<INode> spCurrNode, std::string varName)
     {
-        std::set<ObjPath> depNodes = getSession().globalState->getDenpendentNodes(varName);
         std::set<ObjPath> upstreamDepNodes;
         std::set<ObjPath> upstreams;
         if (spCurrNode) {
-            getUpstreamNodes(spCurrNode, depNodes, upstreamDepNodes, upstreams);
+            getUpstreamNodes(spCurrNode, upstreamDepNodes, upstreams);
             for (auto& objPath : upstreamDepNodes) {
                 if (auto node = zeno::getSession().mainGraph->getNodeByUuidPath(objPath)) {
                     mark_dirty_by_dependNodes(node, true, upstreams);
@@ -1127,10 +1126,13 @@ namespace zeno {
         }
     }
 
-    void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& depNodes, std::set<ObjPath>& upstreamDepNodes, std::set<ObjPath>& upstreams, std::string outParamName)
+    void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& upstreamDepNodes, std::set<ObjPath>& upstreams, std::string outParamName)
     {
-        auto it = depNodes.find(spCurrNode->get_uuid_path());
-        if (it != depNodes.end()) {
+        if (!spCurrNode)
+            return;
+        if (auto spGraph = spCurrNode->getGraph().lock())
+        {
+            spGraph->isFrameNode(spCurrNode->get_uuid());
             upstreamDepNodes.insert(spCurrNode->get_uuid_path());
         }
 
@@ -1139,9 +1141,9 @@ namespace zeno {
         }
         if (std::shared_ptr<SubnetNode> pSubnetNode = std::dynamic_pointer_cast<SubnetNode>(spCurrNode))
         {
-            auto suboutoutGetUpstreamFunc = [&pSubnetNode, &depNodes, &upstreamDepNodes, &upstreams](std::string paramName) {
+            auto suboutoutGetUpstreamFunc = [&pSubnetNode, &upstreamDepNodes, &upstreams](std::string paramName) {
                 if (auto suboutput = pSubnetNode->subgraph->getNode(paramName)) {
-                    getUpstreamNodes(suboutput, depNodes, upstreamDepNodes, upstreams);
+                    getUpstreamNodes(suboutput, upstreamDepNodes, upstreams);
                     upstreams.insert(suboutput->get_uuid_path());
                 }
             };
@@ -1167,7 +1169,7 @@ namespace zeno {
                         auto outParam = link.outParam;
                         std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
                         assert(outNode);
-                        getUpstreamNodes(outNode, depNodes, upstreamDepNodes, upstreams, outParam);
+                        getUpstreamNodes(outNode, upstreamDepNodes, upstreams, outParam);
                         upstreams.insert(outNode->get_uuid_path());
                     }
                 }
@@ -1179,7 +1181,7 @@ namespace zeno {
                         auto outParam = link.outParam;
                         std::shared_ptr<INode> outNode = spGraph->getNode(link.outNode);
                         assert(outNode);
-                        getUpstreamNodes(outNode, depNodes, upstreams, upstreamDepNodes, outParam);
+                        getUpstreamNodes(outNode, upstreams, upstreamDepNodes, outParam);
                         upstreams.insert(outNode->get_uuid_path());
                     }
                 }
@@ -1192,11 +1194,11 @@ namespace zeno {
         {
             upstreams.insert(spGraph->optParentSubgNode.value()->get_uuid_path());
             auto parentSubgNode = spGraph->optParentSubgNode.value();
-            auto parentSubgNodeGetUpstreamFunc = [&depNodes, &upstreams, &upstreamDepNodes, &parentSubgNode](std::string outNode, std::string outParam) {
+            auto parentSubgNodeGetUpstreamFunc = [ &upstreams, &upstreamDepNodes, &parentSubgNode](std::string outNode, std::string outParam) {
                 if (std::shared_ptr<Graph> graph = parentSubgNode->getThisGraph()) {
                     std::shared_ptr<INode> node = graph->getNode(outNode);
                     assert(node);
-                    getUpstreamNodes(node, depNodes, upstreams, upstreamDepNodes, outParam);
+                    getUpstreamNodes(node, upstreams, upstreamDepNodes, outParam);
                     upstreams.insert(node->get_uuid_path());
                 }
             };

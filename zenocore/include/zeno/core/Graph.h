@@ -138,6 +138,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value);
     void parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any& new_value);
 
+    bool isFrameNode(std::string uuid);
+
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
     //增/删边之后更新wildCard端口的类型

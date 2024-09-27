@@ -86,37 +86,6 @@ ZENO_API bool GlobalState::is_working() const {
     return m_working;
 }
 
-ZENO_API void GlobalState::addGlobalVarNode(std::string var, ObjPath nodeUUid)
-{
-    auto it = globalVarNodesMap.find(var);
-    if (it == globalVarNodesMap.end())
-    {
-        globalVarNodesMap.insert({ var, {nodeUUid} });
-    }
-    else {
-        globalVarNodesMap[var].insert(nodeUUid);
-    }
-}
-
-ZENO_API void GlobalState::removeGlobalVarNode(std::string var, ObjPath nodeUUid)
-{
-    auto it = globalVarNodesMap.find(var);
-    if (it != globalVarNodesMap.end())
-    {
-        globalVarNodesMap[var].erase(nodeUUid);
-    }
-}
-
-ZENO_API std::set<ObjPath> GlobalState::getDenpendentNodes(std::string var)
-{
-    auto it = globalVarNodesMap.find(var);
-    if (it != globalVarNodesMap.end())
-    {
-        return globalVarNodesMap[var];
-    }
-    return std::set<std::string> ();
-}
-
 ZENO_API void GlobalState::set_working(bool working) {
     std::lock_guard lk(mtx);
     m_working = working;
