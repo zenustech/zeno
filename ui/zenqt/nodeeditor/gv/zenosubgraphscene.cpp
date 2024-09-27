@@ -1,6 +1,5 @@
 #include "zenosubgraphscene.h"
 #include "zenonodebase.h"
-#include "subnetnode.h"
 #include "heatmapnode.h"
 #include "cameranode.h"
 #include "zenolink.h"
@@ -228,19 +227,7 @@ void ZenoSubGraphScene::initLink(const QModelIndex& linkIdx)
 ZenoNodeBase* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilParam& params)
 {
     const QString& descName = idx.data(ROLE_CLASS_NAME).toString();
-    if (descName == "SubInput")
-    {
-        return new SubnetNode(true, params);
-    }
-    else if (descName == "SubOutput")
-    {
-        return new SubnetNode(false, params);
-    }
-    //else if (descName == "MakeHeatmap")
-    //{
-    //    return new MakeHeatMapNode(params);
-    //}
-    else if (descName == "Group")
+    if (descName == "Group")
     {
         return new GroupNode(params);
     }

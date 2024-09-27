@@ -23,6 +23,8 @@ struct SubnetNode : INode {
     ZENO_API NodeData exportInfo() const override;
 
     ZENO_API CustomUI get_customui() const override;
+    ZENO_API CustomUI export_customui() const override;
+
     ZENO_API void setCustomUi(const CustomUI& ui);
     void mark_subnetdirty(bool bOn);
 };

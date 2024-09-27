@@ -36,6 +36,7 @@
 #include <zeno/core/reflectdef.h>
 #include <zeno/formula/zfxexecute.h>
 #include <zeno/extra/CalcContext.h>
+#include <zeno/extra/SubnetNode.h>
 
 
 using namespace zeno::reflect;
@@ -2001,11 +2002,14 @@ ZENO_API bool zeno::INode::update_param_type(const std::string& param, bool bPri
                 if (type != spParam.type)
                 {
                     spParam.type = type;
-                    //默认值也要更新
-                    zeno::reflect::Any defl = initAnyDeflValue(type);
-                    convertToEditVar(defl, type);
                     CALLBACK_NOTIFY(update_param_type, param, type, bInput)
-                    update_param(spParam.name, defl);
+
+                    //默认值也要更新
+                    if (bInput) {
+                        zeno::reflect::Any defl = initAnyDeflValue(type);
+                        convertToEditVar(defl, type);
+                        update_param(spParam.name, defl);
+                    }
                     return true;
                 }
             }

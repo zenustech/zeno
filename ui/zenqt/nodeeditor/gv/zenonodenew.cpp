@@ -1295,11 +1295,7 @@ void ZenoNodeNew::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
         }
         m_NameItem->setFocus();
     }
-    else if (items.contains(m_headerWidget))
-    {
-        onCollaspeBtnClicked();
-    }
-    else if (items.contains(m_bodyWidget))
+    else if (items.contains(m_headerWidget) || items.contains(m_bodyWidget))
     {
         const QModelIndex& nodeIdx = index();
         zeno::NodeType type = (zeno::NodeType)nodeIdx.data(ROLE_NODETYPE).toInt();

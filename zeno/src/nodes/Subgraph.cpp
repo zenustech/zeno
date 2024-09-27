@@ -35,6 +35,21 @@ struct SubInput : zeno::INode {
         //set_output("port", get_input("_IN_port")); 
         //set_output("hasValue", get_input("_IN_hasValue"));
     }
+
+    CustomUI export_customui() const override {
+        CustomUI ui;
+        ParamGroup group;
+        ParamTab tab;
+        tab.groups.emplace_back(std::move(group));
+        ui.inputPrims.emplace_back(std::move(tab));
+        for (auto param : get_output_primitive_params()) {
+            ui.outputPrims.emplace_back(param);
+        }
+        for (auto param : get_output_object_params()) {
+            ui.outputObjs.emplace_back(param);
+        }
+        return ui;
+    }
 };
 
 ZENDEFNODE(SubInput, {
@@ -49,6 +64,21 @@ struct SubOutput : zeno::INode {
     }
 
     virtual void apply() override {
+    }
+
+    CustomUI export_customui() const override {
+        CustomUI ui;
+        ParamGroup group;
+        ParamTab tab;
+        tab.groups.emplace_back(std::move(group));
+        ui.inputPrims.emplace_back(std::move(tab));
+        for (auto param : get_output_primitive_params()) {
+            ui.outputPrims.emplace_back(param);
+        }
+        for (auto param : get_output_object_params()) {
+            ui.outputObjs.emplace_back(param);
+        }
+        return ui;
     }
 };
 

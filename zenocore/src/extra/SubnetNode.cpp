@@ -60,7 +60,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 primitive.name = "port";
                 primitive.socketType = Socket_Output;
                 newNode->add_output_prim_param(primitive);
-                }
+            }
             else if (!isprim && exist) {
                 zeno::ParamObject paramObj;
                 paramObj.bInput = false;
@@ -103,7 +103,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 primitive.type = Param_Wildcard;
                 primitive.socketType = Socket_WildCard;
                 newNode->add_input_prim_param(primitive);
-        }
+            }
             else if (!isprim && exist) {
                 zeno::ParamObject paramObj;
                 paramObj.bInput = true;
@@ -123,7 +123,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         for (auto name : changes.remove_outputs) {
             subgraph->removeNode(name);
         }
-        }
+    }
     return changes;
 }
 
@@ -195,6 +195,10 @@ ZENO_API NodeData SubnetNode::exportInfo() const {
 
 ZENO_API CustomUI SubnetNode::get_customui() const
 {
+    return m_customUi;
+}
+
+ZENO_API CustomUI SubnetNode::export_customui() const {
     return m_customUi;
 }
 
