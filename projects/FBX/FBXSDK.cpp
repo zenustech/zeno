@@ -16,6 +16,9 @@
 #include "zeno/utils/scope_exit.h"
 #include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/utils/string.h"
+#include "zeno/utils/arrayindex.h"
+#include "zeno/utils/variantswitch.h"
+#include "zeno/utils/eulerangle.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -23,6 +26,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include "DualQuaternion.h"
+#include "zeno/extra/TempNode.h"
+#include "magic_enum.hpp"
 
 #ifdef ZENO_FBXSDK
 #include <fbxsdk.h>
@@ -1475,7 +1480,82 @@ static std::vector<std::string> getBoneNames(PrimitiveObject *prim) {
     }
     return boneNames;
 }
+struct BoneSetAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("skeleton");
+        auto value = get_input<NumericObject>("value");
+        auto attr = get_input2<std::string>("attr");
+        auto type = get_input2<std::string>("type");
+        auto boneName = get_input2<std::string>("boneName");
+        auto boneNameMapping = getBoneNameMapping(prim.get());
+        auto index = boneNameMapping[boneName];
 
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              auto val = value->get<T>();
+              auto &attr_arr = prim->add_attr<T>(attr);
+              if (index < attr_arr.size()) {
+                  attr_arr[index] = val;
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(BoneSetAttr,
+{ /* inputs: */ {
+    "skeleton",
+    {"string", "boneName", ""},
+    {"int", "value", "0"},
+    {"string", "attr", ""},
+    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+}, /* outputs: */ {
+   "prim",
+}, /* params: */ {
+}, /* category: */ {
+   "FBXSDK",
+}});
+struct BoneGetAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("skeleton");
+        auto attr = get_input2<std::string>("attr");
+        auto type = get_input2<std::string>("type");
+        auto boneName = get_input2<std::string>("boneName");
+        auto boneNameMapping = getBoneNameMapping(prim.get());
+        auto index = boneNameMapping[boneName];
+
+        auto value = std::make_shared<NumericObject>();
+
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+              auto &attr_arr = prim->attr<T>(attr);
+              if (index < attr_arr.size()) {
+                  value->set<T>(attr_arr[index]);
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("value", std::move(value));
+    }
+};
+ZENDEFNODE(BoneGetAttr,
+{ /* inputs: */ {
+    "skeleton",
+    {"string", "boneName", ""},
+    {"string", "attr", ""},
+    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+}, /* outputs: */ {
+   "value",
+}, /* params: */ {
+}, /* category: */ {
+   "FBXSDK",
+}});
 static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zeno::PrimitiveObject* skeleton) {
     std::vector<int> ordering;
     std::set<int> ordering_set;
@@ -2624,6 +2704,9 @@ struct IkSolver : INode {
                     yLimit[index] = item->yLimit;
                     zLimit[index] = item->zLimit;
                 }
+                else {
+                    zeno::log_warn("joint limit: joint {} missing", item->boneName);
+                }
             }
         }
         std::vector<float> theta;
@@ -2748,6 +2831,97 @@ ZENDEFNODE(IkJointConstraints, {
     },
     {
         "Skeleton",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct PrimBindOneBone : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        prim->userData().set2("boneName_count", 1);
+        prim->userData().set2("boneName_0", get_input2<std::string>("boneName"));
+        auto &boneName_0 = prim->add_attr<int>("boneName_0");
+        std::fill(boneName_0.begin(), boneName_0.end(), 0);
+        auto &boneWeight_0 = prim->add_attr<float>("boneWeight_0");
+        std::fill(boneWeight_0.begin(), boneWeight_0.end(), 1.0f);
+        set_output2("prim", prim);
+    }
+};
+ZENDEFNODE(PrimBindOneBone, {
+    {
+        "prim",
+        {"string", "boneName", ""},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct PrimDeformByOneBone : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto skeleton = get_input2<PrimitiveObject>("skeleton");
+        auto boneName = get_input2<std::string>("boneName");
+        auto useCustomPivot = get_input2<bool>("useCustomPivot");
+        auto pivot = get_input2<vec3f>("pivot");
+        if (useCustomPivot == false) {
+            auto outs = zeno::TempNodeSimpleCaller("PrimReduction")
+                    .set2("prim", prim)
+                    .set2("attrName", "pos")
+                    .set2("op", "avg")
+                    .call();
+            pivot = outs.get2<zeno::vec3f>("result");
+        }
+        auto eularAngleXYZ = bit_cast<glm::vec3>(get_input2<vec3f>("rotation"));
+        glm::mat4 matRotate = EulerAngle::rotate(EulerAngle::RotationOrder::YXZ, EulerAngle::Measure::Degree, eularAngleXYZ);
+        glm::mat4 matTrans = glm::translate(-bit_cast<glm::vec3>(pivot));
+        auto nameMapping = getBoneNameMapping(skeleton.get());
+        auto boneMatrix = getBoneMatrix(skeleton.get());
+        glm::mat4 transform(1);
+        if (nameMapping.count(boneName)) {
+            auto mat = boneMatrix[nameMapping[boneName]];
+            if (get_input2<bool>("inheritRotation")) {
+                mat[0] = glm::normalize(mat[0]);
+                mat[1] = glm::normalize(mat[1]);
+                mat[2] = glm::normalize(mat[2]);
+            }
+            else {
+                mat[0] = {1, 0, 0, 0};
+                mat[1] = {0, 1, 0, 0};
+                mat[2] = {0, 0, 1, 0};
+            }
+            transform = mat * matTrans * matRotate;
+            auto vert_count = prim->verts.size();
+            #pragma omp parallel for
+            for (auto i = 0; i < vert_count; i++) {
+                prim->verts[i] = transform_pos(transform, prim->verts[i]);
+            }
+            if (prim->verts.attr_is<vec3f>("nrm")) {
+                auto &nrms = prim->verts.attr<vec3f>("nrm");
+                #pragma omp parallel for
+                for (auto i = 0; i < vert_count; i++) {
+                    nrms[i] = transform_nrm(transform, nrms[i]);
+                }
+            }
+        }
+        set_output2("prim", prim);
+    }
+};
+ZENDEFNODE(PrimDeformByOneBone, {
+    {
+        "prim",
+        "skeleton",
+        {"string", "boneName", ""},
+        {"bool", "useCustomPivot", "0"},
+        {"bool", "inheritRotation", "0"},
+        {"vec3f", "pivot", "0, 0, 0"},
+        {"vec3f", "rotation", "0, 0, 0"},
+    },
+    {
+        "prim",
     },
     {},
     {"FBXSDK"},
