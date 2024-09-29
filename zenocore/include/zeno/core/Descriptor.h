@@ -37,7 +37,7 @@ struct SocketDescriptor {
       std::string const &doc = {},
       std::string const& cboxitems = "");
 
-  //兼容以前 `enum [items]`这种写法
+  //鍏煎浠ュ墠 `enum [items]`杩欑鍐欐硶
   ZENO_API SocketDescriptor(
       std::string const& comboitemsDesc,
       std::string const& name,

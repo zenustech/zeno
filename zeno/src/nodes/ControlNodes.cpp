@@ -9,6 +9,9 @@
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/utils/helper.h>
 
+#include <zeno/core/reflectdef.h>
+#include "zeno_types/reflect/reflection.generated.hpp"
+
 
 namespace zeno {
 
@@ -366,62 +369,32 @@ ZENDEFNODE(IfElse, {
 });
 
 //test
-struct TimeShift : zeno::INode {
-    virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changinfo) {
-        if (param == "Clamp") {
-            ParamsUpdateInfo params;
-            auto const& offsetPrimitiveParam = get_input_prim_param("offset");
-            params.push_back({ offsetPrimitiveParam , "offset" });
-            auto const& clampPrimitiveParam = get_input_prim_param("Clamp");
-            params.push_back({ clampPrimitiveParam , "Clamp" });
-            auto const& inputObjParam = get_input_obj_param("prim");
-            params.push_back({ inputObjParam , "prim" });
-            auto const& outputObjParam = get_output_obj_param("prim");
-            params.push_back({ outputObjParam , "prim" });
+struct ZDEFNODE() TimeShift : INode {
 
-            auto clampDefl = clampPrimitiveParam.defl;
-            std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
-            zeno::ParamPrimitive frame;
-            frame.bInput = true;
-            frame.socketType = zeno::Socket_Primitve;
-            frame.type = gParamType_Int;
-            if (clamp == "None") {
-            }
-            else if (clamp == "Clamp to First") {
-                frame.name = "startFrame";
-                params.push_back({ frame , "" });
-            }
-            else if (clamp == "Clamp to Last") {
-                frame.name = "endFrame";
-                params.push_back({ frame , "" });
-            }
-            else {
-                frame.name = "startFrame";
-                params.push_back({ frame , "" });
-                frame.name = "endFrame";
-                params.push_back({ frame , "" });
-            }
-            params_change_info changes = update_editparams(params);
-            INode::trigger_update_params(param, true, changes);
+    ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "clamp", Control = zeno::Combobox, ComboBoxItems = ("None", "Clamp to First", "Clamp to Last", "Clamp to Both"))
+    std::string m_clamp = "None";
+
+    ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "start frame", Constrain = "visible = parameter('clamp').value == 'Clamp to First' || parameter('clamp').value == 'Clamp to Both';")
+    int m_startFrame = 0;
+
+    ZPROPERTY(Role = zeno::Role_InputPrimitive, DisplayName = "end frame", Constrain = "visible = parameter('clamp').value == 'Clamp to Last' || parameter('clamp').value == 'Clamp to Both';")
+    int m_endFrame = 0;
+
+    ReflectCustomUI m_uilayout = {
+        _Group {
+            {"prim", ParamObject("prim", Socket_Clone)},
+            {"offset", ParamPrimitive("offset")},
+        },
+        //输出
+        _Group {
+            {"", ParamObject("Output Object")},
         }
-    }
-    virtual void apply() override {
-        auto prim = get_input2<zeno::PrimitiveObject>("prim");
-        set_output("prim", std::move(prim));
+    };
+
+    std::shared_ptr<IObject> apply(zany prim, int offset) {
+        return prim;
     }
 };
-ZENDEFNODE(TimeShift, {
-    {
-        {gParamType_Primitive, "prim", "", Socket_ReadOnly},
-        {gParamType_Int, "offset", "0", Socket_Primitve, Lineedit},
-        {gParamType_String, "Clamp", "Clamp to Both", Socket_Primitve, Combobox, {}, {}, ";None;Clamp to First;Clamp to Last;Clamp to Both"},
-        {gParamType_Int, "startFrame", "0", Socket_Primitve, Lineedit},
-        {gParamType_Int, "endFrame", "0", Socket_Primitve, Lineedit},
-    },
-    {{gParamType_Primitive, "prim"}},
-    {},
-    {"control"},
-    });
 
 struct Duplicate_deprecated : INode {
     virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changinfo) {

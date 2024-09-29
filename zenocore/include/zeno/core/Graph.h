@@ -149,6 +149,7 @@ private:
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
     bool isLinkValid(const EdgeInfo& edge);
     void foreachApply(INode* foreach_end);
+    void timeshiftApply(INode* timeshift);
 
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
