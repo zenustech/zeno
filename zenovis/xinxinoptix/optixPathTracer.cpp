@@ -1889,7 +1889,7 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<float4>& l
     raii<CUdeviceptr> d_vertex_buffer{}; 
    
     {
-        auto data_length = sizeof( Vertex ) * sphere_count;
+        auto data_length = sizeof( float4 ) * sphere_count;
 
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), lightSpheres.data(),
