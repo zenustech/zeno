@@ -108,7 +108,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
                 //compatible with old case of combobox items.
                 param.type = zeno::types::gParamType_String;
                 param.control = Combobox;
-                std::vector<std::string> items = split_str(param_desc.comboxitems, ' ');
+                std::vector<std::string> items = split_str(param_desc.comboxitems, ';');
                 if (!items.empty()) {
                     items.erase(items.begin());
                     param.ctrlProps = items;

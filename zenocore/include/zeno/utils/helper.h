@@ -59,7 +59,12 @@ namespace zeno {
         std::shared_ptr<INode> node,
         std::map<std::string, std::string>& inputParams,
         std::vector<std::string>& outputParams);
-    ZENO_API bool isDerivedFromSubnetNodeName(const std::string& clsname);    //�ж�clsname�Ƿ�Ϊ�̳���subnetNode�Ľڵ�
+    ZENO_API bool isDerivedFromSubnetNodeName(const std::string& clsname);    //判断clsname是否为继承自subnetNode的节点
+
+    //变量传播dirty相关
+    ZENO_API void propagateDirty(std::shared_ptr<INode> spCurrNode, std::string varName);
+    void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& upstreamDepNodes, std::set<ObjPath>& upstreams, std::string outParamName = "");
+    void mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
 }
 
 

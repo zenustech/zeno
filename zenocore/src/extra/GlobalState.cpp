@@ -55,15 +55,12 @@ ZENO_API void GlobalState::clearState() {
 }
 
 ZENO_API float GlobalState::getFrameId() const {
-    zeno::reflect::Any frame = getSession().globalVariableManager->getVariable("$F");
-    return frame.has_value() ? zeno::reflect::any_cast<float>(frame) : 0;
-    //return frameid;
+    return frameid;
 }
 
 ZENO_API void GlobalState::updateFrameId(float frame) {
     //todo: mutex
-    getSession().globalVariableManager->updateVariable(GVariable("$F", zeno::reflect::make_any<float>(frame)));
-    //frameid = frame;
+    frameid = frame;
 }
 
 ZENO_API void GlobalState::updateFrameRange(int start, int end)
