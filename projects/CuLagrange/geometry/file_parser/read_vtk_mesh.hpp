@@ -12,6 +12,7 @@
 
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/bit_operations.h>
 #include <zeno/zeno.h>
 
 
@@ -450,6 +451,42 @@ namespace zeno {
         return false;
     }
 
+    std::vector<zeno::vec3f> read_attr_vec3f(std::ifstream &file, int num_points, bool type_float) {
+        std::vector<zeno::vec3f> res(num_points);
+        if (type_float) {
+            float* data = new float[num_points * 3];
+            file.read((char*)data, sizeof (float) * num_points * 3);
+            for (auto i = 0; i < num_points * 3; i++) {
+                reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
+            }
+        }
+        else {
+            double* data = new double[num_points * 3];
+            file.read((char*)data, sizeof (double) * num_points * 3);
+            for (auto i = 0; i < num_points * 3; i++) {
+                reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
+            }
+        }
+        return res;
+    }
+    std::vector<float> read_attr_float(std::ifstream &file, int num_points, bool type_float) {
+        std::vector<float> res(num_points);
+        if (type_float) {
+            float* data = new float[num_points];
+            file.read((char*)data, sizeof (float) * num_points);
+            for (auto i = 0; i < num_points; i++) {
+                reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
+            }
+        }
+        else {
+            double* data = new double[num_points];
+            file.read((char*)data, sizeof (double) * num_points);
+            for (auto i = 0; i < num_points; i++) {
+                reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
+            }
+        }
+        return res;
+    }
     // DATASET POLYDATA
     // POINTS n dataType
     // p0x p0y p0z
@@ -587,28 +624,7 @@ namespace zeno {
             }
           }else if(readtype == "BINARY")
           {
-            if (type == "float") {
-              for (int i = 0; i < num_points; i++) {
-                for (int j = 0; j < 3; j++) {
-                  char buf[4];
-                  for (auto k = 3; k >= 0; k--) {
-                    buf[k] = file.get();
-                  }
-                  prim->verts[i][j] = *(float*)buf;
-                }
-              }
-            }
-            else if (type == "double") {
-              for (int i = 0; i < num_points; i++) {
-                for (int j = 0; j < 3; j++) {
-                  char buf[8];
-                  for (auto k = 7; k >= 0; k--) {
-                    buf[k] = file.get();
-                  }
-                  prim->verts[i][j] = *(double*)buf;
-                }
-              }
-            }
+            prim->verts.values = read_attr_vec3f(file, num_points, type == "float");
           }
         }
         else if(line_str.find("Velocity ")!=std::string::npos)
@@ -620,28 +636,7 @@ namespace zeno {
                 file >> Velocity[i][j];
             }
           }else if(readtype == "BINARY"){
-            if (line_str.find(" float")!=std::string::npos) {
-              for (int i = 0; i < num_points; i++) {
-                for (int j = 0; j < 3; j++) {
-                  char buf[4];
-                  for (auto k = 3; k >= 0; k--) {
-                    buf[k] = file.get();
-                  }
-                  Velocity[i][j] = *(float*)buf;
-                }
-              }
-            }
-            else if (line_str.find(" double")!=std::string::npos){
-              for (int i = 0; i < num_points; i++) {
-                for (int j = 0; j < 3; j++) {
-                  char buf[8];
-                  for (auto k = 7; k >= 0; k--) {
-                    buf[k] = file.get();
-                  }
-                  Velocity[i][j] = *(double*)buf;
-                }
-              }
-            }
+            Velocity = read_attr_vec3f(file, num_points, line_str.find(" float")!=std::string::npos);
           }
         }
         else if(line_str.find("POINT_DATA ")!=std::string::npos)
@@ -667,27 +662,7 @@ namespace zeno {
                   file >> Velocity[i][j];
               }
             } else if (readtype == "BINARY") {
-              if (c=="float") {
-                for (int i = 0; i < num_points; i++) {
-                  for (int j = 0; j < 3; j++) {
-                    char buf[4];
-                    for (auto k = 3; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    Velocity[i][j] = *(float *)buf;
-                  }
-                }
-              } else if (c=="double") {
-                for (int i = 0; i < num_points; i++) {
-                  for (int j = 0; j < 3; j++) {
-                    char buf[8];
-                    for (auto k = 7; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    Velocity[i][j] = *(double *)buf;
-                  }
-                }
-              }
+              Velocity = read_attr_vec3f(file, num_points, c=="float");
             }
           }else if(a=="SCALARS") {
             auto &Velocity = prim->verts.add_attr<float>(name);
@@ -696,27 +671,7 @@ namespace zeno {
                 file >> Velocity[i];
               }
             } else if (readtype == "BINARY") {
-              if (c=="float") {
-                for (int i = 0; i < num_points; i++) {
-                  for (int j = 0; j < 1; j++) {
-                    char buf[4];
-                    for (auto k = 3; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    Velocity[i] = *(float *)buf;
-                  }
-                }
-              } else if (c=="double") {
-                for (int i = 0; i < num_points; i++) {
-                  for (int j = 0; j < 1; j++) {
-                    char buf[8];
-                    for (auto k = 7; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    Velocity[i] = *(double *)buf;
-                  }
-                }
-              }
+              Velocity = read_attr_float(file, num_points, c=="float");
             }
           }
         }
@@ -751,24 +706,7 @@ namespace zeno {
                 }
               }else if(readtype == "BINARY")
               {
-                if (strs[3] == "float") {
-                  for (int i = 0; i < num_points; i++) {
-                    char buf[4];
-                    for (auto k = 3; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    vars[i] = *(float*)buf;
-                  }
-                }
-                else if (strs[3] == "double") {
-                  for (int i = 0; i < num_points; i++) {
-                    char buf[8];
-                    for (auto k = 7; k >= 0; k--) {
-                      buf[k] = file.get();
-                    }
-                    vars[i] = *(double*)buf;
-                  }
-                }
+                vars = read_attr_float(file, num_points, strs[3]=="float");
               }
             }else if(strs[1] == "3")
             {
@@ -781,27 +719,7 @@ namespace zeno {
                       file >> vars[i][j];
                   }
                 } else if (readtype == "BINARY") {
-                  if (strs[3] == "float") {
-                    for (int i = 0; i < num_points; i++) {
-                      for (int j = 0; j < 3; j++) {
-                        char buf[4];
-                        for (auto k = 3; k >= 0; k--) {
-                          buf[k] = file.get();
-                        }
-                        vars[i][j] = *(float *)buf;
-                      }
-                    }
-                  } else if (strs[3] == "double") {
-                    for (int i = 0; i < num_points; i++) {
-                      for (int j = 0; j < 3; j++) {
-                        char buf[8];
-                        for (auto k = 7; k >= 0; k--) {
-                          buf[k] = file.get();
-                        }
-                        vars[i][j] = *(double *)buf;
-                      }
-                    }
-                  }
+                  vars = read_attr_vec3f(file, num_points, strs[3]=="float");
                 }
               }
             }
