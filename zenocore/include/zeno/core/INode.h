@@ -192,7 +192,7 @@ private:
     zeno::reflect::Any processPrimitive(PrimitiveParam* in_param);
     std::shared_ptr<DictObject> processDict(ObjectParam* in_param, CalcContext* pContext);
     std::shared_ptr<ListObject> processList(ObjectParam* in_param, CalcContext* pContext);
-    bool receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType outobj_type);
+    bool receiveOutputObj(ObjectParam* in_param, std::shared_ptr<INode> outNode, zany outputObj, ParamType outobj_type);
     void reportStatus(bool bDirty, NodeRunStatus status);
     float resolve(const std::string& formulaOrKFrame, const ParamType type);
     template<class T, class E> T resolveVec(const zeno::reflect::Any& defl, const ParamType type);

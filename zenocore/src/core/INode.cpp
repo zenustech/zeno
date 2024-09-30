@@ -381,19 +381,6 @@ ZENO_API void INode::mark_dirty(bool bOn, bool bWholeSubnet, bool bRecursively)
         return;
 
     if (m_dirty) {
-        for (auto& [name, param] : m_inputObjs) {   //如果input对象是owning类型，mark_dirty时需要将上游也mark_dirty
-            if (param.socketType == Socket_Owning) {
-                for (auto link : param.links) {
-                    auto fromParam = link->fromparam;
-                    assert(fromParam);
-                    if (fromParam) {
-                        auto fromNode = fromParam->m_wpNode.lock();
-                        assert(fromNode);
-                        fromNode->mark_dirty(true);
-                    }
-                }
-            }
-        }
         for (auto& [name, param] : m_inputPrims) {
             for (auto link : param.reflinks) {
                 if (link->dest_inparam != &param) {
@@ -1228,13 +1215,15 @@ zeno::reflect::Any INode::processPrimitive(PrimitiveParam* in_param)
     return result;
 }
 
-bool INode::receiveOutputObj(ObjectParam* in_param, zany outputObj, ParamType outobj_type) {
+bool INode::receiveOutputObj(ObjectParam* in_param, std::shared_ptr<INode> outNode, zany outputObj, ParamType outobj_type) {
 
     if (in_param->socketType == Socket_Clone) {
         in_param->spObject = outputObj->clone();
     }
     else if (in_param->socketType == Socket_Owning) {
         in_param->spObject = outputObj->move_clone();
+        assert(outNode);
+        outNode->mark_dirty(true);
     }
     else if (in_param->socketType == Socket_ReadOnly) {
         in_param->spObject = outputObj;
@@ -1266,13 +1255,13 @@ ZENO_API bool INode::requireInput(std::string const& ds, CalcContext* pContext) 
                 case gParamType_Dict:
                 {
                     std::shared_ptr<DictObject> outDict = processDict(in_param, pContext);
-                    receiveOutputObj(in_param, outDict, gParamType_Dict);
+                    receiveOutputObj(in_param, nullptr, outDict, gParamType_Dict);
                     break;
                 }
                 case gParamType_List:
                 {
                     std::shared_ptr<ListObject> outList = processList(in_param, pContext);
-                    receiveOutputObj(in_param, outList, gParamType_List);
+                    receiveOutputObj(in_param, nullptr, outList, gParamType_List);
                     break;
                 }
                 case gParamType_Curve:
@@ -1293,7 +1282,7 @@ ZENO_API bool INode::requireInput(std::string const& ds, CalcContext* pContext) 
 
                         if (out_param->spObject)
                         {
-                            receiveOutputObj(in_param, out_param->spObject, out_param->type);
+                            receiveOutputObj(in_param, outNode, out_param->spObject, out_param->type);
                         }
                     }
                 }
