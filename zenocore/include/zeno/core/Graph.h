@@ -142,7 +142,7 @@ private:
     bool isLinkValid(const EdgeInfo& edge);
     bool applyNode(std::string const& id);
     void foreachApply(INode* foreach_end, CalcContext* pContext);
-    void timeshiftApply(INode* timeshift);
+    void timeshiftApply(INode* timeshift, CalcContext* pContext);
 
 
     std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.

@@ -95,7 +95,7 @@ void Graph::foreachApply(INode* foreach_end, CalcContext* pContext) {
     //foreach_end->reportStatus(false, Node_RunSucceed);
 }
 
-void Graph::timeshiftApply(INode* timeshiftNode)
+void Graph::timeshiftApply(INode* timeshiftNode, CalcContext* pContext)
 {
     if (timeshiftNode) {
         int oldFrame = getSession().globalState->getFrameId();
@@ -135,7 +135,7 @@ void Graph::timeshiftApply(INode* timeshiftNode)
         //propaget dirty
         std::shared_ptr<INode> spnode = safe_at(m_nodes, timeshiftNode->get_uuid(), "node name");
         propagateDirty(spnode, "$F");
-        timeshiftNode->doApply();
+        timeshiftNode->doApply(pContext);
     }
 }
 
@@ -148,7 +148,7 @@ bool Graph::applyNode(std::string const &node_name) {
     GraphException::translated([&] {
         std::string nodecls = node->get_nodecls();
         if ("TimeShift" == nodecls) {
-            timeshiftApply(node);
+            timeshiftApply(node, &ctx);
         } else if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
             foreachApply(node, &ctx);
         }
