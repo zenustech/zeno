@@ -345,17 +345,21 @@ ZENO_API bool INode::isInDopnetwork()
     std::shared_ptr<Graph> parentGraph = graph.lock();
     while (parentGraph)
     {
-        if (SubnetNode* subnet = parentGraph->optParentSubgNode.value()) {
-            if (DopNetwork* dop = dynamic_cast<DopNetwork*>(subnet)) {
-                return true;
+        if (parentGraph->optParentSubgNode.has_value())
+        {
+            if (SubnetNode* subnet = parentGraph->optParentSubgNode.value()) {
+                if (DopNetwork* dop = dynamic_cast<DopNetwork*>(subnet)) {
+                    return true;
+                }
+                else {
+                    parentGraph = subnet->getGraph().lock();
+                }
             }
             else {
-                parentGraph = subnet->getGraph().lock();
+                break;
             }
         }
-        else {
-            break;
-        }
+        else break;
     }
     return false;
 }

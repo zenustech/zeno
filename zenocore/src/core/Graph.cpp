@@ -95,6 +95,50 @@ void Graph::foreachApply(INode* foreach_end, CalcContext* pContext) {
     //foreach_end->reportStatus(false, Node_RunSucceed);
 }
 
+void Graph::timeshiftApply(INode* timeshiftNode)
+{
+    if (timeshiftNode) {
+        int oldFrame = getSession().globalState->getFrameId();
+        scope_exit sp([&oldFrame] { getSession().globalState->updateFrameId(oldFrame); });
+        //get offset
+        auto defl = timeshiftNode->get_input_prim_param("offset").defl;
+        zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
+        int newFrame = oldFrame + std::get<int>(offset);
+        //clamp
+        auto startFrameDefl = timeshiftNode->get_input_prim_param("start frame").defl;
+        int globalStartFrame = getSession().globalState->getStartFrame();
+        int startFrame = startFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(startFrameDefl)) : globalStartFrame;
+        auto endFrameDefl = timeshiftNode->get_input_prim_param("end frame").defl;
+        int globalEndFrame = getSession().globalState->getEndFrame();
+        int endFrame = endFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(endFrameDefl)) : globalEndFrame;
+        auto clampDefl = timeshiftNode->get_input_prim_param("clamp").defl;
+        std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
+        if (startFrame > endFrame) {
+            startFrame = globalStartFrame;
+            endFrame = globalEndFrame;
+        }
+        if (clamp == "Clamp to First") {
+            newFrame = newFrame < startFrame ? startFrame : newFrame;
+        }
+        else if (clamp == "Clamp to Last") {
+            newFrame = newFrame > endFrame ? endFrame : newFrame;
+        }
+        else if (clamp == "Clamp to Both") {
+            if (newFrame < startFrame) {
+                newFrame = startFrame;
+            }
+            else if (newFrame > endFrame) {
+                newFrame = endFrame;
+            }
+        }
+        getSession().globalState->updateFrameId(newFrame);
+        //propaget dirty
+        std::shared_ptr<INode> spnode = safe_at(m_nodes, timeshiftNode->get_uuid(), "node name");
+        propagateDirty(spnode, "$F");
+        timeshiftNode->doApply();
+    }
+}
+
 bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
@@ -102,7 +146,10 @@ bool Graph::applyNode(std::string const &node_name) {
     CalcContext ctx;
 
     GraphException::translated([&] {
-        if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
+        std::string nodecls = node->get_nodecls();
+        if ("TimeShift" == nodecls) {
+            timeshiftApply(node);
+        } else if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
             foreachApply(node, &ctx);
         }
         else {
@@ -129,7 +176,6 @@ void Graph::onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_v
     assert(spNode);
     {   //检测param依赖全局变量,先remove再parse
         const std::string& uuid = spNode->get_uuid();
-        getSession().globalVariableManager->removeDependGlobalVaraible(uuid, "$F");
         frame_nodes.erase(uuid);
         assert(spParam);
         parseNodeParamDependency(spParam, new_value);
@@ -148,7 +194,6 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
         std::regex pattern("\\$F");
         if (std::regex_search(defl, pattern, std::regex_constants::match_default)) {
             frame_nodes.insert(uuid);
-            getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
         }
     }
     else if (gParamType_Int == spParam->type || gParamType_Float == spParam->type)
@@ -161,7 +206,6 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
                 std::regex pattern("\\$F");
                 if (std::regex_search(arg, pattern, std::regex_constants::match_default)) {
                     frame_nodes.insert(uuid);
-                    getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
                 }
             }
         }, editVar);
@@ -182,12 +226,16 @@ void Graph::parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any
                     std::regex pattern("\\$F");
                     if (std::regex_search(arg, pattern, std::regex_constants::match_default)) {
                         frame_nodes.insert(uuid);
-                        getSession().globalVariableManager->addDependGlobalVaraible(spNode->get_uuid_path(), "$F", zeno::reflect::type_info<float>());
                     }
                 }
             }, primvar);
         }
     }
+}
+
+bool Graph::isFrameNode(std::string uuid)
+{
+    return frame_nodes.count(uuid);
 }
 
 void Graph::viewNodeUpdated(const std::string node, bool bView) {

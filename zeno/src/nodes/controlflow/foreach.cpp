@@ -140,6 +140,10 @@ namespace zeno
             int start_value = zeno::reflect::any_cast<int>(get_defl_value("Start Value"));
             //挺可悲的，明明有一个m_start_value，但因为ui修改的时候没来得及同步过来，而拿不了
             foreach_begin->update_iteration(/*m*/start_value);
+            m_start_value = start_value;
+            m_stop_condition = zeno::reflect::any_cast<int>(get_defl_value("Stop Condition"));
+            m_iterations = zeno::reflect::any_cast<int>(get_defl_value("Iterations"));
+            m_increment = zeno::reflect::any_cast<int>(get_defl_value("Increment"));
         }
 
         ZENO_API bool is_continue_to_run() override {
@@ -149,9 +153,19 @@ namespace zeno
             int current_iter = foreach_begin->get_current_iteration();
 
             if (iter_method == "By Count") {
-                if (current_iter >= m_iterations) {
-                    //TODO: stop conditon
+                if (m_iterations <= 0 || m_increment == 0) {//迭代次数非正或increment为0返回
                     return false;
+                }
+                else {
+                    if (m_increment > 0) {//正增长
+                        if (m_iterations <= current_iter - m_start_value || current_iter >= m_stop_condition) {
+                            return false;
+                        }
+                    } else {//负增长
+                        if (m_iterations <= m_start_value - current_iter || current_iter <= m_stop_condition) {
+                            return false;
+                        }
+                    }
                 }
                 return true;
             }

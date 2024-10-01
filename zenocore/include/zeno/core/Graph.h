@@ -130,6 +130,8 @@ struct Graph : std::enable_shared_from_this<Graph> {
     void onNodeParamUpdated(PrimitiveParam* spParam, zeno::reflect::Any old_value, zeno::reflect::Any new_value);
     void parseNodeParamDependency(PrimitiveParam* spParam, zeno::reflect::Any& new_value);
 
+    bool isFrameNode(std::string uuid);
+
 private:
     std::string generateNewName(const std::string& node_cls, const std::string& origin_name = "", bool bAssets = false);
     //增/删边之后更新wildCard端口的类型
@@ -140,6 +142,7 @@ private:
     bool isLinkValid(const EdgeInfo& edge);
     bool applyNode(std::string const& id);
     void foreachApply(INode* foreach_end, CalcContext* pContext);
+    void timeshiftApply(INode* timeshift);
 
 
     std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.

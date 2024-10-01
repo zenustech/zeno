@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <set>
+#include <map>
+#include <zeno/core/common.h>
 
 namespace zeno {
 
