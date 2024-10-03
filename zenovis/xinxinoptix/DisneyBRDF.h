@@ -320,7 +320,7 @@ float DielectricFresnel(float cosThetaI, float eta)
   float eta2 = eta * eta;
 
   float cos2t = 1.0f - sin2 / eta2;
-  if(cos2t < 0) return 1.0f;
+  if(cos2t < 0.0f) return 1.0f;
 
   float t0 = sqrt(cos2t);
   float t1 = eta * t0;
@@ -417,7 +417,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   float FH = SchlickWeight(LDotH);
   vec3 Fsheen = FH * sheen * Csheen;
 
-  pdf = L.z * 1.0f / M_PIf;
+  pdf = abs(L.z) * 1.0f / M_PIf;
   return 1.0f / M_PIf * baseColor * (Fd + Fretro) + Fsheen;
 }
 
