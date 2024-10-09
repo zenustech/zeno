@@ -334,7 +334,7 @@ void ZPlainLogPanel::contextMenuEvent(QContextMenuEvent* event)
             QString cmd = text;
             cmd = cmd.replace(str, newStr);
             QProcess process;
-            auto cmdArgs = cmd.split(QRegularExpression("\\s+"), QString::SkipEmptyParts);
+            auto cmdArgs = process.splitCommand(cmd);
             process.setProgram(cmdArgs.takeFirst());
             QStringList args;
             for (int i = 0; i < cmdArgs.size(); i++)
