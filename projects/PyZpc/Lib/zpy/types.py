@@ -52,7 +52,8 @@ class ZenoObject:
         if hasattr(value, 'to_handle'):
             return value
         else:
-            return ZenoObject.make_literal(value)
+            handle = ZenoObject.make_literal(value)
+            return ZenoObject(handle)
 
     def fetch_literal(self):
         litType_ = ctypes.c_int(0)
