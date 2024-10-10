@@ -97,50 +97,6 @@ void Graph::foreachApply(INode* foreach_end, CalcContext* pContext) {
     //foreach_end->reportStatus(false, Node_RunSucceed);
 }
 
-void Graph::timeshiftApply(INode* timeshiftNode, CalcContext* pContext)
-{
-    if (timeshiftNode) {
-        int oldFrame = getSession().globalState->getFrameId();
-        scope_exit sp([&oldFrame] { getSession().globalState->updateFrameId(oldFrame); });
-        //get offset
-        auto defl = timeshiftNode->get_input_prim_param("offset").defl;
-        zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
-        int newFrame = oldFrame + std::get<int>(offset);
-        //clamp
-        auto startFrameDefl = timeshiftNode->get_input_prim_param("start frame").defl;
-        int globalStartFrame = getSession().globalState->getStartFrame();
-        int startFrame = startFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(startFrameDefl)) : globalStartFrame;
-        auto endFrameDefl = timeshiftNode->get_input_prim_param("end frame").defl;
-        int globalEndFrame = getSession().globalState->getEndFrame();
-        int endFrame = endFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(endFrameDefl)) : globalEndFrame;
-        auto clampDefl = timeshiftNode->get_input_prim_param("clamp").defl;
-        std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
-        if (startFrame > endFrame) {
-            startFrame = globalStartFrame;
-            endFrame = globalEndFrame;
-        }
-        if (clamp == "Clamp to First") {
-            newFrame = newFrame < startFrame ? startFrame : newFrame;
-        }
-        else if (clamp == "Clamp to Last") {
-            newFrame = newFrame > endFrame ? endFrame : newFrame;
-        }
-        else if (clamp == "Clamp to Both") {
-            if (newFrame < startFrame) {
-                newFrame = startFrame;
-            }
-            else if (newFrame > endFrame) {
-                newFrame = endFrame;
-            }
-        }
-        getSession().globalState->updateFrameId(newFrame);
-        //propaget dirty
-        std::shared_ptr<INode> spnode = safe_at(m_nodes, timeshiftNode->get_uuid(), "node name");
-        propagateDirty(spnode, "$F");
-        timeshiftNode->doApply(pContext);
-    }
-}
-
 bool Graph::applyNode(std::string const &node_name) {
     const std::string uuid = safe_at(m_name2uuid, node_name, "uuid");
     auto node = safe_at(m_nodes, uuid, "node name").get();
@@ -149,9 +105,7 @@ bool Graph::applyNode(std::string const &node_name) {
 
     GraphException::translated([&] {
         std::string nodecls = node->get_nodecls();
-        if ("TimeShift" == nodecls) {
-            timeshiftApply(node, &ctx);
-        } else if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
+        if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
             foreachApply(node, &ctx);
         }
         else {

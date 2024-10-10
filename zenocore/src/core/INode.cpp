@@ -364,6 +364,48 @@ ZENO_API bool INode::isInDopnetwork()
     return false;
 }
 
+void INode::preApplyTimeshift(CalcContext* pContext)
+{
+    int oldFrame = getSession().globalState->getFrameId();
+    scope_exit sp([&oldFrame] { getSession().globalState->updateFrameId(oldFrame); });
+    //get offset
+    auto defl = get_input_prim_param("offset").defl;
+    zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
+    int newFrame = oldFrame + std::get<int>(offset);
+    //clamp
+    auto startFrameDefl = get_input_prim_param("start frame").defl;
+    int globalStartFrame = getSession().globalState->getStartFrame();
+    int startFrame = startFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(startFrameDefl)) : globalStartFrame;
+    auto endFrameDefl = get_input_prim_param("end frame").defl;
+    int globalEndFrame = getSession().globalState->getEndFrame();
+    int endFrame = endFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(endFrameDefl)) : globalEndFrame;
+    auto clampDefl = get_input_prim_param("clamp").defl;
+    std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
+    if (startFrame > endFrame) {
+        startFrame = globalStartFrame;
+        endFrame = globalEndFrame;
+    }
+    if (clamp == "Clamp to First") {
+        newFrame = newFrame < startFrame ? startFrame : newFrame;
+    }
+    else if (clamp == "Clamp to Last") {
+        newFrame = newFrame > endFrame ? endFrame : newFrame;
+    }
+    else if (clamp == "Clamp to Both") {
+        if (newFrame < startFrame) {
+            newFrame = startFrame;
+        }
+        else if (newFrame > endFrame) {
+            newFrame = endFrame;
+        }
+    }
+    getSession().globalState->updateFrameId(newFrame);
+    //propaget dirty
+    propagateDirty(shared_from_this(), "$F");
+
+    preApply(pContext);
+}
+
 void INode::onInterrupted() {
     mark_dirty(true);
     mark_previous_ref_dirty();
@@ -1374,7 +1416,11 @@ ZENO_API void INode::doApply(CalcContext* pContext) {
     pContext->visited_nodes.insert(uuid_path);
     scope_exit spUuidRecord([=] {pContext->visited_nodes.erase(uuid_path); });
 
-    preApply(pContext);
+    if (m_nodecls == "TimeShift") {
+        preApplyTimeshift(pContext);
+    } else {
+        preApply(pContext);
+    }
 
     if (zeno::getSession().is_interrupted()) {
         throw makeError<InterruputError>(m_uuidPath);

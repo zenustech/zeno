@@ -134,6 +134,9 @@ public:
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
     ZENO_API bool isInDopnetwork();
 
+    //for timeshift node
+    void preApplyTimeshift(CalcContext* pContext);
+
     //foreachÌØ¹©
     ZENO_API virtual bool is_continue_to_run();
     ZENO_API virtual void increment();
