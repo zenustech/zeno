@@ -454,15 +454,15 @@ namespace zeno {
     std::vector<zeno::vec3f> read_attr_vec3f(std::ifstream &file, int num_points, bool type_float) {
         std::vector<zeno::vec3f> res(num_points);
         if (type_float) {
-            float* data = new float[num_points * 3];
-            file.read((char*)data, sizeof (float) * num_points * 3);
+            std::vector<float> data(num_points * 3);
+            file.read((char*)data.data(), sizeof (float) * num_points * 3);
             for (auto i = 0; i < num_points * 3; i++) {
                 reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
             }
         }
         else {
-            double* data = new double[num_points * 3];
-            file.read((char*)data, sizeof (double) * num_points * 3);
+            std::vector<double> data(num_points * 3);
+            file.read((char*)data.data(), sizeof (double) * num_points * 3);
             for (auto i = 0; i < num_points * 3; i++) {
                 reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
             }
@@ -472,15 +472,15 @@ namespace zeno {
     std::vector<float> read_attr_float(std::ifstream &file, int num_points, bool type_float) {
         std::vector<float> res(num_points);
         if (type_float) {
-            float* data = new float[num_points];
-            file.read((char*)data, sizeof (float) * num_points);
+            std::vector<float> data(num_points);
+            file.read((char*)data.data(), sizeof (float) * num_points);
             for (auto i = 0; i < num_points; i++) {
                 reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
             }
         }
         else {
-            double* data = new double[num_points];
-            file.read((char*)data, sizeof (double) * num_points);
+            std::vector<double> data(num_points);
+            file.read((char*)data.data(), sizeof (double) * num_points);
             for (auto i = 0; i < num_points; i++) {
                 reinterpret_cast<float *>(res.data())[i] = byteswap(data[i]);
             }
