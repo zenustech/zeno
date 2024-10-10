@@ -849,8 +849,8 @@ inline void calc_sky_cdf_map(cuTexture* tex, int nx, int ny, int nc, std::functi
 }
 
 static std::string calculateMD5(const std::vector<char>& input) {
-    CryptoPP::byte digest[CryptoPP::Weak::MD5::DIGESTSIZE];
-    CryptoPP::Weak::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    unsigned char digest[CryptoPP::Weak::MD5::DIGESTSIZE];
+    CryptoPP::Weak::MD5().CalculateDigest(digest, (const unsigned char*)input.data(), input.size());
     CryptoPP::HexEncoder encoder;
     std::string output;
     encoder.Attach(new CryptoPP::StringSink(output));
