@@ -580,6 +580,7 @@ namespace zeno {
 
                     ParamPrimitive prim;
                     prim.name = param_name;
+                    prim.type = type;
                     prim.bInput = false;
                     prim.bSocketVisible = false;
                     prim.control = NullControl;

@@ -70,7 +70,7 @@ namespace zeno
                 else {
                     std::shared_ptr<IObject> outputObj = foreach_end->get_iterate_object();
                     //outputObj of last iteration as a feedback to next procedure.
-                    return outputObj;
+                    return outputObj ? outputObj : init_object;
                 }
             }
             else if (m_fetch_mehod == "Element of Object") {
@@ -211,7 +211,9 @@ namespace zeno
             m_iterate_object = iterate_object;
             if (m_iterate_method == "By Count" || m_iterate_method == "By Container") {
                 if (m_collect_method == "Feedback to Begin") {
-                    return m_iterate_object;
+                    std::shared_ptr<ListObject> listobj = std::make_shared<ListObject>();
+                    listobj->append(m_iterate_object);
+                    return listobj;
                 }
                 else if (m_collect_method == "Gather Each Iteration") {
                     zany new_obj = iterate_object->clone();

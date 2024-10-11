@@ -91,6 +91,8 @@ void Graph::foreachApply(INode* foreach_end, CalcContext* pContext) {
         foreach_begin->mark_dirty(true);
         foreach_end->doApply(pContext);
     }
+    auto output = foreach_end->get_output_obj("Output Object");
+    output->update_key(foreach_end->get_uuid());
     foreach_end->registerObjToManager();
     //foreach_end->reportStatus(false, Node_RunSucceed);
 }
