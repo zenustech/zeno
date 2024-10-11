@@ -406,6 +406,23 @@ void INode::preApplyTimeshift(CalcContext* pContext)
     preApply(pContext);
 }
 
+void INode::reflectForeach_apply(CalcContext* pContext)
+{
+    std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(get_defl_value("ForEachBegin Path"));
+    if (std::shared_ptr<Graph> spGraph = graph.lock()) {
+        auto foreach_begin = spGraph->getNode(foreach_begin_path);
+        for (reset_forloop_settings(); is_continue_to_run(); increment())
+        {
+            foreach_begin->mark_dirty(true);
+
+            preApply(pContext);
+            reflectNode_apply();
+        }
+        auto output = get_output_obj("Output Object");
+        output->update_key(m_uuid);
+    }
+}
+
 void INode::onInterrupted() {
     mark_dirty(true);
     mark_previous_ref_dirty();
@@ -1418,6 +1435,7 @@ ZENO_API void INode::doApply(CalcContext* pContext) {
 
     if (m_nodecls == "TimeShift") {
         preApplyTimeshift(pContext);
+    } else if (m_nodecls == "ForEachEnd") {
     } else {
         preApply(pContext);
     }
@@ -1436,7 +1454,11 @@ ZENO_API void INode::doApply(CalcContext* pContext) {
             apply();
         }
         else {
-            reflectNode_apply();
+            if (m_nodecls == "ForEachEnd") {
+                reflectForeach_apply(pContext);
+            } else {
+                reflectNode_apply();
+            }
         }
     }
     log_debug("==> leave {}", m_name);
@@ -1446,10 +1468,14 @@ ZENO_API void INode::doApply(CalcContext* pContext) {
         reportStatus(true, Node_Running);
         registerObjToManager();
         reportStatus(true, Node_DirtyReadyToRun);
-    }
-    else if (m_nodecls != "ForEachEnd") {
-        registerObjToManager();
-        reportStatus(false, Node_RunSucceed);
+    } else {
+        if (m_nodecls == "ForEachEnd") {
+            reportStatus(true, Node_Running);
+            registerObjToManager();
+        } else {
+            registerObjToManager();
+            reportStatus(false, Node_RunSucceed);
+        }
     }
 }
 

@@ -104,13 +104,7 @@ bool Graph::applyNode(std::string const &node_name) {
     CalcContext ctx;
 
     GraphException::translated([&] {
-        std::string nodecls = node->get_nodecls();
-        if ("ForEachEnd" == node->get_nodecls() && node->is_dirty()) {
-            foreachApply(node, &ctx);
-        }
-        else {
-            node->doApply(&ctx);
-        }
+        node->doApply(&ctx);
     }, node);
 
     return true;

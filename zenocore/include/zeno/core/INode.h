@@ -138,6 +138,7 @@ public:
     void preApplyTimeshift(CalcContext* pContext);
 
     //foreachÌØ¹©
+    void reflectForeach_apply(CalcContext* pContext);
     ZENO_API virtual bool is_continue_to_run();
     ZENO_API virtual void increment();
     ZENO_API virtual void reset_forloop_settings();
