@@ -434,9 +434,15 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
     params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
     params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
-    params.frame_buffer[ image_index ] = make_color ( accum_color );
+
     params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
     params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
+
+    auto uv = float2{idx.x+0.5f, idx.y+0.5f};
+    auto dither = InterleavedGradientNoise(uv);
+
+    dither = (dither-0.5f)/255;
+    params.frame_buffer[ image_index ] = make_color( accum_color + dither);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

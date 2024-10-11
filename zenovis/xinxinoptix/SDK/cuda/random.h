@@ -28,6 +28,9 @@
 
 #pragma once
 
+#include <vector_types.h>
+#include <sutil/vec_math.h>
+
 template<unsigned int N>
 static __host__ __device__ __inline__ unsigned int tea( unsigned int val0, unsigned int val1 )
 {
@@ -149,4 +152,16 @@ float2 sobolRnd2(unsigned int & seed)
      return make_float2(float(ip.x)/float(0xffffffffu), float(ip.y)/float(0xffffffffu));
 
     //return make_float2(rnd(seed), rnd(seed));
+}
+
+__forceinline__ __device__ float fractf(float x)
+{
+	return x - floorf(x);
+}
+
+/* Gradient noise from Jorge Jimenez's presentation: */
+/* http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare */
+__forceinline__ __device__ float InterleavedGradientNoise(float2 uv)
+{
+	return fractf(52.9829189 * fractf(dot(uv, float2{0.06711056, 0.00583715})));
 }
