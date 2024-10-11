@@ -164,6 +164,21 @@ struct GraphicsManager {
             add_object(spObj);
         }
         for (auto [key, spObj] : objs.modifyObjs) {
+            bool isListDict = false;
+            if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(spObj)) {
+                isListDict = true;
+            } else if (auto spDict = std::dynamic_pointer_cast<zeno::DictObject>(spObj)) {
+                isListDict = true;
+            }
+            if (isListDict) {
+                auto& wtf = graphics.m_curr.m_curr;
+                for (auto it = wtf.begin(); it != wtf.end(); ) {
+                    if (it->first.find(key) != std::string::npos)
+                        it = wtf.erase(it);
+                    else
+                        ++it;
+                }
+            }
             add_object(spObj);
         }
     }

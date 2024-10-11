@@ -70,7 +70,7 @@ namespace zeno
                 else {
                     std::shared_ptr<IObject> outputObj = foreach_end->get_iterate_object();
                     //outputObj of last iteration as a feedback to next procedure.
-                    return outputObj;
+                    return outputObj ? outputObj : init_object;
                 }
             }
             else if (m_fetch_mehod == "Element of Object") {
@@ -211,11 +211,27 @@ namespace zeno
             m_iterate_object = iterate_object;
             if (m_iterate_method == "By Count" || m_iterate_method == "By Container") {
                 if (m_collect_method == "Feedback to Begin") {
-                    return m_iterate_object;
+                    std::shared_ptr<ListObject> listobj = std::make_shared<ListObject>();
+                    if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(m_iterate_object)) {
+                        for (int i = 0; i < spList->size(); i++) {
+                            zany new_obj = spList->get(i)->clone();
+                            listobj->append(new_obj);
+                        }
+                    } else {
+                        listobj->append(m_iterate_object);
+                    }
+                    return listobj;
                 }
                 else if (m_collect_method == "Gather Each Iteration") {
-                    zany new_obj = iterate_object->clone();
-                    m_collect_objs->append(new_obj);
+                    if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(iterate_object)) {
+                        for (int i = 0; i < spList->size(); i++) {
+                            zany new_obj = spList->get(i)->clone();
+                            m_collect_objs->append(new_obj);
+                        }
+                    } else {
+                        zany new_obj = iterate_object->clone();
+                        m_collect_objs->append(new_obj);
+                    }
                     return m_collect_objs;
                 }
                 else {
