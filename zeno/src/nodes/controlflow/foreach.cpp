@@ -212,12 +212,26 @@ namespace zeno
             if (m_iterate_method == "By Count" || m_iterate_method == "By Container") {
                 if (m_collect_method == "Feedback to Begin") {
                     std::shared_ptr<ListObject> listobj = std::make_shared<ListObject>();
-                    listobj->append(m_iterate_object);
+                    if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(m_iterate_object)) {
+                        for (int i = 0; i < spList->size(); i++) {
+                            zany new_obj = spList->get(i)->clone();
+                            listobj->append(new_obj);
+                        }
+                    } else {
+                        listobj->append(m_iterate_object);
+                    }
                     return listobj;
                 }
                 else if (m_collect_method == "Gather Each Iteration") {
-                    zany new_obj = iterate_object->clone();
-                    m_collect_objs->append(new_obj);
+                    if (auto spList = std::dynamic_pointer_cast<zeno::ListObject>(iterate_object)) {
+                        for (int i = 0; i < spList->size(); i++) {
+                            zany new_obj = spList->get(i)->clone();
+                            m_collect_objs->append(new_obj);
+                        }
+                    } else {
+                        zany new_obj = iterate_object->clone();
+                        m_collect_objs->append(new_obj);
+                    }
                     return m_collect_objs;
                 }
                 else {

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
@@ -48,7 +48,7 @@ public:
 
     ZENO_API void doComplete();
     ZENO_API void doApply(CalcContext* pContext);
-    void doApply_Parameter(std::string const &name, CalcContext* pContext); //ÒıÈëÊıÖµÊäÈë²ÎÊı£¬²¢²»¼ÆËãÕû¸ö½Úµã
+    void doApply_Parameter(std::string const &name, CalcContext* pContext); //å¼•å…¥æ•°å€¼è¾“å…¥å‚æ•°ï¼Œå¹¶ä¸è®¡ç®—æ•´ä¸ªèŠ‚ç‚¹
     ZENO_API void doOnlyApply();
 
     //BEGIN new api
@@ -57,8 +57,8 @@ public:
     ZENO_API std::string get_ident() const;
     ZENO_API std::string get_show_name() const;
     ZENO_API std::string get_show_icon() const;
-    ZENO_API virtual CustomUI get_customui() const;     //ÓÉ½ÚµãÄ¬ÈÏ¶¨Òåµ¼³öµÄcustomUi
-    ZENO_API virtual CustomUI export_customui() const;          //ÓÉ´Ë¿ÌÊµ¼Ê´æÔÚµÄ½ÚµãÊäÈëÊä³öµ¼³öµÄcustomUi
+    ZENO_API virtual CustomUI get_customui() const;     //ç”±èŠ‚ç‚¹é»˜è®¤å®šä¹‰å¯¼å‡ºçš„customUi
+    ZENO_API virtual CustomUI export_customui() const;          //ç”±æ­¤åˆ»å®é™…å­˜åœ¨çš„èŠ‚ç‚¹è¾“å…¥è¾“å‡ºå¯¼å‡ºçš„customUi
     ZENO_API ObjPath get_path() const;
     ZENO_API ObjPath get_graph_path() const;
     ZENO_API ObjPath get_uuid_path() const { return m_uuidPath; }
@@ -120,7 +120,7 @@ public:
 
     ZENO_API virtual params_change_info update_editparams(const ParamsUpdateInfo& params);
 
-   //ÓÉparamÕâ¸ö²ÎÊıÖµµÄ±ä»¯´¥·¢½ÚµãparamsÖØÖÃ
+    //ç”±paramè¿™ä¸ªå‚æ•°å€¼çš„å˜åŒ–è§¦å‘èŠ‚ç‚¹paramsé‡ç½®
     ZENO_API virtual void trigger_update_params(const std::string& param, bool changed, params_change_info changes);
 
     ZENO_API void set_name(const std::string& name);
@@ -134,11 +134,7 @@ public:
     ZENO_API void initTypeBase(zeno::reflect::TypeBase* pTypeBase);
     ZENO_API bool isInDopnetwork();
 
-    //for timeshift node
-    void preApplyTimeshift(CalcContext* pContext);
-
-    //foreachÌØ¹©
-    void reflectForeach_apply(CalcContext* pContext);
+    //foreachç‰¹ä¾›
     ZENO_API virtual bool is_continue_to_run();
     ZENO_API virtual void increment();
     ZENO_API virtual void reset_forloop_settings();
@@ -167,7 +163,7 @@ public:
     void constructReference(const std::string& param_name);
     void onNodeNameUpdated(const std::string& oldname, const std::string& newname);
     void on_node_about_to_remove();
-    void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //²ÎÊıÃû°üÀ¨¶ÔÏóÊäÈëºÍÊıÖµÊäÈë£¬²»¿ÉÖØÃû
+    void on_link_added_removed(bool bInput, const std::string& paramname, bool bAdded); //å‚æ•°ååŒ…æ‹¬å¯¹è±¡è¾“å…¥å’Œæ•°å€¼è¾“å…¥ï¼Œä¸å¯é‡å
 
     void checkParamsConstrain();
     CALLBACK_REGIST(update_visable_enable, void, zeno::INode*, std::set<std::string>, std::set<std::string>)
@@ -203,11 +199,16 @@ private:
     std::set<std::pair<std::string, std::string>> resolveReferSource(const zeno::reflect::Any& param_defl);
     void initReferLinks(PrimitiveParam* target_param);
 
-    //preApplyÊÇÏÈ½â¾öËùÓĞÊäÈë²ÎÊı£¨ÉÏÓÎ£©µÄÇóÖµÎÊÌâ
+    //preApplyæ˜¯å…ˆè§£å†³æ‰€æœ‰è¾“å…¥å‚æ•°ï¼ˆä¸Šæ¸¸ï¼‰çš„æ±‚å€¼é—®é¢˜
     void preApply(CalcContext* pContext);
 
+    //for timeshift node
+    void preApplyTimeshift(CalcContext* pContext);
+    //foreachç‰¹ä¾›
+    void reflectForeach_apply(CalcContext* pContext);
+
 public:
-    //ÎªÃûÎªdsµÄÊäÈë²ÎÊı£¬ÇóµÃÕâ¸ö²ÎÊıÔÚÒÀÀµ±ßµÄÇóÖµÏÂµÄÖµ£¬»òÕßÃ»ÓĞÒÀÀµ±ßÏÂµÄÄ¬ÈÏÖµ¡£
+    //ä¸ºåä¸ºdsçš„è¾“å…¥å‚æ•°ï¼Œæ±‚å¾—è¿™ä¸ªå‚æ•°åœ¨ä¾èµ–è¾¹çš„æ±‚å€¼ä¸‹çš„å€¼ï¼Œæˆ–è€…æ²¡æœ‰ä¾èµ–è¾¹ä¸‹çš„é»˜è®¤å€¼ã€‚
     ZENO_API bool requireInput(std::string const &ds, CalcContext* pContext);
 
     ZENO_API std::shared_ptr<Graph> getThisGraph() const;

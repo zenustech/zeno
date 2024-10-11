@@ -141,7 +141,6 @@ private:
     std::shared_ptr<Graph> _getGraphByPath(std::vector<std::string> items);
     bool isLinkValid(const EdgeInfo& edge);
     bool applyNode(std::string const& id);
-    void foreachApply(INode* foreach_end, CalcContext* pContext);
 
 
     std::map<std::string, std::shared_ptr<INode>> m_nodes;  //based on uuid.

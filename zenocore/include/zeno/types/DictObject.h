@@ -36,10 +36,6 @@ struct DictObject : IObjectClone<DictObject> {
           {
               std::string itemKey = m_key + "/" + key;
               spObject->update_key(itemKey);
-          } else {
-              size_t pos = spObject->key().find_last_of("/");
-              std::string itemKey = m_key + "/" + (pos == std::string::npos ? spObject->key() : spObject->key().substr(pos));
-              spObject->update_key(itemKey);
           }
       }
       return true;

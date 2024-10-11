@@ -101,10 +101,6 @@ struct ListObject : IObjectClone<ListObject> {
           {
               std::string itemKey = m_key + "/" + std::to_string(i);
               m_objects[i]->update_key(itemKey);
-          } else {
-              size_t pos = m_objects[i]->key().find_last_of("/");
-              std::string itemKey = m_key + "/" + (pos == std::string::npos ? m_objects[i]->key() : m_objects[i]->key().substr(pos));
-              m_objects[i]->update_key(itemKey);
           }
       }
       return true;

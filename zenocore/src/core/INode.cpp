@@ -364,65 +364,6 @@ ZENO_API bool INode::isInDopnetwork()
     return false;
 }
 
-void INode::preApplyTimeshift(CalcContext* pContext)
-{
-    int oldFrame = getSession().globalState->getFrameId();
-    scope_exit sp([&oldFrame] { getSession().globalState->updateFrameId(oldFrame); });
-    //get offset
-    auto defl = get_input_prim_param("offset").defl;
-    zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
-    int newFrame = oldFrame + std::get<int>(offset);
-    //clamp
-    auto startFrameDefl = get_input_prim_param("start frame").defl;
-    int globalStartFrame = getSession().globalState->getStartFrame();
-    int startFrame = startFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(startFrameDefl)) : globalStartFrame;
-    auto endFrameDefl = get_input_prim_param("end frame").defl;
-    int globalEndFrame = getSession().globalState->getEndFrame();
-    int endFrame = endFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(endFrameDefl)) : globalEndFrame;
-    auto clampDefl = get_input_prim_param("clamp").defl;
-    std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
-    if (startFrame > endFrame) {
-        startFrame = globalStartFrame;
-        endFrame = globalEndFrame;
-    }
-    if (clamp == "Clamp to First") {
-        newFrame = newFrame < startFrame ? startFrame : newFrame;
-    }
-    else if (clamp == "Clamp to Last") {
-        newFrame = newFrame > endFrame ? endFrame : newFrame;
-    }
-    else if (clamp == "Clamp to Both") {
-        if (newFrame < startFrame) {
-            newFrame = startFrame;
-        }
-        else if (newFrame > endFrame) {
-            newFrame = endFrame;
-        }
-    }
-    getSession().globalState->updateFrameId(newFrame);
-    //propaget dirty
-    propagateDirty(shared_from_this(), "$F");
-
-    preApply(pContext);
-}
-
-void INode::reflectForeach_apply(CalcContext* pContext)
-{
-    std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(get_defl_value("ForEachBegin Path"));
-    if (std::shared_ptr<Graph> spGraph = graph.lock()) {
-        auto foreach_begin = spGraph->getNode(foreach_begin_path);
-        for (reset_forloop_settings(); is_continue_to_run(); increment())
-        {
-            foreach_begin->mark_dirty(true);
-
-            preApply(pContext);
-            reflectNode_apply();
-        }
-        auto output = get_output_obj("Output Object");
-        output->update_key(m_uuid);
-    }
-}
-
 void INode::onInterrupted() {
     mark_dirty(true);
     mark_previous_ref_dirty();
@@ -528,6 +469,66 @@ void INode::preApply(CalcContext* pContext) {
             zeno::log_warn("the param {} may not be initialized", name);
     }
 }
+
+void INode::preApplyTimeshift(CalcContext* pContext)
+{
+    int oldFrame = getSession().globalState->getFrameId();
+    scope_exit sp([&oldFrame] { getSession().globalState->updateFrameId(oldFrame); });
+    //get offset
+    auto defl = get_input_prim_param("offset").defl;
+    zeno::PrimVar offset = defl.has_value() ? zeno::reflect::any_cast<zeno::PrimVar>(defl) : 0;
+    int newFrame = oldFrame + std::get<int>(offset);
+    //clamp
+    auto startFrameDefl = get_input_prim_param("start frame").defl;
+    int globalStartFrame = getSession().globalState->getStartFrame();
+    int startFrame = startFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(startFrameDefl)) : globalStartFrame;
+    auto endFrameDefl = get_input_prim_param("end frame").defl;
+    int globalEndFrame = getSession().globalState->getEndFrame();
+    int endFrame = endFrameDefl.has_value() ? std::get<int>(zeno::reflect::any_cast<PrimVar>(endFrameDefl)) : globalEndFrame;
+    auto clampDefl = get_input_prim_param("clamp").defl;
+    std::string clamp = clampDefl.has_value() ? zeno::reflect::any_cast<std::string>(clampDefl) : "None";
+    if (startFrame > endFrame) {
+        startFrame = globalStartFrame;
+        endFrame = globalEndFrame;
+    }
+    if (clamp == "Clamp to First") {
+        newFrame = newFrame < startFrame ? startFrame : newFrame;
+    }
+    else if (clamp == "Clamp to Last") {
+        newFrame = newFrame > endFrame ? endFrame : newFrame;
+    }
+    else if (clamp == "Clamp to Both") {
+        if (newFrame < startFrame) {
+            newFrame = startFrame;
+        }
+        else if (newFrame > endFrame) {
+            newFrame = endFrame;
+        }
+    }
+    getSession().globalState->updateFrameId(newFrame);
+    //propaget dirty
+    propagateDirty(shared_from_this(), "$F");
+
+    preApply(pContext);
+}
+
+void INode::reflectForeach_apply(CalcContext* pContext)
+{
+    std::string foreach_begin_path = zeno::reflect::any_cast<std::string>(get_defl_value("ForEachBegin Path"));
+    if (std::shared_ptr<Graph> spGraph = graph.lock()) {
+        auto foreach_begin = spGraph->getNode(foreach_begin_path);
+        for (reset_forloop_settings(); is_continue_to_run(); increment())
+        {
+            foreach_begin->mark_dirty(true);
+
+            preApply(pContext);
+            reflectNode_apply();
+        }
+        auto output = get_output_obj("Output Object");
+        output->update_key(m_uuid);
+    }
+}
+
 
 ZENO_API void INode::apply() {
 
