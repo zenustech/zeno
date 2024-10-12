@@ -69,14 +69,14 @@ struct SubOutput : zeno::INode {
     CustomUI export_customui() const override {
         CustomUI ui;
         ParamGroup group;
+        for (auto param : get_input_primitive_params()) {
+            group.params.emplace_back(param);
+        }
         ParamTab tab;
         tab.groups.emplace_back(std::move(group));
         ui.inputPrims.emplace_back(std::move(tab));
-        for (auto param : get_output_primitive_params()) {
-            ui.outputPrims.emplace_back(param);
-        }
-        for (auto param : get_output_object_params()) {
-            ui.outputObjs.emplace_back(param);
+        for (auto param : get_input_object_params()) {
+            ui.inputObjs.emplace_back(param);
         }
         return ui;
     }

@@ -274,11 +274,11 @@ ZENO_API ObjPath INode::get_path() const {
             break;
         }
         else {
+            path = name + "/" + path;
             if (!pGraph->optParentSubgNode.has_value())
                 break;
             auto pSubnetNode = pGraph->optParentSubgNode.value();
             assert(pSubnetNode);
-            path = pSubnetNode->m_name + "/" + path;
             pGraph = pSubnetNode->graph.lock();
         }
     }

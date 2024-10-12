@@ -244,19 +244,19 @@ void ZenoPropPanel::reset(GraphModel* subgraph, const QModelIndexList& nodes, bo
 
         int nodeType = m_idx.data(ROLE_NODETYPE).toInt();
         if (nodeType == zeno::Node_SubgraphNode || nodeType == zeno::Node_AssetInstance) {
-            //×ÓÍ¼½Úµã²¼¾Ö
+            //å­å›¾èŠ‚ç‚¹å¸ƒå±€
             QString clsname = m_idx.data(ROLE_CLASS_NAME).toString();
-            if (clsname == "Subnet") {
-                if (QWidget* wid = resetSubnetLayout()) {
-                    pMainLayout->addWidget(wid);
-            }
-            } else if (clsname == "DopNetwork") {
+            if (clsname == "DopNetwork") {
                 if (QWidget* wid = resetDopNetworkLayout()) {
                     pMainLayout->addWidget(wid);
+                }
+            } else {//subnetå’Œasset
+                if (QWidget* wid = resetSubnetLayout()) {
+                    pMainLayout->addWidget(wid);
+                }
             }
-        }
         } else {
-            //ÆÕÍ¨½Úµã²¼¾Ö
+            //æ™®é€šèŠ‚ç‚¹å¸ƒå±€
             if (QWidget* wid = resetNormalNodeLayout()) {
                 pMainLayout->addWidget(wid);
         }
@@ -279,7 +279,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
     if (newItem->data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive) {
         if (!m_idx.isValid())
             return;
-        //subnet½Úµã£¬¿ÉÄÜÓÐ¶à¸ötab
+        //subnetèŠ‚ç‚¹ï¼Œå¯èƒ½æœ‰å¤šä¸ªtab
         if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
             ZASSERT_EXIT(m_tabWidget);
 
@@ -340,7 +340,7 @@ void ZenoPropPanel::onViewParamInserted(const QModelIndex& parent, int first, in
                 }
             }
         }
-        else {  //ÆÕÍ¨½Úµã£¬µ¥¸ötab
+        else {  //æ™®é€šèŠ‚ç‚¹ï¼Œå•ä¸ªtab
             ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
             QStandardItem* pTabItem = parentItem->parent();
             ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
@@ -530,7 +530,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
                 //return;
             //}
             QStandardItemModel* paramsModel = QVariantPtr<ParamsModel>::asPtr(m_idx.data(ROLE_PARAMS))->customParamModel();
-            BlockSignalScope scope(paramsModel); //setDataÊ±ÐèÆÁ±ÎdataChangeÐÅºÅ
+            BlockSignalScope scope(paramsModel); //setDataæ—¶éœ€å±è”½dataChangeä¿¡å·
             paramsModel->setData(perIdx, newValue, ROLE_PARAM_VALUE);
         }
         */
@@ -963,7 +963,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
     {
         if (!m_idx.isValid())
             return;
-        //subnet½Úµã£¬¿ÉÄÜÓÐ¶à¸ötab
+        //subnetèŠ‚ç‚¹ï¼Œå¯èƒ½æœ‰å¤šä¸ªtab
         if ((m_idx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode || m_idx.data(ROLE_NODETYPE) == zeno::Node_AssetInstance)) {
             int vType = removeItem->data(ROLE_ELEMENT_TYPE).toInt();
             const QString& name = removeItem->data(ROLE_PARAM_NAME).toString();
@@ -1034,7 +1034,7 @@ void ZenoPropPanel::onViewParamAboutToBeRemoved(const QModelIndex& parent, int f
                 }
             }
         }
-        else {  //ÆÕÍ¨½Úµã
+        else {  //æ™®é€šèŠ‚ç‚¹
             ZASSERT_EXIT(parentItem->data(ROLE_ELEMENT_TYPE) == VPARAM_GROUP);
             QStandardItem* pTabItem = parentItem->parent();
             ZASSERT_EXIT(pTabItem && pTabItem->data(ROLE_ELEMENT_TYPE) == VPARAM_TAB);
@@ -1107,7 +1107,7 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
 
     if (topLeft.data(ROLE_PARAM_GROUP) == zeno::Role_InputPrimitive)
     {
-        //ÏÖÔÚÒ»°ã¶¼ÊÇ¸Äname»òÕßvalue£¬ÔÝÊ±²»Çø·ÖsubnetºÍÆÕÍ¨½Úµã
+        //çŽ°åœ¨ä¸€èˆ¬éƒ½æ˜¯æ”¹nameæˆ–è€…valueï¼Œæš‚æ—¶ä¸åŒºåˆ†subnetå’Œæ™®é€šèŠ‚ç‚¹
         QStandardItem* groupItem = paramItem->parent();
         ZASSERT_EXIT(groupItem);
 
