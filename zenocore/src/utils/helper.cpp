@@ -1061,6 +1061,11 @@ namespace zeno {
         }
     }
 
+    ZENO_API bool isPrimVarType(ParamType type)
+    {
+        return type == gParamType_Int || type == gParamType_Float || type == gParamType_String || type == gParamType_Curve;
+    }
+
     void getNameMappingFromReflectUI(
         reflect::TypeBase* typeBase,
         std::shared_ptr<INode> node,

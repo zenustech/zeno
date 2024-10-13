@@ -40,7 +40,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     AssetsMgr(AssetsMgr&&) = delete;
     AssetsMgr& operator=(AssetsMgr&&) = delete;
 
-    ZENO_API void createAsset(const zeno::ZenoAsset asset);
+    ZENO_API void createAsset(const zeno::ZenoAsset asset, bool isFirstCreate = false);
     CALLBACK_REGIST(createAsset, void, zeno::AssetInfo)
 
     ZENO_API void removeAsset(const std::string& name);
@@ -63,6 +63,8 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
 private:
     void initAssetsInfo();
     std::shared_ptr<Graph> forkAssetGraph(std::shared_ptr<Graph> assetGraph, std::shared_ptr<SubnetNode> subNode);
+
+    void initAssetSubInputOutput(Asset& asset);
     bool m_bInitAssetInfo = false;
 };
 

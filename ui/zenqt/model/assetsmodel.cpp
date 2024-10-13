@@ -128,62 +128,76 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     input1.cls = "SubInput";
     input1.uipos = { 0, 0 };
 
-    zeno::NodeData input2;
-    input2.name = "input2";
-    input2.cls = "SubInput";
-    input2.uipos = { 0,700 };
+    zeno::NodeData objInput1;
+    objInput1.name = "objInput1";
+    objInput1.cls = "SubInput";
+    objInput1.uipos = { 0,700 };
 
     zeno::NodeData output1;
     output1.name = "output1";
     output1.cls = "SubOutput";
     output1.uipos = { 1300, 250 };
 
-    zeno::NodeData output2;
-    output2.name = "output2";
-    output2.cls = "SubOutput";
-    output2.uipos = { 1300, 900 };
+    zeno::NodeData objOutput1;
+    objOutput1.name = "objOutput1";
+    objOutput1.cls = "SubOutput";
+    objOutput1.uipos = { 1300, 900 };
 
     sample.nodes.insert(std::make_pair("input1", input1));
-    sample.nodes.insert(std::make_pair("input2", input2));
+    sample.nodes.insert(std::make_pair("objInput1", objInput1));
     sample.nodes.insert(std::make_pair("output1", output1));
-    sample.nodes.insert(std::make_pair("output2", output2));
+    sample.nodes.insert(std::make_pair("objOutput1", objOutput1));
 
     asset.optGraph = sample;
 
     std::vector<zeno::ParamPrimitive>& inputs = asset.primitive_inputs;
     std::vector<zeno::ParamPrimitive>& outputs = asset.primitive_outputs;
+    std::vector<zeno::ParamObject>& objInputs = asset.object_inputs;
+    std::vector<zeno::ParamObject>& objOutputs = asset.object_outputs;
 
     zeno::ParamGroup defaultGroup;
 
     zeno::ParamPrimitive param;
+    param.bInput = true;
     param.name = "input1";
-    param.bInput = true;
-    param.socketType = zeno::Socket_Primitve;
+    zeno::PrimVar def = int(0);
+    param.defl = zeno::reflect::make_any<zeno::PrimVar>(def);
+    size_t s = param.defl.type().hash_code();
+    size_t s1 = gParamType_Int;
+    size_t s2 = gParamType_PrimVariant;
+    param.type = zeno::types::gParamType_Int;
+    param.bSocketVisible = false;
     inputs.push_back(param);
     defaultGroup.params.push_back(param);
-
-    param.name = "input2";
-    param.bInput = true;
-    param.socketType = zeno::Socket_Primitve;
-    inputs.push_back(param);
-    defaultGroup.params.push_back(param);
-
-    param.name = "output1";
-    param.bInput = false;
-    param.socketType = zeno::Socket_Output;
-    outputs.push_back(param);
-
-    param.name = "output2";
-    param.bInput = false;
-    param.socketType = zeno::Socket_Output;
-    outputs.push_back(param);
+    zeno::ParamPrimitive outputparam;
+    outputparam.bInput = false;
+    outputparam.name = "output1";
+    outputparam.defl = zeno::reflect::Any();
+    outputparam.type = Param_Wildcard;
+    outputparam.socketType = zeno::Socket_WildCard;
+    outputparam.bSocketVisible = false;
+    outputs.push_back(outputparam);
+    zeno::ParamObject objInput;
+    objInput.bInput = true;
+    objInput.name = "objInput1";
+    objInput.type = Obj_Wildcard;
+    objInput.socketType = zeno::Socket_WildCard;
+    objInputs.push_back(objInput);
+    zeno::ParamObject objOutput;
+    objOutput.bInput = false;
+    objOutput.name = "objOutput1";
+    objOutput.type = Obj_Wildcard;
+    objOutput.socketType = zeno::Socket_WildCard;
+    objOutputs.push_back(objOutput);
 
     zeno::ParamTab tab;
     tab.groups.emplace_back(std::move(defaultGroup));
     asset.m_customui.inputPrims.emplace_back(std::move(tab));
     asset.m_customui.outputPrims = outputs;
+    asset.m_customui.inputObjs = objInputs;
+    asset.m_customui.outputObjs = objOutputs;
+    assets->createAsset(asset, true);
 
-    assets->createAsset(asset);
     saveAsset(QString::fromStdString(info.name));
 }
 

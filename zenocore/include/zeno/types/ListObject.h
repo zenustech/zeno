@@ -97,11 +97,8 @@ struct ListObject : IObjectClone<ListObject> {
   bool update_key(const std::string& key) override {
       m_key = key;
       for (int i = 0; i < m_objects.size(); i++) {
-          if (m_objects[i]->key().empty())
-          {
-              std::string itemKey = m_key + "/" + std::to_string(i);
-              m_objects[i]->update_key(itemKey);
-          }
+          std::string itemKey = m_key + "/" + std::to_string(i);
+          m_objects[i]->update_key(itemKey);
       }
       return true;
   }
