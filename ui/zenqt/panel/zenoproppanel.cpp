@@ -1325,6 +1325,20 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                     }
                 }
             }
+            else if (role == ROLE_PARAM_SOCKET_VISIBLE)
+            {
+                for (auto it = group.begin(); it != group.end(); it++)
+                {
+                    if (it->second.m_coreparamIdx == param->index())
+                    {
+                        bool socketVisible = it->second.m_coreparamIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
+                        if (ZIconLabel* icon = qobject_cast<ZIconLabel*>(it->second.pIconLabel)) {
+                            icon->toggle(socketVisible);
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
     else if (topLeft.data(ROLE_PARAM_GROUP) == zeno::Role_OutputPrimitive) {
@@ -1338,6 +1352,20 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
                         const QString& newName = it->second.m_coreparamIdx.data(ROLE_PARAM_NAME).toString();
                         it->second.pLabel->setText(newName);
                         it->first = newName;
+                        break;
+                    }
+                }
+            }
+            else if (role == ROLE_PARAM_SOCKET_VISIBLE)
+            {
+                for (auto it = m_outputControls.begin(); it != m_outputControls.end(); it++)
+                {
+                    if (it->second.m_coreparamIdx == paramItem->index())
+                    {
+                        bool socketVisible = it->second.m_coreparamIdx.data(ROLE_PARAM_SOCKET_VISIBLE).toBool();
+                        if (ZIconLabel* icon = qobject_cast<ZIconLabel*>(it->second.pIconLabel)) {
+                            icon->toggle(socketVisible);
+                        }
                         break;
                     }
                 }
