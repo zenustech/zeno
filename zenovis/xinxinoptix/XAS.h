@@ -99,6 +99,8 @@ namespace xinxinoptix {
             {
                 CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, _bufferXAS_, compacted_size, &_handleXAS_ ) );
+
+                cudaFree((void*)output_buffer_xas);
             }
             else
             {
