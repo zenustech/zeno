@@ -1010,7 +1010,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             tex_lut[tex_key] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4, blockCompression);
         }
         
-        lookupTexture = [&img](uint32_t idx) {
+        lookupTexture = [img=img](uint32_t idx) {
             auto ptr = (float*)img->verts->data();
             return ptr[idx];
         };
