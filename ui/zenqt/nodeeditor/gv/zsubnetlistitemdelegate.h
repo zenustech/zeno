@@ -39,9 +39,10 @@ protected:
         const QModelIndex& index) override;
 
 public slots:
-    void onDelete();
+    void onDelete(const QModelIndex& index);
 private slots:
-    void onRename(const QModelIndex &index);
+    void onRemoveInlist(const QModelIndex& index);
+    void onRename(const QModelIndex& index);
     void onSaveSubgraph(const QModelIndex& index);
 
 private:

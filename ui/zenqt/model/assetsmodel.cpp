@@ -205,9 +205,9 @@ void AssetsModel::addAsset(const zeno::GraphData& graph)
 {
 }
 
-void AssetsModel::removeAsset(const QString& assetName)
+void AssetsModel::removeAsset(const QString& assetName, bool deleteAssetFile)
 {
-    zeno::getSession().assets->removeAsset(assetName.toStdString());
+    zeno::getSession().assets->removeAsset(assetName.toStdString(), deleteAssetFile);
 }
 
 void AssetsModel::saveAsset(const QString& name)

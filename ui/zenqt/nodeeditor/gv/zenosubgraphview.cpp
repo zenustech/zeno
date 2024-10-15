@@ -873,7 +873,7 @@ void ZenoSubGraphView::resetPath(const QStringList& path, const QString& objId, 
         m_pathWidget->setPath(path);
     }
 
-    if (!objId.isEmpty()) {
+    if (!objId.isEmpty() && objId.compare("main", Qt::CaseInsensitive) != 0) {
         GraphModel* pGraphM = zenoApp->graphsManager()->getGraph(path);
         QModelIndex nodeIdx = pGraphM->indexFromName(objId);
         ZASSERT_EXIT(nodeIdx.isValid());
