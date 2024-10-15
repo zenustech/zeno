@@ -941,9 +941,10 @@ static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, st
 
         prim->userData().set2("boneName_count", int(bone_names.size()));
         for (auto i = 0; i < bone_names.size(); i++) {
-                prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
-            }
+            prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
         }
+        return pose_count;
+    }
 }
 
 static void TraverseNodesToGetSkeleton(FbxNode* pNode, std::vector<std::string> &bone_names, std::vector<FbxMatrix> &transforms, std::map<std::string, std::string> &parent_mapping) {
@@ -1508,13 +1509,13 @@ struct BoneSetAttr : INode {
 };
 ZENDEFNODE(BoneSetAttr,
 { /* inputs: */ {
-    "skeleton",
-    {"string", "boneName", ""},
-    {"int", "value", "0"},
-    {"string", "attr", ""},
+    {gParamType_Primitive, "skeleton"},
+    {gParamType_String, "boneName", ""},
+    {gParamType_Int, "value", "0"},
+    {gParamType_String, "attr", ""},
     {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
 }, /* outputs: */ {
-   "prim",
+   {gParamType_Primitive, "prim"},
 }, /* params: */ {
 }, /* category: */ {
    "FBXSDK",
@@ -1546,12 +1547,12 @@ struct BoneGetAttr : INode {
 };
 ZENDEFNODE(BoneGetAttr,
 { /* inputs: */ {
-    "skeleton",
-    {"string", "boneName", ""},
-    {"string", "attr", ""},
+    {gParamType_Primitive, "skeleton"},
+    {gParamType_String, "boneName", ""},
+    {gParamType_String, "attr", ""},
     {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
 }, /* outputs: */ {
-   "value",
+   {gParamType_IObject, "value"},
 }, /* params: */ {
 }, /* category: */ {
    "FBXSDK",
@@ -2117,16 +2118,16 @@ struct IKChainsItem : INode {
 
 ZENDEFNODE(IKChainsItem, {
     {
-        {"string", "RootName", ""},
-        {"string", "MidName", ""},
-        {"string", "TipName", ""},
-        {"bool", "MatchByName", "1"},
-        {"string", "TwistName", ""},
-        {"string", "GoalName", ""},
-        {"bool", "OrientTip", "0"},
+        {gParamType_String, "RootName", ""},
+        {gParamType_String, "MidName", ""},
+        {gParamType_String, "TipName", ""},
+        {gParamType_Bool, "MatchByName", "1"},
+        {gParamType_String, "TwistName", ""},
+        {gParamType_String, "GoalName", ""},
+        {gParamType_Bool, "OrientTip", "0"},
     },
     {
-        "poseItem",
+        {gParamType_IObject, "poseItem"},
     },
     {},
     {"deprecated"},
@@ -2245,12 +2246,12 @@ struct IKChains : INode {
 
 ZENDEFNODE(IKChains, {
     {
-        "Skeleton",
-        "IK Drivers",
-        {"list", "items"},
+        {gParamType_Primitive, "Skeleton"},
+        {gParamType_Primitive, "IK Drivers"},
+        {gParamType_List, "items"},
     },
     {
-        "Skeleton",
+        {gParamType_Primitive, "Skeleton"},
     },
     {},
     {"deprecated"},
@@ -2632,12 +2633,12 @@ struct IkChainsItem : INode {
 
 ZENDEFNODE(IkChainsItem, {
     {
-        {"string", "endEffectorName", ""},
-        {"int", "depth", "2"},
-        {"vec3f", "targetPos", ""},
+        {gParamType_String, "endEffectorName", ""},
+        {gParamType_Int, "depth", "2"},
+        {gParamType_Vec3f, "targetPos", ""},
     },
     {
-        "IkChain",
+        {gParamType_IObject, "IkChain"},
     },
     {},
     {"FBXSDK"},
@@ -2670,16 +2671,16 @@ struct JointLimitItem : INode {
 
 ZENDEFNODE(JointLimitItem, {
     {
-        {"string", "boneName", ""},
-        {"bool", "enableXLimit", "0"},
-        {"vec2f", "xLimit", "0,0"},
-        {"bool", "enableYLimit", "0"},
-        {"vec2f", "yLimit", "0,0"},
-        {"bool", "enableZLimit", "0"},
-        {"vec2f", "zLimit", "0,0"},
+        {gParamType_String, "boneName", ""},
+        {gParamType_Bool, "enableXLimit", "0"},
+        {gParamType_Vec2f, "xLimit", "0,0"},
+        {gParamType_Bool, "enableYLimit", "0"},
+        {gParamType_Vec2f, "yLimit", "0,0"},
+        {gParamType_Bool, "enableZLimit", "0"},
+        {gParamType_Vec2f, "zLimit", "0,0"},
     },
     {
-        "JointLimit",
+        {gParamType_IObject, "JointLimit"},
     },
     {},
     {"FBXSDK"},
@@ -2766,13 +2767,13 @@ struct IkSolver : INode {
 };
 ZENDEFNODE(IkSolver, {
     {
-        "Skeleton",
-        {"int", "iterCount", "50"},
-        {"list", "IkChains"},
-        {"list", "jointLimits"},
+        {gParamType_Primitive, "Skeleton"},
+        {gParamType_Int, "iterCount", "50"},
+        {gParamType_List, "IkChains"},
+        {gParamType_List, "jointLimits"},
     },
     {
-        "Skeleton",
+        {gParamType_Primitive, "Skeleton"},
     },
     {},
     {"FBXSDK"},
@@ -2825,12 +2826,12 @@ struct IkJointConstraints : INode {
 };
 ZENDEFNODE(IkJointConstraints, {
     {
-        "Skeleton",
-        "RestSkeleton",
-        {"list", "jointLimits"},
+        {gParamType_Primitive, "Skeleton"},
+        {gParamType_Primitive, "RestSkeleton"},
+        {gParamType_List, "jointLimits"},
     },
     {
-        "Skeleton",
+        {gParamType_Primitive, "Skeleton"},
     },
     {},
     {"FBXSDK"},
@@ -2850,11 +2851,11 @@ struct PrimBindOneBone : INode {
 };
 ZENDEFNODE(PrimBindOneBone, {
     {
-        "prim",
-        {"string", "boneName", ""},
+        {gParamType_Primitive, "prim"},
+        {gParamType_String, "boneName", ""},
     },
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"FBXSDK"},
@@ -2912,16 +2913,16 @@ struct PrimDeformByOneBone : INode {
 };
 ZENDEFNODE(PrimDeformByOneBone, {
     {
-        "prim",
-        "skeleton",
-        {"string", "boneName", ""},
-        {"bool", "useCustomPivot", "0"},
-        {"bool", "inheritRotation", "0"},
-        {"vec3f", "pivot", "0, 0, 0"},
-        {"vec3f", "rotation", "0, 0, 0"},
+        {gParamType_Primitive, "prim"},
+        {gParamType_Primitive, "skeleton"},
+        {gParamType_String, "boneName", ""},
+        {gParamType_Bool, "useCustomPivot", "0"},
+        {gParamType_Bool, "inheritRotation", "0"},
+        {gParamType_Vec3f, "pivot", "0, 0, 0"},
+        {gParamType_Vec3f, "rotation", "0, 0, 0"},
     },
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"FBXSDK"},

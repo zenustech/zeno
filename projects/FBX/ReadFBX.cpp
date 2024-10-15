@@ -1399,10 +1399,10 @@ struct ReadSTL : zeno::INode {
 };
 ZENDEFNODE(ReadSTL, {
     {
-        {"readpath", "path"},
+        {gParamType_String, "path", "", zeno::Socket_Primitve, zeno::ReadPathEdit},
     },
     {
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"BaseIO"},
