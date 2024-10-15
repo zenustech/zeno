@@ -58,11 +58,11 @@ namespace zeno {
                     });
                     });
                 } else {
-                    const auto &srcs = src->attr<vec3f>(key);
+                    const auto &srcs = src->attr<zeno::vec3f>(key);
                     auto val1 = srcs[i];
                     auto val2 = srcs[j];
                     auto val = (1.0-c)*val1 + c * val2;
-                    dst->attr<vec3f>(key).emplace_back(val);
+                    dst->attr<zeno::vec3f>(key).emplace_back(val);
                 }
             }
             dst->resize(dst->attr<zeno::vec3f>("pos").size());

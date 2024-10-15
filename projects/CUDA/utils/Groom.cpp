@@ -625,7 +625,7 @@ struct GenerateHairs : INode {
             auto [id, _] = lbvhv.find_nearest(
                 pi,
                 [&](int j, float &dist, int &id) {
-                    float d = zs::limits<float>::max();
+                    float d = zs::detail::deduce_numeric_max<float>();
                     d = zs::dist_pp(pi, vec3::from_array(verts[loops[polys[j][0]]]));
 
                     if (d < dist) {

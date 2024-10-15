@@ -976,6 +976,7 @@ constexpr bool solve_BendTwistConstraint(
 }
 
 // ----------------------------------------------------------------------------------------------
+#if 0
 template<typename VECTOR3d,typename SCALER>
 constexpr bool solve_PerpendiculaBisectorConstraint(
     const VECTOR3d &p0, SCALER invMass0,
@@ -1002,6 +1003,7 @@ constexpr bool solve_PerpendiculaBisectorConstraint(
 
     return true;
 }
+#endif
 
 //     // ----------------------------------------------------------------------------------------------
 //     template<typename VECTOR3d,typename SCALER>

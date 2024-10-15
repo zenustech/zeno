@@ -56,12 +56,12 @@ struct PrimitiveCalcVelocity : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto dt = has_input("dt") ? get_input<NumericObject>("dt")->get<float>() : 0.04f;
-        auto const &pos = prim->attr<vec3f>("pos");
+        auto const &pos = prim->attr<zeno::vec3f>("pos");
         if (no_last_pos) {
             last_pos = pos;
             no_last_pos = false;
         }
-        auto &vel = prim->add_attr<vec3f>("vel");
+        auto &vel = prim->add_attr<zeno::vec3f>("vel");
 
 #pragma omp parallel for
         for (int i = 0; i < std::min(last_pos.size(), pos.size()); i++) {
@@ -95,10 +95,10 @@ struct PrimitiveInterpSubframe : zeno::INode {
 
         if (portion == 0) {
             base_pos = std::move(curr_pos);
-            curr_pos = prim->attr<vec3f>("pos");
+            curr_pos = prim->attr<zeno::vec3f>("pos");
         }
 
-        auto &pos = prim->attr<vec3f>("pos");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
 
 #pragma omp parallel for
         for (int i = 0; i < std::min(pos.size(),

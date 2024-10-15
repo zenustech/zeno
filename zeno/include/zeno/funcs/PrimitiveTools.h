@@ -63,7 +63,7 @@ static void addIndividualPrimitive(PrimitiveObject* dst, const PrimitiveObject* 
                 }, src->attr(key));
                 // dst->attr(key).emplace_back(src->attr(key)[index]);
                 } else {
-                    dst->attr<vec3f>(key).emplace_back(src->attr<vec3f>(key)[index]);
+                    dst->attr<zeno::vec3f>(key).emplace_back(src->attr<zeno::vec3f>(key)[index]);
                 }
             }
             dst->resize(dst->attr<zeno::vec3f>("pos").size());

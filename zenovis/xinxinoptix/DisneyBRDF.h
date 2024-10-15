@@ -5,10 +5,12 @@
 
 namespace BRDFBasics{
 static __inline__ __device__
-float PowerHeuristic(float a, float b)
+float PowerHeuristic(float a, float b, float beta = 2.0f)
 {
-  float t = a * a;
-  return t / (b * b + t + 1e-6);
+    float t  = pow(a,beta);
+    float t2 = pow(b, beta);
+    return t / (t2 + t + 1e-6);
+  
 }
 static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);

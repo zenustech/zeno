@@ -262,6 +262,7 @@ ZENDEFNODE(WriteExr, {
     {},
     {"comp"},
 });
+#if 0
 struct ReadExr : INode {
     std::pair<std::string, int> get_output_name(std::string name) {
         std::string output_name;
@@ -377,4 +378,5 @@ ZENDEFNODE(ReadExr, {
     {},
     {"comp"},
 });
+#endif
 }

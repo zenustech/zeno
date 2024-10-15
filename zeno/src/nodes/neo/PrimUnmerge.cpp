@@ -22,9 +22,18 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(Primitiv
     }
 
 #if 1
+    std::vector<std::vector<int>> aux_arrays;
+    aux_arrays.resize(tagMax);
+    for (int tag = 0; tag < tagMax; tag++) {
+      aux_arrays[tag].resize(0);
+    }
+    //auto const &tagArr = prim->verts.attr<int>(tagAttr);
+    for (int i = 0; i < prim->size(); i++) {
+      aux_arrays[tagArr[i]].emplace_back(i);
+    }
     for (int tag = 0; tag < tagMax; tag++) {
         primList[tag]->assign(prim);
-        primFilterVerts(primList[tag].get(), tagAttr, tag);
+        primFilterVerts(primList[tag].get(), tagAttr, tag, false, {}, "verts", aux_arrays[tag].data(), aux_arrays[tag].size(),true);
     }
 
 #else
@@ -342,6 +351,287 @@ ZENDEFNODE(PrimUnmerge, {
     },
     {"primitive"},
 });
+
+void cleanMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+               std::vector<zeno::vec3f> &verts,
+               std::vector<zeno::vec3f> &nrm,
+               std::vector<zeno::vec3f> &clr,
+               std::vector<zeno::vec3f> &tang,
+               std::vector<zeno::vec3f> &uv,
+               std::vector<zeno::vec3i> &idxBuffer)
+{
+  //first pass, scan the prim to see if verts require duplication
+  std::vector<std::vector<zeno::vec3f>> vert_uv;
+  std::vector<std::vector<zeno::vec2i>> idx_mapping;
+  vert_uv.resize(prim->verts.size());
+  idx_mapping.resize(prim->verts.size());
+  int count = 0;
+  for(int i=0;i<prim->tris.size();i++)
+  {
+    //so far, all value has already averaged on verts, except uv
+    zeno::vec3i idx = prim->tris[i];
+    for(int j=0;j<3;j++)
+    {
+      std::string uv_name;
+      uv_name = "uv" + std::to_string(j);
+      auto vid = idx[j];
+      if(vert_uv[vid].size()==0)
+      {
+        vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+        //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+        //count++;
+      }
+      else
+      {
+        zeno::vec3f uv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+        bool have = false;
+        for(int k=0;k<vert_uv[vid].size();k++)
+        {
+          auto & tester = vert_uv[vid][k];
+          if(tester[0] == uv[0] && tester[1] == uv[1] && tester[2] == uv[2] )
+          {
+            have = true;
+          }
+        }
+        if(have == false)
+        {
+          //need a push_back
+          vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+          //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+          //count++;
+        }
+      }
+    }
+  }
+  count = 0;
+  for(int i=0;i<vert_uv.size();i++) {
+    for(int j=0;j<vert_uv[i].size();j++) {
+      idx_mapping[i].push_back(zeno::vec2i(i, count));
+      count++;
+    }
+  }
+  //first pass done
+
+  // [old_idx, new_idx ] = idx_mapping[vid][k] tells index mapping of old and new vert
+
+  //run a pass to assemble new data
+  verts.resize(0);
+  nrm.resize(0);
+  clr.resize(0);
+  uv.resize(0);
+  tang.resize(0);
+  verts.reserve(count);
+  nrm.reserve(count);
+  clr.reserve(count);
+  uv.reserve(count);
+  tang.reserve(count);
+  for(int i=0;i<vert_uv.size();i++)
+  {
+    for(int j=0;j<vert_uv[i].size();j++)
+    {
+      auto vid = idx_mapping[i][j][0];
+      auto uvt = vert_uv[i][j];
+      auto v  = prim->verts[vid];
+      auto n  = prim->verts.attr<zeno::vec3f>("nrm")[vid];
+      auto c  = prim->verts.attr<zeno::vec3f>("clr")[vid];
+      auto t  = prim->verts.attr<zeno::vec3f>("atang")[vid];
+      verts.push_back(v);
+      nrm.push_back(n);
+      clr.push_back(c);
+      tang.push_back(t);
+      uv.push_back(uvt);
+    }
+  }
+
+  idxBuffer.resize(prim->tris.size());
+  //third pass: assemble new idx map
+  for(int i=0;i<prim->tris.size();i++)
+  {
+    zeno::vec3i idx = prim->tris[i];
+    for(int j=0;j<3;j++) {
+
+      auto old_vid = idx[j];
+      if(idx_mapping[old_vid].size()==1)
+      {
+        idxBuffer[i][j] = idx_mapping[old_vid][0][1];
+      }
+      else
+      {
+        std::string uv_name = "uv" + std::to_string(j);
+        auto &tuv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+        for(int k=0;k<vert_uv[old_vid].size();k++)
+        {
+          auto &vuv = vert_uv[old_vid][k];
+          if(vuv[0] == tuv[0] && vuv[1] == tuv[1] && vuv[2] == tuv[2])
+          {
+            idxBuffer[i][j] = idx_mapping[old_vid][k][1];
+          }
+        }
+      }
+    }
+  }
+}
+void computeVertexTangent(zeno::PrimitiveObject *prim)
+{
+  auto &atang = prim->add_attr<zeno::vec3f>("atang");
+  auto &tang = prim->tris.attr<zeno::vec3f>("tang");
+  atang.assign(atang.size(), zeno::vec3f(0));
+  const auto &pos = prim->attr<zeno::vec3f>("pos");
+  for(size_t i=0;i<prim->tris.size();++i)
+  {
+
+    auto vidx = prim->tris[i];
+    zeno::vec3f v0 = pos[vidx[0]];
+    zeno::vec3f v1 = pos[vidx[1]];
+    zeno::vec3f v2 = pos[vidx[2]];
+    auto e1 = v1-v0, e2=v2-v0;
+    float area = zeno::length(zeno::cross(e1, e2)) * 0.5;
+    atang[vidx[0]] += area * tang[i];
+    atang[vidx[1]] += area * tang[i];
+    atang[vidx[2]] += area * tang[i];
+  }
+#pragma omp parallel for
+  for(auto i=0;i<atang.size();i++)
+  {
+    atang[i] = atang[i]/(length(atang[i])+1e-6);
+
+  }
+}
+void computeTrianglesTangent(zeno::PrimitiveObject *prim)
+{
+  const auto &tris = prim->tris;
+  const auto &pos = prim->attr<zeno::vec3f>("pos");
+  auto const &nrm = prim->add_attr<zeno::vec3f>("nrm");
+  auto &tang = prim->tris.add_attr<zeno::vec3f>("tang");
+  bool has_uv = tris.has_attr("uv0")&&tris.has_attr("uv1")&&tris.has_attr("uv2");
+  //printf("!!has_uv = %d\n", has_uv);
+  if(has_uv) {
+    const auto &uv0data = tris.attr<zeno::vec3f>("uv0");
+    const auto &uv1data = tris.attr<zeno::vec3f>("uv1");
+    const auto &uv2data = tris.attr<zeno::vec3f>("uv2");
+#pragma omp parallel for
+    for (auto i = 0; i < prim->tris.size(); ++i) {
+      const auto &pos0 = pos[tris[i][0]];
+      const auto &pos1 = pos[tris[i][1]];
+      const auto &pos2 = pos[tris[i][2]];
+      zeno::vec3f uv0;
+      zeno::vec3f uv1;
+      zeno::vec3f uv2;
+
+      uv0 = uv0data[i];
+      uv1 = uv1data[i];
+      uv2 = uv2data[i];
+
+      auto edge0 = pos1 - pos0;
+      auto edge1 = pos2 - pos0;
+      auto deltaUV0 = uv1 - uv0;
+      auto deltaUV1 = uv2 - uv0;
+
+      auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+
+      zeno::vec3f tangent;
+      tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+      tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+      tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+      //printf("tangent:%f %f %f\n", tangent[0], tangent[1], tangent[2]);
+      //zeno::log_info("tangent {} {} {}",tangent[0], tangent[1], tangent[2]);
+      auto tanlen = zeno::length(tangent);
+      tangent *(1.f / (tanlen + 1e-8));
+      /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+          zeno::vec3f n = nrm[tris[i][0]], unused;
+          zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+      } else {
+          tang[i] = tangent * (1.f / tanlen);
+      }*/
+      tang[i] = tangent;
+    }
+  } else {
+    const auto &uvarray = prim->attr<zeno::vec3f>("uv");
+#pragma omp parallel for
+    for (auto i = 0; i < prim->tris.size(); ++i) {
+      const auto &pos0 = pos[tris[i][0]];
+      const auto &pos1 = pos[tris[i][1]];
+      const auto &pos2 = pos[tris[i][2]];
+      zeno::vec3f uv0;
+      zeno::vec3f uv1;
+      zeno::vec3f uv2;
+
+      uv0 = uvarray[tris[i][0]];
+      uv1 = uvarray[tris[i][1]];
+      uv2 = uvarray[tris[i][2]];
+
+      auto edge0 = pos1 - pos0;
+      auto edge1 = pos2 - pos0;
+      auto deltaUV0 = uv1 - uv0;
+      auto deltaUV1 = uv2 - uv0;
+
+      auto f = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1] + 1e-5);
+
+      zeno::vec3f tangent;
+      tangent[0] = f * (deltaUV1[1] * edge0[0] - deltaUV0[1] * edge1[0]);
+      tangent[1] = f * (deltaUV1[1] * edge0[1] - deltaUV0[1] * edge1[1]);
+      tangent[2] = f * (deltaUV1[1] * edge0[2] - deltaUV0[1] * edge1[2]);
+      //printf("tangent:%f %f %f\n", tangent[0], tangent[1], tangent[2]);
+      //zeno::log_info("tangent {} {} {}",tangent[0], tangent[1], tangent[2]);
+      auto tanlen = zeno::length(tangent);
+      tangent *(1.f / (tanlen + 1e-8));
+      /*if (std::abs(tanlen) < 1e-8) {//fix by BATE
+          zeno::vec3f n = nrm[tris[i][0]], unused;
+          zeno::pixarONB(n, tang[i], unused);//TODO calc this in shader?
+          } else {
+          tang[i] = tangent * (1.f / tanlen);
+          }*/
+      tang[i] = tangent;
+    }
+  }
+}
+struct primClean : INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    std::vector<zeno::vec3f> verts;
+    std::vector<zeno::vec3f> nrm;
+    std::vector<zeno::vec3f> clr;
+    std::vector<zeno::vec3f> tang;
+    std::vector<zeno::vec3f> uv;
+    std::vector<zeno::vec3i> idxBuffer;
+    computeTrianglesTangent(prim.get());
+    computeVertexTangent(prim.get());
+    cleanMesh(prim, verts, nrm, clr, tang, uv, idxBuffer);
+    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
+    oPrim->verts.resize(verts.size());
+    oPrim->add_attr<zeno::vec3f>("nrm");
+    oPrim->add_attr<zeno::vec3f>("clr");
+    oPrim->add_attr<zeno::vec3f>("uv");
+    oPrim->add_attr<zeno::vec3f>("atang");
+    oPrim->tris.resize(idxBuffer.size());
+
+
+    oPrim->verts.attr<zeno::vec3f>("pos") = verts;
+    oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
+    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
+    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
+    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
+
+
+    oPrim->tris = idxBuffer;
+
+
+    set_output("prim", std::move(oPrim));
+  }
+};
+
+ZENDEFNODE(primClean, {
+                            {
+                                {"primitive", "prim"}
+                            },
+                            {
+                                {"primitive", "prim"},
+                            },
+                            {
+                            },
+                            {"primitive"},
+                        });
+
 
 }
 }

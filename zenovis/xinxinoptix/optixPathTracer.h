@@ -4,7 +4,6 @@
 #include <Shape.h>
 
 #include "LightBounds.h"
-// #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -154,18 +153,14 @@ struct CameraInfo
 struct Params
 {
     unsigned int subframe_index;
-    float4*      accum_buffer;
-    float4*      accum_buffer_D;
-    float4*      accum_buffer_S;
-    float4*      accum_buffer_T;
-    float4*      accum_buffer_B;
+    float3*      accum_buffer;
+    float3*      accum_buffer_D;
+    float3*      accum_buffer_S;
+    float3*      accum_buffer_T;
+    ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
-    float3*      frame_buffer_C;
-    float3*      frame_buffer_D;
-    float3*      frame_buffer_S;
-    float3*      frame_buffer_T;
-    float3*      frame_buffer_B;
-    float3*      frame_buffer_M;
+    ushort3*     frame_buffer_M;
+    ushort3*     frame_buffer_P;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
@@ -195,6 +190,12 @@ struct Params
 
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
+
+    void* meshAux;
+    void* instToMesh;
+
+    uint32_t hairInstOffset;
+    void* hairAux;
 
     void*    dlights_ptr;
     void*    plights_ptr;
@@ -279,29 +280,6 @@ struct HitGroupData
     bool equiangular  = false;
     bool multiscatter = false;
 
-    //float4* vertices;
-#ifdef USE_SHORT_COMPACT
-    ushort2* uv;
-    ushort2* nrm;
-    ushort2* clr;
-    ushort2* tan;
-#else
-
-  #ifdef USE_SHORT
-      ushort3* uv;
-      ushort3* nrm;
-      ushort3* clr;
-      ushort3* tan;
-  #else
-      float4* uv;
-      float4* nrm;
-      float4* clr;
-      float4* tan;
-  #endif
-
-#endif
-    unsigned short* lightMark;
-    uint32_t* auxOffset;
 #ifdef USE_SHORT
     ushort3* instPos;
     ushort3* instNrm;

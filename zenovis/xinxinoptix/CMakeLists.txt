@@ -15,6 +15,8 @@ target_sources(zenovis PRIVATE
   Shape.h
   XAS.h
 
+  BCX.h
+
   LightTree.cpp
   LightTree.h
   LightBounds.cpp
@@ -23,6 +25,8 @@ target_sources(zenovis PRIVATE
   ies/ies.h
   TypeCaster.cpp
   TypeCaster.h
+  
+  GeometryAux.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
@@ -35,7 +39,11 @@ target_sources(zenovis PRIVATE
   SDK/sutil/PPMLoader.cpp       SDK/sutil/Trackball.h
   SDK/sutil/PPMLoader.h         SDK/sutil/vec_math.h
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
+
   )
+
+file(GLOB hair_src "hair/*.h" "hair/*.cpp")
+target_sources(zenovis PRIVATE ${hair_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
@@ -56,11 +64,8 @@ target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
 target_include_directories(zenovis PRIVATE SDK)
+target_include_directories(zenovis PRIVATE SDK/cuda)
 target_include_directories(zenovis PRIVATE SDK/sutil)
-target_include_directories(zenovis PRIVATE SDK/sdk_cuda)
-target_include_directories(zenovis PRIVATE SDK/support)
-target_include_directories(zenovis PRIVATE SDK/support/GLFW/include)
-target_include_directories(zenovis PRIVATE SDK/support/imgui)
 target_include_directories(zenovis PRIVATE .)
 configure_file(sampleConfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/sampleConfig.h @ONLY)
 target_include_directories(zenovis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -108,7 +113,10 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/climits.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/cstdint.h
-    
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/curve.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/BufferView.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     #include <zeno/types/LightObject.h>
@@ -130,6 +138,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/@GeometryAux.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Curves.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Portal.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    

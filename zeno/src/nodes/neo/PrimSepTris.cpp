@@ -8,7 +8,7 @@ namespace zeno {
 
 #if 0
 ZENO_API void primSmoothNormal(PrimitiveObject *prim) {
-    auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+    auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
     std::fill(ZENO_PAR_UNSEQ nrm.begin(), nrm.end(), vec3f());
     for (size_t i = 0; i < prim->polys.size(); i++) {
         auto [base, len] = prim->polys[i];
@@ -36,7 +36,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
     if (!prim->tris.size() && !prim->quads.size() && !prim->polys.size()) {
         //if ((prim->points.size() || prim->lines.size()) && !prim->verts.has_attr("clr")) {
             //throw;
-            //prim->verts.add_attr<vec3f>("clr").assign(prim->verts.size(), vec3f(1, 1, 0));
+            //prim->verts.add_attr<zeno::vec3f>("clr").assign(prim->verts.size(), vec3f(1, 1, 0));
         //}
         return; // TODO: cihou pars and lines
     }
@@ -103,10 +103,10 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
         if (prim->tris.has_attr("uv0") &&
             prim->tris.has_attr("uv1") &&
             prim->tris.has_attr("uv2")) {
-            auto &uv0 = prim->tris.attr<vec3f>("uv0");
-            auto &uv1 = prim->tris.attr<vec3f>("uv1");
-            auto &uv2 = prim->tris.attr<vec3f>("uv2");
-            auto &new_uv = new_verts.add_attr<vec3f>("uv");
+            auto &uv0 = prim->tris.attr<zeno::vec3f>("uv0");
+            auto &uv1 = prim->tris.attr<zeno::vec3f>("uv1");
+            auto &uv2 = prim->tris.attr<zeno::vec3f>("uv2");
+            auto &new_uv = new_verts.add_attr<zeno::vec3f>("uv");
             for (int i = 0; i < prim->tris.size(); i++) {
                 auto uv = uv0[i];
                 new_uv[i * 3 + 0] = {uv[0], uv[1], 0};
@@ -120,11 +120,11 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
             prim->quads.has_attr("uv1") &&
             prim->quads.has_attr("uv2") &&
             prim->quads.has_attr("uv3")) {
-            auto &uv0 = prim->quads.attr<vec3f>("uv0");
-            auto &uv1 = prim->quads.attr<vec3f>("uv1");
-            auto &uv2 = prim->quads.attr<vec3f>("uv2");
-            auto &uv3 = prim->quads.attr<vec3f>("uv3");
-            auto &new_uv = new_verts.add_attr<vec3f>("uv");
+            auto &uv0 = prim->quads.attr<zeno::vec3f>("uv0");
+            auto &uv1 = prim->quads.attr<zeno::vec3f>("uv1");
+            auto &uv2 = prim->quads.attr<zeno::vec3f>("uv2");
+            auto &uv3 = prim->quads.attr<zeno::vec3f>("uv3");
+            auto &new_uv = new_verts.add_attr<zeno::vec3f>("uv");
             size_t b = prim->tris.size() * 3;
             for (int i = 0; i < prim->quads.size(); i++) {
                 new_uv[b + i * 6 + 0] = uv0[i];
@@ -153,7 +153,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
                 b += (len - 2) * 3;
             }
             b = prim->tris.size() * 3 + prim->quads.size() * 6;
-            auto &new_uv = new_verts.add_attr<vec3f>("uv");
+            auto &new_uv = new_verts.add_attr<zeno::vec3f>("uv");
             for (int i = 0; i < v.size(); i++) {
                 auto uv = prim->uvs[v[i]];
                 new_uv[b + i] = {uv[0], uv[1], 0};
@@ -179,7 +179,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
             shn[v[i * 3 + 1]] += n;
             shn[v[i * 3 + 2]] += n;
         }
-        auto &new_nrm = new_verts.add_attr<vec3f>("nrm");
+        auto &new_nrm = new_verts.add_attr<zeno::vec3f>("nrm");
         for (size_t i = 0; i < v.size(); i++) {
             auto n = shn[v[i]];
             n = normalizeSafe(n);
@@ -190,7 +190,7 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
     std::swap(new_verts, prim->verts);
 
     if (!smoothNormal && needCompNormal) {
-        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for (size_t i = 0; i < v.size() / 3; i++) {
             auto a = prim->verts[i * 3 + 0];
             auto b = prim->verts[i * 3 + 1];
@@ -204,10 +204,10 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
     }
 
     if (keepTriFaces) {
-        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
-        auto &uv = prim->attr<vec3f>("uv");
+        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        auto &uv = prim->attr<zeno::vec3f>("uv");
         prim->tris.resize(v.size() / 3);
         for (int i = 0; i < prim->tris.size(); i++) {
             prim->tris[i] = {i * 3, i * 3 + 1, i * 3 + 2};

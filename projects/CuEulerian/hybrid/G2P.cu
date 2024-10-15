@@ -1,6 +1,7 @@
 #include "Structures.hpp"
 #include "Utils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/profile/CppTimers.hpp"
@@ -110,7 +111,7 @@ struct ZSSparseGridToPrimitive : INode {
         auto tag = src_tag(zsSPG, attrTag);
 
         using namespace zs;
-        auto cudaPol = cuda_exec().device(0);
+        auto cudaPol = cuda_exec();
 
         using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
                                   wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;
@@ -180,4 +181,58 @@ ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                      {},
                                      /* category: */
                                      {"Eulerian"}});
+
+struct ZSSparseGridAsParticles : INode {
+    zs::Vector<zs::vec<float, 3>> transform_spgblock_to_particles(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *zsSPG) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        auto &spg = zsSPG->getSparseGrid();
+        auto nbs = spg.numBlocks();
+
+        zs::Vector<zs::vec<float, 3>> blockCenters(spg.get_allocator(), nbs);
+
+        // fmt::print("spg memspace : {}\n", (int)spg.memspace());
+        pol(range(nbs),
+            [spgv = proxy<space>(spg), pars = proxy<space>(blockCenters)]__device__(size_t bno) mutable {
+                auto bcoord = spgv.wCoord(bno, 0);
+                pars[bno] = bcoord + spgv.side_length * spgv.voxelSize() / 2;
+            });
+        return blockCenters;
+    }
+
+    void apply() override {
+        auto zsSPG = get_input<ZenoSparseGrid>("SparseGrid");
+        auto &spg = zsSPG->getSparseGrid();
+
+        using namespace zs;
+        auto pol = cuda_exec();
+        auto centers = transform_spgblock_to_particles(pol, zsSPG.get());
+        centers = centers.clone({memsrc_e::host, -1});
+
+        auto prim = std::make_shared<PrimitiveObject>();
+
+        prim->resize(centers.size());
+        std::memcpy(prim->verts.values.data(), centers.data(), sizeof(zeno::vec3f) * centers.size());
+#if 0
+        pol(zip(prim->verts.values, centers), [](auto &dst, const auto& src) {
+            dst = zeno::vec3f{src[0], src[1], src[2]};
+        });
+#endif
+
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(ZSSparseGridAsParticles, {/* inputs: */
+                                     {"SparseGrid"},
+                                     /* outputs: */
+                                     {"prim"},
+                                     /* params: */
+                                     {},
+                                     /* category: */
+                                     {"Eulerian"}});
+
+
+
 } // namespace zeno

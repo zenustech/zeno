@@ -20,7 +20,7 @@ struct PrimExtrude : INode {
         auto maskAttr = get_input2<std::string>("maskAttr");
         auto extrude = get_input2<float>("extrude");
         auto inset = get_input2<float>("inset");
-        auto offset = get_input2<vec3f>("offset");
+        auto offset = get_input2<zeno::vec3f>("offset");
         //auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
         auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
         auto delOldFaces = get_input2<bool>("delOldFaces");
@@ -66,7 +66,7 @@ struct PrimExtrude : INode {
         if (extrude != 0 || inset != 0) {
             std::string tmpNormAttr = "%%extrude2";
             primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
-            p2norms = std::move(prim2->verts.attr<vec3f>(tmpNormAttr));
+            p2norms = std::move(prim2->verts.attr<zeno::vec3f>(tmpNormAttr));
             prim2->verts.erase_attr(tmpNormAttr);
         }
 
@@ -122,7 +122,7 @@ struct PrimExtrude : INode {
                 insd -= dot(insd, norm) * norm;
                 out[i] = normalizeSafe(insd);
             }
-            //p2inset = std::move(prim2->verts.attr<vec3f>(tmpInsetAttr));
+            //p2inset = std::move(prim2->verts.attr<zeno::vec3f>(tmpInsetAttr));
             //prim2->verts.erase_attr(tmpInsetAttr);
 
             if (!(extrude != 0))

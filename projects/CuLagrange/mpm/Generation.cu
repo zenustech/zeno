@@ -1616,11 +1616,11 @@ struct ToZSBoundary : INode {
 
         // translation
         if (has_input("translation")) {
-            auto b = get_input<NumericObject>("translation")->get<vec3f>();
+            auto b = get_input<NumericObject>("translation")->get<zeno::vec3f>();
             boundary->b = zs::vec<float, 3>{b[0], b[1], b[2]};
         }
         if (has_input("translation_rate")) {
-            auto dbdt = get_input<NumericObject>("translation_rate")->get<vec3f>();
+            auto dbdt = get_input<NumericObject>("translation_rate")->get<zeno::vec3f>();
             boundary->dbdt = zs::vec<float, 3>{dbdt[0], dbdt[1], dbdt[2]};
             // fmt::print("dbdt assigned as {}, {}, {}\n", boundary->dbdt[0],
             //            boundary->dbdt[1], boundary->dbdt[2]);
@@ -1636,7 +1636,7 @@ struct ToZSBoundary : INode {
         }
         // rotation
         if (has_input("ypr_angles")) {
-            auto yprAngles = get_input<NumericObject>("ypr_angles")->get<vec3f>();
+            auto yprAngles = get_input<NumericObject>("ypr_angles")->get<zeno::vec3f>();
             auto rot = zs::Rotation<float, 3>{yprAngles[0], yprAngles[1], yprAngles[2], zs::degree_c, zs::ypr_c};
             boundary->R = rot;
         }

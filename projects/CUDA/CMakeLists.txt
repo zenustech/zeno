@@ -53,68 +53,129 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     POST_BUILD
     COMMAND 
     ${CMAKE_COMMAND} -E env ZENO_BIN_DIR="${ZENO_BIN_DIR}"
-    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit --user
-    COMMENT "installing pyzpc into the specified conda environment: ${ZS_OVERWRITE_PYTHON_EXECUTABLE}"
+    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m ensurepip
+    COMMENT "preparing pip module"
   )
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND 
+    ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m pip install numpy --user
+    COMMENT "installing numpy"
+  )
+  set(PY_LIBS_DIR ${RESOURCE_BASE_DIR}/resource/py_libs)
+  set(PREFIX "lib")
   if (WIN32)
-    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
-    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
-    string (REPLACE ";" " " ZS_PYTHON_LIBS "${ZS_OVERWRITE_PYTHON_LIBRARIES}")
-    separate_arguments(ZS_PYTHON_LIBS)
+    set(SUFFIX ".dll")
+    set(PREFIX "")
+  elseif (APPLE)
+    set(SUFFIX ".dylib")
+  elseif (UNIX)
+    set(SUFFIX ".so")
+  else()
+    message(FATAL_ERROR "unknown system to determine shared library suffix")
+  endif()
+
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CAPIS="${PREFIX}zpc_py_interop${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_NVRTC="${PREFIX}zpc_jit_nvrtc${SUFFIX}")
+  target_compile_definitions(zeno PRIVATE -DZENO_OUTPUT_BINARY_CLANG="${PREFIX}zpc_jit_clang${SUFFIX}")
+  add_custom_command(
+    TARGET copy_py
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/lib
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include/zensim
+    COMMENT "creating pyzpc jit module directory at ${PY_LIBS_DIR}/zpcjit"
+  )
+  file(GLOB ZPC_JIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/zpc_jit/pyzpc/*.py)
+  message("ZPC_JIT_SRC : ${ZPC_JIT_SRC}")
+
+  foreach(ZPCJIT_FILE IN LISTS ZPC_JIT_SRC)
     add_custom_command(
-      TARGET copy_py
-      POST_BUILD
-      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
-      # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
-      COMMAND ${CMAKE_COMMAND}
-      -DOBJECTS=${PYTHON_ENV_PATH}/lib
-      -DOUTPUT=${RESOURCE_BASE_DIR}
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+      TARGET copy_py POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPCJIT_FILE} ${PY_LIBS_DIR}/zpcjit
+      COMMENT "Copying zpcjit src file: ${ZPCJIT_FILE}")
+  endforeach()
+  if (WIN32)
+    cmake_path(GET ZS_OVERWRITE_PYTHON_EXECUTABLE PARENT_PATH PYTHON_ENV_PATH)
+    message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
+    if (NOT EXISTS ${RESOURCE_BASE_DIR}/Lib/site-packages)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+        # COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/dlls ${RESOURCE_BASE_DIR}/dlls
+        COMMAND ${CMAKE_COMMAND}
+        -DOBJECTS=${PYTHON_ENV_PATH}/Lib
+        -DOUTPUT=${RESOURCE_BASE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
 
-      COMMAND ${CMAKE_COMMAND}
-      -DOBJECTS=${PYTHON_ENV_PATH}/dlls
-      -DOUTPUT=${RESOURCE_BASE_DIR}
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+        COMMAND ${CMAKE_COMMAND}
+        -DOBJECTS=${PYTHON_ENV_PATH}/DLLs
+        -DOUTPUT=${RESOURCE_BASE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
 
-      COMMAND ${CMAKE_COMMAND}
-      -DOBJECTS=${PYTHON_ENV_PATH}/library
-      -DOUTPUT=${RESOURCE_BASE_DIR}
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
+      # COMMAND ${CMAKE_COMMAND}
+      # -DOBJECTS=${PYTHON_ENV_PATH}/library
+      # -DOUTPUT=${RESOURCE_BASE_DIR}
+      # -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dir.cmake
 
-      COMMAND ${CMAKE_COMMAND}
-      -DLIB="${PYTHON_ENV_PATH}/zlib.dll"
-      -DDLL_DIR=${PYTHON_ENV_PATH}
-      -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
+      # COMMAND ${CMAKE_COMMAND}
+      # -DLIB="${PYTHON_ENV_PATH}/zlib.dll"
+      # -DDLL_DIR=${PYTHON_ENV_PATH}
+      # -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
+      # -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
 
-      COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
-    )
+        COMMENT "copying python lib directories at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+      )
+    endif()
+    if (EXISTS ${PYTHON_ENV_PATH}/library)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${PYTHON_ENV_PATH}/library" ${RESOURCE_BASE_DIR}/library
+        COMMENT "copying python library directory at ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+      )
+    endif()
+    if (EXISTS ${PYTHON_ENV_PATH}/zlib.dll)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "${PYTHON_ENV_PATH}/zlib.dll" ${RESOURCE_BASE_DIR}
+        COMMENT "copying python zlib.dll ${PYTHON_ENV_PATH} to ${RESOURCE_BASE_DIR}"
+      )
+    endif()
     foreach(lib ${ZS_PYTHON_LIBS})
       add_custom_command(
         TARGET copy_py
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        -DLIB=${lib}
-        -DDLL_DIR=${PYTHON_ENV_PATH}
-        -DOUTPUT=$<TARGET_FILE_DIR:zpc_py_interop>
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/copy_dll.cmake
+        COMMAND ${CMAKE_COMMAND} -E copy lib $<TARGET_FILE_DIR:zpc_py_interop>
       )
     endforeach()
   else()
-    cmake_path(GET ZS_OVERWRITE_PYTHON_INCLUDE_DIR PARENT_PATH PYTHON_ENV_PATH)
+    cmake_path(GET ZS_OVERWRITE_PYTHON_EXECUTABLE PARENT_PATH PYTHON_ENV_PATH)
     cmake_path(GET PYTHON_ENV_PATH PARENT_PATH PYTHON_ENV_PATH)
     message(STATUS "python3 parent: ${PYTHON_ENV_PATH}")
-    add_custom_command(
-      TARGET copy_py
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/bin ${RESOURCE_BASE_DIR}/bin
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
+    if (NOT EXISTS ${RESOURCE_BASE_DIR}/lib/libtinfo.a)
+      add_custom_command(
+        TARGET copy_py
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/bin ${RESOURCE_BASE_DIR}/bin
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_ENV_PATH}/lib ${RESOURCE_BASE_DIR}/lib
 
-      COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
-    )
+        COMMENT "copying python lib directory ${PYTHON_ENV_PATH}/lib to ${RESOURCE_BASE_DIR}/lib"
+      )
+    endif()
   endif()
-endif(ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
+  # prepare zpc headers for pyzpc
+  add_custom_command(
+    TARGET copy_py POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim ${PY_LIBS_DIR}/zpcjit/zpc_jit/zpc/include/zensim
+    COMMENT "Copying zpc source files: ${CMAKE_CURRENT_SOURCE_DIR}/zpc/include/zensim")
+  # prepare zpc libs for pyzpc
+  
+endif(ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
 
 add_library(zshelper INTERFACE)
 target_include_directories(zshelper INTERFACE
