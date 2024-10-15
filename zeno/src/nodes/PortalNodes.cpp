@@ -86,10 +86,10 @@ struct Stamp : zeno::INode {
 };
 
 ZENDEFNODE(Stamp, {
-    {"input"},
-    {"output"},
+    {{gParamType_IObject, "input"}},
+    {{gParamType_IObject, "output"}},
     {{"enum UnChanged DataChange ShapeChange TotalChange", "mode", "UnChanged"},
-     {"string", "name", ""}},
+     {gParamType_String, "name", ""}},
     {"lifecycle"}
 });
 

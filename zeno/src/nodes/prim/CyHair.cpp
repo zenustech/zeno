@@ -32,10 +32,10 @@ struct CyHair : zeno::INode {
 
 ZENDEFNODE(CyHair, 
 {   {   
-        {"readpath", "path"},
-        {"bool", "yup", "1"},
+        {gParamType_String, "path", "", Socket_Primitve, ReadPathEdit},
+        {gParamType_Bool, "yup", "1"},
     },
-    {"out"}, //output
+    {{gParamType_Primitive, "out"}}, //output
     {},
     {"read"}
 });

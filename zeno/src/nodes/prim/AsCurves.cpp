@@ -23,9 +23,9 @@ struct AsCurves : zeno::INode {
 
 ZENDEFNODE(AsCurves, 
 {   {   
-        {"prim"},
+        {gParamType_Primitive, "prim"},
     },
-    {"prim"}, //output
+    {{gParamType_Primitive, "prim"}}, //output
     {
         {"enum " + zeno::CurveTypeListString(), "type", zeno::CurveTypeDefaultString() }
     },            //prim

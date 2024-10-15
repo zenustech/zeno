@@ -38,11 +38,11 @@ namespace zeno {
     {
         None = 0,
         Mute = 1,
-        View = 1<<1,
+        View = 1 << 1,
     };
     ENUM_FLAGS(NodeStatus)
 
-    enum NodeType
+        enum NodeType
     {
         Node_Normal,
         SubInput,
@@ -75,11 +75,11 @@ namespace zeno {
         Socket_Editable,
         Socket_MultiInput,
         Socket_Legacy,
-        Socket_Disable,     //ÄÚ²¿²ÎÊýµÄsocket¶¼ÊÇSocket_Disable
+        Socket_Disable,     //å†…éƒ¨å‚æ•°çš„socketéƒ½æ˜¯Socket_Disable
     };
     ENUM_FLAGS(SocketProperty)
 
-    enum SocketType
+        enum SocketType
     {
         NoSocket,
         //Socket_Primitve,
@@ -148,11 +148,11 @@ namespace zeno {
 
     enum NodeRunStatus
     {
-        Node_DirtyReadyToRun,       //ÒÑ±êÔà£¬µ«»¹Ã»Ö´ÐÐ¼ÆËã¡£  £¨dirty)
-        Node_Pending,               //ÒÑ½øÈë¼ÆËã£¬µ«»¹ÐëµÈ´ýÇ°Ðò¼ÆËãÒÀÀµ¡£(dirty)
-        Node_Running,               //½øÈëapply   (dirty)
-        Node_RunError,              //¼ÆËã´íÎó      (dirty)
-        Node_RunSucceed             //¼ÆËã³É¹¦²¢Íê³É   (no dirty)
+        Node_DirtyReadyToRun,       //å·²æ ‡è„ï¼Œä½†è¿˜æ²¡æ‰§è¡Œè®¡ç®—ã€‚  ï¼ˆdirty)
+        Node_Pending,               //å·²è¿›å…¥è®¡ç®—ï¼Œä½†è¿˜é¡»ç­‰å¾…å‰åºè®¡ç®—ä¾èµ–ã€‚(dirty)
+        Node_Running,               //è¿›å…¥apply   (dirty)
+        Node_RunError,              //è®¡ç®—é”™è¯¯      (dirty)
+        Node_RunSucceed             //è®¡ç®—æˆåŠŸå¹¶å®Œæˆ   (no dirty)
     };
 
     enum ZSG_VERSION
