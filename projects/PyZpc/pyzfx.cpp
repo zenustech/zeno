@@ -189,10 +189,18 @@ struct PyZfx : INode {
         if (PyDict_SetItemString(zenoModDict, "_args", argsDict) < 0)
             throw makeError("failed to set zpy._args");
  
-        if (path.empty()) {
-            auto code = get_input2<std::string>("code");
-            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
-        } else {
+        auto code = get_input2<std::string>("code");
+        if (!code.empty()) { // path.empty()
+            auto tmpFile = zs::abs_exe_directory() + "/__pyzfx__zstmp.py";
+            if (std::FILE* f = std::fopen(tmpFile.c_str(), "w")) {
+                std::fwrite(code.data(), sizeof(char), code.size(), f);
+                std::fclose(f);
+                // *
+                path = tmpFile;
+            }
+            // mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
+        }
+        {
             FILE *fp = fopen(path.c_str(), "r");
             if (!fp) {
                 perror(path.c_str());

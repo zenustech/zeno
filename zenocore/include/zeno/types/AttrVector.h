@@ -498,6 +498,7 @@ struct AttrVector {
         for (auto &[key, val] : attrs) {
             std::visit([&](auto &val) { val.resize(size); }, val);
         }
+        shrink_to_fit();
     }
 
     void clear() {

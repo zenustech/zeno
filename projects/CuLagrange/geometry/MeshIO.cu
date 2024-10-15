@@ -12,7 +12,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
-
+#include <iostream>
 
 
 namespace zeno {
@@ -21,24 +21,31 @@ struct ReadVTKMesh : INode {
     void apply() override {
         auto view_interior = get_param<int>("view_interior");
         auto path = get_input<StringObject>("path")->get();
+        auto type = get_input<StringObject>("method")->get();
         auto prim = std::make_shared<PrimitiveObject>();
-        bool ret = load_vtk_data(path,prim,0);
+        bool ret;
 
-        if(view_interior && prim->quads.size() > 0){
+        if(type == "mesh")
+          ret = load_vtk_data(path,prim,0);
+        else
+          ret = read_unstructured_grid_to_points(path, prim);
+
+        if(type == "mesh") {
+          if (view_interior && prim->quads.size() > 0) {
             prim->tris.resize(prim->quads.size() * 4);
-            
+
             constexpr auto space = zs::execspace_e::openmp;
             auto ompExec = zs::omp_exec();
 
-            ompExec(zs::range(prim->quads.size()),
-                [prim] (int ei) mutable {
-                    const auto& tet = prim->quads[ei];
-                    // for(int i = 0;i < 4;++i)
-                    prim->tris[ei * 4 + 0] = zeno::vec3i{tet[0],tet[1],tet[2]};
-                    prim->tris[ei * 4 + 1] = zeno::vec3i{tet[1],tet[3],tet[2]};
-                    prim->tris[ei * 4 + 2] = zeno::vec3i{tet[0],tet[2],tet[3]};
-                    prim->tris[ei * 4 + 3] = zeno::vec3i{tet[0],tet[3],tet[1]};                    
-                });
+            ompExec(zs::range(prim->quads.size()), [prim](int ei) mutable {
+              const auto &tet = prim->quads[ei];
+              // for(int i = 0;i < 4;++i)
+              prim->tris[ei * 4 + 0] = zeno::vec3i{tet[0], tet[1], tet[2]};
+              prim->tris[ei * 4 + 1] = zeno::vec3i{tet[1], tet[3], tet[2]};
+              prim->tris[ei * 4 + 2] = zeno::vec3i{tet[0], tet[2], tet[3]};
+              prim->tris[ei * 4 + 3] = zeno::vec3i{tet[0], tet[3], tet[1]};
+            });
+          }
         }
 
         set_output("prim",std::move(prim));
@@ -47,6 +54,7 @@ struct ReadVTKMesh : INode {
 
 ZENDEFNODE(ReadVTKMesh, {/* inputs: */ {
                             {"readpath", "path"},
+                            {"enum verts mesh", "method", "verts"},
                         },
                         /* outputs: */
                         {

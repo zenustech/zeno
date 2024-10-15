@@ -44,6 +44,7 @@ set(ZENO_EXTENSIONS
     Roads
     Geometry
     PluginPOC
+    Nemo
     )
 
 #test custom module

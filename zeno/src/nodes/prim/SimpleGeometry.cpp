@@ -23,6 +23,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
 #include <zeno/utils/reflectutil.h>
 
 
@@ -1291,10 +1292,10 @@ struct CreateSphere : zeno::INode {
             memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
             memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
 
-            prim->userData().set2("sphere_transform_row0", row0);
-            prim->userData().set2("sphere_transform_row1", row1);
-            prim->userData().set2("sphere_transform_row2", row2);
-            prim->userData().set2("sphere_transform_row3", row3);
+            prim->userData().set2("_transform_row0", row0);
+            prim->userData().set2("_transform_row1", row1);
+            prim->userData().set2("_transform_row2", row2);
+            prim->userData().set2("_transform_row3", row3);
         }
 
         set_output("prim",std::move(prim));
@@ -1417,6 +1418,48 @@ ZENDEFNODE(CreateCylinder, {
         {gParamType_Int, "lons", "32"},
     },
     {{gParamType_Primitive, "prim"}},
+    {},
+    {"create"},
+});
+struct CreateFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
+    }
+};
+
+ZENDEFNODE(CreateFolder, {
+    {
+        {"directory", "folderPath"}
+    },
+    {},
+    {},
+    {"create"},
+});
+
+struct RemoveFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (fs::exists(folderPath)) {
+            std::error_code errorCode;
+            fs::remove_all(folderPath, errorCode);
+            if (get_input2<bool>("clean")) {
+                fs::create_directories(folderPath);
+            }
+        }
+    }
+};
+
+ZENDEFNODE(RemoveFolder, {
+    {
+        {"directory", "folderPath"},
+        {"bool", "clean", "false"},
+    },
+    {},
     {},
     {"create"},
 });

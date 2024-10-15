@@ -59,6 +59,78 @@ ZENDEFNODE(NumericToSmallVec, {
                                   {"PyZFX"},
                               });
 
+struct SmallVecToNumeric : INode {
+    virtual void apply() override {
+        const auto &smallVec = get_input<SmallVecObject>("ZSSmallVec")->value;
+        auto ret = std::make_shared<NumericObject>();
+        std::visit(
+            [&ret](auto const &vec) {
+                using vec_t = RM_CVREF_T(vec);
+                using VT = zs::conditional_t<zs::is_same_v<vec_t, double>, float, vec_t>;
+                if constexpr (zs::is_scalar_v<vec_t>) {
+                    ret->set((VT)vec);
+                } else {
+                    constexpr auto dim = vec_t::dim;
+                    using VT = zs::conditional_t<zs::is_same_v<typename vec_t::value_type, double>, 
+                        float, typename vec_t::value_type>;
+                    if constexpr (dim == 1) {
+                        constexpr auto dimI = vec_t::template range_t<0>::value;
+                        if constexpr (dimI == 1) {
+                            ret->set((VT)vec(0));
+                        } else {
+                            zeno::vec<dimI, VT> tmp;
+                            for (int d = 0; d < dimI; ++d)
+                                tmp[d] = vec(d);
+                            ret->set(tmp);
+                        }
+                    } else if constexpr (dim == 2) {
+                        constexpr auto dimI = vec_t::template range_t<0>::value;
+                        constexpr auto dimJ = vec_t::template range_t<1>::value;
+                        if constexpr (dimI == 1) {
+                            if constexpr (dimJ <= 4) {
+                                if constexpr (dimJ == 1) {
+                                    ret->set((VT)vec(0, 0));
+                                } else {
+                                    zeno::vec<dimJ, VT> tmp;
+                                    for (int d = 0; d < dimJ; ++d)
+                                        tmp[d] = vec(0, d);
+                                    ret->set(tmp);
+                                }
+                            } else {
+                                static_assert(zs::always_false<vec_t>, "...");
+                            }
+                        } else if constexpr (dimJ == 1) {
+                            if constexpr (dimI <= 4) {
+                                if constexpr (dimI == 1) {
+                                    ret->set((VT)vec(0, 0));
+                                } else {
+                                    zeno::vec<dimI, VT> tmp;
+                                    for (int d = 0; d < dimI; ++d)
+                                        tmp[d] = vec(d, 0);
+                                    ret->set(tmp);
+                                }
+                            } else {
+                                static_assert(zs::always_false<vec_t>, "...");
+                            }
+                        } else {
+                            throw std::runtime_error(fmt::format(
+                                "cannot convert a small vec of shape ({}, {}) to zeno NumericValue", dimI, dimJ));
+                        }
+                    }                    
+                }
+            },
+            smallVec);
+        set_output("numeric", std::move(ret));
+    }
+};
+
+ZENDEFNODE(SmallVecToNumeric, {
+                                  {"ZSSmallVec"},
+                                  {"numeric"},
+                                  {},
+                                  {"PyZFX"},
+                              });
+
 struct PrintSmallVec : INode {
     void apply() override {
         const auto &smallVec = get_input<SmallVecObject>("ZSSmallVec")->value;

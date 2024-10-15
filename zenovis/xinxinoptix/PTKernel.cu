@@ -274,7 +274,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
-        prd.max_depth = 6;
+        prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -348,14 +348,15 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            //if(prd.depth>prd.max_depth) {
-            float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-            if(rnd(prd.seed) > RRprob || prd.depth > prd.max_depth) {
-                prd.done=true;
-            } else {
-                prd.attenuation = prd.attenuation / RRprob;
+            if(prd.depth > prd.max_depth){
+                float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
+                RRprob = min(RRprob, 0.99f);
+                if(rnd(prd.seed) > RRprob) {
+                    prd.done=true;
+                } else {
+                    prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
+                }
             }
-            //}
             if(prd.countEmitted == true)
                 prd.passed = true;
 
@@ -433,9 +434,15 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
     params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
     params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
-    params.frame_buffer[ image_index ] = make_color ( accum_color );
+
     params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
     params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
+
+    auto uv = float2{idx.x+0.5f, idx.y+0.5f};
+    auto dither = InterleavedGradientNoise(uv);
+
+    dither = (dither-0.5f)/255;
+    params.frame_buffer[ image_index ] = make_color( accum_color + dither);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;
@@ -475,7 +482,7 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;

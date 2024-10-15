@@ -123,7 +123,7 @@ struct ZSNSPressureProject : INode {
         for (int iter = 0; iter < nIter; ++iter) {
             // a simple implementation of red-black SOR
             for (int clr = 0; clr != 2; ++clr) {
-#if 1
+#if 0
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
                 static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
@@ -206,7 +206,7 @@ struct ZSNSPressureProject : INode {
 #else
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
-                static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
+                // static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
                 // 7 * sizeof(float) = 28 Bytes / block
                 constexpr int arena_size = 7;
                 constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
@@ -879,7 +879,7 @@ struct ZSNSPressureProject : INode {
 
     template <int level>
     void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
-        if constexpr (level == 3) {
+        if constexpr (level == 1) {
             clearInit<level>(pol, NSGrid);
 
 #if ENABLE_PROFILE

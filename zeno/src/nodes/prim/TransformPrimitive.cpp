@@ -427,6 +427,19 @@ struct PrimitiveTransform : zeno::INode {
             }
         }
 
+        auto transform_ptr = glm::value_ptr(matrix);
+            
+        zeno::vec4f row0, row1, row2, row3;
+        memcpy(row0.data(), transform_ptr, sizeof(float)*4);
+        memcpy(row1.data(), transform_ptr+4, sizeof(float)*4);
+        memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
+        memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
+
+        iObject->userData().set2("_transform_row0", row0);
+        iObject->userData().set2("_transform_row1", row1);
+        iObject->userData().set2("_transform_row2", row2);
+        iObject->userData().set2("_transform_row3", row3);
+
         set_output("outPrim", std::move(iObject));
     }
 };

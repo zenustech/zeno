@@ -96,7 +96,7 @@ struct ZSParticlePerlinNoise : INode {
         auto &tv = zspars->getParticles();
 
         if (!tv.hasProperty(tag))
-            throw std::runtime_error(fmt::format("Attribute [{}] doesn't exist!", tag));
+            throw std::runtime_error(fmt::format("Attribute [{}] doesn't exist!", tag.asChars()));
         const int nchns = tv.getPropertySize(tag);
 
         auto pol = zs::cuda_exec();
