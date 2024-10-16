@@ -507,7 +507,7 @@ struct PrimitiveMarkIslands : INode {
         }
 
         const auto &loops = prim->loops;
-        const auto &polys = prim->polys;
+        auto &polys = prim->polys;
         using IV = zs::vec<int, 2>;
         zs::bht<int, 2, int, 16> tab{(std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
         std::vector<int> is, js;
@@ -568,12 +568,26 @@ struct PrimitiveMarkIslands : INode {
         std::sort(kvs.begin(), kvs.end(), lessOp);
         pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
 
-        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        auto islandTag = get_input2<std::string>("island_tag");
+        auto &setids = prim->add_attr<int>(islandTag);
         pol(range(pos.size()), [&fas, &setids, &invMap, vtab = view<space>(vtab)](int vi) mutable {
             auto ancestor = fas[vi];
             auto setNo = vtab.query(ancestor);
             setids[vi] = invMap[setNo];
         });
+        if (get_input2<bool>("mark_face")) {
+            auto &faceids = polys.add_attr<int>(islandTag);
+            pol(zip(polys.values, faceids), [&](const auto &poly, int &fid) {
+                auto offset = poly[0];
+                auto vi = loops[offset];
+                auto vIslandId = setids[vi];
+                fid = vIslandId;
+                // auto size = poly[1];
+                // for (int i = 1; i < size; ++i) {
+                //     assert(setids[loops[offset + i]] == set);
+                // }
+            });
+        }
 
         if (isTris) {
             primTriangulate(prim.get(), true, false);
@@ -583,7 +597,8 @@ struct PrimitiveMarkIslands : INode {
 };
 
 ZENDEFNODE(PrimitiveMarkIslands, {
-                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}},
+                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}, 
+                                     {"bool", "mark_face", "0"}},
                                      {
                                          {"PrimitiveObject", "prim"},
                                      },
