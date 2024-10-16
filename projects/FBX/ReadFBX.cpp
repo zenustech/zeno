@@ -1398,6 +1398,6 @@ ZENDEFNODE(ReadSTL, {
         {"prim"},
     },
     {},
-    {"BaseIO"},
+    {"primitive"},
 });
 }
