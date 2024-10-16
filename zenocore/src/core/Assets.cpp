@@ -108,8 +108,25 @@ ZENO_API void AssetsMgr::createAsset(const zeno::ZenoAsset asset, bool isFirstCr
     CALLBACK_NOTIFY(createAsset, asset.info)
 }
 
-ZENO_API void AssetsMgr::removeAsset(const std::string& name) {
+ZENO_API void AssetsMgr::removeAsset(const std::string& name, bool deleteAssetFile) {
     m_assets.erase(name);
+    if (deleteAssetFile) {
+    #ifdef _WIN32
+        WCHAR documents[MAX_PATH];
+        SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, documents);
+        std::filesystem::path docPath(documents);
+        std::filesystem::path zenoDir = std::filesystem::u8path(docPath.string() + "/Zeno");
+        if (std::filesystem::is_directory(zenoDir)) {
+            std::filesystem::path assetsDir = std::filesystem::u8path(zenoDir.string() + "/assets");
+            if (std::filesystem::is_directory(assetsDir)) {
+                std::filesystem::path assetsfile = std::filesystem::u8path(assetsDir.string() + "/" + name + ".zda");
+                if (std::filesystem::exists(assetsfile) && std::filesystem::is_regular_file(assetsfile)) {
+                    std::filesystem::remove(assetsfile);
+                }
+            }
+        }
+    #endif
+    }
     CALLBACK_NOTIFY(removeAsset, name)
 }
 

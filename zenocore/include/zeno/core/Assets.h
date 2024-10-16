@@ -43,7 +43,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     ZENO_API void createAsset(const zeno::ZenoAsset asset, bool isFirstCreate = false);
     CALLBACK_REGIST(createAsset, void, zeno::AssetInfo)
 
-    ZENO_API void removeAsset(const std::string& name);
+    ZENO_API void removeAsset(const std::string& name, bool deleteAssetFile);
     CALLBACK_REGIST(removeAsset, void, const std::string&)
 
     ZENO_API void renameAsset(const std::string& old_name, const std::string& new_name);

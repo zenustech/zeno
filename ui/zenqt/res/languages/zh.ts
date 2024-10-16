@@ -2134,6 +2134,10 @@
         <source>Delete</source>
         <translation>删除</translation>
     </message>
+	<message>
+        <source>Remove in list</source>
+        <translation>从列表中移除</translation>
+    </message>
     <message>
         <source>Zeno</source>
         <translation>Zeno</translation>
@@ -2141,6 +2145,10 @@
     <message>
         <source>main graph is not allowed to be deleted</source>
         <translation>不允许删除main图</translation>
+    </message>
+	<message>
+        <source>main graph is not allowed to be removed</source>
+        <translation>不允许移除main图</translation>
     </message>
     <message>
         <source>subgraph name:</source>

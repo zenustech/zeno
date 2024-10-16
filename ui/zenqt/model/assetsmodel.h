@@ -42,7 +42,7 @@ public:
 
     void newAsset(const zeno::AssetInfo asset);
     void addAsset(const zeno::GraphData& graph);
-    void removeAsset(const QString& assetName);
+    void removeAsset(const QString& assetName, bool deleteAssetFile = false);
     void saveAsset(const QString& name);
     zeno::AssetInfo getAsset(const QString& assetName) const;
 

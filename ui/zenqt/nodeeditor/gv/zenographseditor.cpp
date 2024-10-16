@@ -191,7 +191,7 @@ void ZenoGraphsEditor::resetAssetsModel()
     m_ui->assetsList->setItemDelegate(delegate);
     connect(m_ui->assetsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
         QModelIndexList lst = m_ui->assetsList->selectionModel()->selectedIndexes();
-        //delegate->setSelectedIndexs(lst);
+        delegate->setSelectedIndexs(lst);
         if (lst.size() == 1)
         {
             onAssetItemActivated(lst.first());

@@ -140,6 +140,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pCopySubnet = new QAction(tr("Copy subnet"));
             QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
             QAction* pRename = new QAction(tr("Rename"));
+            QAction* pRemoveInlist = new QAction(tr("Remove in list"));
             QAction* pDelete = new QAction(tr("Delete"));
             QAction* pSave = new QAction(tr("Save Subgrah"));
             QAction* pCustomParams = new QAction(tr("Custom Params"));
@@ -150,7 +151,11 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 pSave->setEnabled(false);
             }
             connect(pDelete, &QAction::triggered, this, [=]() {
-                onDelete();
+                onDelete(proxyIndex);
+            });
+
+            connect(pRemoveInlist, &QAction::triggered, this, [=]() {
+                onRemoveInlist(proxyIndex);
              });
 
             /*
@@ -176,6 +181,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pPasteSubnet);
             menu->addSeparator();
             menu->addAction(pRename);
+            menu->addAction(pRemoveInlist);
             menu->addAction(pDelete);
             menu->addAction(pSave);
             menu->addAction(pCustomParams);
@@ -190,12 +196,13 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             }
 #endif
             menu->exec(QCursor::pos());
+            return true;
         }
     }
     return QStyledItemDelegate::editorEvent(event, model, option, proxyIndex);
 }
 
-void ZSubnetListItemDelegate::onDelete()
+void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
     int button = QMessageBox::question(qobject_cast<QWidget*>(this->parent()), tr("Delete Subgraph"), tr("Do you want to delete the selected subgraphs"));
     if (button == QMessageBox::Yes) {
@@ -209,6 +216,32 @@ void ZSubnetListItemDelegate::onDelete()
             }
             nameList << subgName;
         }
+        if (nameList.empty()) {
+            m_model->removeAsset(index.data(ROLE_CLASS_NAME).toString(), true);
+        } else {
+            for (const QString& name : nameList) {
+                m_model->removeAsset(name, true);
+            }
+        }
+    }
+}
+
+void ZSubnetListItemDelegate::onRemoveInlist(const QModelIndex& index)
+{
+    QStringList nameList;
+    for (const QModelIndex& idx : m_selectedIndexs) {
+        QString subgName = idx.data(ROLE_CLASS_NAME).toString();
+        if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
+            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be removed"));
+            msg.exec();
+            continue;
+        }
+        nameList << subgName;
+    }
+    if (nameList.empty()) {
+        m_model->removeAsset(index.data(ROLE_CLASS_NAME).toString());
+    }
+    else {
         for (const QString& name : nameList) {
             m_model->removeAsset(name);
         }

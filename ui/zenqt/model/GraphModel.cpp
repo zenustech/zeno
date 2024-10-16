@@ -1340,8 +1340,8 @@ bool GraphModel::removeRows(int row, int count, const QModelIndex& parent)
     m_nodes.remove(id);
     m_name2uuid.remove(name);
 
-    if (m_subgNodes.find(id) != m_subgNodes.end())
-        m_subgNodes.remove(id);
+    if (m_subgNodes.find(name) != m_subgNodes.end())
+        m_subgNodes.remove(name);
 
     delete pItem;
 
@@ -1393,8 +1393,6 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
         if (assetsName == m_nodes[uuid]->cls)
         {
             //TO DO: compare diff
-            if (!pSubgM->isLocked())
-                continue;
             while (pSubgM->rowCount() > 0)
             {
                 const QString& nodeName = pSubgM->index(0, 0).data(ROLE_NODE_NAME).toString();
