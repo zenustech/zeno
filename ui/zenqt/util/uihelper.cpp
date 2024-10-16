@@ -2261,7 +2261,7 @@ void UiHelper::saveProject(const QString& name)
         GraphModel* pModel =  zenoApp->graphsManager()->getGraph({ "main" });
         if (pModel)
         {
-            pModel->syncToAssetsInstance(name);
+            pModel->saveSyncToAssetsInstance(name);
         }
     }
 }
