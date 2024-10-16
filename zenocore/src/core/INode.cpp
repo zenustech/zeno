@@ -1294,11 +1294,7 @@ bool INode::receiveOutputObj(ObjectParam* in_param, std::shared_ptr<INode> outNo
         //TODO: readonly property on object.
     }
     else if (in_param->socketType == Socket_WildCard) {
-        if (std::shared_ptr<zeno::INode> node = in_param->m_wpNode.lock()) {
-            if (node->get_nodecls() == "SubOutput") {
-                in_param->spObject = outputObj;
-            }
-        }
+        in_param->spObject = outputObj;
     }
     return true;
 }
