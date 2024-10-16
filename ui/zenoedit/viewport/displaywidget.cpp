@@ -1326,7 +1326,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->set_select_mode(zenovis::PICK_MODE::PICK_MESH);
+                scene->set_select_mode(zenovis::PICK_MODE::PICK_FACE);
             else if (select_mode_str == "line")
                 scene->set_select_mode(zenovis::PICK_MODE::PICK_LINE);
             else

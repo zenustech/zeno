@@ -454,7 +454,7 @@ struct FrameBufferPicker : IPicker {
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 
-                if (scene->get_select_mode() == PICK_MODE::PICK_MESH) {
+                if (scene->get_select_mode() == PICK_MODE::PICK_FACE) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
                     CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));

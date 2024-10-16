@@ -106,7 +106,7 @@ void Picker::pick_pixel(int x, int y) {
     auto &selected_prims = scene->selected;
     auto &selected_elements = scene->selected_elements;
     // qDebug() << scene->select_mode;
-    // scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
+    // scene->select_mode = zenovis::PICK_MODE::PICK_FACE;
     auto selected = picker->getPicked(x, y);
 
     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT) {

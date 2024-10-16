@@ -175,7 +175,7 @@ struct PrimitiveHighlight : IGraphicDraw {
             }
 
             // ----- draw selected meshes -----
-            if (scene->get_select_mode() == PICK_MODE::PICK_MESH) {
+            if (scene->get_select_mode() == PICK_MODE::PICK_FACE) {
                 // prepare indices
                 vector<vec3i> ind(selected_count);
                 int i = 0;
