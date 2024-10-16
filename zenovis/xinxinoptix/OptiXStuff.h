@@ -982,37 +982,35 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         ny = std::max(img->userData().get2<int>("h"), 1);
         nc = std::max(img->userData().get2<int>("channels"), 1);
 
-        if (nc < 4) {
+        auto ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
 
-            std::vector<unsigned char> ucdata;
-            ucdata.resize(img->verts.size() * nc);
+        if (nc < 4) {
 
             for(size_t i=0; i<img->verts.size(); i+=1 ) {
 
                 for (int c=0; c<nc; ++c) {
-                    ucdata[i*nc+c] = (img->verts[i][c] * 255.0);
+                    ucdata->at(i*nc+c) = (img->verts[i][c] * 255.0);
                 }
             }
-            tex_lut[tex_key] = makeCudaTexture(ucdata.data(), nx, ny, nc, blockCompression);
+            tex_lut[tex_key] = makeCudaTexture(ucdata->data(), nx, ny, nc, blockCompression);
 
         } else {
 
             assert(nc == 4);
-            std::vector<uchar4> data(nx * ny);
+            auto data = (uchar4*)ucdata->data();
             auto &alpha = img->verts.attr<float>("alpha");
             for (auto i = 0; i < nx * ny; i++) {
                 data[i].x = (unsigned char)(img->verts[i][0]*255.0);
                 data[i].y = (unsigned char)(img->verts[i][1]*255.0);
                 data[i].z = (unsigned char)(img->verts[i][2]*255.0);
                 data[i].w = (unsigned char)(alpha[i]        *255.0);
-
             }
-            tex_lut[tex_key] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4, blockCompression);
+            tex_lut[tex_key] = makeCudaTexture((unsigned char *)data, nx, ny, 4, blockCompression);
         }
         
-        lookupTexture = [img=img](uint32_t idx) {
-            auto ptr = (float*)img->verts->data();
-            return ptr[idx];
+        lookupTexture = [ucdata=ucdata, img=img](uint32_t idx) {
+            auto ptr = ucdata->data();
+            return ptr[idx]/255.0;
         };
     }
     else if (stbi_is_hdr(native_path.c_str())) {
