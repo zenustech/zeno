@@ -441,8 +441,8 @@ extern "C" __global__ void __raygen__rg()
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
-    dither = (dither-0.5f)/255;
-    params.frame_buffer[ image_index ] = make_color( accum_color + dither);
+    dither = (dither-0.5f);
+    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;
