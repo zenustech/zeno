@@ -29,7 +29,7 @@ namespace zs {
     }
 
     __forceinline__ __device__ zs::vec<float, 3> normalizeSafe(const zs::vec<float, 3> &a,
-                                                               float b = zs::limits<float>::epsilon()) {
+                                                               float b = zs::detail::deduce_numeric_epsilon<float>()) {
         return a * (1 / zs::max(b, a.length()));
     }
 
@@ -1694,7 +1694,7 @@ namespace zeno {
 
 
     __forceinline__ __device__ float fit(const float data, const float ss, const float se, const float ds, const float de) {
-        float b = zs::limits<float>::epsilon();
+        float b = zs::detail::deduce_numeric_epsilon<float>();
         b = zs::max(zs::abs(se - ss), b);
         b = se - ss >= 0 ? b : -b;
         float alpha = (data - ss) / b;

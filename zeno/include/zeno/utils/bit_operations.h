@@ -15,6 +15,19 @@ constexpr To &bit_cast(T &t) noexcept {
     return *reinterpret_cast<To *>(std::addressof(t));
 }
 
+
+template<class T>
+constexpr T byteswap(T value) noexcept
+{
+    T out;
+    char * value_ptr = (char *)&value;
+    char * out_ptr = (char *)&out;
+    for (auto i = 0; i < sizeof(T); i++) {
+        out_ptr[i] = value_ptr[sizeof (T) - 1 - i];
+    }
+    return out;
+}
+
 static constexpr std::uint8_t ceil_log2(std::size_t x) {
     const std::uint64_t t[6] = {
         0xFFFFFFFF00000000ull,

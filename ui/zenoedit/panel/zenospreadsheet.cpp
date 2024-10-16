@@ -277,6 +277,21 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
                 .arg(num_attrs)
                 .arg(num_uvs);
             pStatusBar->setText(statusInfo);
+
+            //如果条目数过多（比如几千万级别），会导致qheaderview内部计算视图高度时溢出（整型数上限）
+            //这时候要缩小section size.
+            int adjust_sec_size = 42;
+            if (num_vert > 10000000) {
+                int maxVSize = 2000000000;
+                int secsz = maxVSize / num_vert;
+                if (secsz > 0) {
+                    adjust_sec_size = secsz;
+                }
+            }
+
+            prim_attr_view->verticalHeader()->setMinimumSectionSize(adjust_sec_size);
+            prim_attr_view->verticalHeader()->setDefaultSectionSize(adjust_sec_size);
+
             this->dataModel->setModelData(obj);
         }
     }

@@ -123,7 +123,7 @@ struct ZSNSPressureProject : INode {
         for (int iter = 0; iter < nIter; ++iter) {
             // a simple implementation of red-black SOR
             for (int clr = 0; clr != 2; ++clr) {
-#if 1
+#if 0
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
                 static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
@@ -198,7 +198,7 @@ struct ZSNSPressureProject : INode {
 
                         auto stclSum = tile.shfl(stclVal, 1);
                         auto cutSum = tile.shfl(cutVal, 1);
-                        cutSum = zs::max(cutSum, zs::limits<float>::epsilon() * 10);
+                        cutSum = zs::max(cutSum, zs::detail::deduce_numeric_epsilon<float>() * 10);
                         if (lane_id == 0) {
                             spgv(pOffset, blockno, 0) = stclVal + sor * (stclSum * dx - div * rho) / (cutSum * dx);
                         }
@@ -206,7 +206,7 @@ struct ZSNSPressureProject : INode {
 #else
                 using value_type = typename RM_CVREF_T(spg)::value_type;
                 constexpr int side_length = RM_CVREF_T(spg)::side_length;
-                static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
+                // static_assert(side_length == 1, "coarsest level block assumed to have a side length of 1.");
                 // 7 * sizeof(float) = 28 Bytes / block
                 constexpr int arena_size = 7;
                 constexpr std::size_t bucket_size = RM_CVREF_T(spg._table)::bucket_size;
@@ -528,7 +528,7 @@ struct ZSNSPressureProject : INode {
                             cut_z[1] = cut2shmem[idx + 1];
 
                             float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
-                            cut_sum = zs::max(cut_sum, zs::limits<float>::epsilon() * 10);
+                            cut_sum = zs::max(cut_sum, zs::detail::deduce_numeric_epsilon<float>() * 10);
 
                             p_self = (1.f - sor) * p_self +
                                      sor *
@@ -879,7 +879,7 @@ struct ZSNSPressureProject : INode {
 
     template <int level>
     void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
-        if constexpr (level == 3) {
+        if constexpr (level == 1) {
             clearInit<level>(pol, NSGrid);
 
 #if ENABLE_PROFILE
@@ -1582,7 +1582,7 @@ void ZSNSPressureProject::coloredSOR<0>(zs::CudaExecutionPolicy &pol, ZenoSparse
                         cut_z[1] = spgv.value(cutOffset + 2, icoord + vec3i(0, 0, 1), 1.f);
 
                         float cut_sum = cut_x[0] + cut_x[1] + cut_y[0] + cut_y[1] + cut_z[0] + cut_z[1];
-                        cut_sum = zs::max(cut_sum, zs::limits<float>::epsilon() * 10);
+                        cut_sum = zs::max(cut_sum, zs::detail::deduce_numeric_epsilon<float>() * 10);
 
                         p_self =
                             (1.f - sor) * p_self + sor *

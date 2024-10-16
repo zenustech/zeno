@@ -96,18 +96,22 @@ extern "C" __global__ void __intersection__volume()
     }
 }
 
-__forceinline__ __device__ auto EvalVolume(uint32_t* seed, float* m16, float sigma_t, float3& pos) {
+__forceinline__ __device__ auto EvalVolume(uint32_t* seed, float* m16, float sigma_t, float3& pos, bool isShadowRay=false) {
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     VolumeIn vin;
     vin.pos_view = pos;
     vin.pos_world = pos + params.cam.eye;
+
+    vin.isShadowRay = isShadowRay;
+
     vin.seed = seed;
     vin.sigma_t = sigma_t;
     vin.sbt_ptr = (void*)sbt_data;
     
     vin.world2object = m16;
+
 
     return optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vin );
 }
@@ -408,7 +412,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
             break;
         } // over shoot, outside of volume
 
-        VolumeOut vol_out = EvalVolume(&prd->seed, m16, sigma_t, test_point);
+        VolumeOut vol_out = EvalVolume(&prd->seed, m16, sigma_t, test_point, true);
 
         const auto v_density = vol_out.density / sigma_t;
 

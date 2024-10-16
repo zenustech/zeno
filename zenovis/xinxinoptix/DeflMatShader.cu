@@ -16,6 +16,14 @@
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
+#ifndef __CUDACC_RTC__
+#define _P_TYPE_ 0
+#endif
+
+#if (_P_TYPE_==2)
+#include "Curves.h"
+#endif
+
 static __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     for (size_t i=0; i<3; ++i) {
@@ -67,9 +75,21 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
 
+    auto pType = optixGetPrimitiveType();
+    if (pType != OPTIX_PRIMITIVE_TYPE_SPHERE && pType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        
+        prd->attanuation = vec3(0);
+        optixTerminateRay();
+        return;
+    }
+
     bool sphere_external_ray = false;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+    float3 N = {};
+    printf("Should not reach here\n");
+    return;
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -96,9 +116,23 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     cihouSphereInstanceAux(attrs);
 
 #else
-    size_t inst_idx = optixGetInstanceIndex();
-    size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
+
+    size_t inst_idx = optixGetInstanceId();
+    
+    auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
+    auto meshID = instToMesh[inst_idx];
+
+    auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
+    aux_ptr = aux_ptr + (meshID*5);
+
+    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
+
+    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
+    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+
+    auto vertex_idx = idx_ptr[primIdx];
 
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
@@ -112,11 +146,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
 
-    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
+    float3 n0 = normalize( decodeHalf(nrm_ptr[vertex_idx.x]) );
     n0 = dot(n0, N_Local)>0.8f?n0:N_Local;
-    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
+    float3 n1 = normalize( decodeHalf(nrm_ptr[vertex_idx.y]) );
     n1 = dot(n1, N_Local)>0.8f?n1:N_Local;
-    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
+    float3 n2 = normalize( decodeHalf(nrm_ptr[vertex_idx.z]) );
     n2 = dot(n2, N_Local)>0.8f?n2:N_Local;
 
     N_Local = normalize(interp(barys, n0, n1, n2));
@@ -132,31 +166,33 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ]   );
-    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ]   );
-    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ]   );
-    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ]  );
-    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ]  );
-    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ]  );
-    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
+    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
+    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
+    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
+    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
+    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
+    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
+    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
+    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
 
-    attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    auto _uv_ = interp(barys, uv0, uv1, uv2);
+    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
-    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
-    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
-    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
-    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
-    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
+    attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
+    attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
+    attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
+    attrs.instClr  = decodeHalf( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeHalf( rt_data->instTang[inst_idx]);
 
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
+    attrs.isShadowRay = true;
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
 
@@ -208,7 +244,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         float p = rnd(prd->seed);
 
         float skip = opacity;
-        #if (_SPHERE_)
+        #if (_P_TYPE_==1)
             if (sphere_external_ray) {
                 skip *= opacity;
             }
@@ -257,7 +293,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
-                #if (_SPHERE_)
+                #if (_P_TYPE_==1)
                     if (sphere_external_ray) {
                         prd->attanuation *= vec3(1, 0, 0);
                         if (nDi < (1.0f-_FLT_EPL_)) {
@@ -308,7 +344,47 @@ extern "C" __global__ void __closesthit__radiance()
     MatInput attrs{};
     float estimation = 0;
 
-#if (_SPHERE_)
+#if (_P_TYPE_==2)
+
+    float3 N = {}; 
+
+    auto pType = optixGetPrimitiveType();
+    if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+        prd->done = true;
+        return;
+    }
+
+    float3 normal = computeCurveNormal( optixGetPrimitiveType(), primIdx );
+
+    if (dot(normal, -ray_dir) < 0) {
+        normal = -normal;
+    }
+
+    N = normal;
+        
+    float3 wldPos = P; 
+    float3 wldNorm = normal;
+    float wldOffset = 0.0f;
+
+    prd->geometryNormal = N;
+
+    attrs.pos = P;
+    attrs.nrm = N;
+
+    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
+    auto hairAux = reinterpret_cast<CurveGroupAux*>(params.hairAux);
+
+    auto& aux = hairAux[hair_idx];
+
+    uint strandIndex = aux.strand_i[primIdx];
+
+    float  segmentU   = optixGetCurveParameter();
+    float2 strand_u = aux.strand_u[primIdx];
+    float u = strand_u.x + segmentU * strand_u.y;
+
+    attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
+
+#elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -348,18 +424,9 @@ extern "C" __global__ void __closesthit__radiance()
 
 #else
 
-    size_t inst_idx = optixGetInstanceIndex();
-    size_t vert_aux_offset = rt_data->auxOffset[inst_idx];
-    size_t vert_idx_offset = vert_aux_offset + primIdx*3;
-    //size_t tri_aux_offset = rt_data->auxTriOffset[inst_idx];
-    //size_t tri_idx_offset = tri_aux_offset + primIdx;
-    //size_t vidx0 = rt_data->vidx[tri_idx_offset * 3 + 0];
-    //size_t vidx1 = rt_data->vidx[tri_idx_offset * 3 + 1];
-    //size_t vidx2 = rt_data->vidx[tri_idx_offset * 3 + 2];
-
     float3 _vertices_[3];
     optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
-    
+
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
@@ -388,42 +455,57 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.nrm = N;
 
-    const float3& uv0  = decodeColor( rt_data->uv[ vert_idx_offset+0 ] );
-    const float3& uv1  = decodeColor( rt_data->uv[ vert_idx_offset+1 ] );
-    const float3& uv2  = decodeColor( rt_data->uv[ vert_idx_offset+2 ] );
-    const float3& clr0 = decodeColor( rt_data->clr[ vert_idx_offset+0 ] );
-    const float3& clr1 = decodeColor( rt_data->clr[ vert_idx_offset+1 ] );
-    const float3& clr2 = decodeColor( rt_data->clr[ vert_idx_offset+2 ] );
-    const float3& tan0 = decodeNormal( rt_data->tan[ vert_idx_offset+0 ] );
-    const float3& tan1 = decodeNormal( rt_data->tan[ vert_idx_offset+1 ] );
-    const float3& tan2 = decodeNormal( rt_data->tan[ vert_idx_offset+2 ] );
+    size_t inst_idx = optixGetInstanceId();
+    
+    // { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+    auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
+    auto meshID = instToMesh[inst_idx];
+
+    auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
+    aux_ptr = aux_ptr + (meshID*5);
+
+    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
+
+    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
+    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
+    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+
+    auto vertex_idx = idx_ptr[primIdx];
+    
+    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
+    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
+    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+
+    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
+    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
+    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
+    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
+    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
+    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
+
     float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
-    float uv_area = length(cross(uv1 - uv0, uv2-uv0));
-    estimation = uv_area * 4096.0f*4096.0f / (tri_area + 1e-6);
-        attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
+    
+    auto _uv_ = interp(barys, uv0, uv1, uv2);
+    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
-    attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
+    attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
 
-    attrs.instPos =  decodeColor( rt_data->instPos[inst_idx] );
-    attrs.instNrm =  decodeColor( rt_data->instNrm[inst_idx] );
-    attrs.instUv =   decodeColor( rt_data->instUv[inst_idx]  );
-    attrs.instClr =  decodeColor( rt_data->instClr[inst_idx] );
-    attrs.instTang = decodeColor( rt_data->instTang[inst_idx]);
+    attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
+    attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
+    attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
+    attrs.instClr  = decodeHalf( rt_data->instClr[inst_idx] );
+    attrs.instTang = decodeHalf( rt_data->instTang[inst_idx]);
+
     attrs.rayLength = optixGetRayTmax();
 
-    float3 n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
-    n0 = n0;
-
-    float3 n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
-    n1 = n1;
-
-    float3 n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
-    n2 = n2;
+    float3 n0 = normalize( decodeHalf(nrm_ptr[ vertex_idx.x ]) );
+    float3 n1 = normalize( decodeHalf(nrm_ptr[ vertex_idx.y ]) );
+    float3 n2 = normalize( decodeHalf(nrm_ptr[ vertex_idx.z ]) );
 
     auto N_smooth = normalize(interp(barys, n0, n1, n2));
     attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
-
 
 #endif
 
@@ -438,6 +520,7 @@ extern "C" __global__ void __closesthit__radiance()
       attrs.T = attrs.tang;
     }
     attrs.V = -(ray_dir);
+    attrs.isShadowRay = false;
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
     prd->mask_value = mats.mask_value;
@@ -456,7 +539,12 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-#if _SPHERE_
+#if (_P_TYPE_==2)
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
+        N = faceforward( N, -ray_dir, N );
+        prd->geometryNormal = N;
+    }
+#elif (_P_TYPE_==1)
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N, -ray_dir, N );
@@ -464,13 +552,9 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
 #else
-    n0 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+0 ]) );
+
     n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
-
-    n1 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+1 ]) );
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
-
-    n2 = normalize( decodeNormal(rt_data->nrm[ vert_idx_offset+2 ]) );
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
 
     N_smooth = normalize(interp(barys, n0, n1, n2));
@@ -483,12 +567,7 @@ extern "C" __global__ void __closesthit__radiance()
 #endif
 
     attrs.nrm = N;
-    float term = log2(optixGetRayTmax()*prd->pixel_area*sqrt(estimation))/4.0f;
-//    printf("rayDist:%f, tex_per_area:%f, term:%f, pixel_area:%f\n", optixGetRayTmax(),
-//           sqrt(estimation), term, prd->pixel_area);
-    //mats.nrm = normalize(mix(mats.nrm, vec3(0,0,1), clamp(term,0.0f,1.0f)));
-    //end of material computation
-    //mats.metallic = clamp(mats.metallic,0.01, 0.99);
+  
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
     if(length(attrs.tang)>0)
     {
@@ -681,7 +760,7 @@ extern "C" __global__ void __closesthit__radiance()
     //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
-    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?16:prd->max_depth;
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?12:prd->max_depth;
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
@@ -883,7 +962,12 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     float3 frontPos, backPos;
-    SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    if (wldOffset > 0) {
+        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    } else {
+        frontPos = wldPos;
+        backPos = wldPos;
+    }
 
     shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
