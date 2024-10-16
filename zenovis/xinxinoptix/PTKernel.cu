@@ -482,6 +482,8 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
+        envPdf *= params.skyLightProbablity();
+
         float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
