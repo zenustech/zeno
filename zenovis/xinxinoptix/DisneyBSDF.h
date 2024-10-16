@@ -499,10 +499,9 @@ namespace DisneyBSDF{
             } else {
               if(thin)
               {
-                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt / abs(wi.z);
-                float tmpPdf = (reflectance==false)? 0.0f:1.0f;
+                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt / (1e-6+abs(wi.z));
                 float F = BRDFBasics::DielectricFresnel(abs(wo.z), entering?mat.ior:1.0/mat.ior);
-                tmpPdf *= (1.0f-F);
+                float tmpPdf = reflectance ? (1.0f-F) : 0.0f;
                 t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
