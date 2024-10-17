@@ -611,9 +611,6 @@ struct FrameBufferPicker : IPicker {
             unordered_map<unsigned int, unordered_set<unsigned int>> selected_elem;
             for (int i = 0; i < pixel_count; i++) {
                 if (pixels[i].has_object() && pixels[i].has_element() && id_table.count(pixels[i].obj_id)) {
-                    if (selected_elem.count(pixels[i].obj_id)) {
-                        selected_elem[pixels[i].obj_id] = {};
-                    }
                     selected_elem[pixels[i].obj_id].insert(pixels[i].elem_id);
                 }
             }
