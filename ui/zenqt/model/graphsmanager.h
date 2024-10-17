@@ -59,6 +59,7 @@ signals:
     void fileClosed();
     void fileSaved(QString);
     void dirtyChanged(bool);
+    void assetsAboutToBeRemoved(const QModelIndex&, int, int);
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
