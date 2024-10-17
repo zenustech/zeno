@@ -695,6 +695,16 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //                    }
 //                }
             };
+            zeno::SELECTION_MODE mode = zeno::SELECTION_MODE::NORMAL;
+            if (shift_pressed == false && ctrl_pressed == false) {
+                mode = zeno::SELECTION_MODE::NORMAL;
+            }
+            else if (shift_pressed == true && ctrl_pressed == false) {
+                mode = zeno::SELECTION_MODE::APPEND;
+            }
+            else if (shift_pressed == false && ctrl_pressed == true) {
+                mode = zeno::SELECTION_MODE::REMOVE;
+            }
 
             QPoint releasePos = event->pos();
             if (m_boundRectStartPos == releasePos) {
@@ -702,7 +712,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     // zeno::log_info("res_w: {}, res_h: {}", res()[0], res()[1]);
                     m_picker->pick_depth(releasePos.x(), releasePos.y());
                 } else {
-                    m_picker->pick_pixel(releasePos.x(), releasePos.y());
+                    m_picker->pick_pixel(releasePos.x(), releasePos.y(), mode);
                     if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
                     m_transformer->clear();
@@ -725,16 +735,6 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 int y0 = m_boundRectStartPos.y();
                 int x1 = releasePos.x();
                 int y1 = releasePos.y();
-                zeno::SELECTION_MODE mode = zeno::SELECTION_MODE::NORMAL;
-                if (shift_pressed == false && ctrl_pressed == false) {
-                    mode = zeno::SELECTION_MODE::NORMAL;
-                }
-                else if (shift_pressed == true && ctrl_pressed == false) {
-                    mode = zeno::SELECTION_MODE::APPEND;
-                }
-                else if (shift_pressed == false && ctrl_pressed == true) {
-                    mode = zeno::SELECTION_MODE::REMOVE;
-                }
 
                 m_picker->pick_rect(x0, y0, x1, y1, mode);
                 if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_OBJECT)

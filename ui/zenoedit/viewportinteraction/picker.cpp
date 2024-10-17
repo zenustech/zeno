@@ -100,7 +100,7 @@ zenovis::Scene* Picker::get_scene() const
     return sess->get_scene();
 }
 
-void Picker::pick_pixel(int x, int y) {
+void Picker::pick_pixel(int x, int y, SELECTION_MODE mode) {
     auto scene = this->get_scene();
     ZASSERT_EXIT(scene);
     auto &selected_prims = scene->selected;
@@ -122,24 +122,8 @@ void Picker::pick_pixel(int x, int y) {
         }
     }
     else {
-        if (selected.empty()) {
-            selected_elements.clear();
-            return;
-        }
-        // qDebug() << selected.c_str();
-        auto t = selected.find_last_of(':');
-        auto obj_id = selected.substr(0, t);
-        std::stringstream ss;
-        ss << selected.substr(t+1);
-        int elem_id; ss >> elem_id;
-        if (selected_elements.find(obj_id) != selected_elements.end()) {
-            if (selected_elements[obj_id].count(elem_id) > 0)
-                selected_elements[obj_id].erase(elem_id);
-            else
-                selected_elements[obj_id].insert(elem_id);
-        }
-        else
-            selected_elements[obj_id] = {elem_id};
+        load_from_str(selected, scene->get_select_mode(), mode);
+        if (picked_elems_callback) picked_elems_callback();
     }
     // qDebug() << "clicked (" << x << "," << y <<") selected " << selected_obj.c_str();
     // scene->selected.insert(selected_obj);
