@@ -1039,10 +1039,13 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                     const auto asset = zeno::getSession().assets->getAsset(nodedata.cls);
                     nodedata.customUi = asset.m_customui;
                 }
-                zeno::ParamsUpdateInfo updateInfo;
-                zeno::parseUpdateInfo(nodedata.customUi, updateInfo);
-                paramsM->resetCustomUi(nodedata.customUi);
-                paramsM->batchModifyParams(updateInfo);
+                if (cate != "assets")
+                {
+                    zeno::ParamsUpdateInfo updateInfo;
+                    zeno::parseUpdateInfo(nodedata.customUi, updateInfo);
+                    paramsM->resetCustomUi(nodedata.customUi);
+                    paramsM->batchModifyParams(updateInfo);
+                }
 
                 if (nodedata.subgraph.has_value())
                 {
@@ -1361,6 +1364,14 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
             ZASSERT_EXIT(paramsM);
             paramsM->resetCustomUi(customui);
             paramsM->batchModifyParams(info);
+
+            QString name = res.data(ROLE_NODE_NAME).toString();
+            ZASSERT_EXIT(m_name2uuid.find(name) != m_name2uuid.end());
+            QString uuid = m_name2uuid[name];
+            ZASSERT_EXIT(m_nodes.find(uuid) != m_nodes.end());
+            if (std::shared_ptr<zeno::INode> spNode = m_nodes[uuid]->m_wpNode.lock()) {
+                spNode->mark_dirty(true);
+            }
         }
     }
 
@@ -1368,8 +1379,6 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
     if (!path.isEmpty() && path[0] != "main") {
         return;
     }
-
-    syncToAssetsInstance(assetsName);
 
     for (QString subgnode : m_subgNodes) {
         ZASSERT_EXIT(m_name2uuid.find(subgnode) != m_name2uuid.end());
@@ -1381,8 +1390,9 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName, zeno::ParamsUpd
     }
 }
 
-void GraphModel::syncToAssetsInstance(const QString& assetsName)
+void GraphModel::saveSyncToAssetsInstance(const QString& assetsName)
 {
+    const auto asset = zeno::getSession().assets->getAsset(assetsName.toStdString());
     for (const QString & name : m_subgNodes)
     {
         ZASSERT_EXIT(m_name2uuid.find(name) != m_name2uuid.end());
@@ -1392,37 +1402,55 @@ void GraphModel::syncToAssetsInstance(const QString& assetsName)
         ZASSERT_EXIT(pSubgM);
         if (assetsName == m_nodes[uuid]->cls)
         {
-            //TO DO: compare diff
-            while (pSubgM->rowCount() > 0)
-            {
-                const QString& nodeName = pSubgM->index(0, 0).data(ROLE_NODE_NAME).toString();
-                pSubgM->removeNode(nodeName);
+            if (ParamsModel * paramsM = m_nodes[uuid]->params) {//更新subinput/suboutput
+                zeno::ParamsUpdateInfo updateInfo;
+                zeno::parseUpdateInfo(asset.m_customui, updateInfo);
+                paramsM->resetCustomUi(asset.m_customui);
+                for (auto& param: updateInfo) {
+                    if (std::holds_alternative<zeno::ParamPrimitive>(param.param))
+                        param.oldName = std::get<zeno::ParamPrimitive>(param.param).name;
+                    else
+                        param.oldName = std::get<zeno::ParamObject>(param.param).name;
+                }
+                paramsM->batchModifyParams(updateInfo);
             }
+
             std::shared_ptr<zeno::INode> spNode = m_nodes[uuid]->m_wpNode.lock();
-            auto spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
-            if (spSubnetNode) {
-                auto& assetsMgr = zeno::getSession().assets;
-                assetsMgr->updateAssetInstance(assetsName.toStdString(), spSubnetNode);
-                pSubgM->updateAssetInstance(spSubnetNode->subgraph);
-                spNode->mark_dirty(true);
+            if (!spNode) {
+                continue;
             }
+            std::shared_ptr<zeno::SubnetNode> spSubnetNode = std::dynamic_pointer_cast<zeno::SubnetNode>(spNode);
+            if (!spSubnetNode) {
+                continue;
+            }
+
+            if (std::shared_ptr<zeno::Graph> assetGraph = asset.sharedGraph) {//更新普通node
+                for (auto& [name, node] : assetGraph->getNodes()) {
+                    if (node->get_nodecls() == "SubInput" || node->get_nodecls() == "SubOutput") {
+                        continue;
+                    }
+                    if (spSubnetNode->subgraph->getNode(name)) {
+                        spSubnetNode->subgraph->removeNode(name);
+                    }
+                    if (auto spSubnode = std::dynamic_pointer_cast<zeno::SubnetNode>(node)) {
+                        zeno::NodeData nodedata = node->exportInfo();
+                        std::shared_ptr<zeno::INode> newNode = spSubnetNode->subgraph->createNode(nodedata.cls, nodedata.name, spSubnode->isAssetsNode(), nodedata.uipos);
+                        newNode->init(nodedata);
+                    }
+                    else {
+                        zeno::NodeData nodedata = node->exportInfo();
+                        std::shared_ptr<zeno::INode> newNode = spSubnetNode->subgraph->createNode(nodedata.cls, nodedata.name, false, nodedata.uipos);
+                        newNode->init(nodedata);
+                    }
+                }
+            }
+            spNode->mark_dirty(true);
         }
         else
         {
-            pSubgM->syncToAssetsInstance(assetsName);
+            pSubgM->saveSyncToAssetsInstance(assetsName);
         }
     }
-}
-
-void GraphModel::updateAssetInstance(const std::shared_ptr<zeno::Graph> spGraph)
-{
-    m_wpCoreGraph = spGraph;
-    registerCoreNotify();
-    for (auto& [name, node] : spGraph->getNodes()) {
-        _appendNode(node);
-    }
-
-    _initLink();
 }
 
 void GraphModel::updateParamName(QModelIndex nodeIdx, int row, QString newName)

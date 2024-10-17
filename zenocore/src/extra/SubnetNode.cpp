@@ -48,8 +48,8 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
 {
     params_change_info changes = INode::update_editparams(params);
     //update subnetnode.
-    if (!subgraph->isAssets()) {
-        for (auto name : changes.new_inputs) {
+    for (auto name : changes.new_inputs) {
+        if (!subgraph->getNode(name)) {
             std::shared_ptr<INode> newNode = subgraph->createNode("SubInput", name);
 
             bool exist;     //subnet通过自定义参数面板创建SubInput节点时，根据实际情况添加primitive/obj类型的port端口
@@ -84,14 +84,16 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             changes.outputs.push_back("hasValue");
             newNode->update_layout(changes);
         }
-        for (const auto& [old_name, new_name] : changes.rename_inputs) {
-            subgraph->updateNodeName(old_name, new_name);
-        }
-        for (auto name : changes.remove_inputs) {
-            subgraph->removeNode(name);
-        }
+    }
+    for (const auto& [old_name, new_name] : changes.rename_inputs) {
+        subgraph->updateNodeName(old_name, new_name);
+    }
+    for (auto name : changes.remove_inputs) {
+        subgraph->removeNode(name);
+    }
 
-        for (auto name : changes.new_outputs) {
+    for (auto name : changes.new_outputs) {
+        if (!subgraph->getNode(name)) {
             std::shared_ptr<INode> newNode = subgraph->createNode("SubOutput", name);
 
             bool exist;
@@ -117,12 +119,12 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             changes.inputs.push_back("port");
             newNode->update_layout(changes);
         }
-        for (const auto& [old_name, new_name] : changes.rename_outputs) {
-            subgraph->updateNodeName(old_name, new_name);
-        }
-        for (auto name : changes.remove_outputs) {
-            subgraph->removeNode(name);
-        }
+    }
+    for (const auto& [old_name, new_name] : changes.rename_outputs) {
+        subgraph->updateNodeName(old_name, new_name);
+    }
+    for (auto name : changes.remove_outputs) {
+        subgraph->removeNode(name);
     }
     return changes;
 }
