@@ -275,10 +275,18 @@ ZLayoutBackground* ZenoNodeNew::initHeaderWidget()
     if (type == zeno::NoVersionNode) {
         clrBgFrom = clrBgTo = QColor(83, 83, 85);
     }
-    else if (type == zeno::Node_SubgraphNode || type == zeno::Node_AssetInstance || 
-        type == zeno::Node_AssetReference) {
+    else if (type == zeno::Node_SubgraphNode) {
         clrBgFrom = QColor("#1A5447");
         clrBgTo = QColor("#289880");
+    } else if (type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) {
+        if (!m_index.data(ROLE_INVALID_ASSET_INFO).toString().isEmpty()) {
+            clrBgFrom = QColor(Qt::black);
+            clrBgTo = QColor(Qt::black);
+        }
+        else {
+            clrBgFrom = QColor("#1A5447");
+            clrBgTo = QColor("#289880");
+        }
     }
     else {
         clrBgFrom = QColor("#5F5F5F");
@@ -1299,6 +1307,11 @@ void ZenoNodeNew::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     {
         const QModelIndex& nodeIdx = index();
         zeno::NodeType type = (zeno::NodeType)nodeIdx.data(ROLE_NODETYPE).toInt();
+        if ((type == zeno::Node_AssetInstance || type == zeno::Node_AssetReference) && 
+            //!zeno::getSession().assets->hasAsset(m_index.data(ROLE_CLASS_NAME).toString().toStdString())) {
+            !m_index.data(ROLE_INVALID_ASSET_INFO).toString().isEmpty()) {
+            return;
+        }
         if (type == zeno::Node_SubgraphNode || type == zeno::Node_AssetInstance)
         {
             //fork and expand asset graph

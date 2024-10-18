@@ -13,6 +13,12 @@ AssetsModel::AssetsModel(QObject* parent)
 {
     std::shared_ptr<zeno::AssetsMgr> assets =  zeno::getSession().assets;
     m_cbCreateAsset = assets->register_createAsset([&](zeno::AssetInfo info) {
+        for (int i = 0; i < m_assets.length(); i++) {
+            if (m_assets[i].info.name == info.name) {
+                _removeAsset(QString::fromStdString(info.name));
+                break;
+            }
+        }
         _addAsset(info);
     });
 

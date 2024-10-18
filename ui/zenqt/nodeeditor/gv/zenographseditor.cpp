@@ -110,6 +110,7 @@ void ZenoGraphsEditor::initSignals()
     auto graphsMgr = zenoApp->graphsManager();
     connect(graphsMgr, SIGNAL(modelInited()), this, SLOT(resetMainModel()));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
+    connect(graphsMgr, SIGNAL(assetsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onAssetsToRemove(const QModelIndex&, int, int)));
 
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
@@ -223,10 +224,13 @@ void ZenoGraphsEditor::onAssetsToRemove(const QModelIndex& parent, int first, in
 {
     ZASSERT_EXIT(!parent.isValid());
     AssetsModel* pAssets = zenoApp->graphsManager()->assetsModel();
+    auto graphsMgm = zenoApp->graphsManager();
     for (int r = first; r <= last; r++)
     {
         QModelIndex assets = pAssets->index(r, 0, parent);
-        const QString& name = assets.data(ROLE_NODE_NAME).toString(); //TODO: will be replaced by ROLE_OBJCUSTOMNAME
+        const QString& name = assets.data(ROLE_CLASS_NAME).toString(); //TODO: will be replaced by ROLE_OBJCUSTOMNAME
+        graphsMgm->removeScene({ name });
+
         int idx = tabIndexOfName(name);
         m_ui->graphsViewTab->removeTab(idx);
     }
