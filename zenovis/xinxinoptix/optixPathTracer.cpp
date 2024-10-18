@@ -788,7 +788,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     float3 defaultInstClr = {1, 1, 1};
     float3 defaultInstTang = {1, 0, 0};
 
-    std::size_t num_meshes = (StaticMeshes != nullptr)? 1:0 + g_meshPieces.size();
+    std::size_t num_meshes = g_meshPieces.size() + (StaticMeshes != nullptr? 1:0);
     std::size_t num_instances = num_meshes;
 
     for (const auto &[instID, instData] : g_instLUT)
@@ -1620,8 +1620,6 @@ void UpdateInstMesh(const std::map<std::string, int> &mtlidlut)
 
 void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
-    buildMeshAccel(state, StaticMeshes);
-
     tbb::parallel_for(static_cast<size_t>(0), g_meshPieces.size(), [](size_t i){
         buildMeshAccel(state, g_meshPieces[i]);
     });
@@ -2555,6 +2553,8 @@ static void updateStaticDrawObjects() {
         tri_offset += dat.tris.size() / 3;
         ver_offset += dat.verts.size() / 3;
     }
+
+    buildMeshAccel(state, StaticMeshes);
 }
 
 static void updateDynamicDrawObjects() {
