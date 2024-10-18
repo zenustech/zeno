@@ -56,6 +56,95 @@ static const char * frag_shader = R"(
     }
 )";
 
+static const char* face_vert_shader = R"(
+    # version 330
+    layout (location = 0) in vec3 vPosition;
+
+    out vec3 position;
+    out vec3 posRWS;
+
+    uniform mat4 mVP;
+    uniform mat4 mInvVP;
+    uniform mat4 mView;
+    uniform mat4 mProj;
+    uniform mat4 mInvView;
+    uniform mat4 mInvProj;
+    uniform vec3 mCameraCenter;
+
+    void main()
+    {
+        position = vPosition;
+        posRWS = vPosition - mCameraCenter;
+        gl_Position = mVP * vec4(vPosition, 1.0);
+
+        vec3 posEye = vec3(mView * vec4(vPosition, 1.0));
+        float dist = length(posEye);
+        gl_PointSize = max(5.0, 10.0 / dist);
+    }
+)";
+
+static const char * face_frag_shader = R"(
+    # version 330
+    uniform mat4 mView;
+    uniform mat4 mInvView;
+
+    in vec3 position;
+    in vec3 posRWS;
+    out vec4 FragColor;
+
+    vec3 pbr(vec3 albedo, float roughness, float metallic, float specular, vec3 nrm, vec3 idir, vec3 odir) {
+
+      vec3 hdir = normalize(idir + odir);
+      float NoH = max(1e-5, dot(hdir, nrm));
+      float NoL = max(1e-5, dot(idir, nrm));
+      float NoV = max(1e-5, dot(odir, nrm));
+      float VoH = clamp(dot(odir, hdir), 1e-5, 1.);
+      float LoH = clamp(dot(idir, hdir), 1e-5, 1.);
+
+      vec3 f0 = metallic * albedo + (1. - metallic) * 0.16 * specular;
+      vec3 fdf = f0 + (1. - f0) * pow(1. - VoH, 5.);
+
+      roughness *= roughness;
+      float k = (roughness + 1.) * (roughness + 1.) / 8.;
+      float vdf = 0.25 / ((NoV * k + 1. - k) * (NoL * k + 1. - k));
+
+      float alpha2 = max(0., roughness * roughness);
+      float denom = 1. - NoH * NoH * (1. - alpha2);
+      float ndf = alpha2 / (denom * denom);
+
+      vec3 brdf = fdf * vdf * ndf * f0 + (1. - f0) * albedo;
+      return brdf * NoL;
+    }
+    vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal) {
+        vec3 color = vec3(0.0);
+        vec3 light_dir;
+
+        light_dir = normalize((mInvView * vec4(1., 2., 5., 0.)).xyz);
+        color += vec3(0.45, 0.47, 0.5) * pbr(albedo, 0.44, 0.0, 1.0, normal, light_dir, view_dir);
+
+        light_dir = normalize((mInvView * vec4(-4., -2., 1., 0.)).xyz);
+        color += vec3(0.3, 0.23, 0.18) * pbr(albedo, 0.37, 0.0, 1.0, normal, light_dir, view_dir);
+
+        light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
+        color += vec3(0.15, 0.2, 0.22) * pbr(albedo, 0.48, 0.0, 1.0, normal, light_dir, view_dir);
+        color = pow(clamp(color, 0., 1.), vec3(1./2.2));
+        return color;
+    }
+
+    vec3 calcRayDir(vec3 pos) {
+        vec4 vpos = mView * vec4(pos, 1);
+        return normalize(vpos.xyz);
+    }
+
+    void main() {
+        gl_FragDepth = gl_FragCoord.z * 1.02;
+        FragColor = vec4(0.89, 0.57, 0.15, 1.0);
+        vec3 viewdir = -calcRayDir(position);
+        vec3 normal = normalize(cross(dFdx(posRWS), dFdy(posRWS)));
+        FragColor = vec4(studioShading(vec3(0.95, 0.27, 0), viewdir, normal), 1.0);
+    }
+)";
+
 struct PrimitiveHighlight : IGraphicDraw {
     Scene* scene;
 
@@ -63,12 +152,14 @@ struct PrimitiveHighlight : IGraphicDraw {
     unique_ptr<Buffer> ebo;
 
     opengl::Program* shader;
+    opengl::Program* face_shader;
 
     explicit PrimitiveHighlight(Scene* s) : scene(s) {
         vbo = make_unique<Buffer>(GL_ARRAY_BUFFER);
         ebo = make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
 
         shader = scene->shaderMan->compile_program(vert_shader, frag_shader);
+        face_shader = scene->shaderMan->compile_program(face_vert_shader, face_frag_shader);
     }
 
     virtual void draw() override {
@@ -182,8 +273,8 @@ struct PrimitiveHighlight : IGraphicDraw {
                 for (const auto& idx : elements)
                     ind[i++] = prim->tris[idx];
                 // draw meshes
-                shader->use();
-                scene->camera->set_program_uniforms(shader);
+                face_shader->use();
+                scene->camera->set_program_uniforms(face_shader);
                 ebo->bind_data(ind.data(), selected_count * sizeof(ind[0]));
                 CHECK_GL(glDrawElements(GL_TRIANGLES, selected_count * 3, GL_UNSIGNED_INT, 0));
                 ebo->unbind();

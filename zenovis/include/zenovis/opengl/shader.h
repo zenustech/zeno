@@ -47,6 +47,7 @@ struct Shader : zeno::disable_copy {
             std::string err = "Error compiling shader:\n" +
                                   shader_add_line_info(source) + "\n" +
                                   log.data();
+            zeno::log_error("{}", err);
             throw zeno::makeError(std::move(err));
         }
     }
