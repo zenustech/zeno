@@ -392,4 +392,8 @@ ZENDEFNODE(DopNetwork, {
     {"dop"},
 });
 
+InvalidAsset::InvalidAsset() : m_invalidType(UNKNOW), m_info("")
+{
+}
+
 }

@@ -447,6 +447,14 @@ QVariant GraphModel::data(const QModelIndex& index, int role) const
                 }
             }
         }
+        case ROLE_INVALID_ASSET_INFO: {
+            if (std::shared_ptr<zeno::INode> spNode = item->m_wpNode.lock()) {
+                if (std::shared_ptr<zeno::InvalidAsset> spInvalidNode = std::dynamic_pointer_cast<zeno::InvalidAsset>(spNode)) {
+                    return QString::fromStdString(spInvalidNode->m_info);
+                }
+            }
+            return "";
+        }
         default:
             return QVariant();
     }
@@ -1036,8 +1044,17 @@ zeno::NodeData GraphModel::_createNodeImpl(const QString& cate, zeno::NodeData& 
                 //create input/output in subnet
                 if (cate == "assets")
                 {
-                    const auto asset = zeno::getSession().assets->getAsset(nodedata.cls);
-                    nodedata.customUi = asset.m_customui;
+                    if (std::shared_ptr<zeno::InvalidAsset> invalidAsset = std::dynamic_pointer_cast<zeno::InvalidAsset>(spNode)) {
+                        if (invalidAsset->m_invalidType == zeno::InvalidAsset::UNKNOW) {
+                            spGraph->updateNodeName(invalidAsset->get_name(), "UnknowAsset:" + invalidAsset->get_name());
+                        }
+                        else if (invalidAsset->m_invalidType == zeno::InvalidAsset::CYCLEREF) {
+                            spGraph->updateNodeName(invalidAsset->get_name(), "CycleReferencePath:" + invalidAsset->m_info + "-name:" + invalidAsset->get_name());
+                        }
+                    } else {
+                        const auto asset = zeno::getSession().assets->getAsset(nodedata.cls);
+                        nodedata.customUi = asset.m_customui;
+                    }
                 }
                 if (cate != "assets")
                 {

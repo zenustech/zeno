@@ -50,6 +50,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
     CALLBACK_REGIST(renameAsset, void, const std::string&, const std::string&)
 
     ZENO_API Asset getAsset(const std::string& name) const;
+    ZENO_API bool hasAsset(const std::string& name) const;
     ZENO_API std::shared_ptr<Graph> getAssetGraph(const std::string& name, bool bLoadIfNotExist);
     ZENO_API std::vector<Asset> getAssets() const;
     ZENO_API void updateAssets(const std::string name, ParamsUpdateInfo info, const zeno::CustomUI& customui);
@@ -62,6 +63,7 @@ struct AssetsMgr : std::enable_shared_from_this<AssetsMgr> {
 private:
     void initAssetsInfo();
     std::shared_ptr<Graph> forkAssetGraph(std::shared_ptr<Graph> assetGraph, std::shared_ptr<SubnetNode> subNode);
+    bool hasCycleReference(const std::string& assetName, const std::string& parentAssetName, std::vector<std::string>& cyclePath);
 
     void initAssetSubInputOutput(Asset& asset);
     bool m_bInitAssetInfo = false;

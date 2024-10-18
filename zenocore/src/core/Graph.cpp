@@ -268,7 +268,22 @@ ZENO_API void Graph::init(const GraphData& graph) {
     for (const auto& [name, node] : graph.nodes) {
         bool bAssets = node.asset.has_value();
         std::shared_ptr<INode> spNode = createNode(node.cls, name, bAssets);
-        spNode->init(node);
+        if (bAssets) {
+            if (std::shared_ptr<zeno::InvalidAsset> subNode = std::dynamic_pointer_cast<zeno::InvalidAsset>(spNode)) {
+                spNode->set_pos(node.uipos);
+                if (subNode->m_invalidType == InvalidAsset::UNKNOW && name.substr(0, 12) != "UnknowAsset:") {
+                    updateNodeName(name, "UnknowAsset:" + name);
+                } else if (subNode->m_invalidType == InvalidAsset::CYCLEREF && name.substr(0, 19) != "CycleReferencePath:") {
+                    updateNodeName(name, "CycleReferencePath:" + subNode->m_info + "-name:" +name);
+                }
+            } else {
+                if (name.substr(0, 12) == "UnknowAsset_" || name.substr(0, 19) == "CycleReferencePath:") {
+                    updateNodeName(name, generateNewName(spNode->get_nodecls(), name, true));
+                }
+            }
+        } else {
+            spNode->init(node);
+        }
         if (node.cls == "SubInput") {
             //TODO
         }

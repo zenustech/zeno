@@ -8,6 +8,7 @@
 #include <shlobj.h>
 #endif
 #include <zeno/core/typeinfo.h>
+#include <sstream> 
 
 
 namespace zeno {
@@ -140,6 +141,11 @@ ZENO_API Asset AssetsMgr::getAsset(const std::string& name) const {
         return m_assets.at(name);
     }
     return Asset();
+}
+
+ZENO_API bool AssetsMgr::hasAsset(const std::string& name) const
+{
+    return m_assets.find(name) != m_assets.end();
 }
 
 ZENO_API std::vector<Asset> AssetsMgr::getAssets() const {
@@ -449,6 +455,43 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
     return newGraph;
 }
 
+bool AssetsMgr::hasCycleReference(const std::string& assetName, const std::string& parentAssetName, std::vector<std::string>& cyclePath)
+{
+    if (assetName == parentAssetName) {
+        cyclePath.push_back(assetName);
+        return true;
+    }
+    Asset& assets = m_assets[assetName];
+    if (!assets.sharedGraph) {
+        getAssetGraph(assetName, true);
+    }
+    assert(assets.sharedGraph);
+    cyclePath.push_back(assetName);
+    for (auto& [name, node] : assets.sharedGraph->getNodes()) {
+        if (node->get_nodecls() == parentAssetName) {
+            if (!std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                cyclePath.push_back(name);
+                return true;
+            }
+        } else {
+            if (std::shared_ptr<zeno::InvalidAsset> subNode = std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                if (subNode->get_nodecls() == assetName) {
+                    continue;
+                }
+            }
+            if (std::shared_ptr<zeno::SubnetNode> subNode = std::dynamic_pointer_cast<zeno::SubnetNode>(node)) {
+                if (subNode->isAssetsNode() && !std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                    if (hasCycleReference(subNode->get_nodecls(), parentAssetName, cyclePath)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    cyclePath.pop_back();
+    return false;
+}
+
 void AssetsMgr::initAssetSubInputOutput(Asset& newAsst)
 {
     std::shared_ptr<zeno::INode> input1Node = newAsst.sharedGraph->getNode("input1");
@@ -504,8 +547,39 @@ ZENO_API bool AssetsMgr::generateAssetName(std::string& name)
 }
 
 ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
-    if (m_assets.find(assetName) == m_assets.end()) {
-        return nullptr;
+    //if can turn valid asset reference
+    if (pGraph && pGraph->isAssets()) {
+        std::string parentAssetName;
+        if (!pGraph->optParentSubgNode.has_value()) {
+            parentAssetName = pGraph->getName();
+        } else if (SubnetNode* pSubnetNode = pGraph->optParentSubgNode.value()) {
+            parentAssetName = pSubnetNode->get_nodecls();
+        }
+        std::vector<std::string> cyclePath;
+        if (!hasAsset(assetName)) {//unknow asset
+            std::shared_ptr<InvalidAsset> spNode = std::make_shared<InvalidAsset>();
+            spNode->initUuid(pGraph, assetName);
+            spNode->set_name(nodeName);
+            spNode->subgraph = forkAssetGraph(std::make_shared<Graph>(assetName, true), spNode);
+            spNode->m_invalidType = InvalidAsset::UNKNOW;
+            spNode->m_info = "UnknowAsset";
+            return std::dynamic_pointer_cast<INode>(spNode);
+        }
+        else if (hasCycleReference(assetName, parentAssetName, cyclePath)) {//if assetName contain parentAsset
+            std::shared_ptr<InvalidAsset> spNode = std::make_shared<InvalidAsset>();
+            spNode->initUuid(pGraph, assetName);
+            spNode->set_name(nodeName);
+            spNode->subgraph = forkAssetGraph(std::make_shared<Graph>(assetName, true), spNode);
+            std::ostringstream oss;
+            for (int i = 0; i < cyclePath.size(); ++i) {
+                oss << cyclePath[i];
+                if (i != cyclePath.size() - 1)
+                    oss << "/";
+            }
+            spNode->m_invalidType = InvalidAsset::CYCLEREF;
+            spNode->m_info = oss.str();
+            return std::dynamic_pointer_cast<INode>(spNode);
+        }
     }
 
     Asset& assets = m_assets[assetName];
