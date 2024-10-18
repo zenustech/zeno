@@ -26,6 +26,7 @@ enum class PICK_MODE {
     PICK_VERTEX,
     PICK_LINE,
     PICK_FACE,
+    PICK_FACE_ATTR,
     PAINT,
 };
 

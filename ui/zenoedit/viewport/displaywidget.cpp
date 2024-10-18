@@ -1371,6 +1371,109 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
         }
         zenoApp->getMainWindow()->updateViewport();
     }
+
+    if (node_id == "PrimitiveSelectFaceByAttr") {
+        auto scene = m_glView->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+        auto picker = m_glView->picker();
+        ZASSERT_EXIT(picker);
+        if (node_selected) {
+            // check input nodes
+            auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
+            if (input_nodes.size() != 1)
+                return;
+            // find prim in object manager
+            auto input_node_id = input_nodes[0].get_node_id();
+            string prim_name;
+            for (const auto &[k, v] : scene->objectsMan->pairsShared()) {
+                if (k.find(input_node_id.toStdString()) != string::npos)
+                    prim_name = k;
+            }
+            if (prim_name.empty())
+                return;
+
+            zeno::NodeLocation node_location(nodes[0], subgIdx);
+            // read selected mode
+            auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
+            auto select_attr_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "fromAttr");
+            // checkout has attr
+            {
+                auto obj = scene->objectsMan->get(prim_name);
+                if (!obj.has_value()) {
+                    return;
+                }
+                if(auto prim = dynamic_cast<zeno::PrimitiveObject*>(obj.value())) {
+                    if (prim == nullptr) {
+                        return;
+                    }
+                    bool flag = prim->tris.attr_is<int>(select_attr_str);
+                    if (flag == false) {
+                        zeno::log_error("Prim: {} not has attr {}", prim_name, select_attr_str);
+                        return;
+                    }
+                }
+            }
+            zeno::log_info("{}", select_attr_str);
+            scene->set_select_mode(zenovis::PICK_MODE::PICK_FACE_ATTR);
+            // read selected elements
+            if (picker) {
+//                auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+//                if (!node_selected_str.empty()) {
+//                    string node_context;
+//                    auto node_selected_qstr = QString(node_selected_str.c_str());
+//                    auto elements = node_selected_qstr.split(',');
+//                    for (auto &e : elements) {
+//                        if (e.size() == 0) {
+//                            continue;
+//                        }
+//                        node_context += prim_name + ":" + e.toStdString() + " ";
+//                    }
+//                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
+//                }
+                // set callback to picker
+                picker->set_picked_elems_callback([scene, node_location, prim_name, select_attr_str]() -> void {
+                    auto obj = scene->objectsMan->get(prim_name);
+                    if (!obj.has_value()) {
+                        return;
+                    }
+                    if(auto prim = dynamic_cast<zeno::PrimitiveObject*>(obj.value())) {
+                        if (prim == nullptr) {
+                            return;
+                        }
+                        bool flag = prim->tris.attr_is<int>(select_attr_str);
+                        if (flag == false) {
+                            zeno::log_error("Prim: {} not has attr {}", prim_name, select_attr_str);
+                            return;
+                        }
+                        std::string picked_elems_str;
+                        auto &attr = prim->tris.attr<int>(picked_elems_str);
+                        std::set<int> attr_value;
+                        for (auto elem : scene->selected_elements[prim_name]) {
+                            picked_elems_str += std::to_string(elem) + ",";
+                            if (elem < prim->tris.size()) {
+                                attr_value.insert(attr[elem]);
+                            }
+                        }
+                        zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
+                    }
+                });
+                picker->focus(prim_name);
+            }
+        } else {
+            if (picker) {
+                picker->focus("");
+                picker->set_picked_elems_callback({});
+                {
+                    {
+                        scene->selected = {};
+                        scene->selected_elements = {};
+                    }
+                    scene->set_select_mode(zenovis::PICK_MODE::PICK_OBJECT);
+                }
+            }
+        }
+        zenoApp->getMainWindow()->updateViewport();
+    }
     if (node_id == "PrimitiveAttrPainter") {
         auto scene = m_glView->getSession()->get_scene();
         ZASSERT_EXIT(scene);

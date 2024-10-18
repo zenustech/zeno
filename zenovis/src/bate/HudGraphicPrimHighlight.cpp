@@ -255,8 +255,11 @@ struct PrimitiveHighlight : IGraphicDraw {
                 // prepare indices
                 vector<vec2i> ind(selected_count);
                 int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = prim->lines[idx];
+                for (const auto& idx : elements) {
+                    if (idx < prim->lines.size()) {
+                        ind[i++] = prim->lines[idx];
+                    }
+                }
                 // draw lines
                 shader->use();
                 scene->camera->set_program_uniforms(shader);
@@ -270,8 +273,11 @@ struct PrimitiveHighlight : IGraphicDraw {
                 // prepare indices
                 vector<vec3i> ind(selected_count);
                 int i = 0;
-                for (const auto& idx : elements)
-                    ind[i++] = prim->tris[idx];
+                for (const auto& idx : elements) {
+                    if (idx < prim->tris.size()) {
+                        ind[i++] = prim->tris[idx];
+                    }
+                }
                 // draw meshes
                 face_shader->use();
                 scene->camera->set_program_uniforms(face_shader);
