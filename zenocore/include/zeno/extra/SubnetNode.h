@@ -54,4 +54,15 @@ struct DopNetwork : zeno::SubnetNode {
     size_t m_totalCacheSizeByte;
 };
 
+struct InvalidAsset : zeno::SubnetNode {
+    InvalidAsset();
+
+    enum invalidType {
+        UNKNOW = 0,
+        CYCLEREF
+    };
+    invalidType m_invalidType;
+    std::string m_info;
+};
+
 }

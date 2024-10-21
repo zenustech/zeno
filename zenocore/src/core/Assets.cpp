@@ -8,6 +8,7 @@
 #include <shlobj.h>
 #endif
 #include <zeno/core/typeinfo.h>
+#include <sstream> 
 
 
 namespace zeno {
@@ -140,6 +141,11 @@ ZENO_API Asset AssetsMgr::getAsset(const std::string& name) const {
         return m_assets.at(name);
     }
     return Asset();
+}
+
+ZENO_API bool AssetsMgr::hasAsset(const std::string& name) const
+{
+    return m_assets.find(name) != m_assets.end();
 }
 
 ZENO_API std::vector<Asset> AssetsMgr::getAssets() const {
@@ -439,44 +445,6 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
             std::shared_ptr<INode> spNewNode = newGraph->createNode(cls, name);
             nodeDat = spNode->exportInfo();
             spNewNode->init(nodeDat);
-            if (cls == "SubInput") {
-                bool exist;
-                bool isprim = subNode->isPrimitiveType(true, name, exist);
-                if (isprim) {
-                    zeno::ParamPrimitive primitive;
-                    primitive.bInput = false;
-                    primitive.name = "port";
-                    primitive.socketType = Socket_Output;
-                    spNewNode->add_output_prim_param(primitive);
-                }
-                else if (!isprim && exist) {
-                    zeno::ParamObject paramObj;
-                    paramObj.bInput = false;
-                    paramObj.name = "port";
-                    paramObj.type = Obj_Wildcard;
-                    paramObj.socketType = zeno::Socket_WildCard;
-                    spNewNode->add_output_obj_param(paramObj);
-                }
-            } else if (cls == "SubOutput") {
-                bool exist;
-                bool isprim = subNode->isPrimitiveType(false, name, exist);
-                if (isprim) {
-                    zeno::ParamPrimitive primitive;
-                    primitive.bInput = true;
-                    primitive.name = "port";
-                    primitive.type = Param_Wildcard;
-                    primitive.socketType = Socket_WildCard;
-                    spNewNode->add_input_prim_param(primitive);
-                }
-                else if (!isprim && exist) {
-                    zeno::ParamObject paramObj;
-                    paramObj.bInput = true;
-                    paramObj.name = "port";
-                    paramObj.type = Obj_Wildcard;
-                    paramObj.socketType = zeno::Socket_WildCard;
-                    spNewNode->add_input_obj_param(paramObj);
-                }
-            }
         }
     }
 
@@ -485,6 +453,43 @@ std::shared_ptr<Graph> AssetsMgr::forkAssetGraph(std::shared_ptr<Graph> assetGra
         newGraph->addLink(oldLink);
     }
     return newGraph;
+}
+
+bool AssetsMgr::hasCycleReference(const std::string& assetName, const std::string& parentAssetName, std::vector<std::string>& cyclePath)
+{
+    if (assetName == parentAssetName) {
+        cyclePath.push_back(assetName);
+        return true;
+    }
+    Asset& assets = m_assets[assetName];
+    if (!assets.sharedGraph) {
+        getAssetGraph(assetName, true);
+    }
+    assert(assets.sharedGraph);
+    cyclePath.push_back(assetName);
+    for (auto& [name, node] : assets.sharedGraph->getNodes()) {
+        if (node->get_nodecls() == parentAssetName) {
+            if (!std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                cyclePath.push_back(name);
+                return true;
+            }
+        } else {
+            if (std::shared_ptr<zeno::InvalidAsset> subNode = std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                if (subNode->get_nodecls() == assetName) {
+                    continue;
+                }
+            }
+            if (std::shared_ptr<zeno::SubnetNode> subNode = std::dynamic_pointer_cast<zeno::SubnetNode>(node)) {
+                if (subNode->isAssetsNode() && !std::dynamic_pointer_cast<zeno::InvalidAsset>(node)) {
+                    if (hasCycleReference(subNode->get_nodecls(), parentAssetName, cyclePath)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    cyclePath.pop_back();
+    return false;
 }
 
 void AssetsMgr::initAssetSubInputOutput(Asset& newAsst)
@@ -542,8 +547,39 @@ ZENO_API bool AssetsMgr::generateAssetName(std::string& name)
 }
 
 ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
-    if (m_assets.find(assetName) == m_assets.end()) {
-        return nullptr;
+    //if can turn valid asset reference
+    if (pGraph && pGraph->isAssets()) {
+        std::string parentAssetName;
+        if (!pGraph->optParentSubgNode.has_value()) {
+            parentAssetName = pGraph->getName();
+        } else if (SubnetNode* pSubnetNode = pGraph->optParentSubgNode.value()) {
+            parentAssetName = pSubnetNode->get_nodecls();
+        }
+        std::vector<std::string> cyclePath;
+        if (!hasAsset(assetName)) {//unknow asset
+            std::shared_ptr<InvalidAsset> spNode = std::make_shared<InvalidAsset>();
+            spNode->initUuid(pGraph, assetName);
+            spNode->set_name(nodeName);
+            spNode->subgraph = forkAssetGraph(std::make_shared<Graph>(assetName, true), spNode);
+            spNode->m_invalidType = InvalidAsset::UNKNOW;
+            spNode->m_info = "UnknowAsset";
+            return std::dynamic_pointer_cast<INode>(spNode);
+        }
+        else if (hasCycleReference(assetName, parentAssetName, cyclePath)) {//if assetName contain parentAsset
+            std::shared_ptr<InvalidAsset> spNode = std::make_shared<InvalidAsset>();
+            spNode->initUuid(pGraph, assetName);
+            spNode->set_name(nodeName);
+            spNode->subgraph = forkAssetGraph(std::make_shared<Graph>(assetName, true), spNode);
+            std::ostringstream oss;
+            for (int i = 0; i < cyclePath.size(); ++i) {
+                oss << cyclePath[i];
+                if (i != cyclePath.size() - 1)
+                    oss << "/";
+            }
+            spNode->m_invalidType = InvalidAsset::CYCLEREF;
+            spNode->m_info = oss.str();
+            return std::dynamic_pointer_cast<INode>(spNode);
+        }
     }
 
     Asset& assets = m_assets[assetName];
@@ -588,42 +624,6 @@ ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pG
     }
 
     return std::dynamic_pointer_cast<INode>(spNode);
-}
-
-ZENO_API void zeno::AssetsMgr::updateAssetInstance(const std::string& assetName, std::shared_ptr<SubnetNode>& spNode)
-{
-    if(m_assets.find(assetName) == m_assets.end()) {
-        return;
-    }
-
-    Asset& assets = m_assets[assetName];
-    if (!assets.sharedGraph) {
-        getAssetGraph(assetName, true);
-    }
-
-    for (const ParamPrimitive& param : assets.primitive_inputs)
-    {
-        spNode->add_input_prim_param(param);
-    }
-
-    for (const ParamPrimitive& param : assets.primitive_outputs)
-    {
-        spNode->add_output_prim_param(param);
-    }
-
-    for (const auto& param : assets.object_inputs)
-    {
-        spNode->add_input_obj_param(param);
-    }
-
-    for (const auto& param : assets.object_outputs)
-    {
-        spNode->add_output_obj_param(param);
-    }
-
-    assert(assets.sharedGraph);
-    std::shared_ptr<Graph> assetGraph = forkAssetGraph(assets.sharedGraph, spNode);
-    spNode->subgraph = assetGraph;
 }
 
 }

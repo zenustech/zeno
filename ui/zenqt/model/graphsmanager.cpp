@@ -35,6 +35,10 @@ GraphsManager::GraphsManager(QObject* parent)
     m_main = new GraphModel(zeno::getSession().mainGraph, m_model, this);
     m_model->init(m_main);
     m_assets = new AssetsModel(this);
+
+    connect(m_assets, &AssetsModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& idx, int first, int last) {
+        emit assetsAboutToBeRemoved(idx, first, last);
+    });
 }
 
 GraphsManager::~GraphsManager()
