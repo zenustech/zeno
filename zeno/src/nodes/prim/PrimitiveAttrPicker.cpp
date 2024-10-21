@@ -73,6 +73,31 @@ ZENDEFNODE(PrimitiveAttrPicker, {
     {"primitive"}
 });
 
+struct PrimitiveSelectFaceByAttr : zeno::INode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFNODE(PrimitiveSelectFaceByAttr, {
+    // inputs
+    {
+        {"PrimitiveObject", "prim"},
+        {"string", "fromAttr", "island_index"},
+        {"string", "newAttr", ""},
+        {"float", "attrVal", ""},
+    },
+    // outputs
+    {
+        {"PrimitiveObject", "outPrim"},
+        {"list"}
+    },
+    // params
+    {{"string", "selected", ""}},
+    // category
+    {"primitive"}
+});
+
 struct PrimitiveAttrPainter : zeno::INode {
     virtual void apply() override {
         // parse selected elements string
