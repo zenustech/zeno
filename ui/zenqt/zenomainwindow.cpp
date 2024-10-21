@@ -1269,6 +1269,11 @@ void ZenoMainWindow::onCloseDock()
 #endif
 }
 
+void ZenoMainWindow::importAssetsFromSys()
+{
+    zeno::getSession().assets->importAssetsFromSys();
+}
+
 void ZenoMainWindow::openFileDialog()
 {
     QString filePath = getOpenFileByDialog();

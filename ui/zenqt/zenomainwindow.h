@@ -163,6 +163,7 @@ public slots:
     void onMaximumTriggered();
     void onMenuActionTriggered(bool bTriggered);
     void onCloseDock();
+    void importAssetsFromSys();
     void importGraph(bool bPreset = false);
     void exportGraph();
     void onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select);

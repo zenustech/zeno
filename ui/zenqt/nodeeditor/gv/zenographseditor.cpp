@@ -386,7 +386,7 @@ void ZenoGraphsEditor::onAssetOptionClicked()
         m_mainWin->importGraph();
     });
     connect(pImpAssetsFromSys, &QAction::triggered, this, [=]() {
-
+        m_mainWin->importAssetsFromSys();
     });
     connect(pImpFromPreset, &QAction::triggered, this, [=]() {
         m_mainWin->importGraph(true);
