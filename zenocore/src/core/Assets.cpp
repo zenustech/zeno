@@ -41,6 +41,9 @@ void AssetsMgr::initAssetsInfo() {
     {
         std::filesystem::path itemPath = dir_entry.path();
         if (itemPath.extension() == ".zda") {
+            if (m_assets.find(itemPath.filename().replace_extension("").string()) != m_assets.end()) {
+                continue;
+            }
             std::string zdaPath = itemPath.string();
             zenoio::ZdaReader reader;
             reader.setDelayReadGraph(true);
@@ -546,9 +549,14 @@ ZENO_API bool AssetsMgr::generateAssetName(std::string& name)
     return true;
 }
 
+ZENO_API void AssetsMgr::importAssetsFromSys()
+{
+    initAssetsInfo();
+}
+
 ZENO_API std::shared_ptr<INode> AssetsMgr::newInstance(std::shared_ptr<Graph> pGraph, const std::string& assetName, const std::string& nodeName, bool createInAsset) {
     //if can turn valid asset reference
-    if (pGraph && pGraph->isAssets()) {
+    if (pGraph) {
         std::string parentAssetName;
         if (!pGraph->optParentSubgNode.has_value()) {
             parentAssetName = pGraph->getName();

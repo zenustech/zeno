@@ -6,6 +6,7 @@
 #include <zeno/utils/log.h>
 #include <zeno/io/zdareader.h>
 #include "zassert.h"
+#include "zenoapplication.h"
 
 
 AssetsModel::AssetsModel(QObject* parent)
@@ -214,6 +215,32 @@ void AssetsModel::addAsset(const zeno::GraphData& graph)
 void AssetsModel::removeAsset(const QString& assetName, bool deleteAssetFile)
 {
     zeno::getSession().assets->removeAsset(assetName.toStdString(), deleteAssetFile);
+    const auto& setAssetInstanceInvalid = [&assetName](GraphModel* graph) {
+        if (graph) {
+            int x = graph->rowCount();
+            std::vector<std::tuple<std::string, QPointF>> removedNodes;
+            for (int i = 0; i < graph->rowCount(); i++) {
+                const QString& cls = graph->index(i, 0).data(ROLE_CLASS_NAME).toString();
+                if (cls == assetName) {
+                    QPointF pos = graph->index(i, 0).data(ROLE_OBJPOS).value<QPointF>();
+                    const QString& name = graph->index(i, 0).data(ROLE_NODE_NAME).toString();
+                    graph->removeNode(name);
+                    removedNodes.push_back({name.toStdString(), pos});
+                }
+            }
+            for (auto& node : removedNodes) {
+                graph->createNode(assetName, "assets", std::get<1>(node));
+            }
+        }
+    };
+    auto graphsMgr = zenoApp->graphsManager();
+    GraphModel* mainM = graphsMgr->getGraph({ "main" });
+    setAssetInstanceInvalid(mainM);
+    for (auto& asset : m_assets) {
+        if (asset.pGraphM && asset.pGraphM->name() != assetName) {
+            setAssetInstanceInvalid(asset.pGraphM);
+        }
+    }
 }
 
 void AssetsModel::saveAsset(const QString& name)
