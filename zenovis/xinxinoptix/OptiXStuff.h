@@ -142,7 +142,7 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
 #if defined( NDEBUG )
-    options.logCallbackLevel          = 4;
+    options.logCallbackLevel          = 0;
 #else
     options.logCallbackLevel          = 4;
 #endif
