@@ -12,6 +12,7 @@
 #include <string>
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
+#include "uuid_v4.h"
 
 using Json = nlohmann::json;
 
@@ -664,6 +665,102 @@ ZENDEFNODE(JsonGetData, {
     {},
     {
         "json"
+    },
+});
+
+struct CreateRenderInstance : zeno::INode {
+    virtual void apply() override {
+        auto instID = get_input2<std::string>("instID");
+        auto Geom = get_input2<std::string>("Geom");
+        auto Matrix = get_input2<std::string>("Matrix");
+        auto Material = get_input2<std::string>("Material");
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["BasicRenderInstances"][instID] = {
+            {"Geom", Geom},
+            {"Matrix", Matrix},
+            {"Material", Material},
+        };
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( CreateRenderInstance, {
+    {
+        {"string", "instID", ""},
+        {"string", "Geom", ""},
+        {"string", "Matrix", "Identity"},
+        {"string", "Material", "Default"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+struct RenderGroup : zeno::INode {
+    virtual void apply() override {
+        auto is_static = get_input2<bool>("static");
+        auto Matrix = get_input2<std::string>("Matrix");
+
+        auto items = get_input<ListObject>("items")->get<JsonObject>();
+
+        UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
+        UUIDv4::UUID uuid = uuidGenerator.getUUID();
+        std::string s = uuid.str();
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["BasicRenderInstances"] = {};
+        auto &bri = out_json->json["BasicRenderInstances"];
+        int static_group_count = 0;
+        int dynamic_group_count = 0;
+        for (const auto& item: items) {
+            if (item->json.contains("StaticRenderGroups")) {
+                static_group_count += 1;
+            }
+            if (item->json.contains("DynamicRenderGroups")) {
+                dynamic_group_count += 1;
+            }
+        }
+
+        for (const auto& item: items) {
+            for (auto& [key, value] : item->json["BasicRenderInstances"].items()) {
+                if (bri.contains(key)) {
+                    auto log = zeno::format("Error: Instance {} already exists", key);
+                    log_error(log);
+                    throw zeno::makeError(log);
+                }
+                bri[key] = value;
+            }
+            if (static_group_count == 0 && dynamic_group_count == 0) {
+                if (is_static) {
+                    auto & sRenderGroup0 = out_json->json["StaticRenderGroups"]["sRenderGroup0"];
+                    if (sRenderGroup0.contains("Matrixes") == false) {
+
+                    }
+                }
+
+            }
+        }
+
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( RenderGroup, {
+    {
+        {"list", "items"},
+        {"bool", "static", "1"},
+        {"string", "Matrixes", "Identity"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
     },
 });
 
