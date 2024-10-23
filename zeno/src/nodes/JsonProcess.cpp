@@ -676,7 +676,7 @@ struct CreateRenderInstance : zeno::INode {
         auto Material = get_input2<std::string>("Material");
 
         auto out_json = std::make_shared<JsonObject>();
-        out_json->json["BasicRenderInstances"][instID] = {
+        out_json->json["BasicRenderInstance"][instID] = {
             {"Geom", Geom},
             {"Matrix", Matrix},
             {"Material", Material},
@@ -703,7 +703,8 @@ ZENDEFNODE( CreateRenderInstance, {
 struct RenderGroup : zeno::INode {
     virtual void apply() override {
         auto is_static = get_input2<bool>("static");
-        auto Matrix = get_input2<std::string>("Matrix");
+        auto Matrix_string = get_input2<std::string>("Matrixes");
+        std::vector<std::string> Matrixes = zeno::split_str(Matrix_string, {' ', '\n'});
 
         auto items = get_input<ListObject>("items")->get<JsonObject>();
 
@@ -713,35 +714,44 @@ struct RenderGroup : zeno::INode {
 
         auto out_json = std::make_shared<JsonObject>();
         out_json->json["BasicRenderInstances"] = {};
-        auto &bri = out_json->json["BasicRenderInstances"];
-        int static_group_count = 0;
-        int dynamic_group_count = 0;
-        for (const auto& item: items) {
-            if (item->json.contains("StaticRenderGroups")) {
-                static_group_count += 1;
-            }
-            if (item->json.contains("DynamicRenderGroups")) {
-                dynamic_group_count += 1;
-            }
-        }
+        auto &bris = out_json->json["BasicRenderInstances"];
 
         for (const auto& item: items) {
-            for (auto& [key, value] : item->json["BasicRenderInstances"].items()) {
-                if (bri.contains(key)) {
+            for (auto& [key, value] : item->json["BasicRenderInstance"].items()) {
+                if (bris.contains(key)) {
                     auto log = zeno::format("Error: Instance {} already exists", key);
                     log_error(log);
                     throw zeno::makeError(log);
                 }
-                bri[key] = value;
-            }
-            if (static_group_count == 0 && dynamic_group_count == 0) {
+                bris[key] = value;
                 if (is_static) {
                     auto & sRenderGroup0 = out_json->json["StaticRenderGroups"]["sRenderGroup0"];
+                    if (sRenderGroup0.contains("Objects") == false) {
+                        sRenderGroup0["Objects"] = Json::array();
+                    }
+                    sRenderGroup0["Objects"].push_back(key);
                     if (sRenderGroup0.contains("Matrixes") == false) {
-
+                        Json jsonArray = Json::array();
+                        for (auto &matrix: Matrixes) {
+                            jsonArray.push_back(matrix);
+                        }
+                        sRenderGroup0["Matrixes"] = jsonArray;
                     }
                 }
-
+                else {
+                    auto & dRenderGroup0 = out_json->json["DynamicRenderGroups"]["dRenderGroup0"];
+                    if (dRenderGroup0.contains("Objects") == false) {
+                        dRenderGroup0["Objects"] = Json::array();
+                    }
+                    dRenderGroup0["Objects"].push_back(key);
+                    if (dRenderGroup0.contains("Matrixes") == false) {
+                        Json jsonArray = Json::array();
+                        for (auto &matrix: Matrixes) {
+                            jsonArray.push_back(matrix);
+                        }
+                        dRenderGroup0["Matrixes"] = jsonArray;
+                    }
+                }
             }
         }
 
