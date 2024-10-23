@@ -396,23 +396,24 @@ void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem)
 
 QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem) 
 {
-    int control = pItem->data(ROLE_PARAM_CONTROL).toInt();
-    int type = pItem->data(ROLE_ELEMENT_TYPE).toInt();
-    if (type == VPARAM_TAB) 
+    zeno::ParamControl control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
+    zeno::ParamType type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toLongLong();
+    int elemtype = pItem->data(ROLE_ELEMENT_TYPE).toInt();
+    if (elemtype == VPARAM_TAB)
     {
         return QIcon(":/icons/parameter_control_tab.svg");
     } 
-    else if (type == VPARAM_GROUP) 
+    else if (elemtype == VPARAM_GROUP)
     {
         return QIcon();// ":/icons/parameter_control_group.svg");
     } 
-    else if (type != VPARAM_ROOT) 
+    else if (elemtype != VPARAM_ROOT)
     {
         if (control == zeno::NullControl)
             return QIcon();
         for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) 
         {
-            if (control == controlList[i].ctrl) 
+            if (control == controlList[i].ctrl && type == controlList[i].type)
             {
                 return QIcon(controlList[i].icon);
             }
@@ -602,6 +603,7 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
     };
     if (!deflVal.isValid()) {
         anyVal = zeno::initAnyDeflValue(paramType);
+        zeno::convertToEditVar(anyVal, paramType);
     }
 
     cbSets.cbGetIndexData = [=]() -> QVariant {
@@ -975,7 +977,10 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
-    proxyModelSetData(layerIdx, ctrl, ROLE_PARAM_CONTROL);
+    auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
+    pItem->setData(ctrl, ROLE_PARAM_CONTROL);
+    zeno::ParamType type = getTypeByControlName(controlName);
+    pItem->setData(type, ROLE_PARAM_TYPE);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
     if (pLayoutItem)
@@ -989,16 +994,9 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
 
-    zeno::ParamType type = getTypeByControlName(controlName);
-
-    //update type:
-    auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
-    pItem->setData(type, ROLE_PARAM_TYPE);
-
     QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
-    zeno::reflect::Any anyVal = value.value<zeno::reflect::Any>();
-    if (!value.isValid())
-        anyVal = zeno::initAnyDeflValue(type);
+    zeno::reflect::Any anyVal = zeno::initAnyDeflValue(type);
+    zeno::convertToEditVar(anyVal, type);
 
     zeno::reflect::Any controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value< zeno::reflect::Any>();
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initDefaultValue(type); };
@@ -1009,6 +1007,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         
         switchStackProperties(ctrl, pItem);
         pItem->setData(getIcon(pItem), Qt::DecorationRole);
+        pItem->setData(QVariant::fromValue(anyVal), ROLE_PARAM_VALUE);
     }
 }
 

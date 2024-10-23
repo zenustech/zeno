@@ -1030,10 +1030,17 @@ namespace zeno {
 
     bool isSameDimensionNumericVecType(ParamType left, ParamType right)
     {
-        if (left == types::gParamType_Vec2i && right == types::gParamType_Vec2f || left == types::gParamType_Vec2f && right == types::gParamType_Vec2i ||
-            left == types::gParamType_Vec3i && right == types::gParamType_Vec3f || left == types::gParamType_Vec3f && right == types::gParamType_Vec3i ||
-            left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
-            return true;
+        if (left == right) {
+            if (left == types::gParamType_Vec2f || left == types::gParamType_Vec2i ||
+                left == types::gParamType_Vec3f || left == types::gParamType_Vec3i ||
+                left == types::gParamType_Vec4f || left == types::gParamType_Vec4i)
+                return true;
+        } else {
+            if (left == types::gParamType_Vec2i && right == types::gParamType_Vec2f || left == types::gParamType_Vec2f && right == types::gParamType_Vec2i ||
+                left == types::gParamType_Vec3i && right == types::gParamType_Vec3f || left == types::gParamType_Vec3f && right == types::gParamType_Vec3i ||
+                left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
+                return true;
+        }
         return false;
     }
 
