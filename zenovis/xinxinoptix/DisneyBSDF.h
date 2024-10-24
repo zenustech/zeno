@@ -1,9 +1,12 @@
 #pragma once
+#include "Host.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 #include "IOMat.h"
 #include "DisneyBRDF.h"
 #include "HairBSDF.h"
+#include <cmath>
+#include <forward_list>
 
 namespace DisneyBSDF{
     enum SurfaceEventFlags{
@@ -326,6 +329,38 @@ namespace DisneyBSDF{
 
       pdf =abs (L.z) * 1.0f / M_PIf;
       return 1.0f / M_PIf * baseColor * (Fd + Fsheen);
+    }
+    static __inline__ __device__
+    vec3 EvalDiffuseOrenNayarV1(vec3 color, float roughness,vec3 wi, vec3 wo){
+      //from wiki pedia
+      float sigma = roughness * M_PI;
+      float sigma2 = sigma * sigma;
+      float A = 1.0f - sigma2 / (2.0f * (sigma2 + 0.33f));
+      float B = 0.45 * sigma2 / (sigma2 + 0.09f);
+      vec2 wo_p;
+      wo_p.x = wo.x;
+      wo_p.y = wo.y;
+      wo_p = normalize(wo_p);
+
+      vec2 wi_p;
+      wi_p.x = wi.x;
+      wi_p.y = wi.y;
+      wi_p = normalize(wi_p);
+      float C = max(0.0f,dot(wi_p,wo_p));
+
+      float cos_alpha = max(wo.z,wi.z);
+      float sin_alpha = sqrtf(1.0f - cos_alpha * cos_alpha);
+      float cos_beta = min(wo.z,wi.z);
+      float sin_beta = sqrtf(1.0f - cos_beta * cos_beta);
+      float tan_beta = sin_beta/cos_beta;
+      return color * (A + B * C * sin_alpha * tan_beta) / M_PI;
+
+    }
+    static __inline__ __device__
+    vec3 EvalDiffuseOrenNayarV2(vec3 color, float roughness,vec3 wi, vec3 wo){
+      //from https://mimosa-pudica.net/improved-oren-nayar.html
+      return vec3(1.0f);
+
     }
 
     static __inline__ __device__
@@ -767,7 +802,10 @@ namespace DisneyBSDF{
             SampleSpecular(wo,wi,mat.roughness,mat.anisotropic,r1,r2);
             tbn.inverse_transform(wi);
             wi = normalize(wi);
-
+            if(dot(wi, N2)<0)
+            {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
         }else if(r3<p4)//glass
         {
           bool entering = wo.z>0?true:false;
