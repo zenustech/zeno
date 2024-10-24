@@ -124,6 +124,51 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
             subgraph->removeNode(name);
         }
     }
+    //if need update prim subinput type
+    for (auto _pair : params) {
+        if (const auto& pParam = std::get_if<ParamPrimitive>(&_pair.param)) {
+            const ParamPrimitive& param = *pParam;
+            if (param.bInput && 
+                changes.new_inputs.find(param.name) == changes.new_inputs.end() && 
+                changes.remove_inputs.find(param.name) == changes.remove_inputs.end()) {
+                auto inputnode = subgraph->getNode(param.name);
+                if (inputnode) {
+                    ParamType paramtype;
+                    SocketType socketype;
+                    inputnode->getParamTypeAndSocketType("port", true, false, paramtype, socketype);
+                    if (paramtype != param.type) {
+                        inputnode->update_param_type("port", true, false, param.type);
+                        for (auto& link : inputnode->getLinksByParam(false, "port")) {
+                            if (auto linktonode = subgraph->getNode(link.inNode)) {
+                                ParamType paramType;
+                                SocketType socketType;
+                                linktonode->getParamTypeAndSocketType(link.inParam, true, true, paramType, socketType);
+                                if (socketType == Socket_WildCard) {
+                                    subgraph->updateWildCardParamTypeRecursive(subgraph, linktonode, link.inParam, true, true, param.type);
+                                } else if (!outParamTypeCanConvertInParamType(param.type, paramType, Role_OutputPrimitive, Role_InputPrimitive)) {
+                                    subgraph->removeLink(link);
+                                }
+                            }
+                        }
+                        for (auto& link : getLinksByParam(true, param.name)) {
+                            if (auto spgraph = graph.lock()) {
+                                if (auto linktonode = spgraph->getNode(link.outNode)) {
+                                    ParamType paramType;
+                                    SocketType socketType;
+                                    linktonode->getParamTypeAndSocketType(link.outParam, true, false, paramType, socketType);
+                                    if (socketType == Socket_WildCard) {
+                                        spgraph->updateWildCardParamTypeRecursive(spgraph, linktonode, link.outParam, true, false, param.type);
+                                    } else if (!outParamTypeCanConvertInParamType(paramType, param.type, Role_OutputPrimitive, Role_InputPrimitive)) {
+                                        spgraph->removeLink(link);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     return changes;
 }
 

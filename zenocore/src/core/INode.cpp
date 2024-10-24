@@ -2316,7 +2316,6 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
     }
 
     params_change_info changes;
-    std::set<std::tuple<std::string, zeno::ParamType, bool>> paramTypeChanges;
 
     for (auto _pair : params) {
         if (const auto& pParam = std::get_if<ParamObject>(&_pair.param))
@@ -2407,6 +2406,9 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 
                 PrimitiveParam sparam;
                 sparam.defl = param.defl;
+                if (param.type != sparam.type) {
+                    sparam.defl = initAnyDeflValue(sparam.type);
+                }
                 convertToEditVar(sparam.defl, param.type);
                 sparam.name = newname;
                 sparam.type = param.type;
@@ -2438,14 +2440,18 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
 
                 auto& spParam = in_outputs[newname];
                 spParam.defl = param.defl;
+                if (param.type != spParam.type) {
+                    spParam.defl = initAnyDeflValue(spParam.type);
+                }
                 convertToEditVar(spParam.defl, spParam.type);
+
                 spParam.name = newname;
                 spParam.socketType = param.socketType;
                 if (param.bInput)
                 {
                     if (param.type != spParam.type)
                     {
-                        paramTypeChanges.insert({newname, param.type, param.bInput});
+                        update_param_type(spParam.name, true, param.bInput, param.type);
                         //update_param_type(spParam->name, param.type);
                         //if (auto spNode = subgraph->getNode(oldname))
                         //    spNode->update_param_type("port", param.type);
@@ -2507,10 +2513,6 @@ ZENO_API params_change_info INode::update_editparams(const ParamsUpdateInfo& par
             else
                 changes.outputs.push_back(paramPrim->name);
         }
-    }
-
-    for (const auto& [name, type, bInput] : paramTypeChanges) {
-        update_param_type(name, true, bInput, type);
     }
     return changes;
 }

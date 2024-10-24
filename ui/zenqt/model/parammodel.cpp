@@ -264,6 +264,9 @@ QStandardItemModel* ParamsModel::constructProxyModel()
 
             //zeno::scope_exit sp([=] {this->blockSignals(false); });
             //this->blockSignals(true);
+            if (!paramIdx.isValid()) {
+                continue;
+            }
             setData(paramIdx, newValue, role);
         }
         });
@@ -316,6 +319,8 @@ void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info&
                 int row = indexFromName(paramItem->data(ROLE_PARAM_NAME).toString(), true);
                 if (row != -1)
                 {
+                    paramItem->setData(m_items[row].type, ROLE_PARAM_TYPE);
+                    paramItem->setData(m_items[row].control, ROLE_PARAM_CONTROL);
                     paramItem->setData(QVariant::fromValue(m_items[row].value), ROLE_PARAM_VALUE);
                     paramItem->setData(m_items[row].bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
                 }
@@ -342,7 +347,7 @@ bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int r
         break;
 
     case ROLE_PARAM_TYPE:
-        param.type = (zeno::ParamType)value.toUInt();
+        param.type = (zeno::ParamType)value.toLongLong();
         break;
 
     case ROLE_PARAM_VALUE:
@@ -657,7 +662,9 @@ void ParamsModel::batchModifyParams(const zeno::ParamsUpdateInfo& params)
 
     auto spNode = m_wpNode.lock();
     ZASSERT_EXIT(spNode);
+    this->blockSignals(this);   //updateParamData不发出的datachange信号否则触发m_customParamsM的datachange
     zeno::params_change_info changes = spNode->update_editparams(params);
+    this->blockSignals(false);
     updateUiLinksSockets(changes);
 }
 
@@ -838,18 +845,6 @@ void ParamsModel::updateParamData(const QString& name, const QVariant& val, int 
             QModelIndex idx = createIndex(i, 0);
             emit dataChanged(idx, idx, { role });
             break;
-        }
-    }
-    //object inputs do not need to update custom model
-    if (role == ROLE_SOCKET_TYPE || role == ROLE_PARAM_GROUP)
-        return;
-    Qt::MatchFlags flags = Qt::MatchRecursive | Qt::MatchCaseSensitive;
-    auto pItems = m_customParamsM->findItems(name, flags);
-    for (auto pItem : pItems)
-    {
-        if (pItem->data(ROLE_ISINPUT).toBool() == bInput) //更新输入，或更新输入/输出的visible时,更新customUiModel
-        {
-            pItem->setData(val, role);
         }
     }
 }
