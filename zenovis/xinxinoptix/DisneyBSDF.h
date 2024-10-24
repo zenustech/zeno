@@ -359,8 +359,11 @@ namespace DisneyBSDF{
     static __inline__ __device__
     vec3 EvalDiffuseOrenNayarV2(vec3 color, float roughness,vec3 wi, vec3 wo){
       //from https://mimosa-pudica.net/improved-oren-nayar.html
-      return vec3(1.0f);
-
+      float s = dot(wi,wo) - wi.z * wo.z;
+      float t = s<=0 ? 1 : max(wo.z,wi.z);
+      float A = 1.0f / (M_PI + (M_PI / 2.0f - 0.66666667f) * roughness);
+      float B = roughness * A;
+      return color * wo.z * (A + B * s / t);
     }
 
     static __inline__ __device__
