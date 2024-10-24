@@ -143,7 +143,20 @@
         </layout>
        </widget>
        <widget class="QWidget" name="horizontalLayoutWidget_2">
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,8">
+         <item>
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
@@ -175,7 +188,20 @@
         </layout>
        </widget>
        <widget class="QWidget" name="horizontalLayoutWidget_3">
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,8">
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_6">
            <item>
@@ -207,7 +233,20 @@
         </layout>
        </widget>
        <widget class="QWidget" name="horizontalLayoutWidget_4">
-        <layout class="QHBoxLayout" name="horizontalLayout_9">
+        <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="1,8">
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
@@ -255,7 +294,7 @@
        <item>
         <layout class="QGridLayout" name="gridLayout">
          <item row="3" column="0">
-          <widget class="QLabel" name="label_5">
+          <widget class="QLabel" name="hintLbl">
            <property name="text">
             <string>hint</string>
            </property>
@@ -265,7 +304,7 @@
           <widget class="QLineEdit" name="editHint"/>
          </item>
          <item row="4" column="0">
-          <widget class="QLabel" name="label_6">
+          <widget class="QLabel" name="socketpropertyLbl">
            <property name="text">
             <string>socket property</string>
            </property>
@@ -278,7 +317,7 @@
           <widget class="QLineEdit" name="editName"/>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_3">
+          <widget class="QLabel" name="nameLbl">
            <property name="text">
             <string>Name</string>
            </property>
@@ -288,7 +327,7 @@
           <widget class="QComboBox" name="cbSocketType"/>
          </item>
          <item row="1" column="0">
-          <widget class="QLabel" name="label_16">
+          <widget class="QLabel" name="labelLbl">
            <property name="text">
             <string>Label</string>
            </property>
@@ -298,7 +337,7 @@
           <widget class="ZComboBox" name="cbControl"/>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="label_4">
+          <widget class="QLabel" name="controlLbl">
            <property name="text">
             <string>Control</string>
            </property>
