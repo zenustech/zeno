@@ -622,6 +622,13 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
         m_ui->cbSocketType->addItem("Socket_ReadOnly", zeno::Socket_ReadOnly);
         m_ui->cbSocketType->addItem("Socket_Clone", zeno::Socket_Clone);
         m_ui->cbSocketType->addItem("Socket_Owning", zeno::Socket_Owning);
+        if (socketType == zeno::Socket_ReadOnly) {
+            m_ui->cbSocketType->setCurrentText("Socket_ReadOnly");
+        } else if (socketType == zeno::Socket_Clone) {
+            m_ui->cbSocketType->setCurrentText("Socket_Clone");
+        } else if (socketType == zeno::Socket_Owning) {
+            m_ui->cbSocketType->setCurrentText("Socket_Owning");
+        }
     }
     switchStackProperties(ctrl, pCurrentItem);
 }

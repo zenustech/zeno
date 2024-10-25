@@ -66,6 +66,7 @@ namespace zeno {
     ZENO_API void propagateDirty(std::shared_ptr<INode> spCurrNode, std::string varName);
     void getUpstreamNodes(std::shared_ptr<INode> spCurrNode, std::set<ObjPath>& upstreamDepNodes, std::set<ObjPath>& upstreams, std::string outParamName = "");
     void mark_dirty_by_dependNodes(std::shared_ptr<INode> spCurrNode, bool bOn, std::set<ObjPath> nodesRange, std::string inParamName = "");
+    bool isSubnetInputOutputParam(std::shared_ptr<INode> spParentnode, std::string paramName);
 }
 
 

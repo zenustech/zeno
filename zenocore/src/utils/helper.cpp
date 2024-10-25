@@ -1314,6 +1314,18 @@ namespace zeno {
         }
     }
 
+    bool isSubnetInputOutputParam(std::shared_ptr<INode> spParentnode, std::string paramName)
+    {
+        if (std::shared_ptr<SubnetNode> spSubnetnode = std::dynamic_pointer_cast<SubnetNode>(spParentnode)) {
+            if (auto node = spSubnetnode->subgraph->getNode(paramName)) {
+                if (node->get_nodecls() == "SubInput" || node->get_nodecls() == "SubOutput") {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {
         return false;
     }

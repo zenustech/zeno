@@ -336,6 +336,15 @@ void ParamsModel::updateCustomUiModelIncremental(const zeno::params_change_info&
             paramItem->setData(m_items[row].bSocketVisible, ROLE_PARAM_SOCKET_VISIBLE);
         }
     }
+    QStandardItem* pObjInputsRoot = m_customParamsM->item(2);
+    for (int i = 0; i < pObjInputsRoot->rowCount(); i++)
+    {
+        auto paramItem = pObjInputsRoot->child(i);
+        int row = indexFromName(paramItem->data(ROLE_PARAM_NAME).toString(), true);
+        if (row != -1) {
+            paramItem->setData(m_items[row].connectProp, ROLE_SOCKET_TYPE);
+        }
+    }
 }
 
 bool ParamsModel::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -611,8 +620,10 @@ bool ParamsModel::removeSpecificLink(const QModelIndex& paramIdx, const QModelIn
 
     QList<QPersistentModelIndex>& links = m_items[row].links;
     for (auto link : links) {
-        if (link == linkIdx)
+        if (link == linkIdx) {
+            links.removeOne(link);
             return true;
+        }
     }
     return false;
 }

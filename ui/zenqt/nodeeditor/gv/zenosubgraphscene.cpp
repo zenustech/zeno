@@ -834,8 +834,15 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
             (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard) {
         }
         else {
-            ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
-            return false;
+            //subnet输入对象可能是Socket_Owning之类的，socket属于子图且为obj类型视为可连接
+            GraphModel* insockSubGraph = inSockIdx.data(ROLE_NODE_IDX).toModelIndex().data(ROLE_SUBGRAPH).value<GraphModel*>();
+            GraphModel* outsockSubGraph = outSockIdx.data(ROLE_NODE_IDX).toModelIndex().data(ROLE_SUBGRAPH).value<GraphModel*>();
+            if (insockSubGraph && inGroup == zeno::Role_InputObject || outsockSubGraph && outGroup == zeno::Role_OutputObject) {
+            }
+            else {
+                ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
+                return false;
+            }
         }
     }
     auto links = outSockIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
