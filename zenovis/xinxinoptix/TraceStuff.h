@@ -103,7 +103,6 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
-    unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
     vec3         click_pos;
