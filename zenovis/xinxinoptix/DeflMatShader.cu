@@ -658,8 +658,6 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->adepth++;
-        //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
         prd->_tmin_ = optixGetRayTmax();
