@@ -1030,10 +1030,17 @@ namespace zeno {
 
     bool isSameDimensionNumericVecType(ParamType left, ParamType right)
     {
-        if (left == types::gParamType_Vec2i && right == types::gParamType_Vec2f || left == types::gParamType_Vec2f && right == types::gParamType_Vec2i ||
-            left == types::gParamType_Vec3i && right == types::gParamType_Vec3f || left == types::gParamType_Vec3f && right == types::gParamType_Vec3i ||
-            left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
-            return true;
+        if (left == right) {
+            if (left == types::gParamType_Vec2f || left == types::gParamType_Vec2i ||
+                left == types::gParamType_Vec3f || left == types::gParamType_Vec3i ||
+                left == types::gParamType_Vec4f || left == types::gParamType_Vec4i)
+                return true;
+        } else {
+            if (left == types::gParamType_Vec2i && right == types::gParamType_Vec2f || left == types::gParamType_Vec2f && right == types::gParamType_Vec2i ||
+                left == types::gParamType_Vec3i && right == types::gParamType_Vec3f || left == types::gParamType_Vec3f && right == types::gParamType_Vec3i ||
+                left == types::gParamType_Vec4i && right == types::gParamType_Vec4f || left == types::gParamType_Vec4f && right == types::gParamType_Vec4i)
+                return true;
+        }
         return false;
     }
 
@@ -1305,6 +1312,18 @@ namespace zeno {
             }
             spGraph->optParentSubgNode.value()->mark_dirty(true, true, false);
         }
+    }
+
+    bool isSubnetInputOutputParam(std::shared_ptr<INode> spParentnode, std::string paramName)
+    {
+        if (std::shared_ptr<SubnetNode> spSubnetnode = std::dynamic_pointer_cast<SubnetNode>(spParentnode)) {
+            if (auto node = spSubnetnode->subgraph->getNode(paramName)) {
+                if (node->get_nodecls() == "SubInput" || node->get_nodecls() == "SubOutput") {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     bool getParamInfo(const CustomUI& customui, std::vector<ParamPrimitive>& inputs, std::vector<ParamPrimitive>& outputs) {

@@ -30,6 +30,7 @@
 #include "widgets/zcheckbox.h"
 #include "ZenoDictListLinksPanel.h"
 #include "zenoDopNetworkPanel.h"
+#include <zeno/utils/helper.h>
 
 
 using namespace zeno::reflect;
@@ -1140,6 +1141,13 @@ void ZenoPropPanel::onCustomParamDataChanged(const QModelIndex& topLeft, const Q
             else if (role == ROLE_PARAM_CONTROL)
             {
                 const QString& paramName = param->data(ROLE_PARAM_NAME).toString();
+                const zeno::ParamType type = (zeno::ParamType)param->data(ROLE_PARAM_TYPE).toLongLong();
+                zeno::reflect::Any defAnyval = zeno::initAnyDeflValue(type);
+                zeno::convertToEditVar(defAnyval, type);
+                zeno::scope_exit sp([&paramsModel] {paramsModel->blockSignals(false); });
+                paramsModel->blockSignals(true);
+                param->setData(QVariant::fromValue(defAnyval), ROLE_PARAM_VALUE);
+
                 _PANEL_CONTROL& ctrl = group[paramName];
                 QGridLayout* pGridLayout = qobject_cast<QGridLayout*>(ctrl.controlLayout);
                 ZASSERT_EXIT(pGridLayout);

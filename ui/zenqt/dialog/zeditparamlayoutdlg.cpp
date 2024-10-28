@@ -180,6 +180,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     initUI();
 
     m_ui->cbControl->addItem("");
+    QString maxControlName;
     for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++)
     {
         QListWidgetItem *item = new QListWidgetItem(controlList[i].name, m_ui->listConctrl);
@@ -188,7 +189,14 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
         if (controlList[i].ctrl == zeno::NullControl)
             continue;
         m_ui->cbControl->addItem(controlList[i].name);
+        if (maxControlName.size() < controlList[i].name.size())
+            maxControlName = controlList[i].name;
     }
+    QFontMetrics cbControlMetrics(m_ui->cbControl->font());
+    m_ui->cbControl->setMinimumWidth(cbControlMetrics.horizontalAdvance(maxControlName) + 60);
+    m_ui->cbSocketType->setMinimumWidth(cbControlMetrics.horizontalAdvance(maxControlName) + 60);
+    m_ui->cbSocketType->setEnabled(false);
+
     initModel(pModel);
     initIcon(m_paramsLayoutM_inputs->invisibleRootItem());
     initIcon(m_paramsLayoutM_outputs->invisibleRootItem());
@@ -230,20 +238,14 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     QItemSelectionModel* selModelOutputs = m_ui->outputsView->selectionModel();
     connect(selModelOutputs, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
         SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
-    const QModelIndex& outputFirst = m_paramsLayoutM_outputs->index(0, 0);
-    selModelOutputs->setCurrentIndex(outputFirst, QItemSelectionModel::SelectCurrent);
 
     QItemSelectionModel* selModelInputs_obj = m_ui->objInputsView->selectionModel();
     connect(selModelInputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
         SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
-    const QModelIndex& objInputFirst = m_paramsLayoutM_objInputs->index(0, 0);
-    selModelInputs_obj->setCurrentIndex(objInputFirst, QItemSelectionModel::SelectCurrent);
 
     QItemSelectionModel* selModelOutputs_obj = m_ui->objOutputsView->selectionModel();
     connect(selModelOutputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
         SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
-    const QModelIndex& objOutputFirst = m_paramsLayoutM_objOutputs->index(0, 0);
-    selModelOutputs_obj->setCurrentIndex(objOutputFirst, QItemSelectionModel::SelectCurrent);
 
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
     connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
@@ -370,12 +372,6 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->objInputsView->setAlternatingRowColors(true);
     m_ui->objOutputsView->setAlternatingRowColors(true);
     m_ui->listConctrl->setFocusPolicy(Qt::NoFocus);
-    m_ui->cbSocketType->addItem("NoSocket", zeno::NoSocket);
-    m_ui->cbSocketType->addItem("Socket_Output", zeno::Socket_Output);
-    m_ui->cbSocketType->addItem("Socket_ReadOnly", zeno::Socket_ReadOnly);
-    m_ui->cbSocketType->addItem("Socket_Clone", zeno::Socket_Clone);
-    m_ui->cbSocketType->addItem("Socket_Owning", zeno::Socket_Owning);
-    m_ui->cbSocketType->addItem("Socket_Primitve", zeno::Socket_Primitve);
     //m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
     resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
     setFocusPolicy(Qt::ClickFocus);
@@ -396,23 +392,24 @@ void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem)
 
 QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem) 
 {
-    int control = pItem->data(ROLE_PARAM_CONTROL).toInt();
-    int type = pItem->data(ROLE_ELEMENT_TYPE).toInt();
-    if (type == VPARAM_TAB) 
+    zeno::ParamControl control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
+    zeno::ParamType type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toLongLong();
+    int elemtype = pItem->data(ROLE_ELEMENT_TYPE).toInt();
+    if (elemtype == VPARAM_TAB)
     {
         return QIcon(":/icons/parameter_control_tab.svg");
     } 
-    else if (type == VPARAM_GROUP) 
+    else if (elemtype == VPARAM_GROUP)
     {
         return QIcon();// ":/icons/parameter_control_group.svg");
     } 
-    else if (type != VPARAM_ROOT) 
+    else if (elemtype != VPARAM_ROOT)
     {
         if (control == zeno::NullControl)
             return QIcon();
         for (int i = 0; i < sizeof(controlList) / sizeof(CONTROL_ITEM_INFO); i++) 
         {
-            if (control == controlList[i].ctrl) 
+            if (control == controlList[i].ctrl && type == controlList[i].type)
             {
                 return QIcon(controlList[i].icon);
             }
@@ -490,13 +487,13 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     }
 
     VPARAM_TYPE type = (VPARAM_TYPE)pCurrentItem->data(ROLE_ELEMENT_TYPE).toInt();
-    if (type == VPARAM_TAB)
+    if (type == VPARAM_ROOT || type == VPARAM_TAB || type == VPARAM_GROUP)
     {
-        m_ui->cbControl->setEnabled(false);
-    }
-    else if (type == VPARAM_GROUP)
-    {
-        m_ui->cbControl->setEnabled(false);
+        m_ui->controlLbl->hide();
+        m_ui->cbControl->hide();
+        m_ui->hintLbl->hide();
+        m_ui->cbSocketType->clear();
+        m_ui->cbSocketType->setEnabled(false);
     }
     else if (type == VPARAM_PARAM)
     {
@@ -532,6 +529,9 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
             valueControl->setEnabled(bEditable);
             m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
         }
+        m_ui->controlLbl->show();
+        m_ui->cbControl->show();
+        m_ui->hintLbl->show();
 
         {
             BlockSignalScope scope(m_ui->cbControl);
@@ -544,19 +544,10 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         {
             BlockSignalScope scope(m_ui->cbSocketType);
 
-            m_ui->cbSocketType->setEnabled(true);
-            if (zeno::NoSocket == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("NoSocket"));
-            else if (zeno::Socket_Output == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Socket_Output"));
-            else if (zeno::Socket_ReadOnly == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Socket_ReadOnly"));
-            else if (zeno::Socket_Clone == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Socket_Clone"));
-            else if (zeno::Socket_Owning== socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Socket_Owning"));
-            else if (zeno::Socket_Primitve == socketType)
-                m_ui->cbSocketType->setCurrentText(tr("Socket_Primitve"));
+            m_ui->cbSocketType->clear();
+            m_ui->cbSocketType->setEnabled(false);
+            m_ui->cbSocketType->addItem("Socket_Primitve", zeno::Socket_Primitve);
+            m_ui->cbSocketType->setCurrentText(tr("Socket_Primitve"));
         }
 
         switchStackProperties(ctrl, pCurrentItem);
@@ -602,6 +593,7 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
     };
     if (!deflVal.isValid()) {
         anyVal = zeno::initAnyDeflValue(paramType);
+        zeno::convertToEditVar(anyVal, paramType);
     }
 
     cbSets.cbGetIndexData = [=]() -> QVariant {
@@ -616,34 +608,28 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
         valueControl->setEnabled(bEditable);
         m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
     }
-
-    {
-        BlockSignalScope scope(m_ui->cbControl);
-
-        m_ui->cbControl->setEnabled(true);
-        m_ui->cbControl->setCurrentText(ctrlName);
-        //QString descType = UiHelper::getTypeDesc(paramType);
+    m_ui->controlLbl->hide();
+    m_ui->cbControl->hide();
+    m_ui->hintLbl->hide();
+    if (pModel != m_paramsLayoutM_objInputs) {
+        m_ui->cbSocketType->clear();
+        m_ui->cbSocketType->setEnabled(false);
     }
-
-    {
+    else {
+        m_ui->cbSocketType->setEnabled(true);
         BlockSignalScope scope(m_ui->cbSocketType);
-
-        if (zeno::NoSocket == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("NoSocket"));
-        else if (zeno::Socket_Output == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Socket_Output"));
-        else if (zeno::Socket_ReadOnly == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Socket_ReadOnly"));
-        else if (zeno::Socket_Clone == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Socket_Clone"));
-        else if (zeno::Socket_Owning == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Socket_Owning"));
-        else if (zeno::Socket_Primitve == socketType)
-            m_ui->cbSocketType->setCurrentText(tr("Socket_Primitve"));
-
-        m_ui->cbSocketType->setEnabled(pModel != m_paramsLayoutM_outputs);
+        m_ui->cbSocketType->clear();
+        m_ui->cbSocketType->addItem("Socket_ReadOnly", zeno::Socket_ReadOnly);
+        m_ui->cbSocketType->addItem("Socket_Clone", zeno::Socket_Clone);
+        m_ui->cbSocketType->addItem("Socket_Owning", zeno::Socket_Owning);
+        if (socketType == zeno::Socket_ReadOnly) {
+            m_ui->cbSocketType->setCurrentText("Socket_ReadOnly");
+        } else if (socketType == zeno::Socket_Clone) {
+            m_ui->cbSocketType->setCurrentText("Socket_Clone");
+        } else if (socketType == zeno::Socket_Owning) {
+            m_ui->cbSocketType->setCurrentText("Socket_Owning");
+        }
     }
-
     switchStackProperties(ctrl, pCurrentItem);
 }
 
@@ -975,7 +961,10 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
-    proxyModelSetData(layerIdx, ctrl, ROLE_PARAM_CONTROL);
+    auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
+    pItem->setData(ctrl, ROLE_PARAM_CONTROL);
+    zeno::ParamType type = getTypeByControlName(controlName);
+    pItem->setData(type, ROLE_PARAM_TYPE);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
     if (pLayoutItem)
@@ -989,16 +978,9 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
     };
 
-    zeno::ParamType type = getTypeByControlName(controlName);
-
-    //update type:
-    auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
-    pItem->setData(type, ROLE_PARAM_TYPE);
-
     QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
-    zeno::reflect::Any anyVal = value.value<zeno::reflect::Any>();
-    if (!value.isValid())
-        anyVal = zeno::initAnyDeflValue(type);
+    zeno::reflect::Any anyVal = zeno::initAnyDeflValue(type);
+    zeno::convertToEditVar(anyVal, type);
 
     zeno::reflect::Any controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value< zeno::reflect::Any>();
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initDefaultValue(type); };
@@ -1009,6 +991,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         
         switchStackProperties(ctrl, pItem);
         pItem->setData(getIcon(pItem), Qt::DecorationRole);
+        pItem->setData(QVariant::fromValue(anyVal), ROLE_PARAM_VALUE);
     }
 }
 

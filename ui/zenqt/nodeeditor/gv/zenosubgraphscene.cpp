@@ -834,8 +834,15 @@ bool ZenoSubGraphScene::isLinkValid(const ZenoSocketItem* fixedSockItem, const Z
             (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt() == zeno::Socket_WildCard) {
         }
         else {
-            ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
-            return false;
+            //subnetè¾“å…¥å¯¹è±¡å¯èƒ½æ˜¯Socket_Owningä¹‹ç±»çš„ï¼Œsocketå±äºå­å›¾ä¸”ä¸ºobjç±»å‹è§†ä¸ºå¯è¿æ¥
+            GraphModel* insockSubGraph = inSockIdx.data(ROLE_NODE_IDX).toModelIndex().data(ROLE_SUBGRAPH).value<GraphModel*>();
+            GraphModel* outsockSubGraph = outSockIdx.data(ROLE_NODE_IDX).toModelIndex().data(ROLE_SUBGRAPH).value<GraphModel*>();
+            if (insockSubGraph && inGroup == zeno::Role_InputObject || outsockSubGraph && outGroup == zeno::Role_OutputObject) {
+            }
+            else {
+                ZToolTip::showIconText(":/icons/node/error.svg", QCursor::pos(), tr("Cannot connect different type!"));
+                return false;
+            }
         }
     }
     auto links = outSockIdx.data(ROLE_LINKS).value<PARAM_LINKS>();
@@ -1381,12 +1388,12 @@ void ZenoSubGraphScene::keyReleaseEvent(QKeyEvent* event)
 
 void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
 {
-    QMap<QString, int> nodeLayers;   //±£´æÒÑ´¦Àí½ÚµãµÄ²ã´Î¡£
-    QQueue<QString> queue;           //¼ÇÂ¼µ±Ç°Èë¶ÈÎª0µÄ½Úµã£¬°´ÏÈ½øÏÈ³öµÄË³Ğò¡£
-    QVector<QStringList> layerNodes;    //¼ÇÂ¼¸÷²ã´ÎµÄËùÓĞ½Úµã
-    QMap<QString, int> nodeIndegree;    //¼ÇÂ¼ËùÓĞ½ÚµãµÄÈë¶È¡£
+    QMap<QString, int> nodeLayers;   //ä¿å­˜å·²å¤„ç†èŠ‚ç‚¹çš„å±‚æ¬¡ã€‚
+    QQueue<QString> queue;           //è®°å½•å½“å‰å…¥åº¦ä¸º0çš„èŠ‚ç‚¹ï¼ŒæŒ‰å…ˆè¿›å…ˆå‡ºçš„é¡ºåºã€‚
+    QVector<QStringList> layerNodes;    //è®°å½•å„å±‚æ¬¡çš„æ‰€æœ‰èŠ‚ç‚¹
+    QMap<QString, int> nodeIndegree;    //è®°å½•æ‰€æœ‰èŠ‚ç‚¹çš„å…¥åº¦ã€‚
 
-    //Ê×ÏÈ±éÀúÕûÕÅÍ¼£¬ÇóµÃËùÓĞ½ÚµãµÄÈë¶È£¬²¢°ÑÈë¶ÈÎª0µÄ½Úµã¼ÓÈëqueue¡£
+    //é¦–å…ˆéå†æ•´å¼ å›¾ï¼Œæ±‚å¾—æ‰€æœ‰èŠ‚ç‚¹çš„å…¥åº¦ï¼Œå¹¶æŠŠå…¥åº¦ä¸º0çš„èŠ‚ç‚¹åŠ å…¥queueã€‚
     for (int i = 0; i < m_model->rowCount(); i++)
     {
         QModelIndex idx = m_model->index(i);
@@ -1400,9 +1407,9 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
 
     while (!queue.isEmpty())
     {
-        //³öÁĞ!
+        //å‡ºåˆ—!
         QString node = queue.takeFirst();
-        //Èç¹ûÏëÖªµÀnodeËùÔÚµÄ²ã´Î£¬ĞèÒªÕÒnodeµÄÇ°¼Ì½ÚµãÖĞ×îÉîµÄ²ã´Î£¬È»ºó¼Ó1
+        //å¦‚æœæƒ³çŸ¥é“nodeæ‰€åœ¨çš„å±‚æ¬¡ï¼Œéœ€è¦æ‰¾nodeçš„å‰ç»§èŠ‚ç‚¹ä¸­æœ€æ·±çš„å±‚æ¬¡ï¼Œç„¶ååŠ 1
         QStringList prevNodes = UiHelper::findPreviousNode(m_model, node);
         int maxDepth = 0, currLayer = 0;
         if (!prevNodes.isEmpty())
@@ -1420,7 +1427,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         }
         layerNodes[currLayer].append(node);
 
-        //nodeµÄºó¼ÌÕßµÄÈë¶ÈÈ«²¿¼õÒ»¡£
+        //nodeçš„åç»§è€…çš„å…¥åº¦å…¨éƒ¨å‡ä¸€ã€‚
         QStringList successorNodes = UiHelper::findSuccessorNode(m_model, node);
         for (auto successorNode : successorNodes)
         {
@@ -1434,7 +1441,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         }
     }
 
-    //½«ËùÓĞ½ÚµãÕ¹¿ª»òÕÛµş
+    //å°†æ‰€æœ‰èŠ‚ç‚¹å±•å¼€æˆ–æŠ˜å 
     bool bCollasped = !bHorional;
     for (auto& [name, pNode] : m_nodes)
     {
@@ -1476,7 +1483,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         qreal ycenter = 0.;
         if (layerNodes.isEmpty())
             return;
-        //¾ö¶¨ÖĞÖáÏßµÄÎ»ÖÃ¡£
+        //å†³å®šä¸­è½´çº¿çš„ä½ç½®ã€‚
         qreal vspace = 150.;
         qreal xspace = 300.;
         QSizeF sz = getLayerHeight(bHorional, layerNodes[0], vspace);
@@ -1489,7 +1496,7 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             ZASSERT_EXIT(!sz.isEmpty());
             qreal y = ycenter - sz.height() / 2;    //start pos
 
-            //ÎªÃ¿¸ö½ÚµãÉèÖÃÎ»ÖÃ
+            //ä¸ºæ¯ä¸ªèŠ‚ç‚¹è®¾ç½®ä½ç½®
             for (QString node : layerNodes[i])
             {
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
@@ -1502,12 +1509,12 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
         }
     }
     else {
-        //ÕÛµş×´Ì¬ÏÂµÄÊúÏòÅÅÁĞ
+        //æŠ˜å çŠ¶æ€ä¸‹çš„ç«–å‘æ’åˆ—
 
         qreal xcenter = 0.;
         if (layerNodes.isEmpty())
             return;
-        //¾ö¶¨ÖĞÖáÏßµÄÎ»ÖÃ¡£
+        //å†³å®šä¸­è½´çº¿çš„ä½ç½®ã€‚
         qreal hspace = 150.;
         qreal yspace = 300.;
         QSizeF sz = getLayerHeight(bHorional, layerNodes[0], hspace);
@@ -1525,16 +1532,15 @@ void ZenoSubGraphScene::rearrangeGraph(bool bHorional)
             ZASSERT_EXIT(!sz.isEmpty());
             qreal x = xcenter - sz.width() / 2;    //start pos
 
-            //ÎªÃ¿¸ö½ÚµãÉèÖÃÎ»ÖÃ
+            //ä¸ºæ¯ä¸ªèŠ‚ç‚¹è®¾ç½®ä½ç½®
             for (QString node : layerNodes[i])
             {
                 ZASSERT_EXIT(m_nodes.find(node) != m_nodes.end());
                 ZenoNodeBase* pNode = m_nodes[node];
                 pNode->setPos(x, y);
                 QString name = pNode->nodeId();
-                x += pNode->boundingRect().width(); //TOFIX: ºÃÏñÃ»ËãÉÏ×ó±ßÃû³ÆµÄ³¤¶È
-
-                //ÕÛµş×´Ì¬ÏÂ£¬Ãû×ÖÃ»ÓĞÄÉÈë²¼¾Ö£¨¶àÖØ²¼¾Ö±È½ÏÂé·³£¬ÓÈÆäÊÇµ÷ÕûÎ»ÖÃµÄÊ±ºò£©
+                x += pNode->boundingRect().width(); //TOFIX: å¥½åƒæ²¡ç®—ä¸Šå·¦è¾¹åç§°çš„é•¿åº¦
+                //æŠ˜å çŠ¶æ€ä¸‹ï¼Œåå­—æ²¡æœ‰çº³å…¥å¸ƒå±€ï¼ˆå¤šé‡å¸ƒå±€æ¯”è¾ƒéº»çƒ¦ï¼Œå°¤å…¶æ˜¯è°ƒæ•´ä½ç½®çš„æ—¶å€™ï¼‰
                 int nameLength = metrics.horizontalAdvance(name);
                 x += nameLength;
 

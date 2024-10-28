@@ -30,7 +30,7 @@ ZENO_API SubnetNode::~SubnetNode() = default;
 ZENO_API void SubnetNode::initParams(const NodeData& dat)
 {
     INode::initParams(dat);
-    //ĞèÒª¼ì²éSubInput/SubOutputÊÇ·ñ¶ÔµÄÉÏ£¿
+    //éœ€è¦æ£€æŸ¥SubInput/SubOutputæ˜¯å¦å¯¹çš„ä¸Šï¼Ÿ
     if (dat.subgraph && subgraph->getNodes().empty())
         subgraph->init(*dat.subgraph);
 }
@@ -52,7 +52,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         for (auto name : changes.new_inputs) {
             std::shared_ptr<INode> newNode = subgraph->createNode("SubInput", name);
 
-            bool exist;     //subnetÍ¨¹ı×Ô¶¨Òå²ÎÊıÃæ°å´´½¨SubInput½ÚµãÊ±£¬¸ù¾İÊµ¼ÊÇé¿öÌí¼Óprimitive/objÀàĞÍµÄport¶Ë¿Ú
+            bool exist;     //subneté€šè¿‡è‡ªå®šä¹‰å‚æ•°é¢æ¿åˆ›å»ºSubInputèŠ‚ç‚¹æ—¶ï¼Œæ ¹æ®å®é™…æƒ…å†µæ·»åŠ primitive/objç±»å‹çš„portç«¯å£
             bool isprim = isPrimitiveType(true, name, exist);
             if (isprim) {
                 zeno::ParamPrimitive primitive;
@@ -70,7 +70,7 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
                 newNode->add_output_obj_param(paramObj);
             }
 
-            for (const auto& [param, _] : params) {     //´´½¨SubinputÊ±,¸üĞÂSubinputµÄport½Ó¿ÚÀàĞÍ
+            for (const auto& [param, _] : params) {     //åˆ›å»ºSubinputæ—¶,æ›´æ–°Subinputçš„portæ¥å£ç±»å‹
                 if (auto paramPrim = std::get_if<ParamPrimitive>(&param)) {
                     if (name == paramPrim->name) {
                         newNode->update_param_type("port", true, false, paramPrim->type);
@@ -122,6 +122,51 @@ ZENO_API params_change_info SubnetNode::update_editparams(const ParamsUpdateInfo
         }
         for (auto name : changes.remove_outputs) {
             subgraph->removeNode(name);
+        }
+    }
+    //primçš„è¾“å…¥ç±»å‹å˜åŒ–æ—¶ï¼Œå¯èƒ½éœ€è¦æ›´æ–°å¯¹åº”subinputèŠ‚ç‚¹portç«¯å£çš„ç±»å‹
+    for (auto _pair : params) {
+        if (const auto& pParam = std::get_if<ParamPrimitive>(&_pair.param)) {
+            const ParamPrimitive& param = *pParam;
+            if (param.bInput && 
+                changes.new_inputs.find(param.name) == changes.new_inputs.end() && 
+                changes.remove_inputs.find(param.name) == changes.remove_inputs.end()) {
+                auto inputnode = subgraph->getNode(param.name);
+                if (inputnode) {
+                    ParamType paramtype;
+                    SocketType socketype;
+                    inputnode->getParamTypeAndSocketType("port", true, false, paramtype, socketype);
+                    if (paramtype != param.type) {
+                        inputnode->update_param_type("port", true, false, param.type);
+                        for (auto& link : inputnode->getLinksByParam(false, "port")) {
+                            if (auto linktonode = subgraph->getNode(link.inNode)) {
+                                ParamType paramType;
+                                SocketType socketType;
+                                linktonode->getParamTypeAndSocketType(link.inParam, true, true, paramType, socketType);
+                                if (socketType == Socket_WildCard) {
+                                    subgraph->updateWildCardParamTypeRecursive(subgraph, linktonode, link.inParam, true, true, param.type);
+                                } else if (!outParamTypeCanConvertInParamType(param.type, paramType, Role_OutputPrimitive, Role_InputPrimitive)) {
+                                    subgraph->removeLink(link);
+                                }
+                            }
+                        }
+                        for (auto& link : getLinksByParam(true, param.name)) {
+                            if (auto spgraph = graph.lock()) {
+                                if (auto linktonode = spgraph->getNode(link.outNode)) {
+                                    ParamType paramType;
+                                    SocketType socketType;
+                                    linktonode->getParamTypeAndSocketType(link.outParam, true, false, paramType, socketType);
+                                    if (socketType == Socket_WildCard) {
+                                        spgraph->updateWildCardParamTypeRecursive(spgraph, linktonode, link.outParam, true, false, param.type);
+                                    } else if (!outParamTypeCanConvertInParamType(paramType, param.type, Role_OutputPrimitive, Role_InputPrimitive)) {
+                                        spgraph->removeLink(link);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     return changes;
@@ -199,7 +244,46 @@ ZENO_API CustomUI SubnetNode::get_customui() const
 }
 
 ZENO_API CustomUI SubnetNode::export_customui() const {
-    return m_customUi;
+    CustomUI exportCustomui = m_customUi;
+    if (subgraph) {
+        for (auto& tab : exportCustomui.inputPrims) {
+            for (auto& group : tab.groups) {
+                for (auto& param : group.params) {
+                    if (auto node = subgraph->getNode(param.name)) {
+                        ParamType type;
+                        SocketType socketype;
+                        node->getParamTypeAndSocketType("port", true, false, type, socketype);
+                        param.type = type;
+                    }
+                }
+            }
+        }
+        for (auto& param : exportCustomui.inputObjs) {
+            if (auto node = subgraph->getNode(param.name)) {
+                ParamType type;
+                SocketType socketype;
+                node->getParamTypeAndSocketType("port", false, false, type, socketype);
+                param.type = type;
+            }
+        }
+        for (auto& param : exportCustomui.outputPrims) {
+            if (auto node = subgraph->getNode(param.name)) {
+                ParamType type;
+                SocketType socketype;
+                node->getParamTypeAndSocketType("port", true, true, type, socketype);
+                param.type = type;
+            }
+        }
+        for (auto& param : exportCustomui.outputObjs) {
+            if (auto node = subgraph->getNode(param.name)) {
+                ParamType type;
+                SocketType socketype;
+                node->getParamTypeAndSocketType("port", false, true, type, socketype);
+                param.type = type;
+            }
+        }
+    }
+    return exportCustomui;
 }
 
 ZENO_API void SubnetNode::setCustomUi(const CustomUI& ui)
@@ -220,7 +304,7 @@ ZENO_API void DopNetwork::apply()
     zeno::scope_exit sp([&currentFarme, &sess]() {
         sess.globalState->updateFrameId(currentFarme);
     });
-    //ÖØĞÂ¼ÆËã
+    //é‡æ–°è®¡ç®—
     for (int i = startFrame; i <= currentFarme; i++) {
         if (m_frameCaches.find(i) == m_frameCaches.end()) {
             sess.globalState->updateFrameId(i);
@@ -235,7 +319,7 @@ ZENO_API void DopNetwork::apply()
             while (((m_totalCacheSizeByte + currentFrameCacheSize) / 1024 / 1024) > m_currCacheMemoryMB) {
                 if (!m_frameCaches.empty()) {
                     auto lastIter = --m_frameCaches.end();
-                    if (lastIter->first > currentFarme) {//ÏÈ´Ó×îºóÒ»Ö¡É¾
+                    if (lastIter->first > currentFarme) {//å…ˆä»æœ€åä¸€å¸§åˆ 
 
                         m_totalCacheSizeByte = m_totalCacheSizeByte - m_frameCacheSizes[lastIter->first];
                         CALLBACK_NOTIFY(dopnetworkFrameRemoved, lastIter->first)
