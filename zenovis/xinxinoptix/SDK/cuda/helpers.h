@@ -36,10 +36,8 @@ __forceinline__ __device__ float3 toSRGB( const float3& c, float gamma )
 {
     float  invGamma = 1.0f / gamma;
     float3 powed    = make_float3( powf( c.x, invGamma ), powf( c.y, invGamma ), powf( c.z, invGamma ) );
-    return make_float3(
-        c.x < 0.0031308f ? 12.92f * c.x : 1.055f * powed.x - 0.055f,
-        c.y < 0.0031308f ? 12.92f * c.y : 1.055f * powed.y - 0.055f,
-        c.z < 0.0031308f ? 12.92f * c.z : 1.055f * powed.z - 0.055f );
+
+    return powed;
 }
 
 __forceinline__ __device__ unsigned char quantizeUnsigned8Bits( float x )
