@@ -13,7 +13,7 @@
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
 
-using Json = nlohmann::json;
+using Json = nlohmann::ordered_json;
 
 namespace zeno {
 struct JsonObject : IObjectClone<JsonObject> {
@@ -413,6 +413,29 @@ ZENDEFNODE(JsonGetString, {
     {},
     {
         "deprecated"
+    },
+});
+
+struct JsonGetKeys : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto list = std::make_shared<ListObject>();
+        for (auto& [key, _] : json->json.items()) {
+            list->arr.emplace_back(std::make_shared<zeno::StringObject>(key));
+        }
+        set_output2("keys", list);
+    }
+};
+ZENDEFNODE(JsonGetKeys, {
+    {
+        {"json"},
+    },
+    {
+        "keys",
+    },
+    {},
+    {
+        "json"
     },
 });
 struct JsonGetTypeName : zeno::INode {
