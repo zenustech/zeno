@@ -1,12 +1,9 @@
 #pragma once
-#include "Host.h"
 #include "zxxglslvec.h"
 #include "TraceStuff.h"
 #include "IOMat.h"
 #include "DisneyBRDF.h"
 #include "HairBSDF.h"
-#include <cmath>
-#include <forward_list>
 
 namespace DisneyBSDF{
     enum SurfaceEventFlags{
@@ -333,7 +330,7 @@ namespace DisneyBSDF{
     static __inline__ __device__
     vec3 EvalDiffuseOrenNayarV1(vec3 color, float roughness,vec3 wi, vec3 wo){
       //from wiki pedia
-      float sigma = roughness * M_PI;
+      float sigma = roughness * M_PIf;
       float sigma2 = sigma * sigma;
       float A = 1.0f - sigma2 / (2.0f * (sigma2 + 0.33f));
       float B = 0.45 * sigma2 / (sigma2 + 0.09f);
@@ -353,7 +350,7 @@ namespace DisneyBSDF{
       float cos_beta = min(wo.z,wi.z);
       float sin_beta = sqrtf(1.0f - cos_beta * cos_beta);
       float tan_beta = sin_beta/cos_beta;
-      return color * (A + B * C * sin_alpha * tan_beta) / M_PI;
+      return color * (A + B * C * sin_alpha * tan_beta) / M_PIf;
 
     }
     static __inline__ __device__
@@ -361,8 +358,11 @@ namespace DisneyBSDF{
       //from https://mimosa-pudica.net/improved-oren-nayar.html
       float s = dot(wi,wo) - wi.z * wo.z;
       float t = s<=0 ? 1 : max(wo.z,wi.z);
-      float A = 1.0f / (M_PI + (M_PI / 2.0f - 0.66666667f) * roughness);
-      float B = roughness * A;
+      float sigma = M_PIf * roughness;
+      float sigma2 = sigma * sigma;
+      float B = 0.45f * sigma2 / (M_PIf * (sigma2 + 0.09f));
+      vec3 A = 1.0f / M_PIf * (1.0f - 0.5f * sigma2 / (sigma2+0.33f) + 0.17f * color *sigma2 / (sigma2 + 0.13f));
+  
       return color * wo.z * (A + B * s / t);
     }
 
@@ -470,7 +470,9 @@ namespace DisneyBSDF{
 
           if(diffPr > 0.0f){
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
+            vec3 color = thin ? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface);
+            vec3 d = EvalDiffuseOrenNayarV1(color, mat.roughness,wi,wo);
+            tmpPdf = 1.0f / (2.0f *  M_PIf);
             dterm = dterm + d;
             f = f + d;
             fPdf += tmpPdf * diffPr ;
