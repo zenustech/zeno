@@ -7,12 +7,10 @@
 #include "zeno/utils/fileio.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
-#include "uuid_v4.h"
 
 using Json = nlohmann::json;
 
@@ -674,6 +672,10 @@ struct CreateRenderInstance : zeno::INode {
         auto Geom = get_input2<std::string>("Geom");
         auto Matrix = get_input2<std::string>("Matrix");
         auto Material = get_input2<std::string>("Material");
+        if (instID.empty()) {
+            auto info = zeno::format("instID {} can not be empty!", instID);
+            throw zeno::makeError(info);
+        }
 
         auto out_json = std::make_shared<JsonObject>();
         out_json->json["BasicRenderInstance"][instID] = {
@@ -702,54 +704,79 @@ ZENDEFNODE( CreateRenderInstance, {
 });
 struct RenderGroup : zeno::INode {
     virtual void apply() override {
+        auto RenderGroupID = get_input2<std::string>("RenderGroupID");
         auto is_static = get_input2<bool>("static");
         auto Matrix_string = get_input2<std::string>("Matrixes");
         std::vector<std::string> Matrixes = zeno::split_str(Matrix_string, {' ', '\n'});
 
         auto items = get_input<ListObject>("items")->get<JsonObject>();
-
-        UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
-        UUIDv4::UUID uuid = uuidGenerator.getUUID();
-        std::string s = uuid.str();
+        // Check group id not duplicated
+        {
+            if (RenderGroupID.empty()) {
+                auto info = zeno::format("RenderGroupID {} can not be empty!", RenderGroupID);
+                throw zeno::makeError(info);
+            }
+            for (const auto& item: items) {
+                if (item->json.contains("BasicRenderInstance")) {
+                    for (auto& [key, _] : item->json["BasicRenderInstance"].items()) {
+                        if (key == RenderGroupID) {
+                            auto info = zeno::format("RenderGroupID {} can not be duplicated!", RenderGroupID);
+                            throw zeno::makeError(info);
+                        }
+                    }
+                }
+                if (item->json.contains("BasicRenderInstances")) {
+                    for (auto& [key, _] : item->json["BasicRenderInstances"].items()) {
+                        if (key == RenderGroupID) {
+                            auto info = zeno::format("RenderGroupID {} can not be duplicated!", RenderGroupID);
+                            throw zeno::makeError(info);
+                        }
+                    }
+                }
+                if (item->json.contains("StaticRenderGroups")) {
+                    for (auto& [key, _] : item->json["StaticRenderGroups"].items()) {
+                        if (key == RenderGroupID) {
+                            auto info = zeno::format("RenderGroupID {} can not be duplicated!", RenderGroupID);
+                            throw zeno::makeError(info);
+                        }
+                    }
+                }
+                if (item->json.contains("DynamicRenderGroups")) {
+                    for (auto& [key, _] : item->json["DynamicRenderGroups"].items()) {
+                        if (key == RenderGroupID) {
+                            auto info = zeno::format("RenderGroupID {} can not be duplicated!", RenderGroupID);
+                            throw zeno::makeError(info);
+                        }
+                    }
+                }
+            }
+        }
 
         auto out_json = std::make_shared<JsonObject>();
         out_json->json["BasicRenderInstances"] = {};
         auto &bris = out_json->json["BasicRenderInstances"];
 
         for (const auto& item: items) {
-            for (auto& [key, value] : item->json["BasicRenderInstance"].items()) {
-                if (bris.contains(key)) {
-                    auto log = zeno::format("Error: Instance {} already exists", key);
-                    log_error(log);
-                    throw zeno::makeError(log);
-                }
-                bris[key] = value;
-                if (is_static) {
-                    auto & sRenderGroup0 = out_json->json["StaticRenderGroups"]["sRenderGroup0"];
-                    if (sRenderGroup0.contains("Objects") == false) {
-                        sRenderGroup0["Objects"] = Json::array();
+            if (item->json.contains("BasicRenderInstance")) {
+                for (auto& [key, value] : item->json["BasicRenderInstance"].items()) {
+                    if (bris.contains(key)) {
+                        auto log = zeno::format("Error: Instance {} already exists", key);
+                        log_error(log);
+                        throw zeno::makeError(log);
                     }
-                    sRenderGroup0["Objects"].push_back(key);
-                    if (sRenderGroup0.contains("Matrixes") == false) {
+                    bris[key] = value;
+                    auto category = is_static ? "StaticRenderGroups" : "DynamicRenderGroups";
+                    auto & RenderGroup0 = out_json->json[category][RenderGroupID];
+                    if (RenderGroup0.contains("Objects") == false) {
+                        RenderGroup0["Objects"] = Json::array();
+                    }
+                    RenderGroup0["Objects"].push_back(key);
+                    if (RenderGroup0.contains("Matrixes") == false) {
                         Json jsonArray = Json::array();
                         for (auto &matrix: Matrixes) {
                             jsonArray.push_back(matrix);
                         }
-                        sRenderGroup0["Matrixes"] = jsonArray;
-                    }
-                }
-                else {
-                    auto & dRenderGroup0 = out_json->json["DynamicRenderGroups"]["dRenderGroup0"];
-                    if (dRenderGroup0.contains("Objects") == false) {
-                        dRenderGroup0["Objects"] = Json::array();
-                    }
-                    dRenderGroup0["Objects"].push_back(key);
-                    if (dRenderGroup0.contains("Matrixes") == false) {
-                        Json jsonArray = Json::array();
-                        for (auto &matrix: Matrixes) {
-                            jsonArray.push_back(matrix);
-                        }
-                        dRenderGroup0["Matrixes"] = jsonArray;
+                        RenderGroup0["Matrixes"] = jsonArray;
                     }
                 }
             }
@@ -761,6 +788,7 @@ struct RenderGroup : zeno::INode {
 
 ZENDEFNODE( RenderGroup, {
     {
+        {"string", "RenderGroupID"},
         {"list", "items"},
         {"bool", "static", "1"},
         {"string", "Matrixes", "Identity"},
