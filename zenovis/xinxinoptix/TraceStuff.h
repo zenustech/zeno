@@ -57,6 +57,7 @@ struct ShadowPRD {
     uint8_t nonThinTransHit;
 
     VolumePRD vol;
+    float3 ShadowNormal;
 
     float rndf() {
         return rnd(seed);
@@ -102,7 +103,6 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
-    unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
     vec3         click_pos;

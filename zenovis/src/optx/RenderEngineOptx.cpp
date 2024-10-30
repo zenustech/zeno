@@ -1372,7 +1372,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
 
-            if (cachedMeshesMaterials.count("Default")) {
+            //if (cachedMeshesMaterials.count("Default")) 
+            {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMark::Mesh;
@@ -1385,7 +1386,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 meshMatLUT.insert({"Default", 0});
             }
 
-            if (cachedSphereMaterials.count("Default")) {
+            //if (cachedSphereMaterials.count("Default")) 
+            {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMark::Sphere;

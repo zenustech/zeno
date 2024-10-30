@@ -244,7 +244,7 @@ extern "C" __global__ void __raygen__rg()
 
         RadiancePRD prd;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
-        prd.adepth       = 0;
+
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
@@ -344,11 +344,11 @@ extern "C" __global__ void __raygen__rg()
                 prd.done = true;
             }
 
-            if( prd.done || params.simpleRender==true || prd.adepth>64){
+            if( prd.done || prd.depth>prd.max_depth){
                 break;
             }
 
-            if(prd.depth > prd.max_depth){
+            if(prd.depth > 1){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
@@ -441,8 +441,8 @@ extern "C" __global__ void __raygen__rg()
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
-    dither = (dither-0.5f)/255;
-    params.frame_buffer[ image_index ] = make_color( accum_color + dither);
+    dither = (dither-0.5f);
+    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;
@@ -481,6 +481,8 @@ extern "C" __global__ void __miss__radiance()
             0.0
 
         );
+
+        envPdf *= params.skyLightProbablity();
 
         float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
 

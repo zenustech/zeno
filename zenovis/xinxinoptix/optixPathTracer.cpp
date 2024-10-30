@@ -744,8 +744,10 @@ static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> m
                 ) );
 
     // // Build triangle GAS // // One per SBT record for this build input
+    auto numSbtRecords = g_mtlidlut.empty() ? 1 : g_mtlidlut.size();
+
     std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        g_mtlidlut.size(),
+        numSbtRecords,
         OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
     OptixBuildInput triangle_input                           = {};
@@ -755,7 +757,7 @@ static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> m
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->vertices.size() );
     triangle_input.triangleArray.vertexBuffers               = mesh->vertices.empty() ? nullptr : &dverts;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = mesh->vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.numSbtRecords               = numSbtRecords;
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
@@ -788,7 +790,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     float3 defaultInstClr = {1, 1, 1};
     float3 defaultInstTang = {1, 0, 0};
 
-    std::size_t num_meshes = (StaticMeshes != nullptr)? 1:0 + g_meshPieces.size();
+    std::size_t num_meshes = g_meshPieces.size() + (StaticMeshes != nullptr? 1:0);
     std::size_t num_instances = num_meshes;
 
     for (const auto &[instID, instData] : g_instLUT)
@@ -1620,8 +1622,6 @@ void UpdateInstMesh(const std::map<std::string, int> &mtlidlut)
 
 void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
-    buildMeshAccel(state, StaticMeshes);
-
     tbb::parallel_for(static_cast<size_t>(0), g_meshPieces.size(), [](size_t i){
         buildMeshAccel(state, g_meshPieces[i]);
     });
@@ -2555,6 +2555,8 @@ static void updateStaticDrawObjects() {
         tri_offset += dat.tris.size() / 3;
         ver_offset += dat.verts.size() / 3;
     }
+
+    buildMeshAccel(state, StaticMeshes);
 }
 
 static void updateDynamicDrawObjects() {

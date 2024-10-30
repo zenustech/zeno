@@ -230,7 +230,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
         UF = (UF - _SKY_PROB_) / lightPickProb;
 
         const Vector3f& SP = reinterpret_cast<const Vector3f&>(shadingP);
-        const Vector3f& SN = reinterpret_cast<const Vector3f&>(prd->geometryNormal);
+        const Vector3f& SN = reinterpret_cast<const Vector3f&>(shadowPRD.ShadowNormal);
 
         auto pick = lightTree->sample(UF, SP, SN);
         if (pick.prob <= 0.0f) { return; }
@@ -564,11 +564,11 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             float samplePDF;
             float3 illum = envSky(sample_dir, sunLightDir, make_float3(0., 0., 1.),
                                         40, // be careful
-                                        .45, 15., 1.030725f * 0.3f, params.elapsedTime, samplePDF);\
+                                        .45, 15., 1.030725f * 0.3f, params.elapsedTime, samplePDF);
             samplePDF *= _SKY_PROB_;
             if(samplePDF <= 0.0f) { return; }
 
-            shadeTask(sample_dir, samplePDF, illum, true);
+            shadeTask(sample_dir, samplePDF, M_PIf*illum, true);
         }
     }
 };
