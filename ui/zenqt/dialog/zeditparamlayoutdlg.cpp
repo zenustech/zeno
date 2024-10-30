@@ -680,7 +680,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
     }
     else
     {
-        if (type != VPARAM_GROUP)
+        if (type == VPARAM_ROOT || type == VPARAM_TAB)
         {
             QMessageBox::information(this, tr("Error "), tr("create control needs to place under the group"));
             return;
@@ -729,7 +729,13 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
                 break;
             }
         }
-        pItem->appendRow(pNewItem);
+        if (type == VPARAM_GROUP) {
+            pItem->appendRow(pNewItem);
+        } else if (type == VPARAM_PARAM) {
+            QModelIndex parentIdx = layerIdx.parent();
+            QStandardItem* parentItem = m_paramsLayoutM_inputs->itemFromIndex(parentIdx);
+            parentItem->insertRow(layerIdx.row() + 1, pNewItem);
+        }
         pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
     }
 }

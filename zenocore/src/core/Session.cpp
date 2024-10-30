@@ -162,8 +162,13 @@ static CustomUI descToCustomui(const Descriptor& desc) {
                 param.ctrlProps = items;
             }
         }
-        if (param.type != Param_Null && param.control == NullControl)
-            param.control = getDefaultControl(param.type);
+        if (param.type != Param_Null) {
+            if (param_desc.control == NullControl) {
+                param.control = getDefaultControl(param.type);
+            } else {
+                param.control = param_desc.control;
+            }
+        }
         param.tooltip = param_desc.doc;
         param.bSocketVisible = false;
         default.params.emplace_back(std::move(param));

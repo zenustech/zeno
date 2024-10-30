@@ -10,9 +10,10 @@ namespace zeno {
 struct ParamDescriptor {
   std::string name, defl, doc, comboxitems;
   size_t type;
+  ParamControl control;
 
   ZENO_API ParamDescriptor(size_t type,
-	  std::string const &name, std::string const &defl, std::string const &doc = "");
+	  std::string const &name, std::string const &defl, std::string const &doc = "", ParamControl const& controlType = NullControl);
 
   ZENO_API ParamDescriptor(std::string const& comboitemsDesc,
       std::string const& name,
