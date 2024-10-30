@@ -409,12 +409,12 @@ namespace DisneyBSDF{
         }
         if(diffPr > 0.0 && reflect)
         {
-
+            float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.ior);
             vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,
-                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
+                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt * ( 1 - F);
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf * diffPr ;
+            fPdf += tmpPdf * (1 - F) * diffPr ;
         }
         if(dielectricPr>0.0 && reflect)
         {
@@ -454,7 +454,7 @@ namespace DisneyBSDF{
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
-              tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+              tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:F;
               s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
@@ -462,8 +462,10 @@ namespace DisneyBSDF{
             } else {
               if(thin)
               {
-                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt;
+                vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt / ( abs(wo.z) + 0.0001 );
+                float F = BRDFBasics::DielectricFresnel(abs(wo.z), entering?mat.ior:1.0/mat.ior);
                 float tmpPdf = (reflectance==false)? 0.0f:1.0f;
+                tmpPdf *= (1.0f - F);
                 t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
@@ -479,7 +481,7 @@ namespace DisneyBSDF{
                                                                  vec3(F), tmpPdf);
 
                 vec3 t = brdf * glassWt;
-                tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+                tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:(1.0f - F);
                 t = t * (tmpPdf>0.0f? 1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
@@ -677,7 +679,7 @@ namespace DisneyBSDF{
           prd->hit_type = DIFFUSE_HIT;
           if(wo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
-            wi = BRDFBasics::UniformSampleHemisphere(r1, r2);
+            wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
             tbn.inverse_transform(wi);

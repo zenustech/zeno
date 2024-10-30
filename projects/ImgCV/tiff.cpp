@@ -13,6 +13,7 @@
 #include <zeno/utils/log.h>
 #include <tiffio.h>
 #include <stdio.h>
+#include "imgcv.h"
 
 namespace zeno {
 //std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
@@ -50,7 +51,7 @@ namespace zeno {
 //    // Process image data here...
 //    return img;
 //}
-std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
+std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path, int type = 0) {
     TIFF* tif = TIFFOpen(path.c_str(), "r");
     if (!tif) {
         throw std::runtime_error("tiff read fail");
@@ -86,29 +87,38 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
     if (samplesPerPixel == 4) {
         vec4f *ptr = (vec4f*)data_.data();
         auto &alpha = img->verts.add_attr<float>("alpha");
+        auto &uv = img->verts.add_attr<zeno::vec2f>("uv");
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
                 vec4f rgba = ptr[i * width + j];
                 img->verts[i * width + j] =  { rgba[0], rgba[1], rgba[2] };
                 alpha[i * width + j] =  rgba[3];
+                uv[i * width + j] = vec2f(j,i);
             }
         }
     }
     else if (samplesPerPixel == 3) {
         vec3f *ptr = (vec3f*)data_.data();
+        auto &uv = img->verts.add_attr<zeno::vec2f>("uv");
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
                 vec3f rgb = ptr[i * width + j];
                 img->verts[i * width + j] = rgb;
+                uv[i * width + j] = vec2f(j,i);
             }
         }
     }
     else if (samplesPerPixel == 1) {
-        float *ptr = (float *)data_.data();
+        auto &uv = img->verts.add_attr<zeno::vec2f>("uv");
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
-                float r = ptr[i * width + j];
+                float r;
+                if(type == 0)
+                  r = ((int *)data_.data())[i*width + j];
+                else
+                  r = ((float *)data_.data())[i*width + j];
                 img->verts[i * width + j] = {r, r, r};
+                uv[i * width + j] = vec2f(j,i);
             }
         }
     }
@@ -119,12 +129,14 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
 struct ReadTiffFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        set_output("image", readTiffFile(path));
+        auto type = get_input2<std::string>("dataType");
+        set_output("image", readTiffFile(path, type=="int"?0:1));
     }
 };
 ZENDEFNODE(ReadTiffFile, {
 {
     {"readpath", "path"},
+    {"enum int float", "dataType", "float"},
 },
 {
     {"PrimitiveObject", "image"},
@@ -132,6 +144,7 @@ ZENDEFNODE(ReadTiffFile, {
 {},
     {"primitive"},
 });
+
 }
 
 

@@ -18,7 +18,7 @@
 #include <random>
 #include <sstream>
 #include <ctime>
-
+#include <iostream>
 namespace zeno
 {
 namespace
@@ -687,7 +687,161 @@ ZENDEFNODE(PrimCopyAttr,
                    "erode",
                }});
 
+char* getPrimRawData(PrimitiveObject* prim, std::string type, std::string name, std::string scope)
+{
+  std::cout<<type<<" "<<scope<<" "<<name<<std::endl;
+  if(type == "int")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<int>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<int>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<int>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<int>(name).data());
+  }
+  if(type == "float")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<float>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<float>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<float>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<float>(name).data());
+  }
+  if(type == "vec2f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec2f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec2f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec2f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec2f>(name).data());
+  }
+  if(type == "vec2i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec2i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec2i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec2i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec2i>(name).data());
+  }
+  if(type == "vec3f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec3f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec3f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec3f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec3f>(name).data());
+  }
+  if(type == "vec3i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec3i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec3i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec3i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec3i>(name).data());
+  }
+  if(type == "vec4f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec4f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec4f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec4f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec4f>(name).data());
+  }
+  if(type == "vec4i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec4i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec4i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec4i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec4i>(name).data());
+  }
+}
 
+struct PrimTwoCopyAttr : INode {
+  void apply() override {
+    auto prim   = get_input<PrimitiveObject>("primTo");
+    auto primFrom = get_input<PrimitiveObject>("primFrom");
+    auto sourceName = get_input2<std::string>("NameFrom");
+    auto targetName = get_input2<std::string>("NameTo");
+    auto srcscope = get_input2<std::string>("ScopeFrom");
+    auto tarscope = get_input2<std::string>("ScopeTo");
+    auto type = get_input2<std::string>("type");
+
+    char* dataToPtr;
+    char* dataFromPtr;
+    size_t size;
+
+    dataToPtr = getPrimRawData(prim.get(), type, targetName, tarscope);
+    dataFromPtr = getPrimRawData(primFrom.get(), type, sourceName, srcscope);
+    if(srcscope=="verts")
+      size = primFrom->verts.size();
+    if(srcscope=="tris")
+      size = primFrom->tris.size();
+    if(srcscope=="lines")
+      size = primFrom->lines.size();
+    if(srcscope=="polys")
+      size = primFrom->polys.size();
+
+    if(type=="int")
+      size *= 4;
+    if(type=="float")
+      size *= 4;
+    if(type=="vec2f")
+      size *= 8;
+    if(type=="vec2i")
+      size *= 8;
+    if(type=="vec3f")
+      size *= 12;
+    if(type=="vec3i")
+      size *= 12;
+    if(type=="vec4f")
+      size *= 16;
+    if(type=="vec4i")
+      size *= 16;
+
+    memcpy(dataToPtr, dataFromPtr,size);
+
+    set_output("prim", std::move(prim));
+  }
+};
+ZENDEFNODE(PrimTwoCopyAttr,
+           { /* inputs: */ {
+                "primTo",
+                "primFrom",
+                {"string", "NameTo", "s"},
+                {"string", "NameFrom", "t"},
+                {"enum verts tris loops polys lines", "ScopeTo", "verts"},
+                {"enum verts tris loops polys lines", "ScopeFrom", "verts"},
+                {"enum int float vec2f vec2i vec3f vec3i vec4f vec4i", "type", "vec3f"},
+            }, /* outputs: */ {
+                "prim",
+            }, /* params: */ {
+            }, /* category: */ {
+                "erode",
+            }});
 ///////////////////////////////////////////////////////////////////////////////
 // 2022.07.22 BVH
 ///////////////////////////////////////////////////////////////////////////////
