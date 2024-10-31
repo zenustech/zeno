@@ -17,6 +17,7 @@ public:
 signals:
     void editFinished();
     void geometryUpdated();
+    void lineCountReallyChanged(int, int);
 
 protected:
     void focusInEvent(QFocusEvent* e) override;
@@ -27,6 +28,7 @@ private:
     void initUI();
 
     QPersistentModelIndex m_index;
+    int m_realLineCount;
 };
 
 

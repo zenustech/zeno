@@ -2,13 +2,13 @@
 
 
 ZTextEdit::ZTextEdit(QWidget* parent)
-    : QTextEdit(parent)
+    : QTextEdit(parent), m_realLineCount(0)
 {
     initUI();
 }
 
 ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
-    : QTextEdit(text, parent)
+    : QTextEdit(text, parent), m_realLineCount(0)
 {
     initUI();
 }
@@ -25,6 +25,14 @@ void ZTextEdit::initUI()
         QSize s(document()->size().toSize());
         updateGeometry();
         emit geometryUpdated();
+    });
+    connect(pTextDoc, &QTextDocument::contentsChanged, this, [this]() {
+        QFontMetrics metrics(font());
+        int currline = qCeil(static_cast<double>(document()->size().height()) / metrics.lineSpacing());
+        if (currline != m_realLineCount) {
+            emit lineCountReallyChanged(m_realLineCount, currline);
+            m_realLineCount = currline;
+        }
     });
 }
 

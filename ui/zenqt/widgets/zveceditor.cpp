@@ -2,6 +2,7 @@
 #include "style/zenostyle.h"
 #include "util/uihelper.h"
 #include "zlineedit.h"
+#include "ztextedit.h"
 #include "util/curveutil.h"
 #include <zeno/utils/log.h>
 #include "panel/zenoproppanel.h"
@@ -11,6 +12,7 @@
 #include "zenomainwindow.h"
 #include "widgets/ztimeline.h"
 #include "curvemap/zcurvemapeditor.h"
+#include "nodeeditor/gv/zitemfactory.h"
 
 
 ZVecEditor::ZVecEditor(const zeno::vecvar& vec, bool bFloat, QString styleCls, QWidget* parent)
@@ -37,8 +39,8 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     else if (event->type() == QEvent::FocusIn)
     {
         for (int i = 0; i < m_editors.size(); i++) {
-            if (m_editors[i] != watched) {
-                m_editors[i]->hide();
+            if (m_editors[i] == watched) {
+                showMultiLineEdit(i);
             }
         }
     }
@@ -46,14 +48,19 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     {
         if (m_hintlist && !m_hintlist->isVisible())
         {
-            if (ZLineEdit* edit = qobject_cast<ZLineEdit*>(watched))
-            {
-                if (!edit->hasFocus() && !edit->showingSlider())
-                {
-                    for (int i = 0; i < m_editors.size(); i++) {
-                        if (!m_editors[i]->isVisible())
-                            m_editors[i]->show();
+            if (ZTextEdit* edit = qobject_cast<ZTextEdit*>(watched)) {
+                edit->hide();
+                watched->deleteLater();
+                this->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
+
+                int lineeditIdx = edit->property("lineeditIdx").toInt();
+                if (lineeditIdx < m_editors.size()) {
+                    {
+                        BlockSignalScope scop(m_editors[lineeditIdx]);
+                        m_editors[lineeditIdx]->setText(edit->toPlainText());
                     }
+                    QFocusEvent* event = new QFocusEvent(QEvent::FocusOut);
+                    qApp->sendEvent(m_editors[lineeditIdx], event);
                 }
             }
         }
@@ -144,7 +151,10 @@ void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
         ZASSERT_EXIT(!text.isEmpty());
         m_editors[i]->setText(text);
 
-        pLayout->addWidget(m_editors[i]);
+        pLayout->addWidget(m_editors[i],0, Qt::AlignTop);
+        connect(m_editors[i], &ZLineEdit::textChanged, this, [=](const QString& newText) {
+            showMultiLineEdit(i);
+        });
         connect(m_editors[i], &ZLineEdit::editingFinished, this, [=]() {
             QString newText = m_editors[i]->text();
             if (!m_bFloat) {
@@ -154,21 +164,21 @@ void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
                     m_vec[i] = ival;
                 }
                 else {
-                    //¿ÉÒÔ³¢ÊÔÒ»ÏÂ×ªfloat
+                    //å¯ä»¥å°è¯•ä¸€ä¸‹è½¬float
                     float fval = newText.toFloat(&bConvert);
                     if (bConvert) {
                         ival = static_cast<int>(fval);
                         m_vec[i] = ival;
                     }
                     else {
-                        //¿ÉÄÜÊÇ±ğµÄ±í´ïÊ½ÁË£¬ÕâÊ±ºòÖ±½ÓÌ××Ö·û´®½øÈ¥¾ÍĞĞ
+                        //å¯èƒ½æ˜¯åˆ«çš„è¡¨è¾¾å¼äº†ï¼Œè¿™æ—¶å€™ç›´æ¥å¥—å­—ç¬¦ä¸²è¿›å»å°±è¡Œ
                         m_vec[i] = newText.toStdString();
                     }
                 }
             }
             else {
                 bool isCurves = std::holds_alternative<zeno::CurveData>(m_vec[i]);
-                if (isCurves) { //kÖ¡Ïà¹Ø
+                if (isCurves) { //kå¸§ç›¸å…³
                     std::string xKey = curve_util::getCurveKey(i).toStdString();
                     zeno::CurveData curvedata = std::get<zeno::CurveData>(m_vec[i]);
                     bool bConvert = false;
@@ -204,7 +214,7 @@ void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
                         m_vec[i] = fval;
                     }
                     else {
-                        //¿ÉÒÔ³¢ÊÔÒ»ÏÂ×ªint
+                        //å¯ä»¥å°è¯•ä¸€ä¸‹è½¬int
                         int ival = newText.toInt(&bConvert);
                         if (bConvert) {
                             fval = ival;
@@ -239,7 +249,7 @@ void ZVecEditor::setVec(const zeno::vecvar& editVec, bool bFloat)
 
     if (bFloat != m_bFloat || editVec.size() != size)
     {
-        //ÀàĞÍ´óĞ¡·¢ÉúÁË±ä»¯£¬Ó¦¸ÃÖ»ÓĞ×ÓÍ¼²ÎÊı²ÅÄÜ·¢Éú
+        //ç±»å‹å¤§å°å‘ç”Ÿäº†å˜åŒ–ï¼Œåº”è¯¥åªæœ‰å­å›¾å‚æ•°æ‰èƒ½å‘ç”Ÿ
         Q_ASSERT(m_nodeIdx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode);
         initUI(editVec);
     }
@@ -285,6 +295,39 @@ void ZVecEditor::showNoFocusLineEdits(QWidget* lineEdit)
 void ZVecEditor::setText(const QString& text, ZLineEdit* lineEdit)
 {
     lineEdit->setText(text);
+}
+
+void ZVecEditor::showMultiLineEdit(int i)
+{
+    QFontMetrics lineditFontMetric(m_editors[i]->font());
+    lineditFontMetric.horizontalAdvance(m_editors[i]->text());
+
+    if (lineditFontMetric.horizontalAdvance(m_editors[i]->text()) + 4 * lineditFontMetric.averageCharWidth() >= m_editors[i]->contentsRect().width()) {
+        ZTextEdit* textEdit = new ZTextEdit(this);
+        textEdit->setWindowFlags(textEdit->windowFlags() | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+        textEdit->setFixedWidth(m_editors[i]->width());
+        textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        textEdit->setText(m_editors[i]->text());
+        textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        textEdit->installEventFilter(this);
+        textEdit->moveCursor(QTextCursor::End);
+        textEdit->setProperty("lineeditIdx", i);
+
+        connect(textEdit, &ZTextEdit::lineCountReallyChanged, this, [this, textEdit]() {
+            this->setFixedHeight(textEdit->document()->size().height());
+        textEdit->setFixedHeight(textEdit->document()->size().height());
+            });
+
+        //QPoint posRelativeToParent = m_editors[i]->mapTo(parent, { 0,0 });
+        textEdit->move({ m_editors[i]->x(), m_editors[i]->y() });
+        textEdit->setFocus();
+        textEdit->show();
+
+        QTimer::singleShot(0, [this, textEdit]() {
+            this->setFixedHeight(textEdit->document()->size().height());
+            textEdit->setFixedHeight(textEdit->document()->size().height());
+        });
+    }
 }
 
 int ZVecEditor::getCurrentEditor() 

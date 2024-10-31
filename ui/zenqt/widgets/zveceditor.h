@@ -41,6 +41,7 @@ protected:
 private:
     void initUI(const zeno::vecvar& vec);
     void setText(const QString& text, ZLineEdit*);
+    void showMultiLineEdit(int i);
 
     zeno::vecvar m_vec;
     QVector<ZLineEdit*> m_editors;
