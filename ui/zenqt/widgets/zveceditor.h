@@ -7,6 +7,7 @@
 #include <zeno/core/common.h>
 
 class ZLineEdit;
+class ZTextEdit;
 
 class ZVecEditor : public QWidget
 {
@@ -52,6 +53,7 @@ private:
 
     ZenoHintListWidget* m_hintlist;
     ZenoFuncDescriptionLabel* m_descLabel;
+    ZTextEdit* m_textEdit;
 };
 
 
