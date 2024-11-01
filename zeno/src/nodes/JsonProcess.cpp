@@ -12,7 +12,7 @@
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
 
-using Json = nlohmann::json;
+using Json = nlohmann::ordered_json;
 
 namespace zeno {
 struct JsonObject : IObjectClone<JsonObject> {
@@ -678,11 +678,12 @@ struct CreateRenderInstance : zeno::INode {
         }
 
         auto out_json = std::make_shared<JsonObject>();
-        out_json->json["BasicRenderInstance"][instID] = {
+        out_json->json["BasicRenderInstances"][instID] = {
             {"Geom", Geom},
             {"Matrix", Matrix},
             {"Material", Material},
         };
+        out_json->json["Root"] = instID;
         set_output("json", out_json);
     }
 };
@@ -787,6 +788,71 @@ struct RenderGroup : zeno::INode {
 };
 
 ZENDEFNODE( RenderGroup, {
+    {
+        {"string", "RenderGroupID"},
+        {"list", "items"},
+        {"bool", "static", "1"},
+        {"string", "Matrixes", "Identity"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+
+struct RenderGroup2 : zeno::INode {
+    virtual void apply() override {
+        auto RenderGroupID = get_input2<std::string>("RenderGroupID");
+        auto is_static = get_input2<bool>("static");
+        auto Matrix_string = get_input2<std::string>("Matrixes");
+        std::vector<std::string> Matrixes = zeno::split_str(Matrix_string, {' ', '\n'});
+        auto items = get_input<ListObject>("items")->get<JsonObject>();
+
+        Json node = {};
+        node["Objects"] = Json::array();
+        for (const auto& item: items) {
+            node["Objects"].push_back(item->json["Root"]);
+        }
+        node["Matrixes"] = Json::array();
+        for (auto &matrix: Matrixes) {
+            node["Matrixes"].push_back(matrix);
+        }
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["Root"] = RenderGroupID;
+
+        for (const auto& item: items) {
+            for (auto& [key, value] : item->json["BasicRenderInstances"].items()) {
+                out_json->json["BasicRenderInstances"][key] = value;
+            }
+            for (auto& [key, value] : item->json["DynamicRenderGroups"].items()) {
+                out_json->json["DynamicRenderGroups"][key] = value;
+            }
+            for (auto& [key, value] : item->json["StaticRenderGroups"].items()) {
+                if (is_static) {
+                    out_json->json["StaticRenderGroups"][key] = value;
+                }
+                else {
+                    out_json->json["DynamicRenderGroups"][key] = value;
+                }
+            }
+        }
+
+        if (is_static) {
+            out_json->json["StaticRenderGroups"][RenderGroupID] = node;
+        }
+        else {
+            out_json->json["DynamicRenderGroups"][RenderGroupID] = node;
+        }
+
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( RenderGroup2, {
     {
         {"string", "RenderGroupID"},
         {"list", "items"},
