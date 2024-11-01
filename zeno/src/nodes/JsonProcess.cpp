@@ -841,7 +841,7 @@ struct RenderGroup2 : zeno::INode {
             }
         }
 
-        if (is_static) {
+        if (is_static && !out_json->json.contains("DynamicRenderGroups")) {
             out_json->json["StaticRenderGroups"][RenderGroupID] = node;
         }
         else {
