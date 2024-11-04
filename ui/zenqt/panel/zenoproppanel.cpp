@@ -575,11 +575,31 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         const QModelIndex& idx = paramsModel->paramIdx(perIdx.data(ROLE_PARAM_NAME).toString(), true);
         UiHelper::qIndexSetData(idx, toggled, ROLE_PARAM_SOCKET_VISIBLE);
     });
-    pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
 
-    pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    ZIconLabel* poriginIcon = nullptr, *pnewIcon = pIcon;
+    ZTextLabel* poriginLabel = nullptr, *pnewLabel = pLabel;
+    QWidget* poriginControl = nullptr, *pnewControl = pControl;
+    if (row < pGroupLayout->rowCount()) {//考虑pGroupLayout中插入行的情况
+        while (pGroupLayout->itemAtPosition(row, 0) && pGroupLayout->itemAtPosition(row, 1) && pControl && pGroupLayout->itemAtPosition(row, 2)) {
+            poriginIcon = qobject_cast<ZIconLabel*>(pGroupLayout->itemAtPosition(row, 0)->widget());
+            pGroupLayout->replaceWidget(poriginIcon, pnewIcon);
+            pnewIcon = poriginIcon;
+
+            poriginLabel = qobject_cast<ZTextLabel*>(pGroupLayout->itemAtPosition(row, 1)->widget());
+            pGroupLayout->replaceWidget(poriginLabel, pnewLabel);
+            pnewLabel = poriginLabel;
+
+            poriginControl = pGroupLayout->itemAtPosition(row, 2)->widget();
+            pGroupLayout->replaceWidget(poriginControl, pnewControl);
+            pnewControl = poriginControl;
+            row++;
+        }
+    }
+    pGroupLayout->addWidget(pnewIcon, row, 0, Qt::AlignCenter);
+
+    pGroupLayout->addWidget(pnewLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
     if (pControl)
-        pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
+        pGroupLayout->addWidget(pnewControl, row, 2, Qt::AlignVCenter);
 
     if (ZTextEdit* pMultilineStr = qobject_cast<ZTextEdit*>(pControl))
     {

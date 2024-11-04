@@ -60,7 +60,7 @@ struct MakeMultilineString : MakeString {
 ZENDEFNODE(MakeMultilineString, {
     {},
     {{gParamType_String, "value"}},
-    {{gParamType_String, "value", ""}},
+    {{gParamType_String, "value", "", "", zeno::Multiline}},
     {"string"},
 });
 

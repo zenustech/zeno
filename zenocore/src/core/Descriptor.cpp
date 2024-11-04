@@ -35,8 +35,8 @@ SocketDescriptor::~SocketDescriptor() = default;
 
 
 ParamDescriptor::ParamDescriptor(size_t type,
-	  std::string const &name, std::string const &defl, std::string const &doc)
-      : type(type), name(name), defl(defl), doc(doc) {}
+	  std::string const &name, std::string const &defl, std::string const &doc, ParamControl const& controlType)
+      : type(type), name(name), defl(defl), doc(doc), control(controlType) {}
 ParamDescriptor::~ParamDescriptor() = default;
 
 ParamDescriptor::ParamDescriptor(std::string const& comboitemsDesc, std::string const& name, std::string const& defl)
