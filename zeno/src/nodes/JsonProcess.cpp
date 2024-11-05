@@ -7,7 +7,6 @@
 #include "zeno/utils/fileio.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <tinygltf/json.hpp>
@@ -687,6 +686,129 @@ ZENDEFNODE(JsonGetData, {
     {},
     {
         "json"
+    },
+});
+
+struct CreateRenderInstance : zeno::INode {
+    virtual void apply() override {
+        auto instID = get_input2<std::string>("instID");
+        auto Geom = get_input2<std::string>("Geom");
+        auto Matrix = get_input2<std::string>("Matrix");
+        auto Material = get_input2<std::string>("Material");
+        if (instID.empty()) {
+            auto info = zeno::format("instID {} can not be empty!", instID);
+            throw zeno::makeError(info);
+        }
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["BasicRenderInstances"][instID] = {
+            {"Geom", Geom},
+            {"Matrix", Matrix},
+            {"Material", Material},
+        };
+        out_json->json["Root"] = instID;
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( CreateRenderInstance, {
+    {
+        {"string", "instID", ""},
+        {"string", "Geom", ""},
+        {"string", "Matrix", "Identity"},
+        {"string", "Material", "Default"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+
+struct RenderGroup : zeno::INode {
+    virtual void apply() override {
+        auto RenderGroupID = get_input2<std::string>("RenderGroupID");
+        auto is_static = get_input2<bool>("static");
+        auto Matrix_string = get_input2<std::string>("Matrixes");
+        std::vector<std::string> Matrixes = zeno::split_str(Matrix_string, {' ', '\n'});
+        auto items = get_input<ListObject>("items")->get<JsonObject>();
+
+        std::set<std::string> rinst;
+        std::map<std::string, int> id_checker;
+
+        Json node = {};
+        node["Objects"] = Json::array();
+        for (const auto& item: items) {
+            node["Objects"].push_back(item->json["Root"]);
+        }
+        node["Matrixes"] = Json::array();
+        for (auto &matrix: Matrixes) {
+            node["Matrixes"].push_back(matrix);
+        }
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["Root"] = RenderGroupID;
+
+        for (const auto& item: items) {
+            for (auto& [key, value] : item->json["BasicRenderInstances"].items()) {
+                out_json->json["BasicRenderInstances"][key] = value;
+                rinst.insert(key);
+            }
+            for (auto& [key, value] : item->json["DynamicRenderGroups"].items()) {
+                out_json->json["DynamicRenderGroups"][key] = value;
+                id_checker[key] += 1;
+            }
+            for (auto& [key, value] : item->json["StaticRenderGroups"].items()) {
+                if (is_static) {
+                    out_json->json["StaticRenderGroups"][key] = value;
+                }
+                else {
+                    out_json->json["DynamicRenderGroups"][key] = value;
+                }
+                id_checker[key] += 1;
+            }
+        }
+
+        if (is_static && !out_json->json.contains("DynamicRenderGroups")) {
+            out_json->json["StaticRenderGroups"][RenderGroupID] = node;
+        }
+        else {
+            out_json->json["DynamicRenderGroups"][RenderGroupID] = node;
+        }
+        id_checker[RenderGroupID] += 1;
+
+        for (auto const &[GroupID, count]: id_checker) {
+            if (count > 1) {
+                auto info = zeno::format("Group ID {} is not unique!", GroupID);
+                zeno::log_error(info);
+                throw zeno::makeError(info);
+            }
+            if (rinst.count(GroupID)) {
+                auto info = zeno::format("Group ID {} is not same with RenderInstance ID!", GroupID);
+                zeno::log_error(info);
+                throw zeno::makeError(info);
+            }
+        }
+
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( RenderGroup, {
+    {
+        {"string", "RenderGroupID"},
+        {"list", "items"},
+        {"bool", "static", "1"},
+        {"string", "Matrixes", "Identity"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
     },
 });
 
