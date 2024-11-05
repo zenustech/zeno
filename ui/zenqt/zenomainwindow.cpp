@@ -2279,6 +2279,21 @@ void ZenoMainWindow::statusbarShowMessage(const std::string& text, int timeout) 
     m_ui->statusbar->showMessage(text.c_str(), timeout);
 }
 
+bool ZenoMainWindow::propPanelIsFloating(ZenoPropPanel* panel)
+{
+    for (ads::CDockWidget* dock : m_pDockManager->dockWidgetsMap()) {
+        if (dock->isVisible()) {
+            QWidget* wid = dock->widget();
+            if (DockContent_Parameter* content = qobject_cast<DockContent_Parameter*>(wid)) {
+                if (qobject_cast<ZenoPropPanel*>(content->widget()) == panel) {
+                    return dock->isFloating() || dock->isInFloatingContainer();
+                }
+            }
+        }
+    }
+    return false;
+}
+
 static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {
     //TODO: deprecated.
 #if 0
