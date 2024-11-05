@@ -13,7 +13,7 @@
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
 
-using Json = nlohmann::json;
+using Json = nlohmann::ordered_json;
 
 namespace zeno {
 struct JsonObject : IObjectClone<JsonObject> {
@@ -64,37 +64,37 @@ ZENDEFNODE(WriteJson, {
 });
 static Json iobject_to_json(std::shared_ptr<IObject> iObject) {
     Json json;
-    if (objectIsLiterial<int>(iObject)) {
+    if (objectIsRawLiterial<int>(iObject)) {
         json = objectToLiterial<int>(iObject);
     }
-    else if (objectIsLiterial<vec2i>(iObject)) {
+    else if (objectIsRawLiterial<vec2i>(iObject)) {
         auto value = objectToLiterial<vec2i>(iObject);
         json = { value[0], value[1]};
     }
-    else if (objectIsLiterial<vec3i>(iObject)) {
+    else if (objectIsRawLiterial<vec3i>(iObject)) {
         auto value = objectToLiterial<vec3i>(iObject);
         json = { value[0], value[1], value[2]};
     }
-    else if (objectIsLiterial<vec4i>(iObject)) {
+    else if (objectIsRawLiterial<vec4i>(iObject)) {
         auto value = objectToLiterial<vec4i>(iObject);
         json = { value[0], value[1], value[2], value[3]};
     }
-    else if (objectIsLiterial<float>(iObject)) {
+    else if (objectIsRawLiterial<float>(iObject)) {
         json = objectToLiterial<float>(iObject);
     }
-    else if (objectIsLiterial<vec2f>(iObject)) {
+    else if (objectIsRawLiterial<vec2f>(iObject)) {
         auto value = objectToLiterial<vec2f>(iObject);
         json = { value[0], value[1]};
     }
-    else if (objectIsLiterial<vec3f>(iObject)) {
+    else if (objectIsRawLiterial<vec3f>(iObject)) {
         auto value = objectToLiterial<vec3f>(iObject);
         json = { value[0], value[1], value[2]};
     }
-    else if (objectIsLiterial<vec4f>(iObject)) {
+    else if (objectIsRawLiterial<vec4f>(iObject)) {
         auto value = objectToLiterial<vec4f>(iObject);
         json = { value[0], value[1], value[2], value[3]};
     }
-    else if (objectIsLiterial<std::string>(iObject)) {
+    else if (objectIsRawLiterial<std::string>(iObject)) {
         json = objectToLiterial<std::string>(iObject);
     }
     else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
@@ -413,6 +413,29 @@ ZENDEFNODE(JsonGetString, {
     {},
     {
         "deprecated"
+    },
+});
+
+struct JsonGetKeys : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto list = std::make_shared<ListObject>();
+        for (auto& [key, _] : json->json.items()) {
+            list->arr.emplace_back(std::make_shared<zeno::StringObject>(key));
+        }
+        set_output2("keys", list);
+    }
+};
+ZENDEFNODE(JsonGetKeys, {
+    {
+        {"json"},
+    },
+    {
+        "keys",
+    },
+    {},
+    {
+        "json"
     },
 });
 struct JsonGetTypeName : zeno::INode {
