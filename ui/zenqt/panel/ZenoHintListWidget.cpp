@@ -1,4 +1,5 @@
 #include "ZenoHintListWidget.h"
+#include "style/zenostyle.h"
 
 ZenoHintListWidget::ZenoHintListWidget()
     : QWidget(nullptr)
@@ -33,6 +34,18 @@ ZenoHintListWidget::ZenoHintListWidget()
 
 void ZenoHintListWidget::setData(QStringList items) {
     m_model->setStringList(items);
+
+    int longestStrIdx = -1;
+    for (int i = 0; i < items.size(); ++i) {
+        if (items.at(i) > longestStrIdx) {
+            longestStrIdx = i;
+        }
+    }
+    if (longestStrIdx != -1) {
+        QFontMetrics lineditFontMetric(m_listView->font());
+        setGeometry(x(), y(), ZenoStyle::dpiScaled(lineditFontMetric.horizontalAdvance(items.at(longestStrIdx)) + 30), height());
+        m_button->move(width() - SideLength, height() - SideLength);
+    }
 };
 
 void ZenoHintListWidget::onSwitchItemByKey(bool bDown) {
