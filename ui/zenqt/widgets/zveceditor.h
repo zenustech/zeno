@@ -38,6 +38,7 @@ public slots:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event);
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     void initUI(const zeno::vecvar& vec);

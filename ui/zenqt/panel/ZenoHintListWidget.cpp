@@ -39,15 +39,16 @@ ZenoHintListWidget::ZenoHintListWidget(ZenoPropPanel* panel)
 void ZenoHintListWidget::setData(QStringList items) {
     m_model->setStringList(items);
 
-    int longestStrIdx = -1;
+    int maxSize = 0, maxItemIdx = -1;
     for (int i = 0; i < items.size(); ++i) {
-        if (items.at(i) > longestStrIdx) {
-            longestStrIdx = i;
+        if (items.at(i).size() > maxSize) {
+            maxSize = items.at(i).size();
+            maxItemIdx = i;
         }
     }
-    if (longestStrIdx != -1) {
+    if (maxItemIdx != -1) {
         QFontMetrics lineditFontMetric(m_listView->font());
-        setGeometry(x(), y(), ZenoStyle::dpiScaled(lineditFontMetric.horizontalAdvance(items.at(longestStrIdx)) + 30), height());
+        setGeometry(x(), y(), ZenoStyle::dpiScaled(lineditFontMetric.horizontalAdvance(items.at(maxItemIdx)) + 50), height());
         m_button->move(width() - SideLength, height() - SideLength);
     }
 };
@@ -101,8 +102,21 @@ QPoint ZenoHintListWidget::calculateNewPos(QWidget* widgetToFollow, const QStrin
     QFontMetrics metrics(widgetToFollow->font());
     if (QWidget* m_hintlistParent = qobject_cast<QWidget*>(this->parent())) {
         QPoint newpos = widgetToFollow->mapTo(m_hintlistParent, QPoint(0, 0));
-        newpos.setX(newpos.x() + metrics.width(txt));
-        newpos.setY(newpos.y() + widgetToFollow->height());
+        int parentwidth = m_hintlistParent->width();
+        int txtwidth = metrics.width(txt);
+        if (parentwidth < newpos.x() + txtwidth + this->width()) {
+            newpos.setX(parentwidth - this->width());
+        }
+        else {
+            newpos.setX(newpos.x() + txtwidth);
+        }
+        int parentheight = m_hintlistParent->height();
+        if (parentheight < newpos.y() + widgetToFollow->height() + this->height()) {
+            newpos.setY(newpos.y() - this->height());
+        }
+        else {
+            newpos.setY(newpos.y() + widgetToFollow->height());
+        }
         return newpos;
     }
     return {0,0};
@@ -284,8 +298,21 @@ QPoint ZenoFuncDescriptionLabel::calculateNewPos(QWidget* widgetToFollow, const 
     QFontMetrics metrics(widgetToFollow->font());
     if (QWidget* m_hintlistParent = qobject_cast<QWidget*>(this->parent())) {
         QPoint newpos = widgetToFollow->mapTo(m_hintlistParent, QPoint(0, 0));
-        newpos.setX(newpos.x() + metrics.width(txt));
-        newpos.setY(newpos.y() + widgetToFollow->height());
+        int parentwidth = m_hintlistParent->width();
+        int txtwidth = metrics.width(txt);
+        if (parentwidth < newpos.x() + txtwidth + this->width()) {
+            newpos.setX(parentwidth - this->width());
+        }
+        else {
+            newpos.setX(newpos.x() + txtwidth);
+        }
+        int parentheight = m_hintlistParent->height();
+        if (parentheight < newpos.y() + widgetToFollow->height() + this->height()) {
+            newpos.setY(newpos.y() - this->height());
+        }
+        else {
+            newpos.setY(newpos.y() + widgetToFollow->height());
+        }
         return newpos;
     }
     return { 0,0 };

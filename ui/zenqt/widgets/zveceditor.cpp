@@ -104,6 +104,16 @@ bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
     return QWidget::eventFilter(watched, event);
 }
 
+void ZVecEditor::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_textEdit && m_textEdit->isVisible()) {
+        int lineeditIdx = m_textEdit->property("lineeditIdx").toInt();
+        m_textEdit->move(m_editors[lineeditIdx]->x(), m_editors[lineeditIdx]->y());
+        m_textEdit->setFixedWidth(m_editors[lineeditIdx]->width());
+    }
+}
+
 void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
