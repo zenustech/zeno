@@ -60,8 +60,8 @@ ZenoPropPanel::ZenoPropPanel(QWidget* parent)
     , m_outputWidget(nullptr)
     , m_dictListLinksTable(nullptr)
     , m_dopNetworkPanel(nullptr)
-    , m_hintlist(new ZenoHintListWidget)
-    , m_descLabel(new ZenoFuncDescriptionLabel)
+    , m_hintlist(new ZenoHintListWidget(this))
+    , m_descLabel(new ZenoFuncDescriptionLabel(this))
 {
     QVBoxLayout* pVLayout = new QVBoxLayout;
     pVLayout->setContentsMargins(QMargins(0, 0, 0, 0));
@@ -479,10 +479,10 @@ QWidget* ZenoPropPanel::resetSubnetLayout()
         QStandardItem* pTabItem = pInputs->child(i);
         syncAddTab(m_tabWidget, pTabItem, i);
     }
-    m_hintlist->setParent(m_tabWidget);
+
+    m_descLabel->updateParent();
+    m_hintlist->updateParent();
     m_hintlist->resetSize();
-    m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_tabWidget->mapToGlobal(QPoint(0, 0)); });
-    m_descLabel->setParent(m_tabWidget);
 
     splitter->addWidget(m_tabWidget);
     update();
@@ -749,10 +749,9 @@ QWidget* ZenoPropPanel::resetNormalNodeLayout()
         normalNodeAddInputWidget(scrollArea, pLayout, pGroupItem, row);
     }
 
-    m_hintlist->setParent(m_normalNodeInputWidget);
+    m_descLabel->updateParent();
+    m_hintlist->updateParent();
     m_hintlist->resetSize();
-    m_hintlist->setCalcPropPanelPosFunc([this]() -> QPoint {return m_normalNodeInputWidget->mapToGlobal(QPoint(0, 0)); });
-    m_descLabel->setParent(m_normalNodeInputWidget);
 
     splitter->addWidget(m_normalNodeInputWidget);
     if (QWidget* outputsWidget = resetOutputs()) {

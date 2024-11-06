@@ -45,9 +45,23 @@ void ZTextEdit::initUI()
             QString nodePath = m_index.data(ROLE_OBJPATH).toString();
             zeno::Formula fmla(txt.toStdString(), nodePath.toStdString());
 
-            QPoint newpos = this->mapTo(qobject_cast<QWidget*>(m_hintlist->parent()), QPoint(0, 0));
-            newpos.setX(newpos.x() + cursorRect().x());
-            newpos.setY(newpos.y() + height());
+            const QTextCursor& cursor = textCursor();
+            const QTextBlock& block = cursor.block();
+            QString lineText;
+            if (QTextLayout* layout = block.layout()) {
+                int cursorPosInBlock = cursor.position() - block.position();
+                int visualLineStart = 0;
+                for (int i = 0; i < layout->lineCount(); ++i) {
+                    QTextLine line = layout->lineAt(i);
+                    auto x = line.textStart();
+                    auto xx = line.textStart() + line.textLength();
+                    if (cursorPosInBlock >= line.textStart() && cursorPosInBlock <= line.textStart() + line.textLength()) {
+                        visualLineStart = line.textStart();
+                        break;
+                    }
+                }
+                lineText = block.text().mid(visualLineStart, cursorPosInBlock - visualLineStart);
+            }
 
             //函数说明
             int ret = fmla.parse();
@@ -75,17 +89,18 @@ void ZTextEdit::initUI()
                     }
                     else {
                         m_hintlist->setData(items);
-                        m_hintlist->move(newpos);
                         if (!m_hintlist->isVisible())
                         {
                             connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZTextEdit::sltHintSelected, Qt::UniqueConnection);
                             connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZTextEdit::sltSetFocus, Qt::UniqueConnection);
                             connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZTextEdit::sltSetFocus, Qt::UniqueConnection);
+                            m_hintlist->updateParent();
                             m_hintlist->show();
                             if (m_descLabel->isVisible()) {
                                 m_descLabel->hide();
                             }
                         }
+                        m_hintlist->move(m_hintlist->calculateNewPos(this, lineText));
                         m_hintlist->resetCurrentItem();
                     }
                 }
@@ -98,10 +113,11 @@ void ZTextEdit::initUI()
                     else {
                         int pos = recommandInfo.func_args.argidx;
                         m_descLabel->setDesc(recommandInfo.func_args.func, recommandInfo.func_args.argidx - 1);
-                        m_descLabel->move(newpos);
                         if (!m_descLabel->isVisible()) {
+                            m_descLabel->updateParent();
                             m_descLabel->show();
                         }
+                        m_descLabel->move(m_descLabel->calculateNewPos(this, lineText));
                         m_descLabel->setCurrentFuncName(recommandInfo.func_args.func.name);
                     }
                 }

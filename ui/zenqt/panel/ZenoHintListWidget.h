@@ -28,10 +28,12 @@ private:
     QPainterPath path;
 };
 
+class ZenoPropPanel;
+
 class ZenoHintListWidget : public QWidget {
     Q_OBJECT
 public:
-    ZenoHintListWidget();
+    ZenoHintListWidget(ZenoPropPanel* panel);
     void setData(QStringList items);
     void onSwitchItemByKey(bool bDown);
 
@@ -39,12 +41,11 @@ public:
     void clearCurrentItem();
 
     void resetSize();
-    void setCurrentZlineEdit(ZLineEdit* linedit);
 
     QString getCurrentText();
 
-    void setCalcPropPanelPosFunc(std::function<QPoint()> func);
-    QPoint getPropPanelPos();
+    QPoint calculateNewPos(QWidget* widgetToFollow, const QString& txt);//计算新pos
+    void updateParent();//所在的propanel不为浮动状态，parent为mainwindow，否则为propanel
 
 public slots:
     void sltItemSelect(const QModelIndex& selectedIdx);
@@ -68,21 +69,20 @@ private:
     QStringListModel* m_model;
     QWidget* m_button;
 
-    ZLineEdit* m_currentLineEdit;
-
-    std::function<QPoint()> m_getPropPanelPosfunc;
+    ZenoPropPanel* m_parentPropanel;
 };
 
 class ZenoFuncDescriptionLabel :public QWidget
 {
     Q_OBJECT
 public:
-    ZenoFuncDescriptionLabel();
+    ZenoFuncDescriptionLabel(ZenoPropPanel* panel);
     void setDesc(zeno::FUNC_INFO func, int pos);
     void setCurrentFuncName(std::string funcName);
     std::string getCurrentFuncName();
-    void setCalcPropPanelPosFunc(std::function<QPoint()> func);
-    QPoint getPropPanelPos();
+
+    QPoint calculateNewPos(QWidget* widgetToFollow, const QString& txt);//计算新pos
+    void updateParent();//所在的propanel不为浮动状态，parent为mainwindow，否则为propanel
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -92,5 +92,5 @@ private:
     QLabel* m_label;
     std::string m_currentFunc;
 
-    std::function<QPoint()> m_getPropPanelPosfunc;
+    ZenoPropPanel* m_parentPropanel;
 };

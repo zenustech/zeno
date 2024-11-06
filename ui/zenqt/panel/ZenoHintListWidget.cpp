@@ -1,10 +1,15 @@
 #include "ZenoHintListWidget.h"
+#include "style/zenostyle.h"
+#include "panel/zenoproppanel.h"
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "zassert.h"
 
-ZenoHintListWidget::ZenoHintListWidget()
-    : QWidget(nullptr)
+ZenoHintListWidget::ZenoHintListWidget(ZenoPropPanel* panel)
+    : QWidget(panel)
     , m_listView(new QListView(this))
     , m_model(new QStringListModel(this))
-    , m_currentLineEdit(nullptr)
+    , m_parentPropanel(panel)
 {
     //setMinimumSize({ minWidth,minHeight });
     setWindowFlags(windowFlags() | Qt::FramelessWindowHint| Qt::WindowStaysOnTopHint);
@@ -33,6 +38,19 @@ ZenoHintListWidget::ZenoHintListWidget()
 
 void ZenoHintListWidget::setData(QStringList items) {
     m_model->setStringList(items);
+
+    int maxSize = 0, maxItemIdx = -1;
+    for (int i = 0; i < items.size(); ++i) {
+        if (items.at(i).size() > maxSize) {
+            maxSize = items.at(i).size();
+            maxItemIdx = i;
+        }
+    }
+    if (maxItemIdx != -1) {
+        QFontMetrics lineditFontMetric(m_listView->font());
+        setGeometry(x(), y(), ZenoStyle::dpiScaled(lineditFontMetric.horizontalAdvance(items.at(maxItemIdx)) + 50), height());
+        m_button->move(width() - SideLength, height() - SideLength);
+    }
 };
 
 void ZenoHintListWidget::onSwitchItemByKey(bool bDown) {
@@ -70,11 +88,6 @@ void ZenoHintListWidget::resetSize()
     m_button->move(width() - SideLength, height() - SideLength);
 }
 
-void ZenoHintListWidget::setCurrentZlineEdit(ZLineEdit* linedit)
-{
-    m_currentLineEdit = linedit;
-}
-
 QString ZenoHintListWidget::getCurrentText()
 {
     QItemSelectionModel* selModel = m_listView->selectionModel();
@@ -84,14 +97,41 @@ QString ZenoHintListWidget::getCurrentText()
     return "";
 }
 
-void ZenoHintListWidget::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+QPoint ZenoHintListWidget::calculateNewPos(QWidget* widgetToFollow, const QString& txt)
 {
-    m_getPropPanelPosfunc = func;
+    QFontMetrics metrics(widgetToFollow->font());
+    if (QWidget* m_hintlistParent = qobject_cast<QWidget*>(this->parent())) {
+        QPoint newpos = widgetToFollow->mapTo(m_hintlistParent, QPoint(0, 0));
+        int parentwidth = m_hintlistParent->width();
+        int txtwidth = metrics.width(txt);
+        if (parentwidth < newpos.x() + txtwidth + this->width()) {
+            newpos.setX(parentwidth - this->width());
+        }
+        else {
+            newpos.setX(newpos.x() + txtwidth);
+        }
+        int parentheight = m_hintlistParent->height();
+        if (parentheight < newpos.y() + widgetToFollow->height() + this->height()) {
+            newpos.setY(newpos.y() - this->height());
+        }
+        else {
+            newpos.setY(newpos.y() + widgetToFollow->height());
+        }
+        return newpos;
+    }
+    return {0,0};
 }
 
-QPoint ZenoHintListWidget::getPropPanelPos()
+void ZenoHintListWidget::updateParent()
 {
-    return m_getPropPanelPosfunc();
+    auto mainwin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainwin);
+    if (mainwin->propPanelIsFloating(m_parentPropanel)) {
+        setParent(m_parentPropanel);
+    }
+    else {
+        setParent(mainwin);
+    }
 }
 
 void ZenoHintListWidget::sltItemSelect(const QModelIndex& selectedIdx) {
@@ -202,8 +242,10 @@ void ZenoHintListWidget::paintEvent(QPaintEvent* event)
     painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
 }
 
-ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel()
-    : m_currentFunc("")
+ZenoFuncDescriptionLabel::ZenoFuncDescriptionLabel(ZenoPropPanel* panel)
+    : QWidget(panel)
+    , m_currentFunc("")
+    , m_parentPropanel(panel)
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     //setMinimumSize({ 100, 50 });
@@ -251,14 +293,41 @@ std::string ZenoFuncDescriptionLabel::getCurrentFuncName()
     return m_currentFunc;
 }
 
-void ZenoFuncDescriptionLabel::setCalcPropPanelPosFunc(std::function<QPoint()> func)
+QPoint ZenoFuncDescriptionLabel::calculateNewPos(QWidget* widgetToFollow, const QString& txt)
 {
-    m_getPropPanelPosfunc = func;
+    QFontMetrics metrics(widgetToFollow->font());
+    if (QWidget* m_hintlistParent = qobject_cast<QWidget*>(this->parent())) {
+        QPoint newpos = widgetToFollow->mapTo(m_hintlistParent, QPoint(0, 0));
+        int parentwidth = m_hintlistParent->width();
+        int txtwidth = metrics.width(txt);
+        if (parentwidth < newpos.x() + txtwidth + this->width()) {
+            newpos.setX(parentwidth - this->width());
+        }
+        else {
+            newpos.setX(newpos.x() + txtwidth);
+        }
+        int parentheight = m_hintlistParent->height();
+        if (parentheight < newpos.y() + widgetToFollow->height() + this->height()) {
+            newpos.setY(newpos.y() - this->height());
+        }
+        else {
+            newpos.setY(newpos.y() + widgetToFollow->height());
+        }
+        return newpos;
+    }
+    return { 0,0 };
 }
 
-QPoint ZenoFuncDescriptionLabel::getPropPanelPos()
+void ZenoFuncDescriptionLabel::updateParent()
 {
-    return m_getPropPanelPosfunc();
+    auto mainwin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainwin);
+    if (mainwin->propPanelIsFloating(m_parentPropanel)) {
+        setParent(m_parentPropanel);
+    }
+    else {
+        setParent(mainwin);
+    }
 }
 
 bool ZenoFuncDescriptionLabel::eventFilter(QObject* watched, QEvent* event)

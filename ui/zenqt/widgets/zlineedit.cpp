@@ -66,12 +66,6 @@ void ZLineEdit::init()
             QString nodePath = m_nodeIdx.data(ROLE_OBJPATH).toString();
             zeno::Formula fmla(txt.toStdString(), nodePath.toStdString());
 
-            QFontMetrics metrics(this->font());
-            const QPoint& parentGlobalPos = m_hintlist->getPropPanelPos();
-            QPoint globalPos = this->mapToGlobal(QPoint(0, 0));
-            globalPos.setX(globalPos.x() - parentGlobalPos.x() + metrics.width(txt));
-            globalPos.setY(globalPos.y() - parentGlobalPos.y() + height());
-
             //º¯ÊýËµÃ÷
             int ret = fmla.parse();
             //fmla.printSyntaxTree();
@@ -98,17 +92,18 @@ void ZLineEdit::init()
                     }
                     else {
                         m_hintlist->setData(items);
-                        m_hintlist->move(globalPos);
                         if (!m_hintlist->isVisible())
                         {
                             connect(m_hintlist, &ZenoHintListWidget::hintSelected, this, &ZLineEdit::sltHintSelected, Qt::UniqueConnection);
                             connect(m_hintlist, &ZenoHintListWidget::escPressedHide, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
                             connect(m_hintlist, &ZenoHintListWidget::resizeFinished, this, &ZLineEdit::sltSetFocus, Qt::UniqueConnection);
+                            m_hintlist->updateParent();
                             m_hintlist->show();
                             if (m_descLabel->isVisible()) {
                                 m_descLabel->hide();
                             }
                         }
+                        m_hintlist->move(m_hintlist->calculateNewPos(this, txt));
                         m_hintlist->resetCurrentItem();
                     }
                 }
@@ -121,10 +116,11 @@ void ZLineEdit::init()
                     else {
                         int pos = recommandInfo.func_args.argidx;
                         m_descLabel->setDesc(recommandInfo.func_args.func, recommandInfo.func_args.argidx - 1);
-                        m_descLabel->move(globalPos);
                         if (!m_descLabel->isVisible()) {
+                            m_descLabel->updateParent();
                             m_descLabel->show();
                         }
+                        m_descLabel->move(m_descLabel->calculateNewPos(this, txt));
                         m_descLabel->setCurrentFuncName(recommandInfo.func_args.func.name);
                     }
                 }
@@ -215,10 +211,6 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (m_hintlist)
-    {
-        m_hintlist->setCurrentZlineEdit(this);
-    }
     if (event->button() == Qt::MiddleButton && m_pSlider)
     {
         m_bShowHintList = true;

@@ -59,12 +59,8 @@ void ZCodeEditor::slt_showFuncDesc()
                 m_descLabel->setDesc(info, 0);
                 m_descLabel->setCurrentFuncName(info.name);
 
-                QFontMetrics metrics(this->font());
-                const QPoint& parentGlobalPos = m_descLabel->getPropPanelPos();
-                QPoint pos = mapToGlobal(QPoint(0, 0));
-                pos.setX(pos.x() - parentGlobalPos.x() + metrics.width(currLine.left(positionInLine)) + 20);
-                pos.setY(pos.y() - parentGlobalPos.y() + (cursor.blockNumber() + 1) * metrics.height() + 5);
-                m_descLabel->move(pos);
+                m_descLabel->updateParent();
+                m_descLabel->move(m_descLabel->calculateNewPos(this, currLine.left(positionInLine)));
                 m_descLabel->show();
                 return;
             }
