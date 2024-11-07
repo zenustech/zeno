@@ -7,13 +7,12 @@
 #include "zeno/utils/fileio.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
 
-using Json = nlohmann::json;
+using Json = nlohmann::ordered_json;
 
 namespace zeno {
 struct JsonObject : IObjectClone<JsonObject> {
@@ -64,37 +63,37 @@ ZENDEFNODE(WriteJson, {
 });
 static Json iobject_to_json(std::shared_ptr<IObject> iObject) {
     Json json;
-    if (objectIsLiterial<int>(iObject)) {
+    if (objectIsRawLiterial<int>(iObject)) {
         json = objectToLiterial<int>(iObject);
     }
-    else if (objectIsLiterial<vec2i>(iObject)) {
+    else if (objectIsRawLiterial<vec2i>(iObject)) {
         auto value = objectToLiterial<vec2i>(iObject);
         json = { value[0], value[1]};
     }
-    else if (objectIsLiterial<vec3i>(iObject)) {
+    else if (objectIsRawLiterial<vec3i>(iObject)) {
         auto value = objectToLiterial<vec3i>(iObject);
         json = { value[0], value[1], value[2]};
     }
-    else if (objectIsLiterial<vec4i>(iObject)) {
+    else if (objectIsRawLiterial<vec4i>(iObject)) {
         auto value = objectToLiterial<vec4i>(iObject);
         json = { value[0], value[1], value[2], value[3]};
     }
-    else if (objectIsLiterial<float>(iObject)) {
+    else if (objectIsRawLiterial<float>(iObject)) {
         json = objectToLiterial<float>(iObject);
     }
-    else if (objectIsLiterial<vec2f>(iObject)) {
+    else if (objectIsRawLiterial<vec2f>(iObject)) {
         auto value = objectToLiterial<vec2f>(iObject);
         json = { value[0], value[1]};
     }
-    else if (objectIsLiterial<vec3f>(iObject)) {
+    else if (objectIsRawLiterial<vec3f>(iObject)) {
         auto value = objectToLiterial<vec3f>(iObject);
         json = { value[0], value[1], value[2]};
     }
-    else if (objectIsLiterial<vec4f>(iObject)) {
+    else if (objectIsRawLiterial<vec4f>(iObject)) {
         auto value = objectToLiterial<vec4f>(iObject);
         json = { value[0], value[1], value[2], value[3]};
     }
-    else if (objectIsLiterial<std::string>(iObject)) {
+    else if (objectIsRawLiterial<std::string>(iObject)) {
         json = objectToLiterial<std::string>(iObject);
     }
     else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
@@ -415,6 +414,29 @@ ZENDEFNODE(JsonGetString, {
         "deprecated"
     },
 });
+
+struct JsonGetKeys : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto list = std::make_shared<ListObject>();
+        for (auto& [key, _] : json->json.items()) {
+            list->arr.emplace_back(std::make_shared<zeno::StringObject>(key));
+        }
+        set_output2("keys", list);
+    }
+};
+ZENDEFNODE(JsonGetKeys, {
+    {
+        {"json"},
+    },
+    {
+        "keys",
+    },
+    {},
+    {
+        "json"
+    },
+});
 struct JsonGetTypeName : zeno::INode {
     virtual void apply() override {
         auto json = get_input<JsonObject>("json");
@@ -664,6 +686,129 @@ ZENDEFNODE(JsonGetData, {
     {},
     {
         "json"
+    },
+});
+
+struct CreateRenderInstance : zeno::INode {
+    virtual void apply() override {
+        auto instID = get_input2<std::string>("instID");
+        auto Geom = get_input2<std::string>("Geom");
+        auto Matrix = get_input2<std::string>("Matrix");
+        auto Material = get_input2<std::string>("Material");
+        if (instID.empty()) {
+            auto info = zeno::format("instID {} can not be empty!", instID);
+            throw zeno::makeError(info);
+        }
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["BasicRenderInstances"][instID] = {
+            {"Geom", Geom},
+            {"Matrix", Matrix},
+            {"Material", Material},
+        };
+        out_json->json["Root"] = instID;
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( CreateRenderInstance, {
+    {
+        {"string", "instID", ""},
+        {"string", "Geom", ""},
+        {"string", "Matrix", "Identity"},
+        {"string", "Material", "Default"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+
+struct RenderGroup : zeno::INode {
+    virtual void apply() override {
+        auto RenderGroupID = get_input2<std::string>("RenderGroupID");
+        auto is_static = get_input2<bool>("static");
+        auto Matrix_string = get_input2<std::string>("Matrixes");
+        std::vector<std::string> Matrixes = zeno::split_str(Matrix_string, {' ', '\n'});
+        auto items = get_input<ListObject>("items")->get<JsonObject>();
+
+        std::set<std::string> rinst;
+        std::map<std::string, int> id_checker;
+
+        Json node = {};
+        node["Objects"] = Json::array();
+        for (const auto& item: items) {
+            node["Objects"].push_back(item->json["Root"]);
+        }
+        node["Matrixes"] = Json::array();
+        for (auto &matrix: Matrixes) {
+            node["Matrixes"].push_back(matrix);
+        }
+
+        auto out_json = std::make_shared<JsonObject>();
+        out_json->json["Root"] = RenderGroupID;
+
+        for (const auto& item: items) {
+            for (auto& [key, value] : item->json["BasicRenderInstances"].items()) {
+                out_json->json["BasicRenderInstances"][key] = value;
+                rinst.insert(key);
+            }
+            for (auto& [key, value] : item->json["DynamicRenderGroups"].items()) {
+                out_json->json["DynamicRenderGroups"][key] = value;
+                id_checker[key] += 1;
+            }
+            for (auto& [key, value] : item->json["StaticRenderGroups"].items()) {
+                if (is_static) {
+                    out_json->json["StaticRenderGroups"][key] = value;
+                }
+                else {
+                    out_json->json["DynamicRenderGroups"][key] = value;
+                }
+                id_checker[key] += 1;
+            }
+        }
+
+        if (is_static && !out_json->json.contains("DynamicRenderGroups")) {
+            out_json->json["StaticRenderGroups"][RenderGroupID] = node;
+        }
+        else {
+            out_json->json["DynamicRenderGroups"][RenderGroupID] = node;
+        }
+        id_checker[RenderGroupID] += 1;
+
+        for (auto const &[GroupID, count]: id_checker) {
+            if (count > 1) {
+                auto info = zeno::format("Group ID {} is not unique!", GroupID);
+                zeno::log_error(info);
+                throw zeno::makeError(info);
+            }
+            if (rinst.count(GroupID)) {
+                auto info = zeno::format("Group ID {} is not same with RenderInstance ID!", GroupID);
+                zeno::log_error(info);
+                throw zeno::makeError(info);
+            }
+        }
+
+        set_output("json", out_json);
+    }
+};
+
+ZENDEFNODE( RenderGroup, {
+    {
+        {"string", "RenderGroupID"},
+        {"list", "items"},
+        {"bool", "static", "1"},
+        {"string", "Matrixes", "Identity"},
+    },
+    {
+        {"json"},
+    },
+    {},
+    {
+        "shader",
     },
 });
 

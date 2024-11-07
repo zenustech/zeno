@@ -658,8 +658,6 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->adepth++;
-        //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
         prd->_tmin_ = optixGetRayTmax();
@@ -969,18 +967,18 @@ extern "C" __global__ void __closesthit__radiance()
         backPos = wldPos;
     }
 
-    shadowPRD.origin = dot(-ray_dir, wldNorm) > 0 ? frontPos : backPos;
+    shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
     
-    shadowPRD.origin = frontPos;
-    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
-    }
+    //shadowPRD.origin = frontPos;
+    //if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        //shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
+    //}
     
-    auto shadingP = rtgems::offset_ray(P + params.cam.eye,  prd->geometryNormal); // world space
-    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
-    }
+    auto shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal); // world space
+    //if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+        //shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
+    //}
 
     prd->radiance = {};
     prd->direction = normalize(wi);
@@ -994,6 +992,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->lightmask = DefaultMatMask;
+    shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
     DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
     if(mats.shadowReceiver > 0.5f)
     {
@@ -1006,16 +1005,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->direction = normalize(wi);
 
-    if(mats.thin<0.5f && mats.doubleSide<0.5f){
-        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        //float3 p = p_prim;
-        prd->origin = next_ray_is_going_inside? backPos : frontPos;
-    }
-    else {
-        //auto p_prim = vec3(prd->origin) + optixGetRayTmax() * vec3(prd->direction);
-        //float3 p = p_prim;
-        prd->origin = dot(prd->direction, prd->geometryNormal) < 0? backPos : frontPos;
-    }
+    prd->origin = dot(prd->direction, prd->geometryNormal) < 0.0f ? backPos : frontPos;
 
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);

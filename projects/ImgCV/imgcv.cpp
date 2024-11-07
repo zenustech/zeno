@@ -8,7 +8,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/zeno_p.h>
 #include "imgcv.h"
-
+#include <zeno/utils/UserData.h>
 namespace zeno {
 namespace {
 
@@ -897,6 +897,42 @@ ZENDEFNODE(CVImagePutText, {
     {"opencv"},
 });
 
+struct ReadImageByOpenCV : INode {
+  void apply() override {
+    auto inputPath = get_input2<std::string>("inputPath");
+    cv::Mat image = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
+    cv::Mat exrImage;
+    image.convertTo(exrImage, CV_32F);
+    int width = image.cols;
+    int height = image.rows;
+    auto img = std::make_shared<PrimitiveObject>();
+    img->verts.resize(width * height);
+    auto &clr = img->verts.add_attr<vec3f>("clr");
+    for (size_t j = 0; j < height; j++) {
+      for (size_t i = 0; i < width; i++) {
+        size_t index = j * width + i;
+        img->verts[index] = {float(i) / float(width), float(j) / float(height), 0};
+        float Y = exrImage.at<float>(j, i);
+        clr[index] = {Y, Y, Y};
+      }
+    }
+    img->userData().set2("w", width);
+    img->userData().set2("h", height);
+
+    set_output("image", std::move(img));
+  }
+};
+
+ZENDEFNODE(ReadImageByOpenCV, {
+                                  {
+                                      {"readpath", "inputPath"},
+                                  },
+                                  {
+                                      "image",
+                                  },
+                                  {},
+                                  {"opencv"},
+                              });
 }
 
 }

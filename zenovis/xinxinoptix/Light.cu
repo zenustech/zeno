@@ -282,6 +282,8 @@ extern "C" __global__ void __closesthit__radiance()
         // if (scatterPDF > __FLT_DENORM_MIN__) {
         //     prd->radiance /= scatterPDF;
         // }
+        auto tmp = float3{1, 1, 1};
+        prd->updateAttenuation(tmp);
     }
     return;
 }

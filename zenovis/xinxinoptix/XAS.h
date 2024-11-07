@@ -118,6 +118,13 @@ namespace xinxinoptix {
     inline void buildIAS(OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, std::vector<OptixInstance>& instances, 
                          raii<CUdeviceptr>& bufferIAS, OptixTraversableHandle& handleIAS) 
     {
+
+        if (instances.empty()) {
+            bufferIAS.reset();
+            handleIAS = 0llu;
+            return;
+        }
+
         raii<CUdeviceptr>  d_instances;
         const size_t size_in_bytes = sizeof( OptixInstance ) * instances.size();
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), size_in_bytes ) );

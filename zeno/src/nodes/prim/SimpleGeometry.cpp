@@ -22,6 +22,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
+#include <cstdlib>
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -1454,6 +1455,50 @@ ZENDEFNODE(RemoveFolder, {
     {},
     {},
     {"create"},
+});
+
+struct FFMPEGImagesToVideo : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto fps = get_input2<int>("fps");
+        auto imageFolderPath = get_input2<std::string>("imageFolderPath");
+        auto bitrate = get_input2<int>("bitrate");
+        auto outPath = get_input2<std::string>("outPath");
+
+        bool ok = fs::exists(imageFolderPath) && fs::is_directory(imageFolderPath);
+        if (!ok) {
+            throw zeno::makeError("imageFolderPath not exists or not is_directory");
+        }
+        std::vector<fs::path> filenames;
+        std::string extension;
+        for (const auto& entry : fs::directory_iterator(imageFolderPath)) {
+            if (fs::is_regular_file(entry.status())) {
+                filenames.emplace_back(entry.path().filename());
+                extension = entry.path().filename().extension().string();
+            }
+        }
+        std::sort(filenames.begin(), filenames.end());
+        for (auto i = 0; i < filenames.size(); i++) {
+            auto old_name = zeno::format("{}/{}", imageFolderPath, filenames[i].string());
+            auto new_name = zeno::format("{}/{:07d}{}", imageFolderPath, i, extension);
+            fs::rename(old_name, new_name);
+        }
+
+        auto cmd = zeno::format("ffmpeg -y -r {} -i {}/%07d{} -b:v {}k -c:v mpeg4 {}", fps, imageFolderPath, extension, bitrate, outPath);
+        std::system(cmd.c_str());
+    }
+};
+
+ZENDEFNODE(FFMPEGImagesToVideo, {
+    {
+        {"int", "fps", "25"},
+        {"directory", "imageFolderPath", "imageFolderPath"},
+        {"int", "bitrate", "200000"},
+        {"writepath", "outPath", "outPath"},
+    },
+    {},
+    {},
+    {"Miscellaneous"},
 });
 }
 }
