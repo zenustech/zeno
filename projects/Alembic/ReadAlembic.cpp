@@ -1430,13 +1430,93 @@ struct PrimsFilterInUserdata: INode {
 ZENDEFNODE(PrimsFilterInUserdata, {
     {
         {"list", "list"},
-        {"string", "name", ""},
-        {"string", "filters"},
+        {"string", "name"},
+        {"multiline_string", "filters"},
         {"bool", "contain", "1"},
         {"bool", "fuzzy", "0"},
     },
     {
         {"list", "out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct PrimsFilterInUserdataMultiTags: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto filter_str = get_input2<std::string>("filters");
+        std::vector<std::string> filters = zeno::split_str(filter_str, {' ', '\n'});
+        std::vector<std::string> filters_;
+        auto output = std::make_shared<DictObject>();
+
+        for (auto &s: filters) {
+            if (s.length() > 0) {
+                filters_.push_back(s);
+            }
+        }
+
+        auto name = get_input2<std::string>("name");
+        auto fuzzy = get_input2<bool>("fuzzy");
+        for (auto p: prims) {
+            auto &ud = p->userData();
+            if (ud.has<std::string>(name)) {
+                if (fuzzy) {
+                    for (auto & filter: filters_) {
+                        if (ud.get2<std::string>(name).find(filter) != std::string::npos) {
+                            if (!output->lut.count(filter)) {
+                                output->lut[filter] = std::make_shared<ListObject>();
+                            }
+                            auto ptr = std::dynamic_pointer_cast<ListObject>(output->lut[filter]);
+                            ptr->arr.push_back(p);
+                        }
+                    }
+                }
+                else {
+                    auto value = ud.get2<std::string>(name);
+                    if (std::count(filters_.begin(), filters_.end(), value)) {
+                        if (!output->lut.count(value)) {
+                            output->lut[value] = std::make_shared<ListObject>();
+                        }
+                        auto ptr = std::dynamic_pointer_cast<ListObject>(output->lut[value]);
+                        ptr->arr.push_back(p);
+                    }
+                }
+            }
+            else if (ud.has<int>(name)) {
+                auto value = std::to_string(ud.get2<int>(name));
+                if (std::count(filters_.begin(), filters_.end(), value)) {
+                    if (!output->lut.count(value)) {
+                        output->lut[value] = std::make_shared<ListObject>();
+                    }
+                    auto ptr = std::dynamic_pointer_cast<ListObject>(output->lut[value]);
+                    ptr->arr.push_back(p);
+                }
+            }
+            else if (ud.has<float>(name)) {
+                auto value = std::to_string(ud.get2<float>(name));
+                if (std::count(filters_.begin(), filters_.end(), value)) {
+                    if (!output->lut.count(value)) {
+                        output->lut[value] = std::make_shared<ListObject>();
+                    }
+                    auto ptr = std::dynamic_pointer_cast<ListObject>(output->lut[value]);
+                    ptr->arr.push_back(p);
+                }
+            }
+        }
+        set_output("out", output);
+    }
+};
+
+ZENDEFNODE(PrimsFilterInUserdataMultiTags, {
+    {
+        {"list", "list"},
+        {"string", "name"},
+        {"multiline_string", "filters"},
+        {"bool", "fuzzy", "0"},
+    },
+    {
+        {"DictObject", "out"},
     },
     {},
     {"alembic"},
