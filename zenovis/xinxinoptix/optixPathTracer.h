@@ -188,6 +188,9 @@ struct Params
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
 
+    uint32_t firstVolumeOffset;
+    void* volumeBounds;
+
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
 

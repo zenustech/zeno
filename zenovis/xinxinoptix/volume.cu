@@ -15,12 +15,36 @@
 using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 
-__inline__ __device__ bool rayBox(const float3& ray_ori, const float3& ray_dir, const nanovdb::BBox<nanovdb::Vec3f>& box, 
-                        float& t0, float& t1) {
+__inline__ __device__ bool rayHit(const float3& ray_ori, const float3& ray_dir, const nanovdb::BBox<nanovdb::Vec3f>& box, 
+                                uint8_t bounds, float& t0, float& t1) {
 
     auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_ori ),
                                      reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-    return iray.intersects( box, t0, t1 );
+    if (bounds == 0)
+        return iray.intersects( box, t0, t1 );
+    if (bounds == 1)
+        return iray.intersects({0,0,0}, box.max()[1], t0, t1);
+    if (bounds == 2) {
+
+        iray.intersects( box, t0, t1 );
+
+        auto b_t0 = t0;
+        auto b_t1 = t1;
+
+        iray.setEye( iray.eye() * nanovdb::Vec3f{2,1,2} );
+        iray.setDir( iray.dir() * nanovdb::Vec3f{2,1,2} );
+        bool hit = iray.intersects({0,box.min()[1],0}, box.max()[1]*2, t0, t1);
+
+        auto v0 = iray.dir() * t0 * nanovdb::Vec3f{0.5,1,0.5};
+        t0 = v0.length();
+        auto v1 = iray.dir() * t1 * nanovdb::Vec3f{0.5,1,0.5};
+        t1 = v1.length();
+
+        t0 = max(b_t0, t0);
+        t1 = min(b_t1, t1);
+
+        return hit;
+    }
 }
 
 extern "C" __global__ void __intersection__volume()
@@ -52,8 +76,11 @@ extern "C" __global__ void __intersection__volume()
         t1 = t1 * dirlen;
     } 
 
+    auto offsetId = optixGetInstanceId()-params.firstVolumeOffset;
+    auto bounds = reinterpret_cast<uint8_t*>(params.volumeBounds)[offsetId];
+
     //bool inside = box.isInside(reinterpret_cast<const nanovdb::Vec3f&>(ray_ori));
-    auto hitted = rayBox( ray_ori, ray_dir, box, t0, t1 );
+    auto hitted = rayHit( ray_ori, ray_dir, box, bounds, t0, t1 );
     if (!hitted) { return; }
 
     RadiancePRD *prd = getPRD<RadiancePRD>();
@@ -135,8 +162,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     testPRD.done = false;
     testPRD.seed = prd->seed;
     testPRD.depth == 0;
-    testPRD._tmin_ = t0;
-    testPRD.maxDistance = t1;
+    testPRD._tmin_ = 0;
+    testPRD.maxDistance = NextFloatUp(t1);
     testPRD.test_distance = true;
     
     uint8_t _mask_ = EverythingMask ^ VolumeMatMask;
@@ -146,7 +173,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     } while(testPRD.test_distance && !testPRD.done);
 
     bool surface_inside = false;
-    if(testPRD.maxDistance < t1)
+    if(testPRD.maxDistance <= t1 && testPRD.maxDistance >= t0)
     {
         t1 = testPRD.maxDistance;
         surface_inside = true;
@@ -162,7 +189,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         if (surface_inside) { // Hit other material
 
             prd->_mask_ = _mask_;
-            prd->_tmin_ = NextFloatDown(t1);
+            //prd->_tmin_ = NextFloatDown(t1);
 
         } else { // Volume edge
 

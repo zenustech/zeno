@@ -473,7 +473,18 @@ struct GraphicsManager {
                     memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                     memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                    OptixUtil::preloadVolumeBox(key, mtlid, vbox_transform);
+                    auto bounds = ud.get2<std::string>("bounds");
+                    
+                    uint8_t boundsID = [&]() {
+                        if ("Box" == bounds)
+                            return 0;
+                        if ("Sphere" == bounds)
+                            return 1;
+                        if ("HemiSphere" == bounds)
+                            return 2;
+                    } ();
+
+                    OptixUtil::preloadVolumeBox(key, mtlid, boundsID, vbox_transform);
                     return;
                 }
 
