@@ -944,6 +944,7 @@ static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, st
             prim->userData().set2(zeno::format("boneName_{}", i), bone_names[i]);
         }
     }
+    return pose_count;
 }
 
 static void TraverseNodesToGetSkeleton(FbxNode* pNode, std::vector<std::string> &bone_names, std::vector<FbxMatrix> &transforms, std::map<std::string, std::string> &parent_mapping) {
