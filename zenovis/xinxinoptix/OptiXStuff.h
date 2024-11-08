@@ -642,20 +642,21 @@ inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
 inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
-inline std::vector<std::tuple<std::string, glm::mat4>> volumeTrans;
+inline std::vector<std::tuple<std::string, uint8_t, glm::mat4>> volumeTrans;
 inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
 
-inline bool preloadVolumeBox(std::string& key, std::string& matid, glm::mat4& transform) {
+inline bool preloadVolumeBox(std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
 
-    volumeTrans.push_back( {matid, transform} );
+    volumeTrans.push_back( {matid, bounds, transform} );
     return true;
 }
 
 inline bool processVolumeBox() {
 
     volumeBoxs.clear();
-    for (auto& [key, val] : volumeTrans) {
+    for (auto& [key, bounds, val] : volumeTrans) {
         auto volume_ptr = std::make_shared<VolumeWrapper>();
+        volume_ptr->bounds = bounds;
         volume_ptr->transform = val;
         buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
         volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );

@@ -168,6 +168,7 @@ using Vertex = float3;
 struct PathTracerState
 {
     raii<CUdeviceptr> auxHairBuffer;
+    raii<CUdeviceptr> volumeBoundsBuffer;
 
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
@@ -1022,6 +1023,8 @@ void updateRootIAS()
         optix_instances.push_back( opinstance );
     }
 
+    auto firstVolumeInstance = optix_instance_idx+1;
+    std::vector<uint8_t> volumeBounds(OptixUtil::volumeBoxs.size());
     // process volume
 	for (uint i=0; i<OptixUtil::volumeBoxs.size(); ++i) {
         
@@ -1040,7 +1043,9 @@ void updateRootIAS()
 		optix_instance.sbtOffset = sbt_offset;
 		optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
 		optix_instance.traversableHandle = val->accel.handle;
-        
+
+        volumeBounds[i] = val->bounds;
+
 		getOptixTransform( *(val), optix_instance.transform );
         
         if ( OptixUtil::g_vdb_list_for_each_shader.count(shader_index) > 0 ) {
@@ -1071,10 +1076,7 @@ void updateRootIAS()
 
                 auto dummy = glm::transpose(dirtyMatrix);
                 auto dummy_ptr = glm::value_ptr( dummy );
-                for (size_t i=0; i<12; ++i) {   
-                    //optix_instance.transform[i] = mat3r4c[i];
-                    optix_instance.transform[i] = dummy_ptr[i];
-                }
+                memcpy(optix_instance.transform, dummy_ptr, sizeof(float)*12);
             }
         } // count  
 
@@ -1084,6 +1086,17 @@ void updateRootIAS()
 
 		optix_instances.push_back( optix_instance );
 	}
+
+    state.volumeBoundsBuffer.reset();
+
+    if (!volumeBounds.empty()) {
+        size_t byte_size = sizeof(volumeBounds[0]) * volumeBounds.size();
+        state.volumeBoundsBuffer.resize(byte_size);
+        cudaMemcpy((void*)state.volumeBoundsBuffer.handle, volumeBounds.data(), byte_size, cudaMemcpyHostToDevice);
+
+        state.params.volumeBounds = (void*)state.volumeBoundsBuffer.handle;
+        state.params.firstVolumeOffset = firstVolumeInstance;
+    }
 
     auto op_index = optix_instances.size();
 
@@ -2438,20 +2451,6 @@ struct DrawDat {
     }
 };
 static std::map<std::string, DrawDat> drawdats;
-
-struct DrawDat2 {
-  std::vector<std::string>  mtlidList;
-  std::string mtlid;
-  std::string instID;
-  std::vector<zeno::vec3f> pos;
-  std::vector<zeno::vec3f> nrm;
-  std::vector<zeno::vec3f> tang;
-  std::vector<zeno::vec3f> clr;
-  std::vector<zeno::vec3f> uv;
-  std::vector<int> triMats;
-  std::vector<zeno::vec3i> triIdx;
-};
-static std::map<std::string, DrawDat2> drawdats2;
 
 std::set<std::string> uniqueMatsForMesh() {
 
