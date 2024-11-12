@@ -1446,14 +1446,17 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                             return;
                         }
                         std::string picked_elems_str;
-                        auto &attr = prim->tris.attr<int>(picked_elems_str);
+                        auto &attr = prim->tris.attr<int>(select_attr_str);
                         std::set<int> attr_value;
                         for (auto elem : scene->selected_elements[prim_name]) {
-                            picked_elems_str += std::to_string(elem) + ",";
                             if (elem < prim->tris.size()) {
                                 attr_value.insert(attr[elem]);
                             }
                         }
+                        for (auto elem : attr_value) {
+                            picked_elems_str += std::to_string(elem) + ",";
+                        }
+
                         zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
                     }
                 });
