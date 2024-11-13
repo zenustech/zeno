@@ -1405,6 +1405,6 @@ ZENDEFNODE(ReadSTL, {
         {gParamType_Primitive, "prim"},
     },
     {},
-    {"BaseIO"},
+    {"primitive"},
 });
 }

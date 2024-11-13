@@ -20,6 +20,9 @@ target_sources(zeno PRIVATE
   volume/Conversion.cu
 )
 ]]
+target_sources(zeno PRIVATE
+  volume/VolumeOps.cu
+)
 
 # shallow water & terrain
 target_sources(zeno PRIVATE

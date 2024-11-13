@@ -168,6 +168,7 @@ using Vertex = float3;
 struct PathTracerState
 {
     raii<CUdeviceptr> auxHairBuffer;
+    raii<CUdeviceptr> volumeBoundsBuffer;
 
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
@@ -744,8 +745,10 @@ static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> m
                 ) );
 
     // // Build triangle GAS // // One per SBT record for this build input
+    auto numSbtRecords = g_mtlidlut.empty() ? 1 : g_mtlidlut.size();
+
     std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        g_mtlidlut.size(),
+        numSbtRecords,
         OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
     OptixBuildInput triangle_input                           = {};
@@ -755,7 +758,7 @@ static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> m
     triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->vertices.size() );
     triangle_input.triangleArray.vertexBuffers               = mesh->vertices.empty() ? nullptr : &dverts;
     triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = mesh->vertices.empty() ? 1 : g_mtlidlut.size();
+    triangle_input.triangleArray.numSbtRecords               = numSbtRecords;
     triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
     triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
     triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
@@ -788,7 +791,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
     float3 defaultInstClr = {1, 1, 1};
     float3 defaultInstTang = {1, 0, 0};
 
-    std::size_t num_meshes = (StaticMeshes != nullptr)? 1:0 + g_meshPieces.size();
+    std::size_t num_meshes = g_meshPieces.size() + (StaticMeshes != nullptr? 1:0);
     std::size_t num_instances = num_meshes;
 
     for (const auto &[instID, instData] : g_instLUT)
@@ -1020,6 +1023,8 @@ void updateRootIAS()
         optix_instances.push_back( opinstance );
     }
 
+    auto firstVolumeInstance = optix_instance_idx+1;
+    std::vector<uint8_t> volumeBounds(OptixUtil::volumeBoxs.size());
     // process volume
 	for (uint i=0; i<OptixUtil::volumeBoxs.size(); ++i) {
         
@@ -1038,7 +1043,9 @@ void updateRootIAS()
 		optix_instance.sbtOffset = sbt_offset;
 		optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
 		optix_instance.traversableHandle = val->accel.handle;
-        
+
+        volumeBounds[i] = val->bounds;
+
 		getOptixTransform( *(val), optix_instance.transform );
         
         if ( OptixUtil::g_vdb_list_for_each_shader.count(shader_index) > 0 ) {
@@ -1069,10 +1076,7 @@ void updateRootIAS()
 
                 auto dummy = glm::transpose(dirtyMatrix);
                 auto dummy_ptr = glm::value_ptr( dummy );
-                for (size_t i=0; i<12; ++i) {   
-                    //optix_instance.transform[i] = mat3r4c[i];
-                    optix_instance.transform[i] = dummy_ptr[i];
-                }
+                memcpy(optix_instance.transform, dummy_ptr, sizeof(float)*12);
             }
         } // count  
 
@@ -1082,6 +1086,17 @@ void updateRootIAS()
 
 		optix_instances.push_back( optix_instance );
 	}
+
+    state.volumeBoundsBuffer.reset();
+
+    if (!volumeBounds.empty()) {
+        size_t byte_size = sizeof(volumeBounds[0]) * volumeBounds.size();
+        state.volumeBoundsBuffer.resize(byte_size);
+        cudaMemcpy((void*)state.volumeBoundsBuffer.handle, volumeBounds.data(), byte_size, cudaMemcpyHostToDevice);
+
+        state.params.volumeBounds = (void*)state.volumeBoundsBuffer.handle;
+        state.params.firstVolumeOffset = firstVolumeInstance;
+    }
 
     auto op_index = optix_instances.size();
 
@@ -1620,8 +1635,6 @@ void UpdateInstMesh(const std::map<std::string, int> &mtlidlut)
 
 void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
-    buildMeshAccel(state, StaticMeshes);
-
     tbb::parallel_for(static_cast<size_t>(0), g_meshPieces.size(), [](size_t i){
         buildMeshAccel(state, g_meshPieces[i]);
     });
@@ -2439,20 +2452,6 @@ struct DrawDat {
 };
 static std::map<std::string, DrawDat> drawdats;
 
-struct DrawDat2 {
-  std::vector<std::string>  mtlidList;
-  std::string mtlid;
-  std::string instID;
-  std::vector<zeno::vec3f> pos;
-  std::vector<zeno::vec3f> nrm;
-  std::vector<zeno::vec3f> tang;
-  std::vector<zeno::vec3f> clr;
-  std::vector<zeno::vec3f> uv;
-  std::vector<int> triMats;
-  std::vector<zeno::vec3i> triIdx;
-};
-static std::map<std::string, DrawDat2> drawdats2;
-
 std::set<std::string> uniqueMatsForMesh() {
 
     std::set<std::string> result;
@@ -2555,6 +2554,8 @@ static void updateStaticDrawObjects() {
         tri_offset += dat.tris.size() / 3;
         ver_offset += dat.verts.size() / 3;
     }
+
+    buildMeshAccel(state, StaticMeshes);
 }
 
 static void updateDynamicDrawObjects() {

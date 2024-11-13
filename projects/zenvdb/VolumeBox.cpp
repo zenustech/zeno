@@ -1,3 +1,4 @@
+#include <string>
 #include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -21,6 +22,8 @@ struct CreateVolumeBox : zeno::INode {
         auto pos = get_input2<zeno::vec3f>("pos");
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
+
+        auto bounds = get_input2<std::string>("Bounds:");
 
         auto order = get_input2<std::string>("EulerRotationOrder:");
         auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
@@ -93,6 +96,7 @@ struct CreateVolumeBox : zeno::INode {
         prim->quads->push_back(zeno::vec4i(3, 2, 6, 7));
 
         primWireframe(prim.get(), true);
+        prim->userData().set2("bounds", bounds);
     
         auto transform_ptr = glm::value_ptr(transform);
             
@@ -122,7 +126,8 @@ ZENDEFNODE(CreateVolumeBox, {
     {{gParamType_Primitive, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
-        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"},
+        {"enum Box Sphere HemiSphere", "Bounds", "Box"}
     },
     {"create"}
 });

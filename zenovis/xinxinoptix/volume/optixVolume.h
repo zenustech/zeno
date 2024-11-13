@@ -142,6 +142,7 @@ struct VolumeAccel
 struct VolumeWrapper
 {
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
+	uint8_t bounds;
 	glm::mat4 transform; 
 	std::vector<std::string> selected;
 

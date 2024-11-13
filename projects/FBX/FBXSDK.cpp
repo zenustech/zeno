@@ -945,6 +945,7 @@ static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, st
         }
         return pose_count;
     }
+    return pose_count;
 }
 
 static void TraverseNodesToGetSkeleton(FbxNode* pNode, std::vector<std::string> &bone_names, std::vector<FbxMatrix> &transforms, std::map<std::string, std::string> &parent_mapping) {

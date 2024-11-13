@@ -58,10 +58,13 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context,
         std::vector<float> dummy = widths;
 
         for( auto strand = strands.begin(); strand != strands.end() - 1; ++strand ) {
+            
+            if (zeno::CurveType::LINEAR == curveType) { break; }
+            
             const int end = *( strand + 1 ) - 1;
 
             auto degree = CurveDegree(curveType);
-            if (zeno::CurveType::CATROM == curveType ) {
+            if (zeno::CurveType::CATROM == curveType) {
                 degree -= 1;
             }
             

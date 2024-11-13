@@ -473,7 +473,18 @@ struct GraphicsManager {
                     memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                     memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                    OptixUtil::preloadVolumeBox(key, mtlid, vbox_transform);
+                    auto bounds = ud.get2<std::string>("bounds");
+                    
+                    uint8_t boundsID = [&]() {
+                        if ("Box" == bounds)
+                            return 0;
+                        if ("Sphere" == bounds)
+                            return 1;
+                        if ("HemiSphere" == bounds)
+                            return 2;
+                    } ();
+
+                    OptixUtil::preloadVolumeBox(key, mtlid, boundsID, vbox_transform);
                     return;
                 }
 
@@ -1481,7 +1492,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
 
-            if (cachedMeshesMaterials.count("Default")) {
+            //if (cachedMeshesMaterials.count("Default")) 
+            {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMark::Mesh;
@@ -1494,7 +1506,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 meshMatLUT.insert({"Default", 0});
             }
 
-            if (cachedSphereMaterials.count("Default")) {
+            //if (cachedSphereMaterials.count("Default")) 
+            {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->mark = ShaderMark::Sphere;

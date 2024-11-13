@@ -47,7 +47,90 @@ ZENO_DEFNODE(PrimFlattenTris)({
     {},
     {"primitive"},
 });
+struct PrimFlattenLines : INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    AttrVector<vec3f> new_verts(2 * prim->lines.size());
+    for (int i = 0; i < prim->lines.size(); i++) {
+      auto ind = prim->lines[i];
+      new_verts[i*2+0] = prim->verts[ind[0]];
+      new_verts[i*2+1] = prim->verts[ind[1]];
+    }
+    prim->verts.foreach_attr([&] (auto const &key, auto const &arr) {
+      using T = std::decay_t<decltype(arr[0])>;
+      auto &new_arr = new_verts.add_attr<T>(key);
+      for (int i = 0; i < prim->lines.size(); i++) {
+        auto ind = prim->lines[i];
+        new_arr[i*2+0] = arr[ind[0]];
+        new_arr[i*2+1] = arr[ind[1]];
+      }
+    });
+    for (int i = 0; i < prim->lines.size(); i++) {
+      prim->lines[i] = zeno::vec2i(2*i, 2*i+1);
+    }
+    std::swap(new_verts, prim->verts);
+    prim->points.clear();
+    prim->tris.clear();
+    prim->quads.clear();
+    prim->polys.clear();
+    prim->loops.clear();
+    set_output("prim", std::move(prim));
+  }
+};
 
+ZENO_DEFNODE(PrimFlattenLines)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
+struct PrimFlattenPolys : INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    size_t vertNum = 0;
+    for(size_t i=0; i<prim->polys.size();i++)
+    {
+      vertNum += prim->polys[i][1];
+    }
+    AttrVector<vec3f> new_verts(vertNum);
+    size_t v_count = 0;
+    for (int i = 0; i < prim->polys.size(); i++) {
+      auto num_vert_per_poly = prim->polys[i][1];
+      for(int j=0;j<num_vert_per_poly;j++)
+      {
+        auto vidx = prim->loops[prim->polys[i][0] + j];
+        new_verts[v_count] = prim->verts[vidx];
+        v_count++;
+      }
+    }
+    prim->loops.resize(vertNum);
+    for(size_t i=0;i<vertNum;i++)
+    {
+      prim->loops[i] = i;
+    }
+    std::swap(new_verts, prim->verts);
+    prim->points.clear();
+    prim->tris.clear();
+    prim->quads.clear();
+    set_output("prim", std::move(prim));
+  }
+};
+
+ZENO_DEFNODE(PrimFlattenPolys)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
 struct PrimToList : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

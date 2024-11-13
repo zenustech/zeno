@@ -97,11 +97,13 @@ static __inline__ __device__ vec3 sampleUniformHemiSphere(unsigned int &seed)
 static __inline__ __device__  vec3 CosineSampleHemisphere(float r1, float r2)
 {
   vec3 dir;
-  float r = sqrt(r1);
-  float phi = 2.0f * 3.1415926f  * r2;
-  dir.x = r * cos(phi);
-  dir.y = r * sin(phi);
-  dir.z = sqrt(max(0.0f, 1.0f - dir.x * dir.x - dir.y * dir.y));
+  float phi = 2.0f * M_PIf * r1;
+  float cosTheta = sqrt(r2), sinTheta = sqrt(1.0f - r2);
+//  float r = sqrt(r1);
+//  float phi = 2.0f * 3.1415926f  * r2;
+  dir.x = cos(phi) * sinTheta;
+  dir.y = sin(phi) * sinTheta;
+  dir.z = cosTheta;
   return dir;
 }
 static __inline__ __device__  vec3 UniformSampleHemisphere(float r1, float r2)
@@ -320,7 +322,7 @@ float DielectricFresnel(float cosThetaI, float eta)
   float eta2 = eta * eta;
 
   float cos2t = 1.0f - sin2 / eta2;
-  if(cos2t < 0) return 1.0f;
+  if(cos2t < 0.0f) return 1.0f;
 
   float t0 = sqrt(cos2t);
   float t1 = eta * t0;
@@ -404,21 +406,24 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
     return vec3(0.0);
 
   float LDotH = abs(dot(L, H));
-  float LH2 = dot(L,V) + 1.0f;
-  float Rr = roughness * LH2;
-  // Diffuse
-  float FL = SchlickWeight(abs(L.z));
-  float FV = SchlickWeight(abs(V.z));
-  float Fretro = Rr * (FL + FV + FL * FV * (Rr - 1.0f));
-  float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
+  float FD90MinusOne = 2.0f * roughness * LDotH * LDotH - 0.5f;
+  float FDL = 1.0f + (FD90MinusOne * SchlickWeight(abs(L.z)));
+  float FDV = 1.0F + (FD90MinusOne * SchlickWeight(abs(V.z)));
+//  float LH2 = dot(L,V) + 1.0f;
+//  float Rr = roughness * LH2;
+//  // Diffuse
+//  float FL = SchlickWeight(abs(L.z));
+//  float FV = SchlickWeight(abs(V.z));
+//  float Fretro = Rr * (FL + FV + FL * FV * (Rr - 1.0f));
+//  float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
 
 
   // Sheen
   float FH = SchlickWeight(LDotH);
   vec3 Fsheen = FH * sheen * Csheen;
 
-  pdf = L.z * 1.0f / M_PIf;
-  return 1.0f / M_PIf * baseColor * (Fd + Fretro) + Fsheen;
+  pdf = abs(L.z) / M_PIf;
+  return 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen;
 }
 
 static __inline__ __device__

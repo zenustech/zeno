@@ -24,6 +24,22 @@ inline bool objectIsLiterial(std::shared_ptr<IObject> const &ptr) {
 }
 
 template <class T>
+inline bool objectIsRawLiterial(std::shared_ptr<IObject> const &ptr) {
+    if constexpr (std::is_base_of_v<IObject, T>) {
+        return dynamic_cast<T *>(ptr.get());
+    } else if constexpr (std::is_same_v<std::string, T>) {
+        return dynamic_cast<StringObject *>(ptr.get());
+    } else if constexpr (std::is_same_v<NumericValue, T>) {
+        return dynamic_cast<NumericObject *>(ptr.get());
+    } else {
+        auto p = dynamic_cast<NumericObject *>(ptr.get());
+        return p && std::visit([&] (auto const &val) -> bool {
+            return std::is_same_v<T, std::decay_t<decltype(val)>>;
+        }, p->value);
+    }
+}
+
+template <class T>
 inline auto objectToLiterial(std::shared_ptr<IObject> const &ptr, std::string const &msg = "objectToLiterial") {
     if constexpr (std::is_base_of_v<IObject, T>) {
         return safe_dynamic_cast<T>(ptr, msg);
