@@ -828,15 +828,15 @@ struct PrimTwoCopyAttr : INode {
 };
 ZENDEFNODE(PrimTwoCopyAttr,
            { /* inputs: */ {
-                "primTo",
-                "primFrom",
-                {"string", "NameTo", "s"},
-                {"string", "NameFrom", "t"},
+                {gParamType_Primitive, "primTo"},
+                {gParamType_Primitive, "primFrom"},
+                {gParamType_String, "NameTo", "s"},
+                {gParamType_String, "NameFrom", "t"},
                 {"enum verts tris loops polys lines", "ScopeTo", "verts"},
                 {"enum verts tris loops polys lines", "ScopeFrom", "verts"},
                 {"enum int float vec2f vec2i vec3f vec3i vec4f vec4i", "type", "vec3f"},
             }, /* outputs: */ {
-                "prim",
+                {gParamType_Primitive, "prim"},
             }, /* params: */ {
             }, /* category: */ {
                 "erode",

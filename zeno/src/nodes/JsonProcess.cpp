@@ -694,7 +694,8 @@ ZENDEFNODE(JsonGetData, {
 
 }
 
-#if 0struct CreateRenderInstance : zeno::INode {
+#if 0
+struct CreateRenderInstance : zeno::INode {
     virtual void apply() override {
         auto instID = get_input2<std::string>("instID");
         auto Geom = get_input2<std::string>("Geom");
@@ -819,3 +820,4 @@ ZENDEFNODE( RenderGroup, {
 #endif
 
 }
+#endif

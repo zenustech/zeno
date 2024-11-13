@@ -80,10 +80,10 @@ struct PrimFlattenLines : INode {
 
 ZENO_DEFNODE(PrimFlattenLines)({
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},
@@ -123,10 +123,10 @@ struct PrimFlattenPolys : INode {
 
 ZENO_DEFNODE(PrimFlattenPolys)({
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {
-        "prim",
+        {gParamType_Primitive, "prim"},
     },
     {},
     {"primitive"},

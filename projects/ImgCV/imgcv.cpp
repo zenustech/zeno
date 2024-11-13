@@ -925,10 +925,10 @@ struct ReadImageByOpenCV : INode {
 
 ZENDEFNODE(ReadImageByOpenCV, {
                                   {
-                                      {"readpath", "inputPath"},
+                                      {gParamType_String, "inputPath"},
                                   },
                                   {
-                                      "image",
+                                      {gParamType_Primitive, "image"},
                                   },
                                   {},
                                   {"opencv"},
