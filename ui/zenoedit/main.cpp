@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
         }
     }
 
+#ifndef ZENO_HIDE_UI
     ZenoMainWindow mainWindow;
     zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
     mainWindow.showMaximized();
@@ -157,5 +158,6 @@ int main(int argc, char *argv[])
         if (!zsgPath.isEmpty())
             mainWindow.openFileAndUpdateParam(zsgPath, paramsJson);
     }
+#endif
     return a.exec();
 }

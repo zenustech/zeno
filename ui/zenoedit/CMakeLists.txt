@@ -101,6 +101,10 @@ if (ZENO_OPTIX_PROC)
     target_compile_definitions(zenoedit PRIVATE -DZENO_OPTIX_PROC)
 endif()
 
+if (ZENO_HIDE_UI)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_HIDE_UI)
+endif()
+
 if (ZENO_WIN32_RC)
     target_compile_definitions(zenoedit PRIVATE -DZENO_WIN32_RC)
 endif()
