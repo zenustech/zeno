@@ -35,6 +35,7 @@ struct Scene : zeno::disable_copy {
     std::optional<zeno::vec4f> painter_cursor = {};
     std::unordered_set<std::string> selected = {};
     std::unordered_map<std::string, std::set<int>> selected_elements = {};
+    std::unordered_map<std::string, std::pair<std::string, std::set<int>>> selected_int_attr = {};
     std::unordered_map<std::string, std::vector<zeno::vec3f>> painter_data = {};
     std::unique_ptr<Camera> camera;
     std::unique_ptr<DrawOptions> drawOptions;

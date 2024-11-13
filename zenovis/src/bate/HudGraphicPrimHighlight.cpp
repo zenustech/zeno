@@ -209,6 +209,57 @@ struct PrimitiveHighlight : IGraphicDraw {
                     continue;
             }
         }
+        else if (scene->get_select_mode() == PICK_MODE::PICK_FACE_ATTR) {
+            for (const auto& [prim_id, elements] : scene->selected_int_attr) {
+                // ----- get primitive -----
+                PrimitiveObject* prim = nullptr;
+                auto optional_prim = scene->objectsMan->get(prim_id);
+                if (optional_prim.has_value())
+                    prim = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(prim_id).value());
+                else {
+                    auto node_id = prim_id.substr(0, prim_id.find_first_of(':'));
+                    for (const auto& [n, p] : scene->objectsMan->pairsShared()) {
+                        if (n.find(node_id) != std::string::npos) {
+                            prim = dynamic_cast<PrimitiveObject*>(p.get());
+                            break;
+                        }
+                    }
+                }
+                if (prim == nullptr) {
+                    return;
+                }
+
+                // ----- prepare data -----
+                auto const &pos = prim->attr<zeno::vec3f>("pos");
+
+                // ----- bind buffers -----
+                vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
+                vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+
+                // ----- draw selected meshes -----
+                {
+                    // prepare indices
+                    vector<vec3i> ind;
+                    std::string select_attr_str = elements.first;
+                    if (prim->tris.attr_is<int>(select_attr_str)) {
+                        ind.reserve(prim->tris.size());
+                        auto &attr = prim->tris.attr<int>(select_attr_str);
+                        for (auto i = 0; i < prim->tris.size(); i++) {
+                            if (elements.second.count(attr[i])) {
+                                ind.push_back(prim->tris[i]);
+                            }
+                        }
+                        ind.shrink_to_fit();
+                    }
+                    // draw meshes
+                    face_shader->use();
+                    scene->camera->set_program_uniforms(face_shader);
+                    ebo->bind_data(ind.data(), ind.size() * sizeof(ind[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, ind.size() * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
+                }
+            }
+        }
 
         for (const auto& [prim_id, elements] : scene->selected_elements) {
             // ----- get primitive -----

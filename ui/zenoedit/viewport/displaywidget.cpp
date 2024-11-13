@@ -1413,7 +1413,6 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                     }
                 }
             }
-            zeno::log_info("{}", select_attr_str);
             scene->set_select_mode(zenovis::PICK_MODE::PICK_FACE_ATTR);
             // read selected elements
             if (picker) {
@@ -1456,6 +1455,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         for (auto elem : attr_value) {
                             picked_elems_str += std::to_string(elem) + ",";
                         }
+                        scene->selected_int_attr[prim_name] = {select_attr_str, attr_value};
 
                         zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
                     }
