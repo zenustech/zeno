@@ -589,11 +589,15 @@ bool sceneMenuEvent(
         }
 
         NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+#ifdef ZENO_HIDE_UI
+        return false;
+#else
         auto m_menu = new ZenoNewnodeMenu(subgIdx, cates, scenePos);
         m_menu->setEditorFocus();
         m_menu->exec(QCursor::pos());
         m_menu->deleteLater();
         return true;
+#endif
     }
     return false;
 }

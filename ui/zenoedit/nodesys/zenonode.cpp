@@ -1641,10 +1641,14 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     else
     {
         NODE_CATES cates = pGraphsModel->getCates();
+#ifdef ZENO_HIDE_UI
+
+#else
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, event->scenePos());
         menu->setEditorFocus();
         menu->exec(event->screenPos());
         menu->deleteLater();
+#endif
     }
 }
 
