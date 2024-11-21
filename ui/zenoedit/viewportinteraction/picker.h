@@ -52,6 +52,7 @@ public:
     void focus(const std::string& prim_name);
     void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void()>);
+    void set_picked_elem_attrs_callback(std::function<void(SELECTION_MODE)>);
     void set_paint_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_map<uint32_t, zeno::vec2f>>, zeno::vec4f)>);
     bool get_draw_special_buffer_mode() const;
     void set_draw_special_buffer_mode(bool enable);
@@ -65,6 +66,7 @@ private:
 
     std::function<void(float, int, int)> picked_depth_callback;
     std::function<void()> picked_elems_callback;
+    std::function<void(SELECTION_MODE)> picked_elem_attrs_callback;
     std::function<void(std::unordered_map<std::string, std::unordered_map<uint32_t, zeno::vec2f>>, zeno::vec4f)> paint_elems_callback;
 
     bool draw_special_buffer_mode;

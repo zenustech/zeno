@@ -146,6 +146,11 @@ void Picker::pick_rect(int x0, int y0, int x1, int y1, SELECTION_MODE mode) {
         }
         load_from_str(selected, zenovis::PICK_MODE::PICK_OBJECT, SELECTION_MODE::NORMAL);
     }
+    else if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_FACE_ATTR) {
+        auto selected = picker->getPicked(x0, y0, x1, y1);
+        load_from_str(selected, scene->get_select_mode(), SELECTION_MODE::NORMAL);
+        if (picked_elem_attrs_callback) picked_elem_attrs_callback(mode);
+    }
     else {
         auto selected = picker->getPicked(x0, y0, x1, y1);
         load_from_str(selected, scene->get_select_mode(), mode);
@@ -220,6 +225,10 @@ void Picker::set_picked_depth_callback(std::function<void(float, int, int)> call
 
 void Picker::set_picked_elems_callback(function<void()> callback) {
     picked_elems_callback = std::move(callback);
+}
+
+void Picker::set_picked_elem_attrs_callback(function<void(SELECTION_MODE)> callback) {
+    picked_elem_attrs_callback = std::move(callback);
 }
 
 void Picker::set_paint_elems_callback(function<void(std::unordered_map<std::string, std::unordered_map<uint32_t, zeno::vec2f>>, zeno::vec4f)> callback) {

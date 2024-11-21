@@ -13,6 +13,7 @@
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
 #include <zeno/core/Session.h>
+#include "viewportinteraction/picker.h"
 #include "timeline/ztimeline.h"
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
@@ -1430,7 +1431,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
 //                    picker->load_from_str(node_context, scene->get_select_mode(), zeno::SELECTION_MODE::NORMAL);
 //                }
                 // set callback to picker
-                picker->set_picked_elems_callback([scene, node_location, prim_name, select_attr_str]() -> void {
+                picker->set_picked_elem_attrs_callback([scene, node_location, prim_name, select_attr_str](zeno::SELECTION_MODE mode) -> void {
                     auto obj = scene->objectsMan->get(prim_name);
                     if (!obj.has_value()) {
                         return;
@@ -1455,7 +1456,29 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                         for (auto elem : attr_value) {
                             picked_elems_str += std::to_string(elem) + ",";
                         }
-                        scene->selected_int_attr[prim_name] = {select_attr_str, attr_value};
+                        if (mode == zeno::SELECTION_MODE::NORMAL) {
+                            scene->selected_int_attr[prim_name] = {select_attr_str, attr_value};
+                        }
+                        else if (mode == zeno::SELECTION_MODE::APPEND) {
+                            auto old_select_attr_str = scene->selected_int_attr[prim_name].first;
+                            if (old_select_attr_str == select_attr_str) {
+                                scene->selected_int_attr[prim_name].second.insert(attr_value.begin(), attr_value.end());
+                            }
+                            else {
+                                scene->selected_int_attr[prim_name] = {select_attr_str, attr_value};
+                            }
+                        }
+                        else if (mode == zeno::SELECTION_MODE::REMOVE) {
+                            auto old_select_attr_str = scene->selected_int_attr[prim_name].first;
+                            if (old_select_attr_str == select_attr_str) {
+                                for (auto e: attr_value) {
+                                    scene->selected_int_attr[prim_name].second.erase(e);
+                                }
+                            }
+                            else {
+                                scene->selected_int_attr[prim_name] = {select_attr_str, {}};
+                            }
+                        }
 
                         zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "selected", picked_elems_str);
                     }
