@@ -121,6 +121,10 @@ void Picker::pick_pixel(int x, int y, SELECTION_MODE mode) {
             selected_prims.insert(selected);
         }
     }
+    else if (scene->get_select_mode() == zenovis::PICK_MODE::PICK_FACE_ATTR) {
+        load_from_str(selected, scene->get_select_mode(), SELECTION_MODE::NORMAL);
+        if (picked_elem_attrs_callback) picked_elem_attrs_callback(mode);
+    }
     else {
         load_from_str(selected, scene->get_select_mode(), mode);
         if (picked_elems_callback) picked_elems_callback();
