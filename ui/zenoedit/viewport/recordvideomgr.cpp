@@ -108,11 +108,11 @@ VideoRecInfo RecordVideoMgr::getRecordInfo() const
     return m_recordInfo;
 }
 
-void RecordVideoMgr::endRecToExportVideo()
+REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
 {
     if (m_recordInfo.bExportEXR) {
         emit recordFinished(m_recordInfo.record_path);
-        return;
+        return REC_NOERROR;
     }
     // denoising
     if (m_recordInfo.needDenoise) {
@@ -184,7 +184,7 @@ void RecordVideoMgr::endRecToExportVideo()
     }
     if (!m_recordInfo.bExportVideo) {
         emit recordFinished(m_recordInfo.record_path);
-        return;
+        return REC_NO_RECORD_OPTION;
     }
     //Zenovis::GetInstance().blockSignals(false);
     {
@@ -215,18 +215,24 @@ void RecordVideoMgr::endRecToExportVideo()
                       .arg(outPath)
                       .arg(m_recordInfo.audioPath);
             ret = QProcess::execute(cmd);
-            if (ret == 0)
+            if (ret == 0) {
                 emit recordFinished(m_recordInfo.record_path);
-            else
+                return REC_NOERROR;
+            }
+            else {
                 emit recordFailed(QString());
-            return;
+                return REC_FFMPEG_FATAL;
+            }
         }
         emit recordFinished(m_recordInfo.record_path);
+        return REC_NOERROR;
     }
     else
     {
         //todo get the error string from QProcess.
-        emit recordFailed(QString(tr("ffmpeg command failed, please whether check ffmpeg exists.")));
+        QString err_info = QString(tr("ffmpeg command failed, please whether check ffmpeg exists."));
+        emit recordFailed(err_info);
+        return REC_NOFFMPEG;
     }
 }
 

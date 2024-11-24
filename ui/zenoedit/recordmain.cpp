@@ -99,7 +99,7 @@ int record_main(const QCoreApplication& app)
     if (cmdParser.isSet("zsg"))
     {
         param.sZsgPath = cmdParser.value("zsg");
-        //ÏÈ½âÎözsgÀïÃæµÄäÖÈ¾²ÎÊý
+        //ï¿½È½ï¿½ï¿½ï¿½zsgï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½
         ZsgReader::getInstance().readRenderSettings(param.sZsgPath, param);
     }
     if (cmdParser.isSet("record"))
@@ -236,150 +236,184 @@ int record_main(const QCoreApplication& app)
             QCoreApplication::exit(-2);
         });
 
+        QObject::connect(zenoApp->getServer(), &ZTcpServer::runFinished, [=]() {
+            if (!param.bRecord) {
+                std::cout << "\n[record] record set to false. calculation process finished and exit.\n" << std::flush;
+                QCoreApplication::exit(0);
+            }
+            if (param.sPath.isEmpty()) {
+                std::cout << "\n[record] record failed because the path to store image has not been set." << std::flush;
+                QCoreApplication::exit(-1);
+            }
+        });
+
         bool ret = AppHelper::openZsgAndRun(param, launchparam);
         ZERROR_EXIT(ret, -1); //will launch tcp server to start a calc proc.
 
-        //get the final zencache path, like `2023-07-06 18-29-14`
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-        QString zenCacheDir = mgr->cachePath();
-        ZERROR_EXIT(!zenCacheDir.isEmpty(), -1);
+        if (param.bRecord && !param.sPath.isEmpty()) {
+            //get the final zencache path, like `2023-07-06 18-29-14`
+            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+            QString zenCacheDir = mgr->cachePath();
+            ZERROR_EXIT(!zenCacheDir.isEmpty(), -1);
 
-        QStringList cmdArgs = QCoreApplication::arguments();
-        QStringList args;
+            QStringList cmdArgs = QCoreApplication::arguments();
+            QStringList args;
 
-        int idxCachePath = cmdArgs.indexOf("--cachePath");
-        if (idxCachePath == -1)
-        {
-            zeno::log_error("no cache path offered, please specifiy with --cachePath");
-            return -1;
-        }
+            int idxCachePath = cmdArgs.indexOf("--cachePath");
+            if (idxCachePath == -1)
+            {
+                zeno::log_error("no cache path offered, please specifiy with --cachePath");
+                return -1;
+            }
 
-        auto pGraphs = zenoApp->graphsManagment();
-        ZERROR_EXIT(pGraphs, -1);
+            auto pGraphs = zenoApp->graphsManagment();
+            ZERROR_EXIT(pGraphs, -1);
 
-        args.append("--optixcmd");
-        args.append("0");
+            args.append("--optixcmd");
+            args.append("0");
 
-        args.append("--zsg");
-        args.append(param.sZsgPath);
+            args.append("--zsg");
+            args.append(param.sZsgPath);
 
-        args.append("--cachePath");
-        args.append(zenCacheDir);
+            args.append("--cachePath");
+            args.append(zenCacheDir);
 
-        args.append("--cacheautorm");
-        args.append("1");
+            args.append("--cacheautorm");
+            args.append("1");
 
-        args.append("--optixShowBackground");
-        args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
+            args.append("--optixShowBackground");
+            args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
 
-        args.append("--frame");
-        args.append(QString::number(param.iFrame));
+            args.append("--frame");
+            args.append(QString::number(param.iFrame));
 
-        args.append("--sframe");
-        args.append(QString::number(param.iSFrame));
+            args.append("--sframe");
+            args.append(QString::number(param.iSFrame));
 
-        args.append("--sample");
-        args.append(QString::number(param.iSample));
+            args.append("--sample");
+            args.append(QString::number(param.iSample));
 
-        args.append("--pixel");
-        args.append(param.sPixel);
+            args.append("--pixel");
+            args.append(param.sPixel);
 
-        args.append("--path");
-        args.append(param.sPath);
+            args.append("--path");
+            args.append(param.sPath);
 
-        args.append("--audio");
-        args.append(param.audioPath);
+            args.append("--audio");
+            args.append(param.audioPath);
 
-        args.append("--bitrate");
-        args.append(QString::number(param.iBitrate));
+            args.append("--bitrate");
+            args.append(QString::number(param.iBitrate));
 
-        args.append("--fps");
-        args.append(QString::number(param.iFps));
+            args.append("--fps");
+            args.append(QString::number(param.iFps));
 
-        args.append("--configFilePath");
-        args.append(param.configFilePath);
+            args.append("--configFilePath");
+            args.append(param.configFilePath);
 
-        args.append("--cacheNum");
-        args.append(QString::number(launchparam.cacheNum));
+            args.append("--cacheNum");
+            args.append(QString::number(launchparam.cacheNum));
 
-        args.append("--exitWhenRecordFinish");
-        args.append(QString::number(param.exitWhenRecordFinish));
+            args.append("--exitWhenRecordFinish");
+            args.append(QString::number(param.exitWhenRecordFinish));
 
-        args.append("--optix");
-        args.append(QString::number(param.bOptix));
+            args.append("--optix");
+            args.append(QString::number(param.bOptix));
 
-        args.append("--video");
-        args.append(QString::number(param.isExportVideo));
+            args.append("--video");
+            args.append(QString::number(param.isExportVideo));
 
-        args.append("--aov");
-        args.append(QString::number(param.bAov));
+            args.append("--aov");
+            args.append(QString::number(param.bAov));
 
-        args.append("--exr");
-        args.append(QString::number(param.export_exr));
+            args.append("--exr");
+            args.append(QString::number(param.export_exr));
 
-        args.append("--needDenoise");
-        args.append(QString::number(param.needDenoise));
+            args.append("--needDenoise");
+            args.append(QString::number(param.needDenoise));
 
-        args.append("--videoname");
-        args.append(param.videoName);
+            args.append("--videoname");
+            args.append(param.videoName);
 
-        args.append("--subzsg");
-        args.append(param.subZsg);
+            args.append("--subzsg");
+            args.append(param.subZsg);
 
-        args.append("--paramsPath");
-        args.append(launchparam.paramPath);
+            args.append("--paramsPath");
+            args.append(launchparam.paramPath);
 
-        args.append("--paramsJson");
-        args.append(param.paramsJson);
+            args.append("--paramsJson");
+            args.append(param.paramsJson);
 
-        optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
-        optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-        bool enableOptixLog = true;
-        if (enableOptixLog)
-            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
-        else
-            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
-        optixProc->start(QCoreApplication::applicationFilePath(), args);
+            optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+            optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+            bool enableOptixLog = true;
+            if (enableOptixLog)
+                optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+            else
+                optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
+            optixProc->start(QCoreApplication::applicationFilePath(), args);
 
-        if (!optixProc->waitForStarted(-1)) {
-            zeno::log_warn("optix process failed to get started, giving up");
-            return -1;
-        }
+            if (!optixProc->waitForStarted(-1)) {
+                zeno::log_warn("optix process failed to get started, giving up");
+                return -1;
+            }
 
-        optixProc->closeWriteChannel();
+            optixProc->closeWriteChannel();
 
-        QObject::connect(optixProc, &QProcess::readyRead, [=]() {
+            QObject::connect(optixProc, &QProcess::readyRead, [=]() {
 
-            while (optixProc->canReadLine()) {
-                QByteArray content = optixProc->readLine();
+                while (optixProc->canReadLine()) {
+                    QByteArray content = optixProc->readLine();
 
-                if (content.startsWith("[optixcmd]:")) {
-                    static const QString sFlag = "[optixcmd]:";
-                    content = content.mid(sFlag.length());
-                    rapidjson::Document doc;
-                    doc.Parse(content);
-                    ZASSERT_EXIT(doc.IsObject());
-                    if (doc.HasMember("result")) {
-                        ZASSERT_EXIT(doc["result"].IsInt());
-                        int ret = doc["result"].GetInt();
-                        std::cout << "\n[record] result is " << ret << "\n" << std::flush;
-                        QCoreApplication::exit(ret);
-                    }
-                    else if (doc.HasMember("frame")) {
-                        ZASSERT_EXIT(doc["frame"].IsInt());
-                        int frame = doc["frame"].GetInt();
-                        std::cout << "\n[record] frame " << frame << " recording is finished.\n" << std::flush;
+                    if (content.startsWith("[optixcmd]:")) {
+                        static const QString sFlag = "[optixcmd]:";
+                        content = content.mid(sFlag.length());
+                        rapidjson::Document doc;
+                        doc.Parse(content);
+                        ZASSERT_EXIT(doc.IsObject());
+                        if (doc.HasMember("result")) {
+                            ZASSERT_EXIT(doc["result"].IsInt());
+                            int ret = doc["result"].GetInt();
+                            std::string err_info;
+                            if (ret != 0) {
+                                switch (ret)
+                                {
+                                case REC_NO_RECORD_OPTION:
+                                    err_info = "[error]no record video, please set video=1 on command line";
+                                    break;
+                                case REC_OPTIX_INTERNAL_FATAL:
+                                    err_info = "[error]internal error on ";
+                                    break;
+                                case REC_FFMPEG_FATAL:
+                                    err_info = "[error]run error on ffmpeg command";
+                                    break;
+                                case REC_NOFFMPEG:
+                                    err_info = "[error]no ffmpeg.exe deployed on dir same as zeno.";
+                                    break;
+                                }
+                            }
+                            else {
+                                err_info = "the recording returns no error;";
+                            }
+                            std::cout << "\n" << err_info << "\n" << std::flush;
+                            QCoreApplication::exit(ret);
+                        }
+                        else if (doc.HasMember("frame")) {
+                            ZASSERT_EXIT(doc["frame"].IsInt());
+                            int frame = doc["frame"].GetInt();
+                            std::cout << "\n[record] frame " << frame << " recording is finished.\n" << std::flush;
+                        }
                     }
                 }
-            }
-        });
+                });
 
-        QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
-            if (QProcess::Crashed == error) {
-                std::cout << "\n[record] render process has crashed\n" << std::flush;
-                QCoreApplication::exit(-2);
-            }
-        });
+            QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
+                if (QProcess::Crashed == error) {
+                    std::cout << "\n[record] render process has crashed\n" << std::flush;
+                    QCoreApplication::exit(-2);
+                }
+            });
+        }
 
         //QObject::connect(optixProc, &QProcess::finished, [=](int exitCode, QProcess::ExitStatus exitStatus) {
 
