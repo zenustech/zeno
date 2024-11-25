@@ -119,6 +119,7 @@ struct DistantLight : INode {
         result->data.color = color;
         result->data.intensity = intensity;
         set_output2("out", std::move(result) );
+        set_output2("dir", std::move(dir3) );
     }
 };
 
@@ -130,6 +131,7 @@ ZENDEFNODE(DistantLight, {
         {"float", "intensity", "1"}
     },
     {
+        {"vec3f", "dir"},
         {"out"},
     },
     {
