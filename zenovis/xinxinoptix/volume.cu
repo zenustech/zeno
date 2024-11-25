@@ -162,7 +162,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     testPRD.done = false;
     testPRD.seed = prd->seed;
     testPRD.depth == 0;
-    testPRD._tmin_ = 0;
+    testPRD._tmin_ = t0;
     testPRD.maxDistance = NextFloatUp(t1);
     testPRD.test_distance = true;
     
@@ -189,7 +189,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         if (surface_inside) { // Hit other material
 
             prd->_mask_ = _mask_;
-            //prd->_tmin_ = NextFloatDown(t1);
+            prd->_tmin_ = NextFloatDown(t1);
 
         } else { // Volume edge
 
