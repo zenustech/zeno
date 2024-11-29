@@ -355,7 +355,7 @@ struct QueryNearestPrimitive : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
     } else if (has_input<NumericObject>("prim")) {
-      auto p = get_input<NumericObject>("prim")->get<vec3f>();
+      auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
       w = lbvh->find_nearest(p, bvhId, dist);
       line->verts.push_back(p);
     } else
@@ -496,7 +496,7 @@ struct QueryNearestPrimitiveWithUV : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
     } else if (has_input<NumericObject>("prim")) {
-      auto p = get_input<NumericObject>("prim")->get<vec3f>();
+      auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
       w = lbvh->find_nearest(p, bvhId, dist);
       line->verts.push_back(p);
     } else
@@ -700,7 +700,7 @@ struct QueryNearestPrimitiveWithinGroup : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
     } else if (has_input<NumericObject>("prim")) {
-      auto p = get_input<NumericObject>("prim")->get<vec3f>();
+      auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
       w = lbvh->find_nearest(p, bvhId, dist);
       line->verts.push_back(p);
     } else

@@ -421,7 +421,7 @@ struct ZSSolveShallowWaterMomentum : INode {
             adv_term += w_adv * scheme::HJ_WENO3(u_old[idx(i, j - upwind)], u_old[idx(i, j)], u_old[idx(i, j + upwind)],
                                                  u_old[idx(i, j + 2 * upwind)], w_adv, dx);
             h_f = 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]);
-            if (zs::abs(h_f) > zs::limits<float>::epsilon() * 10)
+            if (zs::abs(h_f) > zs::detail::deduce_numeric_epsilon<float>() * 10)
                 grad_term = gravity * ((h[idx(i, j)] - h[idx(i - 1, j)]) / dx + (B[idx(i, j)] - B[idx(i - 1, j)]) / dx);
             else
                 grad_term = 0;
@@ -440,7 +440,7 @@ struct ZSSolveShallowWaterMomentum : INode {
             adv_term += w_adv * scheme::HJ_WENO3(w_old[idx(i, j - upwind)], w_old[idx(i, j)], w_old[idx(i, j + upwind)],
                                                  w_old[idx(i, j + 2 * upwind)], w_adv, dx);
             h_f = 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]);
-            if (zs::abs(h_f) > zs::limits<float>::epsilon() * 10)
+            if (zs::abs(h_f) > zs::detail::deduce_numeric_epsilon<float>() * 10)
                 grad_term = gravity * ((h[idx(i, j)] - h[idx(i, j - 1)]) / dx + (B[idx(i, j)] - B[idx(i, j - 1)]) / dx);
             else
                 grad_term = 0;

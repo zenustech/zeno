@@ -46,7 +46,7 @@ If you use Linux the setup would be much easier, simply run these commands:
 
 ```bash
 sudo apt-get install -y git cmake make g++
-sudo apt-get install -y qt5-default libqt5svg5-dev
+sudo apt-get install -y qt5-default libqt5svg5-dev libcrypto++-dev
 ```
 
 > NOTE: We highly recommend to use **Ubuntu 20.04 (or above)** whenever possible.

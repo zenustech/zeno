@@ -76,6 +76,15 @@ namespace zenoui
                 ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
+                if (properties.type() == QMetaType::QVariantMap)
+                {
+                    QVariantMap props = properties.toMap();
+                    if (props.find("filter") != props.end())
+                    {
+                        auto filter = props["filter"].toStringList();
+                        pathLineEdit->setProperty("filter", filter);
+                    }
+                }
                 
                 QObject::connect(pathLineEdit, &ZLineEdit::textEditFinished, [=]() {
                     cbSet.cbEditFinished(pathLineEdit->text());

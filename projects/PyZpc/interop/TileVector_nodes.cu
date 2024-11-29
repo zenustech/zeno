@@ -117,6 +117,21 @@ namespace zeno {
         });
 
     struct CopyZsTileVectorTo : INode {
+        std::set<std::string> separate_string_by(const std::string &tags, const std::string &sep) {
+            std::set<std::string> res;
+            using Ti = RM_CVREF_T(std::string::npos);
+            Ti st = tags.find_first_not_of(sep, 0);
+            for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+                res.insert(tags.substr(st, ed - st));
+                st = tags.find_first_not_of(sep, ed);
+                if (st == std::string::npos)
+                    break;
+            }
+            if (st != std::string::npos && st < tags.size()) {
+                res.insert(tags.substr(st));
+            }
+            return res;
+        }
         template <typename SrcRange, typename DstRange, int dim, bool use_bit_cast>
         static void rearrange_device_data(SrcRange&& srcRange, DstRange&& dstRange, zs::wrapv<dim>,
             zs::wrapv<use_bit_cast>) {
@@ -139,11 +154,12 @@ namespace zeno {
         void apply() override {
             auto tvObj = get_input<ZsTileVectorObject>("ZsTileVector");
             auto prim = get_input<PrimitiveObject>("prim");
-            auto attr = get_input2<std::string>("attr");
+            auto attrs = get_input2<std::string>("attr(s)");
+            std::set<std::string> attribCandidates = separate_string_by(attrs, " :;,.");
             auto& tv = tvObj->value;
 
             std::visit(
-                [&prim, &attr](auto& tv) {
+                [&prim, &attrs = attribCandidates](auto& tv) {
                     using tv_t = RM_CVREF_T(tv);
                     using val_t = typename tv_t::value_type;
                     using namespace zs;
@@ -153,7 +169,7 @@ namespace zeno {
                             prim->resize(tv.size());
                         }
 
-                        auto process = [&tv, &attr](auto& primAttrib) {
+                        auto process = [&tv](auto& primAttrib, const auto &attr) {
                             using T = typename RM_CVREF_T(primAttrib)::value_type;
                             if constexpr (zs::is_arithmetic_v<T>) {
                                 using AllocatorT = RM_CVREF_T(tv.get_allocator());
@@ -195,12 +211,14 @@ namespace zeno {
                                         sizeof(ZsT) * tv.size());
                                 }
                             }
-                            };
-                        if (attr == "pos")
-                            // if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
-                            process(prim->attr<zeno::vec3f>("pos"));
-                        else
-                            match(process)(prim->attr(attr));
+                        };
+                        for (const auto &attr : attrs) {
+                            if (attr == "pos")
+                                // if constexpr (zs::is_same_v<std::vector<zeno::vec3f>, RM_CVREF_T(prim->attr(attr))>)
+                                process(prim->attr<zeno::vec3f>("pos"), attr);
+                            else
+                                match([&attr, &process](auto&primAttrib) {process(primAttrib, attr);})(prim->attr(attr));
+                        }
 
                     }
                     else
@@ -215,7 +233,7 @@ namespace zeno {
     ZENDEFNODE(CopyZsTileVectorTo, {
                                        {"ZsTileVector",
                                         {"PrimitiveObject", "prim"},
-                                        {"string", "attr", "clr"},
+                                        {"string", "attr(s)", "clr"},
                                         {"enum convert enforce_bit_cast", "option", "convert"}},
                                        {"prim"},
                                        {},

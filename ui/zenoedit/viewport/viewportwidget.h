@@ -9,6 +9,7 @@
 
 #include <viewportinteraction/transform.h>
 #include <viewportinteraction/picker.h>
+#include "zenovis/Camera.h"
 
 class ZTimeline;
 class ZenoMainWindow;
@@ -40,7 +41,7 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
-    void cameraLookTo(int dir);
+    void cameraLookTo(zenovis::CameraLookToDir dir);
     void clearTransformer();
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);

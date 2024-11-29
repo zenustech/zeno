@@ -18,9 +18,9 @@ struct PrimitiveDuplicate : zeno::INode {
 
         auto scaleByAttr = get_param<std::string>("scaleByAttr");
 
-        auto const &parspos = pars->attr<vec3f>("pos");
-        auto const &meshpos = mesh->attr<vec3f>("pos");
-        auto &outmpos = outm->add_attr<vec3f>("pos");
+        auto const &parspos = pars->attr<zeno::vec3f>("pos");
+        auto const &meshpos = mesh->attr<zeno::vec3f>("pos");
+        auto &outmpos = outm->add_attr<zeno::vec3f>("pos");
 
         if (scaleByAttr.size()) {
             auto const &scaleAttr = pars->attr<float>(scaleByAttr);

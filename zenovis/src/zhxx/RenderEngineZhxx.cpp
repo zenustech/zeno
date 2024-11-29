@@ -85,7 +85,6 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         auto guard = setupState();
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
-        auto const &zxx = cam.m_zxx;
 
         if (!giWasEnable && opt.enable_gi) {
             giNeedUpdate = true;
@@ -106,8 +105,8 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::setDOF(cam.m_dof);
         zenvis::setAperature(cam.m_aperture);
         zenvis::set_window_size(cam.m_nx, cam.m_ny);
-        zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
-                zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
+//        zenvis::look_perspective(zxx.cx, zxx.cy, zxx.cz, zxx.theta,
+//                zxx.phi, zxx.radius, zxx.fov, zxx.ortho_mode);
         int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
@@ -123,7 +122,7 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::finalize();
     }
 
-    void cleanupOptix() override {
+    void cleanupAssets() override {
 
     }
 

@@ -13,7 +13,7 @@ using namespace JsonHelper;
 
 QSet<QString> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
     });
 
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
@@ -430,6 +430,21 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     AddStringList({"bindNodeInput", viewerIdent, "object", ident, output.info.name}, writer);
                     bool isStatic = opts & OPT_ONCE;
                     AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
+
+                    if (name == "Stamp") {
+                        //stamp节点要特殊处理，控制zencache是否导出
+                        auto iterParam = params.find("mode");
+                        if (iterParam != params.end()) {
+                            QString mode = iterParam.value().value.toString();
+                            AddVariantList({ "setNodeParam", viewerIdent, "mode", mode }, "string", writer);
+                        }
+                        iterParam = params.find("name");
+                        if (iterParam != params.end()) {
+                            QString name = iterParam.value().value.toString();
+                            AddVariantList({ "setNodeParam", viewerIdent, "name", name }, "string", writer);
+                        }
+                    }
+
                     AddStringList({"completeNode", viewerIdent}, writer);
                     break;  //current node is not a subgraph node, so only one output is needed to view this obj.
                 }

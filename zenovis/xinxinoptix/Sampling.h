@@ -7,11 +7,21 @@
 
 #ifdef __CUDACC_RTC__
     #include "zxxglslvec.h"
+    using Vector2f = vec2;
     using Vector3f = vec3;
 #else 
     #include "Host.h"
     #include <zeno/utils/vec.h>
+    using Vector2f = zeno::vec<2, float>;
     using Vector3f = zeno::vec<3, float>;
+#endif
+
+#ifndef FLT_MAX 
+#define FLT_MAX __FLT_MAX__
+#endif
+
+#ifndef uint
+using uint = unsigned int;
 #endif
 
 #ifdef __CUDACC_DEBUG__
@@ -23,6 +33,22 @@
     } while (false) /* swallow semicolon */
 
 #endif
+
+struct LightSampleRecord {
+    float3 p;
+    float PDF;
+
+    float3 n;
+    float NoL;
+
+    float3 dir;
+    float dist;
+
+    float2 uv;
+
+    float intensity = 1.0f;
+    bool isDelta = false;
+};
 
 namespace pbrt {
     
@@ -229,7 +255,9 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
     return float3 {u, v, 0.0f};
 } 
 
-static __host__ __device__ __inline__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
+
+template<typename T>
+static __host__ __device__ __inline__ T interp(float2 barys, T a, T b, T c)
 {
     float w0 = 1 - barys.x - barys.y;
     float w1 = barys.x;

@@ -2539,14 +2539,14 @@ struct BulletCalcInverseKinematics : zeno::INode {
             auto numericObjs = get_input<zeno::ListObject>(
                 "targetPositions")->get<std::decay_t<NumericObject>>();
             for (auto &&no: numericObjs)
-                targetPositions.push_back(no->get<vec3f>());
+                targetPositions.push_back(no->get<zeno::vec3f>());
         }
 
         std::vector<vec4f> targetOrientations;
         {
             auto numericObjs = get_input<zeno::ListObject>("targetOrientations")->get<std::decay_t<NumericObject>>();
             for (auto &&no : numericObjs)
-                targetOrientations.push_back(no->get<vec4f>());
+                targetOrientations.push_back(no->get<zeno::vec4f>());
         }
 
 		auto numIterations = get_input2<int>("numIterations"); // 20
@@ -3156,7 +3156,7 @@ struct BulletMultiBodyCalculateJacobian : zeno::INode {
     virtual void apply() {
         auto object = get_input<BulletMultiBodyObject>("object");
         auto linkIndex = get_input2<int>("linkIndex");
-        auto localPosition = get_input2<vec3f>("localPos");
+        auto localPosition = get_input2<zeno::vec3f>("localPos");
 
         std::vector<float> jointPositionsQ;
         {

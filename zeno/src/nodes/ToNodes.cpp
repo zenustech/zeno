@@ -22,13 +22,17 @@ struct ToView : zeno::INode {
     virtual void apply() override {
         auto p = get_input("object");
         bool isStatic = has_input("isStatic") ? get_input2<bool>("isStatic") : false;
+        std::string mode = has_input("mode:") ? get_input2<std::string>("mode:") : "";
+        std::string name = has_input("name:") ? get_input2<std::string>("name:") : "";
+
         //auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : p->clone();
-        auto addtoview = [&] (auto const &addtoview, zany const &p, std::string const &postfix) -> void {
+        auto addtoview = [&] (auto const &addtoview, zany const &p, std::string const &postfix, 
+            std::string const &mode, std::string const &name) -> void {
             if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
                 log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
                 for (size_t i = 0; i < lst->arr.size(); i++) {
                     zany const &lp = lst->arr[i];
-                    addtoview(addtoview, lp, postfix + ":LIST" + std::to_string(i));
+                    addtoview(addtoview, lp, postfix + ":LIST" + std::to_string(i), mode, name);
                 }
                 return;
             }
@@ -56,6 +60,15 @@ struct ToView : zeno::INode {
                         key.append(std::to_string(getThisSession()->globalState->frameid));
                     key.push_back(':');
                     key.append(std::to_string(getThisSession()->globalState->sessionid));
+
+                    if (!name.empty()) {
+                        key = name;
+                    }
+                    if (!mode.empty()) {
+                        auto& ud = pp->userData();
+                        ud.set2("stamp_mode", mode);
+                    }
+
                     log_debug("ToView: add view object [{}] of type {}", key, cppdemangle(typeid(*p)));
                     getThisSession()->globalComm->addViewObject(key, std::move(pp));
                     set_output2("viewid", std::move(key));
@@ -63,7 +76,9 @@ struct ToView : zeno::INode {
             }
         };
 
-        addtoview(addtoview, p, {});
+        //在计算端，没法addViewObject，就相当于没法导cache
+        if (mode != "UnChanged")
+            addtoview(addtoview, p, {}, mode, name);
         hasViewed = true;
         set_output("object", std::move(p));
     }
@@ -72,7 +87,8 @@ struct ToView : zeno::INode {
 ZENDEFNODE(ToView, {
     {"object", {"bool", "isStatic", "0"}},
     {"object", {"string", "viewid"}},
-    {},
+    {{"string", "mode", "TotalChange"},
+     {"string", "name", ""}},
     {"layout"},
 });
 

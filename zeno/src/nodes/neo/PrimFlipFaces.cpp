@@ -10,8 +10,8 @@
 
 namespace zeno {
 
-ZENO_API void primFlipFaces(PrimitiveObject *prim) {
-    if (prim->lines.size())
+ZENO_API void primFlipFaces(PrimitiveObject *prim, bool only_face) {
+    if (!only_face && prim->lines.size())
         parallel_for_each(prim->lines.begin(), prim->lines.end(), [&] (auto &line) {
             std::swap(line[1], line[0]);
         });
@@ -20,8 +20,8 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim) {
             std::swap(tri[2], tri[0]);
         });
         if (prim->tris.attr_is<vec3f>("uv0")) {
-            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
-            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+            auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+            auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
             for (auto i = 0; i < prim->tris.size(); i++) {
                 std::swap(uv0[i], uv2[i]);
             }
@@ -47,7 +47,7 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim) {
 struct PrimFlipFaces : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        primFlipFaces(prim.get());
+        primFlipFaces(prim.get(), false);
         set_output("prim", std::move(prim));
     }
 };

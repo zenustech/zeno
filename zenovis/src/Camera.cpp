@@ -14,42 +14,15 @@ void Camera::setCamera(zeno::CameraData const &cam) {
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
             glm::vec3(cam.up[0], cam.up[1], cam.up[2]));
-    //this->m_dof = cam.dof;
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
 
-//    zeno::log_info("radius {}", m_zxx.radius);
-
-    if (cam.isSet) {
-        m_center = cam.center;
-        m_theta = cam.theta;
-        m_phi = cam.phi;
-        m_radius = cam.radius;
+    if (cam.pivot.has_value()) {
+        this->m_pivot = zeno::vec_to_other<glm::vec3>(cam.pivot.value());
     }
     else {
-        auto view = zeno::normalize(cam.view);
-        zeno::vec3f center = cam.pos + m_radius * zeno::normalize(cam.view);
-        float theta = M_PI_2 - glm::acos(zeno::dot(view, zeno::vec3f(0, 1, 0)));
-        float phi = M_PI_2 + std::atan2(view[2], view[0]);
-//        zeno::log_info("theta: {}", theta);
-//        zeno::log_info("phi: {}", phi);
-
-        m_center = center;
-        m_theta = theta;
-        m_phi = phi;
-
-        float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
-        float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
-        glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-        glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-        glm::vec3 left = glm::cross(up, front);
-        float map_to_up = glm::dot(up, zeno::vec_to_other<glm::vec3>(cam.up));
-        float map_to_left = glm::dot(left, zeno::vec_to_other<glm::vec3>(cam.up));
-        m_roll = glm::atan(map_to_left, map_to_up);
+        this->m_pivot = zeno::vec_to_other<glm::vec3>(cam.pos);
     }
-
-    this->m_auto_radius = !cam.isSet;
-    this->m_need_sync = true;
 }
 
 void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
@@ -63,54 +36,36 @@ void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, b
     this->zOptixCameraSettingInfo.pupillary_distance = pupillary_distance;
 }
 
-static glm::mat4 MakeInfReversedZProjRH(float fovY_radians, float aspectWbyH, float zNear) {
-    float f = 1.0f / tan(fovY_radians / 2.0f);
-    return glm::mat4(
-            f / aspectWbyH, 0.0f,  0.0f,  0.0f,
-            0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  0.0f, -1.0f,
-            0.0f, 0.0f, zNear,  0.0f);
+void Camera::placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up) {
+    auto right = glm::cross(glm::normalize(view), glm::normalize(up));
+    glm::mat3 rotation;
+    rotation[0] = right;
+    rotation[1] = up;
+    rotation[2] = -view;
+
+    Camera::placeCamera(pos, glm::quat_cast(rotation));
 }
-void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
-    front = glm::normalize(front);
-    up = glm::normalize(up);
 
-    m_lodcenter = pos;
-    m_lodfront = front;
-    m_lodup = up;
-
-    m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
-    if (m_ortho_mode) {
-        auto radius = m_radius;
-        m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
-                radius, m_far, m_near);
-    } else {
-        m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), 0.001);
-    }
+void Camera::placeCamera(glm::vec3 pos, glm::quat rotation) {
+    m_pos = pos;
+    m_rotation = rotation;
 }
 
 void Camera::updateMatrix() {
-    auto center = zeno::vec_to_other<glm::vec3>(m_center) ;
-    float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
-    float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
-    glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    glm::vec3 left = glm::cross(up, front);
-    up = glm::cos(m_roll) * up + glm::sin(m_roll) * left;
+    auto center = zeno::vec_to_other<glm::vec3>(m_pivot) ;
 
     if (!m_ortho_mode) {
         m_near = 0.05f;
-        m_far = 20000.0f * std::max(1.0f, (float)m_radius / 10000.f);
-        placeCamera(center - front * m_radius, front, up);
+        m_far = 20000.0f * std::max(1.0f, get_radius() / 10000.f);
+        placeCamera(getPos(), m_rotation);
     } else {
-        placeCamera(center - front * m_radius * 0.4f, front, up);
+        placeCamera(getPos(), m_rotation);
     }
 }
 
 void Camera::setResolution(int nx, int ny) {
     m_nx = nx;
     m_ny = ny;
-    m_proj = MakeInfReversedZProjRH(glm::radians(m_fov), getAspect(), m_near);
 }
 void Camera::setResolutionInfo(bool block, int nx, int ny)
 {
@@ -132,30 +87,13 @@ bool Camera::is_locked_window() const {
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
-    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup);
-}
-void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
-    m_zxx.cx = cx;
-    m_zxx.cy = cy;
-    m_zxx.cz = cz;
-    m_zxx.theta = theta;
-    m_zxx.phi = phi;
-    m_zxx.radius = radius;
-    m_zxx.fov = fov;
-    m_zxx.ortho_mode = ortho_mode;
-    m_zxx.aperture = aperture;
-    m_zxx.focalPlaneDistance = focalPlaneDistance;
-
-    m_ortho_mode = ortho_mode;
-    m_aperture = aperture;
-    this->focalPlaneDistance = focalPlaneDistance;
-
-    updateMatrix();
+    placeCamera(center - get_lodfront() * radius, m_rotation);
 }
 
 void Camera::set_program_uniforms(opengl::Program *pro) {
     pro->use();
-
+    auto m_view = get_view_matrix();
+    auto m_proj = get_proj_matrix();
     auto vp = m_proj * m_view;
     pro->set_uniform("mVP", vp);
     pro->set_uniform("mInvVP", glm::inverse(vp));

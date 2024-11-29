@@ -36,19 +36,15 @@ void buildUniformedSphereGAS(const OptixDeviceContext& context,  OptixTraversabl
     accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
                             OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS |
                             OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-                            
-    float3 sphereVertex = make_float3( 0.f, 0.f, 0.f );
-    float  sphereRadius = 1.0f;
 
-    CUdeviceptr d_vertex_buffer{};
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer ), sizeof( float3 ) ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( d_vertex_buffer ), &sphereVertex,
-                            sizeof( float3 ), cudaMemcpyHostToDevice ) );
+    float4 sphereVertex = make_float4(0, 0, 0, 1);
 
-    CUdeviceptr d_radius_buffer{};
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_radius_buffer ), sizeof( float ) ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( d_radius_buffer ), &sphereRadius, sizeof( float ),
-                            cudaMemcpyHostToDevice ) );
+    raii<CUdeviceptr> d_vertex_buffer {};
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.handle ), sizeof( float4) ) );
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( d_vertex_buffer.handle ), &sphereVertex,
+                            sizeof( float4 ), cudaMemcpyHostToDevice ) );
+
+    CUdeviceptr d_radius_buffer = (CUdeviceptr) ((char*)d_vertex_buffer.handle + sizeof(float3));
 
     OptixBuildInput sphere_input{};
 
@@ -64,9 +60,6 @@ void buildUniformedSphereGAS(const OptixDeviceContext& context,  OptixTraversabl
     sphere_input.sphereArray.numSbtRecords = 1;
 
     buildXAS(context, accel_options, sphere_input, d_gas_output_buffer, gas_handle);
-
-    CUDA_CHECK( cudaFree( (void*)d_vertex_buffer ) );
-    CUDA_CHECK( cudaFree( (void*)d_radius_buffer ) );
 }
 
 void buildInstancedSpheresGAS(const OptixDeviceContext &context, std::vector<std::shared_ptr<SphereInstanceAgent>>& agentList) {

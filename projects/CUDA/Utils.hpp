@@ -103,8 +103,8 @@ retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
 template <typename Pol, typename TileVecT>
 zs::Vector<typename ZenoParticles::lbvh_t::Box>
 retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
-                          float radius = 0.f,
-                          const zs::SmallString &xTag = "xn") {
+                          const float& radius,
+                          const zs::SmallString &xTag) {
   using namespace zs;
   using bv_t = typename ZenoParticles::lbvh_t::Box;
   constexpr auto space = Pol::exec_tag::value;
@@ -225,7 +225,7 @@ void retrieve_bounding_volumes(Pol &pol, const TileVecT &vtemp,
 }
 
 // for ccd
-template <typename Pol, typename TileVecT0, typename TileVecT1, int codim = 3>
+template <typename Pol, typename TileVecT0, typename TileVecT1, int codim>
 zs::Vector<typename ZenoParticles::lbvh_t::Box> retrieve_bounding_volumes(
     Pol &pol, const TileVecT0 &verts,
     const typename ZenoParticles::particles_t &eles, const TileVecT1 &vtemp,
@@ -282,7 +282,7 @@ constexpr bool pt_accd(VecT p, VecT t0, VecT t1, VecT t2, VecT dp, VecT dt0,
   dt2 -= mov;
   dp -= mov;
   T dispMag2Vec[3] = {dt0.l2NormSqr(), dt1.l2NormSqr(), dt2.l2NormSqr()};
-  T tmp = zs::limits<T>::lowest();
+  T tmp = zs::detail::deduce_numeric_lowest<T>();
   for (int i = 0; i != 3; ++i)
     if (dispMag2Vec[i] > tmp)
       tmp = dispMag2Vec[i];
@@ -343,7 +343,7 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
     T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
                  (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
     {
-      dist2_cur = zs::limits<T>::max();
+      dist2_cur = zs::detail::deduce_numeric_max<T>();
       for (const auto &dist : dists)
         if (dist < dist2_cur)
           dist2_cur = dist;
@@ -378,7 +378,7 @@ ee_accd(VecT ea0, VecT ea1, VecT eb0, VecT eb1, VecT dea0, VecT dea1, VecT deb0,
       T dists[] = {(ea0 - eb0).l2NormSqr(), (ea0 - eb1).l2NormSqr(),
                    (ea1 - eb0).l2NormSqr(), (ea1 - eb1).l2NormSqr()};
       {
-        dist2_cur = zs::limits<T>::max();
+        dist2_cur = zs::detail::deduce_numeric_max<T>();
         for (const auto &dist : dists)
           if (dist < dist2_cur)
             dist2_cur = dist;
@@ -568,7 +568,7 @@ void find_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
           atomic_min(exec_cuda, &finalAlpha[0], alpha);
       });
   // zs::reduce(pol, std::begin(surfAlphas), std::end(surfAlphas),
-  // std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
+  // std::begin(finalAlpha), detail::deduce_numeric_max<T>(), getmin<T>{});
   auto surfAlpha = finalAlpha.getVal();
   fmt::print(fg(fmt::color::dark_cyan),
              "surface alpha: {}, default stepsize: {}\n", surfAlpha, stepSize);
@@ -708,7 +708,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
         });
       });
   // zs::reduce(pol, std::begin(surfAlphas), std::end(surfAlphas),
-  // std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
+  // std::begin(finalAlpha), detail::deduce_numeric_max<T>(), getmin<T>{});
   auto surfAlpha = finalAlpha.getVal();
   stepSize = surfAlpha;
   fmt::print(fg(fmt::color::dark_cyan),
@@ -758,7 +758,7 @@ void find_boundary_intersection_free_stepsize(Pol &pol, ZenoParticles &zstets,
       });
 #if 0
   zs::reduce(pol, std::begin(surfEdgeAlphas), std::end(surfEdgeAlphas),
-             std::begin(finalAlpha), limits<T>::max(), getmin<T>{});
+             std::begin(finalAlpha), detail::deduce_numeric_max<T>(), getmin<T>{});
   stepSize = std::min(surfAlpha, finalAlpha.getVal());
 #else
   stepSize = finalAlpha.getVal();

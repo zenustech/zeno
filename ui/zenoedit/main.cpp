@@ -157,5 +157,6 @@ int main(int argc, char *argv[])
         if (!zsgPath.isEmpty())
             mainWindow.openFileAndUpdateParam(zsgPath, paramsJson);
     }
+
     return a.exec();
 }

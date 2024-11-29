@@ -65,6 +65,27 @@ ZENDEFNODE(Route, {
 });
 
 
+struct Stamp : zeno::INode {
+    virtual void apply() override {
+        if (has_input("input")) {
+            auto obj = get_input("input");
+            set_output("output", std::move(obj));
+        }
+        else {
+            set_output("output", std::make_shared<zeno::DummyObject>());
+        }
+    }
+};
+
+ZENDEFNODE(Stamp, {
+    {"input"},
+    {"output"},
+    {{"enum UnChanged DataChange ShapeChange TotalChange", "mode", "UnChanged"},
+     {"string", "name", ""}},
+    {"lifecycle"}
+});
+
+
 struct Clone : zeno::INode {
     virtual void apply() override {
         auto obj = get_input("object");
@@ -74,12 +95,16 @@ struct Clone : zeno::INode {
             return;
         }
         set_output("newObject", std::move(newobj));
+        set_output("origin", obj);
     }
 };
 
 ZENDEFNODE(Clone, {
     {"object"},
-    {"newObject"},
+    {
+        "newObject",
+        "origin",
+    },
     {},
     {"lifecycle"},
 });

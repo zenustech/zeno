@@ -18,7 +18,7 @@
 #include <random>
 #include <sstream>
 #include <ctime>
-
+#include <iostream>
 namespace zeno
 {
 namespace
@@ -30,9 +30,9 @@ struct WBPrimBend : INode {
         auto limitDeformation = get_input<NumericObject>("Limit Deformation")->get<int>();
         auto symmetricDeformation = get_input<NumericObject>("Symmetric Deformation")->get<int>();
         auto angle = get_input<NumericObject>("Bend Angle (degree)")->get<float>();
-        auto upVector = has_input("Up Vector") ? get_input<NumericObject>("Up Vector")->get<vec3f>() : vec3f(0, 1, 0);
-        auto capOrigin = has_input("Capture Origin") ? get_input<NumericObject>("Capture Origin")->get<vec3f>() : vec3f(0, 0, 0);
-        auto dirVector = has_input("Capture Direction") ? get_input<NumericObject>("Capture Direction")->get<vec3f>() : vec3f(0, 0, 1);
+        auto upVector = has_input("Up Vector") ? get_input<NumericObject>("Up Vector")->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto capOrigin = has_input("Capture Origin") ? get_input<NumericObject>("Capture Origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto dirVector = has_input("Capture Direction") ? get_input<NumericObject>("Capture Direction")->get<zeno::vec3f>() : vec3f(0, 0, 1);
         double capLen = has_input("Capture Length") ? get_input<NumericObject>("Capture Length")->get<float>() : 1.0;
 
         glm::vec3 up = normalize(glm::vec3(upVector[0], upVector[1], upVector[2]));
@@ -412,7 +412,7 @@ struct LineCarve : INode {
         auto p = a + (b - a) * r1;
 
         prim->verts.reserve(prim->size() + 1);
-        prim->attr<vec3f>("pos").insert(prim->verts.begin() + int(index) + 1, { p[0], p[1], p[2] });
+        prim->attr<zeno::vec3f>("pos").insert(prim->verts.begin() + int(index) + 1, { p[0], p[1], p[2] });
 
         linesLen.reserve(linesLen.size() + 1);
         linesLen.insert(linesLen.begin() + int(index), insertU);
@@ -479,13 +479,13 @@ ZENDEFNODE(LineCarve,
 struct VisVec3Attribute : INode {
     void apply() override
     {
-        auto color = get_input<NumericObject>("color")->get<vec3f>();
+        auto color = get_input<NumericObject>("color")->get<zeno::vec3f>();
         auto useNormalize = get_input<NumericObject>("normalize")->get<int>();
         auto lengthScale = get_input<NumericObject>("lengthScale")->get<float>();
         auto name = get_input2<std::string>("name");
 
         auto prim = get_input<PrimitiveObject>("prim");
-        auto& attr = prim->verts.attr<vec3f>(name);
+        auto& attr = prim->verts.attr<zeno::vec3f>(name);
         auto& pos = prim->verts;
 
         auto primVis = std::make_shared<PrimitiveObject>();
@@ -500,7 +500,7 @@ struct VisVec3Attribute : INode {
                     },
                     prim->attr(key));
         }
-        auto& visColor = primVis->verts.add_attr<vec3f>("clr");
+        auto& visColor = primVis->verts.add_attr<zeno::vec3f>("clr");
         auto& visPos = primVis->verts;
 
 #pragma omp parallel for
@@ -687,7 +687,161 @@ ZENDEFNODE(PrimCopyAttr,
                    "erode",
                }});
 
+char* getPrimRawData(PrimitiveObject* prim, std::string type, std::string name, std::string scope)
+{
+  std::cout<<type<<" "<<scope<<" "<<name<<std::endl;
+  if(type == "int")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<int>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<int>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<int>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<int>(name).data());
+  }
+  if(type == "float")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<float>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<float>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<float>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<float>(name).data());
+  }
+  if(type == "vec2f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec2f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec2f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec2f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec2f>(name).data());
+  }
+  if(type == "vec2i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec2i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec2i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec2i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec2i>(name).data());
+  }
+  if(type == "vec3f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec3f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec3f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec3f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec3f>(name).data());
+  }
+  if(type == "vec3i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec3i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec3i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec3i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec3i>(name).data());
+  }
+  if(type == "vec4f")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec4f>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec4f>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec4f>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec4f>(name).data());
+  }
+  if(type == "vec4i")
+  {
+    if(scope == "verts")
+      return (char*)(prim->attr<vec4i>(name).data());
+    if(scope == "tris")
+      return (char*)(prim->tris.attr<vec4i>(name).data());
+    if(scope == "polys")
+      return (char*)(prim->polys.attr<vec4i>(name).data());
+    if(scope == "lines")
+      return (char*)(prim->lines.attr<vec4i>(name).data());
+  }
+}
 
+struct PrimTwoCopyAttr : INode {
+  void apply() override {
+    auto prim   = get_input<PrimitiveObject>("primTo");
+    auto primFrom = get_input<PrimitiveObject>("primFrom");
+    auto sourceName = get_input2<std::string>("NameFrom");
+    auto targetName = get_input2<std::string>("NameTo");
+    auto srcscope = get_input2<std::string>("ScopeFrom");
+    auto tarscope = get_input2<std::string>("ScopeTo");
+    auto type = get_input2<std::string>("type");
+
+    char* dataToPtr;
+    char* dataFromPtr;
+    size_t size;
+
+    dataToPtr = getPrimRawData(prim.get(), type, targetName, tarscope);
+    dataFromPtr = getPrimRawData(primFrom.get(), type, sourceName, srcscope);
+    if(srcscope=="verts")
+      size = primFrom->verts.size();
+    if(srcscope=="tris")
+      size = primFrom->tris.size();
+    if(srcscope=="lines")
+      size = primFrom->lines.size();
+    if(srcscope=="polys")
+      size = primFrom->polys.size();
+
+    if(type=="int")
+      size *= 4;
+    if(type=="float")
+      size *= 4;
+    if(type=="vec2f")
+      size *= 8;
+    if(type=="vec2i")
+      size *= 8;
+    if(type=="vec3f")
+      size *= 12;
+    if(type=="vec3i")
+      size *= 12;
+    if(type=="vec4f")
+      size *= 16;
+    if(type=="vec4i")
+      size *= 16;
+
+    memcpy(dataToPtr, dataFromPtr,size);
+
+    set_output("prim", std::move(prim));
+  }
+};
+ZENDEFNODE(PrimTwoCopyAttr,
+           { /* inputs: */ {
+                "primTo",
+                "primFrom",
+                {"string", "NameTo", "s"},
+                {"string", "NameFrom", "t"},
+                {"enum verts tris loops polys lines", "ScopeTo", "verts"},
+                {"enum verts tris loops polys lines", "ScopeFrom", "verts"},
+                {"enum int float vec2f vec2i vec3f vec3i vec4f vec4i", "type", "vec3f"},
+            }, /* outputs: */ {
+                "prim",
+            }, /* params: */ {
+            }, /* category: */ {
+                "erode",
+            }});
 ///////////////////////////////////////////////////////////////////////////////
 // 2022.07.22 BVH
 ///////////////////////////////////////////////////////////////////////////////
@@ -697,8 +851,8 @@ struct BVHNearestPos : INode {
         auto primNei = get_input<PrimitiveObject>("primNei");
 
         auto bvh_id = prim->attr<float>(get_input2<std::string>("bvhIdTag"));
-        auto bvh_ws = prim->attr<vec3f>(get_input2<std::string>("bvhWeightTag"));
-        auto &bvh_pos = prim->add_attr<vec3f>(get_input2<std::string>("bvhPosTag"));
+        auto bvh_ws = prim->attr<zeno::vec3f>(get_input2<std::string>("bvhWeightTag"));
+        auto &bvh_pos = prim->add_attr<zeno::vec3f>(get_input2<std::string>("bvhPosTag"));
 
 #pragma omp parallel for
         for (int i = 0; i < prim->size(); i++) {
@@ -753,7 +907,7 @@ struct BVHNearestAttr : INode {
 
         if(targetType == "tris"){
         auto bvhWeightTag = get_input2<std::string>("bvhWeightTag");
-        auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
+        auto& bvh_ws = prim->verts.attr<zeno::vec3f>(bvhWeightTag);
         auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
         #pragma omp parallel for
         for (int i = 0; i < prim->size(); i++){
@@ -816,7 +970,7 @@ struct HeightStarPattern : zeno::INode {
 
 #pragma omp parallel for
         for (int i = 0; i < prim->verts.size(); i++) {
-            auto coord = prim->verts.attr<vec3f>("res")[i];
+            auto coord = prim->verts.attr<zeno::vec3f>("res")[i];
             vec2f coord2d = vec2f(coord[0], coord[1]);
             vec2f cellcenter = vec2f(floor(coord2d[0]), floor(coord2d[1]));
             float result = 0;
@@ -1096,8 +1250,8 @@ ZENDEFNODE(PrimitiveDelAttrs,
 struct QuatRotBetweenVectors : INode {
     void apply() override
     {
-        auto start = normalize(get_input<NumericObject>("start")->get<vec3f>());
-        auto dest = normalize(get_input<NumericObject>("dest")->get<vec3f>());
+        auto start = normalize(get_input<NumericObject>("start")->get<zeno::vec3f>());
+        auto dest = normalize(get_input<NumericObject>("dest")->get<zeno::vec3f>());
 
         glm::vec3 gl_start(start[0], start[1], start[2]);
         glm::vec3 gl_dest(dest[0], dest[1], dest[2]);
@@ -1123,8 +1277,8 @@ ZENDEFNODE(QuatRotBetweenVectors,
 // 矢量 * 四元数 => 矢量
 struct QuatRotate : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
-        auto vec3 = get_input<NumericObject>("vec3")->get<vec3f>();
+        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
+        auto vec3 = get_input<NumericObject>("vec3")->get<zeno::vec3f>();
 
         glm::vec3 gl_vec3(vec3[0], vec3[1], vec3[2]);
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
@@ -1152,7 +1306,7 @@ struct QuatAngleAxis : INode {
     void apply() override
     {
         auto angle = get_input<NumericObject>("angle(D)")->get<float>();
-        auto axis = normalize(get_input<NumericObject>("axis")->get<vec3f>());
+        auto axis = normalize(get_input<NumericObject>("axis")->get<zeno::vec3f>());
 
         float gl_angle = glm::radians(angle);
         glm::vec3 gl_axis(axis[0], axis[1], axis[2]);
@@ -1179,7 +1333,7 @@ ZENDEFNODE(QuatAngleAxis,
 // 四元数 -> 旋转角度
 struct QuatGetAngle : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
+        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
 
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
         float gl_angle = glm::degrees(glm::angle(gl_quat));
@@ -1203,7 +1357,7 @@ ZENDEFNODE(QuatGetAngle,
 // 四元数 -> 旋转轴
 struct QuatGetAxis : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
+        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
 
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
         glm::vec3 gl_axis = glm::axis(gl_quat);

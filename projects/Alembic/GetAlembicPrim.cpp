@@ -159,7 +159,7 @@ struct GetAlembicPrim : INode {
             prim = get_alembic_prim(abctree, index);
         }
         if (get_input2<bool>("flipFrontBack")) {
-            primFlipFaces(prim.get());
+            primFlipFaces(prim.get(), true);
         }
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(prim.get());
@@ -198,7 +198,7 @@ struct AllAlembicPrim : INode {
         }
         auto outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
         if (get_input2<bool>("flipFrontBack")) {
-            primFlipFaces(outprim.get());
+            primFlipFaces(outprim.get(), true);
         }
         if (get_input2<int>("triangulate") == 1) {
             zeno::primTriangulate(outprim.get());
@@ -297,7 +297,7 @@ struct AlembicPrimList : INode {
         for (auto &prim: new_prims->arr) {
             auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
             if (get_input2<bool>("flipFrontBack")) {
-                primFlipFaces(_prim.get());
+                primFlipFaces(_prim.get(), true);
             }
             if (get_input2<bool>("splitByFaceset") && get_input2<bool>("killDeadVerts")) {
                 primKillDeadVerts(_prim.get());
@@ -433,7 +433,7 @@ struct ImportAlembicPrim : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, outOfRangeAsEmpty);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");
@@ -457,7 +457,7 @@ struct ImportAlembicPrim : INode {
                 outprim = get_alembic_prim(abctree, index);
             }
         }
-        primFlipFaces(outprim.get());
+        primFlipFaces(outprim.get(), true);
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(outprim.get());
         }

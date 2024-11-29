@@ -15,6 +15,7 @@
 #ifdef ZENO_ENABLE_OPTIX
     #include "../xinxinoptix/xinxinoptixapi.h"
 #endif
+//#include <magic_enum.hpp>
 #include <cstdlib>
 #include <map>
 
@@ -61,17 +62,19 @@ void Scene::cleanupView()
 
 void Scene::cleanUpScene()
 {
-    if (objectsMan)
-        objectsMan->clear_objects();
+        zeno::getSession().globalComm->clear_objects([this](){
+            if (objectsMan)
+                objectsMan->clear_objects();
 
-    if (!renderMan)
-        return;
+            if (!renderMan)
+                return;
 
-    RenderEngine* pEngine = renderMan->getEngine();
-    if (pEngine) {
-        pEngine->update();
-        pEngine->cleanupOptix();
-    }
+            RenderEngine* pEngine = renderMan->getEngine();
+            if (pEngine) {
+                pEngine->update();
+                pEngine->cleanupAssets();
+            }
+        });
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
@@ -113,6 +116,13 @@ bool Scene::loadFrameObjects(int frameid) {
     return inserted;
 }
 
+void Scene::set_select_mode(PICK_MODE _select_mode) {
+//    zeno::log_info("{} -> {}", magic_enum::enum_name(select_mode), magic_enum::enum_name(_select_mode));
+    select_mode = _select_mode;
+}
+PICK_MODE Scene::get_select_mode() {
+    return select_mode;
+}
 void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {
@@ -165,7 +175,7 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
         CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_RGBA, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo2));
-        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_DEPTH_COMPONENT32, camera->m_nx, camera->m_ny));
+        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, drawOptions->msaa_samples, GL_DEPTH_COMPONENT32F, camera->m_nx, camera->m_ny));
         CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
         CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo1));
@@ -189,7 +199,7 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo1));
             CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, nx, ny));
             CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, srbo2));
-            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, nx, ny));
+            CHECK_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, nx, ny));
 
             auto bindReadSFbo = opengl::scopeGLBindFramebuffer(GL_DRAW_FRAMEBUFFER, sfbo);
             CHECK_GL(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER,

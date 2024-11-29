@@ -76,7 +76,7 @@ struct ZSCUMathTest : INode {
         constexpr int n = 100;
         using TV = zs::vec<float, 3>;
         //TV m_X[4] = {TV{0, 0, 0}, TV{0, 1, 0}, TV{0, 0, -1}, TV{0, 0, 1}};
-        TV m_X[4] = {TV{0, 0, 0}, TV{0, 1, 0}, TV{0, 0, -1}, TV{-limits<float>::epsilon() * 5, 1, -1}};
+        TV m_X[4] = {TV{0, 0, 0}, TV{0, 1, 0}, TV{0, 0, -1}, TV{-detail::deduce_numeric_epsilon<float>() * 5, 1, -1}};
         auto ra = zs::dihedral_angle(m_X[2], m_X[0], m_X[1], m_X[3], exec_seq);
         auto grad = zs::dihedral_angle_gradient(m_X[2], m_X[0], m_X[1], m_X[3], exec_seq);
         auto hess = zs::dihedral_angle_hessian(m_X[2], m_X[0], m_X[1], m_X[3], exec_seq);

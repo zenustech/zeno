@@ -14,9 +14,9 @@ get_target_property(ZENO_INC_DIR zeno INCLUDE_DIRECTORIES)
 message("demo plugin includes [${ZENO_INC_DIR}]")
 target_include_directories(zeno_plugin_helper INTERFACE ${ZENO_INC_DIR})
 
-get_target_property(ZENO_LINK_OPTIONS zeno LINK_OPTIONS)
-message("demo plugin link options [${ZENO_LINK_OPTIONS}]")
-target_link_options(zeno_plugin_helper INTERFACE ${ZENO_LINK_OPTIONS})
+# get_target_property(ZENO_LINK_OPTIONS zeno LINK_OPTIONS)
+# message("demo plugin link options [${ZENO_LINK_OPTIONS}]")
+# target_link_options(zeno_plugin_helper INTERFACE ${ZENO_LINK_OPTIONS})
 
 get_target_property(ZENO_LINK_DIRS zeno LINK_DIRECTORIES)
 message("demo plugin link dirs [${ZENO_LINK_DIRS}]")

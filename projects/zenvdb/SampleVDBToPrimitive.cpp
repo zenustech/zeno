@@ -203,7 +203,7 @@ struct PrimSample : zeno::INode {
         auto remapMin = get_input2<float>("remapMin");
         auto remapMax = get_input2<float>("remapMax");
         auto wrap = get_input2<std::string>("wrap");
-        auto borderColor = get_input2<vec3f>("borderColor");
+        auto borderColor = get_input2<zeno::vec3f>("borderColor");
         if (has_input<PrimitiveObject>("sampledObject") && get_input<PrimitiveObject>("sampledObject")->userData().has("isImage")) {
             auto image = get_input<PrimitiveObject>("sampledObject");
             primSampleTexture(prim, srcChannel, "vertex", dstChannel, image, wrap, borderColor, remapMin, remapMax);

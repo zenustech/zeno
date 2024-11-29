@@ -21,6 +21,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
+#include <cstdlib>
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -88,9 +90,9 @@ struct CreateCube : zeno::INode {
         auto &loops = prim->loops;
 
         std::vector<zeno::vec3f> dummy;
-        auto &uv1 = !quad ?  prim->tris.add_attr<vec3f>("uv0") : dummy;
-        auto &uv2 = !quad ?  prim->tris.add_attr<vec3f>("uv1") : dummy;
-        auto &uv3 = !quad ?  prim->tris.add_attr<vec3f>("uv2") : dummy;
+        auto &uv1 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv0") : dummy;
+        auto &uv2 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv1") : dummy;
+        auto &uv3 = !quad ?  prim->tris.add_attr<zeno::vec3f>("uv2") : dummy;
 
         if(div_w <= 2)
             div_w = 2;
@@ -963,7 +965,7 @@ struct CreateTorus : zeno::INode {
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         prim->verts.resize(majorSegment * minorSegment);
-        auto &nrm = prim->verts.add_attr<vec3f>("nrm");
+        auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for (auto j = 0; j < minorSegment; j++) {
             float theta = M_PI * 2.0 * j / minorSegment - M_PI;
             float y = sin(theta) * minorRadius;
@@ -1283,10 +1285,10 @@ struct CreateSphere : zeno::INode {
             memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
             memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
 
-            prim->userData().set2("sphere_transform_row0", row0);
-            prim->userData().set2("sphere_transform_row1", row1);
-            prim->userData().set2("sphere_transform_row2", row2);
-            prim->userData().set2("sphere_transform_row3", row3);
+            prim->userData().set2("_transform_row0", row0);
+            prim->userData().set2("_transform_row1", row1);
+            prim->userData().set2("_transform_row2", row2);
+            prim->userData().set2("_transform_row3", row3);
         }
 
         set_output("prim",std::move(prim));
@@ -1411,6 +1413,92 @@ ZENDEFNODE(CreateCylinder, {
     {"prim"},
     {},
     {"create"},
+});
+struct CreateFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (!fs::exists(folderPath)) {
+            fs::create_directories(folderPath);
+        }
+    }
+};
+
+ZENDEFNODE(CreateFolder, {
+    {
+        {"directory", "folderPath"}
+    },
+    {},
+    {},
+    {"create"},
+});
+
+struct RemoveFolder : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        if (fs::exists(folderPath)) {
+            std::error_code errorCode;
+            fs::remove_all(folderPath, errorCode);
+            if (get_input2<bool>("clean")) {
+                fs::create_directories(folderPath);
+            }
+        }
+    }
+};
+
+ZENDEFNODE(RemoveFolder, {
+    {
+        {"directory", "folderPath"},
+        {"bool", "clean", "false"},
+    },
+    {},
+    {},
+    {"create"},
+});
+
+struct FFMPEGImagesToVideo : zeno::INode {
+    virtual void apply() override {
+        namespace fs = std::filesystem;
+        auto fps = get_input2<int>("fps");
+        auto imageFolderPath = get_input2<std::string>("imageFolderPath");
+        auto bitrate = get_input2<int>("bitrate");
+        auto outPath = get_input2<std::string>("outPath");
+
+        bool ok = fs::exists(imageFolderPath) && fs::is_directory(imageFolderPath);
+        if (!ok) {
+            throw zeno::makeError("imageFolderPath not exists or not is_directory");
+        }
+        std::vector<fs::path> filenames;
+        std::string extension;
+        for (const auto& entry : fs::directory_iterator(imageFolderPath)) {
+            if (fs::is_regular_file(entry.status())) {
+                filenames.emplace_back(entry.path().filename());
+                extension = entry.path().filename().extension().string();
+            }
+        }
+        std::sort(filenames.begin(), filenames.end());
+        for (auto i = 0; i < filenames.size(); i++) {
+            auto old_name = zeno::format("{}/{}", imageFolderPath, filenames[i].string());
+            auto new_name = zeno::format("{}/{:07d}{}", imageFolderPath, i, extension);
+            fs::rename(old_name, new_name);
+        }
+
+        auto cmd = zeno::format("ffmpeg -y -r {} -i {}/%07d{} -b:v {}k -c:v mpeg4 {}", fps, imageFolderPath, extension, bitrate, outPath);
+        std::system(cmd.c_str());
+    }
+};
+
+ZENDEFNODE(FFMPEGImagesToVideo, {
+    {
+        {"int", "fps", "25"},
+        {"directory", "imageFolderPath", "imageFolderPath"},
+        {"int", "bitrate", "200000"},
+        {"writepath", "outPath", "outPath"},
+    },
+    {},
+    {},
+    {"Miscellaneous"},
 });
 }
 }

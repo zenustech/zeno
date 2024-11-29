@@ -16,10 +16,6 @@
 #include "Host.h"
 #endif
 
-#ifndef uint
-using uint = unsigned int;
-#endif
-
 #define MISS_HIT 0
 #define DIFFUSE_HIT 1
 #define SPECULAR_HIT 2
@@ -61,6 +57,7 @@ struct ShadowPRD {
     uint8_t nonThinTransHit;
 
     VolumePRD vol;
+    float3 ShadowNormal;
 
     float rndf() {
         return rnd(seed);
@@ -106,9 +103,9 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
-    unsigned char adepth;
     bool         alphaHit;
     vec3         mask_value;
+    vec3         click_pos;
     unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;

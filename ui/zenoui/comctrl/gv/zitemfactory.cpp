@@ -160,6 +160,15 @@ namespace zenoui
                 pPathEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(200, zenoui::g_ctrlHeight)));
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
+                if (controlProps.type() == QMetaType::QVariantMap)
+                {
+                    QVariantMap props = controlProps.toMap();
+                    if (props.find("filter") != props.end())
+                    {
+                        auto filter = props["filter"].toStringList();
+                        pPathEditor->setProperty("filter", filter);
+                    }
+                }
                 
                 QObject::connect(pPathEditor, &ZenoParamPathEdit::editingFinished, [=]() {
                     cbSet.cbEditFinished(pPathEditor->text());

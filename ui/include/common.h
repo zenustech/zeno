@@ -23,6 +23,15 @@ struct TIMELINE_INFO
     TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false), timelinefps(24) {}
 };
 
+enum REC_RETURN_CODE
+{
+    REC_NOERROR = 0,
+    REC_NO_RECORD_OPTION = 1,
+    REC_OPTIX_INTERNAL_FATAL = -1,
+    REC_FFMPEG_FATAL = -3,
+    REC_NOFFMPEG = -2,
+};
+
 struct RECORD_SETTING
 {
     QString record_path;

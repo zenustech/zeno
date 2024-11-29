@@ -13,7 +13,7 @@ struct PrimitiveCalcCentroid : zeno::INode {
     virtual void apply() override {
         auto method = get_param<std::string>("method");
         auto prim = get_input<PrimitiveObject>("prim");
-        auto &pos = prim->attr<vec3f>("pos");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
 
         vec4f acc;
         if (method == "Vertex" || !prim->tris.size()) {

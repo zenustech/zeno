@@ -179,7 +179,7 @@ int optixcmd(const QCoreApplication& app, int port)
         ret = worker.recordFrame_impl(recInfo, frame);
         if (!ret) {
             zeno::log_error("\n[optixcmd]:{\"result\" : -1}\n");
-            return -1;
+            return REC_OPTIX_INTERNAL_FATAL;
         }
         else {
             QString errMsg = QString("\n[optixcmd]: {\"frame\" : %1}\n").arg(frame);
@@ -197,12 +197,16 @@ int optixcmd(const QCoreApplication& app, int port)
         ++frame;
     }
 
+    REC_RETURN_CODE err_info = REC_NOERROR;
     if (param.isExportVideo)
     {
-        recordMgr.endRecToExportVideo();
+        err_info = recordMgr.endRecToExportVideo();
+        if (err_info != REC_NOERROR) {
+            zeno::log_error("\n[optixcmd]:{\"result\" : " + std::to_string(err_info) + "}\n");
+            return REC_NOERROR;
+        }
     }
 
     zeno::log_critical("\n[optixcmd]:{\"result\" : 0}\n");
-
-    return 0;
+    return REC_NOERROR;
 }

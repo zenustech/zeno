@@ -8,7 +8,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/zeno_p.h>
 #include "imgcv.h"
-
+#include <zeno/utils/UserData.h>
 namespace zeno {
 namespace {
 
@@ -466,7 +466,7 @@ struct CVImageFillColor : CVINode {
     void apply() override {
         auto likeimage = get_input<CVImageObject>("image");
         auto is255 = get_input2<bool>("is255");
-        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<zeno::vec3f>("color"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         if (has_input("mask")) {
@@ -734,8 +734,8 @@ struct CVImageFillGrad : CVINode {
         auto scale = get_input2<float>("scale");
         auto offset = get_input2<float>("offset");
         auto is255 = get_input2<bool>("is255");
-        auto color1 = tocvscalar<float>(get_input2<vec3f>("color1"));
-        auto color2 = tocvscalar<float>(get_input2<vec3f>("color2"));
+        auto color1 = tocvscalar<float>(get_input2<zeno::vec3f>("color1"));
+        auto color2 = tocvscalar<float>(get_input2<zeno::vec3f>("color2"));
         auto image = get_input2<bool>("inplace") ? likeimage
             : std::make_shared<CVImageObject>(likeimage->image.clone());
         vec2i shape(image->image.size[1], image->image.size[0]);
@@ -786,7 +786,7 @@ ZENDEFNODE(CVImageFillGrad, {
 struct CVImageDrawPoly : CVINode {
     void apply() override {
         auto image = get_input<CVImageObject>("image");
-        auto color = tocvscalar<float>(get_input2<vec3f>("color"));
+        auto color = tocvscalar<float>(get_input2<zeno::vec3f>("color"));
         if (!get_input2<bool>("inplace"))
             image = std::make_shared<CVImageObject>(*image);
         auto prim = get_input<PrimitiveObject>("prim");
@@ -868,7 +868,7 @@ struct CVImagePutText : CVINode {
         auto antialias = get_input2<bool>("antialias");
         auto scale = get_input2<float>("scale");
         auto is255 = get_input2<bool>("is255");
-        auto color = tocvscalar<double>(get_input2<vec3f>("color") * (is255 ? 255 : 1));
+        auto color = tocvscalar<double>(get_input2<zeno::vec3f>("color") * (is255 ? 255 : 1));
         cv::Point org(get_input2<int>("X0"), get_input2<int>("Y0"));
         cv::putText(image->image, text, org, fontFace, scale, color,
                     thickness, antialias ? cv::LINE_AA : cv::LINE_8);
@@ -897,6 +897,42 @@ ZENDEFNODE(CVImagePutText, {
     {"opencv"},
 });
 
+struct ReadImageByOpenCV : INode {
+  void apply() override {
+    auto inputPath = get_input2<std::string>("inputPath");
+    cv::Mat image = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
+    cv::Mat exrImage;
+    image.convertTo(exrImage, CV_32F);
+    int width = image.cols;
+    int height = image.rows;
+    auto img = std::make_shared<PrimitiveObject>();
+    img->verts.resize(width * height);
+    auto &clr = img->verts.add_attr<vec3f>("clr");
+    for (size_t j = 0; j < height; j++) {
+      for (size_t i = 0; i < width; i++) {
+        size_t index = j * width + i;
+        img->verts[index] = {float(i) / float(width), float(j) / float(height), 0};
+        float Y = exrImage.at<float>(j, i);
+        clr[index] = {Y, Y, Y};
+      }
+    }
+    img->userData().set2("w", width);
+    img->userData().set2("h", height);
+
+    set_output("image", std::move(img));
+  }
+};
+
+ZENDEFNODE(ReadImageByOpenCV, {
+                                  {
+                                      {"readpath", "inputPath"},
+                                  },
+                                  {
+                                      "image",
+                                  },
+                                  {},
+                                  {"opencv"},
+                              });
 }
 
 }

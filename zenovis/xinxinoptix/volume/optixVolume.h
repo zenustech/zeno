@@ -34,7 +34,7 @@
 #include <zeno/types/TextureObject.h>
 
 #ifndef uint
-typedef unsigned int uint;
+using uint = unsigned int;
 #endif
 
 struct GridWrapper {
@@ -142,6 +142,7 @@ struct VolumeAccel
 struct VolumeWrapper
 {
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
+	uint8_t bounds;
 	glm::mat4 transform; 
 	std::vector<std::string> selected;
 

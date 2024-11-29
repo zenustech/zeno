@@ -1340,4 +1340,64 @@ ZENDEFNODE(ReadLightFromFile,
                 "FBX",
             }
            });
+
+struct ReadSTL : zeno::INode {
+    virtual void apply() override {
+        auto filepath = get_input2<std::string>("path");
+
+        Assimp::Importer importer;
+
+        // Import the STL file with triangulation and joining identical vertices
+        const aiScene* scene = importer.ReadFile(filepath, 0);
+
+        // Check if the import was successful
+        if (!scene) {
+            std::cerr << "Failed to load model: " << importer.GetErrorString() << std::endl;
+        }
+
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+
+        // Iterate through all meshes in the scene
+        for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+            aiMesh* mesh = scene->mMeshes[meshIndex];
+            prim->verts.resize(mesh->mNumVertices);
+            std::cout << "Mesh " << meshIndex << ": " << mesh->mNumVertices << " vertices, " << mesh->mNumFaces << " faces." << std::endl;
+
+            // Iterate through all vertices in the mesh
+            for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+                aiVector3D position = mesh->mVertices[vertexIndex];
+                prim->verts[vertexIndex] = {position.x, position.y, position.z};
+            }
+
+            prim->loops.reserve(mesh->mNumFaces * 3);
+            prim->polys.resize(mesh->mNumFaces);
+
+            int counter = 0;
+
+            // Iterate through all faces in the mesh
+            for (unsigned int faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
+                aiFace face = mesh->mFaces[faceIndex];
+
+                for (unsigned int i = 0; i < face.mNumIndices; ++i) {
+
+                    prim->loops.push_back(face.mIndices[i]);
+                }
+
+                prim->polys[faceIndex] = {counter, int(face.mNumIndices)};
+                counter += face.mNumIndices;
+            }
+        }
+        set_output("prim", prim);
+    }
+};
+ZENDEFNODE(ReadSTL, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"prim"},
+    },
+    {},
+    {"primitive"},
+});
 }

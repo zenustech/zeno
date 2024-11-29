@@ -507,7 +507,7 @@ struct PrimitiveMarkIslands : INode {
         }
 
         const auto &loops = prim->loops;
-        const auto &polys = prim->polys;
+        auto &polys = prim->polys;
         using IV = zs::vec<int, 2>;
         zs::bht<int, 2, int, 16> tab{(std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
         std::vector<int> is, js;
@@ -568,12 +568,26 @@ struct PrimitiveMarkIslands : INode {
         std::sort(kvs.begin(), kvs.end(), lessOp);
         pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
 
-        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        auto islandTag = get_input2<std::string>("island_tag");
+        auto &setids = prim->add_attr<int>(islandTag);
         pol(range(pos.size()), [&fas, &setids, &invMap, vtab = view<space>(vtab)](int vi) mutable {
             auto ancestor = fas[vi];
             auto setNo = vtab.query(ancestor);
             setids[vi] = invMap[setNo];
         });
+        if (get_input2<bool>("mark_face")) {
+            auto &faceids = polys.add_attr<int>(islandTag);
+            pol(zip(polys.values, faceids), [&](const auto &poly, int &fid) {
+                auto offset = poly[0];
+                auto vi = loops[offset];
+                auto vIslandId = setids[vi];
+                fid = vIslandId;
+                // auto size = poly[1];
+                // for (int i = 1; i < size; ++i) {
+                //     assert(setids[loops[offset + i]] == set);
+                // }
+            });
+        }
 
         if (isTris) {
             primTriangulate(prim.get(), true, false);
@@ -583,7 +597,8 @@ struct PrimitiveMarkIslands : INode {
 };
 
 ZENDEFNODE(PrimitiveMarkIslands, {
-                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}},
+                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}, 
+                                     {"bool", "mark_face", "0"}},
                                      {
                                          {"PrimitiveObject", "prim"},
                                      },
@@ -611,7 +626,7 @@ struct PrimitiveReorder : INode {
 
         /// @note bv
         constexpr auto defaultBv =
-            bv_t{zsvec3::constant(zs::limits<zs::f32>::max()), zsvec3::constant(zs::limits<zs::f32>::lowest())};
+            bv_t{zsvec3::constant(zs::detail::deduce_numeric_max<zs::f32>()), zsvec3::constant(zs::detail::deduce_numeric_lowest<zs::f32>())};
         bv_t gbv;
         if (orderVerts || orderTris) {
 
@@ -626,21 +641,21 @@ struct PrimitiveReorder : INode {
                 y = xn[1];
                 z = xn[2];
             });
-            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::limits<zs::f32>::max(), getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::detail::deduce_numeric_max<zs::f32>(), getmin<zs::f32>{});
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
-            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::limits<zs::f32>::max(),
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::detail::deduce_numeric_max<zs::f32>(),
                        getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
-            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::limits<zs::f32>::max(),
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::detail::deduce_numeric_max<zs::f32>(),
                        getmin<zs::f32>{});
-            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::limits<zs::f32>::lowest(),
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::detail::deduce_numeric_lowest<zs::f32>(),
                        getmax<zs::f32>{});
             gbv = bv_t{zsvec3{res[0], res[1], res[2]}, zsvec3{res[3], res[4], res[5]}};
         }
-        gbv._min -= limits<float>::epsilon() * 16;
-        gbv._max += limits<float>::epsilon() * 16;
+        gbv._min -= detail::deduce_numeric_epsilon<float>() * 16;
+        gbv._max += detail::deduce_numeric_epsilon<float>() * 16;
 
         /// @note reorder
         struct Mapping {
@@ -2820,9 +2835,9 @@ struct ComputeAverageEdgeLength : INode {
         fmt::print("sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
 #endif
         zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
-        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::limits<float>::max(),
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::detail::deduce_numeric_max<float>(),
                    zs::getmin<float>{});
-        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::limits<float>::min(),
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::detail::deduce_numeric_min<float>(),
                    zs::getmax<float>{});
 
         set_output("prim", prim);
@@ -2988,7 +3003,7 @@ struct ParticleCluster : zeno::INode {
         });
 
         /// @brief uv
-        if (pars->has_attr("uv") && uvDist > zs::limits<float>::epsilon() * 10) {
+        if (pars->has_attr("uv") && uvDist > zs::detail::deduce_numeric_epsilon<float>() * 10) {
             const auto &uv = pars->attr<vec2f>("uv");
             pol(range(pos.size()), [&neighbors, &uv, uvDist2 = uvDist * uvDist](int vi) mutable {
                 int n = neighbors[vi].size();
@@ -3071,7 +3086,7 @@ struct ParticleSegmentation : zeno::INode {
         float uvDist2 = zs::sqr(get_input2<float>("uv_dist"));
         const vec2f *uvPtr = nullptr;
 
-        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::limits<float>::epsilon() * 10)
+        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::detail::deduce_numeric_epsilon<float>() * 10)
             uvPtr = pars->attr<vec2f>("uv").data();
 
         using namespace zs;
@@ -3528,7 +3543,7 @@ struct PrimitiveColoring : INode {
             pol(range(spmat.outerSize()),
                 [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
                     auto color = colors[i];
-                    if (color == limits<T>::max()) {
+                    if (color == detail::deduce_numeric_max<T>()) {
                         correct[0] = 0;
                         printf("node [%d]: %f. not colored!\n", i, (float)color);
                         return;
@@ -3560,7 +3575,7 @@ struct PrimitiveColoring : INode {
             pol(range(spmat.outerSize()),
                 [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
                     auto color = colors[i];
-                    if (color == limits<T>::max()) {
+                    if (color == detail::deduce_numeric_max<T>()) {
                         correct[0] = 0;
                         printf("node [%d]: %f. not colored!\n", i, (float)color);
                         return;
@@ -3591,11 +3606,11 @@ struct PrimitiveColoring : INode {
             bool done = true;
             pol(zip(weights, minWeights, maskOut, colors), [&](u32 &w, u32 &mw, int &mask, float &color) {
                 //if (w < mw && mask == 0)
-                if (w < mw && mw != limits<u32>::max()) {
+                if (w < mw && mw != detail::deduce_numeric_max<u32>()) {
                     done = false;
                     mask = 1;
                     color = iter;
-                    w = limits<u32>::max();
+                    w = detail::deduce_numeric_max<u32>();
                 }
             });
             return done;
@@ -3786,16 +3801,16 @@ struct QueryClosestPrimitive : zeno::INode {
             std::vector<Ti> ids(prim->size(), -1);
             pol(zs::range(prim->size()), [&, lbvh = zs::proxy<zs::execspace_e::openmp>(lbvh), et = zsbvh->et](int i) {
                 using vec3 = zs::vec<float, 3>;
-                kvs[i].dist = zs::limits<float>::max();
+                kvs[i].dist = zs::detail::deduce_numeric_max<float>();
                 kvs[i].pid = i;
                 auto pi = vec3::from_array(prim->verts[i]);
-                float radius = zs::limits<float>::max();
+                float radius = zs::detail::deduce_numeric_max<float>();
                 if (prim->has_attr(radiusTag))
                     radius = prim->attr<float>(radiusTag)[i];
                 lbvh.find_nearest(
                     pi,
                     [&ids, &kvs, &pi, &targetPrim, i, et](int j, float &dist, int &idx) {
-                        float d = zs::limits<float>::max();
+                        float d = zs::detail::deduce_numeric_max<float>();
                         if (et == ZenoLinearBvh::point) {
                             d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
                         } else if (et == ZenoLinearBvh::curve) {
@@ -3859,13 +3874,13 @@ struct QueryClosestPrimitive : zeno::INode {
                  dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
 #endif
         } else if (has_input<NumericObject>("prim")) {
-            auto p = get_input<NumericObject>("prim")->get<vec3f>();
+            auto p = get_input<NumericObject>("prim")->get<zeno::vec3f>();
             using vec3 = zs::vec<float, 3>;
             auto pi = vec3::from_array(p);
             auto lbvhv = zs::proxy<zs::execspace_e::host>(lbvh);
             lbvhv.find_nearest(pi, [&, et = zsbvh->et](int j, float &dist_, int &idx) {
                 using vec3 = zs::vec<float, 3>;
-                float d = zs::limits<float>::max();
+                float d = zs::detail::deduce_numeric_max<float>();
                 if (et == ZenoLinearBvh::point) {
                     d = zs::dist_pp(pi, vec3::from_array(targetPrim->verts[j]));
                 } else if (et == ZenoLinearBvh::curve) {
@@ -4099,9 +4114,9 @@ static zeno::vec3f compute_dimensions(const PrimitiveObject &primA, const Primit
             pol(zs::enumerate(posB), [&, offset = posA.size()](int col, const auto &p) { locs[col + offset] = p[d]; });
 
             std::vector<float> ret(2);
-            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret), zs::limits<float>::max(),
+            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret), zs::detail::deduce_numeric_max<float>(),
                        zs::getmin<float>());
-            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret) + 1, zs::limits<float>::lowest(),
+            zs::reduce(pol, std::begin(locs), std::end(locs), std::begin(ret) + 1, zs::detail::deduce_numeric_lowest<float>(),
                        zs::getmax<float>());
             dims[d] = ret[1] - ret[0];
         };
@@ -4122,7 +4137,7 @@ struct ComputeParticlesDirection : INode {
         zeno::vec3f trans{0, 0, 0};
 
         if (has_input("origin")) {
-            trans = get_input2<vec3f>("origin");
+            trans = get_input2<zeno::vec3f>("origin");
         } else {
             std::vector<float> locs[3];
             for (int d = 0; d != 3; ++d) {
@@ -4632,6 +4647,54 @@ ZENDEFNODE(AdvanceFrame, {
                              {},
                              {"zs_geom"},
                          });
+
+struct PrimAssignRefAttrib : INode {
+    virtual void apply() override {
+        auto points = get_input<PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("ref_prim");
+        auto idTag = get_input2<std::string>("pointIdTag");
+        auto tag = get_input2<std::string>("attribTag");
+
+        auto pointIndex = points->attr<int>(idTag);
+
+        auto assignAttrib = [&pointIndex](auto &dstAttrib, const auto &srcAttrib) {
+            if constexpr (zs::is_same_v<RM_CVREF_T(dstAttrib), RM_CVREF_T(srcAttrib)>) {
+    #pragma omp parallel for
+                for (auto index = 0; index < dstAttrib.size(); ++index) {
+                    dstAttrib[index] = srcAttrib[(int)pointIndex[index]];
+                }
+            } else 
+                throw std::runtime_error(
+                    fmt::format("destination attrib [{}], source attrib [{}]\n", 
+                    zs::get_var_type_str(dstAttrib), zs::get_var_type_str(srcAttrib)));
+        };
+
+        if (tag == "pos") {
+            assignAttrib(points->verts.values, prim->verts.values);
+        } else {
+            zs::match([&verts = points->verts, &tag](const auto &src) {
+                verts.add_attr<RM_CVREF_T(src[0])>(tag);
+            })(prim->verts.attr(tag));
+            zs::match([&assignAttrib](auto &dst, const auto &src) { 
+                assignAttrib(dst, src); 
+            })(points->verts.attr(tag), prim->verts.attr(tag));
+        }
+
+        set_output("prim", get_input("prim"));
+    }
+};
+
+ZENDEFNODE(PrimAssignRefAttrib, {
+                                      {
+                                          "prim",
+                                          "ref_prim",
+                                          {"string", "pointIdTag", "bvh_id"},
+                                          {"string", "attribTag"},
+                                      },
+                                      {"prim"},
+                                      {},
+                                      {"primitive"},
+                                  });
 
 struct RemovePrimitiveTopo : INode {
     void apply() override {

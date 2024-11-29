@@ -48,6 +48,7 @@
 #include <string>
 #include <filesystem>
 
+#include "BCX.h"
 #include "ies/ies.h"
 
 #include "zeno/utils/fileio.h"
@@ -67,15 +68,70 @@ namespace OptixUtil
     using namespace xinxinoptix;
 ////these are all material independent stuffs;
 inline raii<OptixDeviceContext>             context                  ;
-inline OptixPipelineCompileOptions        pipeline_compile_options {};
+
+inline OptixPipelineCompileOptions          pipeline_compile_options ;
 inline raii<OptixPipeline>                  pipeline                 ;
-inline raii<OptixModule>                    ray_module               ;
-inline raii<OptixModule>                    sphere_module            ;
+
+inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
+
+inline raii<CUdeviceptr> d_raygen_record;
+inline raii<CUdeviceptr> d_miss_records;
+inline raii<CUdeviceptr> d_hitgroup_records;
+inline raii<CUdeviceptr> d_callable_records;    
+
+inline raii<OptixModule> sphere_ism;
+
+inline raii<OptixModule> round_linear_ism;
+inline raii<OptixModule> round_bezier_ism;
+inline raii<OptixModule> round_catrom_ism;
+
+inline raii<OptixModule> round_quadratic_ism;
+inline raii<OptixModule> flat_quadratic_ism;
+inline raii<OptixModule> round_cubic_ism;
+
+inline std::vector< std::function<void(void)> > garbageTasks;
+
+inline void resetAll() {
+
+    raygen_prog_group.reset();
+    radiance_miss_group.reset();
+    occlusion_miss_group.reset();
+
+    raygen_module.reset();
+
+    auto count = garbageTasks.size();
+    for (auto& task : garbageTasks) {
+        task();
+    }
+    garbageTasks.clear();
+
+    d_miss_records.reset();
+    d_raygen_record.reset();
+    d_hitgroup_records.reset();
+    d_callable_records.reset();  
+
+    pipeline.reset();
+    context.reset();
+}
+
 inline bool isPipelineCreated = false;
 ////end material independent stuffs
+
+inline static auto DefaultCompileOptions() {
+    OptixModuleCompileOptions module_compile_options = {};
+#if defined( NDEBUG )
+    module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#else 
+    module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
+    return module_compile_options;
+}
+
 inline void createContext()
 {
     // Initialize CUDA
@@ -85,9 +141,22 @@ inline void createContext()
     OPTIX_CHECK( optixInit() );
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
+#if defined( NDEBUG )
+    options.logCallbackLevel          = 0;
+#else
     options.logCallbackLevel          = 4;
+#endif
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+}
+
+inline uint CachedPrimitiveTypeFlags = UINT_MAX;
+
+inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
+
+    if (CachedPrimitiveTypeFlags != UINT_MAX && (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags == usesPrimitiveTypeFlags)) { return false; }
+    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.usesMotionBlur        = false;
@@ -96,24 +165,46 @@ inline void createContext()
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
-    pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+    //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
+    pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
-    OptixModuleCompileOptions module_compile_options = {};
-    #if defined( NDEBUG )
-        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-    #else 
-        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-    #endif
+    OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
     OptixBuiltinISOptions builtin_is_options {};
+    builtin_is_options.usesMotionBlur = false;
+    builtin_is_options.buildFlags     = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-    builtin_is_options.usesMotionBlur      = false;
-    builtin_is_options.buildFlags          = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-    builtin_is_options.builtinISModuleType = OPTIX_PRIMITIVE_TYPE_SPHERE;
-    OPTIX_CHECK( optixBuiltinISModuleGet( context, &module_compile_options, &pipeline_compile_options,
-                            &builtin_is_options, &sphere_module ) );
+    const static auto PrimitiveTypeConfigs = std::vector<std::tuple<OptixPrimitiveTypeFlags, OptixPrimitiveType, OptixModule*>> {
+
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE, OPTIX_PRIMITIVE_TYPE_SPHERE, &sphere_ism },
+
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR,       OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR,       &round_linear_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CATMULLROM,   OPTIX_PRIMITIVE_TYPE_ROUND_CATMULLROM,   &round_catrom_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BEZIER, OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BEZIER, &round_bezier_ism },
+    
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_FLAT_QUADRATIC_BSPLINE,  OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE,  &flat_quadratic_ism  },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_QUADRATIC_BSPLINE, OPTIX_PRIMITIVE_TYPE_ROUND_QUADRATIC_BSPLINE, &round_quadratic_ism },
+        { OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE,     OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE,     &round_cubic_ism     }
+    };
+
+    auto count = garbageTasks.size();
+    for (auto& task : garbageTasks) {
+        task();
+    }
+    garbageTasks.clear();
+
+    for (auto& [pflag, ptype, module_ptr] : PrimitiveTypeConfigs) {
+        if (pflag & pipeline_compile_options.usesPrimitiveTypeFlags) {
+            builtin_is_options.builtinISModuleType = ptype;
+            OPTIX_CHECK( optixBuiltinISModuleGet( context, &module_compile_options, &pipeline_compile_options, &builtin_is_options, module_ptr ) );
+            
+            garbageTasks.push_back([module_ptr=module_ptr](){
+                optixModuleDestroy(*module_ptr);
+                *module_ptr = 0u;
+            });
+        } //if
+    }
+    return true;
 }
 
 #define COMPILE_WITH_TASKS_CHECK( call ) check( call, #call, __FILE__, __LINE__ )
@@ -167,18 +258,10 @@ static std::vector<char> readData(std::string const& filename)
   return data;
 }
 
-inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const char *macro=nullptr, tbb::task_group* _c_group = nullptr)
+inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
 {
-    OptixModuleCompileOptions module_compile_options = {};
+    OptixModuleCompileOptions module_compile_options = OptixUtil::DefaultCompileOptions();
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-#if defined( NDEBUG )
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-#else
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-
-#endif
 
     char log[2048];
     size_t sizeof_log = sizeof( log );
@@ -199,11 +282,14 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         ,"--split-compile=0"
     };
 
-    if (macro != nullptr) {
-        compilerOptions.push_back(macro);
+    std::string flat_macros = ""; 
+
+    for (auto &ele : macros) {
+        compilerOptions.push_back(ele.c_str());
+        flat_macros += ele;
     }
 
-    const char* input = sutil::getInputData( source, macro, name, inputSize, is_success, nullptr, compilerOptions);
+    const char* input = sutil::getCodePTX( source, flat_macros.c_str(), name, inputSize, is_success, nullptr, compilerOptions);
 
     if(is_success==false)
     {
@@ -254,7 +340,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &raygen_prog_group
+                    &raygen_prog_group.reset()
                     ) );
     }
 
@@ -269,7 +355,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     1,  // num program groups
                     &program_group_options,
                     log, &sizeof_log,
-                    &radiance_miss_group
+                    &radiance_miss_group.reset()
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
@@ -282,11 +368,9 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &program_group_options,
                     log,
                     &sizeof_log,
-                    &occlusion_miss_group
+                    &occlusion_miss_group.reset()
                     ) );
     }
-
-    
 }
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
@@ -302,17 +386,21 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     OptixProgramGroupDesc desc        = {};
     desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
+    const char* entryName = entry.empty()? nullptr:entry.c_str();
+
+if (entryName != nullptr) { 
 
     if(kind == "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP")
     {
         desc.hitgroup.moduleCH            = _module;
-        desc.hitgroup.entryFunctionNameCH = entry.c_str();
+        desc.hitgroup.entryFunctionNameCH = entryName;
     } 
     else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
-        desc.hitgroup.moduleAH           = _module;
-        desc.hitgroup.entryFunctionNameAH = entry.c_str();
+        desc.hitgroup.moduleAH            = _module;
+        desc.hitgroup.entryFunctionNameAH = entryName;
     }
+}
 
     if (moduleIS != nullptr) {
         desc.hitgroup.moduleIS            = *moduleIS;
@@ -336,9 +424,22 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
 }
 struct cuTexture{
     std::string md5;
-    cudaArray_t gpuImageArray;
-    cudaTextureObject_t texture;
-    cuTexture(){gpuImageArray = nullptr;texture=0;}
+    bool blockCompression = false;
+    
+    cudaArray_t gpuImageArray = nullptr;
+    cudaTextureObject_t texture = 0llu;
+
+    uint32_t width, height;
+    float average = 0.0f;
+
+    std::vector<float> cdf;
+    std::vector<float> pdf; 
+    std::vector<int> start;
+
+    std::vector<float> rawData;
+
+    cuTexture() {}
+    cuTexture(uint32_t w, uint32_t h) : width(w), height(h) {}
     ~cuTexture()
     {
         if(gpuImageArray!=nullptr)
@@ -353,40 +454,84 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
 
     return loadPPMTexture( ppm_filename, make_float3(1,1,1), nullptr );
 }
-inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc)
+
+
+
+inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc, bool blockCompression)
 {
-    auto texture = std::make_shared<cuTexture>();
-    std::vector<uchar4> data;
-    data.resize(nx*ny);
-    for(int j=0;j<ny;j++)
-    for(int i=0;i<nx;i++)
-    {
-        size_t idx = j*nx + i;
-        data[idx] = {
-            nc>=1?(img[idx*nc + 0]):(unsigned char)0,
-            nc>=2?(img[idx*nc + 1]):(unsigned char)0,
-            nc>=3?(img[idx*nc + 2]):(unsigned char)0,
-            nc>=4?(img[idx*nc + 3]):(unsigned char)0,
-        };
-    }
+    auto texture = std::make_shared<cuTexture>(nx, ny);
+
+    std::vector<uchar4> alt;
     
-    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(8, 8, 8, 8, cudaChannelFormatKindUnsigned);
-    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
-    if (rc != cudaSuccess) {
-        std::cout<<"texture space alloc failed\n";
-        return 0;
+    if (nc == 3 && !blockCompression) { // cuda doesn't support raw rgb, should be raw rgba or compressed rgb 
+        auto count = nx * ny;    
+        alt.resize(count);
+
+        for (size_t i=0; i<count; ++i) {
+            alt[i] = { img[i*nc + 0], img[i*nc + 1], img[i*nc + 2], 255u };
+        }
+        nc = 4;
+        img = (unsigned char*)alt.data();
     }
-    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(), 
-                             nx * sizeof(unsigned char) * 4,
-                             nx * sizeof(unsigned char) * 4,
-                             ny, 
-                             cudaMemcpyHostToDevice);
+
+    if (nx%4 || ny%4) {
+        blockCompression = false;
+    }
+
+    cudaError_t rc;
+ 
+    if (blockCompression == false) {
+        std::vector<int> xyzw(4, 0);
+        for (int i=0; i<nc; ++i) {xyzw[i] = 8;}
+
+        cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindUnsigned);
+        rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+        if (rc != cudaSuccess) {
+            std::cout<<"texture space alloc failed\n";
+            return 0;
+        }
+
+        rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, img, sizeof(unsigned char) * nc * nx * ny, cudaMemcpyHostToDevice);
+
+    } else {
+
+        std::vector<unsigned char> bc_data;
+        cudaChannelFormatDesc channelDescriptor;
+
+        if (nc == 1) {
+            bc_data = compressBC4(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed4>();
+        } else if (nc == 2) {
+            bc_data = compressBC5(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed5>();
+        } else if (nc == 3) {
+            bc_data = compressBC1(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed1>();
+        } else if (nc == 4) {
+            bc_data = compressBC3(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed3>();
+        } else {
+            std::cout<<"texture data unsupported \n";
+            return 0;
+        }
+        
+        rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+
+        if (rc != cudaSuccess) {
+            std::cout<<"texture space alloc failed\n";
+            return 0;
+        }
+
+        rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, bc_data.data(), bc_data.size(), cudaMemcpyHostToDevice);
+    }
+
     if (rc != cudaSuccess) {
         std::cout<<"texture data copy failed\n";
         cudaFreeArray(texture->gpuImageArray);
         texture->gpuImageArray = nullptr;
         return 0;
     }
+
     cudaResourceDesc resourceDescriptor = { };
     resourceDescriptor.resType = cudaResourceTypeArray;
     resourceDescriptor.res.array.array = texture->gpuImageArray;
@@ -408,12 +553,14 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
         texture->gpuImageArray = nullptr;
         return 0;
     }
+
+    texture->blockCompression = blockCompression;
     return texture;
 
 }
 inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
 {
-    auto texture = std::make_shared<cuTexture>();
+    auto texture = std::make_shared<cuTexture>(nx, ny);
     std::vector<float4> data;
     data.resize(nx*ny);
     for(int j=0;j<ny;j++)
@@ -495,20 +642,21 @@ inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
 inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
-inline std::vector<std::tuple<std::string, glm::mat4>> volumeTrans;
+inline std::vector<std::tuple<std::string, uint8_t, glm::mat4>> volumeTrans;
 inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
 
-inline bool preloadVolumeBox(std::string& key, std::string& matid, glm::mat4& transform) {
+inline bool preloadVolumeBox(std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
 
-    volumeTrans.push_back( {matid, transform} );
+    volumeTrans.push_back( {matid, bounds, transform} );
     return true;
 }
 
 inline bool processVolumeBox() {
 
     volumeBoxs.clear();
-    for (auto& [key, val] : volumeTrans) {
+    for (auto& [key, bounds, val] : volumeTrans) {
         auto volume_ptr = std::make_shared<VolumeWrapper>();
+        volume_ptr->bounds = bounds;
         volume_ptr->transform = val;
         buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
         volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );
@@ -612,14 +760,29 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 
     return iesData;
 }
-inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+
+struct TexKey {
+    std::string path;
+    bool blockCompression;
+
+    bool operator == (const TexKey& other) const {
+        return path == other.path && blockCompression == other.blockCompression;
+    }
+
+    bool operator < (const TexKey& other) const {
+        auto l = std::tie(this->path, this->blockCompression);
+        auto r = std::tie(other.path, other.blockCompression);
+        return l < r;
+    }
+};
+
+inline std::map<TexKey, std::shared_ptr<cuTexture>> tex_lut;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
-inline std::map<std::string, int> sky_nx_map;
-inline std::map<std::string, int> sky_ny_map;
-inline std::map<std::string, float> sky_avg_map;
+inline std::string default_sky_tex;
 
+inline std::optional<std::function<void(void)>> portal_delayed;
 
 struct WrapperIES {
     raii<CUdeviceptr> ptr;
@@ -628,20 +791,21 @@ struct WrapperIES {
 
 inline std::map<std::string, WrapperIES> g_ies;
 
-inline std::map<std::string, std::vector<float>> sky_cdf_map;
-inline std::map<std::string, std::vector<float>> sky_pdf_map;
-inline std::map<std::string, std::vector<int>>   sky_start_map;
+// Create cumulative distribution function for importance sampling of spherical environment lights.
+// This is a textbook implementation for the CDF generation of a spherical HDR environment.
+// See "Physically Based Rendering" v2, chapter 14.6.5 on Infinite Area Lights.
 
-template<typename T>
-inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
-    auto &sky_nx = sky_nx_map[sky_tex.value()];
-    auto &sky_ny = sky_ny_map[sky_tex.value()];
-    auto &sky_cdf = sky_cdf_map[sky_tex.value()];
-    auto &sky_pdf = sky_pdf_map[sky_tex.value()];
-    auto &sky_start = sky_start_map[sky_tex.value()];
-    auto &sky_avg = sky_avg_map[sky_tex.value()];
-    sky_nx = nx;
-    sky_ny = ny;
+inline void calc_sky_cdf_map(cuTexture* tex, int nx, int ny, int nc, std::function<float(uint32_t)>& look) {
+
+    tex->width  = nx;
+    tex->height = ny;
+
+    auto &sky_avg = tex->average;
+
+    auto &sky_cdf = tex->cdf;
+    auto &sky_pdf = tex->pdf;
+    auto &sky_start = tex->start;
+
     //we need to recompute cdf
     sky_cdf.resize(nx*ny);
     sky_cdf.assign(nx*ny, 0);
@@ -649,8 +813,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     sky_pdf.assign(nx*ny, 0);
     sky_start.resize(nx*ny);
     sky_start.assign(nx*ny, 0);
-    std::vector<double> skypdf(nx*ny);
-    skypdf.assign(nx*ny,0);
+    
     for(int jj=0; jj<ny;jj++)
     {
         for(int ii=0;ii<nx;ii++)
@@ -658,13 +821,12 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             size_t idx2 = jj*nx*nc + ii*nc;
             size_t idx = jj*nx + ii;
             float illum = 0.0f;
-            auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
-            illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
+            auto color = zeno::vec3f(look(idx2+0), look(idx2+1), look(idx2+2));
+            illum = zeno::dot(color, zeno::vec3f(0.2722287, 0.6740818, 0.0536895));
             //illum = illum > 0.5? illum : 0.0f;
             illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
-            skypdf[idx] = illum;
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
@@ -672,8 +834,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;
-        skypdf[ii] = skypdf[ii] * (double)nx * (double)ny / (double)total_illum;
-        sky_pdf[ii] = skypdf[ii];
+
         if(ii>0)
         {
             if(sky_cdf[ii]>sky_cdf[ii-1])
@@ -687,9 +848,10 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
 }
+
 static std::string calculateMD5(const std::vector<char>& input) {
-    CryptoPP::byte digest[CryptoPP::Weak::MD5::DIGESTSIZE];
-    CryptoPP::Weak::MD5().CalculateDigest(digest, (const CryptoPP::byte*)input.data(), input.size());
+    unsigned char digest[CryptoPP::Weak::MD5::DIGESTSIZE];
+    CryptoPP::Weak::MD5().CalculateDigest(digest, (const unsigned char*)input.data(), input.size());
     CryptoPP::HexEncoder encoder;
     std::string output;
     encoder.Attach(new CryptoPP::StringSink(output));
@@ -697,35 +859,66 @@ static std::string calculateMD5(const std::vector<char>& input) {
     encoder.MessageEnd();
     return output;
 }
-inline void addTexture(std::string path)
+
+namespace detail {
+    template <typename T> struct is_void {
+        static constexpr bool value = false;
+    };
+    template <> struct is_void<void> {
+        static constexpr bool value = true;
+    };
+}
+
+template<typename TaskType=void>
+inline void addTexture(std::string path, bool blockCompression=false, TaskType* task=nullptr)
 {
-    zeno::log_debug("loading texture :{}", path);
     std::string native_path = std::filesystem::u8path(path).string();
+
+    TexKey tex_key {path, blockCompression}; 
+
+    if (tex_lut.count(tex_key)) {
+        return; // do nothing
+    }
+
+    zeno::log_debug("loading texture :{}", path);
+
+    bool should_reload = false;
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
-        if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
-            return;
+
+        if(g_tex_last_write_time[path] != ftime) {
+            should_reload = true;
         }
         g_tex_last_write_time[path] = ftime;
+    } else {
+        zeno::log_info("file {} doesn't exist", path);
+        return;
     }
-    else {
-        if(g_tex.count(path)) {
-            return;
-        }
-    }
+    
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
 
-    if (md5_path_mapping.count(md5Hash)) {
-        g_tex[path] = g_tex[md5_path_mapping[md5Hash]];
-        zeno::log_info("path {} reuse {} tex", path, md5_path_mapping[md5Hash]);
-        return;
+    if ( md5_path_mapping.count(md5Hash) && !should_reload) {
+
+        auto& alt_path = md5_path_mapping[md5Hash];
+        auto alt_key = TexKey { alt_path, blockCompression };
+
+        if (tex_lut.count(alt_key)) {
+
+            tex_lut[tex_key] = tex_lut[alt_key];
+            zeno::log_info("path {} reuse {} tex", path, alt_path);
+            return;
+        }
     }
     else {
         md5_path_mapping[md5Hash] = path;
     }
+
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
+
+    std::function<float(uint32_t)> lookupTexture = [](uint32_t x) {return 0.0f;};
+    std::function<void(void)>     cleanupTexture = [](){};
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -748,12 +941,15 @@ inline void addTexture(std::string path)
             }
         }
         assert(rgba);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, rgba);
-        }
-        g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
-        free(rgba);
+
+        tex_lut[tex_key] = makeCudaTexture(rgba, nx, ny, nc);
+
+        lookupTexture = [rgba](uint32_t idx) {
+            return rgba[idx];
+        };
+        cleanupTexture = [rgba]() {
+            free(rgba);
+        };
     }
     else if (zeno::ends_with(path, ".ies", false)) {
         float coneAngle;
@@ -780,97 +976,126 @@ inline void addTexture(std::string path)
         // Create nodes
         auto img = outs.get<zeno::PrimitiveObject>("image");
         if (img->verts.size() == 0) {
-            g_tex[path] = std::make_shared<cuTexture>();
+            tex_lut[tex_key] = std::make_shared<cuTexture>();
             return;
         }
-        int nx = std::max(img->userData().get2<int>("w"), 1);
-        int ny = std::max(img->userData().get2<int>("h"), 1);
-        int channels = std::max(img->userData().get2<int>("channels"), 3);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
-        }
-        if (channels == 3) {
-            std::vector<unsigned char> ucdata;
-            ucdata.resize(img->verts.size()*3);
-            for(int i=0;i<img->verts.size()*3;i++)
-            {
-              ucdata[i] = (unsigned char)(((float*)img->verts.data())[i]*255.0);
+        nx = std::max(img->userData().get2<int>("w"), 1);
+        ny = std::max(img->userData().get2<int>("h"), 1);
+        nc = std::max(img->userData().get2<int>("channels"), 1);
+
+        auto ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
+
+        if (nc < 4) {
+
+            for(size_t i=0; i<img->verts.size(); i+=1 ) {
+
+                for (int c=0; c<nc; ++c) {
+                    ucdata->at(i*nc+c) = (img->verts[i][c] * 255.0);
+                }
             }
-            g_tex[path] = makeCudaTexture(ucdata.data(), nx, ny, 3);
-        }
-        else {
-            std::vector<uchar4> data(nx * ny);
+            tex_lut[tex_key] = makeCudaTexture(ucdata->data(), nx, ny, nc, blockCompression);
+
+        } else {
+
+            assert(nc == 4);
+            auto data = (uchar4*)ucdata->data();
             auto &alpha = img->verts.attr<float>("alpha");
             for (auto i = 0; i < nx * ny; i++) {
                 data[i].x = (unsigned char)(img->verts[i][0]*255.0);
                 data[i].y = (unsigned char)(img->verts[i][1]*255.0);
                 data[i].z = (unsigned char)(img->verts[i][2]*255.0);
                 data[i].w = (unsigned char)(alpha[i]        *255.0);
-
             }
-            g_tex[path] = makeCudaTexture((unsigned char *)data.data(), nx, ny, 4);
+            tex_lut[tex_key] = makeCudaTexture((unsigned char *)data, nx, ny, 4, blockCompression);
         }
+        
+        lookupTexture = [ucdata=ucdata, img=img](uint32_t idx) {
+            auto ptr = ucdata->data();
+            return ptr[idx]/255.0;
+        };
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
-            g_tex[path] = std::make_shared<cuTexture>();
+            tex_lut[tex_key] = std::make_shared<cuTexture>();
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, img);
-        }
-        g_tex[path] = makeCudaTexture(img, nx, ny, nc);
-        stbi_image_free(img);
+        
+        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc);
+
+        lookupTexture = [img](uint32_t idx) {
+            return img[idx];
+        };
+        cleanupTexture = [img]() {
+            stbi_image_free(img);
+        };
     }
     else {
         unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading ldr texture failed:{}", path);
-            g_tex[path] = std::make_shared<cuTexture>();
+            tex_lut[tex_key] = std::make_shared<cuTexture>();
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
-        assert(img);
-        if(sky_tex.value() == path)//if this is a loading of a sky texture
-        {
-            calc_sky_cdf_map(nx, ny, nc, img);
-        }
-        g_tex[path] = makeCudaTexture(img, nx, ny, nc);
-        stbi_image_free(img);
-    }
-    g_tex[path]->md5 = md5Hash;
+        
+        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc, blockCompression);
 
-    for (auto i = g_tex.begin(); i != g_tex.end(); i++) {
-        zeno::log_info("-{}", i->first);
+        lookupTexture = [img](uint32_t idx) {
+            return (float)img[idx] / 255;
+        };
+        cleanupTexture = [img]() {
+            stbi_image_free(img);
+        };
     }
+    tex_lut[tex_key]->md5 = md5Hash;
+
+    if constexpr (!detail::is_void<TaskType>::value) {
+        if (task != nullptr) {
+            (*task)(tex_lut[tex_key].get(), nx, ny, nc, lookupTexture);
+        }
+    }
+
+    cleanupTexture();
 }
-inline void removeTexture(std::string path) {
+inline void removeTexture(const TexKey &key) {
+
+    auto& path = key.path;
+
     if (path.size()) {
-        if (g_tex.count(path)) {
-            zeno::log_info("removeTexture: {}", path);
-            std::cout << "removeTexture :" << path << std::endl;
-            md5_path_mapping.erase(g_tex[path]->md5);
+        if (tex_lut.count(key)) {
+            zeno::log_info("removeTexture: {} blockCompresssion: {}", path, key.blockCompression);
+            md5_path_mapping.erase(tex_lut[key]->md5);
         }
         else {
             zeno::log_error("removeTexture: {} not exists!", path);
         }
-        g_tex.erase(path);
-        sky_nx_map.erase(path);
-        sky_ny_map.erase(path);
-        sky_cdf_map.erase(path);
-        sky_pdf_map.erase(path);
-        sky_start_map.erase(path);
-        sky_avg_map.erase(path);
+        tex_lut.erase(key);
         g_tex_last_write_time.erase(path);
     }
+}
+
+inline void addSkyTexture(std::string path) {
+    
+    auto task = [](cuTexture* tex, uint32_t nx, uint32_t ny, uint32_t nc, std::function<float(uint32_t)> &lookupTexture) {
+        
+        const auto float_count = nx * ny * nc;
+
+        auto& rawData = tex->rawData;
+        rawData.resize(float_count);
+        for (uint32_t i=0; i<float_count; ++i) {
+            rawData[i] = lookupTexture(i);
+        }
+
+        calc_sky_cdf_map(tex, nx, ny, nc, lookupTexture);
+    };
+
+    addTexture(path, false, &task);
 }
 
 struct OptixShaderCore {
@@ -912,14 +1137,17 @@ struct OptixShaderCore {
         _occlusionEntry = occlusionEntry;
     }
 
-    bool loadProgram(uint idx, const char* macro=nullptr, tbb::task_group* _c_group = nullptr)
+    bool loadProgram(uint idx, const std::vector<std::string> &macro_list = {}, tbb::task_group* _c_group = nullptr)
     {
         std::string tmp_name = "MatShader.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
          
-        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro, _c_group))
+        if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro_list, _c_group))
         {
             std::cout<<"module created"<<std::endl;
+
+            m_radiance_hit_group.reset();
+            m_occlusion_hit_group.reset();
 
             createRTProgramGroups(context, module, 
                 "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
@@ -944,7 +1172,7 @@ struct OptixShaderWrapper
     raii<OptixModule>           callable_module {};
     raii<OptixProgramGroup> callable_prog_group {};
    
-    std::map<int, std::string>           m_texs {};
+    std::map<int, TexKey>                m_texs {};
     bool                                has_vdb {};
     std::string                       parameters{};
 
@@ -963,12 +1191,13 @@ struct OptixShaderWrapper
         std::string tmp_name = "Callable.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
 
-        std::string macro;
-        if (fallback) { 
-            macro = "--define-macro=_FALLBACK_"; 
+        std::vector<std::string> macros {};
+
+        if (fallback) {
+            macros.push_back("--define-macro=_FALLBACK_"); 
         }
 
-        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macro.empty()? nullptr:macro.c_str()); 
+        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macros); 
         if (callable_done) {
 
             // Callable programs
@@ -983,7 +1212,7 @@ struct OptixShaderWrapper
             size_t LOG_SIZE = sizeof( LOG );
 
             OPTIX_CHECK( 
-                optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &callable_prog_group.reset()); 
+                optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &callable_prog_group.reset())
             );
             return true;
         }
@@ -995,17 +1224,17 @@ struct OptixShaderWrapper
     {
         m_texs.clear();
     }
-    void addTexture(int i, std::string name)
+    void addTexture(int i, TexKey key)
     {
-        m_texs[i] = name;
+        m_texs[i] = key;
     }
     cudaTextureObject_t getTexture(int i)
     {
         if(m_texs.find(i)!=m_texs.end())
         {
-            if(g_tex.find(m_texs[i])!=g_tex.end())
+            if(tex_lut.find(m_texs[i])!=tex_lut.end())
             {
-                return g_tex[m_texs[i]]->texture;
+                return tex_lut[m_texs[i]]->texture;
             }
             return 0;
         }
@@ -1023,7 +1252,7 @@ inline void createPipeline()
     size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     num_progs += rtMaterialShaders.size(); // callables;
 
-    OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
+    std::vector<OptixProgramGroup> program_groups(num_progs, {});
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
@@ -1046,7 +1275,7 @@ inline void createPipeline()
                 context,
                 &pipeline_compile_options,
                 &pipeline_link_options,
-                program_groups,
+                program_groups.data(),
                 num_progs,
                 log,
                 &sizeof_log,
@@ -1088,8 +1317,6 @@ inline void createPipeline()
                 continuation_stack_size,
                 max_traversal_depth
                 ) );
-    delete[]program_groups;
-
 }
 
 

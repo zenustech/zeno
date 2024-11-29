@@ -71,9 +71,10 @@ struct FrameBufferRender {
 
     unique_ptr<FBO> fbo;
     unique_ptr<Texture> picking_texture;
-    unique_ptr<RenderObject> depth_rbo;
+    unique_ptr<Texture> depth_texture;
 
     unique_ptr<FBO> intermediate_fbo;
+    unique_ptr<Texture> screen_depth_tex;
     unique_ptr<Texture> screen_tex;
     
     unique_ptr<VAO> quad_vao;
@@ -124,14 +125,15 @@ struct FrameBufferRender {
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, picking_texture->tex, 0));
 
         // generate depth texture
-        depth_rbo = make_unique<RenderObject>();
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo->rbo));
-        CHECK_GL(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT32F, w, h));
-        CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-        CHECK_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo->rbo));
+        depth_texture = make_unique<Texture>();
+        depth_texture->target = GL_TEXTURE_2D_MULTISAMPLE;
+        CHECK_GL(glBindTexture(depth_texture->target, depth_texture->tex));
+        CHECK_GL(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH_COMPONENT32F, w, h, GL_TRUE));
+        CHECK_GL(glBindTexture(depth_texture->target, 0));
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, depth_texture->tex, 0));
 
         // check fbo
-        if(!fbo->complete()) printf("fbo error\n");
+        if(!fbo->complete()) zeno::log_error("fbo error");
 
         // unbind fbo & texture
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -139,13 +141,20 @@ struct FrameBufferRender {
 
         intermediate_fbo = make_unique<FBO>();
         screen_tex = make_unique<Texture>();
+        screen_depth_tex = make_unique<Texture>();
         intermediate_fbo->bind();
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex));
         CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_tex->tex, 0));	// we only need a color buffer
-        if(!intermediate_fbo->complete()) printf("fbo error\n");
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_tex->tex, 0));
+
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_depth_tex->tex));
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, screen_depth_tex->tex, 0));
+        if(!intermediate_fbo->complete()) zeno::log_error("fbo error");
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, 0));
         intermediate_fbo->unbind();
     }
@@ -153,9 +162,10 @@ struct FrameBufferRender {
     void destroy_buffers() {
         fbo.reset();
         picking_texture.reset();
-        depth_rbo.reset();
+        depth_texture.reset();
         intermediate_fbo.reset();
         screen_tex.reset();
+        screen_depth_tex.reset();
     }
     void bind() {
         // enable framebuffer writing
@@ -170,7 +180,7 @@ struct FrameBufferRender {
         // 2. now blit multisampled buffer(s) to normal colorbuffer of intermediate FBO. Image is stored in screenTexture
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_fbo->fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+        CHECK_GL(glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST));
 
         // 3. now render quad with scene's visuals as its texture image
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -186,6 +196,17 @@ struct FrameBufferRender {
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, screen_tex->tex)); // use the now resolved color attachment as the quad's texture
         CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, 6));
         glEnable(GL_MULTISAMPLE);
+    }
+    float getDepth(int x, int y) {
+        if (!intermediate_fbo->complete()) return 0;
+        intermediate_fbo->bind();
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, intermediate_fbo->fbo));
+
+        float depth;
+        CHECK_GL(glReadPixels(x, h - y - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth));
+
+        intermediate_fbo->unbind();
+        return depth;
     }
 };
 }

@@ -23,9 +23,9 @@
 namespace xinxinoptix {
 
     inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
-                         raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, bool verbose=false) {
+                         CUdeviceptr& _bufferXAS_, OptixTraversableHandle& _handleXAS_, bool verbose=false)
+    {
 
-        _bufferXAS_.reset();
         _handleXAS_ = 0llu;
 
         size_t temp_buffer_size {};  
@@ -50,13 +50,13 @@ namespace xinxinoptix {
         }
 
         raii<CUdeviceptr> bufferTemp{};
-        RETURN_IF_CUDA_ERROR( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
 
         const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 
         if (!COMPACTION) {
 
-            RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_.reset() ), output_buffer_size ) );
+            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size ) );
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             nullptr,  // CUDA stream
@@ -71,12 +71,12 @@ namespace xinxinoptix {
                                             0 ) );
         } else {
 
-            raii<CUdeviceptr> output_buffer_xas {};
-            RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
+            CUdeviceptr output_buffer_xas {};
+            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
 
             OptixAccelEmitDesc emitProperty {};
             emitProperty.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-            emitProperty.result = ( CUdeviceptr )( (char*)(CUdeviceptr)output_buffer_xas.handle + output_buffer_size );
+            emitProperty.result = ( CUdeviceptr )( (char*)(CUdeviceptr)output_buffer_xas + output_buffer_size );
 
             OPTIX_CHECK( optixAccelBuild( context,
                                             0,  // CUDA stream
@@ -97,8 +97,10 @@ namespace xinxinoptix {
 
             if( compacted_size < output_buffer_size )
             {
-                RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
+                CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, _bufferXAS_, compacted_size, &_handleXAS_ ) );
+
+                cudaFree((void*)output_buffer_xas);
             }
             else
             {
@@ -107,9 +109,22 @@ namespace xinxinoptix {
         } // COMPACTION
     }
 
+    inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
+                         raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, bool verbose=false) {
+                                               
+        buildXAS(context, accel_options, build_input, _bufferXAS_.reset(), _handleXAS_, verbose);
+    }
+
     inline void buildIAS(OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, std::vector<OptixInstance>& instances, 
                          raii<CUdeviceptr>& bufferIAS, OptixTraversableHandle& handleIAS) 
     {
+
+        if (instances.empty()) {
+            bufferIAS.reset();
+            handleIAS = 0llu;
+            return;
+        }
+
         raii<CUdeviceptr>  d_instances;
         const size_t size_in_bytes = sizeof( OptixInstance ) * instances.size();
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), size_in_bytes ) );

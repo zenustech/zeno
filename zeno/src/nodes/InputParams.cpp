@@ -209,17 +209,17 @@ struct ParamFileParser : zeno::INode {
                     fprintf(fp, "%s,%s,%d\n", p->name.c_str(), p->_type.c_str(), v);
                 }
                 else if (std::holds_alternative<vec2i>(p->defaultValue)) {
-                    auto v = std::get<vec2i>(p->defaultValue);
+                    auto v = std::get<zeno::vec2i>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1]);
                 }
                 else if (std::holds_alternative<vec3i>(p->defaultValue)) {
-                    auto v = std::get<vec3i>(p->defaultValue);
+                    auto v = std::get<zeno::vec3i>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2]);
                 }
                 else if (std::holds_alternative<vec4i>(p->defaultValue)) {
-                    auto v = std::get<vec4i>(p->defaultValue);
+                    auto v = std::get<zeno::vec4i>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2], v[3]);
                 }
@@ -229,17 +229,17 @@ struct ParamFileParser : zeno::INode {
                     fprintf(fp, "%s,%s,%f\n", p->name.c_str(), p->_type.c_str(), v);
                 }
                 else if (std::holds_alternative<vec2f>(p->defaultValue)) {
-                    auto v = std::get<vec2f>(p->defaultValue);
+                    auto v = std::get<zeno::vec2f>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1]);
                 }
                 else if (std::holds_alternative<vec3f>(p->defaultValue)) {
-                    auto v = std::get<vec3f>(p->defaultValue);
+                    auto v = std::get<zeno::vec3f>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2]);
                 }
                 else if (std::holds_alternative<vec4f>(p->defaultValue)) {
-                    auto v = std::get<vec4f>(p->defaultValue);
+                    auto v = std::get<zeno::vec4f>(p->defaultValue);
                     value = std::make_shared<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2], v[3]);
                 }

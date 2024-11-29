@@ -32,21 +32,14 @@
 #include <sutil/vec_math.h>
 
 
-__forceinline__ __device__ float3 toSRGB( const float3& c )
+__forceinline__ __device__ float3 toSRGB( const float3& c, float gamma )
 {
-    float  invGamma = 1.0f / 2.4f;
+    float  invGamma = 1.0f / gamma;
     float3 powed    = make_float3( powf( c.x, invGamma ), powf( c.y, invGamma ), powf( c.z, invGamma ) );
-    return make_float3(
-        c.x < 0.0031308f ? 12.92f * c.x : 1.055f * powed.x - 0.055f,
-        c.y < 0.0031308f ? 12.92f * c.y : 1.055f * powed.y - 0.055f,
-        c.z < 0.0031308f ? 12.92f * c.z : 1.055f * powed.z - 0.055f );
+
+    return powed;
 }
 
-//__forceinline__ __device__ float dequantizeUnsigned8Bits( const unsigned char i )
-//{
-//    enum { N = (1 << 8) - 1 };
-//    return min((float)i / (float)N), 1.f)
-//}
 __forceinline__ __device__ unsigned char quantizeUnsigned8Bits( float x )
 {
     x = clamp( x, 0.0f, 1.0f );
@@ -54,13 +47,17 @@ __forceinline__ __device__ unsigned char quantizeUnsigned8Bits( float x )
     return (unsigned char)min((unsigned int)(x * (float)Np1), (unsigned int)N);
 }
 
-__forceinline__ __device__ uchar4 make_color( const float3& c )
+__forceinline__ __device__ uchar4 makeSRGB( const float3& c, float gamma=2.2f, float dither=0.0f)
 {
     // first apply gamma, then convert to unsigned char
-    float3 srgb = toSRGB( clamp( c, 0.0f, 1.0f ) );
+    float3 srgb = toSRGB( c, gamma );
+    //srgb += make_float3(dither);
+    srgb += make_float3(dither, 1.0-dither, dither)/255;
+    srgb = clamp( srgb, 0.0f, 1.0f );
+
     return make_uchar4( quantizeUnsigned8Bits( srgb.x ), quantizeUnsigned8Bits( srgb.y ), quantizeUnsigned8Bits( srgb.z ), 255u );
 }
 __forceinline__ __device__ uchar4 make_color( const float4& c )
 {
-    return make_color( make_float3( c.x, c.y, c.z ) );
+    return makeSRGB( make_float3( c.x, c.y, c.z ) );
 }

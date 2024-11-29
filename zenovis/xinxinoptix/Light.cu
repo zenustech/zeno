@@ -188,7 +188,7 @@ extern "C" __global__ void __closesthit__radiance()
                             rect.normal, shadingP, 
                             light.spreadMajor, uvScale, uvOffset);  
 
-        if (!valid) { return; }
+        //if (!valid) { return; }
 
         SphericalRect squad;
         SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
@@ -221,7 +221,7 @@ extern "C" __global__ void __closesthit__radiance()
     default: return;
     }
 
-    if (light.type == zeno::LightType::Diffuse && light.spreadMajor < 1.0f) {
+    if (light.type == zeno::LightType::Diffuse && light.spreadMajor < 1.0f && prd->depth > 0) {
 
         auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
         auto atten = light_spread_attenuation(
@@ -282,6 +282,8 @@ extern "C" __global__ void __closesthit__radiance()
         // if (scatterPDF > __FLT_DENORM_MIN__) {
         //     prd->radiance /= scatterPDF;
         // }
+        auto tmp = float3{1, 1, 1};
+        prd->updateAttenuation(tmp);
     }
     return;
 }
