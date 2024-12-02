@@ -179,6 +179,7 @@ struct PathTracerState
     raii<CUdeviceptr>              _meshAux;
     raii<CUdeviceptr>              _instToMesh;
     
+    raii<CUdeviceptr>              d_instIdx;
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
     raii<CUdeviceptr>              d_instUv;
@@ -785,6 +786,8 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                                0,1,0,0,
                                0,0,1,0};
 
+
+    uint   defaultInstIdx = 0u;
     float3 defaultInstPos = {0, 0, 0};
     float3 defaultInstNrm = {0, 1, 0};
     float3 defaultInstUv = {0, 0, 0};
@@ -813,6 +816,8 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 #else
     using AuxType = float3; 
 #endif
+
+    std::vector<uint>    instIdx(num_instances);
     std::vector<AuxType> instPos(num_instances);
     std::vector<AuxType> instNrm(num_instances);
     std::vector<AuxType> instUv(num_instances);
@@ -892,7 +897,6 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     buildMeshAccel(state, mesh);
                 }
 
-
                 for (std::size_t k = 0; k < instMats.size(); ++k)
                 {
                     const auto &instMat = instMats[k];
@@ -908,6 +912,7 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     instance.traversableHandle = mesh->gas_handle;
                     memcpy(instance.transform, instMat3r4c, sizeof(float) * 12);
                     
+                    instIdx[instanceID] = k;
                     instPos[instanceID] = toHalf(instAttrs.pos[k]);
                     instNrm[instanceID] = toHalf(instAttrs.nrm[k]);
                     instUv[instanceID] = toHalf(instAttrs.uv[k]);
@@ -939,6 +944,15 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 ) );
 
     state.params.instToMesh = (void*)state._instToMesh.handle;
+
+    state.d_instIdx.resize(sizeof(instIdx[0]) * instIdx.size(), 0);
+    CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)state.d_instIdx ),
+                instIdx.data(),
+                sizeof(instIdx[0]) * instIdx.size(),
+                cudaMemcpyHostToDevice
+                ) );
+    state.params.instIdx = (uint*)state.d_instIdx.handle;
 
     state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
     CUDA_CHECK( cudaMemcpy(
@@ -2777,15 +2791,18 @@ void UpdateInst()
             auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
 
             sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
-			sia->aux_list = std::vector<float>(element_count * 3, 0);
 
-            for (size_t i=0; i<element_count; ++i) {
-                sia->radius_list[i] *= instTrs.tang[3*i +0];
+            const uint aux_size = 4;
+			sia->aux_list = std::vector<float>(element_count * aux_size, 0);
 
-				sia->aux_list[i*3+0] = instTrs.clr[3*i +0];
-				sia->aux_list[i*3+1] = instTrs.clr[3*i +1];
-				sia->aux_list[i*3+2] = instTrs.clr[3*i +2];
+            for (uint i=0; i<element_count; ++i) {
+                sia->radius_list[i] *= instTrs.tang[3*i];
 
+                sia->aux_list[i*aux_size+0] = reinterpret_cast<float&>(i); // instIdx
+
+				sia->aux_list[i*aux_size+1] = instTrs.clr[3*i+0];
+				sia->aux_list[i*aux_size+2] = instTrs.clr[3*i+1];
+				sia->aux_list[i*aux_size+3] = instTrs.clr[3*i+2];
             }
 
             sia->center_list.resize(element_count);

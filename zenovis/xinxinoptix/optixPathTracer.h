@@ -200,6 +200,8 @@ struct Params
     uint32_t hairInstOffset;
     void* hairAux;
 
+    uint* instIdx;
+
     void*    dlights_ptr;
     void*    plights_ptr;
 

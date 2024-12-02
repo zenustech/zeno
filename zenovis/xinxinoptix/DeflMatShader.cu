@@ -46,15 +46,19 @@ __inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs) {
         assert(lut != nullptr);
 
         auto tmp = lut[optixGetInstanceId()];
-        auto auxBuffer = reinterpret_cast<float3*>(tmp);
+        auto auxBuffer = reinterpret_cast<float*>(tmp);
         assert(auxBuffer != nullptr);
+
+        auto aux = auxBuffer + optixGetPrimitiveIndex() * 4;
 
         attrs.clr = {};
         attrs.tang = {};
+
+        attrs.instIdx = *(uint*)aux;
         attrs.instPos = {}; //rt_data->instPos[inst_idx2];
         attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
         attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-        attrs.instClr = auxBuffer[optixGetPrimitiveIndex()];
+        attrs.instClr = *(float3*)(aux+1);
         attrs.instTang = {}; //rt_data->instTang[inst_idx2];
     }
 }
@@ -113,6 +117,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.nrm = N;
     attrs.uv = sphereUV(_normal_object_, false);
 
+    attrs.instPos = _center_object_;
     cihouSphereInstanceAux(attrs);
 
 #else
@@ -183,6 +188,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
+    attrs.instIdx  = params.instIdx[inst_idx];
     attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
     attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
     attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
@@ -341,8 +347,9 @@ extern "C" __global__ void __closesthit__radiance()
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    MatInput attrs{};
-    float estimation = 0;
+    
+    MatInput attrs {};
+    attrs.isBackFace = optixIsBackFaceHit();
 
 #if (_P_TYPE_==2)
 
@@ -420,6 +427,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
     attrs.uv = sphereUV(objNorm, false);
 
+    attrs.instPos = sphere_center;
     cihouSphereInstanceAux(attrs);
 
 #else
@@ -492,6 +500,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
 
+    attrs.instIdx  = params.instIdx[inst_idx];
     attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
     attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
     attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
