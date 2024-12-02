@@ -6,10 +6,51 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
+#include <magic_enum.hpp>
 #include <algorithm>
 
 namespace zeno {
 
+enum struct SurfaceAttr {
+    pos, clr, nrm, uv, tang, bitang, NoL, LoV, N, T, L, V, H, reflectance, fresnel,
+    worldNrm, worldTan, worldBTn, 
+    camFront, camUp, camRight
+};
+
+enum struct InstAttr {
+    instIdx, instPos, instNrm, instUv, instClr, instTang
+};
+
+enum struct VolumeAttr {};
+
+enum struct RayAttr {
+    rayLength, isBackFace, isShadowRay,
+};
+
+static std::string dataTypeDefaultString() {
+    auto name = magic_enum::enum_name(SurfaceAttr::pos);
+    return std::string(name);
+}
+
+static std::string dataTypeListString() {
+    auto list0 = magic_enum::enum_names<SurfaceAttr>();
+    auto list1 = magic_enum::enum_names<InstAttr>();
+    auto list2 = magic_enum::enum_names<RayAttr>();
+
+    std::string result;
+
+    auto concat = [&](const auto &list) {
+        for (auto& ele : list) {
+            result += " ";
+            result += ele;
+        }
+    };
+
+    concat(list0); concat(list1); concat(list2);    
+   
+    result += " prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy()";
+    return result;
+}
 
 struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual int determineType(EmissionPass *em) override {
@@ -33,7 +74,7 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv tang bitang NoL LoV N T L V H reflectance fresnel instPos instNrm instUv instClr instTang prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy() rayLength isShadowRay worldNrm worldTan worldBTn camFront camUp camRight", "attr", "pos"},
+        {"enum" + dataTypeListString(), "attr", dataTypeDefaultString()},
         {"enum float vec2 vec3 vec4 bool", "type", "vec3"},
     },
     {

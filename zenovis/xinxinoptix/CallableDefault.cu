@@ -17,6 +17,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_uv = attrs.uv;
     auto att_nrm = attrs.nrm;
     auto att_tang = attrs.tang;
+
+    auto att_instIdx = attrs.instIdx;
     auto att_instPos = attrs.instPos;
     auto att_instNrm = attrs.instNrm;
     auto att_instUv = attrs.instUv;
@@ -24,6 +26,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
 
+    auto att_isBackFace = attrs.isBackFace ? 1.0f:0.0f;
     auto att_isShadowRay = attrs.isShadowRay ? 1.0f:0.0f;
 
     vec3 b = normalize(cross(attrs.T, attrs.N));

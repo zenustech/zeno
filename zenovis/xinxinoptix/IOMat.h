@@ -2,6 +2,10 @@
 
 #include "zxxglslvec.h"
 
+#ifndef uint
+#define uint unsigned int
+#endif
+
 struct MatOutput {
     vec3 basecolor;
     float roughness;
@@ -59,6 +63,8 @@ struct MatInput {
     vec3 uv;
     vec3 clr;
     vec3 tang;
+
+    uint instIdx;
     vec3 instPos;
     vec3 instNrm;
     vec3 instUv;
@@ -68,6 +74,7 @@ struct MatInput {
     float LoV;
     
     float rayLength;
+    bool isBackFace;
     bool isShadowRay;
     
     vec3 reflectance;
