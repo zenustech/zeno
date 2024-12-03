@@ -1214,12 +1214,9 @@ void updateRootIAS()
         }
     }
 
-    for (size_t i=0; i<curveGroupStateCache.size(); ++i) {
-
-        auto& ele = curveGroupStateCache[i];
+    for (auto& [key, ele] : curveGroupStateCache) {
 
         OptixInstance opinstance {};
-        
         auto shader_mark = (uint)ele->curveType + 3;
 
 		auto combinedID = ele->mtid + ":" + std::to_string(shader_mark);
