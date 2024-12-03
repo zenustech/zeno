@@ -178,7 +178,6 @@ extern "C" __global__ void __raygen__rg()
     float3 tmp_normal{};
     unsigned int sobolseed = subframe_index;
     float3 mask_value = make_float3( 0.0f );
-    float3 click_pos = make_float3( 0.0f );
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
@@ -263,7 +262,6 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
         prd.mask_value = make_float3( 0.0f );
-        prd.click_pos = make_float3( 0.0f );
 
         prd.depth = 0;
         prd.diffDepth = 0;
@@ -289,8 +287,27 @@ extern "C" __global__ void __raygen__rg()
         unsigned char background_trace = 0;
         prd.alphaHit = false;
 
+        if (subframe_index == 0) {
+            RadiancePRD testPRD {};
+            testPRD.done = false;
+            testPRD.seed = seed;
+            testPRD.depth == 0;
+            testPRD._tmin_ = 0;
+            testPRD.maxDistance = FLT_MAX;
+            testPRD.test_distance = true;
+
+            uint8_t test_mask = EverythingMask ^ VolumeMatMask;
+            do {
+                traceRadiance(params.handle, ray_origin, ray_direction, testPRD._tmin_, testPRD.maxDistance, &testPRD, test_mask);
+            } while(testPRD.test_distance && !testPRD.done);
+            float3 click_pos = make_float3( 0.0f );
+            if (testPRD.maxDistance < FLT_MAX) {
+                click_pos = ray_origin + ray_direction * testPRD.maxDistance;
+            }
+            params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
+        }
+
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-        click_pos = prd.click_pos;
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
 
@@ -436,7 +453,6 @@ extern "C" __global__ void __raygen__rg()
     params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
 
     params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
-    params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
 
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
