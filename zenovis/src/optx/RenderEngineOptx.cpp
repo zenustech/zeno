@@ -371,7 +371,8 @@ struct GraphicsManager {
                         }
                     }
 
-                    loadCurveGroup(points, widths, normals, strands, curveTypeEnum, mtlid);
+                    auto abcpath = ud.get2<std::string>("abcpath_0", "Default");
+                    loadCurveGroup(points, widths, normals, strands, curveTypeEnum, mtlid, abcpath);
                     return;
                 }
 
@@ -1352,7 +1353,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     cachedCurvesMaterials[mtid] = { ctype };
                 }
 
-                for (auto& ele : curveGroupCache) {
+                for (auto& [key, ele] : curveGroupCache) {
 
                     auto ctype = ele->curveType;
                     auto mtlid = ele->mtlid;

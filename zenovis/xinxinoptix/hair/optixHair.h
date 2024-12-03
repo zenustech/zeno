@@ -72,6 +72,15 @@ struct HairState
     // Aux data
     CurveGroupAux aux {};
 
+    ~HairState() {
+        cudaFree( reinterpret_cast<void*>( aux.strand_u.data ) );
+        aux.strand_u.data = 0;
+        cudaFree( reinterpret_cast<void*>( aux.strand_i.data ) );
+        aux.strand_i.data = 0;
+        cudaFree( reinterpret_cast<void*>( aux.strand_info.data ) );
+        aux.strand_info.data = 0;
+    }
+
 public:
 
 void makeHairGAS(OptixDeviceContext contex);
@@ -169,11 +178,11 @@ inline void prepareHairs(OptixDeviceContext context) {
     }
 }
 
-inline std::vector<std::shared_ptr<CurveGroup>> curveGroupCache;
-inline std::vector<std::shared_ptr<HairState>> curveGroupStateCache;
+inline std::map<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
+inline std::map<std::string, std::shared_ptr<HairState>> curveGroupStateCache;
 
 inline void loadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, 
-                           zeno::CurveType curveType, std::string mtlid) {
+                           zeno::CurveType curveType, std::string mtlid, std::string key) {
 
     auto cg = std::make_shared<CurveGroup>();
     cg->mtlid = mtlid; 
@@ -184,14 +193,14 @@ inline void loadCurveGroup(std::vector<float3>& points, std::vector<float>& widt
     cg->normals = std::move(normals);
     cg->strands = std::move(strands);
 
-    curveGroupCache.push_back(cg);
+    curveGroupCache[key] = cg;
 }
 
 inline void prepareCurveGroup(OptixDeviceContext context) {
 
     curveGroupStateCache.clear();
 
-    for (auto& ele : curveGroupCache) {
+    for (auto& [key, ele] : curveGroupCache) {
         auto state = std::make_shared<HairState>();
 
         state->curveGroup = ele;
@@ -200,8 +209,7 @@ inline void prepareCurveGroup(OptixDeviceContext context) {
         state->mtid = ele->mtlid;
 
         state->makeCurveGroupGAS(context);
-
-        curveGroupStateCache.push_back(state);
+        curveGroupStateCache[key] = state;
     }
 
     curveGroupCache.clear();
