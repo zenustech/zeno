@@ -839,6 +839,9 @@ struct NewFBXImportSkin : INode {
                 ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
             }
         }
+        if (get_input2<bool>("CopyFacesetToMatid")) {
+            prim_copy_faceset_to_matid(prim.get());
+        }
         set_output("prim", prim);
     }
 };
@@ -850,6 +853,7 @@ ZENDEFNODE(NewFBXImportSkin, {
         {"bool", "ConvertUnits", "0"},
         {"string", "vectors", "nrm,"},
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
+        {"bool", "CopyFacesetToMatid", "1"},
     },
     {
         "prim",

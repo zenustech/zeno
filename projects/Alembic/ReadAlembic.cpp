@@ -1215,6 +1215,11 @@ struct ReadAlembic : INode {
             }
             set_output("namelist", namelist);
         }
+        if (get_input2<bool>("CopyFacesetToMatid")) {
+            abctree->visitPrims([](auto &prim){
+                prim_copy_faceset_to_matid(prim.get());
+            });
+        }
         set_output("abctree", std::move(abctree));
     }
 };
@@ -1225,6 +1230,7 @@ ZENDEFNODE(ReadAlembic, {
         {"bool", "read_face_set", "1"},
         {"bool", "outOfRangeAsEmpty", "0"},
         {"bool", "skipInvisibleObject", "1"},
+        {"bool", "CopyFacesetToMatid", "1"},
         {"frameid"},
     },
     {
@@ -1638,6 +1644,26 @@ ZENDEFNODE(SetABCPath, {
     {
         "prim",
         {"string", "abcpathName", "/ABC/your_path"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"alembic"},
+});
+
+struct PrimCopyFacesetToMatid: INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        prim_copy_faceset_to_matid(prim.get());
+
+        set_output("out", prim);
+    }
+};
+
+ZENDEFNODE(PrimCopyFacesetToMatid, {
+    {
+        "prim",
     },
     {
         {"out"},

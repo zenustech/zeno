@@ -28,6 +28,31 @@ ZENO_API void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
     }
 }
 
+ZENO_API void prim_copy_faceset_to_matid(PrimitiveObject* prim) {
+    auto &ud = prim->userData();
+    auto faceset_count = ud.get2<int>("faceset_count");
+    ud.set2("matNum", faceset_count);
+    for (auto i = 0; i < faceset_count; i++) {
+        auto value = ud.get2<std::string>(format("faceset_{}", i));
+        ud.set2(format("Material_{}", i), value);
+    }
+
+    if (prim->tris.attr_is<int>("faceset")) {
+        prim->tris.attr_visit<AttrAcceptAll>("faceset", [&] (auto const &attarr) {
+            using T = std::decay_t<decltype(attarr[0])>;
+            auto &targetAttr = prim->tris.template add_attr<T>("matid");
+            std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+        });
+    }
+    if (prim->polys.attr_is<int>("faceset")) {
+        prim->polys.attr_visit<AttrAcceptAll>("faceset", [&] (auto const &attarr) {
+            using T = std::decay_t<decltype(attarr[0])>;
+            auto &targetAttr = prim->polys.template add_attr<T>("matid");
+            std::copy(attarr.begin(), attarr.end(), targetAttr.begin());
+        });
+    }
+}
+
 ZENO_API void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name) {
     int faceset_count = prim->userData().get2<int>("faceset_count",0);
     for (auto j = 0; j < faceset_count; j++) {
