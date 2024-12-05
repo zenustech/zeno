@@ -22,6 +22,31 @@ struct ShaderNode : INode {
     ZENO_API ~ShaderNode() override;
 };
 
+static const inline std::map<std::string, int> TypeHint {
+
+    {"bool", 0},
+    {"int", 10},
+    {"uint", 11},
+
+    {"float", 1},
+    {"vec2", 2},
+    {"vec3", 3},
+    {"vec4", 4}
+};
+
+static const inline std::map<int, std::string> TypeHintReverse {
+
+    {0, "bool"},
+    {10, "int"},
+    {11, "uint"},
+
+    {1, "float"},
+    {2, "vec2"},
+    {3, "vec3"},
+    {4, "vec4"}
+};
+
+
 template <class Derived>
 struct ShaderNodeClone : ShaderNode {
     virtual std::shared_ptr<ShaderNode> clone() const override {
