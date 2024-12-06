@@ -1022,6 +1022,32 @@ ZENDEFNODE(NewFBXImportSkin, {
     {"FBXSDK"},
 });
 
+struct NewFBXResolveTexPath : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        std::string hint_directory = get_input2<std::string>("HintDirectory");
+        std::string target_directory = get_input2<std::string>("TargetDirectory");
+        zeno::log_info("hint_path: {}", hint_directory);
+
+        set_output2("prim", prim);
+    }
+};
+
+ZENDEFNODE(NewFBXResolveTexPath, {
+    {
+        "prim",
+       {"directory", "HintDirectory"},
+       {"bool", "CopyImage", "0"},
+       {"directory", "TargetDirectory"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"FBXSDK"},
+});
+
 static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, std::shared_ptr<PrimitiveObject>& prim) {
     auto pose_count = lScene->GetPoseCount();
     bool found_bind_pose = false;
