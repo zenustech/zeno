@@ -4,6 +4,7 @@
 
 #include "zeno/types/DictObject.h"
 #include "zeno/types/ListObject.h"
+#include "zeno/types/UserData.h"
 #include "zeno/utils/fileio.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
@@ -132,6 +133,76 @@ ZENDEFNODE(FormJson, {
      },
  });
 
+struct PrimUserDataToJson : zeno::INode {
+    void iobject_to_json(Json &json, std::string key, std::shared_ptr<IObject> iObject) {
+        if (objectIsRawLiterial<int>(iObject)) {
+            json[key] = objectToLiterial<int>(iObject);
+        }
+        else if (objectIsRawLiterial<vec2i>(iObject)) {
+            auto value = objectToLiterial<vec2i>(iObject);
+            json[key] = { value[0], value[1]};
+        }
+        else if (objectIsRawLiterial<vec3i>(iObject)) {
+            auto value = objectToLiterial<vec3i>(iObject);
+            json[key] = { value[0], value[1], value[2]};
+        }
+        else if (objectIsRawLiterial<vec4i>(iObject)) {
+            auto value = objectToLiterial<vec4i>(iObject);
+            json[key] = { value[0], value[1], value[2], value[3]};
+        }
+        else if (objectIsRawLiterial<float>(iObject)) {
+            json[key] = objectToLiterial<float>(iObject);
+        }
+        else if (objectIsRawLiterial<vec2f>(iObject)) {
+            auto value = objectToLiterial<vec2f>(iObject);
+            json[key] = { value[0], value[1]};
+        }
+        else if (objectIsRawLiterial<vec3f>(iObject)) {
+            auto value = objectToLiterial<vec3f>(iObject);
+            json[key] = { value[0], value[1], value[2]};
+        }
+        else if (objectIsRawLiterial<vec4f>(iObject)) {
+            auto value = objectToLiterial<vec4f>(iObject);
+            json[key] = { value[0], value[1], value[2], value[3]};
+        }
+        else if (objectIsRawLiterial<std::string>(iObject)) {
+            json[key] = objectToLiterial<std::string>(iObject);
+        }
+    }
+    void apply() override {
+        auto keys_string = get_input2<std::string>("keys");
+        auto output_all = get_input2<bool>("output_all");
+        auto _json = std::make_shared<JsonObject>();
+        auto iObject = get_input("iObject");
+        auto &ud = iObject->userData();
+
+        std::vector<std::string> keys = zeno::split_str(keys_string, {' ', '\n'});
+        std::set<std::string> keys_set(keys.begin(), keys.end());
+
+        for (auto i = ud.begin(); i != ud.end(); i++) {
+            if (output_all == false && keys_set.count(i->first) == 0) {
+                continue;
+            }
+            iobject_to_json(_json->json, i->first, i->second);
+        }
+
+        set_output2("json", _json);
+    }
+};
+ZENDEFNODE(PrimUserDataToJson, {
+     {
+         "iObject",
+         {"bool", "output_all", "0"},
+         {"multiline_string", "keys", "abc_path _pivot _rotate _scale _translate _transform_row0 _transform_row1 _transform_row2 _transform_row3"},
+     },
+     {
+         "json",
+     },
+     {},
+     {
+         "json"
+     },
+ });
 struct JsonToString : zeno::INode {
   virtual void apply() override {
     auto json = get_input<JsonObject>("json");

@@ -35,6 +35,7 @@ ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed = false);
 ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int start = 0);
 ZENO_API void prim_set_abcpath(PrimitiveObject* prim, std::string path_name);
 ZENO_API void prim_set_faceset(PrimitiveObject* prim, std::string faceset_name);
+ZENO_API void prim_copy_faceset_to_matid(PrimitiveObject* prim);
 
 ZENO_API void primFilterVerts(PrimitiveObject *prim, std::string tagAttr, int tagValue, bool isInversed = false, std::string revampAttrO = {}, std::string method = "verts", int* aux = nullptr, int aux_size = 0, bool use_aux = false);
 
