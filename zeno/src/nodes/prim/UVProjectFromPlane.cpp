@@ -497,6 +497,7 @@ struct ReadImageFile_v2 : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         std::shared_ptr<PrimitiveObject> image;
+
         if (zeno::ends_with(path, ".exr", false)) {
             image = readExrFile(path);
         }

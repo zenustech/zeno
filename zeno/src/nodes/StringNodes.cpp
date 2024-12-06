@@ -682,6 +682,38 @@ ZENDEFNODE(NumbertoString, {
     {"string"},
 });
 
+struct NumberToTime : zeno::INode {
+  virtual void apply() override {
+    auto num = int(std::round(get_input2<float>("number")));
+    auto obj = std::make_unique<zeno::StringObject>();
+    int h = num / 60 / 60;
+    int m = num % (60 * 60) / 60;
+    int s = num % 60;
+    if (get_input2<std::string>("format") == "string") {
+      auto str = zeno::format("{:02}:{:02}:{:02}", h, m, s);
+      set_output2("time", str);
+    }
+    else if (get_input2<std::string>("format") == "vec3f") {
+      auto value = vec3f(h, m, s);
+      set_output2("time", value);
+    }
+    else if (get_input2<std::string>("format") == "vec3i") {
+      auto value = vec3i(h, m, s);
+      set_output2("time", value);
+    }
+  }
+};
+
+ZENDEFNODE(NumberToTime, {
+   {
+       {"number"},
+       {"enum vec3i vec3f string", "format", "string"},
+   },
+   {"time"},
+   {},
+   {"string"},
+});
+
 std::string strreplace(std::string textToSearch, std::string_view toReplace, std::string_view replacement)
 {
     size_t pos = 0;

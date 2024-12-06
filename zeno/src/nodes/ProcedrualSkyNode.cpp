@@ -103,8 +103,9 @@ struct DistantLight : INode {
         
         dir3[2] = std::cos(dir2[0]) * std::cos(dir2[1]);
         dir3[0] = std::cos(dir2[0]) * std::sin(dir2[1]);
-        
-        //dir3 = zeno::normalize(dir3);
+        auto dir = get_input2<zeno::vec3f>("dir");
+        dir3 = length(dir)>0?dir:dir3;
+        dir3 = zeno::normalize(dir3);
     
         auto angleExtent = get_input2<float>("angleExtent");
         angleExtent = zeno::clamp(angleExtent, 0.0f, 60.0f);
@@ -125,6 +126,7 @@ struct DistantLight : INode {
 ZENDEFNODE(DistantLight, {
     {
         {"vec2f", "Lat-Lon", "45, 90"},
+        {"vec3f", "dir", "0,0,0"},
         {"float", "angleExtent", "0.5"},
         {"colorvec3f", "color", "1,1,1"},
         {"float", "intensity", "1"}

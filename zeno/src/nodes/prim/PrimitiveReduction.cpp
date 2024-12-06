@@ -75,7 +75,7 @@ struct PrimReduction : zeno::INode {
         zeno::NumericValue result;
         if (prim->attr_is<zeno::vec3f>(attrToReduce))
             result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);
-        else 
+        else
             result = prim_reduce<float>(prim.get(), attrToReduce, op);
         auto out = std::make_shared<zeno::NumericObject>();
         out->set(result);
@@ -94,7 +94,29 @@ ZENDEFNODE(PrimReduction,{
     {},
     {"primitive"},
 });
-
+//struct PrimAttrScatter : zeno::INode {
+//  virtual void apply() override{
+//    auto prim = get_input<PrimitiveObject>("primFrom");
+//    auto prim2 = get_input<PrimitiveObject>("primTo");
+//    auto attrToReduce = get_input2<std::string>(("attrName"));
+//    auto op = get_input2<std::string>(("op"));
+//
+//    set_output("result", std::move(prim));
+//  }
+//};
+//ZENDEFNODE(PrimAttrScatter,{
+//                              {
+//                                    {"primFrom"},
+//                                    {"primTo"},
+//                                  {"string", "attrName", "pos"},
+//                                  {"enum add max min absmax mul", "op", "add"},
+//                              },
+//                              {
+//                                  {"prim"},
+//                              },
+//                              {},
+//                              {"primitive"},
+//                          });
 struct PrimitiveBoundingBox : zeno::INode {
     virtual void apply() override{
         auto prim = get_input<PrimitiveObject>("prim");
