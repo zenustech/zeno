@@ -9,6 +9,7 @@
 #include <zeno/utils/zeno_p.h>
 #include "imgcv.h"
 #include <zeno/utils/UserData.h>
+#include <filesystem>
 namespace zeno {
 namespace {
 
@@ -899,7 +900,8 @@ ZENDEFNODE(CVImagePutText, {
 
 struct ReadImageByOpenCV : INode {
   void apply() override {
-    auto inputPath = get_input2<std::string>("inputPath");
+    auto path = get_input2<std::string>("inputPath");
+    std::string inputPath = std::filesystem::u8path(path).string();
     cv::Mat image = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
     cv::Mat exrImage;
     image.convertTo(exrImage, CV_32F);

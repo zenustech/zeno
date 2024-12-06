@@ -1565,8 +1565,10 @@ ZENDEFNODE(NewFBXImportCamera, {
 namespace zeno {
 struct RigPoseItemObject : PrimitiveObject {
     std::string boneName;
+    bool use_quat = false;
     vec3f translate = {0, 0, 0};
     vec3f rotate = {0, 0, 0};
+    vec4f quat = {1,0,0,0};
 };
 struct NewFBXRigPoseItem : INode {
     virtual void apply() override {
@@ -1574,6 +1576,8 @@ struct NewFBXRigPoseItem : INode {
         item->boneName  = get_input2<std::string>("boneName");
         item->translate = get_input2<vec3f>("translate");
         item->rotate    = get_input2<vec3f>("rotate");
+        item->use_quat  = get_input2<bool>("UseQuaternion");
+        item->quat = get_input2<vec4f>("quaternion");
         set_output2("poseItem", std::move(item));
     }
 };
@@ -1581,8 +1585,10 @@ struct NewFBXRigPoseItem : INode {
 ZENDEFNODE(NewFBXRigPoseItem, {
     {
         {"string", "boneName", ""},
+        {"bool", "UseQuaternion", "0"},
         {"vec3f", "translate", "0, 0, 0"},
         {"vec3f", "rotate", "0, 0, 0"},
+        {"vec4f", "quaternion", "1,0,0,0"},
     },
     {
         "poseItem",
@@ -1791,7 +1797,13 @@ struct NewFBXRigPose : INode {
                 glm::mat4 matRotx  = glm::rotate(glm::radians(trans->rotate[0]), glm::vec3(1,0,0) );
                 glm::mat4 matRoty  = glm::rotate(glm::radians(trans->rotate[1]), glm::vec3(0,1,0) );
                 glm::mat4 matRotz  = glm::rotate(glm::radians(trans->rotate[2]), glm::vec3(0,0,1) );
-                transform = matTrans*matRoty*matRotx*matRotz;
+                glm::mat4 matRot = matRoty*matRotx*matRotz;
+                if(trans->use_quat==true)
+                {
+                  glm::quat rot(trans->quat[3], trans->quat[0], trans->quat[1], trans->quat[2]);
+                  matRot = glm::toMat4(rot);
+                }
+                transform = matTrans*matRot;
                 transform = transforms[bi] * transform * transformsInv[bi];
             }
             if (bone_connects.count(bi) && WorldSpace == false) {

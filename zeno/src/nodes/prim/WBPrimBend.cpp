@@ -19,6 +19,7 @@
 #include <sstream>
 #include <ctime>
 #include <iostream>
+#include <zeno/types/DictObject.h>
 namespace zeno
 {
 namespace
@@ -193,12 +194,32 @@ ZENDEFNODE(ParameterizeLine,
             }, /* category: */ {
                 "primitive",
             } });
+float lerp(float a, float b, float c)
+{
+  return a + (b-a)*c;
+}
+float Dlerp(float a, float b, float c)
+{
+  if(abs(b-511)<0.00001)
+    return a;
+  if(abs(b-a)>180){
+    float x = lerp(a, b+360, c);
+    return x>360?x-360:x;
+  }
+  return lerp(a, b, c);
+}
 struct LineResample : INode {
     void apply() override
     {
         auto prim = get_input<PrimitiveObject>("prim");
 
         auto segments = get_input<NumericObject>("segments")->get<int>();
+        bool has_schema = false;
+        if(has_input("AttrSchema"))
+          has_schema = true;
+        auto attrSchema = std::make_shared<zeno::DictObject>();
+        if(has_schema)
+          attrSchema = get_input<zeno::DictObject>("AttrSchema");
         if (segments < 1) { segments = 1; }
         std::vector<float> linesLen(prim->lines.size());
         if(!prim->lines.has_attr("parameterization")) {
@@ -276,11 +297,33 @@ struct LineResample : INode {
             for(auto key:prim->attr_keys())
             {
                 if(key!="pos")
-                    std::visit([&retprim, &prim, &ind, &r1, &i, key](auto &&ref) {
+                    std::visit([&has_schema, &attrSchema, &retprim, &prim, &ind, &r1, &i, key](auto &&ref) {
                         using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
                         auto a = prim->attr<T>(key)[ind[0]];
                         auto b = prim->attr<T>(key)[ind[1]];
                         retprim->attr<T>(key)[i] = a + (b-a)*r1;
+                        if(has_schema)
+                        {
+                          if(attrSchema->lut.find(key)!=attrSchema->lut.end())
+                          {
+                            auto schema = zeno::safe_dynamic_cast<zeno::StringObject>(attrSchema->lut[key])->value;
+                            if(schema == "Degrees")
+                            {
+                              if constexpr (std::is_convertible_v<T, zeno::vec4f>)
+                              {
+                                retprim->attr<T>(key)[i] = zeno::vec4f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1),Dlerp(a[2],b[2],r1),Dlerp(a[3],b[3],r1));
+                              } else if constexpr (std::is_convertible_v<T, zeno::vec3f>)
+                              {
+                                retprim->attr<T>(key)[i] = zeno::vec3f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1),Dlerp(a[2],b[2],r1));
+                              } else if constexpr (std::is_convertible_v<T, zeno::vec2f>){
+                                retprim->attr<T>(key)[i] = zeno::vec2f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1));
+                              }else if constexpr (std::is_convertible_v<T, float>){
+                                retprim->attr<T>(key)[i] = Dlerp(a, b, r1);
+                              }
+                            }
+                          }
+                        }
+
                     }, prim->attr(key));
             }
         }
@@ -321,6 +364,7 @@ struct LineResample : INode {
 ZENDEFNODE(LineResample,
     {  /* inputs: */ {
             "prim",
+            {"DictObject", "AttrSchema"},
             {"int", "segments", "3"},
             "PrimSampler",
             {"string", "SampleBy", "t"},
