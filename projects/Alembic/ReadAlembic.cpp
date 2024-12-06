@@ -1172,6 +1172,7 @@ struct ReadAlembic : INode {
             frameid = getGlobalState()->frameid;
         }
         auto abctree = std::make_shared<ABCTree>();
+        bool read_face_set = get_input2<bool>("read_face_set");
         {
             auto path = get_input<StringObject>("path")->get();
             if (usedPath != path) {
@@ -1185,7 +1186,6 @@ struct ReadAlembic : INode {
             // fmt::print("GetArchiveStartAndEndTime: {}\n", start);
             // fmt::print("archive.getNumTimeSamplings: {}\n", archive.getNumTimeSamplings());
             auto obj = archive.getTop();
-            bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
             bool skipInvisibleObject = get_input2<bool>("skipInvisibleObject");
             Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
@@ -1215,7 +1215,7 @@ struct ReadAlembic : INode {
             }
             set_output("namelist", namelist);
         }
-        if (get_input2<bool>("CopyFacesetToMatid")) {
+        if (get_input2<bool>("CopyFacesetToMatid") && read_face_set) {
             abctree->visitPrims([](auto &prim){
                 prim_copy_faceset_to_matid(prim.get());
             });

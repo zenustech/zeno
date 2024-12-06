@@ -30,7 +30,7 @@ ZENO_API void prim_set_abcpath(PrimitiveObject* prim, std::string path_name) {
 
 ZENO_API void prim_copy_faceset_to_matid(PrimitiveObject* prim) {
     auto &ud = prim->userData();
-    auto faceset_count = ud.get2<int>("faceset_count");
+    auto faceset_count = ud.get2<int>("faceset_count", 0);
     ud.set2("matNum", faceset_count);
     for (auto i = 0; i < faceset_count; i++) {
         auto value = ud.get2<std::string>(format("faceset_{}", i));
