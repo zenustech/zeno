@@ -358,6 +358,7 @@ struct ReadFBXFile: INode {
         fbx_object->userData().set2("version", vec3i(major, minor, revision));
         usedPath = lFilename;
         _inner_fbx_object = fbx_object;
+        fbx_object->userData().set2("file_path", usedPath);
 
         set_output("fbx_object", std::move(fbx_object));
     }
@@ -616,7 +617,6 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     ud.set2("faceset_count", mat_count);
     prim_set_abcpath(prim.get(), format("/ABC/{}", nodeName));
     if (mat_count > 0) {
-        Json mat_json;
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
             ud.set2(format("faceset_{}", i), material->GetName());
@@ -768,9 +768,8 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                     }
                 }
             }
-            mat_json[mat_name] = json;
+            ud.set2(mat_name, json.dump());
         }
-        ud.set2("material", mat_json.dump());
     }
     return prim;
 }
@@ -997,6 +996,8 @@ struct NewFBXImportSkin : INode {
             for (int i = 0; i < availableRootNames.size(); i++) {
                 ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
             }
+            auto file_path = fbx_object->userData().get2<std::string>("file_path");
+            ud.set2("file_path", file_path);
         }
         if (get_input2<bool>("CopyFacesetToMatid")) {
             prim_copy_faceset_to_matid(prim.get());
