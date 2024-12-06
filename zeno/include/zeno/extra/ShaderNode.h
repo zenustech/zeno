@@ -21,6 +21,30 @@ struct ShaderNode : INode {
     ZENO_API ShaderNode();
     ZENO_API ~ShaderNode() override;
 };
+using ShaderDataTypeList = std::tuple<bool, int, unsigned int, float, vec2f, vec3f, vec4f>;
+
+inline const auto ShaderDataTypeNames = std::array { "bool", "int", "uint", "float", "vec2", "vec3", "vec4" };
+
+static const inline std::map<std::string, int> TypeHint {
+
+    {"bool", 0},
+    {"int", 10},
+    {"uint", 11},
+
+    {"float", 1},
+    {"vec2", 2},
+    {"vec3", 3},
+    {"vec4", 4}
+};
+
+static const inline std::map<int, std::string> TypeHintReverse = []() {
+
+    std::map<int, std::string> result {};
+    for (auto& [k, v] : TypeHint) {
+        result[v] = k;
+    }
+    return result;
+} ();
 
 template <class Derived>
 struct ShaderNodeClone : ShaderNode {

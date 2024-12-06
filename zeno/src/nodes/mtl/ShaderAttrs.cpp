@@ -55,9 +55,7 @@ static std::string dataTypeListString() {
 struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual int determineType(EmissionPass *em) override {
         auto type = get_input2<std::string>("type");
-        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
-        auto idx = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
-        return idx + 1;
+        return TypeHint.at(type);
     }
 
     virtual void emitCode(EmissionPass *em) override {
@@ -75,7 +73,7 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 ZENDEFNODE(ShaderInputAttr, {
     {
         {"enum" + dataTypeListString(), "attr", dataTypeDefaultString()},
-        {"enum float vec2 vec3 vec4 bool", "type", "vec3"},
+        {"enum float vec2 vec3 vec4 bool int uint", "type", "vec3"},
     },
     {
         {"shader", "out"},

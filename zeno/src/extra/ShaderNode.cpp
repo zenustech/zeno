@@ -2,6 +2,7 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/type_traits.h>
 #include <sstream>
 #include <cassert>
 
@@ -38,18 +39,21 @@ ZENO_API int EmissionPass::determineType(IObject *object) {
 
         int type = std::visit([&] (auto const &value) -> int {
             using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<float, T>) {
-                return 1;
-            } else if constexpr (std::is_same_v<vec2f, T>) {
-                return 2;
-            } else if constexpr (std::is_same_v<vec3f, T>) {
-                return 3;
-            } else if constexpr (std::is_same_v<vec4f, T>) {
-                return 4;
-            } else {
-                throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
-            }
+            size_t typeIdx = 0;
+
+            zeno::static_for<0, std::tuple_size_v<ShaderDataTypeList>>([&] (auto i) {
+                using ThisType = std::tuple_element_t<i, ShaderDataTypeList>;
+
+                if (std::is_same_v<ThisType, T>) {
+                    typeIdx = i;
+                    return true;
+                }
+                return false;
+            });
+
+            return TypeHint.at(ShaderDataTypeNames.at(typeIdx));
         }, num->value);
+
         constmap[num] = constants.size();
         constants.push_back(ConstInfo{type, num->value});
         return type;
@@ -126,8 +130,7 @@ ZENO_API std::string EmissionPass::getCommonCode() const {
 }
 
 ZENO_API std::string EmissionPass::typeNameOf(int type) const {
-    if (type == 1) return "float";
-    else return (backend == HLSL ? "float" : "vec") + std::to_string(type);
+    return TypeHintReverse.at(type);
 }
 
 ZENO_API std::string EmissionPass::collectDefs() const {
