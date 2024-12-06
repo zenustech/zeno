@@ -263,6 +263,9 @@ struct Params
     float physical_camera_iso;
     bool  physical_camera_aces;
     bool  physical_camera_exposure;
+    bool  physical_camera_panorama_camera;
+    bool  physical_camera_panorama_vr180;
+    float physical_camera_pupillary_distance;
 };
 
 

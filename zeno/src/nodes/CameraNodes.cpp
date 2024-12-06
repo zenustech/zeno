@@ -106,6 +106,9 @@ struct SetPhysicalCamera : INode {
         ud.set2("iso", get_input2<float>("iso"));
         ud.set2("aces", get_input2<bool>("aces"));
         ud.set2("exposure", get_input2<bool>("exposure"));
+        ud.set2("panorama_camera", get_input2<bool>("panorama_camera"));
+        ud.set2("panorama_vr180", get_input2<bool>("panorama_vr180"));
+        ud.set2("pupillary_distance", get_input2<float>("pupillary_distance"));
 
         set_output("camera", std::move(camera));
     }
@@ -119,6 +122,10 @@ ZENO_DEFNODE(SetPhysicalCamera)({
         {"float", "iso", "150"},
         {"bool", "aces", "0"},
         {"bool", "exposure", "0"},
+        {"bool", "exposure", "0"},
+        {"bool", "panorama_camera", "0"},
+        {"bool", "panorama_vr180", "0"},
+        {"float", "pupillary_distance", "0.06"},
     },
     {
             {"CameraObject", "camera"},
