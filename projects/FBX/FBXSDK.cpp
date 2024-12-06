@@ -1074,7 +1074,6 @@ struct NewFBXResolveTexPath : INode {
         auto prim = get_input<PrimitiveObject>("prim");
 
         std::string hint_directory = get_input2<std::string>("HintDirectory");
-        std::string target_directory = get_input2<std::string>("TargetDirectory");
 
         auto &ud = prim->userData();
         auto file_path = prim->userData().get2<std::string>("file_path");
@@ -1108,8 +1107,6 @@ struct NewFBXResolveTexPath : INode {
             ud.set2<std::string>(mat_name, mat_json.dump());
         }
 
-        zeno::log_info("hint_path: {}", hint_directory);
-
         set_output2("prim", prim);
     }
 };
@@ -1118,8 +1115,6 @@ ZENDEFNODE(NewFBXResolveTexPath, {
     {
         "prim",
        {"string", "HintDirectory"},
-       {"bool", "CopyImageToTargetDirectory", "0"},
-       {"string", "TargetDirectory"},
     },
     {
         "prim",
