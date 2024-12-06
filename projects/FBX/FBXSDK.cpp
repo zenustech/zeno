@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stack>
 #include <numeric>
+#include <filesystem>
 
 #include <zeno/zeno.h>
 #include <zeno/core/IObject.h>
@@ -30,6 +31,7 @@
 #include "magic_enum.hpp"
 #include <tinygltf/json.hpp>
 using Json = nlohmann::ordered_json;
+namespace fs = std::filesystem;
 
 #ifdef ZENO_FBXSDK
 #include <fbxsdk.h>
@@ -358,6 +360,7 @@ struct ReadFBXFile: INode {
         fbx_object->userData().set2("version", vec3i(major, minor, revision));
         usedPath = lFilename;
         _inner_fbx_object = fbx_object;
+        fbx_object->userData().set2("file_path", usedPath);
 
         set_output("fbx_object", std::move(fbx_object));
     }
@@ -457,7 +460,6 @@ void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
         }
     }
     else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
-        zeno::log_info("{}, eByPolygonVertex", name);
         auto &attr = prim->loops.add_attr<vec3f>(name);
         for (auto i = 0; i < prim->loops.size(); i++) {
             int pIndex = i;
@@ -573,7 +575,6 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
             }
         }
         else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
-            zeno::log_info("{}, eByPolygonVertex", name);
             if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
                 auto &uvs = prim->loops.add_attr<int>("uvs");
                 std::iota(uvs.begin(), uvs.end(), 0);
@@ -616,7 +617,6 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
     ud.set2("faceset_count", mat_count);
     prim_set_abcpath(prim.get(), format("/ABC/{}", nodeName));
     if (mat_count > 0) {
-        Json mat_json;
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
             ud.set2(format("faceset_{}", i), material->GetName());
@@ -768,9 +768,8 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                     }
                 }
             }
-            mat_json[mat_name] = json;
+            ud.set2(mat_name, json.dump());
         }
-        ud.set2("material", mat_json.dump());
     }
     return prim;
 }
@@ -997,6 +996,8 @@ struct NewFBXImportSkin : INode {
             for (int i = 0; i < availableRootNames.size(); i++) {
                 ud.set2(format("AvailableRootName_{}", i), availableRootNames[i]);
             }
+            auto file_path = fbx_object->userData().get2<std::string>("file_path");
+            ud.set2("file_path", file_path);
         }
         if (get_input2<bool>("CopyFacesetToMatid")) {
             prim_copy_faceset_to_matid(prim.get());
@@ -1013,6 +1014,107 @@ ZENDEFNODE(NewFBXImportSkin, {
         {"string", "vectors", "nrm,"},
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
         {"bool", "CopyFacesetToMatid", "1"},
+    },
+    {
+        "prim",
+    },
+    {},
+    {"FBXSDK"},
+});
+
+struct NewFBXResolveTexPath : INode {
+    void StringSplitReverse(std::string str, const char split, std::vector<std::string> & ostrs)
+    {
+        std::istringstream iss(str);
+        std::string token;
+        std::vector<std::string> res(0);
+        while(getline(iss, token, split))
+        {
+            res.push_back(token);
+        }
+        ostrs.resize(0);
+        for(int i=res.size()-1; i>=0;i--)
+        {
+            ostrs.push_back(res[i]);
+        }
+    }
+    void formPath(std::vector<std::string> &tokens)
+    {
+        for(int i=1; i<tokens.size();i++)
+        {
+            tokens[i] = tokens[i] + '/' + tokens[i-1];
+        }
+    }
+    bool findFile(std::string HintPath, std::string origPath, std::string & oPath)
+    {
+        {
+            auto orig_path = fs::u8path(origPath);
+            std::error_code ec;
+            if (std::filesystem::exists(orig_path, ec)) {
+                oPath = origPath;
+            }
+        }
+        std::vector<std::string> paths;
+        StringSplitReverse(origPath, '/', paths);
+        formPath(paths);
+        for(int i=0; i<paths.size(); i++)
+        {
+            auto filename = HintPath + '/' + paths[i];
+            auto cur_path = fs::u8path(filename);
+            std::error_code ec;
+            if(std::filesystem::exists(cur_path, ec))
+            {
+                oPath = filename;
+                return true;
+            }
+        }
+        return false;
+    }
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        std::string hint_directory = get_input2<std::string>("HintDirectory");
+
+        auto &ud = prim->userData();
+        auto file_path = prim->userData().get2<std::string>("file_path");
+        fs::path path = fs::u8path(file_path);
+        auto file_path_directory = path.parent_path().u8string();
+        if (hint_directory.empty()) {
+            hint_directory = file_path_directory;
+        }
+        auto faceset_count = ud.get2<int>("faceset_count", 0);
+        for (auto i = 0; i < faceset_count; i++) {
+            auto mat_name = ud.get2<std::string>(format("faceset_{}", i));
+            auto content = ud.get2<std::string>(mat_name);
+            Json mat_json = Json::parse(content);
+            std::vector<std::string> keys;
+            for (auto &[key, _]: mat_json.items()) {
+                if (zeno::ends_with(key, "_tex")) {
+                    keys.push_back(key);
+                }
+            }
+            for (auto &key: keys) {
+                std::string tex_path_str = mat_json[key];
+                if (key == "diffuse_tex") {
+
+                }
+                tex_path_str = zeno::replace_all(tex_path_str, "\\", "/");
+
+                std::string oPath;
+                findFile(hint_directory, tex_path_str, oPath);
+                mat_json[key] = oPath;
+            }
+            ud.set2<std::string>(mat_name, mat_json.dump());
+        }
+
+        set_output2("prim", prim);
+    }
+};
+
+ZENDEFNODE(NewFBXResolveTexPath, {
+    {
+        "prim",
+       {"string", "HintDirectory"},
     },
     {
         "prim",
