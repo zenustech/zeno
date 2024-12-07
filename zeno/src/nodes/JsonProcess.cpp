@@ -760,6 +760,143 @@ ZENDEFNODE(JsonGetData, {
     },
 });
 
+struct CreateJson : zeno::INode {
+  virtual void apply() override {
+      auto _json = std::make_shared<JsonObject>();
+      set_output2("json", _json);
+  }
+};
+ZENDEFNODE(CreateJson, {
+     {},
+     {
+         "json",
+     },
+     {},
+     {
+         "json"
+     },
+ });
+
+struct JsonErase : zeno::INode {
+    void access(Json &json, std::vector<std::string> &names, int index) {
+        auto name = names[index];
+        if (index == names.size() - 1) {
+            json.erase(name);
+            return;
+        }
+        if (json.is_array()) {
+            access(json[std::stoi(name)], names, index + 1);
+        }
+        else {
+            access(json[name], names, index + 1);
+        }
+    }
+    void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        auto names = split_str(path, '/');
+
+        access(json->json, names, 0);
+
+        set_output("json", json);
+    }
+};
+ZENDEFNODE(JsonErase, {
+    {
+        {"json"},
+        {"string", "path", "a/0/b"}
+    },
+    {
+        "json",
+    },
+    {},
+    {
+        "json"
+    },
+});
+
+struct JsonRenameKey : zeno::INode {
+    void access(Json &json, std::vector<std::string> &names, int index, std::string &new_name) {
+        auto name = names[index];
+        if (index == names.size() - 1) {
+            Json node = json[name];
+            json.erase(name);
+            json[new_name] = node;
+            return;
+        }
+        if (json.is_array()) {
+            access(json[std::stoi(name)], names, index + 1, new_name);
+        }
+        else {
+            access(json[name], names, index + 1, new_name);
+        }
+    }
+    void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        auto new_name = get_input2<std::string>("new_name");
+        auto names = split_str(path, '/');
+
+        access(json->json, names, 0, new_name);
+
+        set_output("json", json);
+    }
+};
+ZENDEFNODE(JsonRenameKey, {
+    {
+        {"json"},
+        {"string", "path", "a/0/b"},
+        {"string", "new_name", "new_name"},
+    },
+    {
+        "json",
+    },
+    {},
+    {
+        "json"
+    },
+});
+
+struct JsonInsertValue : zeno::INode {
+    void access(Json &json, std::vector<std::string> &names, int index, std::shared_ptr<IObject> iObject) {
+        auto name = names[index];
+        if (index == names.size() - 1) {
+            json[name] = iobject_to_json(iObject);
+            return;
+        }
+        if (json.is_array()) {
+            access(json[std::stoi(name)], names, index + 1, iObject);
+        }
+        else {
+            access(json[name], names, index + 1, iObject);
+        }
+    }
+    void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto path = get_input2<std::string>("path");
+        auto iObject = get_input("iObject");
+        auto names = split_str(path, '/');
+
+        access(json->json, names, 0, iObject);
+
+        set_output("json", json);
+    }
+};
+ZENDEFNODE(JsonInsertValue, {
+    {
+        {"json"},
+        {"string", "path", "a/0/b"},
+        {"iObject"},
+    },
+    {
+        "json",
+    },
+    {},
+    {
+        "json"
+    },
+});
+
 struct CreateRenderInstance : zeno::INode {
     virtual void apply() override {
         auto instID = get_input2<std::string>("instID");
