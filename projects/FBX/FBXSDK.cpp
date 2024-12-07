@@ -732,6 +732,20 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                     }
                 }
                 {
+                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparencyFactor);
+                    if (property.IsValid()) {
+                        double value = property.Get<double>();
+                        json["opacity_value"] = value;
+                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                        for (int i = 0; i < textureCount; ++i) {
+                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                            if (texture) {
+                                json["opacity_tex"] = texture->GetFileName();
+                            }
+                        }
+                    }
+                }
+                {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sReflection);
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
