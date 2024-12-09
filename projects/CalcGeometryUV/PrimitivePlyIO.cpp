@@ -22,6 +22,7 @@
 #define TINYPLY_IMPLEMENTATION
 #include "primplyio_tinyply.h"
 
+#include "happly.h"
 
 /*
 static void readply(
@@ -123,18 +124,72 @@ static void readply(
     }
 }
 */
+
 static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
     std::filesystem::path file_path(ply_file);
     if(!std::filesystem::exists(file_path)){
         throw std::runtime_error(ply_file + " not exsit");
         return;
     }
+    
     std::ifstream file_stream;
-    file_stream.open(file_path);
+    file_stream.open(file_path,std::ios::binary);
     if(!file_stream.is_open()){
         throw std::runtime_error("fail to open "+ply_file);
         return;
     }
+    
+    happly::PLYData ply_obj(file_stream);
+    try{
+        ply_obj.validate();
+    }catch(std::exception &e){
+        std::cerr << e.what() << std::endl;
+        throw e;
+        return;
+    }
+    std::vector<std::string> element_names = ply_obj.getElementNames();
+    for(std::string element_name : element_names){
+        std::cout << element_name << "\n  |\n";
+        std::vector<std::string>property_names = ply_obj.getElement(element_name).getPropertyNames();
+        for(std::string property_name : property_names){
+            std::cout << "\t|--" << property_name << std::endl;
+        }
+        
+    }
+    happly::Element& vertex = ply_obj.getElement("vertex");
+    std::cout << "Vertex count = " <<vertex.count << std::endl;
+    prim->verts.resize(vertex.count);
+    std::vector<std::string> property_names = vertex.getPropertyNames();
+    for(std::string property_name : property_names){
+        std::vector<float> &new_property = prim->add_attr<float>(property_name);
+        try{
+            std::vector<float> data = vertex.getProperty<float>(property_name);
+            new_property.assign(data.begin(),data.end());
+        }catch(std::exception &e){
+            std::cerr << e.what() << std::endl;
+            throw e;
+            return;
+        }
+    }
+    return;
+
+}
+
+/*
+static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
+    std::filesystem::path file_path(ply_file);
+    if(!std::filesystem::exists(file_path)){
+        throw std::runtime_error(ply_file + " not exsit");
+        return;
+    }
+    
+    std::ifstream file_stream;
+    file_stream.open(file_path,std::ios::binary);
+    if(!file_stream.is_open()){
+        throw std::runtime_error("fail to open "+ply_file);
+        return;
+    }
+
     tinyply::PlyFile ply_obj;
     if(!ply_obj.parse_header(file_stream)){
         throw std::runtime_error("fail to parse ply header");
@@ -210,6 +265,7 @@ static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::
     }
 
 }
+*/
 
 struct ReadPlyPrimitive : zeno::INode {
     virtual void apply() override {
