@@ -193,7 +193,7 @@ ZENDEFNODE(PrimUserDataToJson, {
      {
          "iObject",
          {"bool", "output_all", "0"},
-         {"multiline_string", "keys", "abc_path _pivot _rotate _scale _translate _transform_row0 _transform_row1 _transform_row2 _transform_row3"},
+         {"multiline_string", "keys", "abc_path\n_pivot\n_rotate\n_scale\n_translate\n_transform_row0\n_transform_row1\n_transform_row2\n_transform_row3"},
      },
      {
          "json",
