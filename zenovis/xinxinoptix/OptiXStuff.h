@@ -874,11 +874,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
 {
     std::string native_path = std::filesystem::u8path(path).string();
 
-    TexKey tex_key {path, blockCompression}; 
-
-    if (tex_lut.count(tex_key)) {
-        return; // do nothing
-    }
+    TexKey tex_key {path, blockCompression};
 
     zeno::log_debug("loading texture :{}", path);
 
