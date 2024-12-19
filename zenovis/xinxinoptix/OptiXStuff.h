@@ -963,6 +963,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );
         
         g_ies[path] = {std::move(iesBuffer), coneAngle };
+        return;
     }
     else if (zeno::getSession().nodeClasses.count("ReadPNG16") > 0 && zeno::ends_with(path, ".png", false)) {
         auto outs = zeno::TempNodeSimpleCaller("ReadPNG16")
