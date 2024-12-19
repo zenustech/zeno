@@ -167,15 +167,12 @@ extern "C" __global__ void __closesthit__radiance()
 
 	switch (lightShape) {
 	case zeno::LightShape::Ellipse: {
-		auto valid = true;
+		
 		if (light.rect.isEllipse && !insideEllipse()) {
-			valid &= false;
-		}
-		if (!valid) {
 			prd->done = false;
 			prd->_tmin_ = optixGetRayTmax();
 			return;
-		};
+		}
 	}
 	case zeno::LightShape::Plane: {
     
@@ -185,19 +182,16 @@ extern "C" __global__ void __closesthit__radiance()
 
 			auto rect = light.rect;
 			float2 uvScale, uvOffset;
-			bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY,
-										rect.lenY, rect.normal, shadingP,
-										light.spreadMajor, uvScale, uvOffset);
+			bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, rect.normal, 
+											shadingP, light.spreadMajor, uvScale, uvOffset);
 			// if (!valid) { return; }
 
 			SphericalRect squad;
-			SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX,
-							rect.axisY, rect.lenY);
+			SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
 			lsr.PDF = 1.0f / squad.S;
 			if (!isfinite(lsr.PDF)) {
 				return;
 			}
-
 			lsr.uv = uvOffset + lsr.uv * uvScale;
 		}
 
