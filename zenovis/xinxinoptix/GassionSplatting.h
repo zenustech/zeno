@@ -33,9 +33,10 @@ namespace GS{
     }
     
     static __inline__ __device__
-    vec3 EvalSH(vec3 dir, float* SH_params, int buffer_offset, int level){
+    vec3 EvalSH(float4* buffer, size_t index, int level, vec3 dir){
         vec3 color;
         dir = normalize(dir);
+        float *SH_params =(float*) (buffer + index * 12);
         color = SH_C0 * GetParamFromBuffer(SH_params, 0);
         float x,y,z,xx,yy,zz,xy,xz,yz;
         x = dir.x;
