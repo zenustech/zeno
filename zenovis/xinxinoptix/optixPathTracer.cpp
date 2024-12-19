@@ -1846,9 +1846,10 @@ static int uniformBufferInitialized = false;
 // void optixUpdateUniforms(std::vector<float4> & inConstants) 
 void optixUpdateUniforms(void *inConstants, std::size_t size) {
 
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*size));
 
-    CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
+    //CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*size));
+    std::cout << ((float*)inConstants)[0] <<" "<< ((float*)inConstants)[1]<< " "<<  ((float*)inConstants)[2]  << " "<< ((float*)inConstants)[3]  << std::endl;
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
                           sizeof(float4)*size, cudaMemcpyHostToDevice));
 

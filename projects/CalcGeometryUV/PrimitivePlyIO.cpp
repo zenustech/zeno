@@ -1,5 +1,8 @@
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
@@ -17,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 
+#define SH_C0 0.28209479177387814f
 #undef tinyply
 #define tinyply _zeno_primplyio_tinyply
 #define TINYPLY_IMPLEMENTATION
@@ -124,6 +128,81 @@ static void readply(
     }
 }
 */
+static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
+    std::filesystem::path file_path(ply_file);
+    if(!std::filesystem::exists(file_path)){
+        throw std::runtime_error(ply_file + " not exsit");
+        return;
+    }
+    
+    std::ifstream file_stream;
+    file_stream.open(file_path,std::ios::binary);
+    if(!file_stream.is_open()){
+        throw std::runtime_error("fail to open "+ply_file);
+        return;
+    }
+    
+    happly::PLYData ply_obj(file_stream);
+    try{
+        ply_obj.validate();
+    }catch(std::exception &e){
+        std::cerr << e.what() << std::endl;
+        throw e;
+        return;
+    }
+
+    happly::Element& vertex = ply_obj.getElement("vertex");
+    std::cout << "Vertex count = " <<vertex.count << std::endl;
+    size_t vertex_count = vertex.count;
+    std::vector<zeno::vec3f> &color = prim->add_attr<zeno::vec3f>("clr");
+    std::vector<std::vector<float>*> SH_attrs;
+    SH_attrs.resize(48);
+    for(int i=0;i<48;i++){
+        char c_str[10];
+        snprintf(c_str, 10,"SH_%d",i);
+        std::cout << c_str << std::endl;
+        SH_attrs[i] = & prim->add_attr<float>(c_str);
+        SH_attrs[i]->resize(vertex_count);
+    }
+    prim->verts.resize(vertex_count);
+    std::cout << "Vertex count = " <<vertex_count << std::endl;
+
+    try{
+        std::vector<float> pos_x = vertex.getProperty<float>("x");
+        std::vector<float> pos_y = vertex.getProperty<float>("y");
+        std::vector<float> pos_z = vertex.getProperty<float>("z");
+        std::vector<std::vector<float>> SH_params;
+        SH_params.resize(48);
+        SH_params[0] = vertex.getProperty<float>("f_dc_0");
+        SH_params[1] = vertex.getProperty<float>("f_dc_1");
+        SH_params[2] = vertex.getProperty<float>("f_dc_2");
+        for(int i=0;i<45;i++){
+            char c_str[15] = "";
+            snprintf(c_str, 15,"f_rest_%d",i);
+            std::string str(c_str);
+            SH_params[i+3]= vertex.getProperty<float>(str);
+        }
+
+        for(size_t i=0;i<vertex_count;i++){
+            zeno::vec3f pos(pos_x[i],pos_y[i],pos_z[i]);
+            prim->verts[i]=pos;
+            for(int j=0;j<48;j++){
+                (*SH_attrs[j])[i]=(SH_params[j][i]);
+            }
+            float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
+            float g = std::clamp(0.5f + SH_C0 * SH_params[1][i],0.0f,1.0f);
+            float b = std::clamp(0.5f + SH_C0 * SH_params[2][i],0.0f,1.0f);
+            color[i] = zeno::vec3f(r,g,b);
+        }
+
+    }catch(std::exception &e){
+        std::cerr << e.what() << std::endl;
+        throw e;
+        return;
+    }
+    return;
+}
+
 
 static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
     std::filesystem::path file_path(ply_file);
@@ -175,97 +254,38 @@ static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::
 
 }
 
-/*
-static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
-    std::filesystem::path file_path(ply_file);
-    if(!std::filesystem::exists(file_path)){
-        throw std::runtime_error(ply_file + " not exsit");
-        return;
+struct ReadGassionSplatting : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        ReadGassionSplattingFromPly(path, prim);
+        set_output("prim", std::move(prim));
     }
-    
-    std::ifstream file_stream;
-    file_stream.open(file_path,std::ios::binary);
-    if(!file_stream.is_open()){
-        throw std::runtime_error("fail to open "+ply_file);
-        return;
-    }
+};
 
-    tinyply::PlyFile ply_obj;
-    if(!ply_obj.parse_header(file_stream)){
-        throw std::runtime_error("fail to parse ply header");
-        return;
-    }
-    std::vector<tinyply::PlyElement> elements = ply_obj.get_elements();
-    bool found_vertex = false;
-    tinyply::PlyElement *vertex_element = nullptr;
-
-    std::vector<tinyply::PlyProperty> need_properties;
-    std::vector<std::shared_ptr<tinyply::PlyData>> data_list; 
-
-    int element_size = 0;
-
-    for(tinyply::PlyElement element : elements){
-        if(element.name == "vertex"){
-            found_vertex = true;
-            vertex_element = &element;
-            element_size = element.size;
-            std::cout << "Name: " <<element.name << std::endl;
-            for(tinyply::PlyProperty property : element.properties){
-                std::cout << "\tProperty Name: " << property.name ;
-                if(property.isList){
-                    std::cout << "\tList Type: " << tinyply::PropertyTable[property.listType].str;
-                    std::cout << "\tList Size: " << property.listCount;
-                }else{
-                    need_properties.push_back(property);
-                    data_list.push_back(ply_obj.request_properties_from_element("vertex", {property.name}));
-                    std::cout << "\t" << tinyply::PropertyTable[property.propertyType].str << "\n";
-                }
-            }
-        std::cout << std::endl;
+ZENDEFNODE(
+    ReadGassionSplatting,
+    {
+        // inputs
+        {
+            {
+                "readpath",
+                "path",
+            },
+        },
+        // outpus
+        {
+            "prim",
+        },
+        // params
+        {
+        },
+        // category
+        {
+            "primitive",
         }
     }
-    if(!found_vertex){
-        throw std::runtime_error("No vertex element found in this ply");
-        return;
-    }
-
-    ply_obj.read(file_stream);
-    prim->verts.resize(element_size);
-
-    for(int i=0;i<need_properties.size();i++){
-        tinyply::PlyProperty property = need_properties[i];
-        auto &new_property = prim->add_attr<float>(property.name);
-        unsigned char *buffer = data_list[i]->buffer.get();
-
-        float value = 0.0f;
-        tinyply::PropertyInfo info = tinyply::PropertyTable[property.propertyType];
-
-        for(int j=0; j<element_size;j++){
-            if(info.str == "char"){
-                value = ((char *)buffer)[j];
-            }else if(info.str == "uchar"){
-                value = ((unsigned char *)buffer)[j];
-            }else if(info.str == "short"){
-                value = ((short *)buffer)[j];
-            }else if(info.str == "ushort"){
-                value = ((unsigned short *)buffer)[j];
-            }else if(info.str == "int"){
-                value = ((int *)buffer)[j];
-            }else if(info.str == "uint"){
-                value = ((unsigned int *)buffer)[j];
-            }else if(info.str == "float"){
-                value = ((float *)buffer)[j];
-            }else if(info.str == "double"){
-                value = ((double *)buffer)[j];
-            }else{
-                std::cout << "Unknow Type" << std::endl;
-            }
-            new_property[j] = value;
-        }
-    }
-
-}
-*/
+);
 
 struct ReadPlyPrimitive : zeno::INode {
     virtual void apply() override {

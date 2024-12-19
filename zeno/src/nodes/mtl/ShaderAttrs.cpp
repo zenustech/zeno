@@ -1,3 +1,8 @@
+#include "zeno/utils/log.h"
+#include "zeno/utils/vec.h"
+#include <cstddef>
+#include <cstdio>
+#include <vector>
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
@@ -82,6 +87,8 @@ ZENDEFNODE(ShaderInputAttr, {
     {"shader"},
 });
 
+
+
 struct MakeShaderUniform : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<PrimitiveObject>();
@@ -112,6 +119,60 @@ ZENDEFNODE(MakeShaderUniform, {
     {
         {"int", "size", "512"},
         {"uniformDict"},
+    },
+    {
+        {"prim"},
+    },
+    {},
+    {"shader"},
+});
+
+struct SHParamToUniform : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<PrimitiveObject>();
+        if (has_input("SHPrim")) {
+            zeno::log_warn("here\n------------------");
+            auto prim_in = get_input<zeno::PrimitiveObject>("SHPrim");
+            auto& databuffer = prim->add_attr<zeno::vec4f>("buffer");
+            size_t sh_verts_count = prim_in->verts.size();
+            prim->verts.resize(sh_verts_count*12);
+            for(size_t i=0;i<sh_verts_count;i++){
+                for(int j=0;j<12;j++){
+                    zeno::vec4f tmp;
+                    for(int k=0;k<4;k++){
+                        char c_str[10] = "";
+                        snprintf(c_str, 10, "SH_%d", j*4 + k);
+                        std::vector<float> &data = prim_in->attr<float>(c_str);
+                        tmp[k] = data[i];
+                    }
+                    databuffer[i*12 + j] = tmp;
+                }
+            }
+
+
+            /*
+            for (const auto& [key, value] : uniformDict->lut) {
+                auto index = std::stoi(key);
+                if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
+                    auto value = num->get<zeno::vec3f>();
+                    std::vector<vec3f>& attr_arr = prim->add_attr<zeno::vec3f>("pos");
+                    if (index < attr_arr.size()) {
+                        attr_arr[index] = value;
+                    }
+                }
+                else {
+                    throw Exception("Not NumericObject");
+                }
+            }*/
+            prim->userData().set2("ShaderUniforms", 2);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(SHParamToUniform, {
+    {
+        {"SHPrim"},
     },
     {
         {"prim"},
