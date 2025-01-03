@@ -8,7 +8,8 @@
 
 namespace zeno {
 
-static std::string ftos(float x) {
+template<typename T>
+static std::string ftos(T x) {
     std::ostringstream ss;
     ss << x;
     return ss.str();
@@ -137,8 +138,42 @@ ZENO_API std::string EmissionPass::collectDefs() const {
     std::string res;
     int cnt = 0;
     for (auto const &var: constants) {
+
+        // auto type = std::visit([&] (auto const &value) -> std::string {
+        //     using T = std::decay_t<decltype(value)>;
+        //     std::string expression {};
+        //     std::string value_string = ftos(value);
+
+        //     zeno::static_for<0, std::tuple_size_v<ShaderDataTypeList>>([&] (auto i) {
+        //         using ThisType = std::tuple_element_t<i, ShaderDataTypeList>;
+
+        //         if (std::is_same_v<ThisType, T>) {
+        //             auto type_string = ShaderDataTypeNames[i];
+        //             //auto type_int = TypeHint.at(type_string);
+        //             expression = std::string(type_string) + "(" + value_string + ")";
+        //             return true;
+        //         }
+        //         return false;
+        //     });
+
+        //     return expression;
+        // }, var.value);
+
         auto expr = std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
+
+            if constexpr (std::is_same_v<bool, T>) 
+                return "bool(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<int, T>) 
+                return "int(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<unsigned int, T>) 
+                return "uint(" + ftos(value) + ")";
+
+            if constexpr (std::is_same_v<int64_t, T>) 
+                return "int64_t(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<uint64_t, T>) 
+                return "uint64_t(" + ftos(value) + ")";
+
             if constexpr (std::is_same_v<float, T>) {
                 return typeNameOf(1) + "(" + ftos(value) + ")";
             } else if constexpr (std::is_same_v<vec2f, T>) {

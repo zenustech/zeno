@@ -44,6 +44,8 @@ struct ShaderPrepared {
 
     std::string callable;
     std::string parameters;
+
+    std::map<std::string, std::string> macros;
     
     std::vector<OptixUtil::TexKey> tex_keys;
 };
