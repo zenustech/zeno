@@ -166,6 +166,8 @@ struct Params
     float3*      albedo_buffer;
     float3*      normal_buffer;
 
+    void* global_buffers;
+    
     unsigned int width;
     unsigned int height;
     unsigned int tile_i;

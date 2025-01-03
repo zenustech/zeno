@@ -286,7 +286,7 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
 
     for (auto &ele : macros) {
         compilerOptions.push_back(ele.c_str());
-        flat_macros += ele;
+        flat_macros += ele + "\n";
     }
 
     const char* input = sutil::getCodePTX( source, flat_macros.c_str(), name, inputSize, is_success, nullptr, compilerOptions);
@@ -1175,6 +1175,7 @@ struct OptixShaderWrapper
     std::map<int, TexKey>                m_texs {};
     bool                                has_vdb {};
     std::string                       parameters{};
+    std::map<std::string, std::string>   macros {};
 
     OptixShaderWrapper() = default;
     ~OptixShaderWrapper() = default;
@@ -1191,13 +1192,17 @@ struct OptixShaderWrapper
         std::string tmp_name = "Callable.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
 
-        std::vector<std::string> macros {};
+        std::vector<std::string> _macros_ {};
 
         if (fallback) {
-            macros.push_back("--define-macro=_FALLBACK_"); 
+            _macros_.push_back("--define-macro=_FALLBACK_"); 
         }
 
-        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macros); 
+        for (auto& [k, v] : this->macros) {
+            _macros_.push_back("--define-macro=" + k + "=" + v);
+        }
+
+        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), _macros_); 
         if (callable_done) {
 
             // Callable programs

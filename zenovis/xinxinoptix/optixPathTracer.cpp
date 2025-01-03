@@ -78,6 +78,7 @@
 #include "LightBounds.h"
 #include "LightTree.h"
 
+#include "ShaderBuffer.h"
 #include "TypeCaster.h"
 
 #include "LightBounds.h"
@@ -2352,8 +2353,11 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         }
 
         OptixUtil::rtMaterialShaders[i].core = shaderCore;
-        OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;  
+        OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;
         OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
+        
+        auto macro = globalShaderBufferGroup.code(callable_string);
+        OptixUtil::rtMaterialShaders[i].macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
             OptixUtil::rtMaterialShaders[i].has_vdb = true; 
@@ -2432,6 +2436,9 @@ OptixUtil::_compile_group.wait();
 
 void optixupdateend() {
     camera_changed = true;
+
+    auto buffers = globalShaderBufferGroup.upload();
+    state.params.global_buffers = (void*)buffers;
 
     createSBT( state );
     printf("SBT created \n");
@@ -2790,7 +2797,7 @@ void UpdateInst()
             sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
 
             const uint aux_size = 4;
-			sia->aux_list = std::vector<float>(element_count * aux_size, 0);
+            sia->aux_list = std::vector<float>(element_count * aux_size, 0);
 
             for (uint i=0; i<element_count; ++i) {
                 sia->radius_list[i] *= instTrs.tang[3*i];
@@ -3274,6 +3281,7 @@ void optixCleanup() {
     g_meshPieces.clear();
 
     cleanupHairs();
+    globalShaderBufferGroup.reset();
 }
 
 void optixDestroy() {

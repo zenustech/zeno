@@ -4,7 +4,7 @@
 #include "zeno/types/ListObject.h"
 #include "zeno/types/StringObject.h"
 #include <zeno/types/UserData.h>
-
+#include <tinygltf/json.hpp>
 namespace zeno
 {
   /*struct MakeMaterial
@@ -234,5 +234,70 @@ struct ExtractMaterialShader : zeno::INode
                 "shader",
             },
         });
+
+    struct PrimAttrAsShaderBuffer : zeno::INode {
+
+        static std::string aKey() {
+            return "attrNames";
+        }
+        static std::string bKey() { 
+            return "bindNames";
+        }
+
+        virtual void apply() override {
+
+            auto prim = get_input2<zeno::PrimitiveObject>("in");
+
+            auto a_value = get_input2<std::string>(aKey(), "");
+            auto b_value = get_input2<std::string>(bKey(), "");
+
+            auto task = [](const std::string& raw){
+                
+                std::string segment;
+                std::stringstream test(raw);
+                std::vector<std::string> result;
+
+                while(std::getline(test, segment, ','))
+                {
+                    result.push_back(segment);
+                }
+                return result;
+            };
+
+            std::vector<std::string> a_list = task(a_value);
+            std::vector<std::string> b_list = task(b_value);
+
+            if (a_list.size() != b_list.size()) {
+                throw std::runtime_error("buffer count doesn't match attr count");
+            }
+
+            nlohmann::json json;
+
+            for (size_t i=0; i<a_list.size(); ++i) {
+                auto a = a_list[i];
+                auto b = b_list[i];
+                json[a] = b;
+            }
+
+            prim->userData().set2("ShaderAttributes", json.dump());
+            set_output("out", std::move(prim));
+        }
+    };
+
+    ZENDEFNODE( PrimAttrAsShaderBuffer,
+    {
+        {
+            {"in"},
+            {"string", PrimAttrAsShaderBuffer::aKey(), ""},
+            {"string", PrimAttrAsShaderBuffer::bKey(), ""}
+        },
+        {
+            {"out"},
+        },
+        {},
+        {
+            "shader",
+        },
+    });
 
 } // namespace zeno

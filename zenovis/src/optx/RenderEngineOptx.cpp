@@ -32,6 +32,7 @@
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/AttrVector.h>
 #include <tinygltf/json.hpp>
 
 #include <map>
@@ -41,6 +42,9 @@
 
 #include <hair/Hair.h>
 #include <hair/optixHair.h>
+
+#include "ShaderBuffer.h"
+#include <zeno/extra/ShaderNode.h>
 
 namespace zenovis::optx {
 
@@ -334,6 +338,49 @@ struct GraphicsManager {
                 auto prim_in_lslislSp = std::make_shared<zeno::PrimitiveObject>(*prim_in0);
                 // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
                 auto prim_in = prim_in_lslislSp.get();
+
+                if ( prim_in->userData().has("ShaderAttributes") ) {
+                    auto attritbutes  = prim_in->userData().get2<std::string>("ShaderAttributes");
+
+                    using VarType = zeno::AttrVector<zeno::vec3f>::AttrVectorVariant;
+
+                    auto json = nlohmann::json::parse(attritbutes);
+
+                    for (auto& [attrName, bufferName] : json.items()) {
+                        //for (auto& kname : keys) {
+                        auto& val = prim_in->verts.attrs[attrName];
+                        
+                        std::visit([&, &bufferName=bufferName](auto&& arg) {
+                            using T = std::decay_t<decltype(arg)>;
+
+                            constexpr auto vsize = std::variant_size_v<VarType>;
+
+                            zeno::static_for<0, vsize>([&, &bufferName=bufferName] (auto i) {
+                                using ThisType = std::variant_alternative_t<i, VarType>;
+                                using EleType = typename ThisType::value_type;
+
+                                if constexpr (std::is_same_v<T, ThisType>) {
+
+                                    auto& obj = reinterpret_cast<ThisType&>(val);
+
+                                    if (obj.size() > 0) {
+
+                                        size_t byte_size = obj.size() * sizeof(EleType);
+                                        auto tmp_ptr = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
+                                        tmp_ptr->resize(byte_size);
+                                        cudaMemcpy((void*)tmp_ptr->handle, obj.data(), byte_size, cudaMemcpyHostToDevice);
+
+                                        load_buffer_group(bufferName, tmp_ptr);
+                                    }
+                                    return true;
+                                }
+                                return false;
+                            });
+
+                        }, val);
+                    }
+                }
+
 
                 if (prim_in->userData().has("curve") && prim_in->verts->size() && prim_in->verts.has_attr("width")) {
 
