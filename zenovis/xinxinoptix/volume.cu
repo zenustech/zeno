@@ -123,7 +123,8 @@ extern "C" __global__ void __intersection__volume()
     }
 }
 
-__forceinline__ __device__ auto EvalVolume(uint32_t* seed, float* m16, float sigma_t, float3& pos, bool isShadowRay=false) {
+
+__device__ __inline__ auto EvalVolume(uint32_t& seed, float* m16, float sigma_t, float3& pos, VolumeOut& out, bool isShadowRay=false) {
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
@@ -133,14 +134,14 @@ __forceinline__ __device__ auto EvalVolume(uint32_t* seed, float* m16, float sig
 
     vin.isShadowRay = isShadowRay;
 
-    vin.seed = seed;
+    vin.seed = &seed;
     vin.sigma_t = sigma_t;
     vin.sbt_ptr = (void*)sbt_data;
     
     vin.world2object = m16;
 
-
-    return optixDirectCall<VolumeOut, const float4*, const VolumeIn&>( sbt_data->dc_index, sbt_data->uniforms, vin );
+    auto buffers = (void**)params.global_buffers;
+    optixDirectCall<void, const float4*, void**, void*, VolumeOut&>( sbt_data->dc_index, sbt_data->uniforms, buffers, (void*)&vin, out);
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
@@ -206,7 +207,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     if (0 == sbt_data->vol_depth) { // Homogeneous
 
         new_orig = ray_orig + 0.5f * (t0 + t1) * ray_dir;
-        VolumeOut homo_out = EvalVolume(&prd->seed, m16, 0.0f, new_orig);
+        VolumeOut homo_out; 
+        EvalVolume(prd->seed, m16, 0.0f, new_orig, homo_out);
         //auto hg = pbrt::HenyeyGreenstein(vol_out.anisotropy);
 
         float3 transmittance = vec3(1.0f);
@@ -298,7 +300,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float v_density = 0.0;
     float sigma_t = sbt_data->vol_extinction;
 
-    VolumeOut vol_out;
+    VolumeOut vol_out {};
     auto level = sbt_data->vol_depth;
     auto step_scale = 1.0f / sigma_t;
 
@@ -321,7 +323,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         } // over shoot, outside of volume
 
         new_orig = ray_orig + (t0+t_ele) * ray_dir;
-        vol_out = EvalVolume(&prd->seed, m16, sigma_t, new_orig);
+        EvalVolume(prd->seed, m16, sigma_t, new_orig, vol_out);
 
         v_density = clamp(vol_out.density / sigma_t, 0.0f, 1.0f);
         emitting += vol_out.emission;
@@ -416,7 +418,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
         test_point += ray_dir * 0.5f * (t0 + t1);
 
-        VolumeOut homo_out = EvalVolume(&prd->seed, m16, sigma_t, test_point);
+        VolumeOut homo_out;
+        EvalVolume(prd->seed, m16, sigma_t, test_point, homo_out);
         hg = pbrt::HenyeyGreenstein(homo_out.anisotropy);
 
         transmittance = expf(-homo_out.extinction * t_max);
@@ -439,7 +442,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
             break;
         } // over shoot, outside of volume
 
-        VolumeOut vol_out = EvalVolume(&prd->seed, m16, sigma_t, test_point, true);
+        VolumeOut vol_out;
+        EvalVolume(prd->seed, m16, sigma_t, test_point, vol_out, true);
 
         const auto v_density = vol_out.density / sigma_t;
 
