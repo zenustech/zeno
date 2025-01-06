@@ -26,8 +26,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
 
-    auto att_isBackFace = attrs.isBackFace ? 1.0f:0.0f;
-    auto att_isShadowRay = attrs.isShadowRay ? 1.0f:0.0f;
+    auto att_isBackFace = attrs.isBackFace;
+    auto att_isShadowRay = attrs.isShadowRay;
 
     vec3 b = normalize(cross(attrs.T, attrs.N));
     vec3 t = normalize(cross(attrs.N, b));
