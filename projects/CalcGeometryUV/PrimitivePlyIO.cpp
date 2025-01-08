@@ -1,3 +1,5 @@
+#include "glm/matrix.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -13,12 +15,14 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/log.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <glm/glm.hpp>
 
 #define SH_C0 0.28209479177387814f
 #undef tinyply
@@ -128,7 +132,35 @@ static void readply(
     }
 }
 */
-static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
+glm::mat3 getTransform(glm::vec3 scale, glm::vec4 q, bool print=false)  // should be correct
+{
+    glm::mat3 S = glm::mat3(0.f);
+    S[0][0] = scale.x;
+	S[1][1] = scale.y;
+	S[2][2] = scale.z;
+	float r = q.x;
+	float x = q.y;
+	float y = q.z;
+	float z = q.w;
+
+    glm::mat3 R = glm::mat3(
+		1.f - 2.f * (y * y + z * z), 2.f * (x * y - r * z), 2.f * (x * z + r * y),
+		2.f * (x * y + r * z), 1.f - 2.f * (x * x + z * z), 2.f * (y * z - r * x),
+		2.f * (x * z - r * y), 2.f * (y * z + r * x), 1.f - 2.f * (x * x + y * y)
+	);
+    glm::mat3 M =  S * R ;
+    glm::mat3 Sigma = glm::transpose(R) * S * R;
+
+    if(print){
+        std::cout << "R = " << glm::to_string(R) <<std::endl;
+        std::cout << "S = " << glm::to_string(S) <<std::endl;
+        std::cout << "M = " << glm::to_string(M) <<std::endl;
+        std::cout << "Sigma = " << glm::to_string(Sigma) <<std::endl;
+    }
+    return Sigma;
+}
+
+static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim, bool preview){
     std::filesystem::path file_path(ply_file);
     if(!std::filesystem::exists(file_path)){
         throw std::runtime_error(ply_file + " not exsit");
@@ -155,6 +187,11 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
     std::cout << "Vertex count = " <<vertex.count << std::endl;
     size_t vertex_count = vertex.count;
     std::vector<zeno::vec3f> &color = prim->add_attr<zeno::vec3f>("clr");
+    std::vector<float> &opacity = prim->add_attr<float>("opacity");
+    std::vector<zeno::vec3f> &scale = prim->add_attr<zeno::vec3f>("scale");
+    std::vector<zeno::vec4f> &rotate = prim->add_attr<zeno::vec4f>("rotate");
+    std::vector<zeno::vec3f> &nrm = prim->add_attr<zeno::vec3f>("nrm");
+    std::vector<zeno::vec3f> &tang = prim->add_attr<zeno::vec3f>("tang");
     std::vector<std::vector<float>*> SH_attrs;
     SH_attrs.resize(48);
     for(int i=0;i<48;i++){
@@ -171,6 +208,17 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
         std::vector<float> pos_x = vertex.getProperty<float>("x");
         std::vector<float> pos_y = vertex.getProperty<float>("y");
         std::vector<float> pos_z = vertex.getProperty<float>("z");
+
+        std::vector<float> op = vertex.getProperty<float>("opacity");
+        std::vector<float> scale_x = vertex.getProperty<float>("scale_0");
+        std::vector<float> scale_y = vertex.getProperty<float>("scale_1");
+        std::vector<float> scale_z = vertex.getProperty<float>("scale_2");
+
+        std::vector<float> rot_0 = vertex.getProperty<float>("rot_0");
+        std::vector<float> rot_1 = vertex.getProperty<float>("rot_1");
+        std::vector<float> rot_2 = vertex.getProperty<float>("rot_2");
+        std::vector<float> rot_3 = vertex.getProperty<float>("rot_3");
+
         std::vector<std::vector<float>> SH_params;
         SH_params.resize(48);
         SH_params[0] = vertex.getProperty<float>("f_dc_0");
@@ -183,16 +231,44 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
             SH_params[i+3]= vertex.getProperty<float>(str);
         }
 
+        #pragma omp parallel for
         for(size_t i=0;i<vertex_count;i++){
+            scale_x[i] = exp(scale_x[i]);
+            scale_y[i] = exp(scale_y[i]);
+            scale_z[i] = exp(scale_z[i]);
             zeno::vec3f pos(pos_x[i],pos_y[i],pos_z[i]);
             prim->verts[i]=pos;
             for(int j=0;j<48;j++){
                 (*SH_attrs[j])[i]=(SH_params[j][i]);
             }
-            float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
-            float g = std::clamp(0.5f + SH_C0 * SH_params[1][i],0.0f,1.0f);
-            float b = std::clamp(0.5f + SH_C0 * SH_params[2][i],0.0f,1.0f);
-            color[i] = zeno::vec3f(r,g,b);
+            zeno::vec3f current_scale = zeno::vec3f(scale_x[i],scale_y[i],scale_z[i]);
+            zeno::vec4f current_rotate = zeno::vec4f(rot_0[i],rot_1[i],rot_2[i],rot_3[i]);
+            current_rotate = zeno::normalize(current_rotate);
+
+            if(preview){
+                float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
+                float g = std::clamp(0.5f + SH_C0 * SH_params[1][i],0.0f,1.0f);
+                float b = std::clamp(0.5f + SH_C0 * SH_params[2][i],0.0f,1.0f);
+                color[i] = zeno::vec3f(r,g,b);
+            }else{
+                //mat = {nrm,clr,tang}
+                glm::vec3 scale ={current_scale[0],current_scale[1],current_scale[2]};
+                glm::vec4 rotate ={current_rotate[0],current_rotate[1],current_rotate[2],current_rotate[3]};
+                glm::mat3 mat;
+                if(i==0){
+                    zeno::log_info("pos = {}",pos);
+                    mat = getTransform(scale, rotate,true);
+                    zeno::log_info("tang = {},{},{}",mat[2][0],mat[2][1],mat[2][2]);
+                }else{
+                    mat = getTransform(scale, rotate);
+                }
+                nrm[i] = zeno::vec3f(mat[0][0],mat[0][1],mat[0][2]);
+                color[i] = zeno::vec3f(mat[1][0],mat[1][1],mat[1][2]);
+                tang[i] = zeno::vec3f(mat[2][0],mat[2][1],mat[2][2]);
+            }
+            opacity[i] = op[i];
+            scale[i] = current_scale;
+            rotate[i] = current_rotate;
         }
 
     }catch(std::exception &e){
@@ -258,7 +334,8 @@ struct ReadGassionSplatting : zeno::INode {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        ReadGassionSplattingFromPly(path, prim);
+        bool preview = get_input2<bool>("preview");
+        ReadGassionSplattingFromPly(path, prim,preview);
         set_output("prim", std::move(prim));
     }
 };
@@ -272,6 +349,7 @@ ZENDEFNODE(
                 "readpath",
                 "path",
             },
+            {"bool","preview","0"}
         },
         // outpus
         {
@@ -287,6 +365,44 @@ ZENDEFNODE(
     }
 );
 
+struct GassionExample : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        bool preview = get_input2<bool>("preview");
+        prim->verts->resize(4);
+        prim->verts[0] = zeno::vec3f(0,0,0);
+        prim->verts[1] = zeno::vec3f(1,0,0);
+        prim->verts[2] = zeno::vec3f(0,1,0);
+        prim->verts[3] = zeno::vec3f(0,0,1);
+        std::vector<zeno::vec3f> &color = prim->verts.add_attr<zeno::vec3f>("clr");
+        std::vector<zeno::vec3f> &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
+        std::vector<zeno::vec3f> &tang = prim->verts.add_attr<zeno::vec3f>("tang");
+
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(
+    GassionExample,
+    {
+        // inputs
+        {
+            {"bool","preview","0"}
+        },
+        // outpus
+        {
+            "prim",
+        },
+        // params
+        {
+        },
+        // category
+        {
+            "primitive",
+        }
+    }
+);
 struct ReadPlyPrimitive : zeno::INode {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
