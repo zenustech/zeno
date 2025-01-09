@@ -245,15 +245,9 @@ extern "C" __device__ void __direct_callable__evalmat(const float4* uniforms, vo
     auto att_isBackFace = false;
     auto att_isShadowRay = attrs.isShadowRay;
     
-#ifndef _FALLBACK_
-
-    //GENERATED_BEGIN_MARK 
-    auto anisotropy = 0.0f;
-    auto density = 0.0f;
-
-    vec3 emission = vec3(0.0f);
-    vec3 albedo = vec3(0.5f);
-    auto extinction = vec3(1.0f);
+#ifdef __FORWARD__
+    //GENERATED_BEGIN_MARK
+    
     //GENERATED_END_MARK
 #else
 	auto anisotropy = 0.0f;

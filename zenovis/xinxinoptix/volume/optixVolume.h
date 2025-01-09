@@ -1,7 +1,6 @@
 #pragma once
 
 #include <optix.h>
-#include <optix_stubs.h>
 
 #include <sutil/Aabb.h>
 #include <sutil/vec_math.h>

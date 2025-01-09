@@ -164,7 +164,7 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
     pipeline_compile_options.numAttributeValues    = 2;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
-    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
+    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_USER;
     //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
     pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
@@ -1191,8 +1191,8 @@ struct OptixShaderWrapper
 
         std::vector<std::string> _macros_ {};
 
-        if (fallback) {
-            _macros_.push_back("--define-macro=_FALLBACK_"); 
+        if (!fallback) {
+            _macros_.push_back("--define-macro=__FORWARD__");
         }
 
         for (auto& [k, v] : this->macros) {
