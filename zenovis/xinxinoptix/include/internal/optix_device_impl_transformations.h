@@ -1,23 +1,14 @@
-/*
-* Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
-*
-* NVIDIA Corporation and its licensors retain all intellectual property and proprietary
-* rights in and to this software, related documentation and any modifications thereto.
-* Any use, reproduction, disclosure or distribution of this software and related
-* documentation without an express license agreement from NVIDIA Corporation is strictly
-* prohibited.
-*
-* TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THIS SOFTWARE IS PROVIDED *AS IS*
-* AND NVIDIA AND ITS SUPPLIERS DISCLAIM ALL WARRANTIES, EITHER EXPRESS OR IMPLIED,
-* INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-* PARTICULAR PURPOSE.  IN NO EVENT SHALL NVIDIA OR ITS SUPPLIERS BE LIABLE FOR ANY
-* SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT
-* LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF
-* BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR
-* INABILITY TO USE THIS SOFTWARE, EVEN IF NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF
-* SUCH DAMAGES
+/* 
+* SPDX-FileCopyrightText: Copyright (c) 2019 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
+* SPDX-License-Identifier: LicenseRef-NvidiaProprietary 
+* 
+* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual 
+* property and proprietary rights in and to this material, related 
+* documentation and any modifications thereto. Any use, reproduction, 
+* disclosure or distribution of this material and related documentation 
+* without an express license agreement from NVIDIA CORPORATION or 
+* its affiliates is strictly prohibited. 
 */
-
 /**
 * @file   optix_device_impl_transformations.h
 * @author NVIDIA Corporation
@@ -59,7 +50,9 @@ static __forceinline__ __device__ uint4 optixLdg( unsigned long long addr )
 template <class T>
 static __forceinline__ __device__ T optixLoadReadOnlyAlign16( const T* ptr )
 {
-    T v;
+    // Debug mode may keep this temporary variable
+    // If T does not enforce 16B alignment, v may not be 16B aligned and storing the loaded data from ptr fails
+    __align__(16) T v;
     for( int ofs                     = 0; ofs < sizeof( T ); ofs += 16 )
         *(uint4*)( (char*)&v + ofs ) = optixLdg( (unsigned long long)( (char*)ptr + ofs ) );
     return v;
@@ -81,23 +74,20 @@ static __forceinline__ __device__ float4 optixMultiplyRowMatrix( const float4 ve
 // Converts the SRT transformation srt into a 3x4 matrix with rows m0, m1, and m2
 static __forceinline__ __device__ void optixGetMatrixFromSrt( float4& m0, float4& m1, float4& m2, const OptixSRTData& srt )
 {
+    // assumed to be normalized
     const float4 q = {srt.qx, srt.qy, srt.qz, srt.qw};
 
-    // normalize
-    const float  inv_sql = 1.f / ( srt.qx * srt.qx + srt.qy * srt.qy + srt.qz * srt.qz + srt.qw * srt.qw );
-    const float4 nq      = optixMulFloat4( q, inv_sql );
+    const float sqw = q.w * q.w;
+    const float sqx = q.x * q.x;
+    const float sqy = q.y * q.y;
+    const float sqz = q.z * q.z;
 
-    const float sqw = q.w * nq.w;
-    const float sqx = q.x * nq.x;
-    const float sqy = q.y * nq.y;
-    const float sqz = q.z * nq.z;
-
-    const float xy = q.x * nq.y;
-    const float zw = q.z * nq.w;
-    const float xz = q.x * nq.z;
-    const float yw = q.y * nq.w;
-    const float yz = q.y * nq.z;
-    const float xw = q.x * nq.w;
+    const float xy = q.x * q.y;
+    const float zw = q.z * q.w;
+    const float xz = q.x * q.z;
+    const float yw = q.y * q.w;
+    const float yz = q.y * q.z;
+    const float xw = q.x * q.w;
 
     m0.x = ( sqx - sqy - sqz + sqw );
     m0.y = 2.0f * ( xy - zw );
@@ -221,8 +211,14 @@ static __forceinline__ __device__ void optixResolveMotionKey( float& localt, int
     // No need to check the motion flags. If data originates from a valid transform list handle, then globalt is in
     // range, or vanish flags are not set.
 
-    const float time = max( 0.f, min( numIntervals, ( globalt - timeBegin ) * numIntervals / ( timeEnd - timeBegin ) ) );
-    const float fltKey = floorf( time );
+    // should be NaN or in [0,numIntervals]
+    float time = max( 0.f, min( numIntervals, numIntervals * __fdividef( globalt - timeBegin, timeEnd - timeBegin ) ) );
+
+    // catch NaN (for example when timeBegin=timeEnd)
+    if( time != time )
+        time = 0.f;
+
+    const float fltKey = fminf( floorf(time), numIntervals - 1 );
 
     localt = time - fltKey;
     key    = (int)fltKey;
