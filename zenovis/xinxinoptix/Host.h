@@ -48,6 +48,12 @@ static inline float __uint_as_float(uint32_t i) {
     return bitConvert<uint32_t, float>(i);;
 }
 
+template<typename T>
+inline T smoothstep(T l, T h, T v) {
+    auto t = clamp((v-l) / (h-l), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
 // #ifndef isnan
 // static inline bool isnan(float v) {
 //     return std::isnan(v);
