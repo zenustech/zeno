@@ -2109,7 +2109,7 @@ void buildLightTree() {
             }
 
         } else if (light.shape == zeno::LightShape::Point) {
-            light.point = {center};
+            light.point = {center, radius};
             if (dat.fluxFixed > 0) {
                 auto intensity = dat.fluxFixed / (4 * M_PIf);
                 light.intensity = intensity;

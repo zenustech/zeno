@@ -885,15 +885,8 @@ __forceinline__ __device__ vec4 step(vec4 limit, vec4 a)
 
 __forceinline__ __device__ float smoothstep(float a, float b, float c)
 {
-    if(c>b)
-    {
-        return 1;
-    }
-    if(c>a)
-    {
-        return (c-a)/(b-a);
-    }
-    return 0;
+    auto t = clamp((c - a) / (b - a), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
 }
 __forceinline__ __device__ vec2 smoothstep(vec2 a, vec2 b, vec2 c)
 {

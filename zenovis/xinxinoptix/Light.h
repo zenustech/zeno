@@ -176,7 +176,7 @@ static __inline__ __device__ void sampleSphereIES(LightSampleRecord& lsr, const 
     lsr.NoL = 1.0f;
     lsr.PDF = 1.0f;
 
-    lsr.intensity = 1.0f / dist2;
+    lsr.intensity = PointIntensity(dist2, lsr.dist, 1.0f);
 }
 
 static __inline__ __device__ float light_spread_attenuation(
@@ -289,8 +289,8 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
             if (n_len <= 0) {return;}
 
-            lsr.dist = n_len * lsr.dist;
-            lsr.intensity = M_PIf/(lsr.dist * lsr.dist);
+            auto d = n_len * lsr.dist;
+            lsr.intensity = PointIntensity(d * d, d, 1.0f);
 
             auto tanU = t_len / n_len;
             auto tanV = b_len / n_len;
