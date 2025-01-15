@@ -154,7 +154,10 @@ struct CompactLightBounds {
             return 0;
 
         // Return final importance at reference point
-        float importance = phi * cosThetap / d2;
+        //float importance = phi * cosThetap / d2;
+        float r2 = 1.0f; float d = sqrtf(d2);
+        float importance = phi * cosThetap * 2.0f / ( d  * sqrtf(d2 + r2) + d2 + r2 );
+
         DCHECK(importance >= -1e-3f);
 
         if (n[0]!=0 && n[1]!=0 && n[2]!=0) {
