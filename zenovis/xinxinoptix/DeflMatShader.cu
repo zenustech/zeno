@@ -201,7 +201,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = attrs.pos + vec3(params.cam.eye);
     attrs.isShadowRay = true;
     
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
+    MatOutput mats = {};
+    optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&, MatOutput& >( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs, mats);
 
     if(length(attrs.tang)>0)
     {
@@ -535,7 +536,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.World2ObjectMat = (float*)&World2Object;
     optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
     attrs.World2ObjectMat[15] = 1.0f;
-    #if 1
+    #if 0
     printf("\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n",
     attrs.World2ObjectMat[0],attrs.World2ObjectMat[1],attrs.World2ObjectMat[2],attrs.World2ObjectMat[3],
     attrs.World2ObjectMat[4],attrs.World2ObjectMat[5],attrs.World2ObjectMat[6],attrs.World2ObjectMat[7],
@@ -545,13 +546,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     float3 t_origin=optixGetObjectRayOrigin();
 
-    //printf("object space ray origin: %f, %f, %f\n",t_origin.x,t_origin.y,t_origin.z);
+    printf("object space ray origin: %f, %f, %f\n",t_origin.x,t_origin.y,t_origin.z);
 
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
 
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
+    MatOutput mats={}; 
+    optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&, MatOutput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs, mats);
     prd->mask_value = mats.mask_value;
-    //printf("op= %f\n",mats.opacity);
+    printf("op= %f\n",mats.opacity);
 
     if (prd->test_distance) {
     

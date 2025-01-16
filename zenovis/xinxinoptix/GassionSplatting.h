@@ -36,7 +36,7 @@ namespace GS{
     }
 
     __inline__ __device__
-    float EvalGSOpacity(float4 *buffer,size_t index, vec3 dir, vec3 pos, const float *mat){
+    float EvalGSOpacity(const float4 *buffer,size_t index, vec3 dir, vec3 pos, const float *mat){
         //vec4 v0(mat[0],mat[4],mat[8],0);
         //vec4 v1(mat[1],mat[5],mat[9],0);
         //vec4 v2(mat[2],mat[6],mat[10],0);

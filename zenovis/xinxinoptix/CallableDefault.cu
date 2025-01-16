@@ -10,7 +10,7 @@
 
 //COMMON_CODE
 
-extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], const float4* uniforms, const void** buffers, const MatInput& attrs) {
+extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenotex[], const float4* uniforms, const void** buffers, const MatInput& attrs, MatOutput & mats) {
 
     /* MODMA */
     auto att_pos = attrs.pos;
@@ -168,7 +168,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
 
 #endif // _FALLBACK_
 
-    MatOutput mats;
+    //MatOutput mats;
     /* MODME */
     mats.basecolor = mat_base * mat_basecolor;
     mats.roughness = clamp(mat_roughness, 0.01, 0.99);
@@ -218,5 +218,5 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
 
-    return mats;
+    return;
 }
