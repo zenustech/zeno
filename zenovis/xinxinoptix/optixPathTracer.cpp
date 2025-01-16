@@ -1845,11 +1845,14 @@ static void addLightSphere(float3 center, float radius)
 static int uniformBufferInitialized = false;
 // void optixUpdateUniforms(std::vector<float4> & inConstants) 
 void optixUpdateUniforms(void *inConstants, std::size_t size) {
+    if(uniformBufferInitialized){
+        return;
+    }
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*size));
 
-    //CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*size));
-    std::cout << ((float*)inConstants)[0] <<" "<< ((float*)inConstants)[1]<< " "<<  ((float*)inConstants)[2]  << " "<< ((float*)inConstants)[3]  << std::endl;
+    CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*size));
+    
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
                           sizeof(float4)*size, cudaMemcpyHostToDevice));
 
@@ -2355,6 +2358,7 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         OptixUtil::rtMaterialShaders[i].core = shaderCore;
         OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;  
         OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
+        std::cout <<OptixUtil::rtMaterialShaders[i].callable << std::endl;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
             OptixUtil::rtMaterialShaders[i].has_vdb = true; 
@@ -2816,6 +2820,7 @@ void UpdateInst()
         auto& instScale = g_instScaleLUT[instID];
 
         const auto& numInstMats = instTrs.pos.size() / 3;
+        printf("Update %ld instance\n",numInstMats);
         instMat.resize(numInstMats);
         instScale.resize(numInstMats);
         instAttr.pos.resize(numInstMats);
@@ -2825,36 +2830,79 @@ void UpdateInst()
         instAttr.tang.resize(numInstMats);
         
         tbb::parallel_for(static_cast<std::size_t>(0), numInstMats, [&, &instTrs=instTrs](std::size_t i) {
+            glm::mat4 rotateMat(1);
+            if(instTrs.onbType == "None"){
 
-            auto translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
+                glm::vec4 v3 = {instTrs.pos[3*i], instTrs.pos[3*i + 1], instTrs.pos[3*i + 2],1.0f};
 
-            zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
-            zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
-            float pScale = instTrs.tang[3*i +0];
-            t0 = normalizeSafe(t0);
-            zeno::vec3f t2;
-            zeno::guidedPixarONB(t0, t1, t2);
-            glm::mat4x4 rotateMat(1);
+                instMat[i] = glm::mat4(1.0f);
+                instMat[i][3] = v3;
+                instScale[i] = 1.0f;
 
-            const auto ABC = std::vector{t2, t1, t0};
+                instAttr.nrm[i] = make_float3(0,1,0);
+                instAttr.clr[i]  = *(float3*)&instTrs.clr[3 * i];
+                instAttr.tang[i] = make_float3(1,0,0);
 
-            for (int c=0; c<3; ++c) {
-                auto ci = instTrs.onbType[c] - 'X'; // X, Y, Z
-                auto ve = ABC[ci];
+            }else if(instTrs.onbType == "Matrix"){ //mat={nrm,clr,tang,pos}
+                glm::vec4 v0 = {instTrs.nrm[3*i], instTrs.nrm[3*i + 1], instTrs.nrm[3*i + 2],0.0f};
+                glm::vec4 v1 = {instTrs.clr[3*i], instTrs.clr[3*i + 1], instTrs.clr[3*i + 2],0.0f};
+                glm::vec4 v2 = {instTrs.tang[3*i], instTrs.tang[3*i + 1], instTrs.tang[3*i + 2],0.0f};
 
-                rotateMat[c] = glm::vec4(ve[0], ve[1], ve[2], 0.0);
+                rotateMat[0] = v0;
+                rotateMat[1] = v1;
+                rotateMat[2] = v2;
+                glm::vec4 v3 = {instTrs.pos[3*i], instTrs.pos[3*i + 1], instTrs.pos[3*i + 2],1.0f};
+                glm::mat4 translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
+                glm::mat4 final_mat = translateMat * rotateMat;
+                printf("Loading instance matrix:\n\
+                |%f,%f,%f,%f\t|\n\
+                |%f,%f,%f,%f\t|\n\
+                |%f,%f,%f,%f\t|\n\
+                |%f,%f,%f,%f\t|\n\
+                ",
+                final_mat[0][0],final_mat[1][0],final_mat[2][0],final_mat[3][0],
+                final_mat[0][1],final_mat[1][1],final_mat[2][1],final_mat[3][1],
+                final_mat[0][2],final_mat[1][2],final_mat[2][2],final_mat[3][2],
+                final_mat[0][3],final_mat[1][3],final_mat[2][3],final_mat[3][3]
+                );
+
+                instMat[i] = final_mat;
+                instScale[i] = 1.0f;
+
+                instAttr.nrm[i] = make_float3(0,1,0);
+                instAttr.clr[i]  = make_float3(1,1,1);
+                instAttr.tang[i] = make_float3(1,0,0);
+            }else{
+                float pScale = 1.0f;
+                glm::mat4 translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
+                zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
+                zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
+                pScale = instTrs.tang[3*i +0];
+                t0 = normalizeSafe(t0);
+                zeno::vec3f t2;
+                zeno::guidedPixarONB(t0, t1, t2);
+
+                const auto ABC = std::vector{t2, t1, t0};
+
+                for (int c=0; c<3; ++c) {
+                    auto ci = instTrs.onbType[c] - 'X'; // X, Y, Z
+                    auto ve = ABC[ci];
+
+                    rotateMat[c] = glm::vec4(ve[0], ve[1], ve[2], 0.0);
+                }
+                instMat[i] = translateMat * rotateMat;
+                instScale[i] = pScale;
+
+                instAttr.nrm[i] = *(float3*)&instTrs.nrm[3 * i];
+                instAttr.clr[i]  = *(float3*)&instTrs.clr[3 * i];
+                instAttr.tang[i] = *(float3*)&instTrs.tang[3 * i];
+
             }
 
-            auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
-            instMat[i] = translateMat * rotateMat * scaleMat;
-            instScale[i] = pScale;
 
             instAttr.pos[i] = *(float3*)&instTrs.pos[3 * i];
-            instAttr.nrm[i] = *(float3*)&instTrs.nrm[3 * i];
             
             instAttr.uv[i]   = *(float3*)&instTrs.uv[3 * i];
-            instAttr.clr[i]  = *(float3*)&instTrs.clr[3 * i];
-            instAttr.tang[i] = *(float3*)&instTrs.tang[3 * i];
         });
     }
 }

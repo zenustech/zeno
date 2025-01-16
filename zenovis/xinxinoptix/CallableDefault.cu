@@ -6,6 +6,7 @@
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 #include "IOMat.h"
+#include "GassionSplatting.h"
 
 //COMMON_CODE
 

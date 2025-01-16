@@ -181,7 +181,7 @@ namespace zeno
                 {"object"},
                 {"bool", "isInst", "1"},
                 {"string", "instID", "Inst1"},
-                {"enum XYZ YXZ YZX ZYX ZXY XZY", "onbType", "XYZ"},
+                {"enum XYZ YXZ YZX ZYX ZXY XZY Matrix None", "onbType", "XYZ"},
             },
             {
                 {"object"},

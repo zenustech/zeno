@@ -72,6 +72,7 @@ struct MatInput {
     vec3 instTang;
     float NoL;
     float LoV;
+    float* World2ObjectMat;
     
     float rayLength;
     bool isBackFace;

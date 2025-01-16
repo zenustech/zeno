@@ -2,6 +2,7 @@
 #include "zeno/utils/vec.h"
 #include <cstddef>
 #include <cstdio>
+#include <string>
 #include <vector>
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
@@ -131,12 +132,15 @@ struct SHParamToUniform : zeno::INode {
     virtual void apply() override {
         auto prim = std::make_shared<PrimitiveObject>();
         if (has_input("SHPrim")) {
-            zeno::log_warn("here\n------------------");
             auto prim_in = get_input<zeno::PrimitiveObject>("SHPrim");
             auto& databuffer = prim->add_attr<zeno::vec4f>("buffer");
             size_t sh_verts_count = prim_in->verts.size();
-            prim->verts.resize(sh_verts_count*12);
-            for(size_t i=0;i<sh_verts_count;i++){
+            prim->verts.resize(sh_verts_count*14);
+            std::vector<float> & op = prim_in->attr<float>("opacity");
+            std::vector<zeno::vec3f> & scale = prim_in->attr<zeno::vec3f>("scale");
+            std::vector<zeno::vec4f> & rotate = prim_in->attr<zeno::vec4f>("rotate");
+        #pragma omp parallel for
+            for(auto i=0;i<sh_verts_count;i++){
                 for(int j=0;j<12;j++){
                     zeno::vec4f tmp;
                     for(int k=0;k<4;k++){
@@ -145,25 +149,14 @@ struct SHParamToUniform : zeno::INode {
                         std::vector<float> &data = prim_in->attr<float>(c_str);
                         tmp[k] = data[i];
                     }
-                    databuffer[i*12 + j] = tmp;
+                    databuffer[i*14 + j] = tmp;
                 }
+                databuffer[i*14 + 12] = zeno::vec4f(op[i],scale[i][0],scale[i][1],scale[i][2]);
+                databuffer[i*14 + 13] = rotate[i];
+
             }
 
 
-            /*
-            for (const auto& [key, value] : uniformDict->lut) {
-                auto index = std::stoi(key);
-                if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
-                    auto value = num->get<zeno::vec3f>();
-                    std::vector<vec3f>& attr_arr = prim->add_attr<zeno::vec3f>("pos");
-                    if (index < attr_arr.size()) {
-                        attr_arr[index] = value;
-                    }
-                }
-                else {
-                    throw Exception("Not NumericObject");
-                }
-            }*/
             prim->userData().set2("ShaderUniforms", 2);
         }
         set_output("prim", std::move(prim));
@@ -180,7 +173,70 @@ ZENDEFNODE(SHParamToUniform, {
     {},
     {"shader"},
 });
+struct EvalSHColor : ShaderNodeClone<EvalSHColor> {
+    virtual int determineType(EmissionPass *em) override {
+        em->determineType(get_input("idx").get());
+        em->determineType(get_input("dir").get());
+        return TypeHint.at("vec3");
+    }
 
+    virtual void emitCode(EmissionPass *em) override {
+        std::string idx = em->determineExpr(get_input("idx").get());
+        std::string dir = em->determineExpr(get_input("dir").get());
+        int level = get_input2<int>("SH-Level");
+        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +",3,"+ dir + ",attrs.World2ObjectMat"+")"+")";
+        printf("Emitcode : %s \n",code.c_str());
+        std::string test="vec3(1,0,0)";
+
+        return em->emitCode(code);
+    }
+};
+
+ZENDEFNODE(EvalSHColor, {
+                                {
+                                    {"int", "idx", "0"},
+                                    {"int", "SH-Level", "0"},
+                                    {"vec3", "dir", "0,0,0"}
+                                },
+                                {
+                                    {"vec3", "out"},
+                                },
+                                {},
+                                {"shader"},
+                            });
+
+struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
+    virtual int determineType(EmissionPass *em) override {
+        em->determineType(get_input("idx").get());
+        em->determineType(get_input("dir").get());
+        em->determineType(get_input("pos").get());
+        return TypeHint.at("float");
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string idx = em->determineExpr(get_input("idx").get());
+        std::string dir = em->determineExpr(get_input("dir").get());
+        std::string pos = em->determineExpr(get_input("pos").get());
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+ dir+","+ pos + ","+"attrs.World2ObjectMat" + "))" ;
+
+        printf("Emitcode : %s \n",code.c_str());
+
+        return em->emitCode(code);
+    }
+};
+
+ZENDEFNODE(EvalGSOpacity, {
+                                {
+                                    {"int", "idx", "0"},
+                                    {"vec3", "dir", "0,0,0"},
+                                    {"vec3", "pos", "0,0,0"}
+                                },
+                                {
+                                    {"vec3", "out"},
+                                },
+                                {},
+                                {"shader"},
+                            });
 
 struct ShaderUniformAttr : ShaderNodeClone<ShaderUniformAttr> {
     virtual int determineType(EmissionPass *em) override {
@@ -208,5 +264,6 @@ ZENDEFNODE(ShaderUniformAttr, {
                                 {},
                                 {"shader"},
                             });
+
 
 }

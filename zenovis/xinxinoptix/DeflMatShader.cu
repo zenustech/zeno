@@ -6,6 +6,7 @@
 #include "optixPathTracer.h"
 
 #include "TraceStuff.h"
+#include "optix_device.h"
 #include "zxxglslvec.h"
 
 #include "IOMat.h"
@@ -530,9 +531,26 @@ extern "C" __global__ void __closesthit__radiance()
     }
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
+    mat4 World2Object(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
+    attrs.World2ObjectMat = (float*)&World2Object;
+    optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
+    attrs.World2ObjectMat[15] = 1.0f;
+    #if 1
+    printf("\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n",
+    attrs.World2ObjectMat[0],attrs.World2ObjectMat[1],attrs.World2ObjectMat[2],attrs.World2ObjectMat[3],
+    attrs.World2ObjectMat[4],attrs.World2ObjectMat[5],attrs.World2ObjectMat[6],attrs.World2ObjectMat[7],
+    attrs.World2ObjectMat[8],attrs.World2ObjectMat[9],attrs.World2ObjectMat[10],attrs.World2ObjectMat[11]
+    );
+    #endif
+
+    float3 t_origin=optixGetObjectRayOrigin();
+
+    //printf("object space ray origin: %f, %f, %f\n",t_origin.x,t_origin.y,t_origin.z);
+
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
     prd->mask_value = mats.mask_value;
+    //printf("op= %f\n",mats.opacity);
 
     if (prd->test_distance) {
     
@@ -652,7 +670,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->prob2 = prd->prob;
     prd->passed = false;
 
-    if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
+    if(mats.opacity > 0.999f || rnd(prd->seed)<mats.opacity)
     {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
