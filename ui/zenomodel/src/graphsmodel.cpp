@@ -573,7 +573,7 @@ NODE_DESCS GraphsModel::getCoreDescs()
     QString strDescs = QString::fromStdString(zeno::getSession().dumpDescriptors());
     //zeno::log_critical("EEEE {}", strDescs.toStdString());
     //ZENO_P(strDescs.toStdString());
-	QStringList L = strDescs.split("\n");
+	QStringList L = strDescs.split("\a");
 	for (int i = 0; i < L.size(); i++)
 	{
 		QString line = L[i];

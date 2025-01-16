@@ -131,7 +131,7 @@ ZENO_API std::string Session::dumpDescriptors() const {
         res += "{" + join_str(strs, "%") + "}";
         res += "{" + join_str(desc.categories, "%") + "}";
 
-        res += "\n";
+        res += "\a";
     }
     return res;
 }

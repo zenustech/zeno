@@ -200,8 +200,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
     attrs.isShadowRay = true;
-    //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+    
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
 
     if(length(attrs.tang)>0)
     {
@@ -548,7 +548,8 @@ extern "C" __global__ void __closesthit__radiance()
     //printf("object space ray origin: %f, %f, %f\n",t_origin.x,t_origin.y,t_origin.z);
 
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], float4*, const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, attrs );
+
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
     prd->mask_value = mats.mask_value;
     //printf("op= %f\n",mats.opacity);
 

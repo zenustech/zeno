@@ -226,8 +226,9 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
     return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
 }
 
-extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniforms, VolumeIn2& attrs) {
+extern "C" __device__ void __direct_callable__evalmat(const float4* uniforms, void** buffers, void* attrs_ptr, VolumeOut& output) {
 
+    auto& attrs = *reinterpret_cast<VolumeIn2*>(attrs_ptr);
     auto& prd = attrs;
 
     vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos_world);
@@ -241,8 +242,9 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
     auto vdb_grids = sbt_data->vdb_grids;
     auto vdb_max_v = sbt_data->vdb_max_v;
 
-    auto att_isShadowRay = attrs.isShadowRay ? 1.0f:0.0f;
-
+    auto att_isBackFace = false;
+    auto att_isShadowRay = attrs.isShadowRay;
+    
 #ifndef _FALLBACK_
 
     //GENERATED_BEGIN_MARK 
@@ -263,8 +265,6 @@ extern "C" __device__ VolumeOut __direct_callable__evalmat(const float4* uniform
     vec3 albedo = tmp;
     auto extinction = vec3(1.0f);
 #endif // _FALLBACK_
-
-VolumeOut output;
 
 #if _USING_NANOVDB_
 
@@ -294,5 +294,4 @@ VolumeOut output;
     //USING 3D ARRAY
     //USING 3D Noise 
 #endif
-	return output;
 }

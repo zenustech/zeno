@@ -33,12 +33,12 @@ enum struct RayAttr {
     rayLength, isBackFace, isShadowRay,
 };
 
-static std::string dataTypeDefaultString() {
+static std::string shaderAttrDefaultString() {
     auto name = magic_enum::enum_name(SurfaceAttr::pos);
     return std::string(name);
 }
 
-static std::string dataTypeListString() {
+static std::string shaderAttrListString() {
     auto list0 = magic_enum::enum_names<SurfaceAttr>();
     auto list1 = magic_enum::enum_names<InstAttr>();
     auto list2 = magic_enum::enum_names<RayAttr>();
@@ -78,8 +78,8 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum" + dataTypeListString(), "attr", dataTypeDefaultString()},
-        {"enum float vec2 vec3 vec4 bool int uint", "type", "vec3"},
+        {"enum" + shaderAttrListString(), "attr", shaderAttrDefaultString()},
+        {"enum " + ShaderDataTypeNamesString, "type", "float"},
     },
     {
         {"shader", "out"},
