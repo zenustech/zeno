@@ -149,7 +149,7 @@ glm::mat3 getTransform(glm::vec3 scale, glm::vec4 q, bool print=false)  // shoul
 		2.f * (x * z - r * y), 2.f * (y * z + r * x), 1.f - 2.f * (x * x + y * y)
 	);
     glm::mat3 M =  S * R ;
-    glm::mat3 Sigma = glm::transpose(R) * S * R;
+    glm::mat3 Sigma = glm::transpose(R) *  S * R;
 
     if(print){
         std::cout << "R = " << glm::to_string(R) <<std::endl;
@@ -157,10 +157,11 @@ glm::mat3 getTransform(glm::vec3 scale, glm::vec4 q, bool print=false)  // shoul
         std::cout << "M = " << glm::to_string(M) <<std::endl;
         std::cout << "Sigma = " << glm::to_string(Sigma) <<std::endl;
     }
+
     return Sigma;
 }
 
-static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim, bool preview){
+static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim, bool preview, float preScale=1.0f){
     std::filesystem::path file_path(ply_file);
     if(!std::filesystem::exists(file_path)){
         throw std::runtime_error(ply_file + " not exsit");
@@ -232,18 +233,21 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
         }
 
         #pragma omp parallel for
-        for(size_t i=0;i<vertex_count;i++){
+        for(auto i=0;i<vertex_count;i++){
             scale_x[i] = exp(scale_x[i]);
             scale_y[i] = exp(scale_y[i]);
             scale_z[i] = exp(scale_z[i]);
+
             zeno::vec3f pos(pos_x[i],pos_y[i],pos_z[i]);
-            prim->verts[i]=pos;
+            prim->verts[i]= pos * preScale;
+
             for(int j=0;j<48;j++){
                 (*SH_attrs[j])[i]=(SH_params[j][i]);
             }
-            zeno::vec3f current_scale = zeno::vec3f(scale_x[i],scale_y[i],scale_z[i]);
+
+            zeno::vec3f current_scale = zeno::vec3f(scale_x[i],scale_y[i],scale_z[i]) * preScale;
             zeno::vec4f current_rotate = zeno::vec4f(rot_0[i],rot_1[i],rot_2[i],rot_3[i]);
-            current_rotate = zeno::normalize(current_rotate);
+            current_rotate = zeno::normalizeSafe(current_rotate);
 
             if(preview){
                 float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
@@ -266,7 +270,7 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
                 color[i] = zeno::vec3f(mat[1][0],mat[1][1],mat[1][2]);
                 tang[i] = zeno::vec3f(mat[2][0],mat[2][1],mat[2][2]);
             }
-            opacity[i] = op[i];
+            opacity[i] = 1.0f/(1 + exp(- op[i]));
             scale[i] = current_scale;
             rotate[i] = current_rotate;
         }
@@ -335,7 +339,8 @@ struct ReadGassionSplatting : zeno::INode {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         bool preview = get_input2<bool>("preview");
-        ReadGassionSplattingFromPly(path, prim,preview);
+        float pScale = get_input2<float>("preScale");
+        ReadGassionSplattingFromPly(path, prim,preview,pScale);
         set_output("prim", std::move(prim));
     }
 };
@@ -349,6 +354,7 @@ ZENDEFNODE(
                 "readpath",
                 "path",
             },
+            {"float","preScale","1"},
             {"bool","preview","0"}
         },
         // outpus
