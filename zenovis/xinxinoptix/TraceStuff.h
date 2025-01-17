@@ -79,6 +79,7 @@ struct RadiancePRD
     float3       origin;
     float3       direction;
     
+    float        opacity_remain;
     float        minSpecRough;
     bool         passed;
     float        prob;

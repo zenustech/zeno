@@ -55,6 +55,7 @@ struct MatOutput {
 
     vec3 nrm;
     vec3 emission;
+    float emissionOnly;
 };
 
 struct MatInput {

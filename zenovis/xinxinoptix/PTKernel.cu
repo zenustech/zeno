@@ -287,6 +287,7 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
         prd.mask_value = make_float3( 0.0f );
+        prd.opacity_remain = 1.0f;
 
         prd.depth = 0;
         prd.diffDepth = 0;
@@ -379,8 +380,8 @@ extern "C" __global__ void __raygen__rg()
                     aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
                 }
             }
-            prd.radiance = make_float3(0);
-            prd.emission = make_float3(0);
+            prd.radiance = make_float3(0.0f);
+            prd.emission = make_float3(0.0f);
 
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
@@ -390,7 +391,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 1){
+            if(prd.depth > 1.0f){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
@@ -399,6 +400,17 @@ extern "C" __global__ void __raygen__rg()
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
             }
+            #if 0
+            if(prd.opacity_remain <1.0f){
+                float RRprob = prd.opacity_remain;
+                RRprob = min(RRprob, 0.99f);
+                if(rnd(prd.seed) > RRprob) {
+                    prd.done=true;
+                }else {
+                    prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
+                }
+            }
+            #endif
             if(prd.countEmitted == true)
                 prd.passed = true;
 
@@ -483,7 +495,10 @@ extern "C" __global__ void __raygen__rg()
     auto dither = InterleavedGradientNoise(uv);
 
     dither = (dither-0.5f);
-    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
+    float3 res = make_float3(float(idx.x)/float(w));
+    params.frame_buffer[ image_index ] = makeSRGB(accum_color,2.2f, dither);
+    //unsigned char res = 255.0f * float(idx.x)  / float(w);
+    //params.frame_buffer[image_index] = make_uchar4(res,res,res,255);
 
     if (params.denoise) {
         params.albedo_buffer[ image_index ] = tmp_albedo;

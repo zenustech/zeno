@@ -2860,6 +2860,7 @@ void UpdateInst()
                 glm::vec4 v3 = {instTrs.pos[3*i], instTrs.pos[3*i + 1], instTrs.pos[3*i + 2],1.0f};
                 glm::mat4 translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
                 glm::mat4 final_mat = translateMat * rotateMat;
+                #if 0
                 printf("Loading instance matrix:\n\
                 |%f,%f,%f,%f\t|\n\
                 |%f,%f,%f,%f\t|\n\
@@ -2871,6 +2872,7 @@ void UpdateInst()
                 final_mat[0][2],final_mat[1][2],final_mat[2][2],final_mat[3][2],
                 final_mat[0][3],final_mat[1][3],final_mat[2][3],final_mat[3][3]
                 );
+                #endif
 
                 instMat[i] = final_mat;
                 instScale[i] = 1.0f;

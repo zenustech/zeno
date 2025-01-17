@@ -247,6 +247,7 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
 
             zeno::vec3f current_scale = zeno::vec3f(scale_x[i],scale_y[i],scale_z[i]) * preScale;
             zeno::vec4f current_rotate = zeno::vec4f(rot_0[i],rot_1[i],rot_2[i],rot_3[i]);
+            //zeno::vec4f current_rotate = zeno::vec4f(1,0,0,0);
             current_rotate = zeno::normalizeSafe(current_rotate);
 
             if(preview){

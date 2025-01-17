@@ -184,7 +184,7 @@ struct EvalSHColor : ShaderNodeClone<EvalSHColor> {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string dir = em->determineExpr(get_input("dir").get());
         int level = get_input2<int>("SH-Level");
-        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +",3,"+ dir + ",attrs.World2ObjectMat"+")"+")";
+        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ dir + ",attrs.World2ObjectMat"+")"+")";
         printf("Emitcode : %s \n",code.c_str());
         std::string test="vec3(1,0,0)";
 
@@ -217,7 +217,7 @@ struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string dir = em->determineExpr(get_input("dir").get());
         std::string pos = em->determineExpr(get_input("pos").get());
-        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+ dir+","+ pos + ","+"attrs.World2ObjectMat" + "))" ;
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+ dir+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
 
         printf("Emitcode : %s \n",code.c_str());
 

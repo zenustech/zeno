@@ -9,7 +9,6 @@
 #include "GassionSplatting.h"
 
 //COMMON_CODE
-
 extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenotex[], const float4* uniforms, const void** buffers, const MatInput& attrs, MatOutput & mats) {
 
     /* MODMA */
@@ -49,6 +48,7 @@ extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenote
     auto att_camFront = vec3(params.cam.front);
     auto att_camUp    = vec3(params.cam.up);
     auto att_camRight = vec3(params.cam.right);
+    vec3 relative_pos = attrs.pos - vec3(params.cam.eye);
 
 #ifndef _FALLBACK_
 
@@ -98,6 +98,7 @@ extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenote
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
+    float mat_emissionOnly = 0.0f;
     float mat_displacement = 0.0f;
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
@@ -156,6 +157,7 @@ extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenote
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
+    float mat_emissionOnly = 0.0f;
     float mat_displacement = 0.0f;
     float mat_shadowReceiver = 0.0f;
     float mat_NoL = 1.0f;
@@ -212,6 +214,7 @@ extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenote
     mats.thin = mat_thin;
     mats.doubleSide = mat_doubleSide;
     mats.shadowReceiver = mat_shadowReceiver;
+    mats.emissionOnly = mat_emissionOnly;
 
     mats.smoothness = mat_smoothness;
     mats.sssFxiedRadius = sssFxiedRadius;

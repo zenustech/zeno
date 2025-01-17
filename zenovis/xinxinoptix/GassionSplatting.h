@@ -21,45 +21,23 @@
 
 namespace GS{
     static __inline__ __device__
-    vec3 GetParamFromBuffer(float *SH_params, int index){
+    vec3 GetParamFromBuffer(const float *SH_params, int index){
         return vec3(SH_params[index*3],SH_params[index*3 +1],SH_params[index*3+2]);
     }
 
     static __inline__ __device__ 
-    float* GetShBufferFormUniform(float4 *buffer,size_t index){
-        return (float*) (buffer + index * 14);
+    const float* GetShBufferFormUniform(const float4 *buffer,size_t index){
+        return (const float*) (buffer + index * 14);
     }
 
     static __inline__ __device__
-    float GetOpacityFromUniform(float4 *buffer,size_t index){
+    const float GetOpacityFromUniform(const float4 *buffer,size_t index){
         return buffer[index * 14+12].x;
     }
 
     __inline__ __device__
     float EvalGSOpacity(const float4 *buffer,size_t index, vec3 dir, vec3 pos, const float *mat){
-        //vec4 v0(mat[0],mat[4],mat[8],0);
-        //vec4 v1(mat[1],mat[5],mat[9],0);
-        //vec4 v2(mat[2],mat[6],mat[10],0);
-        //vec4 v3(mat[3],mat[7],mat[11],1);
-        vec4 v0(mat[0],mat[1],mat[2],mat[3]);
-        vec4 v1(mat[4],mat[5],mat[6],mat[7]);
-        vec4 v2(mat[8],mat[9],mat[10],mat[11]);
-
-        vec4 new_pos = vec4(pos[0],pos[1],pos[2],1.0f);
-        vec4 origin = vec4(0.0f,0.0f,0.0f,1.0f);
-        new_pos = (*(mat4 *)mat)  * new_pos;
-        vec3 new_origin;
-
-        origin =  (*(mat4 *)mat) * origin;
-
-        pos.x = new_pos.x;
-        pos.y = new_pos.y;
-        pos.z = new_pos.z;
-
-        new_origin.x = origin.x;
-        new_origin.y = origin.y;
-        new_origin.z = origin.z;
-
+        vec3 new_origin(mat[3],mat[7],mat[11]);
         dir = pos - new_origin;
 
         dir = normalize(dir);
@@ -67,14 +45,14 @@ namespace GS{
         pos = normalize(pos);
 
 
-        //float op = GetOpacityFromUniform(buffer, index);
+        float op = GetOpacityFromUniform(buffer, index);
         float cosAlpha= dot(pos,dir);
+        if(cosAlpha < 0.0f){
+            return 0.0f;
+        }
         float cos2 = cosAlpha * cosAlpha;
         float sin2 = 1.0f - cos2;
-        float result = 0.0f;
-
-        result = exp(-8.0f * sin2) ;
-        return result;
+        return exp(-8.0f * sin2) * op;
 
     }
         
@@ -82,7 +60,7 @@ namespace GS{
         
     
     static __inline__ __device__
-    vec3 EvalSH(float4* buffer, size_t index, int level, vec3 dir,const float *mat){
+    vec3 EvalSH(const float4* buffer, size_t index, int level, vec3 dir,const float *mat){
         vec3 color(1,0,0);
         dir = -vec3(mat[3],mat[7],mat[11]);
         dir = normalize(dir);

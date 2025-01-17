@@ -200,6 +200,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
     attrs.isShadowRay = true;
+    mat4 World2Object(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
+    attrs.World2ObjectMat = (float*)&World2Object;
+    optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
+    attrs.World2ObjectMat[15] = 1.0f;
     
     MatOutput mats = {};
     optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&, MatOutput& >( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs, mats);
@@ -537,23 +541,19 @@ extern "C" __global__ void __closesthit__radiance()
     optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
     attrs.World2ObjectMat[15] = 1.0f;
     #if 0
-    printf("\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n",
+    printf("P=%f,%f,%f\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n|%f,%f,%f,%f|\n",
+    P.x,P.y,P.z,
     attrs.World2ObjectMat[0],attrs.World2ObjectMat[1],attrs.World2ObjectMat[2],attrs.World2ObjectMat[3],
     attrs.World2ObjectMat[4],attrs.World2ObjectMat[5],attrs.World2ObjectMat[6],attrs.World2ObjectMat[7],
     attrs.World2ObjectMat[8],attrs.World2ObjectMat[9],attrs.World2ObjectMat[10],attrs.World2ObjectMat[11]
     );
     #endif
 
-    float3 t_origin=optixGetObjectRayOrigin();
-
-    printf("object space ray origin: %f, %f, %f\n",t_origin.x,t_origin.y,t_origin.z);
-
     //MatOutput mats = evalMaterial(rt_data->textures, rt_data->uniforms, attrs);
 
     MatOutput mats={}; 
     optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&, MatOutput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs, mats);
     prd->mask_value = mats.mask_value;
-    printf("op= %f\n",mats.opacity);
 
     if (prd->test_distance) {
     
@@ -691,6 +691,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->radiance = make_float3(0.0f);
         prd->_tmin_ = optixGetRayTmax();
         prd->alphaHit = true;
+        prd->opacity_remain *= mats.opacity;
 
         prd->prob *= 1;
         prd->countEmitted = false;
@@ -700,6 +701,22 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
+        prd->done = true;
+        return;
+    }
+    if(mats.emissionOnly > 0.5f){
+        if (prd->curMatIdx > 0) {
+          vec3 sigma_t, ss_alpha;
+          //vec3 sigma_t, ss_alpha;
+          prd->readMat(sigma_t, ss_alpha);
+          if (ss_alpha.x < 0.0f) { // is inside Glass
+            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+          } else {
+            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+          }
+        }
+        prd->attenuation2 = prd->attenuation;
+        prd->radiance += mats.emission;
         prd->done = true;
         return;
     }
