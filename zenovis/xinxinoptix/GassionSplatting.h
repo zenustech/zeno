@@ -39,6 +39,7 @@ namespace GS{
     float EvalGSOpacity(const float4 *buffer,size_t index, vec3 dir, vec3 pos, const float *mat){
         vec3 new_origin(mat[3],mat[7],mat[11]);
         dir = pos - new_origin;
+        float len = length(dir);
 
         dir = normalize(dir);
 
@@ -52,7 +53,8 @@ namespace GS{
         }
         float cos2 = cosAlpha * cosAlpha;
         float sin2 = 1.0f - cos2;
-        return exp(-8.0f * sin2) * op;
+        return expf(-8.0f * sin2) * op;
+        //return op;
 
     }
         
@@ -61,7 +63,7 @@ namespace GS{
     
     static __inline__ __device__
     vec3 EvalSH(const float4* buffer, size_t index, int level, vec3 dir,const float *mat){
-        vec3 color(1,0,0);
+        vec3 color(0,0,0);
         dir = -vec3(mat[3],mat[7],mat[11]);
         dir = normalize(dir);
         float *SH_params =(float*) (buffer + index * 14);

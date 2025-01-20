@@ -149,7 +149,7 @@ glm::mat3 getTransform(glm::vec3 scale, glm::vec4 q, bool print=false)  // shoul
 		2.f * (x * z - r * y), 2.f * (y * z + r * x), 1.f - 2.f * (x * x + y * y)
 	);
     glm::mat3 M =  S * R ;
-    glm::mat3 Sigma = glm::transpose(R) *  S * R;
+    glm::mat3 Sigma = glm::transpose(R) *  S;
 
     if(print){
         std::cout << "R = " << glm::to_string(R) <<std::endl;
@@ -227,9 +227,12 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
         SH_params[2] = vertex.getProperty<float>("f_dc_2");
         for(int i=0;i<45;i++){
             char c_str[15] = "";
-            snprintf(c_str, 15,"f_rest_%d",i);
+            int index = (i%3)*15 + i/3;
+            snprintf(c_str, 15,"f_rest_%d", (i%3)*15 + i/3);
+            printf("i=%d, index=%d\n",i,index);
+
             std::string str(c_str);
-            SH_params[i+3]= vertex.getProperty<float>(str);
+            SH_params[3+i]= vertex.getProperty<float>(str);
         }
 
         #pragma omp parallel for
