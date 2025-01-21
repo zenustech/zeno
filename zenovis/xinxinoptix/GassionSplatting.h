@@ -36,21 +36,16 @@ namespace GS{
     }
 
     __inline__ __device__
-    float EvalGSOpacity(const float4 *buffer,size_t index, vec3 dir, vec3 pos, const float *mat){
+    float EvalGSOpacity(const float4 *buffer,size_t index, vec3 pos, const float *mat){
         vec3 new_origin(mat[3],mat[7],mat[11]);
-        dir = pos - new_origin;
-        float len = length(dir);
-
-        dir = normalize(dir);
-
+        vec3 dir = normalize(pos - new_origin);
         pos = normalize(pos);
-
-
-        float op = GetOpacityFromUniform(buffer, index);
         float cosAlpha= dot(pos,dir);
         if(cosAlpha < 0.0f){
             return 0.0f;
         }
+
+        float op = GetOpacityFromUniform(buffer, index);
         float cos2 = cosAlpha * cosAlpha;
         float sin2 = 1.0f - cos2;
         return expf(-8.0f * sin2) * op;

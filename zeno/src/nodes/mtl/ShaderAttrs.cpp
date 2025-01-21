@@ -208,16 +208,14 @@ ZENDEFNODE(EvalSHColor, {
 struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
     virtual int determineType(EmissionPass *em) override {
         em->determineType(get_input("idx").get());
-        em->determineType(get_input("dir").get());
         em->determineType(get_input("pos").get());
         return TypeHint.at("float");
     }
 
     virtual void emitCode(EmissionPass *em) override {
         std::string idx = em->determineExpr(get_input("idx").get());
-        std::string dir = em->determineExpr(get_input("dir").get());
         std::string pos = em->determineExpr(get_input("pos").get());
-        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+ dir+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
 
         printf("Emitcode : %s \n",code.c_str());
 
@@ -228,7 +226,6 @@ struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
 ZENDEFNODE(EvalGSOpacity, {
                                 {
                                     {"int", "idx", "0"},
-                                    {"vec3", "dir", "0,0,0"},
                                     {"vec3", "pos", "0,0,0"}
                                 },
                                 {

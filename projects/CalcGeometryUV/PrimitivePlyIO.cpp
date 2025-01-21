@@ -149,7 +149,7 @@ glm::mat3 getTransform(glm::vec3 scale, glm::vec4 q, bool print=false)  // shoul
 		2.f * (x * z - r * y), 2.f * (y * z + r * x), 1.f - 2.f * (x * x + y * y)
 	);
     glm::mat3 M =  S * R ;
-    glm::mat3 Sigma = glm::transpose(R) *  S;
+    glm::mat3 Sigma = glm::transpose(R) *  S ;
 
     if(print){
         std::cout << "R = " << glm::to_string(R) <<std::endl;

@@ -121,5 +121,6 @@ void main() {
         fColor = vec4(0.87 * intensity, 0.22 * intensity, 0.22 * intensity, 1);
       }
   }
+  fColor = clamp(fColor, vec4(0, 0, 0, 0), vec4(1, 1, 1, 1));
 }
 )"
