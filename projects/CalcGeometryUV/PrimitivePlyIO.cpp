@@ -193,6 +193,11 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
     std::vector<zeno::vec4f> &rotate = prim->add_attr<zeno::vec4f>("rotate");
     std::vector<zeno::vec3f> &nrm = prim->add_attr<zeno::vec3f>("nrm");
     std::vector<zeno::vec3f> &tang = prim->add_attr<zeno::vec3f>("tang");
+
+    std::vector<zeno::vec3f> &r0 = prim->add_attr<zeno::vec3f>("r0");
+    std::vector<zeno::vec3f> &r1 = prim->add_attr<zeno::vec3f>("r1");
+    std::vector<zeno::vec3f> &r2 = prim->add_attr<zeno::vec3f>("r2");
+
     std::vector<std::vector<float>*> SH_attrs;
     SH_attrs.resize(48);
     for(int i=0;i<48;i++){
@@ -250,30 +255,26 @@ static void ReadGassionSplattingFromPly(std::string &ply_file, std::shared_ptr<z
 
             zeno::vec3f current_scale = zeno::vec3f(scale_x[i],scale_y[i],scale_z[i]) * preScale;
             zeno::vec4f current_rotate = zeno::vec4f(rot_0[i],rot_1[i],rot_2[i],rot_3[i]);
-            //zeno::vec4f current_rotate = zeno::vec4f(1,0,0,0);
             current_rotate = zeno::normalizeSafe(current_rotate);
 
-            if(preview){
-                float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
-                float g = std::clamp(0.5f + SH_C0 * SH_params[1][i],0.0f,1.0f);
-                float b = std::clamp(0.5f + SH_C0 * SH_params[2][i],0.0f,1.0f);
-                color[i] = zeno::vec3f(r,g,b);
-            }else{
-                //mat = {nrm,clr,tang}
-                glm::vec3 scale ={current_scale[0],current_scale[1],current_scale[2]};
-                glm::vec4 rotate ={current_rotate[0],current_rotate[1],current_rotate[2],current_rotate[3]};
-                glm::mat3 mat;
-                if(i==0){
-                    zeno::log_info("pos = {}",pos);
-                    mat = getTransform(scale, rotate,true);
-                    zeno::log_info("tang = {},{},{}",mat[2][0],mat[2][1],mat[2][2]);
-                }else{
-                    mat = getTransform(scale, rotate);
-                }
-                nrm[i] = zeno::vec3f(mat[0][0],mat[0][1],mat[0][2]);
-                color[i] = zeno::vec3f(mat[1][0],mat[1][1],mat[1][2]);
-                tang[i] = zeno::vec3f(mat[2][0],mat[2][1],mat[2][2]);
-            }
+            float r = std::clamp(0.5f + SH_C0 * SH_params[0][i],0.0f,1.0f);
+            float g = std::clamp(0.5f + SH_C0 * SH_params[1][i],0.0f,1.0f);
+            float b = std::clamp(0.5f + SH_C0 * SH_params[2][i],0.0f,1.0f);
+            color[i] = zeno::vec3f(r,g,b);
+
+            glm::vec3 scale_glm ={current_scale[0],current_scale[1],current_scale[2]};
+            glm::vec4 rotate_glm ={current_rotate[0],current_rotate[1],current_rotate[2],current_rotate[3]};
+
+            glm::mat3 mat;
+            mat = getTransform(scale_glm, rotate_glm);
+
+            r0[i] = zeno::vec3f(mat[0][0],mat[0][1],mat[0][2]);
+            r1[i] = zeno::vec3f(mat[1][0],mat[1][1],mat[1][2]);
+            r2[i] = zeno::vec3f(mat[2][0],mat[2][1],mat[2][2]);
+
+            //nrm[i] = zeno::vec3f(mat[0][0],mat[0][1],mat[0][2]);
+            //color[i] = zeno::vec3f(mat[1][0],mat[1][1],mat[1][2]);
+            //tang[i] = zeno::vec3f(mat[2][0],mat[2][1],mat[2][2]);
             opacity[i] = 1.0f/(1 + exp(- op[i]));
             scale[i] = current_scale;
             rotate[i] = current_rotate;
