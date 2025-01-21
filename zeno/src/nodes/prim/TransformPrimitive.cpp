@@ -209,7 +209,7 @@ struct PrimitiveTransform : zeno::INode {
         glm::mat3 normMatrix(matrix);
         normMatrix = glm::transpose(glm::inverse(normMatrix));
         auto vector3 = normMatrix * vector;
-        return glm::normalize(vector3);
+        return vector3;
     }
 
     static std::optional<std::shared_ptr<IObject>> get_from_list(std::string path, std::shared_ptr<IObject> iObject) {
