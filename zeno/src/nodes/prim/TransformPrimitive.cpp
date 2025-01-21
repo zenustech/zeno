@@ -246,6 +246,7 @@ struct PrimitiveTransform : zeno::INode {
             , vec3f translate
             , vec4f rotation
             , vec3f scaling
+            , bool transformNormal
     ) {
         if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
 
@@ -274,7 +275,7 @@ struct PrimitiveTransform : zeno::INode {
                 }
             }
 
-            if (prim->has_attr("nrm")) {
+            if (transformNormal && prim->has_attr("nrm")) {
                 auto &nrm = prim->attr<zeno::vec3f>("nrm");
                 prim->verts.add_attr<zeno::vec3f>("_origin_nrm") = nrm;
     #pragma omp parallel for
@@ -295,7 +296,7 @@ struct PrimitiveTransform : zeno::INode {
         }
         else if (auto list = std::dynamic_pointer_cast<ListObject>(iObject)) {
             for (auto &item : list->arr) {
-                transformObj(item, matrix, pivotType, translate, pivotPos, rotation, scaling);
+                transformObj(item, matrix, pivotType, translate, pivotPos, rotation, scaling, transformNormal);
             }
         }
     }
@@ -309,6 +310,7 @@ struct PrimitiveTransform : zeno::INode {
         glm::mat4 pre_mat = glm::mat4(1.0);
         glm::mat4 pre_apply = glm::mat4(1.0);
         glm::mat4 local = glm::mat4(1.0);
+        auto transformNormal = get_input2<bool>("transformNormal");
         if (has_input("Matrix"))
             pre_mat = std::get<glm::mat4>(get_input<zeno::MatrixObject>("Matrix")->m);
         if (has_input("translation"))
@@ -368,12 +370,12 @@ struct PrimitiveTransform : zeno::INode {
 
         if (std::dynamic_pointer_cast<PrimitiveObject>(iObject)) {
             iObject = iObject->clone();
-            transformObj(iObject, matrix, pivotType, pivotPos, translate, rotation, scaling);
+            transformObj(iObject, matrix, pivotType, pivotPos, translate, rotation, scaling, transformNormal);
         }
         else {
             auto select = get_from_list(path, iObject);
             if (select.has_value()) {
-                transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling);
+                transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling, transformNormal);
             }
         }
 
@@ -408,6 +410,7 @@ ZENDEFNODE(PrimitiveTransform, {
         {"Matrix"},
         {"preTransform"},
         {"local"},
+        {"bool", "transformNormal", "1"},
     },
     {
         {"PrimitiveObject", "outPrim"}
