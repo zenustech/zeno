@@ -1846,9 +1846,6 @@ static void addLightSphere(float3 center, float radius)
 static int uniformBufferInitialized = false;
 // void optixUpdateUniforms(std::vector<float4> & inConstants) 
 void optixUpdateUniforms(void *inConstants, std::size_t size) {
-    if(uniformBufferInitialized){
-        return;
-    }
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*size));
 

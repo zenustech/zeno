@@ -1234,8 +1234,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 lightNeedUpdate = true;
                 matNeedUpdate = meshNeedUpdate = false;
             }
+            graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
         }
-        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
