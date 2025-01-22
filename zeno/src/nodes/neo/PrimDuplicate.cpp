@@ -14,6 +14,9 @@
 #include <zeno/utils/log.h>
 #include <cstring>
 #include <cstdlib>
+#include <glm/glm.hpp>
+#include "zeno/utils/bit_operations.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -166,6 +169,29 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     return prim;
 }
 
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string r0, std::string r1, std::string r2) {
+    auto &r_0 = parsPrim->verts.attr<vec3f>(r0);
+    auto &r_1 = parsPrim->verts.attr<vec3f>(r1);
+    auto &r_2 = parsPrim->verts.attr<vec3f>(r2);
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
+    auto mesh_size = meshPrim->verts.size();
+
+    #pragma omp parallel for
+    for (auto i = 0; i < parsPrim->verts.size(); i++) {
+        glm::mat3 mat;
+        mat[0] = zeno::bit_cast<glm::vec3>(r_0[i]);
+        mat[1] = zeno::bit_cast<glm::vec3>(r_1[i]);
+        mat[2] = zeno::bit_cast<glm::vec3>(r_2[i]);
+
+        for (auto j = 0; j < mesh_size; j++) {
+            auto index = i * mesh_size + j;
+            prim->verts[index] = zeno::bit_cast<zeno::vec3f>(mat * zeno::bit_cast<glm::vec3>(meshPrim->verts[j]));
+            prim->verts[index] += parsPrim->verts[i];
+        }
+    }
+    return prim;
+}
 namespace {
 
 struct PrimDuplicate : INode {
@@ -200,6 +226,42 @@ ZENDEFNODE(PrimDuplicate, {
     },
     {
     {"PrimitiveObject", "prim"},
+    },
+    {
+    },
+    {"primitive"},
+});
+
+struct PrimDuplicate2 : INode {
+    virtual void apply() override {
+        auto parsPrim = get_input<PrimitiveObject>("parsPrim");
+        auto meshPrim = get_input<PrimitiveObject>("meshPrim");
+        auto r0 = get_input2<std::string>("r0");
+        auto r1 = get_input2<std::string>("r1");
+        auto r2 = get_input2<std::string>("r2");
+        auto prim = primDuplicate2(
+            parsPrim.get()
+            , meshPrim.get()
+            , r0
+            , r1
+            , r2
+        );
+
+        set_output("prim", prim);
+
+    }
+};
+
+ZENDEFNODE(PrimDuplicate2, {
+    {
+        {"PrimitiveObject", "parsPrim"},
+        {"PrimitiveObject", "meshPrim"},
+        {"string", "r0", "r0"},
+        {"string", "r1", "r1"},
+        {"string", "r2", "r2"},
+    },
+    {
+        {"PrimitiveObject", "prim"},
     },
     {
     },

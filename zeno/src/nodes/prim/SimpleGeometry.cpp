@@ -541,6 +541,51 @@ ZENDEFNODE(CreateDisk, {
     {},
     {"create"},
 });
+struct CreateIcosahedron : zeno::INode {
+    void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        const float X = 0.525731112119133606;
+        const float Z = 0.850650808352039932;
+        prim->verts.values = {
+           {-X, 0.0, Z}, {X, 0.0, Z}, {-X, 0.0, -Z}, {X, 0.0, -Z},
+           {0.0, Z, X}, {0.0, Z, -X}, {0.0, -Z, X}, {0.0, -Z, -X},
+           {Z, X, 0.0}, {-Z, X, 0.0}, {Z, -X, 0.0}, {-Z, -X, 0.0},
+        };
+
+        if (get_input2<bool>("hasNormal")) {
+            auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                nrm[i] = normalize(prim->verts[i]);
+            }
+        }
+        auto position = get_input2<vec3f>("position");
+        auto scaleSize = get_input2<vec3f>("scaleSize");
+        auto scale = get_input2<float>("scale");
+        for (auto & vert : prim->verts) {
+            vert = vert * scale * scale + position;
+        }
+
+        prim->tris.values = {
+           {0,4,1}, {0,9,4}, {9,5,4}, {4,5,8}, {4,8,1},
+           {8,10,1}, {8,3,10}, {5,3,8}, {5,2,3}, {2,7,3},
+           {7,10,3}, {7,6,10}, {7,11,6}, {11,0,6}, {0,1,6},
+           {6,1,10}, {9,0,11}, {9,11,2}, {9,2,5}, {7,2,11},
+        };
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(CreateIcosahedron, {
+    {
+        {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "scaleSize", "1, 1, 1"},
+        {"float", "scale", "1"},
+        {"bool", "hasNormal", "0"},
+    },
+    {"prim"},
+    {},
+    {"create"},
+});
 
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
