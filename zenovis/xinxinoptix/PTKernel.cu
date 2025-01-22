@@ -299,6 +299,7 @@ extern "C" __global__ void __raygen__rg()
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
         prd.max_depth = 4;
+        prd.last_hit_emittion_only = false;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -548,9 +549,11 @@ extern "C" __global__ void __miss__radiance()
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
         
         prd->radiance = misWeight * skysample;
-
-        if (params.show_background == false) {
-            prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
+        float f = 1.0f - prd->opacity_remain;
+        f = smoothstep(0.1f,0.2f,f);
+        if (params.show_background == false || (prd->last_hit_emittion_only && f>0 ) ) {
+            
+            prd->radiance = prd->depth>=1 ?  prd->radiance : make_float3(0.0f,0.0f,0.0f);
         }
 
         prd->done      = true;

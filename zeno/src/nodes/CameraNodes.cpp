@@ -139,12 +139,22 @@ struct TargetCamera : INode {
     virtual void apply() override {
         auto camera = std::make_unique<CameraObject>();
 
-        auto refUp = zeno::normalize(get_input2<zeno::vec3f>("refUp"));
+        zeno::vec3f refUp = get_input2<zeno::vec3f>("refUp");
+        if(length(refUp)<= 0.0f){
+            refUp = zeno::vec3f(0,1,0);
+        }
+        refUp = normalizeSafe(refUp);
         auto pos = get_input2<zeno::vec3f>("pos");
         auto target = get_input2<zeno::vec3f>("target");
         auto AF = get_input2<bool>("AutoFocus");
-        vec3f view = zeno::normalize(target - pos);
+        zeno::vec3f view = target - pos;
+        if(length(view)<= 0.0f){
+            view = zeno::vec3f(0,0,-1);
+        }
+        view = normalizeSafe(view);
+
         vec3f right = zeno::cross(view, refUp);
+
         vec3f up = zeno::cross(right, view);
 
         camera->pos = pos;

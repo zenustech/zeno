@@ -672,6 +672,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->countEmitted = false;
     prd->prob2 = prd->prob;
     prd->passed = false;
+    prd->last_hit_emittion_only = mats.emissionOnly > 0.5f;
 
     if(mats.opacity > 0.999f || rnd(prd->seed)<mats.opacity)
     {
