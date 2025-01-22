@@ -34,6 +34,10 @@ namespace GS{
     const float GetOpacityFromUniform(const float4 *buffer,size_t index){
         return buffer[index * 14+12].x;
     }
+    static __inline__ __device__
+    const float* GetCenterPos (const float4 *buffer,size_t index){
+        return (const float *)(buffer + (index * 14+12)) + 1;
+    }
 
     __inline__ __device__
     float EvalGSOpacity(const float4 *buffer,size_t index, vec3 pos, const float *mat){
@@ -58,10 +62,15 @@ namespace GS{
     
     static __inline__ __device__
     vec3 EvalSH(const float4* buffer, size_t index, int level, vec3 dir,const float *mat){
-        vec3 color(0,0,0);
-        dir = -vec3(mat[3],mat[7],mat[11]);
-        dir = normalize(dir);
         float *SH_params =(float*) (buffer + index * 14);
+        vec3 color(0,0,0);
+        //dir = -vec3(mat[3],mat[7],mat[11]);
+        const float * pos_vec = GetCenterPos(buffer, index);
+        vec3 center_world_pos(pos_vec[0],pos_vec[1],pos_vec[2]);
+        //dir is the world space position of camera
+        dir = center_world_pos - dir;
+
+        dir = normalize(dir);
         color = SH_C0 * GetParamFromBuffer(SH_params, 0);
         float x,y,z,xx,yy,zz,xy,xz,yz;
         x = dir.x;

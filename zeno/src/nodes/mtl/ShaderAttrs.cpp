@@ -138,6 +138,7 @@ struct SHParamToUniform : zeno::INode {
             prim->verts.resize(sh_verts_count*14);
             std::vector<float> & op = prim_in->attr<float>("opacity");
             std::vector<zeno::vec3f> & scale = prim_in->attr<zeno::vec3f>("scale");
+            std::vector<zeno::vec3f> & pos = prim_in->attr<zeno::vec3f>("pos");
             std::vector<zeno::vec4f> & rotate = prim_in->attr<zeno::vec4f>("rotate");
         #pragma omp parallel for
             for(auto i=0;i<sh_verts_count;i++){
@@ -151,7 +152,7 @@ struct SHParamToUniform : zeno::INode {
                     }
                     databuffer[i*14 + j] = tmp;
                 }
-                databuffer[i*14 + 12] = zeno::vec4f(op[i],scale[i][0],scale[i][1],scale[i][2]);
+                databuffer[i*14 + 12] = zeno::vec4f(op[i],pos[i][0],pos[i][1],pos[i][2]);
                 databuffer[i*14 + 13] = rotate[i];
 
             }
@@ -184,7 +185,7 @@ struct EvalSHColor : ShaderNodeClone<EvalSHColor> {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string dir = em->determineExpr(get_input("dir").get());
         int level = get_input2<int>("SH-Level");
-        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ dir + ",attrs.World2ObjectMat"+")"+")";
+        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ "vec3(params.cam.eye)" + ",attrs.World2ObjectMat"+")"+")";
         printf("Emitcode : %s \n",code.c_str());
         std::string test="vec3(1,0,0)";
 
