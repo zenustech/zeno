@@ -44,9 +44,23 @@ struct PrimFillAttr : INode {
                 std::fill(arr.begin(), arr.end(), val);
             }
         }, enum_variant<std::variant<
-            float, vec3f, int
+            float
+            , vec2f
+            , vec3f
+            , vec4f
+            , int
+            , vec2i
+            , vec3i
+            , vec4i
         >>(array_index({
-            "float", "vec3f", "int"
+            "float"
+            , "vec2f"
+            , "vec3f"
+            , "vec4f"
+            , "int"
+            , "vec2i"
+            , "vec3i"
+            , "vec4i"
         }, type)));
         set_output("prim", std::move(prim));
     }
@@ -57,7 +71,7 @@ ZENDEFNODE(PrimFillAttr, {
         {"PrimitiveObject", "prim"},
         {"enum vert tri loop poly line", "scope", "vert"},
         {"string", "attr", "rad"},
-        {"enum float vec3f int", "type", "float"},
+        {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "float"},
         {"float", "value", "0"},
     },
     {
