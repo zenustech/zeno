@@ -175,7 +175,13 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(PrimitiveObject *parsPr
     auto &r_2 = parsPrim->verts.attr<vec3f>(r2);
     auto prim = std::make_shared<PrimitiveObject>();
     prim->verts.resize(parsPrim->verts.size() * meshPrim->verts.size());
-    auto mesh_size = meshPrim->verts.size();
+    prim->tris.resize(parsPrim->verts.size() * meshPrim->tris.size());
+    prim->loops.resize(parsPrim->verts.size() * meshPrim->loops.size());
+    prim->polys.resize(parsPrim->verts.size() * meshPrim->polys.size());
+    auto mesh_vert_size = meshPrim->verts.size();
+    auto mesh_tri_size = meshPrim->tris.size();
+    auto mesh_loop_size = meshPrim->loops.size();
+    auto mesh_poly_size = meshPrim->polys.size();
 
     #pragma omp parallel for
     for (auto i = 0; i < parsPrim->verts.size(); i++) {
@@ -184,10 +190,22 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(PrimitiveObject *parsPr
         mat[1] = zeno::bit_cast<glm::vec3>(r_1[i]);
         mat[2] = zeno::bit_cast<glm::vec3>(r_2[i]);
 
-        for (auto j = 0; j < mesh_size; j++) {
-            auto index = i * mesh_size + j;
+        for (auto j = 0; j < mesh_vert_size; j++) {
+            auto index = i * mesh_vert_size + j;
             prim->verts[index] = zeno::bit_cast<zeno::vec3f>(mat * zeno::bit_cast<glm::vec3>(meshPrim->verts[j]));
             prim->verts[index] += parsPrim->verts[i];
+        }
+        for (auto j = 0; j < mesh_tri_size; j++) {
+            auto index = i * mesh_tri_size + j;
+            prim->tris[index] = meshPrim->tris[j] + mesh_vert_size * i;
+        }
+        for (auto j = 0; j < mesh_loop_size; j++) {
+            auto index = i * mesh_loop_size + j;
+            prim->loops[index] = meshPrim->loops[j] + mesh_vert_size * i;
+        }
+        for (auto j = 0; j < mesh_poly_size; j++) {
+            auto index = i * mesh_poly_size + j;
+            prim->polys[index] = { meshPrim->polys[j][1] * i, meshPrim->polys[j][1] };
         }
     }
     return prim;
