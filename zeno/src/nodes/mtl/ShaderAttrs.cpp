@@ -24,6 +24,7 @@ enum struct SurfaceAttr {
 };
 
 enum struct InstAttr {
+    primIdx,
     instIdx, instPos, instNrm, instUv, instClr, instTang
 };
 

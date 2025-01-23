@@ -79,6 +79,7 @@ cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DZENO_WITH_FBX:BOOL=ON `
     -DZENO_WITH_Alembic:BOOL=ON `
     -DZENO_WITH_MeshSubdiv:BOOL=ON `
+    -DZENO_WITH_CalcGeometryUV:BOOL=ON `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 } else {

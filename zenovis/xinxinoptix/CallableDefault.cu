@@ -26,6 +26,7 @@ extern "C" __device__ void __direct_callable__evalmat(cudaTextureObject_t zenote
     auto att_instTang = attrs.instTang;
     auto att_rayLength = attrs.rayLength;
 
+    uint att_primIdx = attrs.primIdx;
     auto att_isBackFace = attrs.isBackFace;
     auto att_isShadowRay = attrs.isShadowRay;
 

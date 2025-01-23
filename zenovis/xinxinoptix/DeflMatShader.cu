@@ -79,6 +79,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
     MatInput attrs{};
+    attrs.primIdx = primIdx;
 
     auto pType = optixGetPrimitiveType();
     if (pType != OPTIX_PRIMITIVE_TYPE_SPHERE && pType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
@@ -355,8 +356,9 @@ extern "C" __global__ void __closesthit__radiance()
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     
     MatInput attrs {};
+    attrs.primIdx = primIdx;
     attrs.isBackFace = optixIsBackFaceHit();
-
+    
 #if (_P_TYPE_==2)
 
     float3 N = {}; 

@@ -65,6 +65,8 @@ struct MatInput {
     vec3 clr;
     vec3 tang;
 
+    uint primIdx;
+    
     uint instIdx;
     vec3 instPos;
     vec3 instNrm;
