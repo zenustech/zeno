@@ -169,7 +169,15 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPri
     return prim;
 }
 
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string r0, std::string r1, std::string r2) {
+ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(
+        PrimitiveObject *parsPrim
+        , PrimitiveObject *meshPrim
+        , std::string r0
+        , std::string r1
+        , std::string r2
+        , bool copyParsAttr
+        , bool copyMeshAttr
+) {
     auto &r_0 = parsPrim->verts.attr<vec3f>(r0);
     auto &r_1 = parsPrim->verts.attr<vec3f>(r1);
     auto &r_2 = parsPrim->verts.attr<vec3f>(r2);
@@ -208,6 +216,66 @@ ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate2(PrimitiveObject *parsPr
             prim->polys[index] = { meshPrim->polys[j][1] * i, meshPrim->polys[j][1] };
         }
     }
+    if (copyParsAttr) {
+        parsPrim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->verts.add_attr<T>(key);
+            #pragma omp parallel for
+            for (auto i = 0; i < parsPrim->verts.size(); i++) {
+                for (auto j = 0; j < mesh_vert_size; j++) {
+                    auto index = i * mesh_vert_size + j;
+                    arrOut[index] = arrMesh[i];
+                }
+            }
+        });
+    }
+    if (copyMeshAttr) {
+        meshPrim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->verts.add_attr<T>(key);
+            #pragma omp parallel for
+            for (auto i = 0; i < parsPrim->verts.size(); i++) {
+                for (auto j = 0; j < mesh_vert_size; j++) {
+                    auto index = i * mesh_vert_size + j;
+                    arrOut[index] = arrMesh[j];
+                }
+            }
+        });
+        meshPrim->tris.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->tris.add_attr<T>(key);
+            #pragma omp parallel for
+            for (auto i = 0; i < parsPrim->verts.size(); i++) {
+                for (auto j = 0; j < mesh_tri_size; j++) {
+                    auto index = i * mesh_tri_size + j;
+                    arrOut[index] = arrMesh[j];
+                }
+            }
+        });
+        meshPrim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->loops.add_attr<T>(key);
+            #pragma omp parallel for
+            for (auto i = 0; i < parsPrim->verts.size(); i++) {
+                for (auto j = 0; j < mesh_loop_size; j++) {
+                    auto index = i * mesh_loop_size + j;
+                    arrOut[index] = arrMesh[j];
+                }
+            }
+        });
+        meshPrim->polys.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arrMesh) {
+            using T = std::decay_t<decltype(arrMesh[0])>;
+            auto &arrOut = prim->polys.add_attr<T>(key);
+            #pragma omp parallel for
+            for (auto i = 0; i < parsPrim->verts.size(); i++) {
+                for (auto j = 0; j < mesh_poly_size; j++) {
+                    auto index = i * mesh_poly_size + j;
+                    arrOut[index] = arrMesh[j];
+                }
+            }
+        });
+    }
+
     return prim;
 }
 namespace {
@@ -257,12 +325,16 @@ struct PrimDuplicate2 : INode {
         auto r0 = get_input2<std::string>("r0");
         auto r1 = get_input2<std::string>("r1");
         auto r2 = get_input2<std::string>("r2");
+        auto copyParsAttr = get_input2<bool>("copyParsAttr");
+        auto copyMeshAttr = get_input2<bool>("copyMeshAttr");
         auto prim = primDuplicate2(
             parsPrim.get()
             , meshPrim.get()
             , r0
             , r1
             , r2
+            , copyParsAttr
+            , copyMeshAttr
         );
 
         set_output("prim", prim);
@@ -277,6 +349,8 @@ ZENDEFNODE(PrimDuplicate2, {
         {"string", "r0", "r0"},
         {"string", "r1", "r1"},
         {"string", "r2", "r2"},
+        {"bool", "copyParsAttr", "1"},
+        {"bool", "copyMeshAttr", "1"},
     },
     {
         {"PrimitiveObject", "prim"},
