@@ -40,7 +40,7 @@ namespace GS{
     }
 
     __inline__ __device__
-    float EvalGSOpacity(const float4 *buffer,size_t index, vec3 pos, const float *mat){
+    float EvalGSOpacity(const float4 *buffer,size_t index,float clamp_radius, vec3 pos, const float *mat){
         vec3 new_origin(mat[3],mat[7],mat[11]);
         vec3 dir = normalize(pos - new_origin);
         pos = normalize(pos);
@@ -52,7 +52,8 @@ namespace GS{
         float op = GetOpacityFromUniform(buffer, index);
         float cos2 = cosAlpha * cosAlpha;
         float sin2 = 1.0f - cos2;
-        return expf(-8.0f * sin2) * op;
+        sin2 = sin2 * clamp_radius * clamp_radius;
+        return expf(-0.5f * sin2) * op;
         //return op;
 
     }

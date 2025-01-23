@@ -216,7 +216,8 @@ struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
     virtual void emitCode(EmissionPass *em) override {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string pos = em->determineExpr(get_input("pos").get());
-        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
+        float clamp = get_input2<float>("clamp_radius");
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+std::to_string(clamp)+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
 
         printf("Emitcode : %s \n",code.c_str());
 
@@ -227,7 +228,8 @@ struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
 ZENDEFNODE(EvalGSOpacity, {
                                 {
                                     {"int", "idx", "0"},
-                                    {"vec3", "pos", "0,0,0"}
+                                    {"vec3", "pos", "0,0,0"},
+                                    {"float", "clamp_radius", "2"}
                                 },
                                 {
                                     {"vec3", "out"},
