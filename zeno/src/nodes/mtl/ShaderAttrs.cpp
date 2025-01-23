@@ -229,7 +229,7 @@ ZENDEFNODE(EvalGSOpacity, {
                                 {
                                     {"int", "idx", "0"},
                                     {"vec3", "pos", "0,0,0"},
-                                    {"float", "clamp_radius", "2"}
+                                    {"float", "clamp_radius", "4"}
                                 },
                                 {
                                     {"vec3", "out"},
