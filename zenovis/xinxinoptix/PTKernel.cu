@@ -550,11 +550,18 @@ extern "C" __global__ void __miss__radiance()
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
         
         prd->radiance = misWeight * skysample;
-        float f = 1.0f - prd->opacity_remain;
-        f = smoothstep(0.1f,0.2f,f);
-        if (params.show_background == false || (prd->last_hit_emittion_only && f>0 ) ) {
+        float f = prd->opacity_remain;
+        bool gs_not_penetrated = prd->last_hit_emittion_only && f<=0.9;
+        if (params.show_background == false ) {
+            if(prd->depth>=1)
+            {
+                prd->radiance = gs_not_penetrated?make_float3(0.0f,0.0f,0.0f):prd->radiance;
+            }else{
+                prd->radiance = make_float3(0.0f,0.0f,0.0f);
+            }
             
-            prd->radiance = prd->depth>=1 ?  prd->radiance : make_float3(0.0f,0.0f,0.0f);
+        } else {
+            prd->radiance = gs_not_penetrated?make_float3(0.0f,0.0f,0.0f):prd->radiance;
         }
 
         prd->done      = true;
