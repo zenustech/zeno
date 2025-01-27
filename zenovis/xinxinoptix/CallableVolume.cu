@@ -25,74 +25,80 @@ using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 
 //COMMON_CODE
 
-/* w0, w1, w2, and w3 are the four cubic B-spline basis functions. */
-inline __device__ float cubic_w0(float a)
+int3 interp_trilinear_stochastic(const float3& P, float randu)
 {
-  return (1.0f / 6.0f) * (a * (a * (-a + 3.0f) - 3.0f) + 1.0f);
-}
-inline __device__ float cubic_w1(float a)
-{
-  return (1.0f / 6.0f) * (a * a * (3.0f * a - 6.0f) + 4.0f);
-}
-inline __device__ float cubic_w2(float a)
-{
-  return (1.0f / 6.0f) * (a * (a * (-3.0f * a + 3.0f) + 3.0f) + 1.0f);
-}
-inline __device__ float cubic_w3(float a)
-{
-  return (1.0f / 6.0f) * (a * a * a);
+    const float ix = floorf(P.x);
+    const float iy = floorf(P.y);
+    const float iz = floorf(P.z);
+    int idx[3] = {(int)ix, (int)iy, (int)iz};
+
+    const float tx = P.x - ix;
+    const float ty = P.y - iy;
+    const float tz = P.z - iz;
+
+    if (randu < tx) {
+        idx[0]++;
+        randu /= tx;
+    }
+    else {
+        randu = (randu - tx) / (1 - tx);
+    }
+
+    if (randu < ty) {
+        idx[1]++;
+        randu /= ty;
+    }
+    else {
+        randu = (randu - ty) / (1 - ty);
+    }
+
+    if (randu < tz) {
+        idx[2]++;
+    }
+
+    return make_int3(idx[0], idx[1], idx[2]);
 }
 
-/* g0 and g1 are the two amplitude functions. */
-inline __device__ float cubic_g0(float a)
+float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
 {
-  return cubic_w0(a) + cubic_w1(a);
-}
-inline __device__ float cubic_g1(float a)
-{
-  return cubic_w2(a) + cubic_w3(a);
-}
+    const float3 p = floor(P);
+    const float3 t = P - p;
 
-/* h0 and h1 are the two offset functions */
-inline __device__ float cubic_h0(float a)
-{
-  return (cubic_w1(a) / cubic_g0(a)) - 1.0f;
-}
-inline __device__ float cubic_h1(float a)
-{
-  return (cubic_w3(a) / cubic_g1(a)) + 1.0f;
-}
+    /* Cubic weights. */
+    const float3 w0 = (1.0f / 6.0f) * (t * (t * (-t + 3.0f) - 3.0f) + 1.0f);
+    const float3 w1 = (1.0f / 6.0f) * (t * t * (3.0f * t - 6.0f) + 4.0f);
+    //    float3 w2 = (1.0f / 6.0f) * (t * (t * (-3.0f * t + 3.0f) + 3.0f) + 1.0f);
+    const float3 w3 = (1.0f / 6.0f) * (t * t * t);
 
-template<typename S>
-inline __device__ float interp_tricubic_nanovdb(S &s, float x, float y, float z)
-{
-  float px = floorf(x);
-  float py = floorf(y);
-  float pz = floorf(z);
-  float fx = x - px;
-  float fy = y - py;
-  float fz = z - pz;
+    const float3 g0 = w0 + w1;
+    const float3 P0 = p + (w1 / g0) - 1.0f;
+    const float3 P1 = p + (w3 / (make_float3(1.0f) - g0)) + 1.0f;
 
-  float g0x = cubic_g0(fx);
-  float g1x = cubic_g1(fx);
-  float g0y = cubic_g0(fy);
-  float g1y = cubic_g1(fy);
-  float g0z = cubic_g0(fz);
-  float g1z = cubic_g1(fz);
+    float3 Pnew = P0;
 
-  float x0 = px + cubic_h0(fx);
-  float x1 = px + cubic_h1(fx);
-  float y0 = py + cubic_h0(fy);
-  float y1 = py + cubic_h1(fy);
-  float z0 = pz + cubic_h0(fz);
-  float z1 = pz + cubic_h1(fz);
+    if (randu < g0.x) {
+        randu /= g0.x;
+    }
+    else {
+        Pnew.x = P1.x;
+        randu = (randu - g0.x) / (1 - g0.x);
+    }
 
-  using namespace nanovdb;
+    if (randu < g0.y) {
+        randu /= g0.y;
+    }
+    else {
+        Pnew.y = P1.y;
+        randu = (randu - g0.y) / (1 - g0.y);
+    }
 
-  return g0z * (g0y * (g0x * s(Vec3f(x0, y0, z0)) + g1x * s(Vec3f(x1, y0, z0))) +
-                g1y * (g0x * s(Vec3f(x0, y1, z0)) + g1x * s(Vec3f(x1, y1, z0)))) +
-         g1z * (g0y * (g0x * s(Vec3f(x0, y0, z1)) + g1x * s(Vec3f(x1, y0, z1))) +
-                g1y * (g0x * s(Vec3f(x0, y1, z1)) + g1x * s(Vec3f(x1, y1, z1))));
+    if (randu < g0.z) {
+    }
+    else {
+        Pnew.z = P1.z;
+    }
+
+    return Pnew;
 }
 
 inline __device__ float _LERP_(float t, float s1, float s2)
@@ -181,15 +187,23 @@ inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, con
     
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
+    if constexpr(1 == Order) {
+        auto iii = interp_trilinear_stochastic(reinterpret_cast<float3&>(point_indexd), volin.rndf());
+        return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
+    }
+
     if constexpr(3 > Order) {
         using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
         return Sampler(acc)(point_indexd);
     }
 
     if constexpr(3 == Order) {
-        nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true> s(acc);
-        return interp_tricubic_nanovdb(s, point_indexd[0], point_indexd[1], point_indexd[2]);
-    } 
+    
+        auto fff = reinterpret_cast<float3&>(point_indexd);
+        fff = interp_tricubic_to_trilinear_stochastic(fff, volin.rndf());
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true>;
+        return Sampler(acc)( reinterpret_cast<nanovdb::Vec3f&>(fff) );
+    }
     
     if constexpr(4 == Order) {
 
