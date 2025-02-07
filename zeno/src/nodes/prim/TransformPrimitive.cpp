@@ -15,6 +15,7 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/eulerangle.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/bit_operations.h>
 
 namespace zeno {
 namespace {
@@ -384,6 +385,18 @@ struct PrimitiveTransform : zeno::INode {
                 transformObj(select.value(), matrix, pivotType, pivotPos, translate, rotation, scaling, transformDirectionSet);
             }
         }
+
+        glm::mat4 old_matrix;
+        old_matrix[0] = zeno::bit_cast<glm::vec4>(iObject->userData().get2<vec4f>("_transform_row0", {1, 0, 0, 0}));
+        old_matrix[1] = zeno::bit_cast<glm::vec4>(iObject->userData().get2<vec4f>("_transform_row1", {0, 1, 0, 0}));
+        old_matrix[2] = zeno::bit_cast<glm::vec4>(iObject->userData().get2<vec4f>("_transform_row2", {0, 0, 1, 0}));
+        old_matrix[3] = zeno::bit_cast<glm::vec4>(iObject->userData().get2<vec4f>("_transform_row3", {0, 0, 0, 1}));
+
+        auto total_matrix = old_matrix * matrix;
+        iObject->userData().set2("total_transform_row0", bit_cast<vec4f>(total_matrix[0]));
+        iObject->userData().set2("total_transform_row1", bit_cast<vec4f>(total_matrix[1]));
+        iObject->userData().set2("total_transform_row2", bit_cast<vec4f>(total_matrix[2]));
+        iObject->userData().set2("total_transform_row3", bit_cast<vec4f>(total_matrix[3]));
 
         auto transform_ptr = glm::value_ptr(matrix);
             
