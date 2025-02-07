@@ -3127,8 +3127,12 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
 
+    auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+        if (ud.get2<bool>("viewport-optix-pause", false)) {
+            continue;
+        }
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state, denoise);
@@ -3138,7 +3142,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
-    auto &ud = zeno::getSession().userData();
     if (ud.has("optix_image_path")) {
         auto path = ud.get2<std::string>("optix_image_path");
         auto p = (*output_buffer_o).getHostPointer();
