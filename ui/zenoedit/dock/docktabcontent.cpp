@@ -914,6 +914,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         pToolLayout->addWidget(m_background);
         m_camera_setting = new QPushButton("Camera");
         pToolLayout->addWidget(m_camera_setting);
+        m_pause = new QPushButton("Pause");
+        m_pause->setCheckable(true);
+        pToolLayout->addWidget(m_pause);
     }
 
     {
@@ -985,6 +988,11 @@ void DockContent_View::initConnections()
 //                zeno::log_info("set ZOptixCameraSettingInfo");
                 m_pDisplay->onSetCamera(info);
             }
+        });
+    }
+    if (m_pause) {
+        connect(m_pause, &QPushButton::clicked, this, [=](bool bToggled) {
+            zeno::getSession().userData().set2("viewport-optix-pause", bToggled);
         });
     }
     if (m_Reset) {

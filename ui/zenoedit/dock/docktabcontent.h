@@ -161,6 +161,7 @@ private:
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
     QPushButton *m_camera_setting = nullptr;
+    QPushButton *m_pause = nullptr;
     QCheckBox *m_background;
     QCheckBox *m_uv_mode = nullptr;
     QCheckBox *m_depth = nullptr;
