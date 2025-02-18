@@ -1013,6 +1013,30 @@ struct NewFBXImportSkin : INode {
             auto file_path = fbx_object->userData().get2<std::string>("file_path");
             ud.set2("file_path", file_path);
         }
+        {
+            auto &ud = prim->userData();
+            auto faceset_count = ud.get2<int>("faceset_count", 0);
+            Json tex_info;
+            for (auto i = 0; i < faceset_count; i++) {
+                auto mat_name = ud.get2<std::string>(format("faceset_{}", i));
+                auto mat_info_str = ud.get2<std::string>(mat_name);
+                Json mat_json = Json::parse(mat_info_str);
+                std::vector<std::string> keys_to_remove;
+
+                for (auto it = mat_json.begin(); it != mat_json.end(); ++it) {
+                    if (ends_with(it.key(), "_tex") == false) {
+                        keys_to_remove.push_back(it.key());
+                    }
+                }
+
+                for (const auto& key : keys_to_remove) {
+                    mat_json.erase(key);
+                }
+
+                tex_info[mat_name] = mat_json;
+            }
+            ud.set2("tex_info", to_string(tex_info));
+        }
         if (get_input2<bool>("CopyFacesetToMatid")) {
             prim_copy_faceset_to_matid(prim.get());
         }
