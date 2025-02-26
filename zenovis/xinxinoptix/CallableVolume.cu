@@ -25,7 +25,7 @@ using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 
 //COMMON_CODE
 
-int3 interp_trilinear_stochastic(const float3& P, float randu)
+inline int3 interp_trilinear_stochastic(const float3& P, float randu)
 {
     const float ix = floorf(P.x);
     const float iy = floorf(P.y);
@@ -59,7 +59,7 @@ int3 interp_trilinear_stochastic(const float3& P, float randu)
     return make_int3(idx[0], idx[1], idx[2]);
 }
 
-float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
+inline float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
 {
     const float3 p = floor(P);
     const float3 t = P - p;
