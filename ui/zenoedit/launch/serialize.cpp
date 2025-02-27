@@ -137,9 +137,12 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
     }
     if (!launchParam.paramBase64.isEmpty()) {
-        QByteArray byteArray = launchParam.paramBase64.toUtf8();
-        QByteArray bytes = byteArray.toBase64();
-        configDoc.Parse(bytes);
+        zeno::log_info("base64:{}", launchParam.paramBase64.toStdString());
+        QByteArray base64Encoded = launchParam.paramBase64.toUtf8();
+        QByteArray decodedByteArray  = QByteArray::fromBase64(base64Encoded);
+        QString decodedString = QString::fromUtf8(decodedByteArray );
+        zeno::log_info("json: {}", decodedString.toStdString());
+        configDoc.Parse(decodedByteArray );
 
         if (!configDoc.IsObject()) {
             zeno::log_error("paramsBase64 is corrupted");
