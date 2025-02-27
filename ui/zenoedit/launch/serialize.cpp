@@ -314,7 +314,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
                 if (commandParams.contains(objPath))
                 {
-                    if (!launchParam.paramPath.isEmpty())
+                    if (!launchParam.paramPath.isEmpty() || !launchParam.paramBase64.isEmpty())
                     {
                         const QString& command = commandParams[objPath].name;
                         if (configDoc.HasMember(command.toUtf8()))
