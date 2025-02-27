@@ -136,6 +136,15 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             zeno::log_error("config file is corrupted");
         }
     }
+    if (!launchParam.paramBase64.isEmpty()) {
+        QByteArray byteArray = launchParam.paramBase64.toUtf8();
+        QByteArray bytes = byteArray.toBase64();
+        configDoc.Parse(bytes);
+
+        if (!configDoc.IsObject()) {
+            zeno::log_error("paramsBase64 is corrupted");
+        }
+    }
 
     //scan all the nodes in the subgraph.
     for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
