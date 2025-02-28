@@ -92,6 +92,7 @@ int record_main(const QCoreApplication& app)
         {"subzsg", "subgraphzsg", "subgraph zsg file path", ""},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"paramsPath", "paramsPath", "paramsPath"},
+        {"paramsBase64", "paramsBase64", "paramsBase64"},
         {"paramsJson", "paramsJson", "paramsJson"},
         });
     cmdParser.process(app);
@@ -153,6 +154,10 @@ int record_main(const QCoreApplication& app)
     if (cmdParser.isSet("paramsPath"))
     {
         launchparam.paramPath = cmdParser.value("paramsPath");
+    }
+    if (cmdParser.isSet("paramsBase64"))
+    {
+        launchparam.paramBase64 = cmdParser.value("paramsBase64");
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
