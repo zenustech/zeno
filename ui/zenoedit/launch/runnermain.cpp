@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/Timer.h>
@@ -30,7 +31,6 @@
 #include <zeno/types/DictObject.h>
 #include <zenomodel/include/jsonhelper.h>
 
-namespace {
 
 #ifdef ZENO_IPC_USE_TCP
 static std::unique_ptr<QTcpSocket> clientSocket;
@@ -85,8 +85,13 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static int runner_start(std::string const &progJson, int sessionid, const LAUNCH_PARAM& param) {
+int runner_start(std::string const &progJson, int sessionid, const LAUNCH_PARAM& param) {
     zeno::log_trace("runner got program JSON: {}", progJson);
+
+    std::ofstream file("editor_serialize.json", std::ios::out | std::ios::binary);
+    file.write(progJson.c_str(), progJson.size());
+    file.close();
+
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
     //zeno::TimerAtexitHelper timerHelper;
@@ -263,7 +268,6 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
     return 0;
 }
 
-}
 int runner_main(const QCoreApplication& app);
 int runner_main(const QCoreApplication& app) {
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.

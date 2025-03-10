@@ -17,6 +17,7 @@ class ZsgReader
 public:
     static ZsgReader& getInstance();
     bool openFile(const QString& fn, IAcceptor* pAcceptor);
+    bool parseZsg(const QString& fn, const QByteArray& bytes, IAcceptor* pAcceptor);
     bool importSubgraphs(const QString& fn, IAcceptor* pAcceptor, const QMap<QString, QString>& graphs, IGraphsModel* pModel);
     bool importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor);
     PtrLayoutNode _readLayout(const rapidjson::Value& objValue);

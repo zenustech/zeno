@@ -44,6 +44,7 @@ option(ZENO_OPTIX_PROC "Optix with a new proc" OFF)
 option(ZENO_WIN32_RC "Build ZENO with win32 resource file" OFF)
 option(ZENO_NODESVIEW_OPTIM "Optimize Node Graphics View manually" ON)
 option(ZENO_WITH_PYTHON3 "Build ZENO with python" OFF)
+option(ZENO_STANDLONE_SOLVER "Build ZENO with standlone sovler" OFF)
 
 if (NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
     # Otherwise we can't link .so libs with .a libs
@@ -228,6 +229,11 @@ if (ZENO_BUILD_EDITOR)
 endif()
 
 add_subdirectory(projects)
+
+if (ZENO_STANDLONE_SOLVER)
+    message(STATUS "Building Zeno Solver")
+    add_subdirectory(zensovler)
+endif()
 
 if (ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno Designer")

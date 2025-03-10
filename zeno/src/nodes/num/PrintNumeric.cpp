@@ -31,13 +31,13 @@ struct PrintNumeric : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<zeno::NumericObject>("value");
         auto hint = get_param<std::string>("hint");
-        std::cout << hint << ": ";
+        //std::cout << hint << ": ";
         std::visit([](auto const &val) {
             using T = std::decay_t<decltype(val)>;
             std::cout << (std::string)typeid(T).name() + " :";
             do_print _(val);
         }, obj->value);
-        std::cout << std::endl;
+        //std::cout << std::endl;
         set_output("value", std::move(obj));
     }
 };

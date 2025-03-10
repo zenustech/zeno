@@ -5,9 +5,53 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/evaluate_condition.h>
 #include <zeno/core/Graph.h>
+#include <zeno/funcs/ObjectCodec.h>
+#if defined(_WIN32)
+#include <Windows.h>
+#endif
 
 
 namespace zeno {
+
+struct ZenCacheNode : zeno::INode {
+    virtual void apply() override {
+        auto shm_name = get_input<zeno::StringObject>("sharedmemory")->get();
+        int sz = get_input2<int>("size");
+
+#if defined(_WIN32)
+        std::vector<char> bytes;
+        HANDLE hMapFile = OpenFileMapping(
+            FILE_MAP_READ,
+            FALSE,
+            shm_name.c_str()
+        );
+        if (hMapFile == NULL) {
+            throw makeError<UnimplError>("OpenFileMapping failed, error:");
+        }
+        LPVOID pBuf = MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, sz);
+        if (!pBuf) {
+            throw makeError<UnimplError>("MapViewOfFile failed, error:");
+        }
+        bytes.resize(sz);
+        memcpy(bytes.data(), pBuf, sz);
+        std::shared_ptr<zeno::IObject> spObj = zeno::decodeObject(bytes.data(), sz);
+        set_output("output", std::move(spObj));
+#else
+
+#endif
+    }
+};
+
+ZENDEFNODE(ZenCacheNode, {
+    {
+        {"string","sharedmemory", ""},
+        {"int", "size", "0"}
+    },
+    {"output"},
+    {},
+    {"control"},
+});
+
 
 struct CachedByKey : zeno::INode {
     std::map<std::string, std::shared_ptr<IObject>> cache;

@@ -813,6 +813,7 @@ namespace zeno {
         }
       }
       file.close();
+      return true;
     }
     // DATASET UNSTRUCTURED_GRID
     // POINTS n dataType

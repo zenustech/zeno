@@ -63,11 +63,13 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     }
 
     pAcceptor->setFilePath(fn);
-
-    rapidjson::Document doc;
     QByteArray bytes = file.readAll();
-    doc.Parse(bytes);
+    return parseZsg(fn, bytes, pAcceptor);
+}
 
+bool ZsgReader::parseZsg(const QString& fn, const QByteArray& bytes, IAcceptor* pAcceptor) {
+    rapidjson::Document doc;
+    doc.Parse(bytes);
     if (!doc.IsObject() || !doc.HasMember("graph"))
     {
         zeno::log_error("zsg json file is corrupted");
@@ -82,7 +84,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
     NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
-    ret = pAcceptor->setLegacyDescs(graph, nodesDescs);
+    bool ret = pAcceptor->setLegacyDescs(graph, nodesDescs);
     if (!ret) {
         return false;
     }
