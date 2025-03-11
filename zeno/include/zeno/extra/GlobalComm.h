@@ -27,7 +27,8 @@ struct GlobalComm {
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
-    std::set<int> m_inCacheFrames;
+    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
+    int currentFrameNumber = 0;
     mutable std::mutex m_mtx;
 
     int beginFrameNumber = 0;
@@ -61,8 +62,13 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "");
+    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "", bool isBeginframe = true);
     static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
+
+    //stamp相关
+    static int getObjType(std::shared_ptr<IObject> obj);
+    static std::shared_ptr<IObject> constructEmptyObj(int type);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string>>& baseframeinfo);
 private:
     ViewObjects const *_getViewObjects(const int frameid);
 };

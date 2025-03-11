@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
@@ -69,19 +69,46 @@ struct Stamp : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
+            auto session = &zeno::getSession();
+            if (has_input("stampMode")) {
+                int currframe = session->globalState->frameid;
+                int beginframe = session->globalComm->beginFrameNumber;
+                std::string mode = get_input2<std::string>("stampMode");
+                if (mode == "UnChanged") {
+                    if (currframe != beginframe) {
+                        obj = session->globalComm->constructEmptyObj(inputObjType);
+                        obj->userData().set2("stamp-change", "UnChanged");
+                    } else {
+                        obj->userData().set2("stamp-change", "TotalChange");
+                    }
+                } else if (mode == "TotalChange") {
+                    obj->userData().set2("stamp-change", "TotalChange");
+                } else if (mode == "DataChange") {
+                    obj->userData().set2("stamp-change", "DataChange");
+                } else { 
+                    obj->userData().set2("stamp-change", "ShapeChange");
+                }
+            }
+            inputObjType = session->globalComm->getObjType(obj);
             set_output("output", std::move(obj));
         }
         else {
             set_output("output", std::make_shared<zeno::DummyObject>());
         }
     }
+
+    int inputObjType = 0;
 };
 
 ZENDEFNODE(Stamp, {
-    {"input"},
+    {
+        "input",
+        {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"}
+    },
     {"output"},
-    {{"enum UnChanged DataChange ShapeChange TotalChange", "mode", "UnChanged"},
-     {"string", "name", ""}},
+    {
+        //{"string", "name", ""}
+    },
     {"lifecycle"}
 });
 
