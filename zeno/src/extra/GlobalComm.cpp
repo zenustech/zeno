@@ -105,13 +105,43 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     std::vector<std::vector<char>> bufCaches(3);
     std::vector<std::vector<size_t>> poses(3);
     std::vector<std::string> keys(3);
-    for (auto const &[key, obj]: objs) {
+    for (auto &[key, obj]: objs) {
 
         const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
         if (stamptag == "UnChanged") {
-                continue;
+            continue;//不输出这个obj
         } else if (stamptag == "DataChange") {
+            int baseframe = obj->userData().get2<int>("stamp-base", -1);
+            //TODO:
+            //data = obj.获取data()
+            if (0) {
+#define _PER_OBJECT_TYPE(TypeName, ...) \
+            } else if (auto o = std::dynamic_pointer_cast<TypeName>(obj)) { \
+                obj = std::make_shared<zeno::TypeName>();   //置为空obj
+        ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+#undef _PER_OBJECT_TYPE
+            } else {
+            }
+            obj->userData().set2("stamp-change", "DataChange");
+            obj->userData().set2("stamp-base", baseframe);
+            //TODO:
+            //obj.设置data更新的部分
         } else if (stamptag == "ShapeChange") {
+            int baseframe = obj->userData().get2<int>("stamp-base", -1);
+            //TODO:
+            //shape = obj.获取shape()
+            if (0) {
+#define _PER_OBJECT_TYPE(TypeName, ...) \
+            } else if (auto o = std::dynamic_pointer_cast<TypeName>(obj)) { \
+                obj = std::make_shared<zeno::TypeName>();   //置为空obj
+                ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+#undef _PER_OBJECT_TYPE
+            } else {
+            }
+            obj->userData().set2("stamp-change", "ShapeChange");
+            obj->userData().set2("stamp-base", baseframe);
+            //TODO:
+            //obj.设置shape更新的部分
         }
 
         size_t bufsize =0;
@@ -318,11 +348,10 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
     }
 }
 
-bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string>>& baseframeinfo)
+bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string>>& newFrameStampInfo)
 {
     int baseframetoload = 0;
     bool loadPartial = false;
-    std::set<std::string> unchangedObjs;
 
     std::map<std::string, std::tuple<std::string, int, int, std::string>> currentFrameStampinfo;
     auto it = m_inCacheFrames.find(currentFrameNumber);
@@ -344,14 +373,13 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 const int& newFrameObjtype = node.value["stamp-objType"].GetInt();
                 const std::string& newFrameObjkey = node.name.GetString();
 
-                baseframeinfo.insert({ newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":")) , std::tuple<std::string, int, int, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey})});
+                newFrameStampInfo.insert({ newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":")) , std::tuple<std::string, int, int, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey})});
                 if (!currentFrameStampinfo.empty()) {
                     const std::string& curFrameChangeInfo = std::get<0>(currentFrameStampinfo[newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"))]);
                     const int& curFrameBaseframe = std::get<1>(currentFrameStampinfo[newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"))]);
                     if (curFrameBaseframe != newFrameBaseframe) {
-                        if (newFrameChangeInfo == "UnChanged") {
+                        if (newFrameChangeInfo != "TotalChange") {
                             loadPartial = true;
-                            unchangedObjs.insert(newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":")));
                         }
                     }
                 }
@@ -362,7 +390,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     if (!loadPartial) {
         bool ret = fromDisk(cacheFramePath, frameid, objs);
         if (ret) {
-            for (auto& [key, tup] : baseframeinfo) {
+            for (auto& [key, tup] : newFrameStampInfo) {
                 if (std::get<0>(tup) == "UnChanged") {
                     std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
                     emptyobj->userData().set2("stamp-change", std::get<0>(tup));
@@ -380,10 +408,28 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             ViewObjects baseframecache;
             fromDisk(cacheFramePath, baseframetoload, baseframecache);
             for (auto& [key, obj] : baseframecache.m_curr) {
-                auto it = baseframeinfo.find(key.substr(0, key.find_first_of(":")));
-                if (it != baseframeinfo.end() && std::get<0>(it->second) == "UnChanged") {
-                    std::string baseframeObjfullkey = std::get<3>(it->second);
-                    objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + baseframeObjfullkey.substr(baseframeObjfullkey.find_last_of(":")), obj);
+                auto it = newFrameStampInfo.find(key.substr(0, key.find_first_of(":")));
+                if (it != newFrameStampInfo.end()) {
+                    std::string newframeObjfullkey = std::get<3>(it->second);
+                    if (std::get<0>(it->second) == "UnChanged") {
+                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), obj);
+                    } else if (std::get<0>(it->second) == "DataChange") {
+                        auto baseobj = baseframecache.m_curr[it->first + ":TOVIEW:" + std::to_string(baseframetoload) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":"))];
+                        auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
+                        //TODO:
+                        //datachange = newDataChangedObj.获取该对象的datachange
+                        //baseobj->datachange赋给baseobj
+                        objs.m_curr.erase(newframeObjfullkey);
+                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
+                    } else if (std::get<0>(it->second) == "ShapeChange") {
+                        auto baseobj = baseframecache.m_curr[it->first + ":TOVIEW:" + std::to_string(baseframetoload) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":"))];
+                        auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
+                        //TODO:
+                        //shapechange = newShapeChangedObj.获取该对象的shapechange
+                        //baseobj->shapechange赋给baseobj
+                        objs.m_curr.erase(newframeObjfullkey);
+                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
+                    }
                 }
             }
             return true;
