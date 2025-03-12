@@ -132,6 +132,7 @@ ZENO_API void INode::preApply() {
         auto value = safe_at(inputs, "stampMode", "");
         if (auto stampmode = dynamic_cast<zeno::StringObject*>(value.get())) {
             auto session = &zeno::getSession();
+            session->userData().set2("graphHasStampNode", true);
             if (session->globalState->frameid != session->globalComm->beginFrameNumber && stampmode->get() == "UnChanged") {
                 apply();
                 return;
