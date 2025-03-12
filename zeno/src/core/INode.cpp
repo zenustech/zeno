@@ -128,6 +128,16 @@ ZENO_API void INode::preApply() {
             zeno::log_info("remove cache file: {}", path.string());
         }
     }
+    if (myname.size() > 6 && myname.substr(myname.size() - 6) == "-Stamp") {//如果是一个stamp节点,unchange情况直接return
+        auto value = safe_at(inputs, "stampMode", "");
+        if (auto stampmode = dynamic_cast<zeno::StringObject*>(value.get())) {
+            auto session = &zeno::getSession();
+            if (session->globalState->frameid != session->globalComm->beginFrameNumber && stampmode->get() == "UnChanged") {
+                apply();
+                return;
+            }
+        }
+    }
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
