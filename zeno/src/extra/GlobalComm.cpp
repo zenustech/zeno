@@ -48,102 +48,110 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         log_critical("can not create path: {}", dir);
     }
 
-    std::filesystem::path stampInfoPath = dir / "stampInfo.zencache";
-    std::map<std::string, std::tuple<std::string, int>> lastframeStampinfo;
-    if (!isBeginframe) {
-        std::filesystem::path lastframeStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid - 1).substr(1)) / "stampInfo.zencache";
-        std::ifstream file(lastframeStampPath);
-        if (file) {
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            rapidjson::Document doc;
-            doc.Parse(buffer.str().c_str());
-            if (doc.IsObject()) {
-                for (const auto& node : doc.GetObject()) {
-                    const std::string& key = node.name.GetString();
-                    lastframeStampinfo.insert({ key.substr(0, key.find_first_of(":")), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt())});
+    bool hasStampNode = zeno::getSession().userData().has("graphHasStampNode");
+    if (hasStampNode) {
+        std::filesystem::path stampInfoPath = dir / "stampInfo.zencache";
+        std::map<std::string, std::tuple<std::string, int>> lastframeStampinfo;
+        if (!isBeginframe) {
+            std::filesystem::path lastframeStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid - 1).substr(1)) / "stampInfo.zencache";
+            std::ifstream file(lastframeStampPath);
+            if (file) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                rapidjson::Document doc;
+                doc.Parse(buffer.str().c_str());
+                if (doc.IsObject()) {
+                    for (const auto& node : doc.GetObject()) {
+                        const std::string& key = node.name.GetString();
+                        lastframeStampinfo.insert({ key.substr(0, key.find_first_of(":")), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt())});
+                    }
                 }
             }
         }
-    }
-    rapidjson::StringBuffer str;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(str);
-    writer.StartObject();
-    for (auto const& [key, obj] : objs) {
-        if (isBeginframe) {
-            obj->userData().set2("stamp-change", "TotalChange");
-        }
-        const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
-        const int& baseframe = stamptag == "TotalChange" ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, key.find_first_of(":"))]);
-        obj->userData().set2("stamp-base", baseframe);
-
-        writer.Key(key.c_str());
+        rapidjson::StringBuffer str;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(str);
         writer.StartObject();
-        writer.Key("stamp-change");
-        writer.String(stamptag.c_str());
-        writer.Key("stamp-base");
-        writer.Int(baseframe);
-        if (0) {
-#define _PER_OBJECT_TYPE(TypeName, ...) \
-        } else if (auto o = dynamic_cast<TypeName const *>(obj.get())) { \
-            writer.Key("stamp-objType"); \
-            writer.Int((int)ObjectType::TypeName);
-        ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
-#undef _PER_OBJECT_TYPE
-        } else {
-            writer.Key("objType");
-            writer.Int(-1);
+        for (auto const& [key, obj] : objs) {
+            if (isBeginframe) {
+                obj->userData().set2("stamp-change", "TotalChange");
+            }
+            const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
+            const int& baseframe = stamptag == "TotalChange" ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, key.find_first_of(":"))]);
+            obj->userData().set2("stamp-base", baseframe);
+            obj->userData().set2("stamp-change", stamptag);
+
+            writer.Key(key.c_str());
+            writer.StartObject();
+            writer.Key("stamp-change");
+            writer.String(stamptag.c_str());
+            writer.Key("stamp-base");
+            writer.Int(baseframe);
+            if (0) {
+    #define _PER_OBJECT_TYPE(TypeName, ...) \
+            } else if (auto o = dynamic_cast<TypeName const *>(obj.get())) { \
+                writer.Key("stamp-objType"); \
+                writer.Int((int)ObjectType::TypeName);
+            ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+    #undef _PER_OBJECT_TYPE
+            } else {
+                writer.Key("objType");
+                writer.Int(-1);
+            }
+            writer.EndObject();
         }
         writer.EndObject();
+        std::string stampinfos = str.GetString();
+        std::ofstream ofs(stampInfoPath, std::ios::binary);
+        std::ostreambuf_iterator<char> oit(ofs);
+        std::copy(stampinfos.begin(), stampinfos.end(), oit);
     }
-    writer.EndObject();
-    std::string stampinfos = str.GetString();
-    std::ofstream ofs(stampInfoPath, std::ios::binary);
-    std::ostreambuf_iterator<char> oit(ofs);
-    std::copy(stampinfos.begin(), stampinfos.end(), oit);
 
     std::vector<std::vector<char>> bufCaches(3);
     std::vector<std::vector<size_t>> poses(3);
     std::vector<std::string> keys(3);
     for (auto &[key, obj]: objs) {
-
-        const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
-        if (stamptag == "UnChanged") {
-            continue;//不输出这个obj
-        } else if (stamptag == "DataChange") {
-            int baseframe = obj->userData().get2<int>("stamp-base", -1);
-            //TODO:
-            //data = obj.获取data()
-            if (0) {
+        if (hasStampNode) {
+            const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
+            if (stamptag == "UnChanged") {
+                continue;//不输出这个obj
+            }
+            else if (stamptag == "DataChange") {
+                int baseframe = obj->userData().get2<int>("stamp-base", -1);
+                //TODO:
+                //data = obj.获取data()
+                if (0) {
 #define _PER_OBJECT_TYPE(TypeName, ...) \
             } else if (auto o = std::dynamic_pointer_cast<TypeName>(obj)) { \
                 obj = std::make_shared<zeno::TypeName>();   //置为空obj
-        ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+                    ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
-            } else {
+                }
+            else {
+                }
+                obj->userData().set2("stamp-change", "DataChange");
+                obj->userData().set2("stamp-base", baseframe);
+                //TODO:
+                //obj.设置data更新的部分
             }
-            obj->userData().set2("stamp-change", "DataChange");
-            obj->userData().set2("stamp-base", baseframe);
-            //TODO:
-            //obj.设置data更新的部分
-        } else if (stamptag == "ShapeChange") {
-            int baseframe = obj->userData().get2<int>("stamp-base", -1);
-            //TODO:
-            //shape = obj.获取shape()
-            if (0) {
+            else if (stamptag == "ShapeChange") {
+                int baseframe = obj->userData().get2<int>("stamp-base", -1);
+                //TODO:
+                //shape = obj.获取shape()
+                if (0) {
 #define _PER_OBJECT_TYPE(TypeName, ...) \
             } else if (auto o = std::dynamic_pointer_cast<TypeName>(obj)) { \
                 obj = std::make_shared<zeno::TypeName>();   //置为空obj
-                ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+                    ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
-            } else {
+                }
+            else {
+                }
+                obj->userData().set2("stamp-change", "ShapeChange");
+                obj->userData().set2("stamp-base", baseframe);
+                //TODO:
+                //obj.设置shape更新的部分
             }
-            obj->userData().set2("stamp-change", "ShapeChange");
-            obj->userData().set2("stamp-base", baseframe);
-            //TODO:
-            //obj.设置shape更新的部分
         }
-
         size_t bufsize =0;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
         if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
@@ -532,9 +540,16 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
             std::map<std::string, std::tuple<std::string, int, int, std::string>> baseframeinfo;
 
-            bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo);
-            if (!ret)
-                return nullptr;
+            std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.zencache";
+            if (std::filesystem::exists(stampInfoPath)) {
+                bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo);
+                if (!ret)
+                    return nullptr;
+            } else {
+                bool ret = fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
+                if (!ret)
+                    return nullptr;
+            }
 
             m_inCacheFrames.insert({frameid, baseframeinfo });
             // and dump one as balance:
