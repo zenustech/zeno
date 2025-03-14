@@ -442,7 +442,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
             return true;
         }
-        return ret;
+        return ret;//此时objs中对象的stamp-change已经根据切帧前后的变化正确调整
     }
 }
 
