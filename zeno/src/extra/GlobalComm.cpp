@@ -50,10 +50,10 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 
     bool hasStampNode = zeno::getSession().userData().has("graphHasStampNode");
     if (hasStampNode) {
-        std::filesystem::path stampInfoPath = dir / "stampInfo.zencache";
+        std::filesystem::path stampInfoPath = dir / "stampInfo.txt";
         std::map<std::string, std::tuple<std::string, int>> lastframeStampinfo;
         if (!isBeginframe) {
-            std::filesystem::path lastframeStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid - 1).substr(1)) / "stampInfo.zencache";
+            std::filesystem::path lastframeStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid - 1).substr(1)) / "stampInfo.txt";
             std::ifstream file(lastframeStampPath);
             if (file) {
                 std::stringstream buffer;
@@ -367,7 +367,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         currentFrameStampinfo = it->second;
     }
 
-    std::filesystem::path frameStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.zencache";
+    std::filesystem::path frameStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
     std::ifstream file(frameStampPath);
     if (file) {
         std::stringstream buffer;
@@ -540,7 +540,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
             std::map<std::string, std::tuple<std::string, int, int, std::string>> baseframeinfo;
 
-            std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.zencache";
+            std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
             if (std::filesystem::exists(stampInfoPath)) {
                 bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo);
                 if (!ret)
