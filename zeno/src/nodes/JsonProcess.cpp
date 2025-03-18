@@ -429,6 +429,27 @@ ZENDEFNODE(JsonGetChild, {
         "deprecated"
     },
 });
+
+struct JsonHasKey : zeno::INode {
+    virtual void apply() override {
+        auto json = get_input<JsonObject>("json");
+        auto name = get_input2<std::string>("name");
+        set_output2("out", int(json->json.contains(name)));
+    }
+};
+ZENDEFNODE(JsonHasKey, {
+    {
+        {"json"},
+        {"string", "name"},
+    },
+    {
+        "out",
+    },
+    {},
+    {
+        "json"
+    },
+});
 struct JsonGetInt : zeno::INode {
     virtual void apply() override {
         auto json = get_input<JsonObject>("json");
@@ -634,13 +655,54 @@ struct JsonGetData : zeno::INode {
             }
 
             auto names = split_str(path, '/');
+            bool missing = false;
 
             for (auto & name : names) {
+                if (json->json.contains(name) == false) {
+                    missing = true;
+                    break;
+                }
                 if (json->json.is_array()) {
                     json->json = json->json[std::stoi(name)];
                 }
                 else {
                     json->json = json->json[name];
+                }
+            }
+            zeno::log_info("missing {}", missing);
+            if (missing) {
+                if (get_input2<bool>("useDefaultValueWhenMissing")) {
+                    if (type == "json") {
+                        dict->lut[new_name] = std::make_shared<JsonObject>();
+                    }
+                    else if (type == "int") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(int{});
+                    }
+                    else if (type == "float") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(float{});
+                    }
+                    else if (type == "string") {
+                        dict->lut[new_name] = std::make_shared<StringObject>(std::string());
+                    }
+                    else if (type == "vec2f") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec2f{});
+                    }
+                    else if (type == "vec3f") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec3f{});
+                    }
+                    else if (type == "vec4f") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec4f{});
+                    }
+                    else if (type == "vec2i") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec2i{});
+                    }
+                    else if (type == "vec3i") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec3i{});
+                    }
+                    else if (type == "vec4i") {
+                        dict->lut[new_name] = std::make_shared<NumericObject>(vec4i{});
+                    }
+                    continue;
                 }
             }
 
@@ -749,6 +811,7 @@ struct JsonGetData : zeno::INode {
 ZENDEFNODE(JsonGetData, {
     {
         {"json"},
+        {"bool", "useDefaultValueWhenMissing", "0"},
         {"multiline_string", "paths", "json_path:vec3f:output_name"},
     },
     {
