@@ -382,36 +382,59 @@ struct JsonGetChild : zeno::INode {
         auto name = get_input2<std::string>("name");
         auto type = get_input2<std::string>("type");
         if (type == "json") {
-            auto out_json = std::make_shared<JsonObject>();
-            out_json->json = json->json[name];
-            set_output("out", out_json);
+            auto output = std::make_shared<JsonObject>();
+            if (json->json.contains(name)) {
+                output->json = json->json[name];
+            }
+            set_output2("out", output);
         }
         else if (type == "int") {
-            set_output2("out", int(json->json[name]));
+            int output = {};
+            if (json->json.contains(name)) {
+                output = int(json->json[name]);
+            }
+            set_output2("out", output);
         }
         else if (type == "float") {
-            set_output2("out", float(json->json[name]));
+            float output = {};
+            if (json->json.contains(name)) {
+                output = float(json->json[name]);
+            }
+            set_output2("out", output);
         }
         else if (type == "string") {
-            set_output2("out", std::string(json->json[name]));
+            std::string output = {};
+            if (json->json.contains(name)) {
+                output = std::string(json->json[name]);
+            }
+            set_output2("out", output);
         }
         else if (type == "vec2f") {
-            float x = float(json->json[name][0]);
-            float y = float(json->json[name][1]);
-            set_output2("out", vec2f(x, y));
+            vec2f output = {};
+            if (json->json.contains(name)) {
+                output[0] = float(json->json[name][0]);
+                output[1] = float(json->json[name][1]);
+            }
+            set_output2("out", output);
         }
         else if (type == "vec3f") {
-            float x = float(json->json[name][0]);
-            float y = float(json->json[name][1]);
-            float z = float(json->json[name][2]);
-            set_output2("out", vec3f(x, y, z));
+            vec3f output = {};
+            if (json->json.contains(name)) {
+                output[0] = float(json->json[name][0]);
+                output[1] = float(json->json[name][1]);
+                output[2] = float(json->json[name][2]);
+            }
+            set_output2("out", output);
         }
         else if (type == "vec4f") {
-            float x = float(json->json[name][0]);
-            float y = float(json->json[name][1]);
-            float z = float(json->json[name][2]);
-            float w = float(json->json[name][3]);
-            set_output2("out", vec4f(x, y, z, w));
+            vec4f output = {};
+            if (json->json.contains(name)) {
+                output[0] = float(json->json[name][0]);
+                output[1] = float(json->json[name][1]);
+                output[2] = float(json->json[name][2]);
+                output[3] = float(json->json[name][3]);
+            }
+            set_output2("out", output);
         }
     }
 };
@@ -669,7 +692,6 @@ struct JsonGetData : zeno::INode {
                     json->json = json->json[name];
                 }
             }
-            zeno::log_info("missing {}", missing);
             if (missing) {
                 if (get_input2<bool>("useDefaultValueWhenMissing")) {
                     if (type == "json") {
