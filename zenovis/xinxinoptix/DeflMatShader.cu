@@ -333,7 +333,18 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
     o.x = 1.0 - o.y - o.z;
     return o;
 }
-
+static __inline__ __device__
+vec3 bezierOffset(vec3 P, vec3 A, vec3 B, vec3 C, vec3 nA, vec3 nB, vec3 nC, vec3 uvw)
+{
+    vec3 tmpu = P - A, tmpv = P - B, tmpw = P - C;
+    float dotu = min(0.0, dot(tmpu, nA));
+    float dotv = min(0.0, dot(tmpv, nB));
+    float dotw = min(0.0, dot(tmpw, nC));
+    tmpu = tmpu - dotu*nA;
+    tmpv = tmpv - dotv*nB;
+    tmpw = tmpw - dotw*nC;
+    return P + uvw.x*tmpu + uvw.y*tmpv + uvw.z*tmpw;
+}
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -350,7 +361,7 @@ extern "C" __global__ void __closesthit__radiance()
     
     MatInput attrs {};
     attrs.isBackFace = optixIsBackFaceHit();
-
+    vec3 bezierOff = vec3(0);
 #if (_P_TYPE_==2)
 
     float3 N = {}; 
@@ -516,6 +527,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto N_smooth = normalize(interp(barys, n0, n1, n2));
     attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
 
+
+
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
@@ -564,6 +577,9 @@ extern "C" __global__ void __closesthit__radiance()
     n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
+    float3 vv0 = optixTransformPointFromObjectToWorldSpace(v0), vv1 = optixTransformPointFromObjectToWorldSpace(v1), vv2 = optixTransformPointFromObjectToWorldSpace(v2);
+    float3 nn0 = optixTransformNormalFromObjectToWorldSpace(n0), nn1 = optixTransformNormalFromObjectToWorldSpace(n1), nn2 = optixTransformNormalFromObjectToWorldSpace(n2);
+    bezierOff = bezierOffset(vec3(wldPos),vec3(vv0),vec3(vv1),vec3(vv2),vec3(nn0), vec3(nn1), vec3(nn2), vec3(1-barys.x-barys.y, barys.x, barys.y)) - vec3(wldPos);
 
     N_smooth = normalize(interp(barys, n0, n1, n2));
     N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
@@ -976,6 +992,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
+    shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
     //auto shadingP = rtgems::offset_ray(shadowPRD.origin + params.cam.eye,  prd->geometryNormal); // world space
     
     //shadowPRD.origin = frontPos;
@@ -983,11 +1000,11 @@ extern "C" __global__ void __closesthit__radiance()
         //shadowPRD.origin = backPos; //rtgems::offset_ray(P,  -prd->geometryNormal);
     //}
     
-    auto shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal); // world space
-    //if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
+    auto shadingP = rtgems::offset_ray(P + float3(bezierOff) + params.cam.eye, prd->geometryNormal); // world space
+    if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
         //shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
-    //}
-
+        shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal);
+    }
     prd->radiance = {};
     prd->direction = normalize(wi);
     prd->origin = dot(prd->direction, wldNorm) > 0 ? frontPos : backPos;

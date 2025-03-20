@@ -434,10 +434,10 @@ extern "C" __global__ void __raygen__rg()
     float midGray       = 0.18f;
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
-    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
+    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
+    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
+    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
+    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
     float3         accum_color_b  = result_b / samples_per_launch;
     float3         accum_mask     = mask_value / samples_per_launch;
     
@@ -483,6 +483,7 @@ extern "C" __global__ void __raygen__rg()
     auto dither = InterleavedGradientNoise(uv);
 
     dither = (dither-0.5f);
+    accum_color  = PhysicalCamera(accum_color, aperture, shutter_speed, iso, midGray, false, aces);
     params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
 
     if (params.denoise) {
