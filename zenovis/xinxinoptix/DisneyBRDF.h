@@ -402,7 +402,7 @@ static __inline__ __device__
 vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float sheen, vec3 Csheen, vec3 V, vec3 L, vec3 H, float &pdf)
 {
   pdf = 0.0;
-  if (L.z == 0.0)
+  if (L.z <= 0.0)
     return vec3(0.0);
 
   float LDotH = abs(dot(L, H));
