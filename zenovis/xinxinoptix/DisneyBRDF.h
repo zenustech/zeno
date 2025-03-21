@@ -402,8 +402,9 @@ static __inline__ __device__
 vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float sheen, vec3 Csheen, vec3 V, vec3 L, vec3 H, float &pdf)
 {
   pdf = 0.0;
+  vec3 res;
   if (L.z <= 0.0)
-    return vec3(0.0);
+    res = vec3(0.0);
 
   float LDotH = abs(dot(L, H));
   float FD90MinusOne = 2.0f * roughness * LDotH * LDotH - 0.5f;
@@ -423,7 +424,8 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  return 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen;
+  res = 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen;
+  return res;
 }
 
 static __inline__ __device__
