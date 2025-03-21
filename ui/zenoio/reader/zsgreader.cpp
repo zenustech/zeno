@@ -441,7 +441,7 @@ bool ZsgReader::readRenderSettings(const QString& fn, ZENO_RECORD_RUN_INITPARAM&
         param.sPath = jsonRecordInfo[recordinfo::record_path].GetString();
         param.videoName = jsonRecordInfo[recordinfo::videoname].GetString();
         if (param.videoName.isEmpty()) {
-            //界面上的设置默认是空的，保存的时候也是空的，这里给个默认
+            //鐣岄潰涓婄殑璁剧疆榛樿鏄┖鐨勶紝淇濆瓨鐨勬椂鍊欎篃鏄┖鐨勶紝杩欓噷缁欎釜榛樿
             param.videoName = "output.mp4";
         }
         param.iFps = jsonRecordInfo[recordinfo::fps].GetInt();

@@ -444,7 +444,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     AddVariantList({"setNodeInput", viewerIdent, "isStatic", isStatic}, "int", writer);
 
                     if (name == "Stamp") {
-                        //stamp节点要特殊处理，控制zencache是否导出
+                        //stamp鑺傜偣瑕佺壒娈婂鐞嗭紝鎺у埗zencache鏄惁瀵煎嚭
                         auto iterParam = params.find("mode");
                         if (iterParam != params.end()) {
                             QString mode = iterParam.value().value.toString();

@@ -538,34 +538,34 @@ QVector3D CameraControl::realPos() const {
     return {p[0], p[1], p[2]};
 }
 
-// ¼ÆËãÉäÏßÓëÆ½ÃæµÄ½»µã
+// è®¡ç®—å°„çº¿ä¸å¹³é¢çš„äº¤ç‚¹
 std::optional<glm::vec3> CameraControl::intersectRayPlane(
         glm::vec3 ray_origin
         , glm::vec3 ray_direction
         , glm::vec3 plane_point
         , glm::vec3 plane_normal
 ) {
-    // ¼ÆËãÉäÏß·½ÏòºÍÆ½Ãæ·¨ÏòÁ¿µÄµã»ı
+    // è®¡ç®—å°„çº¿æ–¹å‘å’Œå¹³é¢æ³•å‘é‡çš„ç‚¹ç§¯
     float denominator = glm::dot(plane_normal, ray_direction);
 
-    // Èç¹ûµã»ı½Ó½üÓÚ0£¬ËµÃ÷ÉäÏßÓëÆ½ÃæÆ½ĞĞ»òÔÚÆ½ÃæÄÚ
+    // å¦‚æœç‚¹ç§¯æ¥è¿‘äº0ï¼Œè¯´æ˜å°„çº¿ä¸å¹³é¢å¹³è¡Œæˆ–åœ¨å¹³é¢å†…
     if (glm::abs(denominator) < 1e-6f) {
-        return std::nullopt; // ·µ»Ø¿Õ£¬±íÊ¾Ã»ÓĞ½»µã
+        return std::nullopt; // è¿”å›ç©ºï¼Œè¡¨ç¤ºæ²¡æœ‰äº¤ç‚¹
     }
 
-    // ¼ÆËãÉäÏßÆğµãµ½Æ½ÃæÉÏÒ»µãµÄÏòÁ¿
+    // è®¡ç®—å°„çº¿èµ·ç‚¹åˆ°å¹³é¢ä¸Šä¸€ç‚¹çš„å‘é‡
     glm::vec3 diff = plane_point - ray_origin;
 
-    // ¼ÆËãtÖµ
+    // è®¡ç®—tå€¼
     float t = glm::dot(diff, plane_normal) / denominator;
 
-    // Èç¹ût < 0£¬ËµÃ÷½»µãÔÚÉäÏßÆğµãÖ®Ç°£¬·µ»Ø¿Õ
+    // å¦‚æœt < 0ï¼Œè¯´æ˜äº¤ç‚¹åœ¨å°„çº¿èµ·ç‚¹ä¹‹å‰ï¼Œè¿”å›ç©º
 
     if (t < 0) {
         return std::nullopt;
     }
 
-    // ¼ÆËã½»µã
+    // è®¡ç®—äº¤ç‚¹
     glm::vec3 intersection = ray_origin + t * ray_direction;
 
     return intersection;
