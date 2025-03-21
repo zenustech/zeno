@@ -65,6 +65,7 @@ struct VDBGrid : zeno::IObject {
   // using GeneralVdbGrid = variant<typename SomeGrid::Ptr, >;
   // virtual GeneralVdbGrid getGrid() = 0;
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
+  virtual openvdb::Coord evalActiveVoxelDim() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
   virtual void setName(std::string const &name) = 0;
@@ -106,6 +107,9 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 
   openvdb::CoordBBox evalActiveVoxelBoundingBox() override {
     return m_grid->evalActiveVoxelBoundingBox();
+  }
+  openvdb::Coord evalActiveVoxelDim() override {
+    return m_grid->evalActiveVoxelDim();
   }
   openvdb::Vec3d indexToWorld(openvdb::Coord &c) override {
     return m_grid->transform().indexToWorld(c);
@@ -226,6 +230,9 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
 
   openvdb::CoordBBox evalActiveVoxelBoundingBox() override {
     return m_grid->evalActiveVoxelBoundingBox();
+  }
+  openvdb::Coord evalActiveVoxelDim() override {
+    return m_grid->evalActiveVoxelDim();
   }
   openvdb::Vec3d indexToWorld(openvdb::Coord &c) override {
     return m_grid->transform().indexToWorld(c);

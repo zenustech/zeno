@@ -474,7 +474,7 @@ void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
     }
 }
 
-static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
+static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode, bool output_tex_even_missing) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
     std::string nodeName = pNode->GetName();
@@ -625,6 +625,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
             {
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sEmissive);
+                    if (output_tex_even_missing) {
+                        json["emissive_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         FbxDouble3 value = property.Get<FbxDouble3>();
                         json["emissive_value"] = {value[0], value[1], value[2]};
@@ -639,6 +642,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sAmbient);
+                    if (output_tex_even_missing) {
+                        json["ambient_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         FbxDouble3 value = property.Get<FbxDouble3>();
                         json["ambient_value"] = {value[0], value[1], value[2]};
@@ -653,6 +659,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+                    if (output_tex_even_missing) {
+                        json["diffuse_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         FbxDouble3 value = property.Get<FbxDouble3>();
                         json["diffuse_value"] = {value[0], value[1], value[2]};
@@ -667,6 +676,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sSpecular);
+                    if (output_tex_even_missing) {
+                        json["specular_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         FbxDouble3 value = property.Get<FbxDouble3>();
                         json["specular_value"] = {value[0], value[1], value[2]};
@@ -681,6 +693,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sShininess);
+                    if (output_tex_even_missing) {
+                        json["shininess_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         double value = property.Get<double>();
                         json["shininess_value"] = value;
@@ -695,6 +710,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sBump);
+                    if (output_tex_even_missing) {
+                        json["bump_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
                         for (int i = 0; i < textureCount; ++i) {
@@ -707,6 +725,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sNormalMap);
+                    if (output_tex_even_missing) {
+                        json["normal_map_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
                         for (int i = 0; i < textureCount; ++i) {
@@ -719,6 +740,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparentColor);
+                    if (output_tex_even_missing) {
+                        json["transparent_color_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         FbxDouble3 value = property.Get<FbxDouble3>();
                         json["transparent_color_value"] = {value[0], value[1], value[2]};
@@ -733,6 +757,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparencyFactor);
+                    if (output_tex_even_missing) {
+                        json["opacity_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         double value = property.Get<double>();
                         json["opacity_value"] = value;
@@ -747,6 +774,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sReflection);
+                    if (output_tex_even_missing) {
+                        json["reflection_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
                         for (int i = 0; i < textureCount; ++i) {
@@ -759,6 +789,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDisplacementColor);
+                    if (output_tex_even_missing) {
+                        json["displacement_color_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
                         for (int i = 0; i < textureCount; ++i) {
@@ -771,6 +804,9 @@ static std::shared_ptr<PrimitiveObject> GetMesh(FbxNode* pNode) {
                 }
                 {
                     FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sVectorDisplacementColor);
+                    if (output_tex_even_missing) {
+                        json["vector_displacement_color_tex"] = "";
+                    }
                     if (property.IsValid()) {
                         int textureCount = property.GetSrcObjectCount<FbxTexture>();
                         for (int i = 0; i < textureCount; ++i) {
@@ -881,14 +917,14 @@ static void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &na
     }
 }
 
-static void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim) {
+static void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std::shared_ptr<PrimitiveObject> &prim, bool output_tex_even_missing) {
     if (!pNode) return;
 
     FbxMesh* mesh = pNode->GetMesh();
     if (mesh) {
         auto name = pNode->GetName();
         if (target_name == name) {
-            auto sub_prim = GetMesh(pNode);
+            auto sub_prim = GetMesh(pNode, output_tex_even_missing);
             if (sub_prim) {
                 prim = sub_prim;
             }
@@ -897,22 +933,22 @@ static void TraverseNodesToGetPrim(FbxNode* pNode, std::string target_name, std:
     }
 
     for (int i = 0; i < pNode->GetChildCount(); i++) {
-        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim);
+        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim, output_tex_even_missing);
     }
 }
-static void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims) {
+static void TraverseNodesToGetPrims(FbxNode* pNode, std::vector<std::shared_ptr<PrimitiveObject>> &prims, bool output_tex_even_missing) {
     if (!pNode) return;
 
     FbxMesh* mesh = pNode->GetMesh();
     if (mesh) {
-        auto sub_prim = GetMesh(pNode);
+        auto sub_prim = GetMesh(pNode, output_tex_even_missing);
         if (sub_prim) {
             prims.push_back(sub_prim);
         }
     }
 
     for (int i = 0; i < pNode->GetChildCount(); i++) {
-        TraverseNodesToGetPrims(pNode->GetChild(i), prims);
+        TraverseNodesToGetPrims(pNode->GetChild(i), prims, output_tex_even_missing);
     }
 }
 
@@ -927,12 +963,13 @@ struct NewFBXImportSkin : INode {
         auto prim = std::make_shared<PrimitiveObject>();
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
+        bool output_tex_even_missing = get_input2<bool>("OutputTexEvenMissing");
         if(lRootNode) {
             TraverseNodesToGetNames(lRootNode, availableRootNames);
             auto rootName = get_input2<std::string>("rootName");
             if (rootName.empty()) {
                 std::vector<std::shared_ptr<PrimitiveObject>> prims;
-                TraverseNodesToGetPrims(lRootNode, prims);
+                TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing);
 
                 std::map<std::string, int> nameMappingGlobal;
 
@@ -982,7 +1019,7 @@ struct NewFBXImportSkin : INode {
                 }
             }
             else {
-                TraverseNodesToGetPrim(lRootNode, rootName, prim);
+                TraverseNodesToGetPrim(lRootNode, rootName, prim, output_tex_even_missing);
             }
         }
         if (get_input2<bool>("ConvertUnits")) {
@@ -1028,6 +1065,7 @@ ZENDEFNODE(NewFBXImportSkin, {
         {"string", "vectors", "nrm,"},
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
         {"bool", "CopyFacesetToMatid", "1"},
+        {"bool", "OutputTexEvenMissing", "0"},
     },
     {
         "prim",

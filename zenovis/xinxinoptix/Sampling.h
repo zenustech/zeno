@@ -291,6 +291,11 @@ inline float NextFloatDown(float v) {
     return __uint_as_float(ui);
 }
 
+//http://www.cemyuksel.com/research/pointlightattenuation/
+inline float PointIntensity(float d2, float d, float r2) {
+    return 2.0f / ( d  * sqrtf(d2 + r2) + d2 + r2 );
+}
+
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
 

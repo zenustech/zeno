@@ -136,6 +136,18 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             zeno::log_error("config file is corrupted");
         }
     }
+    if (!launchParam.paramBase64.isEmpty()) {
+        zeno::log_info("base64:{}", launchParam.paramBase64.toStdString());
+        QByteArray base64Encoded = launchParam.paramBase64.toUtf8();
+        QByteArray decodedByteArray  = QByteArray::fromBase64(base64Encoded);
+        QString decodedString = QString::fromUtf8(decodedByteArray );
+        zeno::log_info("json: {}", decodedString.toStdString());
+        configDoc.Parse(decodedByteArray );
+
+        if (!configDoc.IsObject()) {
+            zeno::log_error("paramsBase64 is corrupted");
+        }
+    }
 
     //scan all the nodes in the subgraph.
     for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
@@ -302,7 +314,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QString& objPath = inSockIdx.data(ROLE_OBJPATH).toString();
                 if (commandParams.contains(objPath))
                 {
-                    if (!launchParam.paramPath.isEmpty())
+                    if (!launchParam.paramPath.isEmpty() || !launchParam.paramBase64.isEmpty())
                     {
                         const QString& command = commandParams[objPath].name;
                         if (configDoc.HasMember(command.toUtf8()))
