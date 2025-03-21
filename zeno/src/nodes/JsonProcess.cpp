@@ -230,6 +230,11 @@ struct JsonSetDataSimple : zeno::INode {
 
         auto path = get_input2<std::string>("path");
         auto names = split_str(path, '/');
+        if (!names.empty()) {
+            if (names.begin()->empty()) {
+                names.erase(names.begin());
+            }
+        }
         Json *tmp_json = &in_json->json;
         for (auto & name : names) {
             if (tmp_json->is_array()) {
@@ -282,6 +287,11 @@ struct JsonSetData : zeno::INode {
         for (auto &path: paths) {
             auto strings = zeno::split_str(path, ':');
             auto names = split_str(strings[1], '/');
+            if (!names.empty()) {
+                if (names.begin()->empty()) {
+                    names.erase(names.begin());
+                }
+            }
 
             Json *tmp_json = &in_json->json;
             for (auto & name : names) {
