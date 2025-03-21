@@ -131,7 +131,8 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
             empty = false;
             size_t sLen = strlen(zeno::iotags::sZencache_lockfile_prefix);
             if (info.fileName().right(9) != ".zencache" &&
-                info.fileName().left(sLen) != zeno::iotags::sZencache_lockfile_prefix)    //not zencache file or cachelock file
+                info.fileName().left(sLen) != zeno::iotags::sZencache_lockfile_prefix &&
+                info.fileName() != "stampInfo.txt")    //not zencache file or cachelock file or stampInfo.txt
             {
                 return false;
             }
