@@ -380,15 +380,22 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 const int& newFrameBaseframe = node.value["stamp-base"].GetInt();
                 const int& newFrameObjtype = node.value["stamp-objType"].GetInt();
                 const std::string& newFrameObjkey = node.name.GetString();
+                
+                const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
 
-                newFrameStampInfo.insert({ newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":")) , std::tuple<std::string, int, int, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey})});
+                newFrameStampInfo.insert({ nodeid, std::tuple<std::string, int, int, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey})});
                 if (!currentFrameStampinfo.empty()) {
-                    const std::string& curFrameChangeInfo = std::get<0>(currentFrameStampinfo[newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"))]);
-                    const int& curFrameBaseframe = std::get<1>(currentFrameStampinfo[newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"))]);
+                    const std::string& curFrameChangeInfo = std::get<0>(currentFrameStampinfo[nodeid]);
+                    const int& curFrameBaseframe = std::get<1>(currentFrameStampinfo[nodeid]);
+
                     if (curFrameBaseframe != newFrameBaseframe) {
-                        if (newFrameChangeInfo != "TotalChange") {
+                        if (newFrameChangeInfo != "TotalChange") {//不是Totalchange但baseframe变化的情况
                             loadPartial = true;
                         }
+                    }
+                } else {//currentFrameStampinfo为空是重新run
+                    if (newFrameChangeInfo != "TotalChange") {//重新run且不是Totalchange
+                        loadPartial = true;
                     }
                 }
                 baseframetoload = newFrameBaseframe;
@@ -419,18 +426,20 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 auto it = newFrameStampInfo.find(key.substr(0, key.find_first_of(":")));
                 if (it != newFrameStampInfo.end()) {
                     std::string newframeObjfullkey = std::get<3>(it->second);
-                    if (std::get<0>(it->second) == "UnChanged") {
+                    std::string newframeObjStampchange = std::get<0>(it->second);
+
+                    if (newframeObjStampchange == "UnChanged") {
                         objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), obj);
-                    } else if (std::get<0>(it->second) == "DataChange") {
-                        auto baseobj = baseframecache.m_curr[it->first + ":TOVIEW:" + std::to_string(baseframetoload) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":"))];
+                    } else if (newframeObjStampchange == "DataChange") {
+                        auto baseobj = std::move(obj);
                         auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
                         //TODO:
                         //datachange = newDataChangedObj.获取该对象的datachange
                         //baseobj->datachange赋给baseobj
                         objs.m_curr.erase(newframeObjfullkey);
                         objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
-                    } else if (std::get<0>(it->second) == "ShapeChange") {
-                        auto baseobj = baseframecache.m_curr[it->first + ":TOVIEW:" + std::to_string(baseframetoload) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":"))];
+                    } else if (newframeObjStampchange == "ShapeChange") {
+                        auto baseobj = std::move(obj);
                         auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
                         //TODO:
                         //shapechange = newShapeChangedObj.获取该对象的shapechange
