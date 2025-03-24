@@ -32,7 +32,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
                 const std::string& oldkey = key.substr(0, key.find_first_of(":")) + begin->first.substr(begin->first.find_first_of(":"));
                 auto it = objects.m_curr.find(oldkey);
                 if (it != objects.m_curr.end()) {
-                    newobj = objects.m_curr.find(oldkey)->second;
+                    newobj = it->second;
                     newobj->userData().set2("stamp-change", stampChange);
                     newobj->userData().set2("stamp-base", obj->userData().get2<int>("stamp-base", -1));
                     if (stampChange == "UnChanged") {
