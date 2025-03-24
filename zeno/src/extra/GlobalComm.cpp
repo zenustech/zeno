@@ -97,6 +97,11 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 writer.Key("objType");
                 writer.Int(-1);
             }
+            if (stamptag == "DataChange") {
+                writer.Key("stamp-dataChange-hint");
+                std::string changehint = obj->userData().get2<std::string>("stamp-dataChange-hint", "");
+                writer.String(changehint.c_str());
+            }
             writer.EndObject();
         }
         writer.EndObject();
@@ -117,25 +122,27 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             }
             else if (stamptag == "DataChange") {
                 int baseframe = obj->userData().get2<int>("stamp-base", -1);
+                std::string changehint = obj->userData().get2<std::string>("stamp-dataChange-hint", "");
                 //TODO:
-                //data = obj.获取data()
+                //data = obj.根据changehint获取变化的data
                 if (0) {
 #define _PER_OBJECT_TYPE(TypeName, ...) \
             } else if (auto o = std::dynamic_pointer_cast<TypeName>(obj)) { \
                 obj = std::make_shared<zeno::TypeName>();   //置为空obj
                     ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
-                }
+            }
             else {
-                }
+        }
                 obj->userData().set2("stamp-change", "DataChange");
                 obj->userData().set2("stamp-base", baseframe);
+                obj->userData().set2("stamp-dataChange-hint", changehint);
                 //TODO:
-                //obj.设置data更新的部分
+                //obj根据changehint设置data更新的部分
             }
             else if (stamptag == "ShapeChange") {
                 int baseframe = obj->userData().get2<int>("stamp-base", -1);
-                //TODO:
+                //暂时并入Totalchange:
                 //shape = obj.获取shape()
                 if (0) {
 #define _PER_OBJECT_TYPE(TypeName, ...) \
@@ -356,12 +363,12 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
     }
 }
 
-bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string>>& newFrameStampInfo)
+bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo)
 {
     int baseframetoload = 0;
     bool loadPartial = false;
 
-    std::map<std::string, std::tuple<std::string, int, int, std::string>> currentFrameStampinfo;
+    std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>> currentFrameStampinfo;
     auto it = m_inCacheFrames.find(currentFrameNumber);
     if (it != m_inCacheFrames.end()) {
         currentFrameStampinfo = it->second;
@@ -382,8 +389,8 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 const std::string& newFrameObjkey = node.name.GetString();
                 
                 const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
-
-                newFrameStampInfo.insert({ nodeid, std::tuple<std::string, int, int, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey})});
+                const std::string& newFrameChangeHint = node.value.HasMember("stamp-dataChange-hint") ? node.value["stamp-dataChange-hint"].GetString() : "";
+                newFrameStampInfo.insert({ nodeid , std::tuple<std::string, int, int, std::string, std::string>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey, newFrameChangeHint})});
                 if (!currentFrameStampinfo.empty()) {
                     const std::string& curFrameChangeInfo = std::get<0>(currentFrameStampinfo[nodeid]);
                     const int& curFrameBaseframe = std::get<1>(currentFrameStampinfo[nodeid]);
@@ -427,23 +434,20 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 if (it != newFrameStampInfo.end()) {
                     std::string newframeObjfullkey = std::get<3>(it->second);
                     std::string newframeObjStampchange = std::get<0>(it->second);
+                    std::string newframeDataChangeHint = std::get<4>(it->second);
 
                     if (newframeObjStampchange == "UnChanged") {
                         objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), obj);
                     } else if (newframeObjStampchange == "DataChange") {
                         auto baseobj = std::move(obj);
                         auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                        //TODO:
-                        //datachange = newDataChangedObj.获取该对象的datachange
-                        //baseobj->datachange赋给baseobj
+                        //根据newframeDataChangeHint获取newDataChangedObj的data,设置给baseobj
                         objs.m_curr.erase(newframeObjfullkey);
                         objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
                     } else if (newframeObjStampchange == "ShapeChange") {
                         auto baseobj = std::move(obj);
                         auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                        //TODO:
-                        //shapechange = newShapeChangedObj.获取该对象的shapechange
-                        //baseobj->shapechange赋给baseobj
+                        //暂时并入Totalchange
                         objs.m_curr.erase(newframeObjfullkey);
                         objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
                     }
@@ -547,7 +551,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            std::map<std::string, std::tuple<std::string, int, int, std::string>> baseframeinfo;
+            std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>> baseframeinfo;
 
             std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
             if (std::filesystem::exists(stampInfoPath)) {

@@ -85,8 +85,10 @@ struct Stamp : zeno::INode {
                     obj->userData().set2("stamp-change", "TotalChange");
                 } else if (mode == "DataChange") {
                     obj->userData().set2("stamp-change", "DataChange");
-                } else { 
-                    obj->userData().set2("stamp-change", "ShapeChange");
+                    std::string changehint = get_input2<std::string>("changeHint");
+                    obj->userData().set2("stamp-dataChange-hint", changehint);
+                } else if (mode == "ShapeChange") {
+                    obj->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
                 }
             }
             inputObjType = session->globalComm->getObjType(obj);
@@ -103,7 +105,8 @@ struct Stamp : zeno::INode {
 ZENDEFNODE(Stamp, {
     {
         "input",
-        {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"}
+        {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
+        {"string", "changeHint", ""}
     },
     {"output"},
     {

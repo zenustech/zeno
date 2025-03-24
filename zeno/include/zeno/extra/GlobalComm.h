@@ -27,7 +27,7 @@ struct GlobalComm {
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
-    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
+    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
     int currentFrameNumber = 0;
     mutable std::mutex m_mtx;
 
@@ -68,7 +68,7 @@ struct GlobalComm {
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string>>& newFrameStampInfo);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo);
 private:
     ViewObjects const *_getViewObjects(const int frameid);
 };

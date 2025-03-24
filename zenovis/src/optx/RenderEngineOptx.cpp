@@ -1010,6 +1010,7 @@ struct GraphicsManager {
             if(ins.may_emplace(key)) {
                 const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
                 const int& stamptag1 = obj->userData().get2<int>("stamp-base", -1);
+                const std::string& stamptag2 = obj->userData().get2<std::string>("stamp-dataChange-hint", "");
                 changelight = true;
             }
         }
