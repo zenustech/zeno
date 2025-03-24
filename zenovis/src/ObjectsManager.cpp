@@ -30,16 +30,21 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             if (stampChange != "TotalChange") {
                 auto begin = objects.m_curr.begin();
                 const std::string& oldkey = key.substr(0, key.find_first_of(":")) + begin->first.substr(begin->first.find_first_of(":"));
-                newobj = objects.m_curr.find(oldkey)->second;
-                newobj->userData().set2("stamp-change", stampChange);
-                newobj->userData().set2("stamp-base", obj->userData().get2<int>("stamp-base", -1));
-                if (stampChange == "UnChanged") {
-                } else if (stampChange == "DataChange") {
-                    //TODO
-                    //用obj的data信息更新newobj
-                } else if (stampChange == "ShapeChange") {
-                    //TODO
-                    //用obj的shape信息更新newobj
+                auto it = objects.m_curr.find(oldkey);
+                if (it != objects.m_curr.end()) {
+                    newobj = objects.m_curr.find(oldkey)->second;
+                    newobj->userData().set2("stamp-change", stampChange);
+                    newobj->userData().set2("stamp-base", obj->userData().get2<int>("stamp-base", -1));
+                    if (stampChange == "UnChanged") {
+                    } else if (stampChange == "DataChange") {
+                        const std::string& stampDatachangehint = newobj->userData().get2<std::string>("stamp-dataChange-hint", "");
+                        //根据stampDatachangehint用obj的data信息更新newobj
+                    } else if (stampChange == "ShapeChange") {
+                        //暂时并入Totalchange
+                        //用obj的shape信息更新newobj
+                    }
+                } else {
+                    newobj = obj;
                 }
             }
 
