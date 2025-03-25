@@ -76,7 +76,7 @@ struct ToView : zeno::INode {
             }
         };
 
-        //在计算端，没法addViewObject，就相当于没法导cache
+        //鍦ㄨ绠楃锛屾病娉昦ddViewObject锛屽氨鐩稿綋浜庢病娉曞cache
         if (mode != "UnChanged")
             addtoview(addtoview, p, {}, mode, name);
         hasViewed = true;
