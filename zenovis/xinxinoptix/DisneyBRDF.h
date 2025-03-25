@@ -403,8 +403,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
 {
   pdf = 0.0;
   vec3 res;
-  if (L.z <= 0.0)
-    res = vec3(0.0);
+  
 
   float LDotH = abs(dot(L, H));
   float FD90MinusOne = 2.0f * roughness * LDotH * LDotH - 0.5f;
@@ -424,7 +423,8 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen;
+  res = L.z>0? 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen : vec3(0.0);
+
   return res;
 }
 
@@ -498,8 +498,6 @@ static __inline__ __device__
 vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
 {
   pdf = 0.0;
-  if (L.z <= 0.0)
-    return vec3(0.0);
 
   float VDotH = abs(dot(V, H));
 
@@ -510,8 +508,9 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float jacobian = 1.0f / (4.0f * VDotH);
 
   pdf = D * H.z * jacobian;
-  return vec3(1.0) * D * G;
+  return L.z>0? vec3(1.0) * D * G : vec3(0.0);
 }
+
 }
 
 //not used anymore
