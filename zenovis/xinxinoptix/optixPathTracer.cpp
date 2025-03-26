@@ -2466,7 +2466,7 @@ struct DrawDat {
     std::string instID;
     std::vector<float> verts;
     std::vector<uint> tris;
-    std::vector<int> triMats;
+    std::vector<uint> triMats;
 
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
@@ -2557,7 +2557,9 @@ static void updateStaticDrawObjects() {
         }
 
         tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
-            int mtidx = dat.triMats[i];
+
+            auto mtidx = std::clamp(dat.triMats[i], 0u, (uint)global_matidx.size()-1u);
+
             StaticMeshes->mat_idx[tri_offset + i] = global_matidx[mtidx];
 
             StaticMeshes->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
@@ -2617,7 +2619,7 @@ static void updateDynamicDrawObjects() {
 
         for (size_t i=0; i<dat.tris.size()/3; ++i) {
 
-            int mtidx = max(0, dat.triMats[i]);
+            auto mtidx = std::clamp(dat.triMats[i], 0u, (uint)global_matidx.size()-1u);
             mesh->mat_idx[i] = global_matidx[mtidx];
         }
 
@@ -2705,7 +2707,8 @@ static void updateInstObjects()
 
         tbb::parallel_for(size_t(0), tri_num, [&](size_t i) {
 
-            int mtidx = dat.triMats[i];
+            auto mtidx = std::clamp(dat.triMats[i], 0u, (uint)global_matidx.size()-1u);
+ 
             mesh_ref->mat_idx[tri_offset+i] = global_matidx[mtidx];
             mesh_ref->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
         });
@@ -2739,8 +2742,13 @@ void load_object(std::string const &key, std::string const &mtlid, const std::st
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
                  int const *matids, std::vector<std::string> const &matNameList) {
     DrawDat &dat = drawdats[key];
-    //ZENO_P(mtlid);
-    dat.triMats.assign(matids, matids + numtris);
+
+    //dat.triMats.assign(matids, matids + numtris);
+    dat.triMats.resize(numtris, 0);
+    for (int i=0; i<numtris; ++i) {
+        dat.triMats[i] = max(0, matids[i]);
+    }
+
     dat.mtlidList = matNameList;
     dat.mtlid = mtlid;
     dat.instID = instID;
