@@ -800,13 +800,16 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
 
     for (const auto &[instID, instData] : g_instLUT)
     {
-        auto it = g_instMatsLUT.find(instID);
-        size_t count = it != g_instMatsLUT.end()? it->second.size() : 1;
-
         if (instData.mesh != nullptr) {
             num_meshes += 1;
-            num_instances += it->second.size();
-        }
+
+            std::size_t count = 1ull;
+            if (g_instMatsLUT.count(instID)) {
+                const auto& list = g_instMatsLUT[instID]; 
+                count = max(count, list.size());
+            }
+            num_instances += count;
+        }  
     }
 
     std::vector<OptixInstance> optix_instances( num_instances );
@@ -887,8 +890,13 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                 return std::vector{ glm::mat4(1.0) };
             }() : matrix_list;
 
-            const auto &instScales = g_instScaleLUT[instID];
+            const auto &instScales = [&instID=instID]() {
+                auto& ref = g_instScaleLUT[instID];
+                if (ref.empty()) return std::vector<float>{1.0f};
+                return ref;
+            } ();
             const auto &instAttrs = g_instAttrsLUT[instID];
+            const auto instAttrsSize = instAttrs.pos.size();
 
             for (auto& mesh : {instData.mesh}) 
             {
@@ -914,6 +922,8 @@ static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<s
                     memcpy(instance.transform, instMat3r4c, sizeof(float) * 12);
                     
                     instIdx[instanceID] = k;
+
+                    if (k >= instAttrsSize) continue;
                     instPos[instanceID] = toHalf(instAttrs.pos[k]);
                     instNrm[instanceID] = toHalf(instAttrs.nrm[k]);
                     instUv[instanceID] = toHalf(instAttrs.uv[k]);
