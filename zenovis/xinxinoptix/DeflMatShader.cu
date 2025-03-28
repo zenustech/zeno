@@ -24,43 +24,24 @@
 #include "Curves.h"
 #endif
 
-static __inline__ __device__ bool isBadVector(const vec3& vector) {
+__inline__ __device__ bool isBadVector(const vec3& vector) {
 
-    for (size_t i=0; i<3; ++i) {
-        if(!isfinite(vector[i])) {
-            return true;
-        }
-    }
-    return dot(vector, vector) <= 0.0f;
+    bool bad = !isfinite(vector[0]) || !isfinite(vector[1]) || !isfinite(vector[2]);
+    return bad? true : length(vector) == 0.0f;
 }
 
-static __inline__ __device__ bool isBadVector(const float3& vector) {
+__inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
-__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs) {
+__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs, const OptixTraversableHandle& gas) {
 
-    if (params.sphereInstAuxLutBuffer != 0 && optixGetInstanceId() < params.firstSoloSphereOffset) {
-
-        auto lut = reinterpret_cast<unsigned long long*>(params.sphereInstAuxLutBuffer);
-        assert(lut != nullptr);
-
-        auto tmp = lut[optixGetInstanceId()];
-        auto auxBuffer = reinterpret_cast<float*>(tmp);
-        assert(auxBuffer != nullptr);
-
-        auto aux = auxBuffer + optixGetPrimitiveIndex() * 4;
-
-        attrs.clr = {};
-        attrs.tang = {};
-
-        attrs.instIdx = *(uint*)aux;
-        attrs.instPos = {}; //rt_data->instPos[inst_idx2];
-        attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
-        attrs.instUv = {}; //rt_data->instUv[inst_idx2];
-        attrs.instClr = *(float3*)(aux+1);
-        attrs.instTang = {}; //rt_data->instTang[inst_idx2];
-    }
+    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+    
+    float3* color_ptr  = reinterpret_cast<float3*>( *(gas_ptr-1) );
+        
+    attrs.instIdx = optixGetPrimitiveIndex();
+    attrs.instClr = (color_ptr != nullptr)? color_ptr[attrs.instIdx] : float3{}; 
 }
 
 extern "C" __global__ void __anyhit__shadow_cutout()
@@ -118,24 +99,19 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.uv = sphereUV(_normal_object_, false);
 
     attrs.instPos = _center_object_;
-    cihouSphereInstanceAux(attrs);
+    cihouSphereInstanceAux(attrs, gas);
 
 #else
 
     size_t inst_idx = optixGetInstanceId();
+
+    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
     
-    auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
-    auto meshID = instToMesh[inst_idx];
-
-    auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
-    aux_ptr = aux_ptr + (meshID*5);
-
-    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
-
-    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
-    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
-    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
-    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+    uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+    ushort2* uv_ptr  = reinterpret_cast<ushort2*>(*(gas_ptr-2) );
+    ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
+    ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
+    ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
 
     auto vertex_idx = idx_ptr[primIdx];
 
@@ -188,12 +164,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
     attrs.rayLength = optixGetRayTmax();
 
-    attrs.instIdx  = params.instIdx[inst_idx];
-    attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
-    attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
-    attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
-    attrs.instClr  = decodeHalf( rt_data->instClr[inst_idx] );
-    attrs.instTang = decodeHalf( rt_data->instTang[inst_idx]);
+    attrs.instIdx = inst_idx;
 
 #endif
 
@@ -428,7 +399,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.uv = sphereUV(objNorm, false);
 
     attrs.instPos = sphere_center;
-    cihouSphereInstanceAux(attrs);
+    cihouSphereInstanceAux(attrs, gas);
 
 #else
 
@@ -464,20 +435,13 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
 
     size_t inst_idx = optixGetInstanceId();
-    
-    // { d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
-    auto instToMesh = reinterpret_cast<uint*>(params.instToMesh);
-    auto meshID = instToMesh[inst_idx];
+    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
 
-    auto aux_ptr = reinterpret_cast<void**>(params.meshAux);
-    aux_ptr = aux_ptr + (meshID*5);
-
-    auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
-
-    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
-    auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
-    auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
-    auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
+    uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+    ushort2* uv_ptr  = reinterpret_cast<ushort2*>(*(gas_ptr-2) );
+    ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
+    ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
+    ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
 
     auto vertex_idx = idx_ptr[primIdx];
     
@@ -499,15 +463,9 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
     attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
-
-    attrs.instIdx  = params.instIdx[inst_idx];
-    attrs.instPos  = decodeHalf( rt_data->instPos[inst_idx] );
-    attrs.instNrm  = decodeHalf( rt_data->instNrm[inst_idx] );
-    attrs.instUv   = decodeHalf( rt_data->instUv[inst_idx]  );
-    attrs.instClr  = decodeHalf( rt_data->instClr[inst_idx] );
-    attrs.instTang = decodeHalf( rt_data->instTang[inst_idx]);
-
     attrs.rayLength = optixGetRayTmax();
+
+    attrs.instIdx = inst_idx;
 
     float3 n0 = normalize( decodeHalf(nrm_ptr[ vertex_idx.x ]) );
     float3 n1 = normalize( decodeHalf(nrm_ptr[ vertex_idx.y ]) );

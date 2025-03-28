@@ -12,6 +12,7 @@
 
 #include <sampleConfig.h>
 
+#include <stdio.h>
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
@@ -40,6 +41,8 @@
 #include <glm/matrix.hpp>
 
 #include <array>
+#include <vector>
+#include <string>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -57,7 +60,6 @@
 #include "ChiefDesignerEXR.h"
 #include <stb_image.h>
 #include <cudaMemMarco.hpp>
-#include <vector>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
@@ -102,7 +104,6 @@ inline void resetAll() {
 
     raygen_module.reset();
 
-    auto count = garbageTasks.size();
     for (auto& task : garbageTasks) {
         task();
     }
@@ -142,7 +143,7 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
 #if defined( NDEBUG )
-    options.logCallbackLevel          = 0;
+    options.logCallbackLevel          = 4;
 #else
     options.logCallbackLevel          = 4;
 #endif
@@ -236,27 +237,27 @@ inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
     }  
 }
 
-static std::vector<char> readData(std::string const& filename)
-{
-  std::ifstream inputData(filename, std::ios::binary);
+static std::vector<char> readData(std::string const& filename) {
 
-  if (inputData.fail())
-  {
-    std::cerr << "ERROR: readData() Failed to open file " << filename << '\n';
-    return std::vector<char>();
-  }
+    std::ifstream inputData(filename, std::ios::binary);
 
-  // Copy the input buffer to a char vector.
-  std::vector<char> data(std::istreambuf_iterator<char>(inputData), {});
+    if (inputData.fail())
+    {
+        std::cerr << "ERROR: readData() Failed to open file " << filename << '\n';
+        return std::vector<char>();
+    }
 
-  if (inputData.fail())
-  {
-    std::cerr << "ERROR: readData() Failed to read file " << filename << '\n';
-    return std::vector<char>();
-  }
+    // Copy the input buffer to a char vector.
+    std::vector<char> data(std::istreambuf_iterator<char>(inputData), {});
 
-  return data;
-}
+    if (inputData.fail())
+    {
+        std::cerr << "ERROR: readData() Failed to read file " << filename << '\n';
+        return std::vector<char>();
+    }
+
+    return data;
+} // readData
 
 inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
 {
@@ -633,109 +634,6 @@ inline void logInfoVRAM(std::string info) {
     std::cout << " <<< " << info << " >>> " << std::endl;
     printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
         used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
-}
-
-inline std::map<std::string, uint> matIDtoShaderIndex;
-
-inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb_cached_map;
-inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
-
-inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
-
-inline std::vector<std::tuple<std::string, uint8_t, glm::mat4>> volumeTrans;
-inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
-
-inline bool preloadVolumeBox(std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
-
-    volumeTrans.push_back( {matid, bounds, transform} );
-    return true;
-}
-
-inline bool processVolumeBox() {
-
-    volumeBoxs.clear();
-    for (auto& [key, bounds, val] : volumeTrans) {
-        auto volume_ptr = std::make_shared<VolumeWrapper>();
-        volume_ptr->bounds = bounds;
-        volume_ptr->transform = val;
-        buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
-        volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );
-    }
-    volumeTrans.clear();
-    return true;
-}
-
-inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB, 
-                       uint index_of_shader, uint index_inside_shader,
-                       const glm::mat4& transform, 
-                       std::string& combined_key)
-{
-    auto path = texVDB.path;
-    auto channel = texVDB.channel;
-
-    std::filesystem::path filePath = path;
-
-    if ( !std::filesystem::exists(filePath) ) {
-        std::cout << filePath.string() << " doesn't exist" << std::endl;
-        return false;
-    }
-
-    auto fileTime = std::filesystem::last_write_time(filePath);
-    // std::filesystem::file_time_type::duration ft = fileTime.time_since_epoch();
-    // if (filePath.extension() != ".vdb")
-    // {
-    //     std::cout << filePath.filename() << " doesn't exist";
-    //     return false;
-    // }
-
-        auto isNumber = [] (const std::string& s)
-        {
-            for (char const &ch : s) {
-                if (std::isdigit(ch) == 0)
-                    return false;
-            }
-            return true;
-        };
-
-    if ( isNumber(channel) ) {
-        auto channel_index = (uint)std::stoi(channel);
-        channel = fetchGridName(path, channel_index);
-    } else {
-        checkGridName(path, channel);
-    }
-
-    const auto vdb_key = path + "{" + channel + "}";
-    combined_key = vdb_key;
-
-    zeno::log_debug("loading VDB :{}", path);
-
-    if (g_vdb_cached_map.count(vdb_key)) {
-
-        auto& cached = g_vdb_cached_map[vdb_key];
-
-        if (transform == cached->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
-
-            g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
-            return true;
-        } else {
-            cleanupVolume(*g_vdb_cached_map[vdb_key]);
-        }
-    }
-
-    auto volume_ptr = std::make_shared<VolumeWrapper>();
-    volume_ptr->file_time = fileTime;
-    volume_ptr->transform = transform;
-    volume_ptr->selected = {channel};
-    volume_ptr->type = texVDB.eleType;
-    
-    auto succ = loadVolume(*volume_ptr, path); 
-    
-    if (!succ) {return false;}
-
-    g_vdb_cached_map[vdb_key] = volume_ptr;
-    g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
-
-    return true;
 }
 
 inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
@@ -1171,6 +1069,8 @@ struct OptixShaderWrapper
    
     std::map<int, TexKey>                m_texs {};
     bool                                has_vdb {};
+    std::vector<std::string>               vbds {};
+
     std::string                       parameters{};
     std::map<std::string, std::string>   macros {};
 
@@ -1238,7 +1138,6 @@ struct OptixShaderWrapper
             {
                 return tex_lut[m_texs[i]]->texture;
             }
-            return 0;
         }
         return 0;
     }
@@ -1246,7 +1145,7 @@ struct OptixShaderWrapper
 
 inline std::vector<OptixShaderWrapper> rtMaterialShaders;//just have an arry of shaders
 
-inline void createPipeline()
+inline void createPipeline(uint tree_depth)
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
@@ -1311,7 +1210,7 @@ inline void createPipeline()
                 &continuation_stack_size
                 ) );
 
-    const uint32_t max_traversal_depth = 3;
+    const uint32_t max_traversal_depth = tree_depth;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
                 direct_callable_stack_size_from_traversal,

@@ -196,13 +196,8 @@ struct Params
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
 
-    void* meshAux;
-    void* instToMesh;
-
     uint32_t hairInstOffset;
     void* hairAux;
-
-    uint* instIdx;
 
     void*    dlights_ptr;
     void*    plights_ptr;
