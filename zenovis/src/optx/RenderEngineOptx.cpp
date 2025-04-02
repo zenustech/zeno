@@ -352,8 +352,7 @@ struct GraphicsManager {
                     }
                     const auto stamp_base = prim_in->userData().get2<int>("stamp-base", 0);
                     const auto stamp_change = prim_in->userData().get2<std::string>("stamp-change", "");
-    
-                    printf("sbase: %d, schange: %s \n ", stamp_base, stamp_change.c_str());    
+
                     return std::tuple{stamp_base, stamp_change};
                 };
                 const auto [stamp_base, stamp_change] = stamp_work();
@@ -603,8 +602,7 @@ struct GraphicsManager {
                     
                 const auto reType = prim_in->userData().get2<std::string>("ResourceType", "Mesh");
                 const auto reName = prim_in->userData().get2<std::string>("ObjectName", key);
-                std::cout << "********************************************************************" << reType << std::endl;
-
+                
                 if (reType == "SceneDescriptor") 
                 {
                     const auto sceneConfig = prim_in->userData().get2<std::string>("Scene", "");

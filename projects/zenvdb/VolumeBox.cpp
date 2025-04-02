@@ -313,6 +313,11 @@ for (auto& transform : transforms) {
         list->arr.push_back(prim);        
 }
 
+if (list->arr.size()==1) {
+    set_output("prim", std::move(list->arr.front()));
+    return;
+}
+
 set_output("prim", std::move(list));
 
     }

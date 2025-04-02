@@ -1675,7 +1675,6 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         for (auto& [k, v] : macro) {
             std::cout << "Macro: " << k << ":" << v << std::endl;
         }
-        std::cout << "Callable: \n" << shaders[i]->callable << std::endl;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
             OptixUtil::rtMaterialShaders[i].has_vdb = true; 

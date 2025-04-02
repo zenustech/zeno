@@ -554,7 +554,6 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
         }
 
         for (auto& [k, v] : _sphere_groups_) {
-            if (nullptr != v->node) continue;
             if (!v->dirty) continue;
 
             v->dirty = false;
