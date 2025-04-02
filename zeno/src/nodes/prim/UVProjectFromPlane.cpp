@@ -125,14 +125,22 @@ static vec3f getColorClamp(vec2i tex, const vec3f* data, int w, int h) {
 static vec3f Sample2DLinear(vec2f texCoord, const vec3f* data, int w, int h) {
     texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
     vec2f f = fract(texCoord);
-    int x = (int)(texCoord[0]) % w;
-    int y = (int)(texCoord[1]) % h;
-    x = x < 0 ? w + x : x;
-    y = y < 0 ? h + y : y;
-    vec3f s1 = getColor(vec2i(x,y), data, w, h);
-    vec3f s2 = getColor(vec2i(x+1,y), data, w, h);
-    vec3f s3 = getColor(vec2i(x,y+1), data, w, h);
-    vec3f s4 = getColor(vec2i(x+1,y+1), data, w, h);
+
+    int x0 = int(floor(texCoord[0]));
+    int y0 = int(floor(texCoord[1]));
+    int x1 = x0 + 1;
+    int y1 = y0 + 1;
+
+    x0 = (x0 % w + w) % w;
+    x1 = (x1 % w + w) % w;
+    y0 = (y0 % h + h) % h;
+    y1 = (y1 % h + h) % h;
+
+    vec3f s1 = getColor(vec2i(x0, y0), data, w, h);
+    vec3f s2 = getColor(vec2i(x1, y0), data, w, h);
+    vec3f s3 = getColor(vec2i(x0, y1), data, w, h);
+    vec3f s4 = getColor(vec2i(x1, y1), data, w, h);
+
     return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
 }
 
