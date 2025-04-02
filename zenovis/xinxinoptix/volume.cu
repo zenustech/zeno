@@ -389,6 +389,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
     return;
 }
 
+__forceinline__ bool valid(const float3& vvv) {
+    return vvv.x>0 && vvv.y>0 && vvv.z>0;
+}
+
 extern "C" __global__ void __anyhit__occlusion_volume()
 {
     const float3 ray_orig = optixGetWorldRayOrigin();
@@ -476,10 +480,10 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     }
 
     if (0 == level) { transmittance = {}; }
-
     prd->attanuation *= transmittance;
-    optixIgnoreIntersection();
-    //prd->origin = ray_orig;
-    //prd->direction = ray_dir;
-    return;
+
+    if ( valid(prd->attanuation) )
+        optixIgnoreIntersection();
+    else
+        optixTerminateRay();
 }

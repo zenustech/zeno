@@ -50,6 +50,7 @@ struct MatOutput {
     float smoothness;
     float displacement;
     float shadowReceiver;
+    float shadowTerminatorOffset;
     float isHair;
     vec3  mask_value;
 
