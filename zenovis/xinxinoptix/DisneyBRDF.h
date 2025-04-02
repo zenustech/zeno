@@ -423,7 +423,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = L.z>0? 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen : vec3(0.0);
+  res = L.z*H.z>0? 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen : vec3(0.0);
 
   return res;
 }
@@ -451,15 +451,15 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
 {
 
   pdf = 0.0;
-  if (L.z * V.z <= 0.0)
-    return vec3(0.0);
+//  if (L.z * V.z <= 0.0)
+//    return vec3(0.0);
 
   float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f, 10.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
 
   pdf = G1 * D / (4.0 * abs(V.z));
-  return F * D * G2 / (4.0 * L.z * V.z);
+  return (L.z * V.z <= 0.0)?vec3(0.0):F * D * G2 / (4.0 * L.z * V.z);
 }
 
 static __inline__ __device__
@@ -504,11 +504,11 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float F = mix(0.04, 1.0, SchlickWeight(VDotH));
   float D = clamp(GTR2(abs(H.z), ccR),0.0f, 100.0f);
 //  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ccR*ccR, ccR*ccR),0.0f, 100.0f);
-  float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
+  float G = SmithG(abs(L.z), 0.25f) * SmithG(abs(V.z), 0.25f);
   float jacobian = 1.0f / (4.0f * VDotH);
 
   pdf = D * H.z * jacobian;
-  return L.z>0? vec3(1.0) * D * G : vec3(0.0);
+  return L.z*H.z>0? vec3(1.0) * D * G : vec3(0.0);
 }
 
 }
