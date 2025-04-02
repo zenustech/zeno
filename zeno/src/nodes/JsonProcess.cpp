@@ -13,6 +13,9 @@
 #include <string>
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
+#include <filesystem>
+#include "uuid_v4.h"
+namespace fs = std::filesystem;
 
 #ifdef ZENO_WITH_PYTHON3
     #include <Python.h>
@@ -1117,6 +1120,77 @@ ZENDEFNODE( RenderGroup, {
     {
         "shader",
     },
+});
+
+struct PyJsonHost: INode {
+    const std::string pre_process = R"(
+import sys, json
+sys.stderr = sys.stdout
+from pathlib import Path
+current_dir = Path(__file__).parent.resolve()
+input_file_path = current_dir / 'input.json'
+in_json = {}
+with open(input_file_path, 'r', encoding='utf-8') as f:
+    in_json = json.load(f)
+out_json = {}
+)";
+    const std::string post_process = R"(
+output_file_path = current_dir / 'output.json'
+with open(output_file_path, 'w', encoding='utf-8') as f:
+    json.dump(out_json, f)
+)";
+    void apply() override {
+        UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
+        std::string uuid_str = uuidGenerator.getUUID().str();
+        fs::path temp_dir = fs::temp_directory_path();
+        fs::path temp_node_dir = temp_dir / ("pyjsonhost-" + uuid_str);
+        fs::create_directories(temp_node_dir);
+        std::string input_json = "{}";
+        {
+            if (has_input2<std::string>("in_json")) {
+                input_json = get_input2<std::string>("in_json");
+            }
+            else if (has_input2<JsonObject>("in_json")) {
+                input_json = get_input<JsonObject>("in_json")->json.dump();
+            }
+            auto input_json_path = temp_node_dir / "input.json";
+            file_put_content(input_json_path.string(), input_json);
+        }
+        {
+            auto py_code = get_input2<std::string>("py_code");
+            py_code = pre_process + py_code + post_process;
+            auto py_code_path = temp_node_dir / "run.py";
+            file_put_content(py_code_path.string(), py_code);
+            std::string cmd = "python " + py_code_path.string();
+            system(cmd.c_str());
+        }
+        {
+            auto output_json_path = temp_node_dir / "output.json";
+            auto output_json = file_get_content(output_json_path.string());
+            if (get_input2<bool>("output json as string")) {
+                set_output2("out_json", output_json);
+            }
+            else {
+                auto json_obj = std::make_shared<JsonObject>();
+                json_obj->json = Json::parse(output_json);
+                set_output2("out_json", json_obj);
+            }
+        }
+        fs::remove_all(temp_node_dir);
+    }
+};
+
+ZENDEFNODE(PyJsonHost, {
+    {
+        "in_json",
+        {"multiline_string", "py_code", "out_json = in_json"},
+        {"bool", "output json as string", "1"},
+    },
+    {
+        "out_json",
+    },
+    {},
+    {"json"},
 });
 
 #ifdef ZENO_WITH_PYTHON3
