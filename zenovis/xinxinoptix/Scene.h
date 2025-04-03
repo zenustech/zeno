@@ -144,6 +144,8 @@ public:
 
         auto gather = [&]() {
 
+            if (std::isinf(cam.x)) return;
+            
             auto CameraSapceMatrix = IdentityMatrix;
             CameraSapceMatrix[3] -= cam.x;
             CameraSapceMatrix[7] -= cam.y;
@@ -189,9 +191,7 @@ public:
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
 
         std::unordered_map<std::string, uint64_t> candidates{};
-        std::unordered_map<std::string, uint64_t> candidates_alt{};
         std::unordered_map<std::string, uint32_t> candidates_sbt{};
-
         std::unordered_map<std::string, VisibilityMask> candidates_mark{};
 
         std::unordered_map<std::string, glm::mat4*> candidates_matrix{};
@@ -233,9 +233,13 @@ public:
                 if ( shader_ref.vbds.size() > 0 ) {
             
                     auto vdb_key = shader_ref.vbds.front();
-                    auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                    
-                    candidates[candi_name] = vdb_ptr->node->handle;
+
+                    if (_vdb_grids_cached.count(vdb_key)==0) {
+                        shader_visiable = VisibilityMask::NothingMask;
+                    } else {
+                        auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
+                        candidates[candi_name] = vdb_ptr->node->handle;
+                    } //vdb_ptr
                 }
             }
 
