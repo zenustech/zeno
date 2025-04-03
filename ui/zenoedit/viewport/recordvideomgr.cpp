@@ -165,21 +165,18 @@ REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
                 if (ret == 0) {
                     std::string native_pfm_dn_path = std::filesystem::u8path(pfm_dn_path).string();
                     auto image = zeno::readPFMFile(native_pfm_dn_path);
-                    std::string native_jpg_path = std::filesystem::u8path(jpg_path).string();
-                    write_jpg(native_jpg_path, image);
-                    QFile fileOrigin(QString::fromStdString(pfm_path));
-                    if (fileOrigin.exists()) {
-                        fileOrigin.remove();
+                    {
+                        std::string native_jpg_path = std::filesystem::u8path(jpg_path).string();
+                        write_jpg(native_jpg_path, image);
                     }
-                    QFile fileDn(QString::fromStdString(pfm_dn_path));
-                    if (fileDn.exists()) {
-                        fileDn.remove();
-                    }
-                    for (auto& task : auxiliaryTasks) {
-                        task();
-                    } // auxiliaryTasks
                 }
+                for (auto& task : auxiliaryTasks) {
+                    task();
+                }
+                QFile::remove(QString::fromStdString(pfm_path));
+                QFile::remove(QString::fromStdString(pfm_dn_path));
             }
+            QCoreApplication::processEvents();
         }
     }
     if (!m_recordInfo.bExportVideo) {
