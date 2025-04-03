@@ -379,6 +379,7 @@ namespace DisneyBSDF{
 
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float F = BRDFBasics::DielectricFresnel(abs(dot(wo, wm)), mat.ior);
+        float F2 = BRDFBasics::DielectricFresnel(abs(dot(wo, wm)), mat.clearcoatIOR);
         float psss = mat.subsurface;
         float sssPortion = psss / (1.0 + psss);
         //event probability
@@ -387,7 +388,7 @@ namespace DisneyBSDF{
         float dielectricPr = dielectricWt * luminance(mix(Cspec0, vec3(1.0f), F) * mat.specular);
         float metalPr = metalWt;
         float glassPr = glassWt;
-        float clearCtPr = 0.25 * mat.clearcoat;
+        float clearCtPr = 0.25 * mat.clearcoat * luminance(mix(Cspec0, vec3(1.0f), F2));
 
         float invTotalWt = 1.0 / (diffPr + sssPr + dielectricPr + metalPr + glassPr + clearCtPr);
         diffPr       *= invTotalWt;
@@ -429,9 +430,10 @@ namespace DisneyBSDF{
         }
 
         if(reflect){
-
+            wm = normalize(wi + wo);
           if(diffPr > 0.0f){
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
+
             vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
@@ -469,9 +471,13 @@ namespace DisneyBSDF{
             BRDFBasics::CalculateAnisotropicParams(mat.clearcoatRoughness,0,ax,ay);
             //ior related clearCt
             float F = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.clearcoatIOR);
-            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) *
-                     BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
-                                               wm, tmpPdf) * 0.25 * mat.clearcoat;
+//            vec3 s = mix(vec3(0.04f), vec3(1.0f), F) *
+//                     BRDFBasics::EvalClearcoat(mat.clearcoatRoughness, wo, wi,
+//                                               wm, tmpPdf) * 0.25 * mat.clearcoat;
+            vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
+                                          mix(vec3(0.04), vec3(1.0f), F),
+                                          tmpPdf) * 0.25 * mat.clearcoat;
+            tmpPdf *= F;
             sterm = sterm + s;
             f =  f + s;
             fPdf += tmpPdf * clearCtPr;

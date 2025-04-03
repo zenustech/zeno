@@ -371,7 +371,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.frame_buffer_p .reset()),
-        params.width * params.height * sizeof( ushort3 )
+        params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
@@ -395,7 +395,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
     state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
-    state.params.frame_buffer_P = (ushort3*)(CUdeviceptr)state.frame_buffer_p;
+    state.params.frame_buffer_P = (float3*)(CUdeviceptr)state.frame_buffer_p;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
@@ -1942,14 +1942,7 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
         }
     }
     else if (name == "pos") {
-        std::vector<ushort3> temp_buffer(w * h);
-        cudaMemcpy(temp_buffer.data(), (void*)state.frame_buffer_p.handle, sizeof(ushort3) * temp_buffer.size(), cudaMemcpyDeviceToHost);
-        for (auto i = 0; i < temp_buffer.size(); i++) {
-            float3 v = toFloat(temp_buffer[i]);
-            tex_data[i * 3 + 0] = v.x;
-            tex_data[i * 3 + 1] = v.y;
-            tex_data[i * 3 + 2] = v.z;
-        }
+        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
@@ -1996,7 +1989,7 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_m.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "pos") {
-        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
+        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "color") {
         std::vector<float> temp_buffer(w * h * 3);

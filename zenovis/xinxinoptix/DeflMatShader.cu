@@ -932,8 +932,8 @@ extern "C" __global__ void __closesthit__radiance()
     
     auto shadingP = rtgems::offset_ray(P + float3(bezierOff) + params.cam.eye, prd->geometryNormal); // world space
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        //shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
-        shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal);
+        shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
+        //shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal);
     }
     prd->radiance = {};
     prd->direction = normalize(wi);

@@ -329,7 +329,7 @@ extern "C" __global__ void __raygen__rg()
             if (testPRD.maxDistance < FLT_MAX) {
                 click_pos = ray_origin + ray_direction * testPRD.maxDistance;
             }
-            params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
+            params.frame_buffer_P[ image_index ] = click_pos;
         }
 
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
