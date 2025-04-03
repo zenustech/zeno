@@ -132,7 +132,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
 
-    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto uv_ptr  = reinterpret_cast<float2*>(aux_ptr[1]);
     auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
     auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
     auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
@@ -171,9 +171,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
-    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
-    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    const auto& uv0  = uv_ptr[ vertex_idx.x ];
+    const auto& uv1  = uv_ptr[ vertex_idx.y ];
+    const auto& uv2  = uv_ptr[ vertex_idx.z ];
     auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
     auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
     auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
@@ -489,16 +489,16 @@ extern "C" __global__ void __closesthit__radiance()
 
     auto idx_ptr = reinterpret_cast<uint3*>(aux_ptr[0]);
 
-    auto uv_ptr  = reinterpret_cast<ushort2*>(aux_ptr[1]);
+    auto uv_ptr  = reinterpret_cast<float2*>(aux_ptr[1]);
     auto clr_ptr = reinterpret_cast<ushort3*>(aux_ptr[2]);
     auto nrm_ptr = reinterpret_cast<ushort3*>(aux_ptr[3]);
     auto tan_ptr = reinterpret_cast<ushort3*>(aux_ptr[4]);
 
     auto vertex_idx = idx_ptr[primIdx];
     
-    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
-    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
-    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    const auto& uv0  = uv_ptr[ vertex_idx.x ];
+    const auto& uv1  = uv_ptr[ vertex_idx.y ];
+    const auto& uv2  = uv_ptr[ vertex_idx.z ];
 
     auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
     auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );

@@ -224,7 +224,7 @@ struct smallMesh{
     std::vector<uint3>  indices {};
     std::vector<uint>   mat_idx {};
 
-    std::vector<ushort2>      g_uv;
+    std::vector<float2>      g_uv;
     std::vector<ushort3>     g_clr;
     std::vector<ushort3>     g_nrm;
     std::vector<ushort3>     g_tan;
@@ -2574,7 +2574,7 @@ static void updateStaticDrawObjects() {
 
         tbb::parallel_for(size_t(0), dat.verts.size()/3, [&](size_t i) {
 
-            StaticMeshes->g_uv[ver_offset + i] = toHalf( *(float2*)&uvAttr[i * 3] );
+            StaticMeshes->g_uv[ver_offset + i]  = *(float2*)&uvAttr[i * 3];
             StaticMeshes->g_clr[ver_offset + i] = toHalf( *(float3*)&clrAttr[i * 3] );
 
             StaticMeshes->g_nrm[ver_offset + i] = toHalf( *(float3*)&nrmAttr[i * 3] );
@@ -2635,7 +2635,7 @@ static void updateDynamicDrawObjects() {
 
         tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
             
-            mesh->g_uv[i] = toHalf( *(float2*)&(uvAttr[i * 3]) );
+            mesh->g_uv[i] = ( *(float2*)&(uvAttr[i * 3]) );
             mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
 
             mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
@@ -2722,7 +2722,7 @@ static void updateInstObjects()
 
             auto offset = ver_offset + i;
 
-            mesh_ref->g_uv[offset] = toHalf( *(float2*)&uvAttr[i * 3] );
+            mesh_ref->g_uv[offset]  = *(float2*)&uvAttr[i * 3];
             mesh_ref->g_clr[offset] = toHalf( *(float3*)&clrAttr[i * 3] );
             mesh_ref->g_nrm[offset] = toHalf( *(float3*)&nrmAttr[i * 3] );
             mesh_ref->g_tan[offset] = toHalf( *(float3*)&tangAttr[i * 3] );
