@@ -1,114 +1,37 @@
 #pragma once 
 
-#include <optix.h>
-#include <sutil/sutil.h>
-#include <sutil/vec_math.h>
-#include <sutil/Exception.h>
+#include "optixCommon.h"
+#include "XAS.h"
 
-#include <set>
-#include <map>
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
 #include <zeno/utils/vec.h>
 
-#include "XAS.h"
-#include "raiicuda.h"
-
-namespace xinxinoptix 
-{
-
-struct InfoSphereTransformed {
+struct SphereTransformed {
+    bool dirty = true;
+    
     std::string materialID;
     std::string instanceID;
     
     glm::mat4 optix_transform;
+
+    std::shared_ptr<SceneNode> node;
 };
 
-inline std::map<std::string, InfoSphereTransformed> SphereTransformedTable;
-void preload_sphere_transformed(std::string const &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform);
+struct SphereGroup {
+    bool dirty = true;
 
-struct SphereInstanceGroupBase {
-    std::string key;
-    std::string instanceID;
-    std::string materialID;
+    std::vector<zeno::vec3f> centerV;
+    std::vector<float> radiusV;
+    std::vector<zeno::vec3f> colorV;
 
-    zeno::vec3f center{};
-    float radius{};
+    std::shared_ptr<SceneNode> node;
+
+    xinxinoptix::raii<CUdeviceptr> color_buffer;
 };
 
-inline std::map<std::string, SphereInstanceGroupBase> SpheresInstanceGroupMap;
-void preload_sphere_instanced(std::string const &key, std::string const &mtlid, const std::string &instID, const float &radius, const zeno::vec3f &center);
+void buildUnitSphereGAS(const OptixDeviceContext& context,  OptixTraversableHandle& gas_handle, xinxinoptix::raii<CUdeviceptr>& d_gas_output_buffer);
 
-inline std::set<std::string> sphere_unique_mats;
-inline std::set<std::string> uniqueMatsForSphere() {
-    return sphere_unique_mats;
-}
-
-inline OptixTraversableHandle uniformed_sphere_gas_handle {};
-inline raii<CUdeviceptr>      uniformed_sphere_gas_buffer {};
-
-void buildUniformedSphereGAS(const OptixDeviceContext& context,  OptixTraversableHandle& gas_handle, raii<CUdeviceptr>& d_gas_output_buffer);
-
-struct SphereInstanceAgent {
-    SphereInstanceGroupBase base{};
-
-    std::vector<float> radius_list{};
-    std::vector<zeno::vec3f> center_list{};
-
-    std::vector<float> aux_list {};
-    raii<CUdeviceptr> aux_buffer {};
-
-    raii<CUdeviceptr>      inst_sphere_gas_buffer {};
-    OptixTraversableHandle inst_sphere_gas_handle {};
-
-    SphereInstanceAgent(SphereInstanceGroupBase _base):base(_base){}
-    //SphereInstanceAgent(SphereInstanceBase &_base):base(_base){}
-
-    void updateAux() {
-
-        size_t data_size = sizeof(float) * aux_list.size();
-
-        aux_buffer.resize( data_size );
-        cudaMemcpy((void*)aux_buffer.handle, aux_list.data(), data_size, cudaMemcpyHostToDevice);
-    }
-
-    ~SphereInstanceAgent() {
-
-        aux_buffer.reset();
-        inst_sphere_gas_handle = 0;
-        inst_sphere_gas_buffer.reset();
-    }
-};
-
-inline raii<CUdeviceptr> sphereInstanceAuxLutBuffer {};
-
-inline std::vector<std::shared_ptr<SphereInstanceAgent>> sphereInstanceGroupAgentList;
-void buildInstancedSpheresGAS(const OptixDeviceContext &context, std::vector<std::shared_ptr<SphereInstanceAgent>>& agentList);
-
-void updateSphereXAS();
-
-inline OptixTraversableHandle sphereHandleXAS {};
-inline raii<CUdeviceptr>      sphereBufferXAS {};
-
-inline void cleanupSpheresCPU() {
-    sphere_unique_mats.clear();
-    SphereTransformedTable.clear();
-    SpheresInstanceGroupMap.clear();
-}
-
-inline void cleanupSpheresGPU() {
-    uniformed_sphere_gas_buffer.reset();
-    uniformed_sphere_gas_handle = 0llu;
-
-    sphereInstanceGroupAgentList.clear();
-
-    sphereBufferXAS.reset();
-    sphereHandleXAS = 0llu;
-
-    sphereInstanceAuxLutBuffer.reset();
-}
-
-} // NAMESPACE END
+void buildSphereGroupGAS(const OptixDeviceContext &context, SphereGroup& group);
