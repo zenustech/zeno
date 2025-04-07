@@ -550,6 +550,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     N_smooth = normalize(interp(barys, n0, n1, n2));
     N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
+    N = normalize(N);
 
     if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N, -ray_dir, N );
