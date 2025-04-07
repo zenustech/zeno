@@ -540,14 +540,28 @@ extern "C" __global__ void __closesthit__radiance()
     n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
     n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
    
-    if (mats.shadowTerminatorOffset > 0) {
+    if (mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
 
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
 
         bezierOff = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3) - (*(vec3*)&objPos);
-        auto tmp = optixTransformNormalFromObjectToWorldSpace(bezierOff);
-        auto len = 1.0f/length(tmp); len = len * len;
-        bezierOff = make_float3(mats.shadowTerminatorOffset) * len;
+        const auto local_len = length(bezierOff);
+
+        if (local_len >0) {
+
+            auto tmp = optixTransformNormalFromObjectToWorldSpace(bezierOff);
+            
+            auto len = local_len/length(tmp); len = len * len;
+            bezierOff = mats.shadowTerminatorOffset * len * tmp;
+            // auto _v0 = optixTransformPointFromObjectToWorldSpace(v0);
+            // auto _v1 = optixTransformPointFromObjectToWorldSpace(v1);
+            // auto _v2 = optixTransformPointFromObjectToWorldSpace(v2);
+            // auto _n0 = optixTransformNormalFromObjectToWorldSpace(n0);
+            // auto _n1 = optixTransformNormalFromObjectToWorldSpace(n1);
+            // auto _n2 = optixTransformNormalFromObjectToWorldSpace(n2);
+            // _n0 = normalize(_n0); _n1 = normalize(_n1); _n2 = normalize(_n2);
+            // auto _bezierOff = bezierOffset(wldPos, _v0, _v1, _v2, _n0, _n1, _n2, barys3) - (*(vec3*)&wldPos);
+        }
     }
 
     N_smooth = normalize(interp(barys, n0, n1, n2));
