@@ -129,6 +129,7 @@ ZENO_API void INode::preApply() {
         }
     }
     if (myname.size() > 6 && myname.substr(myname.size() - 6) == "-Stamp") {//如果是一个stamp节点,unchange情况直接return
+        requireInput("stampMode");
         auto value = safe_at(inputs, "stampMode", "");
         if (auto stampmode = dynamic_cast<zeno::StringObject*>(value.get())) {
             auto session = &zeno::getSession();
