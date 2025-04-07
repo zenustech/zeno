@@ -545,7 +545,9 @@ extern "C" __global__ void __closesthit__radiance()
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
 
         bezierOff = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3) - (*(vec3*)&objPos);
-        bezierOff = mats.shadowTerminatorOffset * optixTransformNormalFromObjectToWorldSpace(bezierOff);
+        auto tmp = optixTransformNormalFromObjectToWorldSpace(bezierOff);
+        auto len = 1.0f/length(tmp); len = len * len;
+        bezierOff = make_float3(mats.shadowTerminatorOffset) * len;
     }
 
     N_smooth = normalize(interp(barys, n0, n1, n2));
