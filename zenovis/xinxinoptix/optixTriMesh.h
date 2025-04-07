@@ -32,7 +32,7 @@ struct MeshObject {
     std::vector<uint3>  indices {};
     std::vector<uint>   mat_idx {};
 
-    std::vector<ushort2> g_uv;
+    std::vector<float2> g_uv;
     std::vector<ushort3> g_clr, g_nrm, g_tan;
 
 template<typename T>

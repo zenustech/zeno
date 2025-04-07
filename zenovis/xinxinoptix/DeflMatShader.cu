@@ -108,7 +108,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
     
     uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    ushort2* uv_ptr  = reinterpret_cast<ushort2*>(*(gas_ptr-2) );
+    float2* uv_ptr   = reinterpret_cast<float2*>( *(gas_ptr-2) );
     ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
     ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
     ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
@@ -147,9 +147,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.pos = P;
     attrs.nrm = N;
 
-    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
-    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
-    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    const auto& uv0  = uv_ptr[ vertex_idx.x ];
+    const auto& uv1  = uv_ptr[ vertex_idx.y ];
+    const auto& uv2  = uv_ptr[ vertex_idx.z ];
     auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
     auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
     auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
@@ -453,16 +453,16 @@ extern "C" __global__ void __closesthit__radiance()
     auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
 
     uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    ushort2* uv_ptr  = reinterpret_cast<ushort2*>(*(gas_ptr-2) );
+    float2* uv_ptr   = reinterpret_cast<float2*>( *(gas_ptr-2) );
     ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
     ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
     ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
 
     auto vertex_idx = idx_ptr[primIdx];
     
-    auto uv0  = decodeHalf( uv_ptr[ vertex_idx.x ] );
-    auto uv1  = decodeHalf( uv_ptr[ vertex_idx.y ] );
-    auto uv2  = decodeHalf( uv_ptr[ vertex_idx.z ] );
+    const auto& uv0  = uv_ptr[ vertex_idx.x ];
+    const auto& uv1  = uv_ptr[ vertex_idx.y ];
+    const auto& uv2  = uv_ptr[ vertex_idx.z ];
 
     auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
     auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );

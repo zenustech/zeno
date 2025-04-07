@@ -66,7 +66,7 @@ void Scene::updateStaticDrawObjects() {
 
         tbb::parallel_for(size_t(0), dat.verts.size()/3, [&](size_t i) {
 
-            StaticMeshes->g_uv[ver_offset + i] = toHalf( *(float2*)&uvAttr[i * 3] );
+            StaticMeshes->g_uv[ver_offset + i] = ( *(float2*)&uvAttr[i * 3] );
             StaticMeshes->g_clr[ver_offset + i] = toHalf( *(float3*)&clrAttr[i * 3] );
 
             StaticMeshes->g_nrm[ver_offset + i] = toHalf( *(float3*)&nrmAttr[i * 3] );
@@ -128,7 +128,7 @@ void Scene::updateDrawObjects() {
 
         tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
             
-            mesh->g_uv[i] = toHalf( *(float2*)&(uvAttr[i * 3]) );
+            mesh->g_uv[i] = ( *(float2*)&(uvAttr[i * 3]) );
             mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
 
             mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
