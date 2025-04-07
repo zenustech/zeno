@@ -931,24 +931,61 @@ static void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &na
         TraverseNodesToGetNames(pNode->GetChild(i), names);
     }
 }
-static void TraverseNodesToGetJson(FbxNode* pNode, Json &json) {
+static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
     json["visibility"] = int(pNode->GetVisibility());
     json["node_name"] = nodeName;
-    FbxAMatrix bindMatrix = pNode->EvaluateLocalTransform();
-    auto r0 = bindMatrix.GetRow(0);
-    auto r1 = bindMatrix.GetRow(1);
-    auto r2 = bindMatrix.GetRow(2);
-    auto t = bindMatrix.GetRow(3);
-    json["r0"] = {r0[0], r0[1], r0[2]};
-    json["r1"] = {r1[0], r1[1], r1[2]};
-    json["r2"] = {r2[0], r2[1], r2[2]};
-    json["t"] = {t[0], t[1], t[2]};
+    {
+        FbxAMatrix bindMatrix = pNode->EvaluateLocalTransform(curTime);
+        auto r0 = bindMatrix.GetRow(0);
+        auto r1 = bindMatrix.GetRow(1);
+        auto r2 = bindMatrix.GetRow(2);
+        auto t = bindMatrix.GetRow(3);
+        if (
+            std::isnan(r0[0]) || std::isnan(r0[1]) || std::isnan(r0[2])
+            || std::isnan(r1[0]) || std::isnan(r1[1]) || std::isnan(r1[2])
+            || std::isnan(r2[0]) || std::isnan(r2[1]) || std::isnan(r2[2])
+            || std::isnan(t[0]) || std::isnan(t[1]) || std::isnan(t[2])
+        ) {
+            json["r0"] = {0.0, 0.0, 0.0};
+            json["r1"] = {0.0, 0.0, 0.0};
+            json["r2"] = {0.0, 0.0, 0.0};
+            json["t"]  = {0.0, 0.0, 0.0};
+        } else {
+            json["r0"] = {r0[0], r0[1], r0[2]};
+            json["r1"] = {r1[0], r1[1], r1[2]};
+            json["r2"] = {r2[0], r2[1], r2[2]};
+            json["t"]  = {t[0], t[1], t[2]};
+        }
+    }
+    if (false) {
+        FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform(curTime);
+        auto r0 = bindMatrix.GetRow(0);
+        auto r1 = bindMatrix.GetRow(1);
+        auto r2 = bindMatrix.GetRow(2);
+        auto t = bindMatrix.GetRow(3);
+        if (
+            std::isnan(r0[0]) || std::isnan(r0[1]) || std::isnan(r0[2])
+            || std::isnan(r1[0]) || std::isnan(r1[1]) || std::isnan(r1[2])
+            || std::isnan(r2[0]) || std::isnan(r2[1]) || std::isnan(r2[2])
+            || std::isnan(t[0]) || std::isnan(t[1]) || std::isnan(t[2])
+        ) {
+            json["gr0"] = {0.0, 0.0, 0.0};
+            json["gr1"] = {0.0, 0.0, 0.0};
+            json["gr2"] = {0.0, 0.0, 0.0};
+            json["gt"]  = {0.0, 0.0, 0.0};
+        } else {
+            json["gr0"] = {r0[0], r0[1], r0[2]};
+            json["gr1"] = {r1[0], r1[1], r1[2]};
+            json["gr2"] = {r2[0], r2[1], r2[2]};
+            json["gt"]  = {t[0], t[1], t[2]};
+        }
+    }
     json["children_name"] = Json::array();
     for (int i = 0; i < pNode->GetChildCount(); i++) {
         Json child;
-        TraverseNodesToGetJson(pNode->GetChild(i), child);
+        TraverseNodesToGetJson(pNode->GetChild(i), child, curTime);
         std::string childName = child["node_name"];
         json[childName] = child;
         json["children_name"].push_back(childName);
@@ -1773,6 +1810,16 @@ ZENDEFNODE(NewFBXImportCamera, {
 
 struct NewFBXSceneInfo : INode {
     virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        float fps = get_input2<float>("fps");
+        float t = float(frameid) / fps;
+        FbxTime curTime;       // The time for each key in the animation curve(s)
+        curTime.SetSecondDouble(t);   // Starting time
         auto fbx_object = get_input2<FBXObject>("fbx_object");
         auto lScene = fbx_object->lScene;
         FbxNode* lRootNode = lScene->GetRootNode();
@@ -1780,7 +1827,7 @@ struct NewFBXSceneInfo : INode {
         if (lRootNode != nullptr){
             std::string nodeName = lRootNode->GetName();
             Json json;
-            TraverseNodesToGetJson(lRootNode, json);
+            TraverseNodesToGetJson(lRootNode, json, curTime);
             json_obj->json[nodeName] = json;
         }
         set_output2("json", json_obj);
@@ -1790,6 +1837,8 @@ struct NewFBXSceneInfo : INode {
 ZENDEFNODE(NewFBXSceneInfo, {
     {
         "fbx_object",
+        {"frameid"},
+        {"float", "fps", "25"},
     },
     {
         "json",
