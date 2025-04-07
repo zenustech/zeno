@@ -625,13 +625,17 @@ struct GraphicsManager {
                         auto r2 = _r2[i];
 
                         auto& matrix3r4c = matrix_list[i];
-
-                        memcpy(&matrix3r4c[0], &r0, sizeof(float)*3); 
-                        memcpy(&matrix3r4c[4], &r1, sizeof(float)*3);
-                        memcpy(&matrix3r4c[8], &r2, sizeof(float)*3);
-
-                        matrix3r4c[3] = pos[0];
-                        matrix3r4c[7] = pos[1];
+                        matrix3r4c[0]  = r0[0];
+                        matrix3r4c[1]  = r1[0];
+                        matrix3r4c[2]  = r2[0];
+                        matrix3r4c[3]  = pos[0];
+                        matrix3r4c[4]  = r0[1];
+                        matrix3r4c[5]  = r1[1];
+                        matrix3r4c[6]  = r2[1];
+                        matrix3r4c[7]  = pos[1];
+                        matrix3r4c[8]  = r0[2];
+                        matrix3r4c[9]  = r1[2];
+                        matrix3r4c[10] = r2[2];
                         matrix3r4c[11] = pos[2];
                     }
                     defaultScene.load_matrix_list(reName, matrix_list);
