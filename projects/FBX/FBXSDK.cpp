@@ -959,7 +959,7 @@ static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) 
             json["t"]  = {t[0], t[1], t[2]};
         }
     }
-    if (false) {
+    if (true) {
         FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform(curTime);
         auto r0 = bindMatrix.GetRow(0);
         auto r1 = bindMatrix.GetRow(1);
@@ -1919,7 +1919,12 @@ struct NewFBXPrimList : INode {
             for (auto prim: prims) {
                 auto &ud = prim->userData();
                 auto fbx_path = ud.get2<std::string>("fbx_path");
-                if (get_visibility_from_json(json->json, fbx_path)) {
+                if (get_input2<bool>("SkipInvisibleMesh")) {
+                    if (get_visibility_from_json(json->json, fbx_path)) {
+                        new_prims.push_back(prim);
+                    }
+                }
+                else {
                     new_prims.push_back(prim);
                 }
             }
@@ -1981,6 +1986,7 @@ ZENDEFNODE(NewFBXPrimList, {
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
         {"bool", "CopyFacesetToMatid", "1"},
         {"bool", "OutputTexEvenMissing", "0"},
+        {"bool", "SkipInvisibleMesh", "0"},
     },
     {
         "prims",

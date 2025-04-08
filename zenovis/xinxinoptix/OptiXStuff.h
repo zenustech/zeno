@@ -272,7 +272,7 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
     bool is_success=false;
 
     std::vector<const char*> compilerOptions {
-        "-std=c++17", "-default-device" 
+        "-std=c++17", "-default-device", "-DNVRTC_CACHE_DISABLE=1", "-DNVRTC_LOG_LEVEL=0"
         //,"-extra-device-vectorization"
   #if !defined( NDEBUG )      
         ,"-lineinfo" //"-G"//"--dopt=on",

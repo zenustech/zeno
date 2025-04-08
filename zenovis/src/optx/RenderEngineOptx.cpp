@@ -1140,7 +1140,7 @@ struct GraphicsManager {
             //auto ikey = key + ':' + std::string(std::to_string(idx));
             if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
 
-                zeno::log_info("load_object: loading graphics [{}]", key);
+//                zeno::log_info("load_object: loading graphics [{}]", key);
                 changed = true;
 
                 if (!scene->drawOptions->updateMatlOnly) {
@@ -1173,7 +1173,7 @@ struct GraphicsManager {
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
 
-                zeno::log_info("load_object: loaded graphics to {}", ig.get());
+//                zeno::log_info("load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }

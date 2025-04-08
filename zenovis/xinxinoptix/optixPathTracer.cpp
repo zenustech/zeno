@@ -1682,11 +1682,11 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         }
 
         auto& texs = shaders[i]->tex_keys;
-        std::cout<<"texSize:"<<texs.size()<<std::endl;
+        //std::cout<<"texSize:"<<texs.size()<<std::endl;
 
         for(int j=0;j<texs.size();j++)
         {
-            std::cout<< "texPath:" << texs[j].path <<std::endl;
+            //std::cout<< "texPath:" << texs[j].path <<std::endl;
             OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
         }
 
@@ -1708,7 +1708,7 @@ OptixUtil::_compile_group.wait();
 
             auto fallback = shaders[i]->matid == "Default";
             
-            printf("now compiling %d'th shader \n", i);
+            //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
             {
                 std::cout<<"shader compiling failed, using fallback shader instead"<<std::endl;
