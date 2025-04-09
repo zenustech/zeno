@@ -107,10 +107,18 @@ bool Scene::loadFrameObjects(int frameid) {
     const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
         return this->objectsMan->load_objects(objs);
     };
-    bool isFrameValid = false;
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
+    bool isFrameValid = false, isLoaded = false, isRerun = false;
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid, isLoaded, isRerun);
     if (!isFrameValid)
         return false;
+
+    zeno::scope_exit sp([this, isLoaded, isRerun, frameid]() {
+        if (isLoaded)
+            renderMan->getEngine()->endFrameLoading(frameid, isRerun);
+    });
+    if (isLoaded) {
+        renderMan->getEngine()->beginFrameLoading(frameid, isRerun);
+    }
 
     renderMan->getEngine()->update();
     return inserted;
