@@ -400,11 +400,14 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                             loadPartial = true;
                         }
                     }
-                } else {//currentFrameStampinfo为空是重新run
+                }
+#if 0
+                else {//currentFrameStampinfo为空是重新run
                     if (newFrameChangeInfo != "TotalChange") {//重新run且不是Totalchange
                         loadPartial = true;
                     }
                 }
+#endif
                 baseframetoload = newFrameBaseframe;
             }
         }
