@@ -160,15 +160,22 @@ void ViewportWidget::initializeGL()
     m_zenovis->initializeGL();
     ZASSERT_EXIT(m_picker);
     m_picker->initialize();
+
+    auto session = m_zenovis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
     if (loadSettingFromZsg)
     {
-        auto session = m_zenovis->getSession();
-        ZASSERT_EXIT(session);
-        auto scene = session->get_scene();
-        ZASSERT_EXIT(scene);
         scene->camera->setResolutionInfo(std::get<2>(viewInfo), std::get<0>(viewInfo), std::get<1>(viewInfo));
         session->set_background_color(std::get<3>(viewInfo), std::get<4>(viewInfo), std::get<5>(viewInfo));
     }
+
+    //从注册表初始化drawOptions
+    auto& inst = ZenoSettingsManager::GetInstance();   
+    QVariant varSampleNumber = inst.getValue(zsViewportSampleNumber);
+    int sampleNumber = varSampleNumber.isValid() ? varSampleNumber.toInt() : 1;
+    scene->drawOptions->num_samples = sampleNumber;
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)

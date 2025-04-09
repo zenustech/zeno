@@ -412,6 +412,11 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     auto scene = m_zenovis->getSession()->get_scene();
 
+    auto& inst = ZenoSettingsManager::GetInstance();    //从注册表初始化drawOptions
+    QVariant varSampleNumber = inst.getValue(zsViewportSampleNumber);
+    int sampleNumber = varSampleNumber.isValid() ? varSampleNumber.toInt() : 1;
+    scene->drawOptions->num_samples = sampleNumber;
+
     m_worker = new OptixWorker(m_zenovis);
     m_worker->moveToThread(&m_thdOptix);
     connect(&m_thdOptix, &QThread::finished, m_worker, &QObject::deleteLater);

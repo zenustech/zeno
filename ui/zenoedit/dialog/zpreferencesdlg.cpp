@@ -7,6 +7,8 @@
 #include "startup/zstartup.h"
 #include "zshortcutsettingdlg.h"
 #include <zenoui/comctrl/zlabel.h>
+#include "viewport/displaywidget.h"
+#include <zenovis/DrawOptions.h>
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)
@@ -77,6 +79,7 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     QVariant varAutoCleanCache = inst.getValue(zsCacheAutoClean);
     QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
     QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
+    QVariant varSampleNumber = inst.getValue(zsViewportSampleNumber);
 
     bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
     bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
@@ -85,6 +88,7 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
     bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
     bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
+    int sampleNumber = varSampleNumber.isValid() ? varSampleNumber.toInt() : 1;
 
     CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
@@ -117,6 +121,9 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     m_pViewportPointSizeScaleSpinBox = new QDoubleSpinBox;
     m_pViewportPointSizeScaleSpinBox->setValue(viewportPointSizeScale);
 
+    m_pViewportSampleNumber = new QSpinBox;
+    m_pViewportSampleNumber->setValue(sampleNumber);
+
     m_pEnableCheckbox = new QCheckBox;
     m_pEnableCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
     connect(m_pEnableCheckbox, &QCheckBox::stateChanged, [=](bool state) {
@@ -131,6 +138,20 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
         m_pPathEdit->setEnabled(state);
         m_pTempCacheDir->setEnabled(state);
         m_pAutoCleanCache->setEnabled(state && !m_pTempCacheDir->isChecked());
+    });
+
+    connect(m_pViewportSampleNumber, QOverload<int>::of(&QSpinBox::valueChanged), this, [&](int value) {
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        for (auto displaywid : main->viewports()) {
+            if (displaywid) {
+                if (auto vis = displaywid->getZenoVis()) {
+                    if (auto scene = vis->getSession()->get_scene()) {
+                        scene->drawOptions->num_samples = value;
+                    }
+                }
+            }
+        }
     });
 
     QGridLayout* pLayout = new QGridLayout(this);
@@ -148,6 +169,8 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pEnableShiftChangeFOV, 5, 1);
     pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 6, 0);
     pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 6, 1);
+    pLayout->addWidget(new QLabel(tr("viewport Sample Number")), 7, 0);
+    pLayout->addWidget(m_pViewportSampleNumber, 7, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 5);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -163,6 +186,7 @@ void ZenoCachePane::saveValue()
     inst.setValue(zsCacheAutoClean, m_pAutoCleanCache->checkState() == Qt::Checked);
     inst.setValue(zsEnableShiftChangeFOV, m_pEnableShiftChangeFOV->checkState() == Qt::Checked);
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
+    inst.setValue(zsViewportSampleNumber, m_pViewportSampleNumber->value());
 }
 
 //layout pane
