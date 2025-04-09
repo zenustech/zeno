@@ -77,7 +77,7 @@ public:
             const auto geo_type = checkGeoType(geo_name);
             if (geo_type != ShaderMark::Volume) continue;
 
-            const auto material_str = it.value()["Material"].template get<std::string>();
+            const auto material_str = it.value().value("Material", "Default");
             const auto material_key = std::make_tuple(material_str, geo_type);
 
             auto shader_index = shader_indice_table[material_key];
@@ -210,7 +210,7 @@ public:
 
             candidates_matrix[candi_name] = matrix_ptr;
 
-            std::string material_str = it.value()["Material"].template get<std::string>();
+            const auto material_str = it.value().value("Material", "Default");
             auto material_key = std::make_tuple(material_str, geo_type);
 
             auto shader_index = 0u;
@@ -575,7 +575,7 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
                 std::string geo_name = it.value()["Geom"].template get<std::string>();
                 const auto geo_type = checkGeoType(geo_name);
 
-                std::string material_str = it.value()["Material"].template get<std::string>();
+                const auto material_str = it.value().value("Material", "Default");
                 auto material_key = std::make_tuple(material_str, geo_type);
 
                 shader_key_set.insert( material_key );
