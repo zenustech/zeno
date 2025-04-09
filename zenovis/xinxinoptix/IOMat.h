@@ -65,6 +65,16 @@ struct MatInput {
     vec3 clr;
     vec3 tang;
 
+    float2 _barys;
+    inline float3 barys() const {
+        return { 1.0f-_barys.x-_barys.y, _barys.x, _barys.y };
+    }
+    
+    inline float area() const {
+        assert(false && "Empty function area()\n");
+        return 0;
+    }
+
     uint instIdx;
     vec3 instPos;
     vec3 instNrm;
