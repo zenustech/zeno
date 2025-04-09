@@ -222,6 +222,7 @@ public:
             }
             if (ShaderMark::Mesh == geo_type) {
                 shader_index = 0u;
+                shader_visiable = VisibilityMask::DefaultMatMask;
                 
             } else if (ShaderMark::Volume == geo_type) {
                 shader_visiable = VisibilityMask::VolumeMatMask;
@@ -302,11 +303,7 @@ public:
                 OptixTraversableHandle handle;
                 uint theDepth = 0;
 
-                if (0) {
-                    handle = nodeCache[item_key]->handle;
-                } else {
-                    handle = treeLook(item_key, renderGroup, true, theDepth);
-                }
+                handle = treeLook(item_key, renderGroup, true, theDepth);
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
@@ -455,6 +452,7 @@ public:
                  int const *matids, std::vector<std::string> const &matNameList) 
     {
         MeshDat &dat = drawdats[key];
+        dat.dirty = true;
 
         dat.triMats.assign(matids, matids + numtris);
         dat.mtlidList = matNameList;

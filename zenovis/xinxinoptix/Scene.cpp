@@ -100,6 +100,7 @@ void Scene::updateDrawObjects() {
         if (mesh == nullptr) {
             mesh = std::make_shared<MeshObject>();
         }
+        mesh->dirty = true;
         mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
         
         std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
