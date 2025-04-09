@@ -114,10 +114,13 @@ bool Scene::loadFrameObjects(int frameid) {
 
     zeno::scope_exit sp([this, isLoaded, isRerun, frameid]() {
         if (isLoaded)
-            renderMan->getEngine()->endFrameLoading(frameid, isRerun);
+            renderMan->getEngine()->endFrameLoading(frameid);
     });
+    if (isRerun) {
+        renderMan->getEngine()->rerun();
+    }
     if (isLoaded) {
-        renderMan->getEngine()->beginFrameLoading(frameid, isRerun);
+        renderMan->getEngine()->beginFrameLoading(frameid);
     }
 
     renderMan->getEngine()->update();
