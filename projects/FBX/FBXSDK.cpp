@@ -1961,7 +1961,10 @@ struct NewFBXPrimList : INode {
                         auto &nrm = prim->loops.attr<vec3f>(vector);
                         auto &vnrm = prim->verts.add_attr<vec3f>(vector);
                         for (auto i = 0; i < prim->loops.size(); i++) {
-                            vnrm[prim->loops[i]] = nrm[i];
+                            vnrm[prim->loops[i]] += nrm[i];
+                        }
+                        for (auto i = 0; i < prim->verts.size(); i++) {
+                            vnrm[i] = normalizeSafe(vnrm[i]);
                         }
                     }
                 }
