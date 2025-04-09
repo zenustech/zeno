@@ -33,6 +33,7 @@
 #include <sutil/PPMLoader.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
+#include <unordered_map>
 
 #include <glad/glad.h>
 //#include <GLFW/glfw3.h>
@@ -1008,7 +1009,7 @@ static void getInputDataFromFile( std::string& ptx, const char* sample_name, con
 
 struct PtxSourceCache
 {
-    std::map< std::string, std::shared_ptr<std::string> > map;
+    std::unordered_map< std::string, std::shared_ptr<std::string> > map;
     ~PtxSourceCache()
     {
         map = {};
