@@ -7,6 +7,8 @@
 #include "startup/zstartup.h"
 #include "zshortcutsettingdlg.h"
 #include <zenoui/comctrl/zlabel.h>
+#include "viewport/displaywidget.h"
+#include <zenovis/DrawOptions.h>
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)
@@ -133,6 +135,23 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
         m_pAutoCleanCache->setEnabled(state && !m_pTempCacheDir->isChecked());
     });
 
+    m_pViewportSampleNumber = new QSpinBox;
+    m_pViewportSampleNumber->setRange(1, 10000);
+    m_pViewportSampleNumber->setValue(1);
+    {
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        for (auto displaywid : main->viewports()) {
+            if (displaywid && !displaywid->isGLViewport()) {
+                if (auto vis = displaywid->getZenoVis()) {
+                    if (auto scene = vis->getSession()->get_scene()) {
+                        m_pViewportSampleNumber->setValue(scene->drawOptions->num_samples);
+                    }
+                }
+            }
+        }
+    }
+
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable cache")), 0, 0);
     pLayout->addWidget(m_pEnableCheckbox, 0, 1);
@@ -148,6 +167,8 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pEnableShiftChangeFOV, 5, 1);
     pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 6, 0);
     pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 6, 1);
+    pLayout->addWidget(new QLabel(tr("Viewport Sample Number")), 7, 0);
+    pLayout->addWidget(m_pViewportSampleNumber, 7, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 5);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -163,6 +184,17 @@ void ZenoCachePane::saveValue()
     inst.setValue(zsCacheAutoClean, m_pAutoCleanCache->checkState() == Qt::Checked);
     inst.setValue(zsEnableShiftChangeFOV, m_pEnableShiftChangeFOV->checkState() == Qt::Checked);
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+    for (auto displaywid : main->viewports()) {
+        if (displaywid) {
+            if (auto vis = displaywid->getZenoVis()) {
+                if (auto scene = vis->getSession()->get_scene()) {
+                    scene->drawOptions->num_samples = m_pViewportSampleNumber->value();
+                }
+            }
+        }
+    }
 }
 
 //layout pane
