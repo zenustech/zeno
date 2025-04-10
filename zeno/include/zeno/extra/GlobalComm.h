@@ -53,6 +53,7 @@ struct GlobalComm {
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool load_objects(const int frameid, 
                 const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& cb,
+                std::function<void(int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun)> callbackUpdate,
                 bool& isFrameValid);
     ZENO_API void clear_objects(const std::function<void()>& cb);
     ZENO_API bool isFrameCompleted(int frameid) const;
@@ -70,7 +71,7 @@ struct GlobalComm {
     static std::shared_ptr<IObject> constructEmptyObj(int type);
     bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo);
 private:
-    ViewObjects const *_getViewObjects(const int frameidm);
+    ViewObjects const *_getViewObjects(const int frameidm, bool& optxneedLoaded, bool& optxneedrerun);
 };
 
 }

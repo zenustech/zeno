@@ -545,19 +545,19 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
     std::lock_guard lck(m_mtx);
     bool isLoaded = false, isRerun = false;
-    return _getViewObjects(frameid);
+    return _getViewObjects(frameid, isLoaded, isRerun);
 }
 
-GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
+GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bool& optxneedLoaded, bool& optxneedrerun) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            zeno::getSession().userData().set2<bool>("optixNeedLoad", true);
+            optxneedLoaded = true;
             if (m_inCacheFrames.empty()) {
-                zeno::getSession().userData().set2<bool>("optixNeedRerun", true);
+                optxneedrerun = true;
             }
             std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>> baseframeinfo;
 
@@ -588,7 +588,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
             }
         } else {
             if (currentFrameNumber != frameid) {
-                zeno::getSession().userData().set2<bool>("optixNeedLoad", true);
+                optxneedLoaded = true;
             }
         }
     }
@@ -614,6 +614,7 @@ ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
         const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
+        std::function<void(int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun)> callbackUpdate,
         bool& isFrameValid)
 {
     if (!callback)
@@ -631,7 +632,8 @@ ZENO_API bool GlobalComm::load_objects(
 
     isFrameValid = true;
     bool inserted = false;
-    auto const* viewObjs = _getViewObjects(frameid);
+    static bool optxneedLoaded = false, optxneedrerun = false;
+    auto const* viewObjs = _getViewObjects(frameid, optxneedLoaded, optxneedrerun);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
         inserted = callback(viewObjs->m_curr);
@@ -640,6 +642,7 @@ ZENO_API bool GlobalComm::load_objects(
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         inserted = callback({});
     }
+    callbackUpdate(frameid, inserted, optxneedLoaded, optxneedrerun);
     return inserted;
 }
 
