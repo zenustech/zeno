@@ -13,6 +13,9 @@ ZENO_API bool objectGetBoundingBox(IObject *ptr, vec3f &bmin, vec3f &bmax) {
         return true;
     } else {
         if (auto obj = dynamic_cast<PrimitiveObject *>(ptr)) {
+            if (obj->verts.size() == 0) {
+                return false;
+            }
             std::tie(bmin, bmax) = primBoundingBox(obj);
             ud.setLiterial("_bboxMin", bmin);
             ud.setLiterial("_bboxMax", bmax);

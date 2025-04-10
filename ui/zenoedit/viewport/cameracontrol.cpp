@@ -290,7 +290,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             // translate
-            if (m_hit_posWS.has_value()) {
+            if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
                 auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
                 if (new_pos.has_value()) {
@@ -525,6 +525,9 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
 }
 
 void CameraControl::focus(QVector3D center, float radius) {
+    if (radius == 0) {
+        radius = 1;
+    }
     setPivot({float(center.x()), float(center.y()), float(center.z())});
     if (getFOV() >= 1e-6)
         radius /= (getFOV() / 45.0f);
