@@ -8,6 +8,7 @@
 #include <Sampling.h>
 #include <cuda/random.h>
 #include <cuda/climits.h>
+
 #define _FLT_MAX_ __FLT_MAX__
 #define _FLT_MIN_ __FLT_MIN__
 #define _FLT_EPL_ __FLT_EPSILON__

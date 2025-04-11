@@ -150,29 +150,29 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     
     file.close();
 
-    const auto parent_matrix = volume.transform;
+    //const auto parent_matrix = volume.transform;
 
-    const auto child_matrix = [&]() -> auto {
+    // const auto child_matrix = [&]() -> auto {
 
-        auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
-        glm::mat4 result;
-        for (uint i=0; i<16; ++i) {
-            auto ele = *(tmp[0]+i);
-            result[i/4][i%4] = ele;
-        }
-        return result;
-    }();
+    //     auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
+    //     glm::mat4 result;
+    //     for (uint i=0; i<16; ++i) {
+    //         auto ele = *(tmp[0]+i);
+    //         result[i/4][i%4] = ele;
+    //     }
+    //     return result;
+    // }();
 
-    auto result_matrix = parent_matrix * child_matrix;  
+    //auto result_matrix = parent_matrix * child_matrix;  
 
-    auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
-    auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
+    //auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
+    //auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
 
-    for (uint i=0; i<16; ++i) {
-        *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
-    }
+    //for (uint i=0; i<16; ++i) {
+    //    *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
+    //}
 
-    auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
+    //auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
 
     volume.grids.clear();
     volume.grids.reserve(tmp_grids.size());
@@ -182,7 +182,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
     for (uint i=0; i<grid_count; ++i) {
         auto grid = tmp_grids[i];
-        grid->setTransform(result_transform);
+        //grid->setTransform(result_transform);
          
         //volume.grids.push_back(GridWrapper());
         //parsing(grid, volume.grids[i].handle);
@@ -274,13 +274,14 @@ void cleanupVolume( VolumeWrapper& volume )
     }
 }
 
-void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const OptixDeviceContext& context )
+void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context )
 {
     // Build accel for the volume and store it in a VolumeAccel struct.
     //
     // For Optix the NanoVDB volume is represented as a 3D box in index coordinate space. The volume's
     // GAS is created from a single AABB. Because the index space is by definition axis aligned with the
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
+    auto& accel = *volume.node;
     {
 		// get this grid's aabb
         sutil::Aabb aabb = [&]()
@@ -337,7 +338,7 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
         CUdeviceptr d_temp_buffer_gas;
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_temp_buffer_gas ),
             gas_buffer_sizes.tempSizeInBytes ) );
-        CUdeviceptr d_output_buffer_gas;
+        xinxinoptix::raii<CUdeviceptr> d_output_buffer_gas;
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_output_buffer_gas ),
             gas_buffer_sizes.outputSizeInBytes ) );
         CUdeviceptr d_compacted_size;
@@ -366,14 +367,14 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_compacted_size ) ) );
         if( compacted_size < gas_buffer_sizes.outputSizeInBytes ) 
         {
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &accel.d_buffer ), compacted_size ) );
+            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &accel.buffer ), compacted_size ) );
             OPTIX_CHECK( optixAccelCompact( context, 0, accel.handle,
-                accel.d_buffer, compacted_size, &accel.handle ) );
-            CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_output_buffer_gas ) ) );
+                accel.buffer, compacted_size, &accel.handle ) );
+                d_output_buffer_gas.reset();
         }
         else 
         {
-            accel.d_buffer = d_output_buffer_gas;
+            accel.buffer = std::move(d_output_buffer_gas);
         }
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_temp_buffer_gas ) ) );
     }
@@ -381,10 +382,9 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
 
 void cleanupVolumeAccel( VolumeAccel& accel )
 {
-    if (accel.d_buffer != 0) {
-	    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( accel.d_buffer ) ) );
+    if (accel.buffer != 0) {
 
-        accel.d_buffer = 0u;
+        accel.buffer.reset();
         accel.handle = 0u;
     }
 }

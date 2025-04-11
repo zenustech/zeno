@@ -27,6 +27,8 @@ enum ShaderMark {
     CURVE_CATROM,
 };
 
+using shader_key_t = std::tuple<std::string, ShaderMark>;
+
 static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
     { zeno::CurveType::QUADRATIC_BSPLINE, ShaderMark::CURVE_QUADRATIC },
     { zeno::CurveType::RIBBON_BSPLINE,    ShaderMark::CURVE_RIBBON    },
@@ -48,11 +50,11 @@ struct ShaderPrepared {
     std::map<std::string, std::string> macros;
     
     std::vector<OptixUtil::TexKey> tex_keys;
+    std::vector<std::string>       vdb_keys;
 };
 
 namespace xinxinoptix {
 
-std::set<std::string> uniqueMatsForMesh();
 
 void optixCleanup();
 void optixDestroy();
@@ -61,20 +63,13 @@ void optixrender(int fbo = 0, int samples = 1, bool denoise = false, bool simple
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut);
-void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut);
-void UpdateInst();
-void UpdateInstMesh(const std::map<std::string, int> &mtlidlut);
 
-void UpdateMeshGasAndIas(bool staticNeedUpdate);
+void prepareScene();
 void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders, 
                     bool requireTriangObj, bool requireTriangLight, 
                     bool requireSphereObj, bool requireSphereLight, 
                     bool requireVolumeObj, uint usesCurveTypes, bool refresh=false);
                     
-void updateSphereXAS();
-
-void updateVolume(uint32_t volume_shader_offset);
 void updateRootIAS();
 void buildLightTree();
 void optixupdateend();
@@ -86,11 +81,6 @@ void set_physical_camera_param(float aperture, float shutter_speed, float iso, b
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 
-void load_object(std::string const &key, std::string const &mtlid, const std::string& instID, float const *verts, size_t numverts, uint const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab,int const *matids, std::vector<std::string> const &matNameList);
-
-void unload_object(std::string const &key);
-void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang);
-void unload_inst(const std::string &key);
 glm::vec3 get_click_pos(int x, int y);
 
 struct LightDat {
