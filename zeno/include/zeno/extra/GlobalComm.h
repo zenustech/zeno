@@ -70,6 +70,7 @@ struct GlobalComm {
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
     bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo);
+    std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
 private:
     ViewObjects const *_getViewObjects(const int frameidm, bool& optxneedLoaded, bool& optxneedrerun);
 };
