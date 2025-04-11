@@ -144,11 +144,11 @@ SUTILAPI void calculateCameraVariables(
 double SUTILAPI currentTime();
 
 // Get input data, either pre-compiled with NVCC or JIT compiled by NVRTC.
-SUTILAPI const char* getCodePTX( const char* source,
+SUTILAPI const char* cuCompiled(   const char* source,
                                    const char* macro,
                                    const char* name,
                                    size_t&     dataSize,
-                                   bool &is_success, 
+                                   bool&       success, 
                                    const char** log = NULL,    // (Optional) pointer to compiler log string. If *log == NULL there is no output. Only valid until the next getInputData call
                                    const std::vector<const char*>& compilerOptions = {CUDA_NVRTC_OPTIONS}
                                    );  // Optional vector of compiler options.
