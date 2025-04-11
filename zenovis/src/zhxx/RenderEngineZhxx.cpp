@@ -122,11 +122,15 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::finalize();
     }
 
-    void beginFrameLoading(int frameid, bool isRerun) {
+    void rerun() {
 
     }
 
-    void endFrameLoading(int frameid, bool isRerun) {
+    void beginFrameLoading(int frameid) {
+
+    }
+
+    void endFrameLoading(int frameid) {
 
     }
 

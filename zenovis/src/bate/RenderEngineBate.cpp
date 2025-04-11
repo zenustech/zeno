@@ -97,11 +97,15 @@ struct RenderEngineBate : RenderEngine {
         }
     }
 
-    void beginFrameLoading(int frameid, bool isRerun) {
+    void rerun() {
 
     }
 
-    void endFrameLoading(int frameid, bool isRerun) {
+    void beginFrameLoading(int frameid) {
+
+    }
+
+    void endFrameLoading(int frameid) {
 
     }
 

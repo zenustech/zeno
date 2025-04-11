@@ -400,11 +400,14 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                             loadPartial = true;
                         }
                     }
-                } else {//currentFrameStampinfo为空是重新run
+                }
+#if 0
+                else {//currentFrameStampinfo为空是重新run
                     if (newFrameChangeInfo != "TotalChange") {//重新run且不是Totalchange
                         loadPartial = true;
                     }
                 }
+#endif
                 baseframetoload = newFrameBaseframe;
             }
         }
@@ -427,36 +430,100 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     else {
         bool ret = fromDisk(cacheFramePath, frameid, objs);
         if (ret) {
-            ViewObjects baseframecache;
-            fromDisk(cacheFramePath, baseframetoload, baseframecache);
-            for (auto& [key, obj] : baseframecache.m_curr) {
-                auto it = newFrameStampInfo.find(key.substr(0, key.find_first_of(":")));
-                if (it != newFrameStampInfo.end()) {
-                    std::string newframeObjfullkey = std::get<3>(it->second);
-                    std::string newframeObjStampchange = std::get<0>(it->second);
-                    std::string newframeDataChangeHint = std::get<4>(it->second);
+            for (auto& [key, tup] : newFrameStampInfo) {
+                int newframeObjBaseframe = std::get<1>(tup);
+                std::string newframeObjfullkey = std::get<3>(tup);
+                std::string newframeObjStampchange = std::get<0>(tup);
+                std::string newframeDataChangeHint = std::get<4>(tup);
 
-                    if (newframeObjStampchange == "UnChanged") {
-                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), obj);
-                    } else if (newframeObjStampchange == "DataChange") {
-                        auto baseobj = std::move(obj);
-                        auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                        //根据newframeDataChangeHint获取newDataChangedObj的data,设置给baseobj
-                        objs.m_curr.erase(newframeObjfullkey);
-                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
-                    } else if (newframeObjStampchange == "ShapeChange") {
-                        auto baseobj = std::move(obj);
-                        auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                        //暂时并入Totalchange
-                        objs.m_curr.erase(newframeObjfullkey);
-                        objs.try_emplace(it->first + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
-                    }
+                if (newframeObjStampchange == "UnChanged") {
+                    objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
+                }
+                else if (newframeObjStampchange == "DataChange") {
+                    auto baseobj = std::move(fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
+                    auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
+                    //根据newframeDataChangeHint获取newDataChangedObj的data,设置给baseobj
+                    objs.m_curr.erase(newframeObjfullkey);
+                    objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
+                }
+                else if (newframeObjStampchange == "ShapeChange") {
+                    auto baseobj = std::move(fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
+                    auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
+                    //暂时并入Totalchange
+                    objs.m_curr.erase(newframeObjfullkey);
+                    objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
                 }
             }
             return true;
         }
         return ret;//此时objs中对象的stamp-change已经根据切帧前后的变化正确调整
     }
+}
+
+std::shared_ptr<IObject> GlobalComm::fromDiskReadObject(std::string cachedir, int frameid, std::string objectName)
+{
+    if (cachedir.empty())
+        return nullptr;
+    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    cachepath[0] = dir / "lightCameraObj.zencache";
+    cachepath[1] = dir / "materialObj.zencache";
+    cachepath[2] = dir / "normalObj.zencache";
+
+    for (auto path : cachepath)
+    {
+        if (!std::filesystem::exists(path))
+        {
+            continue;
+        }
+        log_debug("load cache from disk {}", path);
+
+        auto szBuffer = std::filesystem::file_size(path);
+
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open()) {
+            log_error("zeno cache file does not exist");
+            continue;
+        }
+        std::string keysStr;
+        std::getline(file, keysStr, '\a');
+        size_t pos = keysStr.size();
+        if (pos <= 8) {
+            log_error("zeno cache file broken");
+            continue;
+        }
+
+        size_t keyscount = std::stoi(keysStr.substr(8));
+        if (keyscount < 1) {
+            continue;
+        }
+        size_t keyindex = -1;
+        std::string targetkey;
+        for (int k = 0; k < keyscount; k++) {
+            std::string segment;
+            std::getline(file, segment, '\a');
+            if (segment.find(objectName) != std::string::npos) {
+                keyindex = k;
+                targetkey = segment;
+            }
+        }
+        if (keyindex == -1) {
+            continue;
+        } else {
+            std::vector<size_t> poses(keyscount + 1);
+            file.read((char*)poses.data(), (keyscount + 1) * sizeof(size_t));
+            size_t posstart = poses[keyindex], posend = poses[keyindex + 1];
+
+            if (posend < posstart || szBuffer < posend) {
+                log_error("zeno cache file broken");
+                continue;
+            }
+            std::vector<char> objbuff(posend - posstart);
+            file.seekg(posstart, std::ios::cur);
+            file.read(objbuff.data(), posend - posstart);
+            return decodeObject(objbuff.data(), posend - posstart);
+        }
+    }
+    return nullptr;
 }
 
 ZENO_API void GlobalComm::newFrame() {
@@ -545,16 +612,16 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
     return _getViewObjects(frameid, isLoaded, isRerun);
 }
 
-GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bool& isLoaded, bool& isRerun) {
+GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bool& optxneedLoaded, bool& optxneedrerun) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            isLoaded = true;
+            optxneedLoaded = true;
             if (m_inCacheFrames.empty()) {
-                isRerun = true;
+                optxneedrerun = true;
             }
             std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>> baseframeinfo;
 
@@ -585,7 +652,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bo
             }
         } else {
             if (currentFrameNumber != frameid) {
-                isLoaded = true;
+                optxneedLoaded = true;
             }
         }
     }
@@ -611,7 +678,8 @@ ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
         const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
-        bool& isFrameValid, bool& isLoaded, bool& isRerun)
+        std::function<void(int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun)> callbackUpdate,
+        bool& isFrameValid)
 {
     if (!callback)
         return false;
@@ -628,7 +696,8 @@ ZENO_API bool GlobalComm::load_objects(
 
     isFrameValid = true;
     bool inserted = false;
-    auto const* viewObjs = _getViewObjects(frameid, isLoaded, isRerun);
+    static bool optxneedLoaded = false, optxneedrerun = false;
+    auto const* viewObjs = _getViewObjects(frameid, optxneedLoaded, optxneedrerun);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
         inserted = callback(viewObjs->m_curr);
@@ -637,6 +706,7 @@ ZENO_API bool GlobalComm::load_objects(
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         inserted = callback({});
     }
+    callbackUpdate(frameid, inserted, optxneedLoaded, optxneedrerun);
     return inserted;
 }
 
