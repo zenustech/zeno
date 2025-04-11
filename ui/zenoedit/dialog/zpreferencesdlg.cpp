@@ -188,11 +188,7 @@ void ZenoCachePane::saveValue()
     ZASSERT_EXIT(main);
     for (auto displaywid : main->viewports()) {
         if (displaywid) {
-            if (auto vis = displaywid->getZenoVis()) {
-                if (auto scene = vis->getSession()->get_scene()) {
-                    scene->drawOptions->num_samples = m_pViewportSampleNumber->value();
-                }
-            }
+            displaywid->setSampleNumber(m_pViewportSampleNumber->value());
         }
     }
 }
