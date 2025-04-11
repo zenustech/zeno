@@ -15,6 +15,9 @@
 #include <utility>
 
 namespace zeno {
+struct JsonObject : IObjectClone<JsonObject> {
+    Json json;
+};
 
 int count_alembic_prims(std::shared_ptr<zeno::ABCTree> abctree) {
     int count = 0;
@@ -224,13 +227,14 @@ struct AlembicPrimList : INode {
         auto abctree = get_input<ABCTree>("abctree");
         auto prims = std::make_shared<zeno::ListObject>();
         int use_xform = get_input2<int>("use_xform");
+        int skip_instance = get_input2<int>("skipInstance");
         if (use_xform) {
             prims = get_xformed_prims(abctree);
         } else {
             abctree->visitPrims([&] (auto const &p) {
                 auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
                 prims->arr.push_back(np);
-            });
+            }, skip_instance);
         }
         auto new_prims = std::make_shared<zeno::ListObject>();
         if (get_input2<bool>("splitByFaceset")) {
@@ -318,6 +322,7 @@ ZENDEFNODE(AlembicPrimList, {
         {"bool", "triangulate", "0"},
         {"bool", "splitByFaceset", "0"},
         {"bool", "killDeadVerts", "1"},
+        {"bool", "skipInstance", "0"},
         {"string", "pathInclude", ""},
         {"string", "pathExclude", ""},
         {"string", "facesetInclude", ""},
@@ -326,6 +331,26 @@ ZENDEFNODE(AlembicPrimList, {
     {"prims"},
     {},
     {"alembic"},
+});
+
+struct AlembicSceneInfo : INode {
+    virtual void apply() override {
+        auto abctree = get_input<ABCTree>("abctree");
+        auto json_obj = std::make_shared<JsonObject>();
+        json_obj->json = abctree->get_scene_info();
+        set_output2("json", json_obj);
+    }
+};
+
+ZENDEFNODE(AlembicSceneInfo, {
+    {
+        "abctree",
+    },
+    {
+        "json",
+    },
+    {},
+    {"Alembic"},
 });
 
 struct GetAlembicCamera : INode {
