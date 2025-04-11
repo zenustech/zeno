@@ -779,6 +779,13 @@ void DisplayWidget::onSetBackground(bool bShowBackground)
     }
 }
 
+void DisplayWidget::setSampleNumber(int sample_number)
+{
+    if (!m_bGLView) {
+        m_optixView->setSampleNumber(sample_number);
+    }
+}
+
 zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
 {
     if (!m_bGLView) {

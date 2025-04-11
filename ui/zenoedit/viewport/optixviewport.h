@@ -44,6 +44,7 @@ public slots:
     void onCleanUpScene();
     void onCleanUpView();
     void onSetBackground(bool bShowBg);
+    void onSetSampleNumber(int sample_number);
 
     void onSetData(float, float, float, bool, bool, bool, bool, float);
 
@@ -73,6 +74,7 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     void showBackground(bool bShow);
+    void setSampleNumber(int sample_number);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
@@ -111,6 +113,7 @@ signals:
     void sig_cleanUpScene();
     void sig_cleanUpView();
     void sig_setBackground(bool bShowBg);
+    void sig_setSampleNumber(int sample_number);
     void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
 
 public slots:
