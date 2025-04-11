@@ -97,6 +97,14 @@ struct RenderEngineBate : RenderEngine {
         }
     }
 
+    void beginFrameLoading(int frameid, bool isRerun) {
+
+    }
+
+    void endFrameLoading(int frameid, bool isRerun) {
+
+    }
+
     void cleanupAssets() override {
 
     }

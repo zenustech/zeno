@@ -166,11 +166,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     attrs.instIdx = inst_idx;
 
+    attrs._barys = barys;
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
     attrs.isShadowRay = true;
-    
+
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
 
     if(length(attrs.tang)>0)
@@ -470,8 +471,6 @@ extern "C" __global__ void __closesthit__radiance()
     auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
     auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
     auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
-
-    float tri_area = length(cross(_vertices_[1]-_vertices_[0], _vertices_[2]-_vertices_[1]));
     
     auto _uv_ = interp(barys, uv0, uv1, uv2);
     attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
@@ -489,8 +488,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto N_smooth = normalize(interp(barys, n0, n1, n2));
     attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
 
-
-
+    attrs._barys = barys;
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);
@@ -505,7 +503,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
-
+    
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
     prd->mask_value = mats.mask_value;
 

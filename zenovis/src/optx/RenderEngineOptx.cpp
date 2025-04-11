@@ -1830,6 +1830,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         xinxinoptix::optixDestroy();
     }
 
+    void beginFrameLoading(int frameid, bool isRerun) {
+        int a = 0;
+    }
+
+    void endFrameLoading(int frameid, bool isRerun) {
+        int a = 0;
+    }
+
     void cleanupAssets() override {
         xinxinoptix::optixCleanup();
     }

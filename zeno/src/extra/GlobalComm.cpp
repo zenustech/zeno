@@ -541,16 +541,21 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
 
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
     std::lock_guard lck(m_mtx);
-    return _getViewObjects(frameid);
+    bool isLoaded = false, isRerun = false;
+    return _getViewObjects(frameid, isLoaded, isRerun);
 }
 
-GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
+GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, bool& isLoaded, bool& isRerun) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
+            isLoaded = true;
+            if (m_inCacheFrames.empty()) {
+                isRerun = true;
+            }
             std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>> baseframeinfo;
 
             std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
@@ -578,6 +583,10 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
                     }
                 }
             }
+        } else {
+            if (currentFrameNumber != frameid) {
+                isLoaded = true;
+            }
         }
     }
     currentFrameNumber = frameid;
@@ -602,7 +611,7 @@ ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
         const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
-        bool& isFrameValid)
+        bool& isFrameValid, bool& isLoaded, bool& isRerun)
 {
     if (!callback)
         return false;
@@ -619,7 +628,7 @@ ZENO_API bool GlobalComm::load_objects(
 
     isFrameValid = true;
     bool inserted = false;
-    auto const* viewObjs = _getViewObjects(frameid);
+    auto const* viewObjs = _getViewObjects(frameid, isLoaded, isRerun);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
         inserted = callback(viewObjs->m_curr);
