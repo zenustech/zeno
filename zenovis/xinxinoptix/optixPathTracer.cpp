@@ -187,7 +187,6 @@ struct PathTracerState
     raii<CUdeviceptr> sky_start;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
-    CUdeviceptr                              d_params2=0;
 
     OptixShaderBindingTable sbt {};
 };
@@ -332,7 +331,7 @@ static void handleCameraUpdate( Params& params )
     //params.vp3 = cam_vp3;
     //params.vp4 = cam_vp4;
 
-    camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
+    camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
 
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
@@ -420,29 +419,22 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
 
-        //state.params.tile_i = i;
-        //state.params.tile_j = j;
-        state.params.tile_w = state.params.windowSpace.x;
-        state.params.tile_h = state.params.windowSpace.y;
-
-        //CUDA_SYNC_CHECK();
-        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
                     ) );
-        //CUDA_SYNC_CHECK();
-
+                    
         //timer.tick();
         
         OPTIX_CHECK( optixLaunch(
                     OptixUtil::pipeline,
                     0,
-                    (CUdeviceptr)state.d_params2,
+                    (CUdeviceptr)state.d_params.handle,
                     sizeof( Params ),
                     &state.sbt,
-                    state.params.tile_w,   // launch width
-                    state.params.tile_h,  // launch height
-                    1                     // launch depth
+                    state.params.width,
+                    state.params.height,
+                    1
                     ) );
 
         //timer.tock("frame time");
@@ -926,8 +918,7 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
 
     //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
-    if(state.d_params2==0)
-        CUDA_CHECK(cudaMalloc((void**)&state.d_params2, sizeof( Params )));
+    state.d_params.resize( sizeof( Params ) );
 
     if (!output_buffer_o) {
       output_buffer_o.emplace(
@@ -1822,17 +1813,10 @@ void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno
   state.params.height = t[1];
   float sx = (float)t[0]/(float)dx;
   float sy = (float)t[1]/(float)dy;
-
-  state.params.windowSpace = make_int2(sx * (float)nx, sy * (float)ny);
-  state.params.windowCrop_min = make_int2(sx * (float)bmin[0], sy * (float)bmin[1]);
-  state.params.windowCrop_max = make_int2(sx * (float)bmax[0], sy * (float)bmax[1]);
 }
 void set_window_size(int nx, int ny) {
     state.params.width = nx;
     state.params.height = ny;
-    state.params.windowSpace = make_int2(nx, ny);
-    state.params.windowCrop_min = make_int2(0,0);
-    state.params.windowCrop_max = make_int2(nx, ny);
     camera_changed = true;
     resize_dirty = true;
 }
