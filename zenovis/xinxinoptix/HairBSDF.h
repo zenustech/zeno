@@ -26,15 +26,15 @@ namespace HairBSDF{
     static __inline__ __device__ float
     sinh(float x)
     {
-        float a = exp(2*x) - 1;
-        float b = 2 * exp(x);
+        float a = expf(2*x) - 1;
+        float b = 2 * expf(x);
         return a / b;
     }
     static __inline__ __device__ float
     csch(float x)
     {
-        float a = exp(2*x) - 1;
-        float b = 2 * exp(x);
+        float a = expf(2*x) - 1;
+        float b = 2 * expf(x);
         return b / a;
     }
     static __inline__ __device__ float
@@ -50,7 +50,7 @@ namespace HairBSDF{
     }
     static __inline__ __device__ float
     logI_0(float x){
-        return x + 0.5 * (-log(2 * M_PIf) + log(1 / x) + 1 / (8 * x));
+        return x + 0.5f * (-logf(2 * M_PIf) + logf(1 / x) + 1 / (8 * x));
     }
 
     /*From weta, can be repalce */
@@ -58,7 +58,7 @@ namespace HairBSDF{
     M_p_Weta(float sinTheta_i, float cosTheta_i, float sinTheta_o, float cosTheta_o, float beta)
     {
         float v = beta * beta;
-        v = max(v,0.04);
+        v = max(v,0.04f);
         float a = cosTheta_i * cosTheta_o / v;
         float b = sinTheta_i * sinTheta_o / v;
         //if(beta < 0.3f){
@@ -88,12 +88,12 @@ namespace HairBSDF{
     static __inline__ __device__ float
     Logistic(float x, float s) {
         x = abs(x);
-        return exp(-x / s) / (s * (1 + exp(-x / s) * (1 + exp(-x / s))));
+        return expf(-x / s) / (s * (1 + expf(-x / s) * (1 + expf(-x / s))));
     }
     static __inline__ __device__ float 
     LogisticCDF(float x,float s)
     {
-        float temp = exp(-x/s);
+        float temp = expf(-x/s);
         return 1 / (1+temp);
     }
     static __inline__ __device__ float 

@@ -79,13 +79,13 @@ struct vec3{
         return make_float3(x, y, z);
     }
     __forceinline__ __device__ vec3 rotX(float a) {
-        return vec3(x, cos(a) * y - sin(a) * z, sin(a) * y + cos(a) * z);
+        return vec3(x, cosf(a) * y - sinf(a) * z, sinf(a) * y + cosf(a) * z);
     }
     __forceinline__ __device__ vec3 rotY(float a) {
-        return vec3(cos(a) * x - sin(a) * z, y, cos(a) * z + sin(a) * x);
+        return vec3(cosf(a) * x - sinf(a) * z, y, cosf(a) * z + sinf(a) * x);
     }
     __forceinline__ __device__ vec3 rotZ(float a) {
-        return vec3(cos(a) * x - sin(a) * y, cos(a) * y + sin(a) * x, z);
+        return vec3(cosf(a) * x - sinf(a) * y, cosf(a) * y + sinf(a) * x, z);
     }
 };
 
@@ -743,7 +743,7 @@ __forceinline__ __device__ vec3 mix(vec3 a, float b, float c)
 }
 __forceinline__ __device__ vec3 mix(vec3 a, vec3 b, float c)
 {
-    return (1-c)*a + c * b;
+    return (1.f-c)*a + c * b;
 }
 __forceinline__ __device__ vec3 mix(vec3 a, vec3 b, vec3 c)
 {
@@ -1131,7 +1131,7 @@ __forceinline__ __device__ vec4 convertTo4(vec4 v) {
 }
 
 __forceinline__ __device__ float luminance(vec3 c) {
-    return dot(c, vec3(0.2722287, 0.6740818, 0.0536895));
+    return dot(c, vec3(0.2722287f, 0.6740818f, 0.0536895f));
 }
 
 __forceinline__ __device__ float safepower(float in1, float in2) {
