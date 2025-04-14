@@ -1543,6 +1543,12 @@ void ZenoMainWindow::onCheckUpdate()
 #endif
 }
 
+void ZenoMainWindow::onSetTimelineValue()
+{
+    ZASSERT_EXIT(m_pTimeline);
+    m_pTimeline->setSliderValue(m_pTimeline->fromTo().first);
+}
+
 void ZenoMainWindow::importGraph(bool bPreset) {
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
