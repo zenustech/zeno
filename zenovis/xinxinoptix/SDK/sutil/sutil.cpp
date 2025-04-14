@@ -878,17 +878,16 @@ const char *lookupIncFile(const char *name) {
     return getIncFileTab().at(it - pathtab.begin());
 }
 
-inline bool getPtxFromCuString( std::string&                    ptx,
-                                const char*                     cu_source,
+inline bool compileShaderCuda(  std::string&                    compiled,
+                                const char*                     source,
                                 const char*                     name,
-                                const char**                    log_string,
+                                const char**                    log,
                                 const std::vector<const char*>& options)
 {
     // Create program
     nvrtcProgram prog;
-    NVRTC_CHECK_ERROR( nvrtcCreateProgram( &prog, cu_source, name, getIncFileTab().size(), getIncFileTab().data(), getIncPathTab().data() ) );
+    NVRTC_CHECK_ERROR( nvrtcCreateProgram( &prog, source, name, getIncFileTab().size(), getIncFileTab().data(), getIncPathTab().data() ) );
 
-    // JIT compile CU to PTX
     const nvrtcResult compileRes = nvrtcCompileProgram( prog, (int)options.size(), options.data() );
 
     std::string _nvrtcLog;
@@ -900,7 +899,7 @@ inline bool getPtxFromCuString( std::string&                    ptx,
     {
         _nvrtcLog.resize( log_size );
         NVRTC_CHECK_ERROR( nvrtcGetProgramLog( prog, &_nvrtcLog[0] ) );
-        if( log_string ) {
+        if( log ) {
             //*log_string = ;
             //std::cout << _nvrtcLog.c_str() << std::endl;
         }
@@ -915,8 +914,8 @@ inline bool getPtxFromCuString( std::string&                    ptx,
         //else cu_source_beg = cu_source;
         std::string mod_cu_source = "1 ";
         int line = 1;
-        mod_cu_source.reserve(strlen(cu_source));
-        for (const char *p = cu_source; *p; p++) {
+        mod_cu_source.reserve(strlen(source));
+        for (const char *p = source; *p; p++) {
             mod_cu_source.push_back(*p);
             if (*p == '\n') {
                 mod_cu_source += std::to_string(++line) + ' ';
@@ -935,11 +934,24 @@ inline bool getPtxFromCuString( std::string&                    ptx,
         return false;
     }
 
-    // Retrieve PTX code
-    size_t ptx_size = 0;
-    NVRTC_CHECK_ERROR( nvrtcGetPTXSize( prog, &ptx_size ) );
-    ptx.resize( ptx_size );
-    NVRTC_CHECK_ERROR( nvrtcGetPTX( prog, &ptx[0] ) );
+    size_t code_size = 0;
+    bool using_ir  = false;
+    for (auto opt : options) {
+        if (opt == "--optix-ir") {
+            using_ir = true; break;
+        }
+    }
+
+    if (using_ir) {
+        NVRTC_CHECK_ERROR( nvrtcGetOptiXIRSize(prog, &code_size) );
+        compiled.resize( code_size );
+        NVRTC_CHECK_ERROR( nvrtcGetOptiXIR( prog, &compiled[0] ) );
+
+    } else {
+        NVRTC_CHECK_ERROR( nvrtcGetPTXSize( prog, &code_size ) );
+        compiled.resize( code_size );
+        NVRTC_CHECK_ERROR( nvrtcGetPTX( prog, &compiled[0] ) );
+    }
 
     // Cleanup
     NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
@@ -1007,16 +1019,8 @@ static void getInputDataFromFile( std::string& ptx, const char* sample_name, con
 
 #endif  // CUDA_NVRTC_ENABLED
 
-struct PtxSourceCache
-{
-    std::unordered_map< std::string, std::shared_ptr<std::string> > map;
-    ~PtxSourceCache()
-    {
-        map = {};
-    }
-};
-
-static PtxSourceCache g_ptxSourceCache;
+using CuShaderCacheCompiled = std::unordered_map< std::string, std::shared_ptr<std::string> >;
+static CuShaderCacheCompiled cuShaderCacheCompiled{};
 
 static std::string ridincs(std::string s) {
     while (1) if (auto p = s.find("#include"); p != std::string::npos) {
@@ -1052,35 +1056,34 @@ static const char* getOptixHeader() {
 }
 #endif
 
-const char* getCodePTX( const char*                     source,
+const char* cuCompiled( const char*                     source,
                         const char*                     macro,
                         const char*                     name,
                         size_t&                         dataSize,
-                        bool &                          is_success,
+                        bool&                           success,
                         const char**                    log,
                         const std::vector<const char*>& compilerOptions)
 {
     if( log )
         *log = NULL;
 
-    std::shared_ptr<std::string> ptx {};
+    std::shared_ptr<std::string> compiled;
     std::string key = (macro!=nullptr? std::string(macro):"") + std::string( source );
 
-    if( g_ptxSourceCache.map.count(key) == 0 )
+    if( cuShaderCacheCompiled.count(key) == 0 )
     {
-        ptx = std::make_shared<std::string>();
-        is_success = getPtxFromCuString( *ptx, source, name, log, compilerOptions );
-
-        if(is_success==true)
-            g_ptxSourceCache.map[key] = ptx;
+        compiled = std::make_shared<std::string>();
+        success = compileShaderCuda( *compiled, source, name, log, compilerOptions );
+        if(success==true)
+            cuShaderCacheCompiled[key] = compiled;
     }
     else
     {
-        ptx = g_ptxSourceCache.map[key];
-        is_success = true;
+        compiled = cuShaderCacheCompiled[key];
+        success = true;
     }
-    dataSize = ptx->size();
-    return ptx->c_str();
+    dataSize = compiled->size();
+    return compiled->c_str();
 }
 
 void ensureMinimumSize( int& w, int& h )

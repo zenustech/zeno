@@ -128,7 +128,7 @@ inline static auto DefaultCompileOptions() {
     module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 #else 
     module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
     return module_compile_options;
 }
@@ -269,18 +269,17 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
 
     size_t      inputSize = 0;
     //TODO: the file path problem
-    bool is_success=false;
+    bool success=false;
 
     std::vector<const char*> compilerOptions {
-        "-std=c++17", "-default-device", "-DNVRTC_CACHE_DISABLE=1", "-DNVRTC_LOG_LEVEL=0"
+        "-std=c++17", "-default-device"
         //,"-extra-device-vectorization"
   #if !defined( NDEBUG )      
         ,"-lineinfo" //"-G"//"--dopt=on",
   #endif
-        // "--gpu-architecture=compute_60",
         ,"--relocatable-device-code=true"
         // "--extensible-whole-program"
-        ,"--split-compile=0"
+        , "--optix-ir"
     };
 
     std::string flat_macros = ""; 
@@ -290,10 +289,9 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         flat_macros += ele + "\n";
     }
 
-    const char* input = sutil::getCodePTX( source, flat_macros.c_str(), name, inputSize, is_success, nullptr, compilerOptions);
+    const auto input = sutil::cuCompiled(source, flat_macros.c_str(), name, inputSize, success, nullptr, compilerOptions);
 
-    if(is_success==false)
-    {
+    if(!success) {
         return false;
     }
 
