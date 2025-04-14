@@ -35,6 +35,7 @@ private:
     QDoubleSpinBox* m_pViewportPointSizeScaleSpinBox;
 
     QCheckBox* m_pEnableShiftChangeFOV;
+    QSpinBox* m_pViewportSampleNumber;
 };
 
 //NASLOCPane

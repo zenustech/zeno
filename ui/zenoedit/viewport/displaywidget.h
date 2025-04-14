@@ -81,6 +81,7 @@ public slots:
     void onDockViewAction(bool triggered);
     void onSetCamera(zenovis::ZOptixCameraSettingInfo value);
     void onSetBackground(bool bShowBackground);
+    void setSampleNumber(int sample_number);
     zenovis::ZOptixCameraSettingInfo getCamera() const;
 
 signals:
