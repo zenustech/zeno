@@ -61,8 +61,10 @@ public:
     nlohmann::json sceneJson;
 
     inline void preload_scene(const std::string& jsonString) {
+        bool accept = nlohmann::json::accept(jsonString);
+        if (!accept) return;
+        
         sceneJson = nlohmann::json::parse(jsonString);
-        return;
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
