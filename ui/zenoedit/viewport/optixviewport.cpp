@@ -409,6 +409,11 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             emit mainWin->visFrameUpdated(false, frameid);
     }, Qt::BlockingQueuedConnection);
     */
+    //初始化timeline置为起始帧
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    connect(this, SIGNAL(sig_setTimeLineValueToStart()), mainWin, SLOT(onSetTimelineValue()));
+    emit sig_setTimeLineValueToStart();
 
     //fake GL
     m_zenovis->initializeGL();

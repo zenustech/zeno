@@ -107,20 +107,38 @@ bool Scene::loadFrameObjects(int frameid) {
     const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
         return this->objectsMan->load_objects(objs);
     };
-    bool isFrameValid = false, isLoaded = false, isRerun = false;
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid, isLoaded, isRerun);
+    auto cbUpdate = [this](int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun) {
+        if (renderMan->getDefaultEngineName() == "optx") {
+            if (!optxneedrerun && optxneedLoaded) {
+                if (frameid == zeno::getSession().userData().get2<int>("optixObjsCurrFrame", -1)) {
+                    return;
+                }
+            }
+            zeno::scope_exit sp([this, &optxneedLoaded, &frameid, inserted]() {
+                if (optxneedLoaded || inserted) {
+                    renderMan->getEngine()->endFrameLoading(frameid);
+                    optxneedLoaded = false;
+                    zeno::getSession().userData().set2<int>("optixObjsCurrFrame", std::move(frameid));
+                }
+            });
+            if (optxneedrerun) {
+                renderMan->getEngine()->rerun();
+                optxneedrerun = false;
+            }
+            if (optxneedLoaded || inserted) {
+                renderMan->getEngine()->beginFrameLoading(frameid);
+            }
+            renderMan->getEngine()->update();
+        }
+        else {
+            renderMan->getEngine()->update();
+        }
+    };
+    bool isFrameValid = false;
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, cbUpdate, isFrameValid);
     if (!isFrameValid)
         return false;
 
-    zeno::scope_exit sp([this, isLoaded, isRerun, frameid]() {
-        if (isLoaded)
-            renderMan->getEngine()->endFrameLoading(frameid, isRerun);
-    });
-    if (isLoaded) {
-        renderMan->getEngine()->beginFrameLoading(frameid, isRerun);
-    }
-
-    renderMan->getEngine()->update();
     return inserted;
 }
 

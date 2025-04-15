@@ -1217,6 +1217,22 @@ void ZenoMainWindow::updateViewport(const QString& action)
                 }
             }
         }
+        if (action == "newFrame") {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int beginframe = m_pTimeline->fromTo().first;
+            if (endFrame == beginframe) {   //run的时候起始帧计算完成后，将timeline重置为起始帧
+                bool oldalways = m_bAlways, oldalwaysLightCam = m_bAlwaysLightCamera, oldalwaysMat = m_bAlwaysMaterial;
+                m_bAlways = false;
+                m_bAlwaysLightCamera = false;
+                m_bAlwaysMaterial = false;
+                zeno::scope_exit sp([this, oldalways, oldalwaysLightCam, oldalwaysMat]() {
+                    m_bAlways = oldalways;
+                    m_bAlwaysLightCamera = oldalwaysLightCam;
+                    m_bAlwaysMaterial = oldalwaysMat;
+                    });
+                m_pTimeline->setSliderValue(beginframe);
+            }
+        }
     }
 }
 
@@ -1525,6 +1541,12 @@ void ZenoMainWindow::onCheckUpdate()
     });
     dlg.exec();
 #endif
+}
+
+void ZenoMainWindow::onSetTimelineValue()
+{
+    ZASSERT_EXIT(m_pTimeline);
+    m_pTimeline->setSliderValue(m_pTimeline->fromTo().first);
 }
 
 void ZenoMainWindow::importGraph(bool bPreset) {

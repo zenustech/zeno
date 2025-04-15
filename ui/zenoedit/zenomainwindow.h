@@ -135,6 +135,7 @@ public:
 
     };
 signals:
+    void setTimeLineValueToStart();
     void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(bool bGLView, int frameid);
@@ -176,6 +177,7 @@ public slots:
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
+    void onSetTimelineValue();
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
