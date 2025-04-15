@@ -132,7 +132,7 @@ public:
             if (!mesh->dirty) { continue; }            
             
             mesh->dirty = false;
-            mesh->buildGas(context, _mtlidlut);
+            mesh->buildGas(context, _mesh_materials);
         }
     }
 
@@ -441,10 +441,9 @@ public:
     
     std::map<std::string, MeshDat> drawdats;
 
-    std::map<std::string, uint> _mtlidlut;
     std::set<std::string> uniqueMatsForMesh;
-
-    std::map<shader_key_t, uint> shader_indice_table;
+    std::map<std::string, uint16_t> _mesh_materials;
+    std::map<shader_key_t, uint16_t> shader_indice_table;
 
     std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
@@ -481,9 +480,9 @@ public:
     void updateStaticDrawObjects();
     void updateDrawObjects();
 
-    void updateMeshMaterials(std::map<std::string, uint> const &mtlidlut) {
+    void updateMeshMaterials(std::map<std::string, uint16_t> const &mtlidlut) {
 
-        _mtlidlut = mtlidlut;
+        _mesh_materials = mtlidlut;
         camera_changed = true;
         updateDrawObjects();
     }

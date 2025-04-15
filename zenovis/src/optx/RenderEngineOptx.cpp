@@ -1299,8 +1299,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::set<shader_key_t> cachedMaterials;
     std::map<std::string, std::vector<zeno::CurveType>> cachedCurvesMaterials;
 
-    std::map<std::string, uint> cachedMeshMatLUT;
-    bool meshMatLUTChanged(std::map<std::string, uint>& newLUT) {
+    std::map<std::string, uint16_t> cachedMeshMatLUT;
+    bool meshMatLUTChanged(std::map<std::string, uint16_t>& newLUT) {
         bool changed = false;
         if (cachedMeshMatLUT.size() != newLUT.size()) {
             changed = true;
@@ -1463,8 +1463,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             std::vector<std::shared_ptr<ShaderPrepared>> _volume_shader_list{};
 
-            std::map<std::string,  uint> meshMatLUT{};
-            std::map<shader_key_t, uint> ShaderKeyIndex{};
+            std::map<std::string,  uint16_t> meshMatLUT{};
+            std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
 
             ensure_shadtmpl(_default_callable_template);
             ensure_shadtmpl(_volume_callable_template);
@@ -1774,7 +1774,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 bMeshMatLUTChanged = meshMatLUTChanged(meshMatLUT);
             }
             if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
-                std::map<std::string, uint>().swap(cachedMeshMatLUT);
+                std::map<std::string, uint16_t>().swap(cachedMeshMatLUT);
                 cachedMeshMatLUT = meshMatLUT;
             }
 
