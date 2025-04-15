@@ -11,6 +11,8 @@ using Json = nlohmann::ordered_json;
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
+#include "zeno/utils/log.h"
+
 using Alembic::AbcGeom::ObjectVisibility;
 
 namespace zeno {
@@ -40,6 +42,10 @@ struct ABCTree : PrimitiveObject {
         ObjectVisibility cur_visible = visible == ObjectVisibility::kVisibilityDeferred? parent_visible: visible;
         json["visibility"] = int(cur_visible);
         json["node_name"] = name;
+        json["instance_source_path"] = instanceSourcePath;
+//        if (instanceSourcePath.size()) {
+//            zeno::log_info("{}: {}", name, instanceSourcePath);
+//        }
         auto r0 = Imath::V4d(1, 0, 0, 0) * xform;
         auto r1 = Imath::V4d(0, 1, 0, 0) * xform;
         auto r2 = Imath::V4d(0, 0, 1, 0) * xform;
@@ -60,12 +66,13 @@ struct ABCTree : PrimitiveObject {
             json["gt"]  = {t[0], t[1], t[2]};
         }
         json["children_name"] = Json::array();
-        std::vector<Json> children_json;
-        for (const auto &child: children) {
-            auto cjson = child->get_scene_info(cur_visible, mat);
-            auto name = cjson["node_name"];
-            json["children_name"].push_back(name);
-            json[name] = cjson;
+        if (instanceSourcePath.empty()) {
+            for (const auto &child: children) {
+                auto cjson = child->get_scene_info(cur_visible, mat);
+                auto name = cjson["node_name"];
+                json["children_name"].push_back(name);
+                json[name] = cjson;
+            }
         }
         return json;
     }

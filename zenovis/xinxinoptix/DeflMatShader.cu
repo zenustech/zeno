@@ -434,6 +434,11 @@ extern "C" __global__ void __closesthit__radiance()
     float3 wldPos, wldNorm; float wldOffset;
     SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
 
+     auto _v0 = optixTransformPointFromObjectToWorldSpace(v0);
+     auto _v1 = optixTransformPointFromObjectToWorldSpace(v1);
+     auto _v2 = optixTransformPointFromObjectToWorldSpace(v2);
+
+
     /* MODMA */
     P = wldPos;
     attrs.pos = P;
@@ -489,6 +494,10 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
 
     attrs._barys = barys;
+    attrs.e1 = vec3(_v1 - _v0);
+    attrs.e2 = vec3(_v2 - _v0);
+    float a = 0.5 * length(cross(attrs.e1, attrs.e2));
+    attrs.els = vec3(a/(length(_v2 - _v1)+0.000001), a/(length(_v2 - _v0)+0.000001), a/(length(_v0 - _v1)+0.000001));
 #endif
 
     attrs.pos = attrs.pos + vec3(params.cam.eye);

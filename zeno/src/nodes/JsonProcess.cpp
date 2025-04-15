@@ -459,7 +459,7 @@ ZENDEFNODE(JsonGetChild, {
     {
         {"json"},
         {"string", "name"},
-        {"enum json int float string vec2f vec3f vec4f", "type"},
+        {"enum json int float string vec2f vec3f vec4f", "type", "json"},
     },
     {
         "out",
@@ -1172,7 +1172,12 @@ with open(output_file_path, 'w', encoding='utf-8') as f:
             }
             else {
                 auto json_obj = std::make_shared<JsonObject>();
-                json_obj->json = Json::parse(output_json);
+                try {
+                    json_obj->json = Json::parse(output_json);
+                } catch (const std::exception& e) {
+                    zeno::log_error(output_json);
+                    throw std::runtime_error("Failed to parse output JSON: " + std::string(e.what()));
+                }
                 set_output2("out_json", json_obj);
             }
         }

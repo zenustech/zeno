@@ -1097,7 +1097,7 @@ struct GraphicsManager {
 
         for (auto const &[key, obj] : objs) {
             if (ins.may_emplace(key) && key.find(":static:")!=key.npos) {
-                zeno::log_info("load_static_object: loading graphics [{}]", key);
+                //zeno::log_info("load_static_object: loading graphics [{}]", key);
                 changed = true;
 
                 if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
@@ -1120,7 +1120,7 @@ struct GraphicsManager {
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
 
-                zeno::log_info("load_static_object: loaded graphics to {}", ig.get());
+                //zeno::log_info("load_static_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
         }
@@ -1747,7 +1747,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             if (matNeedUpdate)
             {
-                std::cout<<"shaders size "<< allShaders.size() << std::endl;
+//                std::cout<<"shaders size "<< allShaders.size() << std::endl;
 
                 unsigned int usesPrimitiveTypeFlags = 0u;
                 if (requireTriangObj || requireTriangLight)
@@ -1786,13 +1786,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::prepareScene();
 
                 xinxinoptix::optixupdateend();
-                std::cout<< "Finish optix update" << std::endl;
+                //std::cout<< "Finish optix update" << std::endl;
             }
 
             if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
             {
                 xinxinoptix::optixupdateend();
-                std::cout << "Finish optix update" << std::endl;
+                //std::cout << "Finish optix update" << std::endl;
             }
 
         }
@@ -1800,7 +1800,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(lightNeedUpdate){
             CppTimer timer; timer.tick();
             xinxinoptix::buildLightTree();
-            timer.tock("Build LightTree");
+//            timer.tock("Build LightTree");
         }
 
         if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {

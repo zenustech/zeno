@@ -390,7 +390,7 @@ public:
                 uint depth = 0;
                 auto handle = treeLook(obj_key, rg, false, depth);
 
-                std::cout << "Fetching handle: " << handle << std::endl;
+//                std::cout << "Fetching handle: " << handle << std::endl;
             } //rg
 
             std::vector<OptixInstance> instanced {};

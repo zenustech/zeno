@@ -48,7 +48,7 @@ static std::string shaderAttrListString() {
 
     concat(list0); concat(list1); concat(list2);    
     
-    result += " attrs.area() attrs.barys()";
+    result += " attrs.area() attrs.barys() attrs.eLength()";
     result += " prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy()";
 
     return result;

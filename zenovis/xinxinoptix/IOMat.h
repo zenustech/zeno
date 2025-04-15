@@ -69,10 +69,15 @@ struct MatInput {
     inline float3 barys() const {
         return { 1.0f-_barys.x-_barys.y, _barys.x, _barys.y };
     }
-    
+    vec3 e1,e2;
     inline float area() const {
-        assert(false && "Empty function area()\n");
-        return 0;
+        //assert(false && "Empty function area()\n");
+        return 0.5*length(cross(e1,e2))+0.000001;
+    }
+    vec3 els;
+    inline float3 eLength() const {
+        //assert(false && "Empty function area()\n");
+        return make_float3(els.x, els.y, els.z);
     }
 
     uint instIdx;

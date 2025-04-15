@@ -990,7 +990,7 @@ void unload_light(){
 
     OptixUtil::portal_delayed.reset();
 
-    std::cout << "Lights unload done. \n"<< std::endl;
+//    std::cout << "Lights unload done. \n"<< std::endl;
 }
 
 void load_triangle_light(std::string const &key, LightDat& ld,
@@ -1719,7 +1719,7 @@ OptixUtil::_compile_group.wait();
     }
 
     OptixUtil::_compile_group.wait();
-    theTimer.tock("Done Optix Shader Compile:");
+//    theTimer.tock("Done Optix Shader Compile:");
 
     if (OptixUtil::sky_tex.has_value()) {
 
@@ -1767,13 +1767,13 @@ void optixupdateend() {
     state.params.global_buffers = (void*)buffers;
 
     createSBT( state );
-    printf("SBT created \n");
+//    printf("SBT created \n");
 
     OptixUtil::createPipeline(defaultScene.maxNodeDepth);
-    printf("Pipeline created \n");
+//    printf("Pipeline created \n");
 
     initLaunchParams( state );
-    printf("init params created \n");
+//    printf("init params created \n");
 }
 
 
