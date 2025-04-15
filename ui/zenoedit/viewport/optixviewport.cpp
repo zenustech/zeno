@@ -10,6 +10,7 @@
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include "viewport/displaywidget.h"
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -403,8 +404,18 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
-        if (mainWin)
-            emit mainWin->visFrameUpdated(false, frameid);
+        if (mainWin) {
+            bool hasglViewport = false;
+            for (auto view: mainWin->viewports()) {
+                if (view->isGLViewport() && view->isVisible()) {
+                    hasglViewport = true;
+                    break;
+                }
+            }
+            if (!hasglViewport) {//有visible的gl窗口，则不更新timeline
+                emit mainWin->visFrameUpdated(false, frameid);
+            }
+        }
     }, Qt::BlockingQueuedConnection);
     
     //初始化timeline置为起始帧
