@@ -1,30 +1,33 @@
 /*
- * Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *  * Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *  * Neither the name of NVIDIA CORPORATION nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
+ * modification, are permitted provided that the following conditions are met:
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
- * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+ */ 
+
 
 /**
 * @file   optix_micromap_impl.h
@@ -34,12 +37,6 @@
 
 #ifndef OPTIX_OPTIX_MICROMAP_IMPL_H
 #define OPTIX_OPTIX_MICROMAP_IMPL_H
-
-#include <cstdint>
-
-#ifdef __CUDACC__
-#include <cuda_runtime.h>
-#endif
 
 #ifndef OPTIX_MICROMAP_FUNC
 #ifdef __CUDACC__
@@ -61,16 +58,16 @@ namespace optix_impl {
 // the device implementation of __uint_as_float is declared in cuda_runtime.h
 #else
 // the host implementation of __uint_as_float
-OPTIX_MICROMAP_INLINE_FUNC float __uint_as_float( uint32_t x )
+OPTIX_MICROMAP_INLINE_FUNC float __uint_as_float( unsigned int x )
 {
-    union { float f; uint32_t i; } var;
+    union { float f; unsigned int i; } var;
     var.i = x;
     return var.f;
 }
 #endif
 
 // Extract even bits
-OPTIX_MICROMAP_INLINE_FUNC uint32_t extractEvenBits( uint32_t x )
+OPTIX_MICROMAP_INLINE_FUNC unsigned int extractEvenBits( unsigned int x )
 {
     x &= 0x55555555;
     x = ( x | ( x >> 1 ) ) & 0x33333333;
@@ -82,7 +79,7 @@ OPTIX_MICROMAP_INLINE_FUNC uint32_t extractEvenBits( uint32_t x )
 
 
 // Calculate exclusive prefix or (log(n) XOR's and SHF's)
-OPTIX_MICROMAP_INLINE_FUNC uint32_t prefixEor( uint32_t x )
+OPTIX_MICROMAP_INLINE_FUNC unsigned int prefixEor( unsigned int x )
 {
     x ^= x >> 1;
     x ^= x >> 2;
@@ -92,24 +89,25 @@ OPTIX_MICROMAP_INLINE_FUNC uint32_t prefixEor( uint32_t x )
 }
 
 // Convert distance along the curve to discrete barycentrics
-OPTIX_MICROMAP_INLINE_FUNC void index2dbary( uint32_t index, uint32_t& u, uint32_t& v, uint32_t& w )
+OPTIX_MICROMAP_INLINE_FUNC void index2dbary( unsigned int index, unsigned int& u, unsigned int& v, unsigned int& w )
 {
-    uint32_t b0 = extractEvenBits( index );
-    uint32_t b1 = extractEvenBits( index >> 1 );
+    unsigned int b0 = extractEvenBits( index );
+    unsigned int b1 = extractEvenBits( index >> 1 );
 
-    uint32_t fx = prefixEor( b0 );
-    uint32_t fy = prefixEor( b0 & ~b1 );
+    unsigned int fx = prefixEor( b0 );
+    unsigned int fy = prefixEor( b0 & ~b1 );
 
-    uint32_t t = fy ^ b1;
+    unsigned int t = fy ^ b1;
 
     u = ( fx & ~t ) | ( b0 & ~t ) | ( ~b0 & ~fx & t );
     v = fy ^ b0;
     w = ( ~fx & ~t ) | ( b0 & ~t ) | ( ~b0 & fx & t );
 }
 
-// Compute barycentrics of a sub or micro triangle wrt a base triangle
-// The order of the returned bary0, bary1, bary2 matters and allows for using this function for sub triangles and the conversion from sub triangle to base triangle barycentric space
-OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivisionLevel, float2& bary0, float2& bary1, float2& bary2 )
+// Compute barycentrics of a sub or micro triangle wrt a base triangle.  The order of the returned
+// bary0, bary1, bary2 matters and allows for using this function for sub triangles and the
+// conversion from sub triangle to base triangle barycentric space
+OPTIX_MICROMAP_INLINE_FUNC void micro2bary( unsigned int index, unsigned int subdivisionLevel, float2& bary0, float2& bary1, float2& bary2 )
 {
     if( subdivisionLevel == 0 )
     {
@@ -119,7 +117,7 @@ OPTIX_MICROMAP_INLINE_FUNC void micro2bary( uint32_t index, uint32_t subdivision
         return;
     }
 
-    uint32_t iu, iv, iw;
+    unsigned int iu, iv, iw;
     index2dbary( index, iu, iv, iw );
 
     // we need to only look at "level" bits

@@ -136,13 +136,11 @@ float half_to_float(ushort1 in)
 extern "C" __global__ void __raygen__rg()
 {
 
-    const int    w   = params.windowSpace.x;
-    const int    h   = params.windowSpace.y;
+    const int    w   = params.width;
+    const int    h   = params.height;
     //const float3 eye = params.eye;
-    const uint3  idxx = optixGetLaunchIndex();
-    uint3 idx;
-    idx.x = idxx.x + params.tile_i * params.tile_w;
-    idx.y = idxx.y + params.tile_j * params.tile_h;
+    //const uint3  idxx = optixGetLaunchIndex();
+    uint3 idx = optixGetLaunchIndex();
     if(idx.x>w || idx.y>h)
         return;
 
@@ -184,8 +182,8 @@ extern "C" __global__ void __raygen__rg()
         float2 subpixel_jitter = sobolRnd(sobolseed);
 
         float2 d = 2.0f * make_float2(
-            ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
-            ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
+            ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
+            ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
             ) - 1.0f;
 
         float2 r01 = sobolRnd(eventseed);

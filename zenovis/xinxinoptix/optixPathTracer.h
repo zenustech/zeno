@@ -170,10 +170,6 @@ struct Params
     
     unsigned int width;
     unsigned int height;
-    unsigned int tile_i;
-    unsigned int tile_j;
-    unsigned int tile_w;
-    unsigned int tile_h;
     unsigned int samples_per_launch;
 
     CameraInfo cam;
@@ -196,13 +192,8 @@ struct Params
     uint32_t firstSoloSphereOffset;
     void* sphereInstAuxLutBuffer;
 
-    void* meshAux;
-    void* instToMesh;
-
     uint32_t hairInstOffset;
     void* hairAux;
-
-    uint* instIdx;
 
     void*    dlights_ptr;
     void*    plights_ptr;
@@ -226,9 +217,6 @@ struct Params
 
     float* skycdf;
     int* sky_start;
-    int2 windowCrop_min;
-    int2 windowCrop_max;
-    int2 windowSpace;
 
     uint32_t skynx;
     uint32_t skyny;

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cuda_gl_interop.h>
-#include <cuda_runtime.h>
-
 #include <optix.h>
 #include <optix_stubs.h>
 
@@ -12,7 +9,7 @@
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
-#include <sutil/GLDisplay.h>
+// #include <sutil/GLDisplay.h>
 #include <sutil/Matrix.h>
 #include <sutil/Trackball.h>
 #include <sutil/sutil.h>
