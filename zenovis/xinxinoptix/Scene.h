@@ -215,7 +215,7 @@ public:
             const auto material_str = it.value().value("Material", "Default");
             auto material_key = std::make_tuple(material_str, geo_type);
 
-            auto shader_index = 0u;
+            uint16_t shader_index = 0u;
             auto shader_visiable = VisibilityMask::NothingMask;
 
             if (shader_indice_table.count(material_key)) {
@@ -223,7 +223,13 @@ public:
                 shader_visiable = VisibilityMask::DefaultMatMask;
             }
             if (ShaderMark::Mesh == geo_type) {
-                shader_index = 0u;
+
+                auto mesh = _meshes_[geo_name];
+                if (mesh->mat_idx.size()==1) {
+                    shader_index = max(shader_index, mesh->mat_idx[0]);
+                } else {
+                    shader_index = 0u;
+                }
                 shader_visiable = VisibilityMask::DefaultMatMask;
                 
             } else if (ShaderMark::Volume == geo_type) {
@@ -447,7 +453,7 @@ public:
 
     std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
-    void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
+    void preload_mesh(std::string const &key, std::string const &mtlid,
                  float const *verts, size_t numverts, uint const *tris, size_t numtris,
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
                  int const *matids, std::vector<std::string> const &matNameList) 
@@ -458,7 +464,6 @@ public:
         dat.triMats.assign(matids, matids + numtris);
         dat.mtlidList = matNameList;
         dat.mtlid = mtlid;
-        dat.instID = instID;
         dat.verts.assign(verts, verts + numverts * 3);
         dat.tris.assign(tris, tris + numtris * 3);
         //TODO: flatten just here... or in renderengineoptx.cpp

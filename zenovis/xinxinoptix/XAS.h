@@ -180,7 +180,7 @@ namespace xinxinoptix {
             CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr&)dverts ), vertices.data(), size_in_byte, cudaMemcpyHostToDevice) );
         }
 
-        if (!mat_idx.empty())
+        if (mat_idx.size()>1)
         {
             const size_t size_in_byte = mat_idx.size() * sizeof( mat_idx[0] );
             CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dmats ), size_in_byte ) );
@@ -195,7 +195,7 @@ namespace xinxinoptix {
                         ) );
         }
         // // Build triangle GAS // // One per SBT record for this build input
-        const auto numSbtRecords = mtlidlut.empty() ? 1 : mtlidlut.size();
+        const auto numSbtRecords = (mtlidlut.empty() || mat_idx.size()<=1) ? 1 : mtlidlut.size();
         std::vector<uint32_t> triangle_input_flags( numSbtRecords, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL );
 
         OptixBuildInput triangle_input                           = {};

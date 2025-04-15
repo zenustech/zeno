@@ -735,10 +735,9 @@ struct GraphicsManager {
                         }
                     }
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
-                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
                     auto& matids = prim_in->tris.attr<int>("matid");
 
-                    defaultScene.load_object(reName, mtlid, instID, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
+                    defaultScene.preload_mesh(reName, mtlid, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
                 } // Mesh
             } // ResourceType
 

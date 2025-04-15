@@ -10,7 +10,6 @@ struct MeshDat {
 
     std::vector<std::string> mtlidList;
     std::string mtlid;
-    std::string instID;
     std::vector<float> verts;
     std::vector<uint> tris;
     std::vector<int> triMats;
@@ -48,7 +47,7 @@ using raii = xinxinoptix::raii<T>;
     void resize(size_t tri_num, size_t vert_num) {
 
         indices.resize(tri_num);
-        mat_idx.resize(tri_num);
+        //mat_idx.resize(tri_num);
 
         vertices.resize(vert_num);
         g_nrm.resize(vert_num);
