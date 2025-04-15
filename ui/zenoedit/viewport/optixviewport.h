@@ -115,7 +115,6 @@ signals:
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
     void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
-    void sig_setTimeLineValueToStart();
 
 public slots:
     void onFrameRunFinished(int frame);

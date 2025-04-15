@@ -125,6 +125,8 @@ public:
         ACTION_ZENCACHE,
         ACTION_SET_SHORTCUT,
         ACTION_PREFERENCES,
+        //tools
+        ACTION_COMPOSE_VIDEO,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_ZOOM,
@@ -135,7 +137,6 @@ public:
 
     };
 signals:
-    void setTimeLineValueToStart();
     void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(bool bGLView, int frameid);
@@ -178,6 +179,7 @@ public slots:
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
     void onSetTimelineValue();
+    void onComposeVideo();
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;

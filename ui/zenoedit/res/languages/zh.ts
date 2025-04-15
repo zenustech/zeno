@@ -831,6 +831,14 @@
         <source>Option</source>
         <translation type="unfinished">选项</translation>
     </message>
+	<message>
+        <source>Tools</source>
+        <translation type="finished">工具</translation>
+    </message>
+	<message>
+        <source>Compose video</source>
+        <translation type="finished">合成视频</translation>
+    </message>
     <message>
         <source>Undo</source>
         <translation type="unfinished">撤销</translation>
@@ -2215,6 +2223,64 @@
         <source>File to Save</source>
         <translation>文件保存路径</translation>
     </message>
+</context>
+<context>
+    <name>ZComposeVideoDlg</name>
+    <message>
+        <source>File to Load</source>
+        <translation type="finished">文件加载路径</translation>
+    </message>
+	<message>
+        <source>Invalid input path</source>
+        <translation type="finished">输入路径无效</translation>
+    </message>
+	<message>
+        <source>Export success</source>
+        <translation type="finished">导出成功</translation>
+    </message>
+	<message>
+        <source>Export faild</source>
+        <translation type="finished">导出失败</translation>
+    </message>
+	<message>
+        <source>Output file exists</source>
+        <translation type="finished">输出文件已存在</translation>
+    </message>
+	<message>
+        <source>Jpg file not exist</source>
+        <translation type="finished">Jpg文件不存在</translation>
+    </message>
+</context>
+<context>
+    <name>ZComposeVideoDlgClass</name>
+	<message>
+		<source>ZComposeVideoDlgClass</source>
+		<translation>视频合成</translation>
+	</message>
+	<message>
+		<source>FPS:</source>
+		<translation>帧率：</translation>
+	</message>
+	<message>
+		<source>Bit Rate:</source>
+		<translation>比特率：</translation>
+	</message>
+	<message>
+		<source>(Option)</source>
+		<translation>（选项）</translation>
+	</message>
+	<message>
+		<source>Path:</source>
+		<translation>路径：</translation>
+	</message>
+	<message>
+		<source>File Name:</source>
+		<translation>文件名：</translation>
+	</message>
+	<message>
+		<source>Start frame:</source>
+		<translation>起始帧号：</translation>
+	</message>
 </context>
 <context>
     <name>ZRestartDlg</name>

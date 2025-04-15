@@ -184,22 +184,11 @@ REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
         return REC_NO_RECORD_OPTION;
     }
     //Zenovis::GetInstance().blockSignals(false);
-    {
-        QString dir_path = m_recordInfo.record_path + "/P/";
-        QDir qDir = QDir(dir_path);
-        qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-        fileList.sort();
-        for (auto i = 0; i < fileList.size(); i++) {
-            auto new_name = dir_path + zeno::format("{:07d}.jpg", i).c_str();
-            auto old_name = dir_path + fileList.at(i);
-            QFile::rename(old_name,new_name);
-        }
-    }
     QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
     QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
 
-    QString cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3k -c:v mpeg4 %4")
+    QString cmd = QString("ffmpeg -y -start_number %1 -r %2 -i %3 -b:v %4k -c:v mpeg4 %5")
+              .arg(m_recordInfo.frameRange.first)
               .arg(m_recordInfo.fps)
               .arg(imgPath)
               .arg(m_recordInfo.bitrate)
