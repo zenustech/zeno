@@ -659,7 +659,9 @@ void ZenoMainWindow::initTimelineDock()
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {
-            view->onPlayClicked(bPlaying);
+            if (view->isVisible()) {
+                view->onPlayClicked(bPlaying);
+            }
         }
     });
 

@@ -401,14 +401,12 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         //    emit mainWin->visObjectsUpdated(this, frameid);
     });
 
-    //no need to notify timeline to update.
-    /*
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
             emit mainWin->visFrameUpdated(false, frameid);
     }, Qt::BlockingQueuedConnection);
-    */
+    
     //初始化timeline置为起始帧
     auto mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
