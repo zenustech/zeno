@@ -210,10 +210,10 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
-void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+void DisplayWidget::setRenderSeparately(runType runtype) {
     if (m_optixView)
     {
-        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+        m_optixView->setRenderSeparately(runtype);
     }
 }
 
@@ -540,8 +540,8 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     for (auto displayWid : mainWin->viewports())
         if (!displayWid->isGLViewport())
-            displayWid->setRenderSeparately(false, false);
-    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
+            displayWid->setRenderSeparately(RunALL);
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
@@ -557,10 +557,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
-            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
-        }
+        launchParam.runtype = mainWin->runtype();
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }

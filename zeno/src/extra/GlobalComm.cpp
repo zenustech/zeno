@@ -40,7 +40,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
-void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName, bool isBeginframe) {
+void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string runtype, std::string fileName, bool isBeginframe) {
     if (cachedir.empty()) return;
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -161,7 +161,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         }
         size_t bufsize =0;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
-        if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
+        if (runtype == "RunLightCamera" && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
         {
             bufsize = bufCaches[0].size();
             if (encodeObject(obj.get(), bufCaches[0]))
@@ -171,7 +171,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 poses[0].push_back(bufsize);
             }
         }
-        if (cacheMaterialOnly && (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)))
+        if (runtype == "RunMaterial" && (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)))
         {
             bufsize = bufCaches[1].size();
             if (encodeObject(obj.get(), bufCaches[1]))
@@ -181,7 +181,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 poses[1].push_back(bufsize);
             }
         }
-        if (!cacheLightCameraOnly && !cacheMaterialOnly)
+        if (runtype != "RunLightCamera" && runtype != "RunMaterial")
         {
             if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)) {
                 bufsize = bufCaches[0].size();
@@ -224,7 +224,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     size_t currentFrameSize = 0;
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
+        if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || fileName != "" && i != 2))
             continue;
         keys[i].push_back('\a');
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
@@ -256,7 +256,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     }
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1 || fileName != "" && i != 2))
+        if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || fileName != "" && i != 2))
             continue;
         log_debug("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);
@@ -540,12 +540,12 @@ ZENO_API void GlobalComm::finishFrame() {
     m_maxPlayFrame += 1;
 }
 
-ZENO_API void GlobalComm::dumpFrameCache(int frameid, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype) {
     std::lock_guard lck(m_mtx);
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, cacheLightCameraOnly, cacheMaterialOnly, "", frameid == beginFrameNumber);
+        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype, "", frameid == beginFrameNumber);
     }
 }
 

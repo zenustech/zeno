@@ -70,7 +70,7 @@ void OptixWorker::onPlayToggled(bool bToggled)
     else {
         m_pTimer->start(m_sampleFeq);
     }
-    setRenderSeparately(false, false);
+    setRenderSeparately(RunALL);
 }
 
 void OptixWorker::onSetSlidFeq(int feq)
@@ -157,10 +157,10 @@ void OptixWorker::cancelRecording()
     m_bRecording = false;
 }
 
-void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+void OptixWorker::setRenderSeparately(runType runtype) {
     auto scene = m_zenoVis->getSession()->get_scene();
-    scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
-    scene->drawOptions->updateMatlOnly = updateMatlOnly;
+    scene->drawOptions->updateLightCameraOnly = runtype == RunLightCamera;
+    scene->drawOptions->updateMatlOnly = runtype == RunMaterial;
 }
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
@@ -466,7 +466,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
-    setRenderSeparately(false, false);
+    setRenderSeparately(RunALL);
     m_thdOptix.start();
 }
 
@@ -503,8 +503,8 @@ void ZOptixViewport::setSimpleRenderOption()
     scene->drawOptions->simpleRender = true;
 }
 
-void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
-    emit sig_setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+void ZOptixViewport::setRenderSeparately(runType runtype) {
+    emit sig_setRenderSeparately(runtype);
 }
 
 void ZOptixViewport::cameraLookTo(zenovis::CameraLookToDir dir)

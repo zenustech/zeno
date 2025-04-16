@@ -107,7 +107,7 @@ ZENO_API void zeno::INode::writeTmpCaches()
     }
     int frameid = zeno::getSession().globalState->frameid;
     std::string fileName = myname + ".zenocache";
-    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, fileName);
+    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, "RunAll", fileName);
 }
 
 ZENO_API void INode::preApply() {

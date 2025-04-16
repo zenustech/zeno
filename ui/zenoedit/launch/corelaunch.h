@@ -5,11 +5,17 @@
 
 class IGraphsModel;
 
+enum runType {
+    RunALL = 0,
+    RunMatrix,
+    RunLightCamera,
+    RunMaterial
+};
+
 struct LAUNCH_PARAM {
     int beginFrame = 0;
     int endFrame = 0;
-    bool applyLightAndCameraOnly = false;
-    bool applyMaterialOnly = false;
+    runType runtype = RunALL;
     QString generator;   //triggered by GenerateCommands Node to start a calc, to get the commands.
     bool enableCache = false;
     bool tempDir = false;

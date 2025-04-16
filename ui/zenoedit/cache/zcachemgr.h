@@ -17,6 +17,7 @@ public:
         Opt_Undefined = 0,
         Opt_RunAll,
         Opt_RunLightCameraMaterial,
+        Opt_RunMatrix,
         Opt_AlwaysOn
     };
     void setCacheOpt(cacheOption opt);
