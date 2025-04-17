@@ -1481,7 +1481,7 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         emit toggleChanged(STATUS_ONCE, hovered);
 	});
     connect(m_minCache, &ZenoImageItem::toggled, [=](bool hovered) {
-        emit toggleChanged(STATUS_CACHE, hovered);
+        emit toggleChanged(MATRIX, hovered);
     });
 
     setAcceptHoverEvents(true);
@@ -1492,7 +1492,7 @@ void ZenoMinStatusBtnItem::setOptions(int options)
     setChecked(STATUS_ONCE, options & OPT_ONCE);
     setChecked(STATUS_MUTE, options & OPT_MUTE);
     setChecked(STATUS_VIEW, options & OPT_VIEW);
-    setChecked(STATUS_CACHE, options & OPT_CACHE);
+    setChecked(MATRIX, options & OPT_MATRIX);
 }
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
@@ -1512,7 +1512,7 @@ void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 		m_view->toggle(bChecked);
 		m_minView->toggle(bChecked);
 	}
-    if (btn == STATUS_CACHE)
+    if (btn == MATRIX)
     {
         m_cache->toggle(bChecked);
         m_minCache->toggle(bChecked);

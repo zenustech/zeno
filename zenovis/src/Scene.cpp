@@ -104,8 +104,8 @@ bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
 
-    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
-        return this->objectsMan->load_objects(objs);
+    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype) -> bool {
+        return this->objectsMan->load_objects(objs, runtype);
     };
     auto cbUpdate = [this](int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun) {
         if (renderMan->getDefaultEngineName() == "optx") {
@@ -127,8 +127,8 @@ bool Scene::loadFrameObjects(int frameid) {
             }
             if (optxneedLoaded || inserted) {
                 renderMan->getEngine()->beginFrameLoading(frameid);
+                renderMan->getEngine()->update();
             }
-            renderMan->getEngine()->update();
         }
         else {
             renderMan->getEngine()->update();

@@ -429,7 +429,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if ((launchParam.runtype == RunLightCamera && !lightCameraNodes.contains(name) || launchParam.runtype == RunMaterial && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx))
+                if ((launchParam.runtype == RunLightCamera && !lightCameraNodes.contains(name) || 
+                    launchParam.runtype == RunMaterial && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx) ||
+                    launchParam.runtype == RunMatrix && !(opts & OPT_MATRIX))
                 {
                     continue;
                 }
@@ -462,9 +464,14 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
         }
-        if (opts & OPT_CACHE)
-        {
-            AddStringList({ "cacheToDisk", ident}, writer);
+        if (lightCameraNodes.contains(name)) {
+            AddStringList({ "objRunType", ident, "lightCamera"}, writer);
+        } else if ((matNodeNames.count(name.toStdString()) == 1) || pGraphsModel->IsSubGraphNode(idx)) {
+            AddStringList({ "objRunType", ident, "material"}, writer);
+        } else if (opts & OPT_MATRIX) {
+            AddStringList({ "objRunType", ident, "matrix"}, writer);
+        } else {
+            AddStringList({ "objRunType", ident, "normal"}, writer);
         }
     }
 }

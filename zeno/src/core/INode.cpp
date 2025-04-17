@@ -77,7 +77,7 @@ ZENO_API bool zeno::INode::getTmpCache()
     GlobalComm::ViewObjects objs;
     std::string fileName = myname + ".zenocache";
     int frameid = zeno::getSession().globalState->frameid;
-    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
+    bool ret = zeno::getSession().globalComm->fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
     if (ret && objs.size() > 0)
     {
         for (const auto& [key, obj] : objs)
@@ -111,6 +111,7 @@ ZENO_API void zeno::INode::writeTmpCaches()
 }
 
 ZENO_API void INode::preApply() {
+#if 0
     auto& dc = graph->getDirtyChecker();
     if (!dc.amIDirty(myname) && bTmpCache)
     {
@@ -128,6 +129,7 @@ ZENO_API void INode::preApply() {
             zeno::log_info("remove cache file: {}", path.string());
         }
     }
+#endif
     if (myname.size() > 6 && myname.substr(myname.size() - 6) == "-Stamp") {//如果是一个stamp节点,unchange情况直接return
         requireInput("stampMode");
         auto value = safe_at(inputs, "stampMode", "");
@@ -150,8 +152,13 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
+#if 0
         if (bTmpCache)
             writeTmpCaches();
+#endif
+        for (auto& [k, obj] : outputs) {
+            obj->userData().set2("objRunType", objRunType);
+        }
     }
     log_debug("==> leave {}", myname);
 }

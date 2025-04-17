@@ -629,7 +629,7 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        scene->objectsMan->lightObjects.clear();
+        //scene->objectsMan->lightObjects.clear();
     }
 }
 
@@ -659,7 +659,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    //scene->objectsMan->lightObjects.clear();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -699,7 +699,7 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    //scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {

@@ -161,6 +161,7 @@ void OptixWorker::setRenderSeparately(runType runtype) {
     auto scene = m_zenoVis->getSession()->get_scene();
     scene->drawOptions->updateLightCameraOnly = runtype == RunLightCamera;
     scene->drawOptions->updateMatlOnly = runtype == RunMaterial;
+    scene->drawOptions->updateMatrixOnly = runtype == RunMatrix;
 }
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
