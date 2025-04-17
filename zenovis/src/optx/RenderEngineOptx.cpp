@@ -1424,44 +1424,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
 
-            if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
-                cachedMaterials = defaultScene.prepareShaderSet();
-
-                for (auto& [key, _] : hair_xxx_cache) 
-                {
-                    auto& [filePath, mode, mtid] = key;
-
-                    auto ctype = (zeno::CurveType)mode;
-
-                    if (cachedCurvesMaterials.count(mtid) > 0) {
-                        auto& ref = cachedCurvesMaterials.at(mtid);
-                        ref.push_back( ctype );
-                        continue;
-                    }
-                    cachedCurvesMaterials[mtid] = { ctype };
-                }
-
-                for (auto& [key, ele] : curveGroupCache) {
-
-                    auto ctype = ele->curveType;
-                    auto mtlid = ele->mtlid;
-
-                    if (cachedCurvesMaterials.count(mtlid) > 0) {
-                        auto& ref = cachedCurvesMaterials.at(mtlid);
-                        ref.push_back( ctype );
-                        continue;
-                    }
-                    cachedCurvesMaterials[mtlid] = { ctype };
-                }
- 
-            } // preserve material names for materials-only updating case 
-
-            std::vector<std::shared_ptr<ShaderPrepared>> _meshes_shader_list{};
-            std::vector<std::shared_ptr<ShaderPrepared>> _sphere_shader_list{};
-            std::vector<std::shared_ptr<ShaderPrepared>> _curves_shader_list{};
-
-            std::vector<std::shared_ptr<ShaderPrepared>> _volume_shader_list{};
-
             std::map<std::string,  uint16_t> meshMatLUT{};
             std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
 
@@ -1471,55 +1433,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
-
-            //if (cachedMeshesMaterials.count("Default")) 
-            {
-                auto tmp = std::make_shared<ShaderPrepared>();
-
-                tmp->mark = ShaderMark::Mesh;
-                tmp->matid = "Default";
-                tmp->filename = _default_shader_template.name;
-                tmp->callable = _default_callable_template.shadtmpl;
-
-                _meshes_shader_list.push_back(tmp);
-
-                meshMatLUT.insert({"Default", 0});
-            }
-
-            //if (cachedSphereMaterials.count("Default")) 
-            {
-                auto tmp = std::make_shared<ShaderPrepared>();
-
-                tmp->mark = ShaderMark::Sphere;
-                tmp->matid = "Default";
-                tmp->filename = _default_shader_template.name;
-                tmp->callable = _default_callable_template.shadtmpl;
-
-                _sphere_shader_list.push_back(tmp);
-            }
-
-            unsigned int usesCurveTypeFlags = 0;
-            auto mark_task = [&usesCurveTypeFlags](zeno::CurveType ele) {
-
-                usesCurveTypeFlags |= CURVE_FLAG_MAP.at(ele);
-                return CURVE_SHADER_MARK.at(ele);
-            };
-
-            if (cachedCurvesMaterials.count("Default") ) {
-
-                auto& ref = cachedCurvesMaterials.at("Default"); 
-
-                for (auto& ele : ref) {
-
-                    auto tmp = std::make_shared<ShaderPrepared>();
-                    tmp->matid = "Default";
-                    tmp->filename = _default_shader_template.name;
-                    tmp->callable = _default_callable_template.shadtmpl;
-
-                    tmp->mark = mark_task(ele);
-                    _curves_shader_list.push_back(tmp);
-                }                
-            }
 
             //first pass, remove duplicated mat and keep the later
             std::map<std::string, GraphicsManager::DetMaterial*> matMap;
