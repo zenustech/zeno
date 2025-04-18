@@ -91,6 +91,7 @@ ZENO_API bool zeno::INode::getTmpCache()
 
 ZENO_API void zeno::INode::writeTmpCaches()
 {
+#if 0
     GlobalComm::ViewObjects objs;
     for (auto const& [name, value] : outputs) 
     {
@@ -108,6 +109,7 @@ ZENO_API void zeno::INode::writeTmpCaches()
     int frameid = zeno::getSession().globalState->frameid;
     std::string fileName = myname + ".zenocache";
     GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, "RunAll", fileName);
+#endif
 }
 
 ZENO_API void INode::preApply() {

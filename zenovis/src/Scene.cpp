@@ -127,8 +127,8 @@ bool Scene::loadFrameObjects(int frameid) {
             }
             if (optxneedLoaded || inserted) {
                 renderMan->getEngine()->beginFrameLoading(frameid);
-                renderMan->getEngine()->update();
             }
+            renderMan->getEngine()->update();
         }
         else {
             renderMan->getEngine()->update();

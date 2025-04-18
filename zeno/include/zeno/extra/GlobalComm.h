@@ -27,7 +27,7 @@ struct GlobalComm {
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
-    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
+    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
     int currentFrameNumber = 0;
     mutable std::mutex m_mtx;
 
@@ -38,6 +38,7 @@ struct GlobalComm {
     std::string objTmpCachePath;
 
     std::string runtype;
+    bool sceneLoaded = false;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
@@ -65,13 +66,13 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isBeginframe = true);
+    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isBeginframe = true);
     bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo, std::string& runtype);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype);
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
 private:
     ViewObjects const *_getViewObjects(const int frameidm, bool& optxneedLoaded, bool& optxneedrerun, std::string& runtype);
