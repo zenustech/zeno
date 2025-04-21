@@ -57,6 +57,7 @@
 #include "dialog/zcheckupdatedlg.h"
 #include "dialog/zrestartdlg.h"
 #include "dialog/zpreferencesdlg.h"
+#include "dialog/ZComposeVideoDlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -283,6 +284,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_CHECKUPDATE: {
         onCheckUpdate();
+        break;
+    }
+    case ACTION_COMPOSE_VIDEO: {
+        onComposeVideo();
         break;
     }
     default: {
@@ -654,7 +659,9 @@ void ZenoMainWindow::initTimelineDock()
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {
-            view->onPlayClicked(bPlaying);
+            if (view->isVisible()) {
+                view->onPlayClicked(bPlaying);
+            }
         }
     });
 
@@ -1549,6 +1556,12 @@ void ZenoMainWindow::onSetTimelineValue()
     m_pTimeline->setSliderValue(m_pTimeline->fromTo().first);
 }
 
+void ZenoMainWindow::onComposeVideo()
+{
+    ZComposeVideoDlg dlg(this);
+    dlg.exec();
+}
+
 void ZenoMainWindow::importGraph(bool bPreset) {
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
@@ -1950,6 +1963,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
     m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
+    m_ui->actionCombine_video->setProperty("ActionType", ACTION_COMPOSE_VIDEO);
 }
 
 void ZenoMainWindow::screenShoot() 
