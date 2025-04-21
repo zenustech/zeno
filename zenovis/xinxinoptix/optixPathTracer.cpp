@@ -292,30 +292,21 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-    state.params.handle = state.rootHandleIAS;
-
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float3 )
-                ) );
-    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-
     auto& params = state.params;
-
-    CUDA_CHECK( cudaMallocManaged(
-            reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
-            ) );
-    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    params.handle = state.rootHandleIAS;
     
-    CUDA_CHECK( cudaMallocManaged(
-            reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
-            ) );
-    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    auto byte_size = params.width * params.height * sizeof( float3 );
+
+    state.accum_buffer_p.resize(byte_size);
+    params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
+
+    state.albedo_buffer_p.resize(byte_size, 0, true);
+    params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+
+    state.normal_buffer_p.resize(byte_size, 0, true);
+    params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
-
     //state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 }
@@ -378,16 +369,12 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
             ) );
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
 
-    CUDA_CHECK( cudaMallocManaged(
-                reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
-                ) );
+    auto byte_size = params.width * params.height * sizeof( float3 );
+
+    state.albedo_buffer_p.resize(byte_size, 0, true);
     state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
-    
-    CUDA_CHECK( cudaMallocManaged(
-                reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
-                ) );
+
+    state.normal_buffer_p.resize(byte_size, 0, true);
     state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
@@ -666,18 +653,9 @@ void updateRootIAS()
 
 static void createSBT( PathTracerState& state )
 {
-        OptixUtil::d_raygen_record.reset();
-        OptixUtil::d_miss_records.reset();
-        OptixUtil::d_hitgroup_records.reset();
-        OptixUtil::d_callable_records.reset();
-
-        state.accum_buffer_p.reset();
-        state.albedo_buffer_p.reset();
-        state.normal_buffer_p.reset();
-
     raii<CUdeviceptr>  &d_raygen_record = OptixUtil::d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
-    CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
+    d_raygen_record.resize(raygen_record_size);
 
     RayGenRecord rg_sbt = {};
     OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::raygen_prog_group, &rg_sbt ) );
@@ -691,18 +669,18 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_miss_records = OptixUtil::d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
-    CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
+    d_miss_records.resize(miss_record_size * RAY_TYPE_COUNT);
 
     MissRecord ms_sbt[2];
-    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::radiance_miss_group,  &ms_sbt[0] ) );
+    OPTIX_CHECK_LOG( optixSbtRecordPackHeader( OptixUtil::radiance_miss_group,  &ms_sbt[0] ) );
     ms_sbt[0].data.bg_color = make_float4( 0.0f );
-    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::occlusion_miss_group, &ms_sbt[1] ) );
+    OPTIX_CHECK_LOG( optixSbtRecordPackHeader( OptixUtil::occlusion_miss_group, &ms_sbt[1] ) );
     ms_sbt[1].data.bg_color = make_float4( 0.0f );
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_miss_records ),
                 ms_sbt,
-                miss_record_size*RAY_TYPE_COUNT,
+                miss_record_size * RAY_TYPE_COUNT,
                 cudaMemcpyHostToDevice
                 ) );
 
@@ -712,10 +690,7 @@ static void createSBT( PathTracerState& state )
     const size_t hitgroup_record_count = shader_count * RAY_TYPE_COUNT;
 
     raii<CUdeviceptr>  &d_hitgroup_records = OptixUtil::d_hitgroup_records;
-    
-    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
-                hitgroup_record_size * hitgroup_record_count
-                ));
+    d_hitgroup_records.resize(hitgroup_record_size * hitgroup_record_count);
 
     std::vector<HitGroupRecord> hitgroup_records(hitgroup_record_count);
     std::vector<CallablesRecord> callable_records(shader_count);
@@ -816,7 +791,9 @@ static void createSBT( PathTracerState& state )
     {
         raii<CUdeviceptr>& d_callable_records = OptixUtil::d_callable_records;
         size_t      sizeof_callable_record = sizeof( CallablesRecord );
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_callable_records ), sizeof_callable_record * shader_count ) );
+
+        d_callable_records.resize( sizeof_callable_record * shader_count );
+
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_callable_records ), callable_records.data(),
                                 sizeof_callable_record * shader_count, cudaMemcpyHostToDevice ) );
 

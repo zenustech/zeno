@@ -98,11 +98,13 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize, std::size_t incSize = 0) {
-#if 0
+    bool resize(std::size_t newSize, std::size_t incSize = 0, bool managed=false) {     
+#if 1
         if (newSize != size) {  // temporary
-            printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);
-            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
+            if (managed)
+                CUDA_CHECK(cudaMallocManaged(reinterpret_cast<void **>(&reset()), newSize));
+            else
+                CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
             size = newSize;
             capacity = newSize;
             return true;
