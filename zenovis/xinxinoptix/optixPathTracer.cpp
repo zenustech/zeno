@@ -41,19 +41,15 @@
 #include <zeno/utils/fileio.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/UserData.h>
-#include "optixSphere.h"
 #include "optixVolume.h"
 #include "zeno/core/Session.h"
 
 #include <algorithm>
-#include <thread>
 #include <array>
 #include <optional>
 #include <cstring>
-#include <fstream>
-#include <iomanip>
+
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -931,11 +927,6 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
-void splitMesh(std::vector<Vertex> & verts, 
-std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<MeshObject>> &oMeshes, int meshesStart, int vertsStart);
-
-
 static std::map<std::string, LightDat> lightdats;
 static std::vector<float2>  triangleLightCoords;
 static std::vector<float3>  triangleLightNormals;
@@ -1607,10 +1598,14 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
     OptixUtil::_compile_group.wait();
 
-    OptixUtil::rtMaterialShaders.clear();
+    //OptixUtil::rtMaterialShaders.clear();
     OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
+        if (!shaders[i]->dirty) continue;
+
+        shaders[i]->dirty = false;
+        OptixUtil::rtMaterialShaders[i].dirty = true;
 
 OptixUtil::_compile_group.run([&shaders, i] () {
 
@@ -1634,34 +1629,30 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             shaderCore = shaderCoreLUT.at(key);
         }
 
-        OptixUtil::rtMaterialShaders[i].core = shaderCore;
-        OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;
-        OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
+        auto& rtShader = OptixUtil::rtMaterialShaders[i];
+
+        rtShader.core = shaderCore;
+        rtShader.callable = shaders[i]->callable;
+        rtShader.parameters = shaders[i]->parameters;
         
         auto macro = globalShaderBufferGroup.code(callable_string);
-        OptixUtil::rtMaterialShaders[i].macros = macro;
-
-        for (auto& [k, v] : macro) {
-            std::cout << "Macro: " << k << ":" << v << std::endl;
-        }
+        rtShader.macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
-            OptixUtil::rtMaterialShaders[i].has_vdb = true; 
+            rtShader.has_vdb = true; 
         }
 
         auto& texs = shaders[i]->tex_keys;
-        //std::cout<<"texSize:"<<texs.size()<<std::endl;
 
         for(int j=0;j<texs.size();j++)
         {
-            //std::cout<< "texPath:" << texs[j].path <<std::endl;
-            OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
+            rtShader.addTexture(j, texs[j]);
         }
 
         auto& vdbs = shaders[i]->vdb_keys;
         for (int j=0; j<shaders[i]->vdb_keys.size(); ++j)
         {
-            OptixUtil::rtMaterialShaders[i].vbds.push_back(vdbs[j]);
+            rtShader.vbds.push_back(vdbs[j]);
         }
 }); //_compile_group
     } //for
@@ -1672,10 +1663,13 @@ OptixUtil::_compile_group.wait();
     //std::vector<tbb::task_group> task_groups(task_count);
     for(int i=0; i<task_count; ++i)
     {
+        auto& shader_ref = OptixUtil::rtMaterialShaders[i];
+        if (!shader_ref.dirty) continue;
+        shader_ref.dirty = false;
+
         OptixUtil::_compile_group.run([&shaders, i] () {
 
             auto fallback = shaders[i]->matid == "Default";
-            
             //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
             {
@@ -1728,49 +1722,28 @@ OptixUtil::_compile_group.wait();
 
 }
 
-void optixupdateend() {
+void configPipeline(bool shaderDirty) {
     camera_changed = true;
 
     auto buffers = globalShaderBufferGroup.upload();
     state.params.global_buffers = (void*)buffers;
 
-    createSBT( state );
-    printf("SBT created \n");
+    CppTimer timer;
 
-    OptixUtil::createPipeline(defaultScene.maxNodeDepth);
-    printf("Pipeline created \n");
-
-    initLaunchParams( state );
-    printf("init params created \n");
-}
-
-
-void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<MeshObject>> &oMeshes, int meshesStart, int vertsStart)
-{
-    size_t num_tri = (verts.size()-vertsStart)/3;
-    oMeshes.resize(meshesStart);
-    size_t tris_per_mesh = TRI_PER_MESH;
-    size_t num_iter = num_tri/tris_per_mesh + 1;
-    for(int i=0; i<num_iter;i++)
-    {
-        auto m = std::make_shared<MeshObject>();
-        for(int j=0;j<tris_per_mesh;j++)
-        {
-            size_t idx = i*tris_per_mesh + j;
-            if(idx<num_tri){
-                m->vertices.emplace_back(verts[vertsStart + idx*3+0]);
-                m->vertices.emplace_back(verts[vertsStart + idx*3+1]);
-                m->vertices.emplace_back(verts[vertsStart + idx*3+2]);
-                m->mat_idx.emplace_back(mat_idx[vertsStart/3 + idx]);
-                m->indices.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
-            }
-        }
-        if(m->vertices.size()>0)
-            oMeshes.push_back(std::move(m));
+    if (shaderDirty) {
+        timer.tick();
+        createSBT( state );
+        timer.tock("SBT created \n");
     }
-}
 
+    timer.tick();
+    OptixUtil::createPipeline(defaultScene.maxNodeDepth, shaderDirty);
+    timer.tock("Pipeline created \n");
+
+    timer.tick();
+    initLaunchParams( state );
+    timer.tock("init params created \n");
+}
 
 void prepareScene()
 {
@@ -2149,7 +2122,6 @@ void optixCleanup() {
     state.finite_lights_ptr.reset();
     
     state.params.sky_strength = 1.0f;
-    state.params.sky_texture;
 
     std::vector<OptixUtil::TexKey> keys;
 
@@ -2165,19 +2137,22 @@ void optixCleanup() {
    
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 
-    lightsWrapper.reset();
-
     for (auto const& [key, val] : defaultScene._vdb_grids_cached) {
         cleanupVolume(*val);
     }
-
+    
     defaultScene = {};
     OptixUtil::g_ies.clear();
 
     cleanupHairs();
     globalShaderBufferGroup.reset();
 
-    defaultScene = {};
+    using namespace OptixUtil;
+
+    pipelineMark = {};
+    // raygen_module            .handle=0;
+    // sphere_ism               .handle=0;
+    // raygen_prog_group        .handle=0;
 }
 
 void optixDestroy() {
@@ -2204,7 +2179,7 @@ void optixDestroy() {
 
     output_buffer_o           .reset();
     state = {};
-    isPipelineCreated = false;         
+    pipelineMark = {};         
 }
 
 #if 0

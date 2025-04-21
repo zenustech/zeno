@@ -26,7 +26,6 @@
 #include "optixVolume.h"
 #include "optix_types.h"
 #include "raiicuda.h"
-#include "zeno/types/TextureObject.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
@@ -47,7 +46,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <filesystem>
 
@@ -118,7 +116,9 @@ inline void resetAll() {
     context.reset();
 }
 
-inline bool isPipelineCreated = false;
+typedef std::tuple<uint, uint> PipelineMark;
+
+inline PipelineMark pipelineMark = {};
 ////end material independent stuffs
 
 inline static auto DefaultCompileOptions() {
@@ -139,7 +139,7 @@ inline void createContext()
     CUDA_CHECK( cudaFree( 0 ) );
 
     CUcontext          cu_ctx = 0;  // zero means take the current context
-    OPTIX_CHECK( optixInit() );
+    OPTIX_CHECK_LOG( optixInit() );
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
 #if defined( NDEBUG )
@@ -148,15 +148,16 @@ inline void createContext()
     options.logCallbackLevel          = 4;
 #endif
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
-    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+    OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
 inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
-    if (CachedPrimitiveTypeFlags != UINT_MAX && (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags == usesPrimitiveTypeFlags)) { return false; }
-    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+    auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
+    if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
+    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags | OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -1061,6 +1062,7 @@ struct OptixShaderCore {
 
 struct OptixShaderWrapper
 {
+    bool dirty = true;
     std::shared_ptr<OptixShaderCore> core{};
     
     std::string                 callable {};
@@ -1145,8 +1147,13 @@ struct OptixShaderWrapper
 
 inline std::vector<OptixShaderWrapper> rtMaterialShaders;//just have an arry of shaders
 
-inline void createPipeline(uint tree_depth)
+inline void createPipeline(uint tree_depth, bool shaderDirty)
 {
+    auto shader_count = rtMaterialShaders.size();
+    auto newMark = PipelineMark {tree_depth, shader_count};
+    if (!shaderDirty && newMark == pipelineMark)
+        return;
+
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
 
@@ -1167,10 +1174,10 @@ inline void createPipeline(uint tree_depth)
     char   log[2048];
     size_t sizeof_log = sizeof( log );
 
-    if (isPipelineCreated)
+    if (std::get<0>(pipelineMark)!=0)
     {
-        OPTIX_CHECK(optixPipelineDestroy(pipeline));
-        isPipelineCreated = false;
+        OPTIX_CHECK_LOG(optixPipelineDestroy(pipeline));
+        pipelineMark = newMark;
     }
     OPTIX_CHECK_LOG( optixPipelineCreate(
                 context,
@@ -1182,7 +1189,7 @@ inline void createPipeline(uint tree_depth)
                 &sizeof_log,
                 &pipeline
                 ) );
-    isPipelineCreated = true;
+    pipelineMark = newMark;
 
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
