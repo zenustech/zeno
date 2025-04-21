@@ -27,7 +27,9 @@ void Scene::loadGLAPI(void *procaddr) {
         zeno::log_error("failed to load OpenGL via GLAD: {}", res);
 }
 
-Scene::~Scene() = default;
+Scene::~Scene() {
+    zeno::getSession().globalComm->sceneLoadedFlag.erase(reinterpret_cast<uintptr_t>(this));
+};
 
 Scene::Scene()
     : camera(std::make_unique<Camera>()),
@@ -47,6 +49,8 @@ Scene::Scene()
         switchRenderEngine("zhxx");
     else
         switchRenderEngine("bate");
+
+    zeno::getSession().globalComm->sceneLoadedFlag.insert({ reinterpret_cast<uintptr_t>(this) , {true, false, false} });
 }
 
 void Scene::cleanupView()
@@ -107,25 +111,31 @@ bool Scene::loadFrameObjects(int frameid) {
     const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype) -> bool {
         return this->objectsMan->load_objects(objs, runtype);
     };
-    auto cbUpdate = [this](int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun) {
+    auto cbUpdate = [this](int frameid, bool inserted) {
         if (renderMan->getDefaultEngineName() == "optx") {
-            if (!optxneedrerun && optxneedLoaded) {
+            std::tuple<bool, bool, bool>& flag = zeno::getSession().globalComm->sceneLoadedFlag[reinterpret_cast<uintptr_t>(this)];
+            bool& assetNeedLoad = std::get<0>(flag), & needRun = std::get<1>(flag), & needFrameLoading = std::get<2>(flag);
+            if (!assetNeedLoad && !needRun && needFrameLoading) {
                 if (frameid == zeno::getSession().userData().get2<int>("optixObjsCurrFrame", -1)) {
                     return;
                 }
             }
-            zeno::scope_exit sp([this, &optxneedLoaded, &frameid, inserted]() {
-                if (optxneedLoaded || inserted) {
+            zeno::scope_exit sp([this, &flag, &frameid, inserted, &needFrameLoading]() {
+                if (needFrameLoading || inserted) {
                     renderMan->getEngine()->endFrameLoading(frameid);
-                    optxneedLoaded = false;
+                    needFrameLoading = false;
                     zeno::getSession().userData().set2<int>("optixObjsCurrFrame", std::move(frameid));
                 }
             });
-            if (optxneedrerun) {
-                renderMan->getEngine()->rerun();
-                optxneedrerun = false;
+            if (assetNeedLoad) {
+                renderMan->getEngine()->assetLoad();
+                assetNeedLoad = false;
             }
-            if (optxneedLoaded || inserted) {
+            if (needRun) {
+                renderMan->getEngine()->run();
+                needRun = false;
+            }
+            if (needFrameLoading || inserted) {
                 renderMan->getEngine()->beginFrameLoading(frameid);
             }
             renderMan->getEngine()->update();
@@ -135,7 +145,7 @@ bool Scene::loadFrameObjects(int frameid) {
         }
     };
     bool isFrameValid = false;
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, cbUpdate, isFrameValid);
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, cbUpdate, reinterpret_cast<uintptr_t>(this), isFrameValid);
     if (!isFrameValid)
         return false;
 

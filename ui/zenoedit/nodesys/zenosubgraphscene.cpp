@@ -1254,7 +1254,7 @@ void ZenoSubGraphScene::removeNodeCache()
         STATUS_UPDATE_INFO info;
         int options = idx.data(ROLE_OPTIONS).toInt();
         info.oldValue = options;
-        options &= (~(int)OPT_MATRIX);
+        options &= (~(int)OPT_CACHE);
         info.role = ROLE_OPTIONS;
         info.newValue = options;
         pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);

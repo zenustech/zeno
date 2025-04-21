@@ -122,7 +122,11 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::finalize();
     }
 
-    void rerun() {
+    void assetLoad() {
+
+    }
+
+    void run() {
 
     }
 

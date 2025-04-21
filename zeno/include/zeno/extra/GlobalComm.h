@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <functional>
+#include <filesystem>
 
 namespace zeno {
 
@@ -37,8 +38,8 @@ struct GlobalComm {
     std::string cacheFramePath;
     std::string objTmpCachePath;
 
-    std::string runtype;
-    bool sceneLoaded = false;
+    std::map<uintptr_t, std::tuple<bool, bool, bool>> sceneLoadedFlag;  //assetneedLoad, run, load
+    bool assetsInitialized = false;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
@@ -56,7 +57,7 @@ struct GlobalComm {
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool load_objects(const int frameid, 
                 const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype)>& cb,
-                std::function<void(int frameid, bool inserted, bool& optxneedLoaded, bool& optxneedrerun)> callbackUpdate,
+                std::function<void(int frameid, bool inserted)> callbackUpdate, uintptr_t sceneId,
                 bool& isFrameValid);
     ZENO_API void clear_objects(const std::function<void()>& cb);
     ZENO_API bool isFrameCompleted(int frameid) const;
@@ -74,8 +75,9 @@ struct GlobalComm {
     static std::shared_ptr<IObject> constructEmptyObj(int type);
     bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype);
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
+    static std::string getRunType(std::filesystem::path dir);
 private:
-    ViewObjects const *_getViewObjects(const int frameidm, bool& optxneedLoaded, bool& optxneedrerun, std::string& runtype);
+    ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype);
 };
 
 }

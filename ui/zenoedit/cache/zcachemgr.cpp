@@ -14,7 +14,7 @@ ZCacheMgr::ZCacheMgr()
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
 {
-    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || Opt_RunMatrix || m_cacheOpt == Opt_AlwaysOn)) {
+    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_RunMatrix || m_cacheOpt == Opt_AlwaysOn)) {
          return true;
     }
     if ((bTempDir || bAutoCleanCache) &&

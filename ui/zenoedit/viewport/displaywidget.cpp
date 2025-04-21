@@ -913,7 +913,7 @@ void DisplayWidget::onRecord()
             ZASSERT_EXIT(mgr);
             ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
             zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
+            mgr->setCacheOpt(ZCacheMgr::Opt_LoadAsset);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)

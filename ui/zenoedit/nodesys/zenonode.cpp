@@ -1934,15 +1934,15 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 			options ^= OPT_VIEW;
 		}
     }
-    else if (btn == MATRIX)
+    else if (btn == STATUS_CACHE)
     {
         if (toggled)
         {
-            options |= OPT_MATRIX;
+            options |= OPT_CACHE;
         }
         else
         {
-            options ^= OPT_MATRIX;
+            options ^= OPT_CACHE;
         }
     }
 

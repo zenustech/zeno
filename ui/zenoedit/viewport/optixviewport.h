@@ -35,7 +35,7 @@ public slots:
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
-    void setRenderSeparately(runType runtype);
+    void setRenderSeparately(int runtype);
     void onSetSafeFrames(bool bLock, int nx, int ny);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
@@ -105,7 +105,7 @@ signals:
     void sig_switchTimeFrame(int frame);
     void sig_setSafeFrames(bool bLock, int nx, int ny);
     void sig_cancelRecording();
-    void sig_setRenderSeparately(runType runtype);
+    void sig_setRunType(int runtype);
     void sig_setLoopPlaying(bool enable);
     void sig_setSlidFeq(int feq);
     void sigscreenshoot(QString, QString, int, int);

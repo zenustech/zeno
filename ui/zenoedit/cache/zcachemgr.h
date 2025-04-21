@@ -15,6 +15,7 @@ public:
 
     enum cacheOption {
         Opt_Undefined = 0,
+        Opt_LoadAsset,
         Opt_RunAll,
         Opt_RunLightCameraMaterial,
         Opt_RunMatrix,

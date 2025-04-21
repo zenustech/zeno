@@ -70,7 +70,7 @@ void OptixWorker::onPlayToggled(bool bToggled)
     else {
         m_pTimer->start(m_sampleFeq);
     }
-    setRenderSeparately(RunALL);
+    //setRenderSeparately(RunALL);
 }
 
 void OptixWorker::onSetSlidFeq(int feq)
@@ -157,11 +157,11 @@ void OptixWorker::cancelRecording()
     m_bRecording = false;
 }
 
-void OptixWorker::setRenderSeparately(runType runtype) {
+void OptixWorker::setRenderSeparately(int runtype) {
     auto scene = m_zenoVis->getSession()->get_scene();
-    scene->drawOptions->updateLightCameraOnly = runtype == RunLightCamera;
-    scene->drawOptions->updateMatlOnly = runtype == RunMaterial;
-    scene->drawOptions->updateMatrixOnly = runtype == RunMatrix;
+    scene->drawOptions->updateLightCameraOnly = (runType)runtype == RunLightCamera;
+    scene->drawOptions->updateMatlOnly = (runType)runtype == RunMaterial;
+    scene->drawOptions->updateMatrixOnly = (runType)runtype == RunMatrix;
 }
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
@@ -445,8 +445,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         update();
     });
     connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
-    connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
-    connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
+    connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop, Qt::BlockingQueuedConnection);
+    connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work, Qt::BlockingQueuedConnection);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sigscreenshoot, m_worker, &OptixWorker::screenShoot, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
@@ -456,7 +456,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
-    connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
+    connect(this, &ZOptixViewport::sig_setRunType, m_worker, &OptixWorker::setRenderSeparately);
     connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
     connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
@@ -505,7 +505,7 @@ void ZOptixViewport::setSimpleRenderOption()
 }
 
 void ZOptixViewport::setRenderSeparately(runType runtype) {
-    emit sig_setRenderSeparately(runtype);
+    emit sig_setRunType((int)runtype);
 }
 
 void ZOptixViewport::cameraLookTo(zenovis::CameraLookToDir dir)

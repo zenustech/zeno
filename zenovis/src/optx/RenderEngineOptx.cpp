@@ -1835,7 +1835,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         xinxinoptix::optixDestroy();
     }
 
-    void rerun() {
+    void assetLoad() {
+        int a = 0;
+    }
+
+    void run() {
         int a = 0;
     }
 

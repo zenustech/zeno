@@ -402,8 +402,8 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         if (opts & OPT_VIEW) {
             options.push_back("VIEW");
         }
-        if (opts & OPT_MATRIX) {
-            options.push_back("MATRIX");
+        if (opts & OPT_CACHE) {
+            options.push_back("CACHE");
         }
         if (data[ROLE_COLLASPED].toBool())
         {

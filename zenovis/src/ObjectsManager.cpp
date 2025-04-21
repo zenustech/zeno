@@ -22,7 +22,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
         }
     }
     if(changed){
-        if (runtype == "RunAll" || runtype == "RunLightCamera") {
+        if (runtype == "LoadAsset" || runtype == "RunAll" || runtype == "RunLightCamera") {
             lightObjects.clear();
         }
     }
@@ -32,22 +32,24 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             std::string stampChange = obj->userData().get2<std::string>("stamp-change", "TotalChange");
             if (stampChange != "TotalChange") {
                 auto begin = objects.m_curr.begin();
-                const std::string& oldkey = key.substr(0, key.find_first_of(":")) + begin->first.substr(begin->first.find_first_of(":"));
-                auto it = objects.m_curr.find(oldkey);
-                if (it != objects.m_curr.end()) {
-                    newobj = it->second;
-                    newobj->userData().set2("stamp-change", stampChange);
-                    newobj->userData().set2("stamp-base", obj->userData().get2<int>("stamp-base", -1));
-                    if (stampChange == "UnChanged") {
-                    } else if (stampChange == "DataChange") {
-                        const std::string& stampDatachangehint = newobj->userData().get2<std::string>("stamp-dataChange-hint", "");
-                        //根据stampDatachangehint用obj的data信息更新newobj
-                    } else if (stampChange == "ShapeChange") {
-                        //暂时并入Totalchange
-                        //用obj的shape信息更新newobj
+                if (begin != objects.m_curr.end()) {
+                    const std::string& oldkey = key.substr(0, key.find_first_of(":")) + begin->first.substr(begin->first.find_first_of(":"));
+                    auto it = objects.m_curr.find(oldkey);
+                    if (it != objects.m_curr.end()) {
+                        newobj = it->second;
+                        newobj->userData().set2("stamp-change", stampChange);
+                        newobj->userData().set2("stamp-base", obj->userData().get2<int>("stamp-base", -1));
+                        if (stampChange == "UnChanged") {
+                        } else if (stampChange == "DataChange") {
+                            const std::string& stampDatachangehint = newobj->userData().get2<std::string>("stamp-dataChange-hint", "");
+                            //根据stampDatachangehint用obj的data信息更新newobj
+                        } else if (stampChange == "ShapeChange") {
+                            //暂时并入Totalchange
+                            //用obj的shape信息更新newobj
+                        }
+                    } else {
+                        newobj = obj;
                     }
-                } else {
-                    newobj = obj;
                 }
             }
 
@@ -62,7 +64,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             inserted = true;
         }
     }
-    if (runtype != "RunAll") {
+    if (runtype != "RunAll" && runtype != "LoadAsset") {
         std::set<std::string> keys;
         for (auto& [k, _] : objs) {
             keys.insert(k.substr(0, k.find_first_of(":")));
@@ -71,7 +73,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             (runtype == "RunMaterial" ? "material" :
                 (runtype == "RunMatrix" ? "matrix" : "normal"));
         for (auto& [k, obj] : objects.m_curr) {
-            if (obj && obj->userData().get2<std::string>("objRunType", "normal") != objruntype && keys.find(k.substr(k.find_first_of(":"))) == keys.end()) {
+            if (obj && obj->userData().get2<std::string>("objRunType", "normal") != objruntype && keys.find(k.substr(0, k.find_first_of(":"))) == keys.end()) {
                 ins.try_emplace(k, std::move(obj)); //key保持不变，不会触发optx加载obj
             }
         }

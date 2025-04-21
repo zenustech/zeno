@@ -1054,9 +1054,9 @@ void ModelAcceptor::setOptions(const QString& id, const QStringList& options)
         {
             opts |= OPT_MUTE;
         }
-        else if (optName == "MATRIX")
+        else if (optName == "CACHE")
         {
-            opts |= OPT_MATRIX;
+            opts |= OPT_CACHE;
         }
         else if (optName == "collapsed")
         {

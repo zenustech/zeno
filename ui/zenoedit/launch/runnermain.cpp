@@ -244,10 +244,11 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
             bool ret = lckFile.tryLock();
             //dump cache to disk.
             session->globalComm->dumpFrameCache(frame, 
-                param.runtype == RunALL ? "RunAll" :
+                param.runtype == LoadAsset ? "LoadAsset" :
+                (param.runtype == RunALL ? "RunAll" :
                 (param.runtype == RunLightCamera ? "RunLightCamera" :
                 (param.runtype == RunMaterial ? "RunMaterial" :
-                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll"))));
+                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll")))));
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());
