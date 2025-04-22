@@ -132,18 +132,6 @@ ZENO_API void INode::preApply() {
         }
     }
 #endif
-    if (myname.size() > 6 && myname.substr(myname.size() - 6) == "-Stamp") {//如果是一个stamp节点,unchange情况直接return
-        requireInput("stampMode");
-        auto value = safe_at(inputs, "stampMode", "");
-        if (auto stampmode = dynamic_cast<zeno::StringObject*>(value.get())) {
-            auto session = &zeno::getSession();
-            session->userData().set2("graphHasStampNode", true);
-            if (session->globalState->frameid != session->globalComm->beginFrameNumber && stampmode->get() == "UnChanged") {
-                apply();
-                return;
-            }
-        }
-    }
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -160,6 +148,12 @@ ZENO_API void INode::preApply() {
 #endif
         for (auto& [k, obj] : outputs) {
             obj->userData().set2("objRunType", objRunType);
+        }
+        if (inputs.find("stampMode") != inputs.end()) {
+            auto session = &zeno::getSession();
+            if (!session->userData().has("graphHasStampNode")) {
+                session->userData().set2("graphHasStampNode", true);
+            }
         }
     }
     log_debug("==> leave {}", myname);
