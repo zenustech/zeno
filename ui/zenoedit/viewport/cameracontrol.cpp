@@ -102,7 +102,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
-    if (event->button() == Qt::MiddleButton) {
+    if (event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
             m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
@@ -128,7 +128,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             bTransform = true;
         }
     }
-    if (!bTransform && (event->buttons() & button)) {
+    if (!bTransform && ((event->buttons() & button)) || event->buttons() & Qt::RightButton) {
         m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
@@ -281,14 +281,14 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
-    else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
+    else if (!bTransform && ((event->buttons() & (rotateButton | moveButton)) || (event->buttons() & Qt::MouseButton::RightButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
         //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         Qt::KeyboardModifiers modifiers = event->modifiers();
-        if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
+        if (((moveKey == modifiers) && (event->buttons() & moveButton)) || (event->buttons() & Qt::MouseButton::RightButton)) {
             // translate
             if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());

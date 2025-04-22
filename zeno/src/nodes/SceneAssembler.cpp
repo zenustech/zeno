@@ -902,17 +902,21 @@ ZENDEFNODE( SceneRootRename, {
 });
 
 struct RenderScene : zeno::INode {
+    std::shared_ptr<ListObject> m_static_scene = nullptr;
     void apply() override {
         auto scene = std::make_shared<ListObject>();
         Json scene_descriptor_json;
         if (has_input("static_scene")) {
-            auto static_scene_tree = get_scene_tree_from_list(get_input2<ListObject>("static_scene"));
-            auto new_static_scene_tree = static_scene_tree->root_rename("SRG", std::nullopt);
-            auto static_scene = get_input2<bool>("flatten_static_scene")? new_static_scene_tree->to_flatten_structure(true) : new_static_scene_tree->to_layer_structure(true);
-            for (auto i = 1; i < static_scene->arr.size() - 2; i++) {
-                scene->arr.push_back(static_scene->arr[i]);
+            if (!m_static_scene) {
+                auto static_scene_tree = get_scene_tree_from_list(get_input2<ListObject>("static_scene"));
+                auto new_static_scene_tree = static_scene_tree->root_rename("SRG", std::nullopt);
+                auto static_scene = get_input2<bool>("flatten_static_scene")? new_static_scene_tree->to_flatten_structure(true) : new_static_scene_tree->to_layer_structure(true);
+                for (auto i = 1; i < static_scene->arr.size() - 2; i++) {
+                    scene->arr.push_back(static_scene->arr[i]);
+                }
+                m_static_scene = static_scene;
             }
-            auto scene_str = static_scene->arr[static_scene->arr.size() - 2]->userData().get2<std::string>("Scene");
+            auto scene_str = m_static_scene->arr[m_static_scene->arr.size() - 2]->userData().get2<std::string>("Scene");
             auto static_scene_descriptor = Json::parse(scene_str);
             scene_descriptor_json["StaticRenderGroups"] = static_scene_descriptor["StaticRenderGroups"];
             scene_descriptor_json["BasicRenderInstances"].update(static_scene_descriptor["BasicRenderInstances"]);
@@ -956,36 +960,5 @@ ZENDEFNODE( RenderScene, {
     },
 });
 
-
-//struct ModifySceneTree : zeno::INode {
-//    void apply() override {
-//        auto scene_list = get_input2<ListObject>("sceneSource");
-//        auto path = get_input2<std::string>("path");
-//        auto prim = get_input2<PrimitiveObject>("prim");
-//        auto pos = prim->verts[0];
-//        auto r0 = prim->verts.add_attr<vec3f>("r0")[0];
-//        auto r1 = prim->verts.add_attr<vec3f>("r1")[0];
-//        auto r2 = prim->verts.add_attr<vec3f>("r2")[0];
-//        sceneTree->modify(path, pos, r0, r1, r2);
-//
-//        auto scene = scene_tree_to_structure(sceneTree.get());
-//        set_output2("scene", scene);
-//    }
-//};
-//
-//ZENDEFNODE( ModifySceneTree, {
-//    {
-//        "sceneSource",
-//        {"string", "path", ""},
-//        "prim",
-//    },
-//    {
-//        {"scene"}
-//    },
-//    {},
-//    {
-//        "Scene",
-//    },
-//});
 
 }
