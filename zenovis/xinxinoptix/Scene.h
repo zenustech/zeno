@@ -180,11 +180,13 @@ public:
             return; 
         }
 
-        staticRenderGroup = 0;
         dynamicRenderGroup = 0;
-
         nodeCache = {};
         nodeDepthCache = {};
+
+        //staticRenderGroup = 0;
+        //nodeCacheStatic = {};
+        //nodeDepthCacheStatic = {};
 
         prepare_mesh_gas(context);
         prepare_sphere_gas(context);
@@ -284,10 +286,13 @@ public:
         prepare(_sphere_groups_);
         prepare(_vol_boxs);
 
-        std::function<OptixTraversableHandle(std::string, nlohmann::json& renderGroup, bool cache, uint& depth)> treeLook;  
-        
-        treeLook = [&](std::string obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth) -> OptixTraversableHandle {
+        std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+                                                decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
 
+        treeLook = [this, &treeLook, &context, &candidates, &candidates_matrix, &candidates_sbt, &candidates_mark]
+                        (std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+                            decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        {
             if (candidates.count(obj_key)) { //leaf node
                 test_depth = 0;
                 return candidates[obj_key];
@@ -311,7 +316,7 @@ public:
                 OptixTraversableHandle handle;
                 uint theDepth = 0;
 
-                handle = treeLook(item_key, renderGroup, true, theDepth);
+                handle = treeLook(item_key, renderGroup, true, theDepth, nodeCache, nodeDepthCache);
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
@@ -386,8 +391,8 @@ public:
             return node->handle;
         };
 
-        auto groupTask = [&](std::string key) -> OptixTraversableHandle {
-
+        auto groupTask = [&](std::string key, decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        {
             if (!sceneJson.contains(key)) return 0;
             auto& rg = sceneJson[key];
 
@@ -396,7 +401,7 @@ public:
                 auto obj_key = item.key();
 
                 uint depth = 0;
-                auto handle = treeLook(obj_key, rg, false, depth);
+                auto handle = treeLook(obj_key, rg, false, depth, nodeCache, nodeDepthCache);
 
                 std::cout << "Fetching handle: " << handle << std::endl;
             } //rg
@@ -411,7 +416,7 @@ public:
                 if (nodeDepthCache[obj_key]>0) { continue; } // deeper node
                 
                 uint depth = 0u;
-                auto handle = treeLook(obj_key, rg, true, depth);
+                auto handle = treeLook(obj_key, rg, true, depth, nodeCache, nodeDepthCache);
                 the_depth = max(the_depth, depth);
 
                 OptixInstance opi {};
@@ -428,22 +433,26 @@ public:
             auto node = std::make_shared<SceneNode>();
             xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
             nodeCache[key] = node;
+            nodeDepthCache[key] = the_depth+1;
             assert(node->handle!=0);
-
-            maxNodeDepth = max(maxNodeDepth, the_depth+1);
+            
             return node->handle;
         };
 
         maxNodeDepth = 1;
-        staticRenderGroup = groupTask("StaticRenderGroups");
-        dynamicRenderGroup = groupTask("DynamicRenderGroups");
-        maxNodeDepth = maxNodeDepth+2;
+        if (0 == staticRenderGroup) {
+            staticRenderGroup = groupTask("StaticRenderGroups", nodeCacheStatic, nodeDepthCacheStatic);
+        }
+        dynamicRenderGroup = groupTask("DynamicRenderGroups", nodeCache, nodeDepthCache);
+        maxNodeDepth = 2 + max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
         gather();
     }
 
     uint maxNodeDepth = 1;
     std::unordered_map<std::string, uint> nodeDepthCache {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCache {};
+    std::unordered_map<std::string, uint> nodeDepthCacheStatic {};
+    std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
