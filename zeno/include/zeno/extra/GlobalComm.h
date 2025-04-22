@@ -57,7 +57,7 @@ struct GlobalComm {
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool load_objects(const int frameid, 
                 const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype)>& cb,
-                std::function<void(int frameid, bool inserted)> callbackUpdate, uintptr_t sceneId,
+                std::function<void(int frameid, bool inserted, bool hasstamp)> callbackUpdate, uintptr_t sceneId,
                 bool& isFrameValid);
     ZENO_API void clear_objects(const std::function<void()>& cb);
     ZENO_API bool isFrameCompleted(int frameid) const;
@@ -77,7 +77,7 @@ struct GlobalComm {
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
     static std::string getRunType(std::filesystem::path dir);
 private:
-    ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype);
+    ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp);
 };
 
 }
