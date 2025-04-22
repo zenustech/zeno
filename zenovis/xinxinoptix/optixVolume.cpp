@@ -310,9 +310,9 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
         }();
 
 		// up to device
-        CUdeviceptr d_aabb;
+        xinxinoptix::raii<CUdeviceptr> d_aabb;
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ) ) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb ), &aabb, 
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb.handle ), &aabb, 
             sizeof( sutil::Aabb ), cudaMemcpyHostToDevice ) );
 
         // Make build input for this grid
@@ -330,23 +330,6 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
         OptixAccelBuildOptions accel_options = {};
         accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
         accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
-
-        OptixAccelBufferSizes gas_buffer_sizes;
-        OPTIX_CHECK( optixAccelComputeMemoryUsage( context, &accel_options, 
-            &build_input, 1, &gas_buffer_sizes ) );
-
-        CUdeviceptr d_temp_buffer_gas;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_temp_buffer_gas ),
-            gas_buffer_sizes.tempSizeInBytes ) );
-        xinxinoptix::raii<CUdeviceptr> d_output_buffer_gas;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_output_buffer_gas ),
-            gas_buffer_sizes.outputSizeInBytes ) );
-        CUdeviceptr d_compacted_size;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_compacted_size ), sizeof( size_t ) ) );
-
-        OptixAccelEmitDesc emit_property = {};
-        emit_property.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-        emit_property.result = d_compacted_size;
 
         xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 8);
         cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
