@@ -1,7 +1,5 @@
 #pragma once
 #include "zxxglslvec.h"
-#include "TraceStuff.h"
-#include "IOMat.h" 
 #include "DisneyBRDF.h"
 namespace HairBSDF{
     /*

@@ -7,7 +7,6 @@
 #include "zeno/types/LightObject.h"
 #include "zxxglslvec.h"
 #include "DisneyBRDF.h"
-#include "DisneyBSDF.h"
 
 #include "Shape.h"
 #include "Light.h"
@@ -352,9 +351,4 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     optixIgnoreIntersection();
     return;
-}
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
 }

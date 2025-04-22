@@ -138,8 +138,7 @@ extern "C" __global__ void __raygen__rg()
 
     const int    w   = params.width;
     const int    h   = params.height;
-    //const float3 eye = params.eye;
-    //const uint3  idxx = optixGetLaunchIndex();
+
     uint3 idx = optixGetLaunchIndex();
     if(idx.x>w || idx.y>h)
         return;
@@ -579,10 +578,6 @@ extern "C" __global__ void __miss__radiance()
 
 extern "C" __global__ void __miss__occlusion()
 {
-    setPayloadOcclusion( false );
+    //setPayloadOcclusion( false );
 }
 
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}
