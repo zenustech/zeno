@@ -375,6 +375,17 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
 
 bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype)
 {
+    const auto& lasttwo = [](const std::string& str)->int {
+        int count = 0;
+        for (int i = str.length() - 1; i >= 0; --i) {
+            if (str[i] == ':') {
+                ++count;
+                if (count == 2)
+                    return i;
+            }
+        }
+        return -1;
+    };
     bool loadPartial = false;
 
     auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
@@ -404,7 +415,8 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                         const size_t& newFrameObjStartIdx = node.value.HasMember("startIndexInCache") ? std::stoull(node.value["startIndexInCache"].GetString()) : 0;
                         const size_t& newFrameObjLength = node.value.HasMember("ObjSize") ? std::stoull(node.value["ObjSize"].GetString()) : 0;
                 
-                        const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
+                        //const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
+                        const std::string& nodeid = newFrameObjkey.substr(0, lasttwo(newFrameObjkey));
                         const std::string& newFrameChangeHint = node.value.HasMember("stamp-dataChange-hint") ? node.value["stamp-dataChange-hint"].GetString() : "";
                         newFrameStampInfo.insert({ nodeid , std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey, newFrameChangeHint, newFrameObjStartIdx, newFrameObjLength})});
                         if (!currentFrameStampinfo.empty()) {
@@ -429,7 +441,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
         }
     }
-    const auto& load = [&dir, &newFrameStampInfo](std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&lasttwo, &dir, &newFrameStampInfo](std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return nullptr;
 
@@ -474,7 +486,8 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
             file.seekg((keyscount + 1) * sizeof(size_t), std::ios::cur);
             for (auto& k : keys) {
-                auto it = newFrameStampInfo.find(k.substr(0, k.find_first_of(":")));
+                //auto it = newFrameStampInfo.find(k.substr(0, k.find_first_of(":")));
+                auto it = newFrameStampInfo.find(k.substr(0, lasttwo(k)));
                 if (it != newFrameStampInfo.end()) {
                     if (std::get<0>(it->second) == "TotalChange") {
                         std::streampos originalPos = file.tellg();
