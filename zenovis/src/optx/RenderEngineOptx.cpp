@@ -343,11 +343,9 @@ struct GraphicsManager {
         {
             const auto stamp_work = [](const zeno::UserData& ud) {
 
-                if (!ud.has("stamp-base")) {
-                    return std::tuple{0, std::string("TotalChange")};
-                }
-                const auto stamp_base = ud.get2<int>("stamp-base", 0);
-                const auto stamp_change = ud.get2<std::string>("stamp-change", "");
+                auto stamp_base = ud.get2<int>("stamp-base", 0);
+                auto stamp_change = ud.get2<std::string>("stamp-change", "TotalChange");
+                std::transform(stamp_change.begin(), stamp_change.end(), stamp_change.begin(), ::tolower);
 
                 return std::tuple{stamp_base, stamp_change};
             };
@@ -360,7 +358,7 @@ struct GraphicsManager {
                 auto prim_in = prim_in_lslislSp.get();
 
                 const auto [stamp_base, stamp_change] = stamp_work(prim_in_lslislSp->userData());
-                if (stamp_change == "Unchanged") { return; }
+                if (stamp_change == "unchanged") { return; }
 
                 if ( prim_in->userData().has("ShaderAttributes") ) {
                     auto attritbutes  = prim_in->userData().get2<std::string>("ShaderAttributes");
@@ -750,7 +748,7 @@ struct GraphicsManager {
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
                 const auto [stamp_base, stamp_change] = stamp_work(mtl->userData());
-                const auto dirty = stamp_change != "UnChanged";
+                const auto dirty = stamp_change != "unchanged";
                 det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->parameters,
                         stamp_base,  dirty};
             }
