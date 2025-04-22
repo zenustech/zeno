@@ -1423,6 +1423,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             );
         }
 
+
+        //zeno::log_info("meshNeedUpdate:{},matNeedUpdate:{},staticNeedUpdate:{},lightNeedUpdate:{}",meshNeedUpdate,matNeedUpdate,staticNeedUpdate,lightNeedUpdate);
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
 
             if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
@@ -1744,8 +1746,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             defaultScene.processVolumeBox(OptixUtil::context);
             defaultScene.shader_indice_table = ShaderKeyIndex;
-
-            if (matNeedUpdate)
+            bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
+            if (matNeedUpdate && second_matNeedUpdate)
             {
 //                std::cout<<"shaders size "<< allShaders.size() << std::endl;
 

@@ -227,14 +227,13 @@ struct AlembicPrimList : INode {
         auto abctree = get_input<ABCTree>("abctree");
         auto prims = std::make_shared<zeno::ListObject>();
         int use_xform = get_input2<int>("use_xform");
-        int skip_instance = get_input2<int>("skipInstance");
         if (use_xform) {
             prims = get_xformed_prims(abctree);
         } else {
             abctree->visitPrims([&] (auto const &p) {
                 auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
                 prims->arr.push_back(np);
-            }, skip_instance);
+            });
         }
         auto new_prims = std::make_shared<zeno::ListObject>();
         if (get_input2<bool>("splitByFaceset")) {
@@ -309,6 +308,9 @@ struct AlembicPrimList : INode {
             if (get_input2<bool>("triangulate")) {
                 zeno::primTriangulate(_prim.get());
             }
+            auto abcpath_0 = _prim->userData().get2<std::string>("abcpath_0");
+            abcpath_0 += "/mesh";
+            _prim->userData().set2("abcpath_0", abcpath_0);
         }
         set_output("prims", std::move(new_prims));
     }
@@ -322,7 +324,6 @@ ZENDEFNODE(AlembicPrimList, {
         {"bool", "triangulate", "0"},
         {"bool", "splitByFaceset", "0"},
         {"bool", "killDeadVerts", "1"},
-        {"bool", "skipInstance", "0"},
         {"string", "pathInclude", ""},
         {"string", "pathExclude", ""},
         {"string", "facesetInclude", ""},
@@ -458,7 +459,7 @@ struct ImportAlembicPrim : INode {
             auto obj = archive.getTop();
             bool read_face_set = get_input2<bool>("read_face_set");
             bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
-            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, outOfRangeAsEmpty);
+            traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, outOfRangeAsEmpty, 0);
         }
         bool use_xform = get_input2<bool>("use_xform");
         auto index = get_input2<int>("index");

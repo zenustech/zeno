@@ -118,9 +118,10 @@ bool Scene::loadFrameObjects(int frameid) {
     });
     if (isLoaded) {
         renderMan->getEngine()->beginFrameLoading(frameid, isRerun);
+        renderMan->getEngine()->update();
     }
 
-    renderMan->getEngine()->update();
+
     return inserted;
 }
 

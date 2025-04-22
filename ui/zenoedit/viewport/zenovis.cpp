@@ -46,7 +46,30 @@ void Zenovis::paintGL()
         session->set_viewport_point_size_scale(viewportPointSizeScale);
     }
     int frameid = session->get_curr_frameid();
-    doFrameUpdate();
+
+    //获取当前帧cache文件的时间戳等简要信息
+//    std::string frame_brief_curr = session->get_curr_frameChacheInfo(frameid);
+
+    //把当前的brief和全局记录的比较， 如果不同，则意味着当前所在帧的cache文件被重写过了
+    bool cacheChanged = false;
+//    if(global_frame_brief.find(frameid)==global_frame_brief.end())
+//    {
+//        cacheChanged = true;
+//    }else if(global_frame_brief[frameid] != frame_brief_curr)
+//    {
+//        cacheChanged = true;
+//    }
+//
+
+
+    //在帧号发生变化的情况下, 或者cache brief发生变化时候, 需要重新doFrameUpdate
+    if(frameid != rememberedFrameid) {
+        bool inserted = doFrameUpdate();
+        if (inserted) {
+            rememberedFrameid = frameid;
+        }
+        //global_frame_brief[frameid] = frame_brief_curr;
+    }
     session->new_frame();
     emit frameDrawn(frameid);
 }
@@ -183,7 +206,7 @@ int Zenovis::setCurrentFrameId(int frameid)
     return frameid;
 }
 
-void Zenovis::doFrameUpdate()
+bool Zenovis::doFrameUpdate()
 {
     int frameid = getCurrentFrameId();
 
@@ -217,6 +240,7 @@ void Zenovis::doFrameUpdate()
         }
         setCurrentFrameId(frameid + 1);
     }
+    return inserted;
 }
 
 /*

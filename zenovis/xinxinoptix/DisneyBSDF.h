@@ -349,6 +349,7 @@ namespace DisneyBSDF{
             bool reflectance = false)
 
     {
+        mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
         bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
         if(sameside == false)
         {
@@ -461,7 +462,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, F, tmpPdf) * metalWt;
-            tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:1.0f;
+            tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:1.0f;
             s = s * (tmpPdf>0.0f? 1.0f:0.0f);
             sterm = sterm + s;
             f = f + s;
@@ -501,7 +502,7 @@ namespace DisneyBSDF{
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                                             mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
-              tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:F;
+              tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:F;
               s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
@@ -527,7 +528,7 @@ namespace DisneyBSDF{
                                                                  vec3(F), tmpPdf);
 
                 vec3 t = brdf * glassWt;
-                tmpPdf *= (mat.roughness<=0.03 && reflectance==false)? 0.0f:(1.0f - F);
+                tmpPdf *= (mat.roughness<=0.001 && reflectance==false)? 0.0f:(1.0f - F);
                 t = t * (tmpPdf>0.0f? 1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;

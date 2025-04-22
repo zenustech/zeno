@@ -36,7 +36,8 @@ extern void traverseABC(
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
     bool skipInvisibleObject,
-    bool outOfRangeAsEmpty
+    bool outOfRangeAsEmpty,
+    int use_instance = 0
 );
 
 extern Alembic::AbcGeom::IArchive readABC(std::string const &path);

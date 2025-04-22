@@ -917,6 +917,10 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_pause = new QPushButton("Pause");
         m_pause->setCheckable(true);
         pToolLayout->addWidget(m_pause);
+        m_matNeedUpdate = new QCheckBox(tr("UpdateMat"));
+        m_matNeedUpdate->setChecked(true);
+        m_matNeedUpdate->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_matNeedUpdate);
     }
 
     {
@@ -993,6 +997,12 @@ void DockContent_View::initConnections()
     if (m_pause) {
         connect(m_pause, &QPushButton::clicked, this, [=](bool bToggled) {
             zeno::getSession().userData().set2("viewport-optix-pause", bToggled);
+        });
+    }
+    if (m_matNeedUpdate) {
+        connect(m_matNeedUpdate, &QCheckBox::stateChanged, this, [=](int state) {
+            bool bChecked = (state == Qt::Checked);
+            zeno::getSession().userData().set2("viewport-optix-matNeedUpdate", bChecked);
         });
     }
     if (m_Reset) {

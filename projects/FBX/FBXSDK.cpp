@@ -30,7 +30,7 @@
 #include "zeno/extra/TempNode.h"
 #include "magic_enum.hpp"
 #include <tinygltf/json.hpp>
-using Json = nlohmann::ordered_json;
+using Json = nlohmann::json;
 namespace fs = std::filesystem;
 
 #ifdef ZENO_FBXSDK
@@ -485,6 +485,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
     ) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
+    auto mesh_name = pMesh->GetName();
     std::string nodeName = pNode->GetName();
     if (nodeName == "RootNode") {
         nodeName = "ABC";
@@ -634,7 +635,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         }
     }
     ud.set2("faceset_count", mat_count);
-    prim_set_abcpath(prim.get(), fbx_path);
+    prim_set_abcpath(prim.get(), fbx_path + '/' + mesh_name);
     if (mat_count > 0) {
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
@@ -944,6 +945,11 @@ static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) 
     if (nodeName == "RootNode") {
         nodeName = "ABC";
     }
+    auto pMesh = pNode->GetMesh();
+    if (pMesh) {
+        auto mesh_name = pMesh->GetName();
+        json["mesh"] = mesh_name;
+    }
     json["visibility"] = int(pNode->GetVisibility());
     json["node_name"] = nodeName;
     {
@@ -967,29 +973,6 @@ static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) 
             json["r1"] = {r1[0], r1[1], r1[2]};
             json["r2"] = {r2[0], r2[1], r2[2]};
             json["t"]  = {t[0], t[1], t[2]};
-        }
-    }
-    if (true) {
-        FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform(curTime);
-        auto r0 = bindMatrix.GetRow(0);
-        auto r1 = bindMatrix.GetRow(1);
-        auto r2 = bindMatrix.GetRow(2);
-        auto t = bindMatrix.GetRow(3);
-        if (
-            std::isnan(r0[0]) || std::isnan(r0[1]) || std::isnan(r0[2])
-            || std::isnan(r1[0]) || std::isnan(r1[1]) || std::isnan(r1[2])
-            || std::isnan(r2[0]) || std::isnan(r2[1]) || std::isnan(r2[2])
-            || std::isnan(t[0]) || std::isnan(t[1]) || std::isnan(t[2])
-        ) {
-            json["gr0"] = {0.0, 0.0, 0.0};
-            json["gr1"] = {0.0, 0.0, 0.0};
-            json["gr2"] = {0.0, 0.0, 0.0};
-            json["gt"]  = {0.0, 0.0, 0.0};
-        } else {
-            json["gr0"] = {r0[0], r0[1], r0[2]};
-            json["gr1"] = {r1[0], r1[1], r1[2]};
-            json["gr2"] = {r2[0], r2[1], r2[2]};
-            json["gt"]  = {t[0], t[1], t[2]};
         }
     }
     json["children_name"] = Json::array();

@@ -57,7 +57,7 @@ public:
     void cleanupView();
 
 //private:
-    void doFrameUpdate();
+    bool doFrameUpdate();
 
     int m_solver_frameid;
     int m_solver_interval;
@@ -70,6 +70,8 @@ public:
 
     //bool m_bAddPoint = false;
     bool m_loopPlaying = false;
+    int rememberedFrameid = -99999;
+    std::map<int, std::string> global_frame_brief;
 };
 
 #endif

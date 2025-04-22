@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 #ifdef ZENO_WITH_PYTHON3
     #include <Python.h>
 #endif
-using Json = nlohmann::ordered_json;
+using Json = nlohmann::json;
 
 namespace zeno {
 struct JsonObject : IObjectClone<JsonObject> {
