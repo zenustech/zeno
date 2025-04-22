@@ -992,8 +992,3 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 }
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}
