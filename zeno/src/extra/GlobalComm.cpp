@@ -703,12 +703,12 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
 
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
     std::lock_guard lck(m_mtx);
-    bool isLoaded = false, isRerun = false;
+    bool isLoaded = false, isRerun = false, hasstamp = false;
     std::string runtype;
-    return _getViewObjects(frameid, -1, runtype);
+    return _getViewObjects(frameid, -1, runtype, hasstamp);
 }
 
-GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, uintptr_t sceneIdn, std::string& runtype) {
+GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
@@ -757,10 +757,12 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                     if (!ret)
                         return nullptr;
                 }
+                hasStamp = true;
             } else {
                 bool ret = fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype);
                 if (!ret)
                     return nullptr;
+                hasStamp = false;
             }
 
             m_inCacheFrames.insert({frameid, baseframeinfo });
@@ -801,7 +803,7 @@ ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
 ZENO_API bool GlobalComm::load_objects(
         const int frameid,
         const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype)>& callback,
-        std::function<void(int frameid, bool inserted)> callbackUpdate,
+        std::function<void(int frameid, bool inserted, bool hasstamp)> callbackUpdate,
         uintptr_t sceneId,
         bool& isFrameValid)
 {
@@ -820,9 +822,9 @@ ZENO_API bool GlobalComm::load_objects(
 
     isFrameValid = true;
     bool inserted = false;
-    static bool optxneedLoaded = false, optxneedrerun = false;
+    static bool hasstamp = false;
     static std::string runtype;
-    auto const* viewObjs = _getViewObjects(frameid, sceneId, runtype);
+    auto const* viewObjs = _getViewObjects(frameid, sceneId, runtype, hasstamp);
     if (viewObjs) {
         zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
         inserted = callback(viewObjs->m_curr, runtype);
@@ -831,7 +833,7 @@ ZENO_API bool GlobalComm::load_objects(
         zeno::log_trace("load_objects: no objects at frame {}", frameid);
         inserted = callback({}, runtype);
     }
-    callbackUpdate(frameid, inserted);
+    callbackUpdate(frameid, inserted, hasstamp);
     return inserted;
 }
 
