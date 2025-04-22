@@ -423,9 +423,12 @@ public:
                 instanced.push_back(opi);
             } //srg
 
+            if (instanced.size() == 0) return 0;
+
             auto node = std::make_shared<SceneNode>();
             xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
             nodeCache[key] = node;
+            assert(node->handle!=0);
 
             maxNodeDepth = max(maxNodeDepth, the_depth+1);
             return node->handle;
