@@ -348,35 +348,9 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
         emit_property.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
         emit_property.result = d_compacted_size;
 
-        OPTIX_CHECK( optixAccelBuild( context,
-            0,
-            &accel_options,
-            &build_input,
-            1,
-            d_temp_buffer_gas,
-            gas_buffer_sizes.tempSizeInBytes,
-            d_output_buffer_gas,
-            gas_buffer_sizes.outputSizeInBytes,
-            &accel.handle,
-            &emit_property,
-            1 ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_aabb ) ) );
-        size_t compacted_size;
-        CUDA_CHECK( cudaMemcpy( &compacted_size, reinterpret_cast<void*>( emit_property.result ),
-            sizeof( size_t ), cudaMemcpyDeviceToHost ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_compacted_size ) ) );
-        if( compacted_size < gas_buffer_sizes.outputSizeInBytes ) 
-        {
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &accel.buffer ), compacted_size ) );
-            OPTIX_CHECK( optixAccelCompact( context, 0, accel.handle,
-                accel.buffer, compacted_size, &accel.handle ) );
-                d_output_buffer_gas.reset();
-        }
-        else 
-        {
-            accel.buffer = std::move(d_output_buffer_gas);
-        }
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_temp_buffer_gas ) ) );
+        xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 8);
+        cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
+        return;
     }
 }
 

@@ -74,13 +74,14 @@ extern "C" __global__ void __intersection__volume()
     { // world distance to object distance 
         t0 = t0 * dirlen; 
         t1 = t1 * dirlen;
-    } 
+    }
+    
+    auto gas = optixGetGASTraversableHandle();
+    auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
 
-    // auto offsetId = optixGetInstanceId()-params.firstVolumeOffset;
-    // auto bounds = reinterpret_cast<uint8_t*>(params.volumeBounds)[offsetId];
-
+    uint8_t bounds = *(gas_ptr-1);
     //bool inside = box.isInside(reinterpret_cast<const nanovdb::Vec3f&>(ray_ori));
-    auto hitted = rayHit( ray_ori, ray_dir, box, 0, t0, t1 );
+    auto hitted = rayHit( ray_ori, ray_dir, box, bounds, t0, t1 );
     if (!hitted) { return; }
 
     RadiancePRD *prd = getPRD<RadiancePRD>();
