@@ -97,7 +97,11 @@ struct RenderEngineBate : RenderEngine {
         }
     }
 
-    void rerun() {
+    void assetLoad() {
+
+    }
+
+    void run() {
 
     }
 

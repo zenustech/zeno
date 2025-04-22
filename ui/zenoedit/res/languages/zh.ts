@@ -212,6 +212,14 @@
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>
+	<message>
+        <source>RunMatrix</source>
+        <translation>运行矩阵</translation>
+    </message>
+	<message>
+        <source>LoadAsset</source>
+        <translation>运行资产</translation>
+    </message>
     <message>
         <source>This function can only be used in cache mode.</source>
         <translation>该功能仅支持在缓存模式下运行。</translation>
