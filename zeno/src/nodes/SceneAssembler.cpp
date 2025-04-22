@@ -16,6 +16,11 @@
 #include <tinygltf/json.hpp>
 #include <zeno/zeno.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
+#include <zeno/utils/eulerangle.h>
+
 
 using Json = nlohmann::json;
 namespace zeno {
@@ -955,6 +960,54 @@ ZENDEFNODE( RenderScene, {
         {"scene"},
     },
     {},
+    {
+        "Scene",
+    },
+});
+
+
+struct MakeXform : zeno::INode {
+    void apply() override {
+        auto translate = get_input2<vec3f>("translate");
+        auto eulerXYZ = get_input2<vec3f>("eulerXYZ");
+        auto scale = get_input2<vec3f>("scale");
+        glm::mat4 matScale  = glm::scale( glm::vec3(scale[0], scale[1], scale[2] ));
+
+
+        auto order = get_input2<std::string>("EulerRotationOrder:");
+        auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
+
+        auto measure = get_input2<std::string>("EulerAngleMeasure:");
+        auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
+
+        glm::vec3 eularAngleXYZ = glm::vec3(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+        glm::mat4 matRotate = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
+
+        auto mat = matRotate * matScale;
+
+        auto xform = std::make_shared<PrimitiveObject>();
+        xform->resize(1);
+        xform->verts[0] = translate;
+        xform->verts.add_attr<vec3f>("r0")[0] = {mat[0][0], mat[0][1], mat[0][2]};
+        xform->verts.add_attr<vec3f>("r1")[0] = {mat[1][0], mat[1][1], mat[1][2]};
+        xform->verts.add_attr<vec3f>("r2")[0] = {mat[2][0], mat[2][1], mat[2][2]};
+        set_output2("xform", xform);
+    }
+};
+
+ZENDEFNODE( MakeXform, {
+    {
+        {"vec3f", "translate", "0, 0, 0"},
+        {"vec3f", "eulerXYZ", "0, 0, 0"},
+        {"vec3f", "scale", "1, 1, 1"},
+    },
+    {
+        {"xform"},
+    },
+    {
+        {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "ZYX"},
+        {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
+    },
     {
         "Scene",
     },

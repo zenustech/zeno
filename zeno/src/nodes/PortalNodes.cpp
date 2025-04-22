@@ -283,17 +283,25 @@ ZENDEFNODE(GetUserData, {
 
 struct GetUserData2 : zeno::INode {
   virtual void apply() override {
+    std::shared_ptr<IObject> default_value = std::make_shared<DummyObject>();
+    if (has_input("default_value")) {
+        default_value = get_input("default_value");
+    }
     auto object = get_input("object");
     auto key = get_input2<std::string>("key");
     auto hasValue = object->userData().has(key);
-    auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+    auto data = hasValue ? object->userData().get(key) : default_value->clone();
     set_output2("hasValue", hasValue);
     set_output("data", std::move(data));
   }
 };
 
 ZENDEFNODE(GetUserData2, {
-                            {"object",{"string", "key", ""}},
+                            {
+                                "object",
+                                {"string", "key", ""},
+                                "default_value",
+                            },
                             {"data", {"bool", "hasValue"}},
                             {},
                             {"lifecycle"},
