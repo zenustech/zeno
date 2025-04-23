@@ -47,28 +47,27 @@ void Zenovis::paintGL()
     }
     int frameid = session->get_curr_frameid();
 
-    //获取当前帧cache文件的时间戳等简要信息
-//    std::string frame_brief_curr = session->get_curr_frameChacheInfo(frameid);
-
-    //把当前的brief和全局记录的比较， 如果不同，则意味着当前所在帧的cache文件被重写过了
-    bool cacheChanged = false;
-//    if(global_frame_brief.find(frameid)==global_frame_brief.end())
-//    {
-//        cacheChanged = true;
-//    }else if(global_frame_brief[frameid] != frame_brief_curr)
-//    {
-//        cacheChanged = true;
-//    }
-//
-
-
-    //在帧号发生变化的情况下, 或者cache brief发生变化时候, 需要重新doFrameUpdate
-    if(frameid != rememberedFrameid) {
-        bool inserted = doFrameUpdate();
-        if (inserted) {
-            rememberedFrameid = frameid;
+    //鍒ゆ柇doframeupdate鎵ц
+    bool frameCacheExists = false;
+    std::string frame_brief_curr = zeno::getSession().globalComm->cacheTimeStamp(frameid, frameCacheExists);
+    if (frameid != rememberedFrameid) {
+        if (frameCacheExists) {
+            doFrameUpdate();
+            global_frame_brief[frameid] = frame_brief_curr;
         }
-        //global_frame_brief[frameid] = frame_brief_curr;
+        rememberedFrameid = frameid;
+    } else {
+        bool cacheChanged = false;
+        if (global_frame_brief.find(frameid) == global_frame_brief.end()) {
+            cacheChanged = true;
+        }
+        else if (global_frame_brief[frameid] != frame_brief_curr) {
+            cacheChanged = true;
+        }
+        if (cacheChanged && frameCacheExists) {
+            doFrameUpdate();
+            global_frame_brief[frameid] = frame_brief_curr;
+        }
     }
     session->new_frame();
     emit frameDrawn(frameid);
@@ -156,6 +155,13 @@ void Zenovis::cleanupView()
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
+    if (m_playing) {
+        int currentid = getCurrentFrameId();
+        if (currentid != zeno::getSession().globalComm->frameRange().second)
+        {
+            setCurrentFrameId(currentid + 1);
+        }
+    }
 }
 
 bool Zenovis::isPlaying() const

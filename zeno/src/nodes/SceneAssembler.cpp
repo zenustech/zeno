@@ -71,24 +71,24 @@ struct JsonObject : IObjectClone<JsonObject> {
 };
 static std::string get_parent_path(const std::string& path) {
     if (path.empty() || path == "/") {
-        return path;  // ¸ùÄ¿Â¼µÄ¸¸Ä¿Â¼ÊÇËü×Ô¼º
+        return path;  // æ ¹ç›®å½•çš„çˆ¶ç›®å½•æ˜¯å®ƒè‡ªå·±
     }
 
-    // ÒÆ³ıÄ©Î²µÄĞ±¸Ü£¨Èç¹ûÓĞ£©
+    // ç§»é™¤æœ«å°¾çš„æ–œæ ï¼ˆå¦‚æœæœ‰ï¼‰
     std::string normalized = path;
     if (normalized.back() == '/') {
         normalized.pop_back();
     }
 
-    // ²éÕÒ×îºóÒ»¸öĞ±¸Ü
+    // æŸ¥æ‰¾æœ€åä¸€ä¸ªæ–œæ 
     auto last_slash = normalized.find_last_of('/');
 
     if (last_slash == std::string::npos) {
-        return "/";  // Ã»ÓĞĞ±¸Ü£¬·µ»Ø¸ùÄ¿Â¼
+        return "/";  // æ²¡æœ‰æ–œæ ï¼Œè¿”å›æ ¹ç›®å½•
     }
 
     if (last_slash == 0) {
-        return "/";  // ÒÑ¾­ÊÇ¸ùÄ¿Â¼µÄÖ±½Ó×ÓÄ¿Â¼
+        return "/";  // å·²ç»æ˜¯æ ¹ç›®å½•çš„ç›´æ¥å­ç›®å½•
     }
 
     return normalized.substr(0, last_slash);
@@ -604,7 +604,6 @@ static void get_local_matrix_map(
 }
 
 struct FormSceneTree : zeno::INode {
-    int inputObjType = 0;
     void apply() override {
         auto sceneTree = std::make_shared<SceneObject>();
         auto scene_json = get_input2<JsonObject>("scene_info");
@@ -619,12 +618,7 @@ struct FormSceneTree : zeno::INode {
                 int beginframe = session->globalComm->beginFrameNumber;
                 std::string mode = get_input2<std::string>("stampMode");
                 if (mode == "UnChanged") {
-                    if (currframe != beginframe) {
-                        p = session->globalComm->constructEmptyObj(inputObjType);
-                        p->userData().set2("stamp-change", "UnChanged");
-                    } else {
-                        p->userData().set2("stamp-change", "UnChanged");
-                    }
+                    p->userData().set2("stamp-change", "UnChanged");
                 } else if (mode == "TotalChange") {
                     p->userData().set2("stamp-change", "TotalChange");
                 } else if (mode == "DataChange") {
@@ -632,7 +626,7 @@ struct FormSceneTree : zeno::INode {
                     std::string changehint = get_input2<std::string>("changeHint");
                     p->userData().set2("stamp-dataChange-hint", changehint);
                 } else if (mode == "ShapeChange") {
-                    p->userData().set2("stamp-change", "TotalChange");//shapechangeÔİÊ±È«²¿°´Totalchange´¦Àí
+                    p->userData().set2("stamp-change", "TotalChange");//shapechangeæš‚æ—¶å…¨éƒ¨æŒ‰Totalchangeå¤„ç†
                 }
                 if (!p->userData().has<std::string>("ResourceType")) {
                     p->userData().set2("ResourceType", get_input2<std::string>("ResourceType"));
@@ -713,11 +707,11 @@ static std::vector<std::string> splitPath(const std::string& path) {
     std::string segment;
     std::string currentPath;
 
-    // Ìø¹ıµÚÒ»¸ö¿Õ¶Î£¨ÒòÎªÂ·¾¶ÒÔ '/' ¿ªÍ·£©
+    //  è·³è¿‡ç¬¬ä¸€ä¸ªç©ºæ®µï¼ˆå› ä¸ºè·¯å¾„ä»¥ '/' å¼€å¤´ï¼‰
     std::getline(iss, segment, '/');
 
     while (std::getline(iss, segment, '/')) {
-        if (segment.empty()) continue; // Ìø¹ıÁ¬ĞøµÄ '/'
+        if (segment.empty()) continue; //  è·³è¿‡è¿ç»­çš„ '/'
         currentPath += "/" + segment;
         result.push_back(currentPath);
     }

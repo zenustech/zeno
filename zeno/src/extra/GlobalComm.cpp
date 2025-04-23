@@ -19,6 +19,7 @@
 #include <rapidjson/document.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/core/Session.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 #ifdef __linux__
     #include<unistd.h>
@@ -945,6 +946,34 @@ ZENO_API void GlobalComm::removeCachePath()
         std::filesystem::remove_all(dirToRemove);
         zeno::log_info("remove dir: {}", dirToRemove);
     }
+}
+
+ZENO_API std::string GlobalComm::cacheTimeStamp(int frame, bool& exists)
+{
+    auto dir = std::filesystem::u8path(cacheFramePath) / std::to_string(1000000 + frame).substr(1);
+    if (std::filesystem::exists(dir)) {
+        if (std::filesystem::begin(std::filesystem::directory_iterator(dir)) != std::filesystem::end(std::filesystem::directory_iterator())) {
+            auto lockfilename = zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
+            if (!std::filesystem::exists(lockfilename)) {
+                std::ostringstream oss;
+                for (const auto& entry : std::filesystem::recursive_directory_iterator(dir)) {
+                    if (std::filesystem::is_regular_file(entry)) {
+                        const std::filesystem::path& filePath = entry.path();
+                        auto ftime = std::filesystem::last_write_time(filePath);
+
+                        auto sctp = std::chrono::time_point_cast<std::chrono::milliseconds>(ftime);
+                        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(sctp.time_since_epoch()).count();
+
+
+                        oss << timestamp;
+                    }
+                }
+                exists = true;
+                return oss.str();
+            }
+        }
+    }
+    return "";
 }
 
 }
