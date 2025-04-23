@@ -77,7 +77,7 @@ ZENO_API bool zeno::INode::getTmpCache()
     GlobalComm::ViewObjects objs;
     std::string fileName = myname + ".zenocache";
     int frameid = zeno::getSession().globalState->frameid;
-    bool ret = GlobalComm::fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
+    bool ret = zeno::getSession().globalComm->fromDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, fileName);
     if (ret && objs.size() > 0)
     {
         for (const auto& [key, obj] : objs)
@@ -91,6 +91,7 @@ ZENO_API bool zeno::INode::getTmpCache()
 
 ZENO_API void zeno::INode::writeTmpCaches()
 {
+#if 0
     GlobalComm::ViewObjects objs;
     for (auto const& [name, value] : outputs) 
     {
@@ -107,10 +108,12 @@ ZENO_API void zeno::INode::writeTmpCaches()
     }
     int frameid = zeno::getSession().globalState->frameid;
     std::string fileName = myname + ".zenocache";
-    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, false, false, fileName);
+    GlobalComm::toDisk(zeno::getSession().globalComm->objTmpCachePath, frameid, objs, "RunAll", fileName);
+#endif
 }
 
 ZENO_API void INode::preApply() {
+#if 0
     auto& dc = graph->getDirtyChecker();
     if (!dc.amIDirty(myname) && bTmpCache)
     {
@@ -128,18 +131,7 @@ ZENO_API void INode::preApply() {
             zeno::log_info("remove cache file: {}", path.string());
         }
     }
-    if (myname.size() > 6 && myname.substr(myname.size() - 6) == "-Stamp") {//如果是一个stamp节点,unchange情况直接return
-        requireInput("stampMode");
-        auto value = safe_at(inputs, "stampMode", "");
-        if (auto stampmode = dynamic_cast<zeno::StringObject*>(value.get())) {
-            auto session = &zeno::getSession();
-            session->userData().set2("graphHasStampNode", true);
-            if (session->globalState->frameid != session->globalComm->beginFrameNumber && stampmode->get() == "UnChanged") {
-                apply();
-                return;
-            }
-        }
-    }
+#endif
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -150,8 +142,19 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
+#if 0
         if (bTmpCache)
             writeTmpCaches();
+#endif
+        for (auto& [k, obj] : outputs) {
+            obj->userData().set2("objRunType", objRunType);
+        }
+        if (inputs.find("stampMode") != inputs.end()) {
+            auto session = &zeno::getSession();
+            if (!session->userData().has("graphHasStampNode")) {
+                session->userData().set2("graphHasStampNode", true);
+            }
+        }
     }
     log_debug("==> leave {}", myname);
 }

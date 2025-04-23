@@ -283,7 +283,12 @@ struct SceneObject : IObjectClone<SceneObject> {
                 prim->verts.add_attr<vec3f>("r2")[0] = {r2[0], r2[1], r2[2]};
 
                 prim->userData().set2("ResourceType", "Matrixes");
-                prim->userData().set2("stamp-change", "TotalChange");
+                if (use_static) {
+                    prim->userData().set2("stamp-change", "UnChanged");
+                }
+                else {
+                    prim->userData().set2("stamp-change", "TotalChange");
+                }
                 std::string object_name = path + "_m";
                 if (stn.matrix.size()) {
                     object_name = path + "_m";
@@ -335,7 +340,7 @@ struct SceneObject : IObjectClone<SceneObject> {
     }
 
     std::shared_ptr<zeno::ListObject> to_flatten_structure(bool use_static) {
-        zeno::log_info("to_flatten_structure root_name: {}", root_name);
+//        zeno::log_info("to_flatten_structure root_name: {}", root_name);
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
         scene->arr.push_back(dict);
@@ -391,7 +396,12 @@ struct SceneObject : IObjectClone<SceneObject> {
                     matrix->verts[i] = {mat[3][0], mat[3][1], mat[3][2]};
                 }
                 matrix->userData().set2("ResourceType", "Matrixes");
-                matrix->userData().set2("stamp-change", "TotalChange");
+                if (use_static) {
+                    matrix->userData().set2("stamp-change", "UnChanged");
+                }
+                else {
+                    matrix->userData().set2("stamp-change", "TotalChange");
+                }
                 std::string object_name = mesh_name + "_m";
                 matrix->userData().set2("ObjectName", object_name);
                 scene->arr.push_back(matrix);
@@ -598,7 +608,7 @@ struct FormSceneTree : zeno::INode {
         auto scene_json = get_input2<JsonObject>("scene_info");
         sceneTree->root_name = "/ABC";
         auto prim_list = get_input2<ListObject>("prim_list");
-        zeno::log_info("prim_list: {}", prim_list->arr.size());
+//        zeno::log_info("prim_list: {}", prim_list->arr.size());
         for (auto p: prim_list->arr) {
             auto abc_path = p->userData().get2<std::string>("abcpath_0");
             {
@@ -611,7 +621,7 @@ struct FormSceneTree : zeno::INode {
                         p = session->globalComm->constructEmptyObj(inputObjType);
                         p->userData().set2("stamp-change", "UnChanged");
                     } else {
-                        p->userData().set2("stamp-change", "TotalChange");
+                        p->userData().set2("stamp-change", "UnChanged");
                     }
                 } else if (mode == "TotalChange") {
                     p->userData().set2("stamp-change", "TotalChange");
@@ -868,7 +878,7 @@ static void scene_add_prefix2(
 struct SceneRootRename : zeno::INode {
     void apply() override {
         auto scene_tree = get_scene_tree_from_list(get_input2<ListObject>("scene"));
-        zeno::log_info("SceneRootRename input root_name {}", scene_tree->root_name);
+//        zeno::log_info("SceneRootRename input root_name {}", scene_tree->root_name);
         auto new_root_name = get_input2<std::string>("new_root_name");
         if (zeno::ends_with(new_root_name, "/")) {
             new_root_name.pop_back();
@@ -884,7 +894,7 @@ struct SceneRootRename : zeno::INode {
             root_xform = get_xform_from_prim(get_input2<PrimitiveObject>("xform"));
         }
         auto new_scene_tree = scene_tree->root_rename(new_root_name, root_xform);
-        zeno::log_info("SceneRootRename output root_name {}", new_scene_tree->root_name);
+//        zeno::log_info("SceneRootRename output root_name {}", new_scene_tree->root_name);
 
         auto scene = new_scene_tree->to_layer_structure();
         set_output2("scene", scene);

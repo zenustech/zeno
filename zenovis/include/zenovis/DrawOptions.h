@@ -20,6 +20,7 @@ struct DrawOptions {
     bool needRefresh = false;
     bool updateMatlOnly = false;
     bool updateLightCameraOnly = false;
+    bool updateMatrixOnly = false;
     int num_samples = 1;
     int msaa_samples = 0;
     bool denoise = false;

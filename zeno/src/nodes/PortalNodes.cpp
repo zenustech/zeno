@@ -77,10 +77,8 @@ struct Stamp : zeno::INode {
                 if (mode == "UnChanged") {
                     if (currframe != beginframe) {
                         obj = session->globalComm->constructEmptyObj(inputObjType);
-                        obj->userData().set2("stamp-change", "UnChanged");
-                    } else {
-                        obj->userData().set2("stamp-change", "TotalChange");
                     }
+                    obj->userData().set2("stamp-change", "UnChanged");
                 } else if (mode == "TotalChange") {
                     obj->userData().set2("stamp-change", "TotalChange");
                 } else if (mode == "DataChange") {
@@ -124,6 +122,24 @@ ZENDEFNODE(Stamp, {
     {"lifecycle"}
 });
 
+struct SetToMatrix : zeno::INode {
+    virtual void apply() override {
+        if (has_input("input")) {
+            auto obj = get_input("input");
+            set_output("output", std::move(obj));
+        }
+        else {
+            set_output("output", std::make_shared<zeno::DummyObject>());
+        }
+    }
+};
+
+ZENDEFNODE(SetToMatrix, {
+    {"input"},
+    {"output"},
+    {},
+    {"lifecycle"},
+});
 
 struct Clone : zeno::INode {
     virtual void apply() override {

@@ -320,7 +320,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pAlways->setToolTip(tr("Always mode"));
 
     m_btnRun = new ZToolMenuButton(this);
+    m_btnRun->addAction(tr("LoadAsset"), ":/icons/run_all.svg");
     m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
+    m_btnRun->addAction(tr("RunMatrix"), ":/icons/run_all.svg");
     m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
     m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
     m_btnKill = new ZTextIconButton(tr("Running..."), this);
@@ -331,7 +333,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
                           ":/icons/run_all_btn.svg", "", "");
     m_btnRun->setRadius(ZenoStyle::dpiScaled(2));
     m_btnRun->setFont(fnt);
-    m_btnRun->setText(tr("Run"));
+    m_btnRun->setText(tr("LoadAsset"));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
     m_btnRun->setBackgroundClr(QColor("#1978E6"), QColor("#599EED"), QColor("#1978E6"), QColor("#1978E6"));
@@ -406,7 +408,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addWidget(m_btnRun);
     pToolLayout->addWidget(m_btnKill);
-
+    
     pToolLayout->addStretch(4);
 
     pToolLayout->addWidget(cbSubgType);
@@ -480,7 +482,7 @@ void DockContent_Editor::initConnections()
     std::function<void()> resetAlways = [=]() {
         pAlways->setChecked(false);
         pMainWin->setAlways(false);
-        pMainWin->setAlwaysLightCameraMaterial(false, false);
+        pMainWin->setRunType(RunALL);
     };
     connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
     connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
@@ -495,25 +497,28 @@ void DockContent_Editor::initConnections()
             QVector<DisplayWidget*> views = pMainWin->viewports();
             for (auto displayWid : views) {
                 if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(false, false);
+                    displayWid->setRenderSeparately(RunALL);
                 }
             }
-            if (m_btnRun->text() == tr("Run"))
-            {
-                pMainWin->setAlways(true);
-                pMainWin->setAlwaysLightCameraMaterial(false, false);
+            if (m_btnRun->text() == tr("setLoadAsset")) {
+                pMainWin->setRunType(LoadAsset);
             }
-            else {
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                    pMainWin->setAlwaysLightCameraMaterial(true, false);
-                else if (m_btnRun->text() == tr("RunMaterial"))
-                    pMainWin->setAlwaysLightCameraMaterial(false, true);
-                pMainWin->setAlways(false);
+            else if (m_btnRun->text() == tr("Run")) {
+                pMainWin->setRunType(RunALL);
             }
+            else if (m_btnRun->text() == tr("RunLightCamera")) {
+                pMainWin->setRunType(RunLightCamera);
+            }
+            else if (m_btnRun->text() == tr("RunMaterial")) {
+                pMainWin->setRunType(RunMaterial);
+            }
+            else if (m_btnRun->text() == tr("RunMatrix")) {
+                pMainWin->setRunType(RunMatrix);
+            }
+            pMainWin->setAlways(true);
         }
         else {
             pMainWin->setAlways(false);
-            pMainWin->setAlwaysLightCameraMaterial(false, false);
         }
     });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
@@ -546,35 +551,44 @@ void DockContent_Editor::initConnections()
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+        std::function<void(runType)> setOptixUpdateSeparately = [=](runType runtype) {
             QVector<DisplayWidget *> views = pMainWin->viewports();
             for (auto displayWid : views) {
                 if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                    displayWid->setRenderSeparately(runtype);
                 }
             }
         };
-        if (m_btnRun->text() == tr("Run"))
+        if (m_btnRun->text() == tr("LoadAsset"))
         {
-            setOptixUpdateSeparately(false, false);
+            setOptixUpdateSeparately(LoadAsset);
+            mgr->setCacheOpt(ZCacheMgr::Opt_LoadAsset);
+            pMainWin->onRunTriggered(LoadAsset);
+        } else if (m_btnRun->text() == tr("Run")) {
+            setOptixUpdateSeparately(RunALL);
             mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
-            pMainWin->onRunTriggered();
-        }
-        else {
+            pMainWin->onRunTriggered(RunALL);
+        } else {
             QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
                 QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
             } else {
-                mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
-                if (m_btnRun->text() == tr("RunLightCamera"))
-                {
-                    setOptixUpdateSeparately(true, false);
-                    pMainWin->onRunTriggered(true, false);
-                }
-                if (m_btnRun->text() == tr("RunMaterial"))
-                {
-                    setOptixUpdateSeparately(false, true);
-                    pMainWin->onRunTriggered(false, true);
+                if (m_btnRun->text() == tr("RunMatrix")) {
+                    setOptixUpdateSeparately(RunMatrix);
+                    mgr->setCacheOpt(ZCacheMgr::Opt_RunMatrix);
+                    pMainWin->onRunTriggered(RunMatrix);
+                } else {
+                    mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
+                    if (m_btnRun->text() == tr("RunLightCamera"))
+                    {
+                        setOptixUpdateSeparately(RunLightCamera);
+                        pMainWin->onRunTriggered(RunLightCamera);
+                    }
+                    if (m_btnRun->text() == tr("RunMaterial"))
+                    {
+                        setOptixUpdateSeparately(RunMaterial);
+                        pMainWin->onRunTriggered(RunMaterial);
+                    }
                 }
             }
         }
@@ -586,7 +600,7 @@ void DockContent_Editor::initConnections()
         QString text = m_btnRun->text();
         QColor clr;
         QColor hoverClr;
-        if (text == tr("Run"))
+        if (text == tr("Run") || text == tr("LoadAsset") || text == tr("RunMatrix"))
         {
             clr = QColor("#1978E6");
             hoverClr = QColor("#599EED");

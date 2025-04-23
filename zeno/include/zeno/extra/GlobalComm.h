@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <functional>
+#include <filesystem>
 
 namespace zeno {
 
@@ -27,7 +28,7 @@ struct GlobalComm {
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
-    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
+    std::map<int, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>> m_inCacheFrames;//<帧号,该帧的stampinfo:<objkey, tuple<changinfo,baseframe,objtype, fullobjkey>>
     int currentFrameNumber = 0;
     mutable std::mutex m_mtx;
 
@@ -37,11 +38,14 @@ struct GlobalComm {
     std::string cacheFramePath;
     std::string objTmpCachePath;
 
+    std::map<uintptr_t, std::tuple<bool, bool, bool>> sceneLoadedFlag;  //assetneedLoad, run, load
+    bool assetsInitialized = false;
+
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
-    ZENO_API void dumpFrameCache(int frameid, bool cacheLightCameraOnly = false, bool cacheMaterialOnly = false);
+    ZENO_API void dumpFrameCache(int frameid, std::string runtype = "RunAll");
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API int numOfFinishedFrame();
@@ -52,8 +56,9 @@ struct GlobalComm {
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool load_objects(const int frameid, 
-                const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& cb,
-                bool& isFrameValid, bool& isLoaded, bool& isRerun);
+                const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype)>& cb,
+                std::function<void(int frameid, bool inserted, bool hasstamp)> callbackUpdate, uintptr_t sceneId,
+                bool& isFrameValid);
     ZENO_API void clear_objects(const std::function<void()>& cb);
     ZENO_API bool isFrameCompleted(int frameid) const;
     ZENO_API FRAME_STATE getFrameState(int frameid) const;
@@ -62,15 +67,17 @@ struct GlobalComm {
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
-    static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName = "", bool isBeginframe = true);
-    static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string fileName = "");
+    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isBeginframe = true);
+    bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string>>& newFrameStampInfo);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype);
+    std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
+    static std::string getRunType(std::filesystem::path dir);
 private:
-    ViewObjects const *_getViewObjects(const int frameidm, bool& isLoaded, bool& isRerun);
+    ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp);
 };
 
 }

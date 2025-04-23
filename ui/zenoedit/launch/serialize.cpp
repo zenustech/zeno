@@ -429,7 +429,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if ((launchParam.applyLightAndCameraOnly && !lightCameraNodes.contains(name) || launchParam.applyMaterialOnly && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx))
+                if ((launchParam.runtype == RunLightCamera && !lightCameraNodes.contains(name) || 
+                    launchParam.runtype == RunMaterial && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx) ||
+                    launchParam.runtype == RunMatrix && name != "SetToMatrix")
                 {
                     continue;
                 }
@@ -461,10 +463,16 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     break;  //current node is not a subgraph node, so only one output is needed to view this obj.
                 }
             }
-        }
-        if (opts & OPT_CACHE)
-        {
-            AddStringList({ "cacheToDisk", ident}, writer);
+
+            if (lightCameraNodes.contains(name)) {
+                AddStringList({ "objRunType", ident, "lightCamera"}, writer);
+            } else if ((matNodeNames.count(name.toStdString()) == 1) || pGraphsModel->IsSubGraphNode(idx)) {
+                AddStringList({ "objRunType", ident, "material"}, writer);
+            } else if (name == "SetToMatrix") {
+                AddStringList({ "objRunType", ident, "matrix"}, writer);
+            } else {
+                AddStringList({ "objRunType", ident, "normal"}, writer);
+            }
         }
     }
 }

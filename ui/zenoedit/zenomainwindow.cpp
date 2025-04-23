@@ -57,6 +57,7 @@
 #include "dialog/zcheckupdatedlg.h"
 #include "dialog/zrestartdlg.h"
 #include "dialog/zpreferencesdlg.h"
+#include "dialog/ZComposeVideoDlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -64,8 +65,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
-    , m_bAlwaysLightCamera(false)
-    , m_bAlwaysMaterial(false)
+    , m_runtype(RunALL)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -283,6 +283,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_CHECKUPDATE: {
         onCheckUpdate();
+        break;
+    }
+    case ACTION_COMPOSE_VIDEO: {
+        onComposeVideo();
         break;
     }
     default: {
@@ -654,7 +658,9 @@ void ZenoMainWindow::initTimelineDock()
     connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
         QVector<DisplayWidget*> views = viewports();
         for (DisplayWidget* view : views) {
-            view->onPlayClicked(bPlaying);
+            if (view->isVisible()) {
+                view->onPlayClicked(bPlaying);
+            }
         }
     });
 
@@ -667,7 +673,7 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (!m_bAlways && !m_bAlwaysLightCamera && !m_bAlwaysMaterial)
+        if (!m_bAlways && m_runtype != RunLightCamera && m_runtype != RunMaterial)
             return;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
@@ -675,32 +681,22 @@ void ZenoMainWindow::initTimelineDock()
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
         QVector<DisplayWidget *> views = viewports();
-        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+        std::function<void(runType)> setOptixUpdateSeparately = [=] (runType runtype) {
             QVector<DisplayWidget *> views = viewports();
             for (auto displayWid : views) {
                 if (!displayWid->isGLViewport()) {
-                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                    displayWid->setRenderSeparately(runtype);
                 }
             }
         };
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
-                setOptixUpdateSeparately(false, false);
+                setOptixUpdateSeparately(m_runtype);
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
                 launchParam.projectFps = timeline()->fps();
-                AppHelper::initLaunchCacheParam(launchParam);
-                view->onRun(launchParam);
-            }
-            else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                LAUNCH_PARAM launchParam;
-                launchParam.beginFrame = nFrame;
-                launchParam.endFrame = nFrame;
-                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
-                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
-                launchParam.projectFps = timeline()->fps();
+                launchParam.runtype = m_runtype;
                 AppHelper::initLaunchCacheParam(launchParam);
                 view->onRun(launchParam);
             }
@@ -788,7 +784,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void ZenoMainWindow::onRunTriggered(runType runtype)
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -812,8 +808,7 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
-        launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
-        launchParam.applyMaterialOnly = applyMaterialOnly;
+        launchParam.runtype = runtype;
         QString path = pModel->filePath();
         path = path.left(path.lastIndexOf("/"));
         launchParam.zsgPath = path;
@@ -950,7 +945,7 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                     QVector<DisplayWidget*> views = pMainWin->viewports();
                     for (auto displayWid : views) {
                         if (!displayWid->isGLViewport()) {
-                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                            displayWid->setRenderSeparately(updateLightCameraOnly ? RunLightCamera : (updateMatlOnly ? RunMaterial : RunALL));
                         }
                     }
                     if (m_bOptixProcRecording)
@@ -1215,6 +1210,21 @@ void ZenoMainWindow::updateViewport(const QString& action)
                         view->updateFrame();
                     }
                 }
+            }
+        }
+        if (action == "newFrame") {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int beginframe = m_pTimeline->fromTo().first;
+            if (endFrame == beginframe) {   //run的时候起始帧计算完成后，将timeline重置为起始帧
+                runType oldtype = m_runtype;
+                bool oldalways = m_bAlways;
+                m_bAlways = false;
+                m_runtype = RunALL;
+                zeno::scope_exit sp([this, oldalways, oldtype]() {
+                    m_bAlways = oldalways;
+                    m_runtype = oldtype;
+                    });
+                m_pTimeline->setSliderValue(beginframe);
             }
         }
     }
@@ -1525,6 +1535,18 @@ void ZenoMainWindow::onCheckUpdate()
     });
     dlg.exec();
 #endif
+}
+
+void ZenoMainWindow::onSetTimelineValue()
+{
+    ZASSERT_EXIT(m_pTimeline);
+    m_pTimeline->setSliderValue(m_pTimeline->fromTo().first);
+}
+
+void ZenoMainWindow::onComposeVideo()
+{
+    ZComposeVideoDlg dlg(this);
+    dlg.exec();
 }
 
 void ZenoMainWindow::importGraph(bool bPreset) {
@@ -1928,6 +1950,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
     m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
+    m_ui->actionCombine_video->setProperty("ActionType", ACTION_COMPOSE_VIDEO);
 }
 
 void ZenoMainWindow::screenShoot() 
@@ -2113,12 +2136,9 @@ bool ZenoMainWindow::isAlways() const
     return m_bAlways;
 }
 
-bool ZenoMainWindow::isAlwaysLightCamera() const {
-    return m_bAlwaysLightCamera;
-}
-
-bool ZenoMainWindow::isAlwaysMaterial() const {
-    return m_bAlwaysMaterial;
+runType ZenoMainWindow::runtype()
+{
+    return m_runtype;
 }
 
 void ZenoMainWindow::setAlways(bool bAlways)
@@ -2129,9 +2149,8 @@ void ZenoMainWindow::setAlways(bool bAlways)
         m_pTimeline->togglePlayButton(false);
 }
 
-void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial) {
-    m_bAlwaysLightCamera = bAlwaysLightCamera;
-    m_bAlwaysMaterial = bAlwaysMaterial;
+void ZenoMainWindow::setRunType(runType runtype) {
+    m_runtype = runtype;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
