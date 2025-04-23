@@ -14,11 +14,11 @@ ZCacheMgr::ZCacheMgr()
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
 {
-    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
+    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_RunMatrix || m_cacheOpt == Opt_AlwaysOn)) {
          return true;
     }
     if ((bTempDir || bAutoCleanCache) &&
-            m_cacheOpt != Opt_RunLightCameraMaterial &&
+            m_cacheOpt != Opt_RunLightCameraMaterial && m_cacheOpt != Opt_RunMatrix &&
             m_cacheOpt != Opt_AlwaysOn)
     {
         cleanCacheDir();
@@ -132,7 +132,8 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
             size_t sLen = strlen(zeno::iotags::sZencache_lockfile_prefix);
             if (info.fileName().right(9) != ".zencache" &&
                 info.fileName().left(sLen) != zeno::iotags::sZencache_lockfile_prefix &&
-                info.fileName() != "stampInfo.txt")    //not zencache file or cachelock file or stampInfo.txt
+                info.fileName() != "stampInfo.txt" &&
+                info.fileName() != "runInfo.txt")    //not zencache file or cachelock file or stampInfo.txt
             {
                 return false;
             }

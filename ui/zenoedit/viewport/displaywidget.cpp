@@ -210,10 +210,10 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
-void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+void DisplayWidget::setRenderSeparately(runType runtype) {
     if (m_optixView)
     {
-        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+        m_optixView->setRenderSeparately(runtype);
     }
 }
 
@@ -540,8 +540,8 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     for (auto displayWid : mainWin->viewports())
         if (!displayWid->isGLViewport())
-            displayWid->setRenderSeparately(false, false);
-    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
+            displayWid->setRenderSeparately(RunALL);
+    if (mainWin->isAlways())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
@@ -557,10 +557,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
-        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
-            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
-            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
-        }
+        launchParam.runtype = mainWin->runtype();
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -632,7 +629,7 @@ void DisplayWidget::afterRun()
         ZASSERT_EXIT(session);
         auto scene = session->get_scene();
         ZASSERT_EXIT(scene);
-        scene->objectsMan->lightObjects.clear();
+        //scene->objectsMan->lightObjects.clear();
     }
 }
 
@@ -662,7 +659,7 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    //scene->objectsMan->lightObjects.clear();
     ZTimeline* timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
 }
@@ -702,7 +699,7 @@ void DisplayWidget::onRun() {
     Zenovis* pZenoVis = getZenoVis();
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    //scene->objectsMan->lightObjects.clear();
 }
 
 void DisplayWidget::runAndRecord(const VideoRecInfo &recInfo) {
@@ -776,6 +773,13 @@ void DisplayWidget::onSetBackground(bool bShowBackground)
 {
     if (!m_bGLView) {
         m_optixView->showBackground(bShowBackground);
+    }
+}
+
+void DisplayWidget::setSampleNumber(int sample_number)
+{
+    if (!m_bGLView) {
+        m_optixView->setSampleNumber(sample_number);
     }
 }
 
@@ -909,7 +913,7 @@ void DisplayWidget::onRecord()
             ZASSERT_EXIT(mgr);
             ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
             zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
-            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
+            mgr->setCacheOpt(ZCacheMgr::Opt_LoadAsset);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)

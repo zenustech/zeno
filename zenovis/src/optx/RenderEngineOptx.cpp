@@ -1829,6 +1829,22 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         xinxinoptix::optixDestroy();
     }
 
+    void assetLoad() {
+        int a = 0;
+    }
+
+    void run() {
+        int a = 0;
+    }
+
+    void beginFrameLoading(int frameid) {
+        int a = 0;
+    }
+
+    void endFrameLoading(int frameid) {
+        int a = 0;
+    }
+
     void cleanupAssets() override {
         cached_shaders = {};
         OptixUtil::rtMaterialShaders.clear();

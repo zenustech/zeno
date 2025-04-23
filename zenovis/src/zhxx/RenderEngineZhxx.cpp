@@ -122,6 +122,22 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
         zenvis::finalize();
     }
 
+    void assetLoad() {
+
+    }
+
+    void run() {
+
+    }
+
+    void beginFrameLoading(int frameid) {
+
+    }
+
+    void endFrameLoading(int frameid) {
+
+    }
+
     void cleanupAssets() override {
 
     }

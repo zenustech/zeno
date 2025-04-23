@@ -38,10 +38,9 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
-    void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
+    void setRunType(runType runtype);
     bool isAlways() const;
-    bool isAlwaysLightCamera() const;
-    bool isAlwaysMaterial() const;
+    runType runtype();
     void resetTimeline(TIMELINE_INFO info);
     void initUserdata(USERDATA_SETTING info);
     ZTimeline* timeline() const;
@@ -125,6 +124,8 @@ public:
         ACTION_ZENCACHE,
         ACTION_SET_SHORTCUT,
         ACTION_PREFERENCES,
+        //tools
+        ACTION_COMPOSE_VIDEO,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_ZOOM,
@@ -171,11 +172,13 @@ public slots:
     void optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId);
     void optixClientSend(QString& info);
     void optixClientStartRec();
-    void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRunTriggered(runType runtype = RunALL);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
+    void onSetTimelineValue();
+    void onComposeVideo();
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
@@ -220,8 +223,7 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
-    bool m_bAlwaysLightCamera;
-    bool m_bAlwaysMaterial;
+    runType m_runtype;
     int m_nResizeTimes;
     bool m_bOnlyOptix;          //isolate optix window.
     Ui::MainWindow* m_ui;
