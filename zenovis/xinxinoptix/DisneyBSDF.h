@@ -596,7 +596,7 @@ namespace DisneyBSDF{
       vtmp.z = abs(vtmp.z);
       vec3 wm = BRDFBasics::SampleGGXVNDF(vtmp, ax, ay, r1, r2);
 
-      wi = normalize(reflect(-wo, wm));
+      wi = normalize(reflect(-wo, rough<0.03? vec3(0,0,1):wm));
     }
 
 
@@ -794,7 +794,7 @@ namespace DisneyBSDF{
           float ax, ay;
           BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
           vec3 swo = woo.z>0?woo:-woo;
-          vec3 wm = BRDFBasics::SampleGGXVNDF(swo, ax, ay, r1, r2);
+          vec3 wm = mat.roughness<0.03?vec3(0,0,1):BRDFBasics::SampleGGXVNDF(swo, ax, ay, r1, r2);
           wm = wm.z<0?-wm:wm;
 
           wm = entering?wm:-wm;

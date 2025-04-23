@@ -307,6 +307,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             Json BasicRenderInstances = Json();
             for (const auto &[path, prim]: prim_list) {
                 BasicRenderInstances[path]["Geom"] = path;
+                BasicRenderInstances[path]["Material"] = "Default";
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
 
@@ -416,6 +417,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             json["BasicRenderInstances"] = Json();
             for (const auto &[path, prim]: prim_list) {
                 json["BasicRenderInstances"][path]["Geom"] = path;
+                json["BasicRenderInstances"][path]["Material"] = "Default";
                 if (use_static) {
                     json["StaticRenderGroups"]["StaticObjects"][path] = Json::array({path+"_m"});
                 }

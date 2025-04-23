@@ -120,7 +120,10 @@ void Scene::updateDrawObjects() {
             }
         } else {
 
-            mesh->mat_idx = {0};
+            auto matName = dat.mtlid;
+            auto it = _mesh_materials.find(matName);
+            uint16_t index = (it != _mesh_materials.end()) ? it->second : 0u;
+            mesh->mat_idx = { index };
 
             if (_mesh_materials.count(dat.mtlid)>0) {
                 auto idx = _mesh_materials.at(dat.mtlid);
