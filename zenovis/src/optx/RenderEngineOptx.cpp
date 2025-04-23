@@ -736,7 +736,10 @@ struct GraphicsManager {
                             matNameList.emplace_back(matName);
                         }
                     }
-                    auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
+                    auto mtlid = prim_in->userData().get2<std::string>("mtlid", "");
+                    if ("" == mtlid) {
+                        mtlid = prim_in->userData().get2<std::string>("Material_0", "Default");
+                    }
                     auto& matids = prim_in->tris.attr<int>("matid");
 
                     defaultScene.preload_mesh(reName, mtlid, vs, nvs, ts, nts, vtab, matids.data(), matNameList);

@@ -157,7 +157,7 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
     auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
     if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
-    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags | OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+    CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
