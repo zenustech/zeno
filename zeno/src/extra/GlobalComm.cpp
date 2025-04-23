@@ -36,6 +36,19 @@ namespace zeno {
 std::vector<std::filesystem::path> cachepath(4);
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string runtype, std::string fileName, bool isBeginframe) {
     if (cachedir.empty()) return;
+
+    const auto& lasttwo = [](const std::string& str)->int {
+        int count = 0;
+        for (int i = str.length() - 1; i >= 0; --i) {
+            if (str[i] == ':') {
+                ++count;
+                if (count == 2)
+                    return i;
+            }
+        }
+        return -1;
+    };
+
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
     {
@@ -71,7 +84,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                         if (group.name.GetString() == docKey) {
                             for (const auto& node : group.value.GetObject()) {
                                 const std::string& key = node.name.GetString();
-                                lastframeStampinfo.insert({ key.substr(0, key.find_first_of(":")), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt()) });
+                                lastframeStampinfo.insert({ key.substr(0, lasttwo(key)), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt()) });
                             }
                         }
                     }
@@ -105,9 +118,10 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 obj->userData().set2("stamp-change", "TotalChange");
             }*/
             const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
-            const int& baseframe = stamptag == "TotalChange" || isBeginframe ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, key.find_first_of(":"))]);
+            const int& baseframe = stamptag == "TotalChange" || isBeginframe ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, lasttwo(key))]);
             obj->userData().set2("stamp-base", baseframe);
             obj->userData().set2("stamp-change", stamptag);
+
 
             //写出stampinfo
             writer.Key(key.c_str());
@@ -116,6 +130,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             writer.String(stamptag.c_str());
             writer.Key("stamp-base");
             writer.Int(baseframe);
+
             if (0) {
     #define _PER_OBJECT_TYPE(TypeName, ...) \
             } else if (auto o = dynamic_cast<TypeName const *>(obj.get())) { \
@@ -502,7 +517,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         }
         return true;
     };
-    if (!loadPartial) {
+    //if (!loadPartial) {
         bool ret = load(cacheFramePath, frameid, objs, runtype);
         for (auto& [key, tup] : newFrameStampInfo) {
             if (std::get<0>(tup) == "UnChanged") {
@@ -513,7 +528,8 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
         }
         return ret;
-    }
+    //}
+#if 0
     else {
         bool ret = load(cacheFramePath, frameid, objs, runtype);
         if (ret) {
@@ -526,7 +542,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 if (newframeObjStampchange == "UnChanged") {
                     if (auto correspondFrameObj = fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key)) {
                         correspondFrameObj->userData().set2("stamp-change", "TotalChange");
-                        objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), correspondFrameObj);
+                        objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), correspondFrameObj);
                     }
                 }
                 else if (newframeObjStampchange == "DataChange") {
@@ -534,20 +550,21 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                     auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
                     //根据newframeDataChangeHint获取newDataChangedObj的data,设置给baseobj
                     objs.m_curr.erase(newframeObjfullkey);
-                    objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
+                    objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), baseobj);
                 }
                 else if (newframeObjStampchange == "ShapeChange") {
                     auto baseobj = std::move(fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
                     auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
                     //暂时并入Totalchange
                     objs.m_curr.erase(newframeObjfullkey);
-                    objs.try_emplace(key + ":TOVIEW:" + std::to_string(frameid) + newframeObjfullkey.substr(newframeObjfullkey.find_last_of(":")), baseobj);
+                    objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), baseobj);
                 }
             }
             return true;
         }
         return ret;//此时objs中对象的stamp-change已经根据切帧前后的变化正确调整
     }
+#endif
 }
 
 std::shared_ptr<IObject> GlobalComm::fromDiskReadObject(std::string cachedir, int frameid, std::string objectName)
