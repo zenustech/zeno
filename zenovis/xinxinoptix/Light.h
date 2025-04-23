@@ -434,14 +434,14 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             }
 
                 float3 radianceNoShadow = emission * bxdf_value;
-                radianceNoShadow *= misWeight / (lsr.PDF + 1e-4);
+                radianceNoShadow *= misWeight / (lsr.PDF + 1e-4f);
 
                 if (nullptr != RadianceWithoutShadow) {
                     *RadianceWithoutShadow = radianceNoShadow;
                 }
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
-                    auto tmp = light_attenuation * misWeight / (lsr.PDF + 1e-4);
+                    auto tmp = light_attenuation * misWeight / (lsr.PDF + 1e-4f);
                     (*taskAux)(emission * tmp);
                 }// TypeAux
 

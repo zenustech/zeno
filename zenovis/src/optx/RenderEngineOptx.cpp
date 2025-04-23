@@ -210,6 +210,9 @@ struct GraphicsManager {
             std::string extensions;
             std::string mtlidkey;
             std::string parameters;
+
+            int stamp_base = 0;
+            bool dirty = true;
         };
 
         struct DetPrimitive {
@@ -338,6 +341,15 @@ struct GraphicsManager {
         explicit ZxxGraphic(std::string key_, zeno::IObject *obj)
         : key(std::move(key_))
         {
+            const auto stamp_work = [](const zeno::UserData& ud) {
+
+                auto stamp_base = ud.get2<int>("stamp-base", 0);
+                auto stamp_change = ud.get2<std::string>("stamp-change", "TotalChange");
+                std::transform(stamp_change.begin(), stamp_change.end(), stamp_change.begin(), ::tolower);
+
+                return std::tuple{stamp_base, stamp_change};
+            };
+
             if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 // vvv deepcopy to cihou following inplace ops vvv
@@ -345,18 +357,8 @@ struct GraphicsManager {
                 // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
                 auto prim_in = prim_in_lslislSp.get();
 
-                auto stamp_work = [&prim_in]() {
-
-                    if (!prim_in->userData().has("stamp-base")) {
-                        return std::tuple{0, std::string("TotalChange")};
-                    }
-                    const auto stamp_base = prim_in->userData().get2<int>("stamp-base", 0);
-                    const auto stamp_change = prim_in->userData().get2<std::string>("stamp-change", "");
-
-                    return std::tuple{stamp_base, stamp_change};
-                };
-                const auto [stamp_base, stamp_change] = stamp_work();
-                if (stamp_change == "Unchanged") { return; }
+                const auto [stamp_base, stamp_change] = stamp_work(prim_in_lslislSp->userData());
+                if (stamp_change == "unchanged") { return; }
 
                 if ( prim_in->userData().has("ShaderAttributes") ) {
                     auto attritbutes  = prim_in->userData().get2<std::string>("ShaderAttributes");
@@ -735,10 +737,9 @@ struct GraphicsManager {
                         }
                     }
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
-                    auto instID = prim_in->userData().get2<std::string>("instID", "Default");
                     auto& matids = prim_in->tris.attr<int>("matid");
 
-                    defaultScene.load_object(reName, mtlid, instID, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
+                    defaultScene.preload_mesh(reName, mtlid, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
                 } // Mesh
             } // ResourceType
 
@@ -746,7 +747,10 @@ struct GraphicsManager {
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
             {
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->parameters};
+                const auto [stamp_base, stamp_change] = stamp_work(mtl->userData());
+                const auto dirty = stamp_change != "unchanged";
+                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->parameters,
+                        stamp_base,  dirty};
             }
         }
 
@@ -1295,12 +1299,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     ShaderTemplateInfo _light_shader_template {
         "Light.cu", false, {}, {}, {}
     };
-    
-    std::set<shader_key_t> cachedMaterials;
+
     std::map<std::string, std::vector<zeno::CurveType>> cachedCurvesMaterials;
 
-    std::map<std::string, uint> cachedMeshMatLUT;
-    bool meshMatLUTChanged(std::map<std::string, uint>& newLUT) {
+    std::map<std::string, std::set<ShaderMark>> required_shader_names;
+    std::map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
+
+    std::map<std::string, uint16_t> cachedMeshMatLUT;
+    bool meshMatLUTChanged(std::map<std::string, uint16_t>& newLUT) {
         bool changed = false;
         if (cachedMeshMatLUT.size() != newLUT.size()) {
             changed = true;
@@ -1351,14 +1357,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         
         _template.ensured = true;
-    }
-
-    bool hasEnding (std::string const &fullString, std::string const &ending) {
-        if (fullString.length() >= ending.length()) {
-            return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
-        } else {
-            return false;
-        }
     }
 
     void draw(bool _) override {
@@ -1427,46 +1425,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         //zeno::log_info("meshNeedUpdate:{},matNeedUpdate:{},staticNeedUpdate:{},lightNeedUpdate:{}",meshNeedUpdate,matNeedUpdate,staticNeedUpdate,lightNeedUpdate);
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
 
-            if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
-                cachedMaterials = defaultScene.prepareShaderSet();
-
-                for (auto& [key, _] : hair_xxx_cache) 
-                {
-                    auto& [filePath, mode, mtid] = key;
-
-                    auto ctype = (zeno::CurveType)mode;
-
-                    if (cachedCurvesMaterials.count(mtid) > 0) {
-                        auto& ref = cachedCurvesMaterials.at(mtid);
-                        ref.push_back( ctype );
-                        continue;
-                    }
-                    cachedCurvesMaterials[mtid] = { ctype };
-                }
-
-                for (auto& [key, ele] : curveGroupCache) {
-
-                    auto ctype = ele->curveType;
-                    auto mtlid = ele->mtlid;
-
-                    if (cachedCurvesMaterials.count(mtlid) > 0) {
-                        auto& ref = cachedCurvesMaterials.at(mtlid);
-                        ref.push_back( ctype );
-                        continue;
-                    }
-                    cachedCurvesMaterials[mtlid] = { ctype };
-                }
- 
-            } // preserve material names for materials-only updating case 
-
-            std::vector<std::shared_ptr<ShaderPrepared>> _meshes_shader_list{};
-            std::vector<std::shared_ptr<ShaderPrepared>> _sphere_shader_list{};
-            std::vector<std::shared_ptr<ShaderPrepared>> _curves_shader_list{};
-
-            std::vector<std::shared_ptr<ShaderPrepared>> _volume_shader_list{};
-
-            std::map<std::string,  uint> meshMatLUT{};
-            std::map<shader_key_t, uint> ShaderKeyIndex{};
+            std::map<std::string,  uint16_t> meshMatLUT{};
+            std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
 
             ensure_shadtmpl(_default_callable_template);
             ensure_shadtmpl(_volume_callable_template);
@@ -1474,55 +1434,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_default_shader_template);
             ensure_shadtmpl(_volume_shader_template);
             ensure_shadtmpl(_light_shader_template);
-
-            //if (cachedMeshesMaterials.count("Default")) 
-            {
-                auto tmp = std::make_shared<ShaderPrepared>();
-
-                tmp->mark = ShaderMark::Mesh;
-                tmp->matid = "Default";
-                tmp->filename = _default_shader_template.name;
-                tmp->callable = _default_callable_template.shadtmpl;
-
-                _meshes_shader_list.push_back(tmp);
-
-                meshMatLUT.insert({"Default", 0});
-            }
-
-            //if (cachedSphereMaterials.count("Default")) 
-            {
-                auto tmp = std::make_shared<ShaderPrepared>();
-
-                tmp->mark = ShaderMark::Sphere;
-                tmp->matid = "Default";
-                tmp->filename = _default_shader_template.name;
-                tmp->callable = _default_callable_template.shadtmpl;
-
-                _sphere_shader_list.push_back(tmp);
-            }
-
-            unsigned int usesCurveTypeFlags = 0;
-            auto mark_task = [&usesCurveTypeFlags](zeno::CurveType ele) {
-
-                usesCurveTypeFlags |= CURVE_FLAG_MAP.at(ele);
-                return CURVE_SHADER_MARK.at(ele);
-            };
-
-            if (cachedCurvesMaterials.count("Default") ) {
-
-                auto& ref = cachedCurvesMaterials.at("Default"); 
-
-                for (auto& ele : ref) {
-
-                    auto tmp = std::make_shared<ShaderPrepared>();
-                    tmp->matid = "Default";
-                    tmp->filename = _default_shader_template.name;
-                    tmp->callable = _default_callable_template.shadtmpl;
-
-                    tmp->mark = mark_task(ele);
-                    _curves_shader_list.push_back(tmp);
-                }                
-            }
 
             //first pass, remove duplicated mat and keep the later
             std::map<std::string, GraphicsManager::DetMaterial*> matMap;
@@ -1548,14 +1459,101 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
+            const auto make_default_shader = [&](ShaderMark mark) {
+                auto default_shader = std::make_shared<ShaderPrepared>();
+                default_shader->mark = mark;
+                default_shader->matid = "Default";
+                default_shader->filename = _default_shader_template.name;
+                default_shader->callable = _default_callable_template.shadtmpl;
+                return default_shader;
+            };
+
+            bool ShaderDirty = false;
+
+            if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
+                required_shader_names = defaultScene.prepareShaderSet();
+
+                const auto shaderCount = cached_shaders.size();
+
+                for (const auto& [key, value] : required_shader_names) {
+
+                    bool use_default = matMap.count(key) == 0;                       
+
+                    for (const auto& mark : value) {
+                        auto shader_key = std::tuple {key, mark};
+                        //auto default_key = std::tuple {"Default", mark};
+                        
+                        if (use_default) {
+                            auto shader_ref = cached_shaders[shader_key];
+                            if (shader_ref==nullptr || shader_ref->dirty)
+                                cached_shaders[shader_key] = make_default_shader(mark);
+                        } else {
+                            auto& shader_ref = matMap.at(key);
+                            if (shader_ref->dirty) {
+                                cached_shaders[shader_key] = nullptr;
+                                ShaderDirty = true;
+                            } // dirty
+                        }
+                    }
+                }
+
+                ShaderDirty |= (cached_shaders.size() != shaderCount);
+
+                // for (auto& [key, _] : hair_xxx_cache) 
+                // {
+                //     auto& [filePath, mode, mtid] = key;
+
+                //     auto ctype = (zeno::CurveType)mode;
+
+                //     if (cachedCurvesMaterials.count(mtid) > 0) {
+                //         auto& ref = cachedCurvesMaterials.at(mtid);
+                //         ref.push_back( ctype );
+                //         continue;
+                //     }
+                //     cachedCurvesMaterials[mtid] = { ctype };
+                // }
+
+                // for (auto& [key, ele] : curveGroupCache) {
+
+                //     auto ctype = ele->curveType;
+                //     auto mtlid = ele->mtlid;
+
+                //     if (cachedCurvesMaterials.count(mtlid) > 0) {
+                //         auto& ref = cachedCurvesMaterials.at(mtlid);
+                //         ref.push_back( ctype );
+                //         continue;
+                //     }
+                //     cachedCurvesMaterials[mtlid] = { ctype };
+                // }
+ 
+            } // preserve material names for materials-only updating case
+
+            unsigned int usesCurveTypeFlags = 0;
+            auto mark_task = [&usesCurveTypeFlags](zeno::CurveType ele) {
+
+                usesCurveTypeFlags |= CURVE_FLAG_MAP.at(ele);
+                return CURVE_SHADER_MARK.at(ele);
+            };
+
+            if (cachedCurvesMaterials.count("Default") ) {
+
+                auto& ref = required_shader_names.at("Default"); 
+
+                for (auto& ele : ref) {
+
+                    auto tmp = std::make_shared<ShaderPrepared>();
+                    tmp->matid = "Default";
+                    tmp->filename = _default_shader_template.name;
+                    tmp->callable = _default_callable_template.shadtmpl;
+                    tmp->mark = ele;
+                }                
+            }
+
             // Auto unload unused texure
             {
                 std::set<OptixUtil::TexKey> realNeedTexPaths;
                 for(auto const &[matkey, mtldet] : matMap) {
-                    if (mtldet->parameters.find("vol") != std::string::npos
-                        || cachedCurvesMaterials.count(mtldet->mtlidkey) > 0
-                        || cachedMaterials.count( {mtldet->mtlidkey, ShaderMark::Mesh} ) > 0
-                        || cachedMaterials.count({mtldet->mtlidkey, ShaderMark::Sphere}) > 0) 
+                    if (required_shader_names.count( mtldet->mtlidkey ) > 0) 
                     {
                         for(auto& tex: mtldet->tex2Ds) {
                             realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
@@ -1565,9 +1563,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 // add light map
                 for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
-                    // if (ld.profileKey.size()) {
-                    //     realNeedTexPaths.emplace_back(ld.profileKey);
-                    // }
                     if (ld.textureKey.size()) {
                         realNeedTexPaths.insert( {ld.textureKey, false});
                     }
@@ -1590,12 +1585,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
                 for (const auto& realNeedTexKey: realNeedTexPaths) {
-
                     OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
                 }
             }
+
             for(auto const &[matkey, mtldet] : matMap)
             {       
+                if ( !mtldet->dirty ) continue;
+                if ( required_shader_names.count(mtldet->mtlidkey) == 0 ) continue;
+                mtldet->dirty = false;
+
                     const bool isVol = mtldet->parameters.find("vol") != std::string::npos;
                     
                     const auto& selected_source = isVol? _volume_shader_template : _default_shader_template;
@@ -1643,7 +1642,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                                 auto vdb_path = tex->path;
         
                                 static const auto extension = std::string("vdb");
-                                auto found_vdb = hasEnding(vdb_path, extension);
+                                auto found_vdb = zeno::ends_with(vdb_path, extension);
                                 if (!found_vdb) { continue; }
         
                                 std::string vdb_key;
@@ -1655,37 +1654,34 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     if (isVol) {
                         
                         shaderP.mark = ShaderMark::Volume;
-                        _volume_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
+                        auto this_key = std::tuple{shaderP.matid, ShaderMark::Volume};
+                        cached_shaders[this_key] = std::make_shared<ShaderPrepared>(shaderP);
                     } else {
 
-                        if (cachedMaterials.count( {mtldet->mtlidkey, ShaderMark::Mesh} ) > 0) {
-                            meshMatLUT.insert({mtldet->mtlidkey, (int)_meshes_shader_list.size()});
+                        auto reuiredSet = required_shader_names.at(mtldet->mtlidkey);
+                        
+                        for (auto& mark : reuiredSet) {
+                            shaderP.mark = mark;
 
-                            shaderP.mark = ShaderMark::Mesh;
-                            _meshes_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
+                            auto _shader_key = std::tuple{mtldet->mtlidkey, mark};                            
+                            cached_shaders[_shader_key] = std::make_shared<ShaderPrepared>(shaderP);
                         }
-
-                        if (cachedMaterials.count( {mtldet->mtlidkey, ShaderMark::Sphere} ) > 0) {
-
-                            shaderP.mark = ShaderMark::Sphere;
-                            _sphere_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
-                        }
-
-                        if (cachedCurvesMaterials.count(mtldet->mtlidkey) > 0) {
-
-                            auto& ref = cachedCurvesMaterials.at(mtldet->mtlidkey); 
-                            for (auto& ele : ref) {
-
-                                shaderP.mark = mark_task(ele);
-                                _curves_shader_list.push_back(std::make_shared<ShaderPrepared>(shaderP));
-                            }
-                        }  
                     }
             }
 
-            const auto requireTriangObj = !_meshes_shader_list.empty();
-            const auto requireSphereObj = !_sphere_shader_list.empty();
-            const auto requireVolumeObj = !_volume_shader_list.empty();
+            bool requireTriangObj = false;
+            bool requireSphereObj = false;
+            bool requireVolumeObj = false;
+
+            for (const auto& [key, shader] : cached_shaders) {
+                const auto [k, v] = key;
+                if (v == ShaderMark::Mesh)
+                    requireTriangObj = true;
+                if (v == ShaderMark::Sphere)
+                    requireSphereObj = true;
+                if (v == ShaderMark::Volume)
+                    requireVolumeObj = true;
+            }
 
             bool requireSphereLight = false;
             bool requireTriangLight = false;
@@ -1714,7 +1710,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 tmp->mark = ShaderMark::Mesh;
                 tmp->matid = "Light";
 
-                _meshes_shader_list.push_back(tmp);
+                //cachedMaterial[ std::tuple{"Light", ShaderMark::Mesh} ] = tmp;
             }
 
             if (requireSphereLight) {
@@ -1725,32 +1721,28 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 tmp->mark = ShaderMark::Sphere;
                 tmp->matid = "Light";
                 
-                _sphere_shader_list.push_back(tmp);
+                //cachedMaterial[ std::tuple{"Light", ShaderMark::Sphere} ] = tmp;
             }
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
-            allShaders.reserve(_meshes_shader_list.size()+_sphere_shader_list.size()+_volume_shader_list.size());            
+            allShaders.reserve(cached_shaders.size()+2);
 
-            allShaders.insert(allShaders.end(), _meshes_shader_list.begin(), _meshes_shader_list.end());
-            allShaders.insert(allShaders.end(), _sphere_shader_list.begin(), _sphere_shader_list.end());
-            allShaders.insert(allShaders.end(), _volume_shader_list.begin(), _volume_shader_list.end());
+            ShaderKeyIndex.clear();
+            for (const auto& [key, shader] : cached_shaders) {
+                auto idx = allShaders.size();
 
-            allShaders.insert(allShaders.end(), _curves_shader_list.begin(), _curves_shader_list.end());
-
-                for (uint i=0; i<allShaders.size(); ++i) {
-                    auto& ref = allShaders[i];
-
-                    auto combinedID = std::make_tuple(ref->matid, ref->mark);
-                    ShaderKeyIndex[combinedID] = i;
-                }
+                allShaders.push_back(shader);
+                ShaderKeyIndex[key] = idx;
+                
+                if (std::get<1>(key) == ShaderMark::Mesh)
+                    meshMatLUT[std::get<0>(key)] = idx;
+            }
 
             defaultScene.processVolumeBox(OptixUtil::context);
             defaultScene.shader_indice_table = ShaderKeyIndex;
             bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
             if (matNeedUpdate && second_matNeedUpdate)
             {
-//                std::cout<<"shaders size "<< allShaders.size() << std::endl;
-
                 unsigned int usesPrimitiveTypeFlags = 0u;
                 if (requireTriangObj || requireTriangLight)
                     usesPrimitiveTypeFlags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
@@ -1762,6 +1754,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     usesPrimitiveTypeFlags |= usesCurveTypeFlags;
 
                 auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags);
+                ShaderDirty |= refresh;
+
+                if (refresh) {
+                    for (auto& shader : allShaders)
+                        shader->dirty = true;
+                }
                 
                 xinxinoptix::updateShaders(allShaders, 
                                                     requireTriangObj, requireTriangLight, 
@@ -1776,7 +1774,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 bMeshMatLUTChanged = meshMatLUTChanged(meshMatLUT);
             }
             if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
-                std::map<std::string, uint>().swap(cachedMeshMatLUT);
+                std::map<std::string, uint16_t>().swap(cachedMeshMatLUT);
                 cachedMeshMatLUT = meshMatLUT;
             }
 
@@ -1787,14 +1785,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::updateCurves();
                 xinxinoptix::prepareScene();
 
-                xinxinoptix::optixupdateend();
-                //std::cout<< "Finish optix update" << std::endl;
+                xinxinoptix::configPipeline(ShaderDirty);
+                std::cout<< "Finish optix update" << std::endl;
             }
 
             if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
             {
-                xinxinoptix::optixupdateend();
-                //std::cout << "Finish optix update" << std::endl;
+
+                xinxinoptix::configPipeline(ShaderDirty);
+                std::cout << "Finish optix update" << std::endl;
             }
 
         }
@@ -1849,6 +1848,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void cleanupAssets() override {
+        cached_shaders = {};
+        OptixUtil::rtMaterialShaders.clear();
+
         xinxinoptix::optixCleanup();
     }
 

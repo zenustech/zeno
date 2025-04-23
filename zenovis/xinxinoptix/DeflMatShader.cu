@@ -37,8 +37,9 @@ __inline__ __device__ bool isBadVector(const float3& vector) {
 __inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs, const OptixTraversableHandle& gas) {
 
     auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-    
+
     float3* color_ptr  = reinterpret_cast<float3*>( *(gas_ptr-1) );
+    if (color_ptr == nullptr) return;
         
     attrs.instIdx = optixGetPrimitiveIndex();
     attrs.instClr = (color_ptr != nullptr)? color_ptr[attrs.instIdx] : float3{}; 
@@ -997,9 +998,4 @@ extern "C" __global__ void __closesthit__radiance()
     {
       prd->done = true;
     }
-}
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
 }

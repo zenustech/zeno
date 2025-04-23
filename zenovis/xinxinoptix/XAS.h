@@ -165,7 +165,7 @@ namespace xinxinoptix {
         buildIAS(context, accel_options, instances, bufferIAS, handleIAS);
     } 
 
-    inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint>& mat_idx, const std::map<std::string, uint>& g_mtlidlut,
+    inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint16_t>& mat_idx, const std::map<std::string, uint16_t>& mtlidlut,
                                 raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size)
     {
         if (vertices.empty()) { return; }
@@ -180,7 +180,7 @@ namespace xinxinoptix {
             CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr&)dverts ), vertices.data(), size_in_byte, cudaMemcpyHostToDevice) );
         }
 
-        if (!mat_idx.empty())
+        if (mat_idx.size()>1)
         {
             const size_t size_in_byte = mat_idx.size() * sizeof( mat_idx[0] );
             CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dmats ), size_in_byte ) );
@@ -195,7 +195,7 @@ namespace xinxinoptix {
                         ) );
         }
         // // Build triangle GAS // // One per SBT record for this build input
-        const auto numSbtRecords = g_mtlidlut.empty() ? 1 : g_mtlidlut.size();
+        const auto numSbtRecords = (mtlidlut.empty() || mat_idx.size()<=1) ? 1 : mtlidlut.size();
         std::vector<uint32_t> triangle_input_flags( numSbtRecords, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL );
 
         OptixBuildInput triangle_input                           = {};
@@ -207,8 +207,8 @@ namespace xinxinoptix {
         triangle_input.triangleArray.flags                       = triangle_input_flags.data();
         triangle_input.triangleArray.numSbtRecords               = numSbtRecords;
         triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
-        triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
-        triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
+        triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint16_t );
+        triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint16_t );
         
         triangle_input.triangleArray.indexBuffer                 = didx;
         triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;

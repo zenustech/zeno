@@ -19,7 +19,7 @@ void Scene::updateStaticDrawObjects() {
 
     std::vector<const MeshDat*> candidates;
     for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos && dat.instID == "Default") {
+        if(key.find(":static:")!=key.npos) {
             candidates.push_back(&dat);
 
             tri_num += dat.tris.size()/3;
@@ -42,18 +42,17 @@ void Scene::updateStaticDrawObjects() {
 
         auto& dat = *dat_ptr;
 
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
+        std::vector<uint16_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
         for (size_t j=0; j<dat.mtlidList.size(); ++j) {
             auto matName = dat.mtlidList[j];
-            auto it = _mtlidlut.find(matName);
-            global_matidx[j] = it != _mtlidlut.end() ? it->second : 0;
+            auto it = _mesh_materials.find(matName);
+            global_matidx[j] = it != _mesh_materials.end() ? it->second : 0;
         }
 
         tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
             int mtidx = dat.triMats[i];
-            StaticMeshes->mat_idx[tri_offset + i] = global_matidx[mtidx];
-
+            StaticMeshes->mat_idx[tri_offset+i] = global_matidx[mtidx];
             StaticMeshes->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
         });
 
@@ -102,21 +101,33 @@ void Scene::updateDrawObjects() {
         }
         mesh->dirty = true;
         mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
+
+        if (dat.mtlidList.size()>1) {
+
+            mesh->mat_idx.resize(dat.tris.size()/3);
+
+            std::vector<uint16_t> global_matidx(max(dat.mtlidList.size(), 1ull));
+
+            for (size_t j=0; j<dat.mtlidList.size(); ++j) {
+                auto matName = dat.mtlidList[j];
+                auto it = _mesh_materials.find(matName);
+                global_matidx[j] = it != _mesh_materials.end() ? it->second : 0;
+            }
+
+            for (size_t i=0; i<dat.tris.size()/3; ++i) {
+                int mtidx = max(0, dat.triMats[i]);
+                mesh->mat_idx[i] = global_matidx[mtidx];
+            }
+        } else {
+
+            mesh->mat_idx = {0};
+
+            if (_mesh_materials.count(dat.mtlid)>0) {
+                auto idx = _mesh_materials.at(dat.mtlid);
+                mesh->mat_idx[0] = idx;
+            }
+        }
         
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
-
-        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-            auto matName = dat.mtlidList[j];
-            auto it = _mtlidlut.find(matName);
-            global_matidx[j] = it != _mtlidlut.end() ? it->second : 0;
-        }
-
-        for (size_t i=0; i<dat.tris.size()/3; ++i) {
-
-            int mtidx = max(0, dat.triMats[i]);
-            mesh->mat_idx[i] = global_matidx[mtidx];
-        }
-
         memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
         memcpy(mesh->vertices.data(), dat.verts.data(), sizeof(float)*dat.verts.size() );
 

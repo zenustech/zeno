@@ -61,8 +61,10 @@ public:
     nlohmann::json sceneJson;
 
     inline void preload_scene(const std::string& jsonString) {
+        bool accept = nlohmann::json::accept(jsonString);
+        if (!accept) return;
+        
         sceneJson = nlohmann::json::parse(jsonString);
-        return;
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
@@ -130,7 +132,7 @@ public:
             if (!mesh->dirty) { continue; }            
             
             mesh->dirty = false;
-            mesh->buildGas(context, _mtlidlut);
+            mesh->buildGas(context, _mesh_materials);
         }
     }
 
@@ -178,11 +180,13 @@ public:
             return; 
         }
 
-        staticRenderGroup = 0;
         dynamicRenderGroup = 0;
-
         nodeCache = {};
         nodeDepthCache = {};
+
+        //staticRenderGroup = 0;
+        //nodeCacheStatic = {};
+        //nodeDepthCacheStatic = {};
 
         prepare_mesh_gas(context);
         prepare_sphere_gas(context);
@@ -213,7 +217,7 @@ public:
             const auto material_str = it.value().value("Material", "Default");
             auto material_key = std::make_tuple(material_str, geo_type);
 
-            auto shader_index = 0u;
+            uint16_t shader_index = 0u;
             auto shader_visiable = VisibilityMask::NothingMask;
 
             if (shader_indice_table.count(material_key)) {
@@ -221,7 +225,13 @@ public:
                 shader_visiable = VisibilityMask::DefaultMatMask;
             }
             if (ShaderMark::Mesh == geo_type) {
-                shader_index = 0u;
+
+                auto mesh = _meshes_[geo_name];
+                if (mesh->mat_idx.size()==1) {
+                    shader_index = max(shader_index, mesh->mat_idx[0]);
+                } else {
+                    shader_index = 0u;
+                }
                 shader_visiable = VisibilityMask::DefaultMatMask;
                 
             } else if (ShaderMark::Volume == geo_type) {
@@ -276,10 +286,13 @@ public:
         prepare(_sphere_groups_);
         prepare(_vol_boxs);
 
-        std::function<OptixTraversableHandle(std::string, nlohmann::json& renderGroup, bool cache, uint& depth)> treeLook;  
-        
-        treeLook = [&](std::string obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth) -> OptixTraversableHandle {
+        std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+                                                decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
 
+        treeLook = [this, &treeLook, &context, &candidates, &candidates_matrix, &candidates_sbt, &candidates_mark]
+                        (std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+                            decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        {
             if (candidates.count(obj_key)) { //leaf node
                 test_depth = 0;
                 return candidates[obj_key];
@@ -303,7 +316,7 @@ public:
                 OptixTraversableHandle handle;
                 uint theDepth = 0;
 
-                handle = treeLook(item_key, renderGroup, true, theDepth);
+                handle = treeLook(item_key, renderGroup, true, theDepth, nodeCache, nodeDepthCache);
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
@@ -378,8 +391,8 @@ public:
             return node->handle;
         };
 
-        auto groupTask = [&](std::string key) -> OptixTraversableHandle {
-
+        auto groupTask = [&](std::string key, decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        {
             if (!sceneJson.contains(key)) return 0;
             auto& rg = sceneJson[key];
 
@@ -388,7 +401,7 @@ public:
                 auto obj_key = item.key();
 
                 uint depth = 0;
-                auto handle = treeLook(obj_key, rg, false, depth);
+                auto handle = treeLook(obj_key, rg, false, depth, nodeCache, nodeDepthCache);
 
 //                std::cout << "Fetching handle: " << handle << std::endl;
             } //rg
@@ -403,7 +416,7 @@ public:
                 if (nodeDepthCache[obj_key]>0) { continue; } // deeper node
                 
                 uint depth = 0u;
-                auto handle = treeLook(obj_key, rg, true, depth);
+                auto handle = treeLook(obj_key, rg, true, depth, nodeCache, nodeDepthCache);
                 the_depth = max(the_depth, depth);
 
                 OptixInstance opi {};
@@ -415,38 +428,44 @@ public:
                 instanced.push_back(opi);
             } //srg
 
+            if (instanced.size() == 0) return 0;
+
             auto node = std::make_shared<SceneNode>();
             xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
             nodeCache[key] = node;
-
-            maxNodeDepth = max(maxNodeDepth, the_depth+1);
+            nodeDepthCache[key] = the_depth+1;
+            assert(node->handle!=0);
+            
             return node->handle;
         };
 
         maxNodeDepth = 1;
-        staticRenderGroup = groupTask("StaticRenderGroups");
-        dynamicRenderGroup = groupTask("DynamicRenderGroups");
-        maxNodeDepth = maxNodeDepth+2;
+        if (0 == staticRenderGroup) {
+            staticRenderGroup = groupTask("StaticRenderGroups", nodeCacheStatic, nodeDepthCacheStatic);
+        }
+        dynamicRenderGroup = groupTask("DynamicRenderGroups", nodeCache, nodeDepthCache);
+        maxNodeDepth = 2 + max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
         gather();
     }
 
     uint maxNodeDepth = 1;
     std::unordered_map<std::string, uint> nodeDepthCache {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCache {};
+    std::unordered_map<std::string, uint> nodeDepthCacheStatic {};
+    std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
     
     std::map<std::string, MeshDat> drawdats;
 
-    std::map<std::string, uint> _mtlidlut;
     std::set<std::string> uniqueMatsForMesh;
-
-    std::map<shader_key_t, uint> shader_indice_table;
+    std::map<std::string, uint16_t> _mesh_materials;
+    std::map<shader_key_t, uint16_t> shader_indice_table;
 
     std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
-    void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
+    void preload_mesh(std::string const &key, std::string const &mtlid,
                  float const *verts, size_t numverts, uint const *tris, size_t numtris,
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
                  int const *matids, std::vector<std::string> const &matNameList) 
@@ -457,7 +476,6 @@ public:
         dat.triMats.assign(matids, matids + numtris);
         dat.mtlidList = matNameList;
         dat.mtlid = mtlid;
-        dat.instID = instID;
         dat.verts.assign(verts, verts + numverts * 3);
         dat.tris.assign(tris, tris + numtris * 3);
         //TODO: flatten just here... or in renderengineoptx.cpp
@@ -479,9 +497,9 @@ public:
     void updateStaticDrawObjects();
     void updateDrawObjects();
 
-    void updateMeshMaterials(std::map<std::string, uint> const &mtlidlut) {
+    void updateMeshMaterials(std::map<std::string, uint16_t> const &mtlidlut) {
 
-        _mtlidlut = mtlidlut;
+        _mesh_materials = mtlidlut;
         camera_changed = true;
         updateDrawObjects();
     }
@@ -563,9 +581,9 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
         }
     }
 
-    std::set<shader_key_t> prepareShaderSet() {
+    std::map<std::string, std::set<ShaderMark>> prepareShaderSet() {
 
-        std::set<shader_key_t> shader_key_set;
+        std::map<std::string, std::set<ShaderMark>> shader_key_set;
 
         if (sceneJson.contains(brikey)) {
             auto& bri = sceneJson[brikey];
@@ -578,14 +596,17 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
                 const auto material_str = it.value().value("Material", "Default");
                 auto material_key = std::make_tuple(material_str, geo_type);
 
-                shader_key_set.insert( material_key );
+                if (shader_key_set.count(material_str)==0) {
+                    shader_key_set[material_str] = std::set<ShaderMark>();
+                }
+                shader_key_set[material_str].insert(geo_type);
             }
         }
 
         for (auto& mat : uniqueMatsForMesh) {
-            shader_key_set.insert( std::tuple {mat, ShaderMark::Mesh} );
+            auto& cached = shader_key_set[mat];
+            cached.insert( ShaderMark::Mesh );
         }
-
         return shader_key_set;
     }
 

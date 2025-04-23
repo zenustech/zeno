@@ -10,7 +10,6 @@ struct MeshDat {
 
     std::vector<std::string> mtlidList;
     std::string mtlid;
-    std::string instID;
     std::vector<float> verts;
     std::vector<uint> tris;
     std::vector<int> triMats;
@@ -30,7 +29,7 @@ struct MeshObject {
 
     std::vector<float3> vertices{};
     std::vector<uint3>  indices {};
-    std::vector<uint>   mat_idx {};
+    std::vector<uint16_t> mat_idx{};
 
     std::vector<float2> g_uv;
     std::vector<ushort3> g_clr, g_nrm, g_tan;
@@ -48,7 +47,7 @@ using raii = xinxinoptix::raii<T>;
     void resize(size_t tri_num, size_t vert_num) {
 
         indices.resize(tri_num);
-        mat_idx.resize(tri_num);
+        //mat_idx.resize(tri_num);
 
         vertices.resize(vert_num);
         g_nrm.resize(vert_num);
@@ -92,7 +91,7 @@ using raii = xinxinoptix::raii<T>;
         return std::vector { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
     }
 
-    void buildGas(OptixDeviceContext context, const std::map<std::string, uint>& mtlidlut) {
+    void buildGas(OptixDeviceContext context, const std::map<std::string, uint16_t>& mtlidlut) {
 
         auto buffers = this->aux();
         std::reverse(buffers.begin(), buffers.end());

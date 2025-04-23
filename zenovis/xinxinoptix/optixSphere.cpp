@@ -30,7 +30,8 @@ void buildUnitSphereGAS(const OptixDeviceContext& context,  OptixTraversableHand
     sphere_input.sphereArray.flags         = sphere_input_flags;
     sphere_input.sphereArray.numSbtRecords = 1;
 
-    buildXAS(context, accel_options, sphere_input, d_gas_output_buffer, gas_handle);
+    buildXAS(context, accel_options, sphere_input, d_gas_output_buffer, gas_handle, 8);
+    cudaMemset((char*)d_gas_output_buffer.handle+128-8, 0, 8);
 }
 
 void buildSphereGroupGAS(const OptixDeviceContext &context, SphereGroup& group) {

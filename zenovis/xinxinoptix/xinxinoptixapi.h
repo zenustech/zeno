@@ -27,7 +27,27 @@ enum ShaderMark {
     CURVE_CATROM,
 };
 
-using shader_key_t = std::tuple<std::string, ShaderMark>;
+typedef std::tuple<std::string, ShaderMark> shader_key_t;
+struct ByShaderKey
+{
+    bool operator()(const shader_key_t& a, const shader_key_t& b) const
+    {
+        auto& [a1, a2] = a;
+        auto& [b1, b2] = b;
+    
+        if (a2 < b2)
+            return true;
+        if (a2 > b2)
+            return false;
+
+        // if (a1=="Default")
+        //     return true;
+        if (b1=="Default")
+            return false;
+    
+        return a1 < b1;
+    }
+};
 
 static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
     { zeno::CurveType::QUADRATIC_BSPLINE, ShaderMark::CURVE_QUADRATIC },
@@ -40,6 +60,8 @@ static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
 };
 
 struct ShaderPrepared {
+    bool dirty = true;
+
     ShaderMark mark;
     std::string matid;
     std::string filename;
@@ -72,7 +94,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                     
 void updateRootIAS();
 void buildLightTree();
-void optixupdateend();
+void configPipeline(bool dirty);
 
 void set_window_size(int nx, int ny);
 void set_outside_random_number(int32_t outside_random_number);
