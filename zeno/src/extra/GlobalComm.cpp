@@ -428,9 +428,9 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             for (const auto& group : doc.GetObject()) {
                 if (group.name.GetString() == runtype) {
                     for (const auto& node : group.value.GetObject()) {
-                        const std::string& newFrameChangeInfo = node.value["stamp-change"].GetString();
-                        const int& newFrameBaseframe = node.value["stamp-base"].GetInt();
-                        const int& newFrameObjtype = node.value["stamp-objType"].GetInt();
+                        const std::string& newFrameChangeInfo = node.value.HasMember("stamp-change") ? node.value["stamp-change"].GetString() : "TotalChange" ;
+                        const int& newFrameBaseframe = node.value.HasMember("stamp-base") ? node.value["stamp-base"].GetInt() : -1;
+                        const int& newFrameObjtype = node.value.HasMember("stamp-objType") ? node.value["stamp-objType"].GetInt() : 0;
                         const std::string& newFrameObjkey = node.name.GetString();
                         const size_t& newFrameObjStartIdx = node.value.HasMember("startIndexInCache") ? std::stoull(node.value["startIndexInCache"].GetString()) : 0;
                         const size_t& newFrameObjLength = node.value.HasMember("ObjSize") ? std::stoull(node.value["ObjSize"].GetString()) : 0;
@@ -968,14 +968,18 @@ ZENO_API std::string GlobalComm::cacheTimeStamp(int frame, bool& exists)
                 std::ostringstream oss;
                 for (const auto& entry : std::filesystem::recursive_directory_iterator(dir)) {
                     if (std::filesystem::is_regular_file(entry)) {
-                        const std::filesystem::path& filePath = entry.path();
-                        auto ftime = std::filesystem::last_write_time(filePath);
+                        try {
+                            const std::filesystem::path& filePath = entry.path();
+                            auto ftime = std::filesystem::last_write_time(filePath);
 
-                        auto sctp = std::chrono::time_point_cast<std::chrono::milliseconds>(ftime);
-                        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(sctp.time_since_epoch()).count();
-
-
-                        oss << timestamp;
+                            auto sctp = std::chrono::time_point_cast<std::chrono::milliseconds>(ftime);
+                            auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(sctp.time_since_epoch()).count();
+                            oss << timestamp;
+                        }
+                        catch (const std::filesystem::filesystem_error& e) {
+                            exists = false;
+                            return "";
+                        }
                     }
                 }
                 exists = true;

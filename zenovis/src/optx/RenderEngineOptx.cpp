@@ -1833,6 +1833,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void assetLoad() {
         int a = 0;
+        defaultScene = {};
     }
 
     void run() {
