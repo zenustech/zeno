@@ -68,13 +68,13 @@ struct GlobalComm {
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
     ZENO_API std::string cacheTimeStamp(int frame, bool& exists);
-    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isBeginframe = true);
+    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isStampModeInit = false);
     bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool loadasset = false);
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
     static std::string getRunType(std::filesystem::path dir);
 private:
