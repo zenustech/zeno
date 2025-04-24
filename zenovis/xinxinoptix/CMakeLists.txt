@@ -25,6 +25,8 @@ target_sources(zenovis PRIVATE
   LightTree.h
   LightBounds.cpp
   LightBounds.h
+  LightsWrapper.h
+  
   ies/ies.cpp
   ies/ies.h
   TypeCaster.cpp

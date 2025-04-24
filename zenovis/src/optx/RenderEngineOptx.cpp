@@ -484,7 +484,6 @@ struct GraphicsManager {
                 if (is_sphere) {
 
                     auto& ud = prim_in_lslislSp->userData();
-                    printf("Before loading sphere %s for ray tracing... \n", key.c_str());
                     
                     auto mtlid = ud.get2<std::string>("mtlid", "Default");
                     auto instID = ud.get2<std::string>("instID", "Default");
@@ -519,8 +518,6 @@ struct GraphicsManager {
 
                         defaultScene.preload_sphere_transformed(objectName, mtlid, instID, sphere_transform);
                     }
-
-                    printf("After loading sphere %s for ray tracing... \n", key.c_str());
                     return;
                 }
 
@@ -1696,12 +1693,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 } else if (shape_enum != zeno::LightShape::Point) {
                     requireTriangLight = true;
                 }
-
                 if (requireSphereLight && requireTriangLight) {
                     break;
                 }
-                continue;
             }
+
+            const auto shaderCount = cached_shaders.size();
 
             if (requireTriangLight) {
                 auto tmp = std::make_shared<ShaderPrepared>();
@@ -1711,7 +1708,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 tmp->mark = ShaderMark::Mesh;
                 tmp->matid = "Light";
 
-                //cachedMaterial[ std::tuple{"Light", ShaderMark::Mesh} ] = tmp;
+                cached_shaders[ std::tuple{"Light", ShaderMark::Mesh} ] = tmp;
             }
 
             if (requireSphereLight) {
@@ -1722,8 +1719,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 tmp->mark = ShaderMark::Sphere;
                 tmp->matid = "Light";
                 
-                //cachedMaterial[ std::tuple{"Light", ShaderMark::Sphere} ] = tmp;
+                cached_shaders[ std::tuple{"Light", ShaderMark::Sphere} ] = tmp;
             }
+
+            ShaderDirty |=  cached_shaders.size() != shaderCount;
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
             allShaders.reserve(cached_shaders.size()+2);
@@ -1739,7 +1738,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     meshMatLUT[std::get<0>(key)] = idx;
             }
 
-            defaultScene.processVolumeBox(OptixUtil::context);
+            //defaultScene.processVolumeBox(OptixUtil::context);
             defaultScene.shader_indice_table = ShaderKeyIndex;
 
             if (matNeedUpdate)
@@ -1779,6 +1778,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cachedMeshMatLUT = meshMatLUT;
             }
 
+            if(lightNeedUpdate){
+                CppTimer timer; timer.tick();
+                xinxinoptix::buildLightTree();
+                timer.tock("Build LightTree");
+            }
+
             if (meshNeedUpdate || bMeshMatLUTChanged)
             {
                 defaultScene.updateMeshMaterials(meshMatLUT);
@@ -1799,16 +1804,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         }
 
-        if(lightNeedUpdate){
-            CppTimer timer; timer.tick();
-            xinxinoptix::buildLightTree();
-            timer.tock("Build LightTree");
-        }
-
         if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {
 
             lightNeedUpdate = false;
-            xinxinoptix::updateRootIAS();
+            //xinxinoptix::updateRootIAS();
 
             matNeedUpdate = false;
             meshNeedUpdate = false;
@@ -1833,7 +1832,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void assetLoad() {
-        int a = 0;
+
+        defaultScene = {};
+        cached_shaders = {};
+        OptixUtil::rtMaterialShaders.clear();
     }
 
     void run() {

@@ -43,8 +43,15 @@
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
+#include "LightsWrapper.h"
 
 using m3r4c = std::array<float, 12>;
+
+const m3r4c IdentityMatrix = { 
+    1,0,0,0, 
+    0,1,0,0, 
+    0,0,1,0 };
+
 const std::string brikey = "BasicRenderInstances";
 
 class Scene {
@@ -136,17 +143,72 @@ public:
         }
     }
 
+    LightsWrapper lightsWrapper;
+
+    void prepare_light_ias(OptixDeviceContext& context) {
+
+        std::vector<OptixInstance> optix_instances;
+
+        if (lightsWrapper.lightTrianglesGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 0;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
+        if (lightsWrapper.lightPlanesGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 1;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
+        if (lightsWrapper.lightSpheresGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Sphere);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 2;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
+        xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle);
+    }
+
     inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
         float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
 
-        m3r4c IdentityMatrix = { 
-            1,0,0,0, 
-            0,1,0,0, 
-            0,0,1,0 };
-
         auto gather = [&]() {
 
-            if (std::isinf(cam.x)) return;
+            if (std::isinf(cam.x)) { cam = {}; }
             
             auto CameraSapceMatrix = IdentityMatrix;
             CameraSapceMatrix[3] -= cam.x;
@@ -172,12 +234,23 @@ public:
                 instanced.push_back(opi);
             }
 
+            if (lightsWrapper.lightIasHandle != 0u) {
+                OptixInstance opi {};
+                opi.instanceId = instanced.size();
+                opi.visibilityMask = LightMatMask;
+                opi.traversableHandle = lightsWrapper.lightIasHandle;
+                memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
+                instanced.push_back(opi);
+
+                maxNodeDepth = max(maxNodeDepth, 3u);
+            }
+
             xinxinoptix::buildIAS(context, instanced, bufferRoot, handleRoot);
         };
 
-        if (cam.x != std::numeric_limits<float>::infinity()) { 
+        if (cam.x != std::numeric_limits<float>::infinity() || !sceneJson.contains(brikey) ) { 
             gather();
-            return; 
+            return;
         }
 
         dynamicRenderGroup = 0;
@@ -188,10 +261,10 @@ public:
         //nodeCacheStatic = {};
         //nodeDepthCacheStatic = {};
 
+        processVolumeBox(context);
         prepare_mesh_gas(context);
         prepare_sphere_gas(context);
-        if (!sceneJson.contains(brikey)) return;
-
+        
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
 
         std::unordered_map<std::string, uint64_t> candidates{};
@@ -294,7 +367,7 @@ public:
                             decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
         {
             if (candidates.count(obj_key)) { //leaf node
-                test_depth = 0;
+                test_depth = 1;
                 return candidates[obj_key];
             }
 
@@ -444,7 +517,8 @@ public:
             staticRenderGroup = groupTask("StaticRenderGroups", nodeCacheStatic, nodeDepthCacheStatic);
         }
         dynamicRenderGroup = groupTask("DynamicRenderGroups", nodeCache, nodeDepthCache);
-        maxNodeDepth = 2 + max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
+        maxNodeDepth = max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
+        maxNodeDepth += 1;
         gather();
     }
 

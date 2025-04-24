@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optix.h>
-#include "raiicuda.h"
+#include <raiicuda.h>
 
 #include "XAS.h"
 

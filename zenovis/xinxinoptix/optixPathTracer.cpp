@@ -153,7 +153,6 @@ using Vertex = float3;
 struct PathTracerState
 {
     raii<CUdeviceptr> auxHairBuffer;
-    raii<CUdeviceptr> volumeBoundsBuffer;
 
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
@@ -236,35 +235,6 @@ static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib,
             compactAttrib[offset[i]] = kvs[i].first;
     }
 }
-
-struct LightsWrapper {
-    std::vector<float3> _planeLightGeo;
-    std::vector<float4> _sphereLightGeo;
-    std::vector<float3> _triangleLightGeo;
-    std::vector<GenericLight> g_lights;
-
-    OptixTraversableHandle   lightPlanesGas{};
-    raii<CUdeviceptr>  lightPlanesGasBuffer{};
-
-    OptixTraversableHandle  lightSpheresGas{};
-    raii<CUdeviceptr> lightSpheresGasBuffer{};
-
-    OptixTraversableHandle  lightTrianglesGas{};
-    raii<CUdeviceptr> lightTrianglesGasBuffer{};
-
-    raii<CUdeviceptr> lightBitTrailsPtr;
-    raii<CUdeviceptr> lightTreeNodesPtr;
-    raii<CUdeviceptr> lightTreeDummyPtr;
-
-    raii<CUdeviceptr> triangleLightCoords;
-    raii<CUdeviceptr> triangleLightNormals;
-
-    void reset() { *this = {}; }
-
-} lightsWrapper;
-
-
-
 
 
 //------------------------------------------------------------------------------
@@ -399,7 +369,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
-    state.params.num_lights = lightsWrapper.g_lights.size();
+    state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
 
         CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
@@ -491,77 +461,11 @@ void updateRootIAS()
     uint optix_instance_idx = 0u;
     uint sbt_offset = 0u;
 
-    auto firstVolumeInstance = optix_instance_idx+1;
-    std::vector<uint8_t> volumeBounds(defaultScene._vol_boxs.size()); 
-
-    state.volumeBoundsBuffer.reset();
-
-    if (!volumeBounds.empty()) {
-        size_t byte_size = sizeof(volumeBounds[0]) * volumeBounds.size();
-        state.volumeBoundsBuffer.resize(byte_size);
-        cudaMemcpy((void*)state.volumeBoundsBuffer.handle, volumeBounds.data(), byte_size, cudaMemcpyHostToDevice);
-
-        state.params.volumeBounds = (void*)state.volumeBoundsBuffer.handle;
-        state.params.firstVolumeOffset = firstVolumeInstance;
-    }
-
     auto op_index = optix_instances.size();
 
     uint32_t MAX_INSTANCE_ID;
     optixDeviceContextGetProperty( OptixUtil::context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
     state.params.maxInstanceID = MAX_INSTANCE_ID;
-
-  	//process light
-	if (lightsWrapper.lightTrianglesGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
-		auto shader_index = defaultScene.shader_indice_table[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID-2;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
-
-	if (lightsWrapper.lightPlanesGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
-		auto shader_index = defaultScene.shader_indice_table[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID-1;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
-
-	if (lightsWrapper.lightSpheresGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::tuple(std::string("Light"), ShaderMark::Sphere);
-		auto shader_index = defaultScene.shader_indice_table[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
 
     std::vector<CurveGroupAux> auxHair;
     state.params.hairInstOffset = op_index;
@@ -736,8 +640,9 @@ static void createSBT( PathTracerState& state )
             {
                 rec.data.textures[t] = shader_ref.getTexture(t);
             }
-
+            if (!shader_ref.parameters.empty())
             {
+
                 auto j = nlohmann::json::parse(shader_ref.parameters);
 
                 if (!j["vol_depth"].is_null()) {
@@ -1091,7 +996,7 @@ void update_procedural_sky(
 }
 
 static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
-    auto& geo = lightsWrapper._triangleLightGeo;
+    auto& geo = defaultScene.lightsWrapper._triangleLightGeo;
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
@@ -1099,7 +1004,7 @@ static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
-    auto& geo = lightsWrapper._planeLightGeo;
+    auto& geo = defaultScene.lightsWrapper._planeLightGeo;
 
     geo.push_back(make_float3(vert0.x, vert0.y, vert0.z));
     geo.push_back(make_float3(vert1.x, vert1.y, vert1.z));
@@ -1113,7 +1018,7 @@ static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 static void addLightSphere(float3 center, float radius) 
 {
     float4 vt {center.x, center.y, center.z, radius};
-    lightsWrapper._sphereLightGeo.push_back(vt);
+    defaultScene.lightsWrapper._sphereLightGeo.push_back(vt);
 }
 
 static int uniformBufferInitialized = false;
@@ -1272,6 +1177,7 @@ void buildLightTree() {
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
 
+    auto& lightsWrapper = defaultScene.lightsWrapper;
     lightsWrapper.reset();
 
     std::vector<LightDat*> sortedLights; 
@@ -1482,6 +1388,8 @@ void buildLightTree() {
                 &dummy, sizeof( dummy ), cudaMemcpyHostToDevice) );
         state.params.lightTreeSampler = lightTreeDummyPtr.handle;
     }
+
+    defaultScene.prepare_light_ias(OptixUtil::context);
 }
 
 inline std::map<std::tuple<std::string, ShaderMark>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
@@ -1670,6 +1578,8 @@ OptixUtil::_compile_group.wait();
         OptixUtil::_compile_group.run([&shaders, i] () {
 
             auto fallback = shaders[i]->matid == "Default";
+            fallback |= shaders[i]->matid == "Light";
+            
             //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
             {
@@ -2118,7 +2028,7 @@ void optixCleanup() {
     state.plights = {};
     state.params.plights_ptr = 0u;
 
-    lightsWrapper.reset();
+    defaultScene.lightsWrapper.reset();
     state.finite_lights_ptr.reset();
     
     state.params.sky_strength = 1.0f;

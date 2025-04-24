@@ -13,16 +13,12 @@
 #include "Sampling.h"
 #include "LightTree.h"
 
-static __inline__ __device__ bool checkLightGAS(uint instanceId) {
-    return ( instanceId >= params.maxInstanceID-2 );
-}
-
 static __inline__ __device__ bool isPlaneLightGAS(uint instanceId) {
-    return ( instanceId == params.maxInstanceID-1 );
+    return ( instanceId == 1 );
 }
 
 static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
-    return ( instanceId == params.maxInstanceID-2 );
+    return ( instanceId == 0 );
 }
 
 extern "C" __global__ void __closesthit__radiance()
@@ -41,9 +37,8 @@ extern "C" __global__ void __closesthit__radiance()
     // auto zenotex = rt_data->textures;
 
     auto instanceId = optixGetInstanceId();
-    auto isLightGAS = checkLightGAS(instanceId);
 
-    if (params.num_lights == 0 || !isLightGAS) {
+    if (params.num_lights == 0) {
         prd->depth += 1;
         prd->done = true;
         return;
@@ -297,11 +292,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     // const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     auto instanceId = optixGetInstanceId();
-    auto isLightGAS = checkLightGAS(instanceId);
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
 
-    if (params.num_lights == 0 || !isLightGAS) {
+    if (params.num_lights == 0) {
         optixIgnoreIntersection();
         return;
     }
@@ -324,7 +318,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
 
     if (light_index == prd->lightIdx) {
-        //printf("maxDistance = %f tmax = %f \n", prd->maxDistance, optixGetRayTmax());
         ignore = true;
     }
 

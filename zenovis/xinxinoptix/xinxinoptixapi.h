@@ -42,7 +42,13 @@ struct ByShaderKey
 
         // if (a1=="Default")
         //     return true;
-        if (b1=="Default")
+        if (b1 == "Default")
+            return false;
+        if (a1 == "Light")
+            return false;
+        if (a1 < b1 || b1=="Light")
+            return true;
+        else
             return false;
     
         return a1 < b1;
