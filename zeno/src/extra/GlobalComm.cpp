@@ -35,7 +35,7 @@ enum class ObjectType : int32_t {
 namespace zeno {
 
 std::vector<std::filesystem::path> cachepath(4);
-void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string runtype, std::string fileName, bool isBeginframe) {
+void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string runtype, std::string fileName, bool isStampModeInit) {
     if (cachedir.empty()) return;
 
     const auto& lasttwo = [](const std::string& str)->int {
@@ -50,7 +50,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         return -1;
     };
 
-    std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
+    std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + (isStampModeInit ? "data" : std::to_string(1000000 + frameid).substr(1)));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
     {
         log_critical("can not create path: {}", dir);
@@ -70,9 +70,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     if (hasStampNode) {
         std::filesystem::path stampInfoPath = dir / "stampInfo.txt";
         std::map<std::string, std::tuple<std::string, int>> lastframeStampinfo;
-        std::string docKey = runtype == "LoadAsset" ? "RunAll" : runtype;
 
-        if (!isBeginframe) {
+        if (!isStampModeInit && frameid != beginFrameNumber) {
             rapidjson::Document doc;
             std::filesystem::path lastframeStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid - 1).substr(1)) / "stampInfo.txt";
             std::ifstream file(lastframeStampPath);
@@ -82,7 +81,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 doc.Parse(buffer.str().c_str());
                 if (doc.IsObject()) {
                     for (const auto& group : doc.GetObject()) {
-                        if (group.name.GetString() == docKey) {
+                        if (group.name.GetString() == runtype) {
                             for (const auto& node : group.value.GetObject()) {
                                 const std::string& key = node.name.GetString();
                                 lastframeStampinfo.insert({ key.substr(0, lasttwo(key)), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt()) });
@@ -105,21 +104,23 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         if (currFrameStampInfodoc.IsObject()) {
             for (auto& member : currFrameStampInfodoc.GetObject()) {
                 const char* key = member.name.GetString();
-                if (std::string(key) != docKey) {
-                    const rapidjson::Value& value = member.value;
+                if (std::string(key) != runtype) {
+                        const rapidjson::Value& value = member.value;
                     writer.Key(key);
-                    value.Accept(writer);
+                        value.Accept(writer);
+                    }
                 }
             }
-        }
-        writer.Key(docKey.c_str());
+        writer.Key(runtype.c_str());
         writer.StartObject();
         for (auto& [key, obj] : objs) {
             /*if (isBeginframe) {
                 obj->userData().set2("stamp-change", "TotalChange");
             }*/
-            const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
-            const int& baseframe = stamptag == "TotalChange" || isBeginframe ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, lasttwo(key))]);
+            std::string oldStampChange = obj->userData().get2<std::string>("stamp-change", "TotalChange");
+
+            std::string stamptag = isStampModeInit ? "TotalChange" : oldStampChange;
+            int baseframe = isStampModeInit ? -9999 : (stamptag == "TotalChange" || frameid == beginFrameNumber ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, lasttwo(key))]));
             obj->userData().set2("stamp-base", baseframe);
             obj->userData().set2("stamp-change", stamptag);
 
@@ -151,10 +152,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 
             //编码obj
             if (stamptag == "UnChanged") {
-                if (!isBeginframe) {
-                    writer.EndObject();
-                    continue;//不是起始帧的unchange，不输出这个obj
-                }
+                writer.EndObject();
+                continue;
             }
             else if (stamptag == "DataChange") {
                 int baseframe = obj->userData().get2<int>("stamp-base", -1);
@@ -203,6 +202,9 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 keys[idx].push_back('\a');
                 keys[idx].append(key);
                 poses[idx].push_back(bufsize);
+            }
+            if (isStampModeInit) {
+                obj->userData().set2("stamp-change", oldStampChange);
             }
 
             //写出stampinfo的obj尺寸
@@ -287,7 +289,9 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         std::copy(bufCaches[i].begin(), bufCaches[i].end(), oit);
     }
 
-    objs.clear();
+    if (!isStampModeInit) {
+        objs.clear();
+    }
 }
 
 bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string& runtype, std::string fileName) {
@@ -389,7 +393,7 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
     }
 }
 
-bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string& runtype)
+bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool loadasset)
 {
     const auto& lasttwo = [](const std::string& str)->int {
         int count = 0;
@@ -404,7 +408,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     };
     bool loadPartial = false;
 
-    auto dir = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1);
+    auto dir = std::filesystem::u8path(cachedir) / (loadasset ? "data" : std::to_string(1000000 + frameid).substr(1));
     //runtype = getRunType(dir);
 
     std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>> currentFrameStampinfo;
@@ -413,7 +417,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         currentFrameStampinfo = it->second;
     }
 
-    std::filesystem::path frameStampPath = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
+    std::filesystem::path frameStampPath = dir / "stampInfo.txt";
     std::ifstream file(frameStampPath);
     if (file) {
         std::stringstream buffer;
@@ -430,7 +434,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                         const std::string& newFrameObjkey = node.name.GetString();
                         const size_t& newFrameObjStartIdx = node.value.HasMember("startIndexInCache") ? std::stoull(node.value["startIndexInCache"].GetString()) : 0;
                         const size_t& newFrameObjLength = node.value.HasMember("ObjSize") ? std::stoull(node.value["ObjSize"].GetString()) : 0;
-                
+
                         //const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
                         const std::string& nodeid = newFrameObjkey.substr(0, lasttwo(newFrameObjkey));
                         const std::string& newFrameChangeHint = node.value.HasMember("stamp-dataChange-hint") ? node.value["stamp-dataChange-hint"].GetString() : "";
@@ -457,7 +461,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
         }
     }
-    const auto& load = [&lasttwo, &dir, &newFrameStampInfo](std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&lasttwo, &dir, &newFrameStampInfo](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return nullptr;
 
@@ -519,7 +523,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         return true;
     };
     //if (!loadPartial) {
-        bool ret = load(cacheFramePath, frameid, objs, runtype);
+        bool ret = load(cacheFramePath, objs, runtype);
         for (auto& [key, tup] : newFrameStampInfo) {
             if (std::get<0>(tup) == "UnChanged") {
                 std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
@@ -532,7 +536,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     //}
 #if 0
     else {
-        bool ret = load(cacheFramePath, frameid, objs, runtype);
+        bool ret = load(cacheFramePath, objs, runtype);
         if (ret) {
             for (auto& [key, tup] : newFrameStampInfo) {
                 int newframeObjBaseframe = std::get<1>(tup);
@@ -671,7 +675,13 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype, "", frameid == beginFrameNumber);
+
+        if (frameid == beginFrameNumber) {
+            if (zeno::getSession().userData().has("graphHasStampNode")) {
+                toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype, "", true);
+            }
+        }
+        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype, "");
     }
 }
 
@@ -755,12 +765,12 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
             if (std::filesystem::exists(stampInfoPath)) {
                 if (m_inCacheFrames.empty()) {//重新运行了
                     if (!assetsInitialized || runtype == "LoadAsset") {//
-                        bool ret = fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, runtype);
+                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, true);
                         if (!ret)
                             return nullptr;
-                        for (auto& [k, obj] : m_frames[frameIdx].view_objects.m_curr) {
-                            obj->userData().set2("stamp-change", "TotalChange");
-                        }
+                        //for (auto& [k, obj] : m_frames[frameIdx].view_objects.m_curr) {
+                        //    obj->userData().set2("stamp-change", "TotalChange");
+                        //}
                         if (!assetsInitialized) {
                             assetsInitialized = true;
                         } else if (runtype == "LoadAsset") {
@@ -783,7 +793,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                     for (auto& [objPtrId, flag] : sceneLoadedFlag) {
                         std::get<2>(flag) = true;
                     }
-                    runtype = "RunAll"; //切帧要加载新帧的全部
+                    runtype = runtype != "LoadAsset" && runtype != "RunAll" ? "RunAll" : runtype; //切帧要加载新帧的全部
                     bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype);
                     if (!ret)
                         return nullptr;
