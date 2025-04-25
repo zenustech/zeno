@@ -960,11 +960,16 @@ ZENO_API void GlobalComm::removeCachePath()
 
 ZENO_API std::string GlobalComm::cacheTimeStamp(int frame, bool& exists)
 {
+    std::lock_guard lck(m_mtx);
+    int framesize = frame - beginFrameNumber;
+    if (m_frames.size() <= framesize || m_frames[framesize].frame_state != FRAME_COMPLETED) {
+        return "";
+    }
     auto dir = std::filesystem::u8path(cacheFramePath) / std::to_string(1000000 + frame).substr(1);
     if (std::filesystem::exists(dir)) {
-        if (std::filesystem::begin(std::filesystem::directory_iterator(dir)) != std::filesystem::end(std::filesystem::directory_iterator())) {
+        if (!std::filesystem::is_empty(dir)) {
             auto lockfilename = zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
-            if (!std::filesystem::exists(lockfilename)) {
+            if (!std::filesystem::exists(std::filesystem::u8path(cacheFramePath) / lockfilename)) {
                 std::ostringstream oss;
                 for (const auto& entry : std::filesystem::recursive_directory_iterator(dir)) {
                     if (std::filesystem::is_regular_file(entry)) {
@@ -977,13 +982,17 @@ ZENO_API std::string GlobalComm::cacheTimeStamp(int frame, bool& exists)
                             oss << timestamp;
                         }
                         catch (const std::filesystem::filesystem_error& e) {
-                            exists = false;
                             return "";
                         }
                     }
                 }
-                exists = true;
-                return oss.str();
+                std::string res = oss.str();
+                if (res.empty()) {
+                    return "";
+                } else {
+                    exists = true;
+                    return oss.str();
+                }
             }
         }
     }
