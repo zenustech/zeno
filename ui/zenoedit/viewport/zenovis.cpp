@@ -58,7 +58,7 @@ void Zenovis::paintGL()
         rememberedFrameid = frameid;
     } else {
         bool cacheChanged = false;
-        if (global_frame_brief.find(frameid) == global_frame_brief.end()) {
+        if (global_frame_brief.count(frameid) == 0) {
             cacheChanged = true;
         }
         else if (global_frame_brief[frameid] != frame_brief_curr) {

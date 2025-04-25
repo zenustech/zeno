@@ -71,7 +71,7 @@ public:
     //bool m_bAddPoint = false;
     bool m_loopPlaying = false;
     int rememberedFrameid = -99999;
-    std::map<int, std::string> global_frame_brief;
+    std::unordered_map<int, std::string> global_frame_brief;
 };
 
 #endif
