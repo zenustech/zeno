@@ -67,6 +67,7 @@ struct ShadowPRD {
 
 struct RadiancePRD
 {
+    unsigned int offset = 0;
     bool test_distance;
     float maxDistance;
     // TODO: move some state directly into payload registers?

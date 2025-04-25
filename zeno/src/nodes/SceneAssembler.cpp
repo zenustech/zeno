@@ -604,6 +604,7 @@ static void get_local_matrix_map(
 }
 
 struct FormSceneTree : zeno::INode {
+    int inputObjType = 0;
     void apply() override {
         auto sceneTree = std::make_shared<SceneObject>();
         auto scene_json = get_input2<JsonObject>("scene_info");
@@ -618,6 +619,9 @@ struct FormSceneTree : zeno::INode {
                 int beginframe = session->globalComm->beginFrameNumber;
                 std::string mode = get_input2<std::string>("stampMode");
                 if (mode == "UnChanged") {
+                    if (currframe != beginframe) {
+                        p = session->globalComm->constructEmptyObj(inputObjType);
+                    }
                     p->userData().set2("stamp-change", "UnChanged");
                 } else if (mode == "TotalChange") {
                     p->userData().set2("stamp-change", "TotalChange");

@@ -717,7 +717,7 @@ extern "C" __global__ void __closesthit__radiance()
     flag = DisneyBSDF::scatterEvent;
 
     //sssColor = mix(basecolor, sssColor, subsurface);
-
+    if(prd->depth>1 && mats.roughness>0.4) mats.specular = 0.0f;
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
                 prd->eventseed,
@@ -758,6 +758,8 @@ extern "C" __global__ void __closesthit__radiance()
     if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
     }
+    if(prd->depth>=3 && prd->hit_type==DIFFUSE_HIT)
+        prd->done = true;
 
 
     prd->passed = false;
@@ -932,11 +934,11 @@ extern "C" __global__ void __closesthit__radiance()
         return lbrdf;
 
     };
-
+    vec3 auxRadiance = {};
     auto taskAux = [&](const vec3& radiance) {
-        prd->radiance_d *= radiance;
-        prd->radiance_s *= radiance;
-        prd->radiance_t *= radiance;
+        auxRadiance = auxRadiance + radiance;
+        auxRadiance = auxRadiance + radiance;
+        auxRadiance = auxRadiance + radiance;
     };
 
     ShadowPRD shadowPRD {};
@@ -973,7 +975,22 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->lightmask = DefaultMatMask;
     shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
-    DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+    if(prd->hit_type==DIFFUSE_HIT && prd->depth <=1 ) {
+        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        prd->radiance *= 0.25f;
+        prd->radiance_d *= auxRadiance * 0.25;
+        prd->radiance_s *= auxRadiance * 0.25;
+        prd->radiance_t *= auxRadiance * 0.25;
+    }
+    else {
+        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        prd->radiance_d *= auxRadiance;
+        prd->radiance_s *= auxRadiance;
+        prd->radiance_t *= auxRadiance;
+    }
     if(mats.shadowReceiver > 0.5f)
     {
       auto radiance = length(prd->radiance);

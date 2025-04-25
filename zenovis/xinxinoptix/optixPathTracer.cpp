@@ -394,10 +394,10 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
+static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
     // Launch
-    uchar4* result_buffer_data = output_buffer.map();
+    //uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
@@ -421,7 +421,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     ) );
 
         //timer.tock("frame time");
-        output_buffer.unmap();
+        //output_buffer.unmap();
 
     try {
         CUDA_SYNC_CHECK();
@@ -2001,16 +2001,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
+    uchar4* result_buffer_data = output_buffer_o->map();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         if (ud.get2<bool>("viewport-optix-pause", false)) {
             continue;
         }
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state, denoise);
+        launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
-
+    output_buffer_o->unmap();
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
