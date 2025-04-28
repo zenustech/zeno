@@ -122,10 +122,24 @@ ZENDEFNODE(Stamp, {
     {"lifecycle"}
 });
 
-struct SetToMatrix : zeno::INode {
+struct SetRuntype : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
+            if (has_input("RunType")) {
+                std::string runttype = get_input2<std::string>("RunType");
+                if (runttype == "normal") {
+                    obj->userData().set2("objRunType", "normal");
+                } else if (runttype == "lightCamera") {
+                    obj->userData().set2("objRunType", "lightCamera");
+                } else if (runttype == "material") {
+                    obj->userData().set2("objRunType", "material");
+                } else if (runttype == "matrix") {
+                    obj->userData().set2("objRunType", "matrix");
+                } else {
+                    obj->userData().set2("objRunType", "normal");
+                }
+            }
             set_output("output", std::move(obj));
         }
         else {
@@ -134,8 +148,10 @@ struct SetToMatrix : zeno::INode {
     }
 };
 
-ZENDEFNODE(SetToMatrix, {
-    {"input"},
+ZENDEFNODE(SetRuntype, {
+    {"input",
+        {"enum normal lightCamera material matrix", "RunType", "normal"},
+    },
     {"output"},
     {},
     {"lifecycle"},

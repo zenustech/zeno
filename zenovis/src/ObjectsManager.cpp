@@ -64,6 +64,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             inserted = true;
         }
     }
+#if 0
     if (runtype != "RunAll" && runtype != "LoadAsset") {
         std::set<std::string> keys;
         for (auto& [k, _] : objs) {
@@ -78,6 +79,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             }
         }
     }
+#endif
     return inserted;
 }
 
