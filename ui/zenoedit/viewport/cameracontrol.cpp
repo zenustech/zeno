@@ -102,7 +102,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
-    if (event->button() == Qt::MiddleButton || event->button() == Qt::RightButton) {
+    if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
             m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
@@ -255,6 +255,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
     }
 
+    bool use_right_button = event->buttons() & Qt::MouseButton::RightButton;
+
     if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
         // zoom
         if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false) == false) {
@@ -281,16 +283,16 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
-    else if (!bTransform && ((event->buttons() & (rotateButton | moveButton)) || (event->buttons() & Qt::MouseButton::RightButton))) {
+    else if (!bTransform && ((event->buttons() & (rotateButton | moveButton)) || use_right_button)) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
         //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         Qt::KeyboardModifiers modifiers = event->modifiers();
-        if (((moveKey == modifiers) && (event->buttons() & moveButton)) || (event->buttons() & Qt::MouseButton::RightButton)) {
+        if (((moveKey == modifiers) && (event->buttons() & moveButton)) || use_right_button) {
             // translate
-            if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
+            if (!use_right_button && zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
                 auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
                 if (new_pos.has_value()) {
@@ -435,6 +437,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
                 auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
                 if (hit_posWS.has_value()) {
                     auto pivot = hit_posWS.value();
+                    setPivot(pivot);
                     auto new_pos = (pos - pivot) * scale + pivot;
                     setPos(new_pos);
                 }

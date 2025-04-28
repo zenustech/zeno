@@ -932,7 +932,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_pause->setCheckable(true);
         pToolLayout->addWidget(m_pause);
         m_matNeedUpdate = new QCheckBox(tr("UpdateMat"));
-        m_matNeedUpdate->setChecked(true);
+        m_matNeedUpdate->setChecked(false);
         m_matNeedUpdate->setStyleSheet("color: white;");
         pToolLayout->addWidget(m_matNeedUpdate);
     }
