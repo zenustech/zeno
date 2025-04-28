@@ -1467,62 +1467,57 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             };
 
             bool ShaderDirty = false;
-
-            if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
+            std::vector<std::string> dirtyShaderNames {};
+            const auto shaderCount = cached_shaders.size();
+            
+            bool requireTriangObj = false;
+            bool requireSphereObj = false;
+            bool requireVolumeObj = false;
+            
+            if ( matNeedUpdate ) {
                 required_shader_names = defaultScene.prepareShaderSet();
 
-                const auto shaderCount = cached_shaders.size();
-
+                dirtyShaderNames.clear();
+                dirtyShaderNames.reserve(matMap.size());
+            
                 for (const auto& [key, value] : required_shader_names) {
 
-                    bool use_default = matMap.count(key) == 0;                       
+                    bool is_default = matMap.count(key) == 0;
+                    bool is_dirty = false;
+
+                    if (!is_default) {
+                        auto& shader_ref = matMap[key]; 
+                        is_dirty = shader_ref->dirty;
+                        if (is_dirty) {
+                            dirtyShaderNames.push_back(key);
+                        }
+                    }
 
                     for (const auto& mark : value) {
+
+                        if (mark == ShaderMark::Mesh)
+                            requireTriangObj = true;
+                        if (mark == ShaderMark::Sphere)
+                            requireSphereObj = true;
+                        if (mark == ShaderMark::Volume)
+                            requireVolumeObj = true;
+
                         auto shader_key = std::tuple {key, mark};
                         //auto default_key = std::tuple {"Default", mark};
                         
-                        if (use_default) {
+                        if (is_default) {
                             auto shader_ref = cached_shaders[shader_key];
-                            if (shader_ref==nullptr || shader_ref->dirty)
+                            if (shader_ref==nullptr) {
                                 cached_shaders[shader_key] = make_default_shader(mark);
-                        } else {
-                            auto& shader_ref = matMap.at(key);
-                            if (shader_ref->dirty) {
-                                cached_shaders[shader_key] = nullptr;
                                 ShaderDirty = true;
-                            } // dirty
+                            }
+                        } else {
+                            if (!is_dirty) continue;                             
+                            cached_shaders[shader_key] = nullptr;
+                            ShaderDirty = true;
                         }
                     }
                 }
-
-                ShaderDirty |= (cached_shaders.size() != shaderCount);
-
-                // for (auto& [key, _] : hair_xxx_cache) 
-                // {
-                //     auto& [filePath, mode, mtid] = key;
-
-                //     auto ctype = (zeno::CurveType)mode;
-
-                //     if (cachedCurvesMaterials.count(mtid) > 0) {
-                //         auto& ref = cachedCurvesMaterials.at(mtid);
-                //         ref.push_back( ctype );
-                //         continue;
-                //     }
-                //     cachedCurvesMaterials[mtid] = { ctype };
-                // }
-
-                // for (auto& [key, ele] : curveGroupCache) {
-
-                //     auto ctype = ele->curveType;
-                //     auto mtlid = ele->mtlid;
-
-                //     if (cachedCurvesMaterials.count(mtlid) > 0) {
-                //         auto& ref = cachedCurvesMaterials.at(mtlid);
-                //         ref.push_back( ctype );
-                //         continue;
-                //     }
-                //     cachedCurvesMaterials[mtlid] = { ctype };
-                // }
  
             } // preserve material names for materials-only updating case
 
@@ -1587,10 +1582,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
-            for(auto const &[matkey, mtldet] : matMap)
-            {       
+            for(auto const &shaderName : dirtyShaderNames)
+            {   
+                //if (matMap.count(shaderName) == 0) continue;
+                auto mtldet  = matMap[shaderName];
+
                 if ( !mtldet->dirty ) continue;
-                if ( required_shader_names.count(mtldet->mtlidkey) == 0 ) continue;
                 mtldet->dirty = false;
 
                     const bool isVol = mtldet->parameters.find("vol") != std::string::npos;
@@ -1656,29 +1653,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         cached_shaders[this_key] = std::make_shared<ShaderPrepared>(shaderP);
                     } else {
 
-                        auto reuiredSet = required_shader_names.at(mtldet->mtlidkey);
+                        auto& reuiredSet = required_shader_names.at(mtldet->mtlidkey);
                         
                         for (auto& mark : reuiredSet) {
                             shaderP.mark = mark;
-
                             auto _shader_key = std::tuple{mtldet->mtlidkey, mark};                            
                             cached_shaders[_shader_key] = std::make_shared<ShaderPrepared>(shaderP);
                         }
                     }
-            }
-
-            bool requireTriangObj = false;
-            bool requireSphereObj = false;
-            bool requireVolumeObj = false;
-
-            for (const auto& [key, shader] : cached_shaders) {
-                const auto [k, v] = key;
-                if (v == ShaderMark::Mesh)
-                    requireTriangObj = true;
-                if (v == ShaderMark::Sphere)
-                    requireSphereObj = true;
-                if (v == ShaderMark::Volume)
-                    requireVolumeObj = true;
             }
 
             bool requireSphereLight = false;
@@ -1698,31 +1680,27 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
-            const auto shaderCount = cached_shaders.size();
+            const auto prepareLightShader = [&](ShaderMark smark) {
+                const auto shader_key = std::tuple{ "Light", smark };
+                if (cached_shaders.count(shader_key)>0) return;
 
-            if (requireTriangLight) {
                 auto tmp = std::make_shared<ShaderPrepared>();
 
                 tmp->filename = _light_shader_template.name;
                 tmp->callable = _default_callable_template.shadtmpl;
-                tmp->mark = ShaderMark::Mesh;
-                tmp->matid = "Light";
-
-                cached_shaders[ std::tuple{"Light", ShaderMark::Mesh} ] = tmp;
-            }
-
-            if (requireSphereLight) {
-                auto tmp = std::make_shared<ShaderPrepared>();
-
-                tmp->filename = _light_shader_template.name;
-                tmp->callable = _default_callable_template.shadtmpl;
-                tmp->mark = ShaderMark::Sphere;
+                tmp->mark = smark;
                 tmp->matid = "Light";
                 
-                cached_shaders[ std::tuple{"Light", ShaderMark::Sphere} ] = tmp;
-            }
+                cached_shaders[shader_key] = tmp;
+                ShaderDirty = true;
+            };
 
-            ShaderDirty |=  cached_shaders.size() != shaderCount;
+            if (requireTriangLight)
+                prepareLightShader(ShaderMark::Mesh);
+            if (requireSphereLight)
+                prepareLightShader(ShaderMark::Sphere);
+
+            ShaderDirty |= cached_shaders.size() != shaderCount;
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
             allShaders.reserve(cached_shaders.size()+2);
@@ -1756,16 +1734,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags);
                 ShaderDirty |= refresh;
 
-                if (refresh) {
-                    for (auto& shader : allShaders)
-                        shader->dirty = true;
-                }
-                
-                xinxinoptix::updateShaders(allShaders, 
+                if (ShaderDirty) {
+                    xinxinoptix::updateShaders(allShaders, 
                                                     requireTriangObj, requireTriangLight, 
                                                     requireSphereObj, requireSphereLight, 
                                                     requireVolumeObj, usesCurveTypeFlags, refresh);
-                                                    
+                }                                    
                 defaultScene.prepareVolumeAssets();
             }
 
@@ -1804,15 +1778,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         }
 
-        if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {
-
             lightNeedUpdate = false;
-            //xinxinoptix::updateRootIAS();
-
+           
             matNeedUpdate = false;
             meshNeedUpdate = false;
             staticNeedUpdate = false;
-        }
 
 #ifdef OPTIX_BASE_GL
         int targetFBO = 0;

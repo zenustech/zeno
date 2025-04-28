@@ -1572,7 +1572,7 @@ OptixUtil::_compile_group.wait();
     for(int i=0; i<task_count; ++i)
     {
         auto& shader_ref = OptixUtil::rtMaterialShaders[i];
-        if (!shader_ref.dirty) continue;
+        if (!refresh && !shader_ref.dirty) continue;
         shader_ref.dirty = false;
 
         OptixUtil::_compile_group.run([&shaders, i] () {
