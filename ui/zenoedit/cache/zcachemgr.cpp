@@ -30,7 +30,8 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
         m_spTmpCacheDir->setAutoRemove(true);
         lastRunCachePath = QDir(m_spTmpCacheDir->path());
         m_isNew = false;
-    } else {
+    }
+    else {
         QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
         bool ret = dirCacheRoot.mkdir(tempDirPath);
         if (ret) {
