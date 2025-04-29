@@ -925,6 +925,12 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                     }
                 }
             }
+        } else {
+            if (currentFrameNumber != frameid) {
+                for (auto& [objPtrId, flag] : sceneLoadedFlag) {
+                    std::get<2>(flag) = true;
+                }
+            }
         }
     }
     currentFrameNumber = frameid;
