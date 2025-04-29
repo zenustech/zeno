@@ -43,12 +43,12 @@ template <class T> struct raii_traits {
     }
 
     static void allocate(CUdeviceptr **pp, size_t n) {
-        CUDA_CHECK(cudaMalloc(pp, n));
+        CUDA_CHECK(cudaMallocAsync(pp, n));
     }
 
     static void deallocate(CUdeviceptr p) {
         if(p) {
-            CUDA_CHECK(cudaFree((void *)p));
+            CUDA_CHECK(cudaFreeAsync((void *)p, 0));
         }
     }
 };
@@ -104,7 +104,7 @@ struct raii {
             if (managed)
                 CUDA_CHECK(cudaMallocManaged(reinterpret_cast<void **>(&reset()), newSize));
             else
-                CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
+                CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void **>(&reset()), newSize, 0));
             size = newSize;
             capacity = newSize;
             return true;

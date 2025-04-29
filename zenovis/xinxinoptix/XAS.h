@@ -45,8 +45,8 @@ namespace xinxinoptix {
                         &xas_buffer_sizes
                         ) );
 
-            temp_buffer_size = roundUp<size_t>(xas_buffer_sizes.tempSizeInBytes, 128u);
-            output_buffer_size = roundUp<size_t>( xas_buffer_sizes.outputSizeInBytes, 128u );
+            temp_buffer_size = roundUp<size_t>(xas_buffer_sizes.tempSizeInBytes, 8u);
+            output_buffer_size = roundUp<size_t>( xas_buffer_sizes.outputSizeInBytes, 8u );
 
             if (verbose) {
                 float temp_mb   = (float)temp_buffer_size   / (1024 * 1024);
@@ -58,13 +58,13 @@ namespace xinxinoptix {
         aux_size = roundUp<size_t>(aux_size, 128u);
 
         raii<CUdeviceptr> bufferTemp{};
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size, 0 ) );
 
         const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 
         if (!COMPACTION) {
 
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size + aux_size) );
+            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size + aux_size, 0) );
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             0,  // CUDA stream
@@ -80,7 +80,7 @@ namespace xinxinoptix {
         } else {
 
             CUdeviceptr output_buffer_xas {};
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t) + aux_size) );
+            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t) + aux_size, 0) );
 
             OptixAccelEmitDesc emitProperty {};
             emitProperty.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -105,11 +105,11 @@ namespace xinxinoptix {
 
             if( compacted_size < output_buffer_size )
             {
-                CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size + aux_size) );
+                CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size + aux_size, 0) );
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, 
                 (CUdeviceptr)( (char*)_bufferXAS_ + aux_size), compacted_size, &_handleXAS_ ) );
 
-                cudaFree((void*)output_buffer_xas);
+                cudaFreeAsync((void*)output_buffer_xas, 0);
             }
             else
             {
@@ -136,7 +136,7 @@ namespace xinxinoptix {
 
         raii<CUdeviceptr>  d_instances;
         const size_t size_in_bytes = sizeof( OptixInstance ) * instances.size();
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), size_in_bytes ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_instances.reset() ), size_in_bytes, 0) );
         CUDA_CHECK( cudaMemcpy(
                     reinterpret_cast<void*>( (CUdeviceptr)d_instances ),
                     instances.data(),
@@ -176,21 +176,21 @@ namespace xinxinoptix {
 
         {
             const size_t size_in_byte = vertices.size() * sizeof( vertices[0] );
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dverts ), size_in_byte ) );
+            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &dverts ), size_in_byte, 0 ) );
             CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr&)dverts ), vertices.data(), size_in_byte, cudaMemcpyHostToDevice) );
         }
 
         if (mat_idx.size()>1)
         {
             const size_t size_in_byte = mat_idx.size() * sizeof( mat_idx[0] );
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dmats ), size_in_byte ) );
+            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &dmats ), size_in_byte, 0 ) );
             CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)dmats ), mat_idx.data(), size_in_byte, cudaMemcpyHostToDevice ) );
         }
 
         if (!indices.empty())
         {
             const size_t size_in_byte = indices.size() * sizeof(uint3);
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &didx ), size_in_byte ) );
+            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &didx ), size_in_byte, 0) );
             CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)didx ), indices.data(), size_in_byte, cudaMemcpyHostToDevice
                         ) );
         }

@@ -857,8 +857,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
 
         raii<CUdeviceptr> iesBuffer;
         size_t data_length = iesd.size() * sizeof(float);
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &iesBuffer.reset() ), data_length) );
+        iesBuffer.resize(data_length);
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );
         
         g_ies[path] = {std::move(iesBuffer), coneAngle };

@@ -392,14 +392,6 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
 
         //timer.tock("frame time");
         output_buffer.unmap();
-
-    try {
-        CUDA_SYNC_CHECK();
-    } 
-    catch(std::exception const& e)
-    {
-        std::cout << "Exception: " << e.what() << "\n";
-    } 
 }
 
 
@@ -1047,7 +1039,7 @@ static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& li
 
     raii<CUdeviceptr> d_lightMesh;
     
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes, 0 ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
                 lightMesh.data(), vertices_size_in_bytes,
@@ -1094,7 +1086,7 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<float4>& l
     {
         auto data_length = sizeof( float4 ) * sphere_count;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), lightSpheres.data(),
                                 data_length, cudaMemcpyHostToDevice ) );
     }
@@ -1134,7 +1126,7 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
 
     raii<CUdeviceptr> d_lightMesh;
     
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes, 0 ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
                 lightMesh.data(), vertices_size_in_bytes,
@@ -1196,7 +1188,7 @@ void buildLightTree() {
     {
         auto byte_size = triangleLightNormals.size() * sizeof(float3);
 
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightNormals ),
                                 triangleLightNormals.data(), byte_size, cudaMemcpyHostToDevice) );
         state.params.triangleLightNormalBuffer = lightsWrapper.triangleLightNormals.handle;
@@ -1205,7 +1197,7 @@ void buildLightTree() {
     {
         auto byte_size = triangleLightCoords.size() * sizeof(float2);
 
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightCoords ),
                                 triangleLightCoords.data(), byte_size, cudaMemcpyHostToDevice) );
         state.params.triangleLightCoordsBuffer = lightsWrapper.triangleLightCoords.handle;
@@ -1352,10 +1344,9 @@ void buildLightTree() {
     buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
     buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
-    CUDA_CHECK( cudaMalloc(
+    CUDA_CHECK( cudaMallocAsync(
         reinterpret_cast<void**>( &state.finite_lights_ptr.reset() ),
-        sizeof( GenericLight ) * std::max(lightsWrapper.g_lights.size(),(size_t)1)
-        ) );
+        sizeof( GenericLight ) * std::max(lightsWrapper.g_lights.size(),(size_t)1), 0 ) );
 
     state.params.lights = (GenericLight*)(CUdeviceptr)state.finite_lights_ptr;
     CUDA_CHECK( cudaMemcpy(
@@ -1382,7 +1373,7 @@ void buildLightTree() {
     Dummy dummy = { lightBitTrailsPtr.handle, lightTreeNodesPtr.handle, lsampler.bounds() };
 
     {
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightTreeDummyPtr.reset() ), sizeof( dummy )) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightTreeDummyPtr.reset() ), sizeof( dummy ), 0) );
         CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)lightTreeDummyPtr ),
                 &dummy, sizeof( dummy ), cudaMemcpyHostToDevice) );
@@ -1607,10 +1598,10 @@ OptixUtil::_compile_group.wait();
         state.params.skyny = tex->height;
         state.params.envavg = tex->average;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
-                            sizeof(float)*tex->cdf.size() ) );
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
-                              sizeof(int)*tex->start.size() ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
+                            sizeof(float)*tex->cdf.size(), 0 ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &state.sky_start.reset() ),
+                              sizeof(int)*tex->start.size(), 0 ) );
 
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
                    tex->cdf.data(),
@@ -2063,6 +2054,14 @@ void optixCleanup() {
     // raygen_module            .handle=0;
     // sphere_ism               .handle=0;
     // raygen_prog_group        .handle=0;
+
+    try {
+        CUDA_SYNC_CHECK();
+    }
+    catch(std::exception const& e)
+    {
+        std::cout << "Exception: " << e.what() << "\n";
+    }
 }
 
 void optixDestroy() {
