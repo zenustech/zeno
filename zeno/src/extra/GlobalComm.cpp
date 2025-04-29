@@ -477,6 +477,19 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
 
 bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool loadasset)
 {
+    static int staticSessId = 0;
+    const auto& tempFixStaticKey = [&loadasset](std::string key)->std::string {
+        if (!loadasset) {
+            if (key.find("static") != std::string::npos) {
+                key = key.substr(0, key.find_last_of(":")) + ":" + std::to_string(staticSessId);
+            }
+        }
+        else {
+            staticSessId = zeno::getSession().globalState->sessionid;
+        }
+        return key;
+    };
+
     bool loadPartial = false;
 
     auto dir = std::filesystem::u8path(cachedir) / (loadasset ? "data" : std::to_string(1000000 + frameid).substr(1));
@@ -565,7 +578,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
             }
         }
     }
-    const auto& load = [&dir, &newFrameStampInfo](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&tempFixStaticKey, &dir, &newFrameStampInfo](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return nullptr;
 
@@ -619,7 +632,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                         std::vector<char> objbuff(std::get<6>(it->second));
                         file.read(objbuff.data(), std::get<6>(it->second));
                         file.seekg(originalPos);
-                        objs.try_emplace(std::get<3>(it->second), decodeObject(objbuff.data(), std::get<6>(it->second)));
+                        objs.try_emplace(tempFixStaticKey(std::get<3>(it->second)), decodeObject(objbuff.data(), std::get<6>(it->second)));
                     }
                 }
             }
@@ -634,7 +647,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
                 emptyobj->userData().set2("stamp-change", std::get<0>(tup));
                 emptyobj->userData().set2("stamp-base", std::get<1>(tup));
-                objs.try_emplace(std::get<3>(tup), emptyobj);
+                objs.try_emplace(tempFixStaticKey(std::get<3>(tup)), emptyobj);
             }
         }
         return ret;
