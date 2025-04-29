@@ -300,7 +300,7 @@ public:
             if (ShaderMark::Mesh == geo_type) {
 
                 auto mesh = _meshes_[geo_name];
-                if (mesh->mat_idx.size()==1) {
+                if (mesh != nullptr && mesh->mat_idx.size()==1) {
                     shader_index = max(shader_index, mesh->mat_idx[0]);
                 } else {
                     shader_index = 0u;
@@ -347,6 +347,7 @@ public:
                 } else {
                     for (auto& ele : geo_to_candidate[key]) {
                         if (candidates[ele] != 0) continue;
+                        if (iterator->second == nullptr) continue;
                         candidates[ele] = iterator->second->node->handle;
                     }
                     ++iterator;
