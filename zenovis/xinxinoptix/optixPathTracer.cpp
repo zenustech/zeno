@@ -904,7 +904,10 @@ void show_background(bool enable) {
 
 void updatePortalLights(const std::vector<Portal>& portals) {
 
-    auto &tex = OptixUtil::tex_lut[ { OptixUtil::sky_tex.value(), false } ];
+    decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
+    OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::sky_tex.value(), false});
+    
+    auto &tex = tex_accessor->second;
 
     auto& pll = state.plights;
     auto& pls = pll.list;
@@ -1328,7 +1331,10 @@ void buildLightTree() {
         
         if ( OptixUtil::tex_lut.count( tex_key ) > 0 ) {
 
-            auto& val = OptixUtil::tex_lut.at(tex_key);
+            decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
+            OptixUtil::tex_lut.find(tex_accessor, tex_key);
+
+            auto& val = tex_accessor->second;
             light.tex = val->texture;
             light.texGamma = dat.textureGamma;
         }
@@ -1582,13 +1588,17 @@ OptixUtil::_compile_group.wait();
     }
 
     OptixUtil::_compile_group.wait();
-    theTimer.tock("Done Optix Shader Compile:");
+//    theTimer.tock("Done Optix Shader Compile:");
 
     if (OptixUtil::sky_tex.has_value()) {
 
-        auto &tex = OptixUtil::tex_lut[ {OptixUtil::sky_tex.value(), false} ];
+        decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
+        OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::sky_tex.value(), false});
+
+        auto tex = tex_accessor->second;
         if (tex.get() == 0) {
-            tex = OptixUtil::tex_lut[ {OptixUtil::default_sky_tex, false} ];
+            OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::default_sky_tex, false});
+            tex = tex_accessor->second;
         }
         
         if (tex->texture == state.params.sky_texture) return;

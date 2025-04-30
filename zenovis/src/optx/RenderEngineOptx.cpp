@@ -1577,9 +1577,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
                     OptixUtil::removeTexture(need_remove_tex);
                 }
+                CppTimer texTimer; timer.tick();
+                tbb::task_group texture_group;
                 for (const auto& realNeedTexKey: realNeedTexPaths) {
-                    OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
+                    texture_group.run([&]() {
+                        OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
+                    });
                 }
+                texture_group.wait();
+                timer.tock("Texture loading");
             }
 
             for(auto const &shaderName : dirtyShaderNames)

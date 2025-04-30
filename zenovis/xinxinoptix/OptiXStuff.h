@@ -461,8 +461,11 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
 
+    if (nx % 4 || ny % 4) {
+        blockCompression = false;
+    }
+
     std::vector<uchar4> alt;
-    
     if (nc == 3 && !blockCompression) { // cuda doesn't support raw rgb, should be raw rgba or compressed rgb 
         auto count = nx * ny;    
         alt.resize(count);
@@ -472,10 +475,6 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
         }
         nc = 4;
         img = (unsigned char*)alt.data();
-    }
-
-    if (nx%4 || ny%4) {
-        blockCompression = false;
     }
 
     cudaError_t rc;
@@ -673,9 +672,23 @@ struct TexKey {
     }
 };
 
-inline std::map<TexKey, std::shared_ptr<cuTexture>> tex_lut;
-inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
-inline std::map<std::string, std::string> md5_path_mapping;
+struct TexKeyHash
+{
+    static size_t hash(TexKey const& s) noexcept
+    {
+        std::size_t h1 = std::hash<std::string>{}(s.path);
+        std::size_t h2 = std::hash<bool>{}(s.blockCompression);
+        return h1 ^ (h2 << 1); // or use boost::hash_combine (see Discussion)
+    }
+
+    static bool equal( const TexKey& x, const TexKey& y ) {
+        return x.path == y.path && x.blockCompression == y.blockCompression;
+    }
+};
+
+inline tbb::concurrent_hash_map<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
+inline tbb::concurrent_hash_map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline tbb::concurrent_hash_map<std::string, std::string> md5_path_mapping;
 inline std::optional<std::string> sky_tex;
 inline std::string default_sky_tex;
 
@@ -778,12 +791,11 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
 
-        if(g_tex_last_write_time[path] != ftime) {
-            g_tex_last_write_time[path] = ftime;
-        }
-        else {
-            return;
-        }
+        decltype(g_tex_last_write_time)::const_accessor time_accessor;
+        if (g_tex_last_write_time.find(time_accessor, path)) {
+            if (time_accessor->second == ftime) return;
+        } 
+        g_tex_last_write_time.insert( {path, ftime} );
 
     } else {
         zeno::log_info("file {} doesn't exist", path);
@@ -793,20 +805,21 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
 
-    if ( md5_path_mapping.count(md5Hash)) {
+    decltype(md5_path_mapping)::const_accessor md5_accessor;
+    if ( md5_path_mapping.find(md5_accessor, md5Hash) ) {
 
-        auto& alt_path = md5_path_mapping[md5Hash];
+        auto& alt_path = md5_accessor->second;
         auto alt_key = TexKey { alt_path, blockCompression };
 
-        if (tex_lut.count(alt_key)) {
-
-            tex_lut[tex_key] = tex_lut[alt_key];
+        decltype(tex_lut)::const_accessor tex_accessor;
+        if (tex_lut.find(tex_accessor, alt_key)) {
+            tex_lut.insert( {tex_key, tex_accessor->second} );
             //zeno::log_info("path {} reuse {} tex", path, alt_path);
             return;
         }
     }
     else {
-        md5_path_mapping[md5Hash] = path;
+        md5_path_mapping.insert({md5Hash, path});
     }
 
     int nx, ny, nc;
@@ -814,6 +827,8 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
 
     std::function<float(uint32_t)> lookupTexture = [](uint32_t x) {return 0.0f;};
     std::function<void(void)>     cleanupTexture = [](){};
+
+    std::shared_ptr<cuTexture> newTexture = nullptr;
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -837,7 +852,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         }
         assert(rgba);
 
-        tex_lut[tex_key] = makeCudaTexture(rgba, nx, ny, nc);
+        newTexture = makeCudaTexture(rgba, nx, ny, nc);
 
         lookupTexture = [rgba](uint32_t idx) {
             return rgba[idx];
@@ -871,7 +886,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         // Create nodes
         auto img = outs.get<zeno::PrimitiveObject>("image");
         if (img->verts.size() == 0) {
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            newTexture = std::make_shared<cuTexture>();
             return;
         }
         nx = std::max(img->userData().get2<int>("w"), 1);
@@ -888,7 +903,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
                     ucdata->at(i*nc+c) = (img->verts[i][c] * 255.0);
                 }
             }
-            tex_lut[tex_key] = makeCudaTexture(ucdata->data(), nx, ny, nc, blockCompression);
+            newTexture = makeCudaTexture(ucdata->data(), nx, ny, nc, blockCompression);
 
         } else {
 
@@ -901,7 +916,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
                 data[i].z = (unsigned char)(img->verts[i][2]*255.0);
                 data[i].w = (unsigned char)(alpha[i]        *255.0);
             }
-            tex_lut[tex_key] = makeCudaTexture((unsigned char *)data, nx, ny, 4, blockCompression);
+            newTexture = makeCudaTexture((unsigned char *)data, nx, ny, 4, blockCompression);
         }
         
         lookupTexture = [ucdata=ucdata, img=img](uint32_t idx) {
@@ -913,14 +928,14 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            newTexture = std::make_shared<cuTexture>();
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
         
-        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc);
+        newTexture = makeCudaTexture(img, nx, ny, nc);
 
         lookupTexture = [img](uint32_t idx) {
             return img[idx];
@@ -930,16 +945,17 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         };
     }
     else {
+
         unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading ldr texture failed:{}", path);
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            tex_lut.insert( {tex_key, std::make_shared<cuTexture>()} );
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         
-        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc, blockCompression);
+        newTexture = makeCudaTexture(img, nx, ny, nc, blockCompression);
 
         lookupTexture = [img](uint32_t idx) {
             return (float)img[idx] / 255;
@@ -948,14 +964,17 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             stbi_image_free(img);
         };
     }
-    tex_lut[tex_key]->md5 = md5Hash;
+    if (newTexture != nullptr) {
+        newTexture->md5 = md5Hash;
 
-    if constexpr (!detail::is_void<TaskType>::value) {
-        if (task != nullptr) {
-            (*task)(tex_lut[tex_key].get(), nx, ny, nc, lookupTexture);
+        if constexpr (!detail::is_void<TaskType>::value) {
+            if (task != nullptr) {
+                (*task)(newTexture.get(), nx, ny, nc, lookupTexture);
+            }
         }
-    }
 
+        tex_lut.insert({ tex_key, newTexture });
+    }
     cleanupTexture();
 }
 inline void removeTexture(const TexKey &key) {
@@ -963,14 +982,17 @@ inline void removeTexture(const TexKey &key) {
     auto& path = key.path;
 
     if (path.size()) {
-        if (tex_lut.count(key)) {
+
+        decltype(tex_lut)::const_accessor tex_accessor;
+        if (tex_lut.find(tex_accessor, key)) {
+
             zeno::log_info("removeTexture: {} blockCompresssion: {}", path, key.blockCompression);
-            md5_path_mapping.erase(tex_lut[key]->md5);
+            md5_path_mapping.erase(tex_accessor->second->md5);
+            tex_lut.erase(tex_accessor);
         }
         else {
             zeno::log_error("removeTexture: {} not exists!", path);
         }
-        tex_lut.erase(key);
         g_tex_last_write_time.erase(path);
     }
 }
@@ -1135,9 +1157,10 @@ struct OptixShaderWrapper
     {
         if(m_texs.find(i)!=m_texs.end())
         {
-            if(tex_lut.find(m_texs[i])!=tex_lut.end())
+            decltype(tex_lut)::const_accessor tex_accessor;
+            if ( tex_lut.find(tex_accessor, m_texs[i]) )
             {
-                return tex_lut[m_texs[i]]->texture;
+                return tex_accessor->second->texture;
             }
         }
         return 0;
@@ -1225,72 +1248,6 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
                 max_traversal_depth
                 ) );
 }
-
-
-template <typename T = char>
-class CuBuffer
-{
-  public:
-    CuBuffer( size_t count = 0 ) { alloc( count ); }
-    ~CuBuffer() { free(); }
-    void alloc( size_t count )
-    {
-        free();
-        m_allocCount = m_count = count;
-        if( m_count )
-        {
-            CUDA_CHECK( cudaMalloc( &m_ptr, m_allocCount * sizeof( T ) ) );
-        }
-    }
-    void allocIfRequired( size_t count )
-    {
-        if( count <= m_allocCount )
-        {
-            m_count = count;
-            return;
-        }
-        alloc( count );
-    }
-    CUdeviceptr get() const { return reinterpret_cast<CUdeviceptr>( m_ptr ); }
-    CUdeviceptr get( size_t index ) const { return reinterpret_cast<CUdeviceptr>( m_ptr + index ); }
-    void        free()
-    {
-        m_count      = 0;
-        m_allocCount = 0;
-        CUDA_CHECK( cudaFree( m_ptr ) );
-        m_ptr = nullptr;
-    }
-    CUdeviceptr release()
-    {
-        m_count             = 0;
-        m_allocCount        = 0;
-        CUdeviceptr current = reinterpret_cast<CUdeviceptr>( m_ptr );
-        m_ptr               = nullptr;
-        return current;
-    }
-    void upload( const T* data )
-    {
-        CUDA_CHECK( cudaMemcpy( m_ptr, data, m_count * sizeof( T ), cudaMemcpyHostToDevice ) );
-    }
-
-    void download( T* data ) const
-    {
-        CUDA_CHECK( cudaMemcpy( data, m_ptr, m_count * sizeof( T ), cudaMemcpyDeviceToHost ) );
-    }
-    void downloadSub( size_t count, size_t offset, T* data ) const
-    {
-        assert( count + offset <= m_allocCount );
-        CUDA_CHECK( cudaMemcpy( data, m_ptr + offset, count * sizeof( T ), cudaMemcpyDeviceToHost ) );
-    }
-    size_t count() const { return m_count; }
-    size_t reservedCount() const { return m_allocCount; }
-    size_t byteSize() const { return m_allocCount * sizeof( T ); }
-
-  private:
-    size_t m_count      = 0;
-    size_t m_allocCount = 0;
-    T*     m_ptr        = nullptr;
-};
 
 
 }
