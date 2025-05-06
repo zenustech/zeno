@@ -276,11 +276,19 @@ struct SceneObject : IObjectClone<SceneObject> {
                 auto r2 = matrix[2];
                 auto t  = matrix[3];
                 auto prim = std::make_shared<PrimitiveObject>();
-                prim->verts.resize(1);
-                prim->verts[0] = {t[0], t[1], t[2]};
-                prim->verts.add_attr<vec3f>("r0")[0] = {r0[0], r0[1], r0[2]};
-                prim->verts.add_attr<vec3f>("r1")[0] = {r1[0], r1[1], r1[2]};
-                prim->verts.add_attr<vec3f>("r2")[0] = {r2[0], r2[1], r2[2]};
+                prim->verts.resize(4);
+                prim->verts[0][0] = r0[0];
+                prim->verts[0][1] = r1[0];
+                prim->verts[0][2] = r2[0];
+                prim->verts[1][0] = t [0];
+                prim->verts[1][1] = r0[1];
+                prim->verts[1][2] = r1[1];
+                prim->verts[2][0] = r2[1];
+                prim->verts[2][1] = t [1];
+                prim->verts[2][2] = r0[2];
+                prim->verts[3][0] = r1[2];
+                prim->verts[3][1] = r2[2];
+                prim->verts[3][2] = t [2];
 
                 prim->userData().set2("ResourceType", "Matrixes");
                 if (use_static) {
@@ -385,16 +393,21 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             for (auto &[mesh_name, mats]: tmp_matrix_xforms) {
                 auto matrix = std::make_shared<PrimitiveObject>();
-                matrix->resize(mats.size());
-                auto &r0 = matrix->verts.add_attr<vec3f>("r0");
-                auto &r1 = matrix->verts.add_attr<vec3f>("r1");
-                auto &r2 = matrix->verts.add_attr<vec3f>("r2");
+                matrix->resize(mats.size() * 4);
                 for (auto i = 0; i < mats.size(); i++) {
-                    auto & mat = mats[i];
-                    r0[i] = {mat[0][0], mat[0][1], mat[0][2]};
-                    r1[i] = {mat[1][0], mat[1][1], mat[1][2]};
-                    r2[i] = {mat[2][0], mat[2][1], mat[2][2]};
-                    matrix->verts[i] = {mat[3][0], mat[3][1], mat[3][2]};
+                    auto &mat = mats[i];
+                    matrix->verts[i * 4 + 0][0] = mat[0][0];
+                    matrix->verts[i * 4 + 0][1] = mat[1][0];
+                    matrix->verts[i * 4 + 0][2] = mat[2][0];
+                    matrix->verts[i * 4 + 1][0] = mat[3][0];
+                    matrix->verts[i * 4 + 1][1] = mat[0][1];
+                    matrix->verts[i * 4 + 1][2] = mat[1][1];
+                    matrix->verts[i * 4 + 2][0] = mat[2][1];
+                    matrix->verts[i * 4 + 2][1] = mat[3][1];
+                    matrix->verts[i * 4 + 2][2] = mat[0][2];
+                    matrix->verts[i * 4 + 3][0] = mat[1][2];
+                    matrix->verts[i * 4 + 3][1] = mat[2][2];
+                    matrix->verts[i * 4 + 3][2] = mat[3][2];
                 }
                 matrix->userData().set2("ResourceType", "Matrixes");
                 if (use_static) {
