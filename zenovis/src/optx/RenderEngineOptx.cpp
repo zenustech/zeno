@@ -613,33 +613,12 @@ struct GraphicsManager {
                 }
             
                 if (reType == "Matrixes") {
-                    auto count = prim_in->verts->size();
-                    auto& _r0 = prim_in->verts.attr<zeno::vec3f>("r0");
-                    auto& _r1 = prim_in->verts.attr<zeno::vec3f>("r1");
-                    auto& _r2 = prim_in->verts.attr<zeno::vec3f>("r2");
+                    auto count = prim_in->verts->size() / 4;
 
                     std::vector<m3r4c> matrix_list(count);
 
-                    for (size_t i=0; i<count; ++i) {
-                        auto pos = prim_in->verts[i];
-                        auto r0 = _r0[i];
-                        auto r1 = _r1[i];
-                        auto r2 = _r2[i];
+                    std::copy_n((float*)prim_in->verts.data(), count * 12, (float*)matrix_list.data());
 
-                        auto& matrix3r4c = matrix_list[i];
-                        matrix3r4c[0]  = r0[0];
-                        matrix3r4c[1]  = r1[0];
-                        matrix3r4c[2]  = r2[0];
-                        matrix3r4c[3]  = pos[0];
-                        matrix3r4c[4]  = r0[1];
-                        matrix3r4c[5]  = r1[1];
-                        matrix3r4c[6]  = r2[1];
-                        matrix3r4c[7]  = pos[1];
-                        matrix3r4c[8]  = r0[2];
-                        matrix3r4c[9]  = r1[2];
-                        matrix3r4c[10] = r2[2];
-                        matrix3r4c[11] = pos[2];
-                    }
                     defaultScene.load_matrix_list(reName, matrix_list);
                     return;
                 }
@@ -1420,10 +1399,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.pupillary_distance
             );
         }
-
-
-        //zeno::log_info("meshNeedUpdate:{},matNeedUpdate:{},staticNeedUpdate:{},lightNeedUpdate:{}",meshNeedUpdate,matNeedUpdate,staticNeedUpdate,lightNeedUpdate);
-        if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
+        bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", false);
+        second_matNeedUpdate = second_matNeedUpdate || cached_shaders.empty();
+        if ((meshNeedUpdate || matNeedUpdate || staticNeedUpdate) && second_matNeedUpdate) {
 
             std::map<std::string,  uint16_t> meshMatLUT{};
             std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
@@ -1740,7 +1718,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             defaultScene.processVolumeBox(OptixUtil::context);
             defaultScene.shader_indice_table = ShaderKeyIndex;
-            bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
+
             if (matNeedUpdate && second_matNeedUpdate)
             {
                 unsigned int usesPrimitiveTypeFlags = 0u;
@@ -1807,6 +1785,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {
 
             lightNeedUpdate = false;
+            xinxinoptix::updateCurves();
+            xinxinoptix::prepareScene();
+            xinxinoptix::configPipeline(false);
             xinxinoptix::updateRootIAS();
 
             matNeedUpdate = false;
@@ -1834,6 +1815,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void assetLoad() {
         int a = 0;
         defaultScene = {};
+        zeno::log_info("assetLoad, clear cached_shaders.size() = {}", cached_shaders.size());
+        cached_shaders = {};
     }
 
     void run() {

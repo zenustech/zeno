@@ -61,10 +61,15 @@ public:
     nlohmann::json sceneJson;
 
     inline void preload_scene(const std::string& jsonString) {
-        bool accept = nlohmann::json::accept(jsonString);
-        if (!accept) return;
+//        bool accept = nlohmann::json::accept(jsonString);
+//        if (!accept) return;
         
-        sceneJson = nlohmann::json::parse(jsonString);
+        try {
+            sceneJson = nlohmann::json::parse(jsonString);
+        }
+        catch (...) {
+            zeno::log_error("Can not parse json in preload_scene");
+        }
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
