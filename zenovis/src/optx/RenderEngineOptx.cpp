@@ -950,16 +950,11 @@ struct GraphicsManager {
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
-                    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex.value() != path
-                        && OptixUtil::sky_tex.value() != OptixUtil::default_sky_tex ) {
-                        OptixUtil::removeTexture( {OptixUtil::sky_tex.value(), false} );
-                    }
-
                     OptixUtil::sky_tex = path;
-                    OptixUtil::addSkyTexture(path);
                 } else {
                     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
                 }
+                OptixUtil::setSkyTexture(OptixUtil::sky_tex.value());
 
                 xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
@@ -1542,50 +1537,30 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }                
             }
 
-            // Auto unload unused texure
             {
-                std::set<OptixUtil::TexKey> realNeedTexPaths;
+                std::unordered_set<OptixUtil::TexKey, OptixUtil::TexKeyHash> requiredTexPathSet;
                 for(auto const &[matkey, mtldet] : matMap) {
-                    if (required_shader_names.count( mtldet->mtlidkey ) > 0) 
-                    {
-                        for(auto& tex: mtldet->tex2Ds) {
-                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
-                        }
-                    }
-                    
-                }
-                // add light map
-                for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
-                    if (ld.textureKey.size()) {
-                        realNeedTexPaths.insert( {ld.textureKey, false});
-                    }
-                }
-                std::vector<OptixUtil::TexKey> needToRemoveTexPaths;
-                for(auto const &[key, _]: OptixUtil::tex_lut) {
+                    if (required_shader_names.count( mtldet->mtlidkey ) == 0) continue;
 
-                    if (realNeedTexPaths.count(key) > 0) {
-                        continue; 
+                    for(auto& tex: mtldet->tex2Ds) {
+                        requiredTexPathSet.insert( {tex->path, tex->blockCompression} );
                     }
-                    if (OptixUtil::sky_tex.has_value() && key.path == OptixUtil::sky_tex.value()) {
-                        continue;
-                    }
-                    if (key.path == OptixUtil::default_sky_tex) {
-                        continue;
-                    }
-                    needToRemoveTexPaths.emplace_back(key);
                 }
-                for (const auto& need_remove_tex: needToRemoveTexPaths) {
-                    OptixUtil::removeTexture(need_remove_tex);
+                
+                for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
+                    if (ld.textureKey.empty()) continue; 
+                    requiredTexPathSet.insert( {ld.textureKey, false});
                 }
-                CppTimer texTimer; timer.tick();
+
+                timer.tick();
                 tbb::task_group texture_group;
-                for (const auto& realNeedTexKey: realNeedTexPaths) {
+                for (const auto& realNeedTexKey: requiredTexPathSet) {
                     texture_group.run([&]() {
                         OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
                     });
                 }
                 texture_group.wait();
-                timer.tock("Texture loading");
+                timer.tock("Texture load");
             }
 
             for(auto const &shaderName : dirtyShaderNames)
@@ -1626,11 +1601,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.parameters = mtldet->parameters;
 
                         shaderP.matid = mtldet->mtlidkey;
-                        shaderP.tex_keys.reserve(mtldet->tex2Ds.size());
+                        shaderP.texs.reserve(mtldet->tex2Ds.size());
 
                         for(auto tex:mtldet->tex2Ds)
                         {
-                            shaderP.tex_keys.push_back( {tex->path, tex->blockCompression} );
+                            decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
+                            OptixUtil::tex_lut.find(tex_accessor, {tex->path, tex->blockCompression} );
+    
+                            auto &tex_ptr = tex_accessor->second;
+                            shaderP.texs.push_back( tex_ptr);
                         }
 
                         if (mtldet->tex3Ds.size() > 0) {
@@ -1668,6 +1647,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         }
                     }
             }
+
+            timer.tick();
+            for (auto it = OptixUtil::tex_lut.cbegin(); it != OptixUtil::tex_lut.cend(); ++it)
+            {
+                if (it->second.use_count()<=1)
+                    OptixUtil::tex_lut.erase(it->first);
+            }
+            timer.tock("Texture unload");
 
             bool requireSphereLight = false;
             bool requireTriangLight = false;

@@ -674,7 +674,12 @@ struct TexKey {
 
 struct TexKeyHash
 {
-    static size_t hash(TexKey const& s) noexcept
+    size_t operator()(const TexKey& key) const
+    {
+        return hash(key);
+    }
+
+    static size_t hash(const TexKey& s) noexcept
     {
         std::size_t h1 = std::hash<std::string>{}(s.path);
         std::size_t h2 = std::hash<bool>{}(s.blockCompression);
@@ -689,7 +694,9 @@ struct TexKeyHash
 inline tbb::concurrent_hash_map<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
 inline tbb::concurrent_hash_map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline tbb::concurrent_hash_map<std::string, std::string> md5_path_mapping;
+
 inline std::optional<std::string> sky_tex;
+inline std::shared_ptr<cuTexture> sky_tex_ptr;
 inline std::string default_sky_tex;
 
 inline std::optional<std::function<void(void)>> portal_delayed;
@@ -997,7 +1004,17 @@ inline void removeTexture(const TexKey &key) {
     }
 }
 
-inline void addSkyTexture(std::string path) {
+inline std::shared_ptr<cuTexture> getTexturePtr(std::string& path) {
+    decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
+    auto find = OptixUtil::tex_lut.find(tex_accessor, {path, false});
+
+    if (find)
+        return tex_accessor->second;
+    else
+        return nullptr;
+}
+
+inline void setSkyTexture(std::string& path) {
     
     auto task = [](cuTexture* tex, uint32_t nx, uint32_t ny, uint32_t nc, std::function<float(uint32_t)> &lookupTexture) {
         
@@ -1013,6 +1030,7 @@ inline void addSkyTexture(std::string path) {
     };
 
     addTexture(path, false, &task);
+    sky_tex_ptr = OptixUtil::getTexturePtr(path);
 }
 
 struct OptixShaderCore {
@@ -1090,7 +1108,7 @@ struct OptixShaderWrapper
     raii<OptixModule>           callable_module {};
     raii<OptixProgramGroup> callable_prog_group {};
    
-    std::map<int, TexKey>                m_texs {};
+    std::vector<uint64_t>                  texs {};
     bool                                has_vdb {};
     std::vector<std::string>               vbds {};
 
@@ -1147,23 +1165,14 @@ struct OptixShaderWrapper
 
     void clearTextureRecords()
     {
-        m_texs.clear();
-    }
-    void addTexture(int i, TexKey key)
-    {
-        m_texs[i] = key;
+        texs = {};
     }
     cudaTextureObject_t getTexture(int i)
     {
-        if(m_texs.find(i)!=m_texs.end())
-        {
-            decltype(tex_lut)::const_accessor tex_accessor;
-            if ( tex_lut.find(tex_accessor, m_texs[i]) )
-            {
-                return tex_accessor->second->texture;
-            }
-        }
-        return 0;
+        if (i>=texs.size())
+            return 0;
+        else
+            return texs[i];
     }
 };
 

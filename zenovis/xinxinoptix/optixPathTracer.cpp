@@ -820,7 +820,7 @@ void optixinit( int argc, char* argv[] )
     OptixUtil::default_sky_tex = cur_path + "/hdr/Panorama.hdr";
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 
-    OptixUtil::addSkyTexture(OptixUtil::sky_tex.value());
+    OptixUtil::setSkyTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
@@ -1547,11 +1547,11 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             rtShader.has_vdb = true; 
         }
 
-        auto& texs = shaders[i]->tex_keys;
-
-        for(int j=0;j<texs.size();j++)
-        {
-            rtShader.addTexture(j, texs[j]);
+        auto& texs = shaders[i]->texs;
+        rtShader.texs = {};
+        rtShader.texs.reserve(texs.size());
+        for(int j=0; j<texs.size(); j++) {
+            rtShader.texs.push_back(texs[j]->texture);
         }
 
         auto& vdbs = shaders[i]->vdb_keys;
@@ -1590,17 +1590,9 @@ OptixUtil::_compile_group.wait();
     OptixUtil::_compile_group.wait();
 //    theTimer.tock("Done Optix Shader Compile:");
 
-    if (OptixUtil::sky_tex.has_value()) {
+    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex_ptr!=nullptr) {
 
-        decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
-        OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::sky_tex.value(), false});
-
-        auto tex = tex_accessor->second;
-        if (tex.get() == 0) {
-            OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::default_sky_tex, false});
-            tex = tex_accessor->second;
-        }
-        
+        auto& tex = OptixUtil::sky_tex_ptr;
         if (tex->texture == state.params.sky_texture) return;
 
         state.params.sky_texture = tex->texture;

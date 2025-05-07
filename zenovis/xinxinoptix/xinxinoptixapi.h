@@ -77,7 +77,7 @@ struct ShaderPrepared {
 
     std::map<std::string, std::string> macros;
     
-    std::vector<OptixUtil::TexKey> tex_keys;
+    std::vector<std::shared_ptr<OptixUtil::cuTexture>> texs;
     std::vector<std::string>       vdb_keys;
 };
 
