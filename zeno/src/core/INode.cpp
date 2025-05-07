@@ -3,6 +3,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/DummyObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -146,13 +147,23 @@ ZENO_API void INode::preApply() {
         if (bTmpCache)
             writeTmpCaches();
 #endif
+        std::function<bool(std::shared_ptr<IObject>)> hasStampUd = [&hasStampUd](std::shared_ptr<IObject> obj) -> bool {
+            if (auto l = std::dynamic_pointer_cast<ListObject>(obj)) {
+                for (auto i : l->arr)
+                    if (hasStampUd(i))
+                        return true;
+            } else {
+                if (obj->userData().has("stamp-change"))
+                    return true;
+            }
+            return false;
+        };
         for (auto& [k, obj] : outputs) {
             obj->userData().set2("objRunType", objRunType);
-        }
-        if (inputs.find("stampMode") != inputs.end()) {
-            auto session = &zeno::getSession();
-            if (!session->userData().has("graphHasStampNode")) {
-                session->userData().set2("graphHasStampNode", true);
+            if (!zeno::getSession().userData().has("graphHasStampNode")) {
+                if (hasStampUd(obj)) {
+                    zeno::getSession().userData().set2("graphHasStampNode", true);
+                }
             }
         }
     }
