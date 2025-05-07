@@ -820,6 +820,27 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                     }
                 }
             }
+        } else {
+             if (currentFrameNumber != frameid) {
+                std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1)) / "stampInfo.txt";
+                if (std::filesystem::exists(stampInfoPath)) {
+                    for (auto& [objPtrId, flag] : sceneLoadedFlag) {
+                        std::get<2>(flag) = true;
+                    }
+                    if (frameid == beginFrameNumber) {
+                        std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>> baseframeinfo;
+                        m_frames[frameIdx].view_objects.m_curr.clear();
+                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype);
+                        if (!ret)
+                            return nullptr;
+                        m_inCacheFrames[frameid] = baseframeinfo;
+                    }
+                    hasStamp = true;
+                }
+                else {
+                    hasStamp = false;
+                }
+            }
         }
     }
     currentFrameNumber = frameid;
