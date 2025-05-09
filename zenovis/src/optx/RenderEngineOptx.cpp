@@ -448,7 +448,7 @@ struct GraphicsManager {
                 auto is_cyhair = prim_in_lslislSp->userData().has("cyhair");
                 if (is_cyhair) {
                     auto& ud = prim_in_lslislSp->userData();
-                    auto mtlid = ud.get2<std::string>("mtlid", "Default");
+                    const auto objectName = prim_in->userData().get2<std::string>("ObjectName", key); 
 
                     auto type_index = ud.get2<uint>("curve", 0u);
                     auto path_string = ud.get2<std::string>("path", "");
@@ -478,7 +478,7 @@ struct GraphicsManager {
                                                 } : glm::mat4(1.0);
 
                     trans = transform * trans;
-                    loadHair( path_string, mtlid, type_index, trans);
+                    defaultScene.preloadHair( objectName, path_string, type_index, trans);
                     return;
                 }
 

@@ -265,6 +265,7 @@ public:
         prepare_mesh_gas(context);
         prepare_sphere_gas(context);
         prepareCurveGroup(context);
+        prepareHairs(context);
         
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
 
@@ -361,6 +362,7 @@ public:
         prepare(_sphere_groups_);
         prepare(_vol_boxs);
         prepare(curveGroupStateCache);
+        prepare(hair_state_cache);
 
         std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                                                 decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
@@ -586,6 +588,13 @@ public:
 
     void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
     void prepareCurveGroup(OptixDeviceContext& context);
+
+    //using hair_state_key = std::tuple<std::string, uint>;
+    std::map<std::string, std::shared_ptr<Hair>> hair_cache;
+    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> hair_state_cache;
+
+    void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));
+    void prepareHairs(OptixDeviceContext& context);
 
 std::unordered_map<std::string, ShaderMark>  geoTypeMap;
 std::unordered_map<std::string, glm::mat4> geoMatrixMap;

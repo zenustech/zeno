@@ -239,3 +239,45 @@ void Scene::prepareCurveGroup(OptixDeviceContext& context) {
         curveGroupStateCache[key] = state;
     }
 }
+
+void Scene::preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform) {
+
+    auto lwt = std::filesystem::last_write_time(filePath);
+    bool neo = false;
+
+    auto hair = [&]() -> std::shared_ptr<Hair> {
+
+        if (hair_cache.count(filePath) == 0 || lwt != hair_cache[filePath]->time()) 
+        {
+            neo = true;
+            auto tmp = std::make_shared<Hair>( filePath );
+            tmp->prepareWidths();
+            hair_cache[filePath] = tmp;
+            return tmp;
+        }
+        return hair_cache[filePath];
+    } ();
+
+    //auto key = std::tuple {filePath, mode};
+    if (hair_state_cache.count( name ) == 0 || neo) {
+
+        auto tmp = std::make_shared<CurveGroupWrapper>();
+        tmp->curveType = (zeno::CurveType)mode;
+        tmp->pHair = hair;
+
+        hair_state_cache[ name ] = tmp;
+    } 
+        
+    geoMatrixMap[name] = glm::transpose(transform);
+    auto mark = (uint)mode + 3;
+    updateGeoType( name, ShaderMark(mark) );
+}
+
+void Scene::prepareHairs(OptixDeviceContext& context) {
+
+    for (auto& [key, state] : hair_state_cache) {
+        if (!state->dirty) continue;
+        state->dirty = false;
+        state->makeHairGAS(context);
+    }
+}

@@ -422,59 +422,9 @@ void updateRootIAS()
     state.params.handle = state.rootHandleIAS;
     return;
 
-    const auto campos = state.params.cam.eye;
-    const float mat3r4c[12] = {1,0,0,-campos.x,   
-                               0,1,0,-campos.y,   
-                               0,0,1,-campos.z};
-
-    std::vector<OptixInstance> optix_instances{};
-    uint optix_instance_idx = 0u;
-    uint sbt_offset = 0u;
-
-    auto op_index = optix_instances.size();
-
     uint32_t MAX_INSTANCE_ID;
     optixDeviceContextGetProperty( OptixUtil::context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
     state.params.maxInstanceID = MAX_INSTANCE_ID;
-
-    for (auto& [key, val] : hair_yyy_cache) {
-
-        OptixInstance opinstance {};
-        auto& [filePath, mode, mtlid] = key;
-        
-        auto shader_mark = mode + 3;
-
-		auto combinedID = std::tuple(mtlid, (ShaderMark)shader_mark);
-		auto shader_index = defaultScene.shader_indice_table[combinedID];
-
-        auto& hair_state = geo_hair_cache[ std::tuple(filePath, mode) ];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		//opinstance.instanceId = op_index++;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = DefaultMatMask;
-		opinstance.traversableHandle = hair_state->node->handle;
-
-        // sutil::Matrix3x4 yUpTransform = {
-        //     0.0f, 1.0f, 0.0f, -campos.x,
-        //     0.0f, 0.0f, 1.0f, -campos.y,
-        //     1.0f, 0.0f, 0.0f, -campos.z,
-        // };
-
-        for (auto& trans : val) {
-
-            auto dummy = glm::transpose(trans);
-            auto dummy_ptr = glm::value_ptr( dummy );
-
-		    memcpy(opinstance.transform, dummy_ptr, sizeof(float) * 12);
-            opinstance.transform[3]  += -campos.x;
-            opinstance.transform[7]  += -campos.y;
-            opinstance.transform[11] += -campos.z;
-
-            opinstance.instanceId = op_index++;
-		    optix_instances.push_back( opinstance );
-        }
-    }
 }
 
 static void createSBT( PathTracerState& state )
@@ -1996,7 +1946,6 @@ void optixCleanup() {
     defaultScene = {};
     OptixUtil::g_ies.clear();
 
-    cleanupHairs();
     globalShaderBufferGroup.reset();
 
     using namespace OptixUtil;

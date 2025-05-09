@@ -179,15 +179,16 @@ void CurveGroupWrapper::makeHairGAS(OptixDeviceContext context)
 {
     auto pState = this;
     const Hair* pHair = pState->pHair.get();
-    
+
+    if (pState->node == nullptr)
+        pState->node = std::make_shared<SceneNode>();
+        
     if (pState->node->handle) return;
 
     pState->node->handle = 0;
     pState->node->buffer.reset();
 
     makeCurveGroupGAS(context);
-
-    return;
 }
 
 std::vector<float2> CurveGroupWrapper::strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands)
