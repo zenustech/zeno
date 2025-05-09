@@ -186,15 +186,6 @@ struct Params
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
 
-    uint32_t firstVolumeOffset;
-    void* volumeBounds;
-
-    uint32_t firstSoloSphereOffset;
-    void* sphereInstAuxLutBuffer;
-
-    uint32_t hairInstOffset;
-    void* hairAux;
-
     void*    dlights_ptr;
     void*    plights_ptr;
 

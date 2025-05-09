@@ -49,8 +49,8 @@ target_sources(zenovis PRIVATE
 
   )
 
-file(GLOB hair_src "hair/*.h" "hair/*.cpp")
-target_sources(zenovis PRIVATE ${hair_src})
+file(GLOB curve_src "curve/*.h" "curve/*.cpp")
+target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)

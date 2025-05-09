@@ -366,12 +366,10 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.pos = P;
     attrs.nrm = N;
 
-    auto hair_idx = optixGetInstanceId() - params.hairInstOffset;
-    auto hairAux = reinterpret_cast<CurveGroupAux*>(params.hairAux);
+    auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
+    auto& aux = *(CurveGroupAux*)(gas_ptr-sizeof(CurveGroupAux));
 
-    auto& aux = hairAux[hair_idx];
-
-    uint strandIndex = aux.strand_i[primIdx];
+    uint strandIndex = aux.strand_i[primIdx].x;
 
     float  segmentU   = optixGetCurveParameter();
     float2 strand_u = aux.strand_u[primIdx];

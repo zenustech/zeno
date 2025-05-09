@@ -82,8 +82,8 @@
 #include "Portal.h"
 #include "Scene.h"
 
-#include <hair/Hair.h>
-#include <hair/optixHair.h>
+#include <curve/Hair.h>
+#include <curve/optixCurve.h>
 
 #include "ChiefDesignerEXR.h"
 using namespace zeno::ChiefDesignerEXR;
@@ -152,8 +152,6 @@ using Vertex = float3;
 
 struct PathTracerState
 {
-    raii<CUdeviceptr> auxHairBuffer;
-
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
     
@@ -328,8 +326,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         params.width * params.height * sizeof( ushort1 )
             ) );
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-
-    auto byte_size = params.width * params.height * sizeof( float3 );
     
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
@@ -402,11 +398,6 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
     //output_buffer_o.getHostPointer();
 }
 
-void updateCurves() {
-    prepareHairs(OptixUtil::context);
-    prepareCurveGroup(OptixUtil::context);
-}
-
 static void initCameraState()
 {
     camera.setEye( make_float3( 278.0f, 273.0f, -900.0f ) );
@@ -431,7 +422,6 @@ void updateRootIAS()
     state.params.handle = state.rootHandleIAS;
     return;
 
-    timer.tick();
     const auto campos = state.params.cam.eye;
     const float mat3r4c[12] = {1,0,0,-campos.x,   
                                0,1,0,-campos.y,   
@@ -446,9 +436,6 @@ void updateRootIAS()
     uint32_t MAX_INSTANCE_ID;
     optixDeviceContextGetProperty( OptixUtil::context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
     state.params.maxInstanceID = MAX_INSTANCE_ID;
-
-    std::vector<CurveGroupAux> auxHair;
-    state.params.hairInstOffset = op_index;
 
     for (auto& [key, val] : hair_yyy_cache) {
 
@@ -466,7 +453,7 @@ void updateRootIAS()
 		//opinstance.instanceId = op_index++;
 		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
 		opinstance.visibilityMask = DefaultMatMask;
-		opinstance.traversableHandle = hair_state->gasHandle;
+		opinstance.traversableHandle = hair_state->node->handle;
 
         // sutil::Matrix3x4 yUpTransform = {
         //     0.0f, 1.0f, 0.0f, -campos.x,
@@ -486,49 +473,8 @@ void updateRootIAS()
 
             opinstance.instanceId = op_index++;
 		    optix_instances.push_back( opinstance );
-
-            auxHair.push_back(hair_state->aux); 
         }
     }
-
-    for (auto& [key, ele] : curveGroupStateCache) {
-
-        OptixInstance opinstance {};
-        auto shader_mark = (uint)ele->curveType + 3;
-
-		auto combinedID = std::tuple(ele->mtid, (ShaderMark)shader_mark);
-		auto shader_index = defaultScene.shader_indice_table[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = op_index++;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = DefaultMatMask;
-		opinstance.traversableHandle = ele->gasHandle;
-
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-		optix_instances.push_back( opinstance );
-
-        auxHair.push_back(ele->aux);
-    }
-
-    state.auxHairBuffer.reset();
-
-    {
-        size_t byte_size = sizeof(CurveGroupAux) * auxHair.size();
-        state.auxHairBuffer.resize(byte_size);
-        cudaMemcpy((void*)state.auxHairBuffer.handle, auxHair.data(), byte_size, cudaMemcpyHostToDevice);
-
-        state.params.hairAux = (void*)state.auxHairBuffer.handle;
-    }
-
-	OptixAccelBuildOptions accel_options{};
-	accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-	accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-	buildIAS(OptixUtil::context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);  
-
-	timer.tock("update Root IAS");
-	state.params.handle = state.rootHandleIAS;
 }
 
 static void createSBT( PathTracerState& state )

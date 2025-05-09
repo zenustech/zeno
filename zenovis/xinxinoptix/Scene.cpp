@@ -1,6 +1,6 @@
 #include "Scene.h"
+#include "TypeCaster.h"
 #include "optix_types.h"
-#include "zeno/utils/vec.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -208,4 +208,34 @@ bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combin
 
     _vdb_grids_cached[vdb_key] = volume_ptr;
     return true;
+}
+
+void Scene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key) {
+
+    auto cg = std::make_shared<CurveGroup>();
+    cg->curveType = curveType;
+
+    cg->points = std::move(points);
+    cg->widths = std::move(widths);
+    cg->normals = std::move(normals);
+    cg->strands = std::move(strands);
+
+    curveGroupCache[key] = cg;
+    auto mark = (uint)curveType + 3;
+    updateGeoType( key, ShaderMark(mark) );
+}
+
+void Scene::prepareCurveGroup(OptixDeviceContext& context) {
+
+    for (auto& [key, ele] : curveGroupCache) {
+        if (!ele->dirty) continue;
+        ele->dirty = false;
+
+        auto state = std::make_shared<CurveGroupWrapper>();
+        state->curveGroup = ele;
+        state->curveType = ele->curveType;
+
+        state->makeCurveGroupGAS(context);
+        curveGroupStateCache[key] = state;
+    }
 }

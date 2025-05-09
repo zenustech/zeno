@@ -19,7 +19,6 @@
 
 #include <vector_types.h>
 #include <zeno/types/NumericObject.h>
-#include <tbb/parallel_for.h>
 
 #include <xinxinoptixapi.h>
 
@@ -37,12 +36,13 @@
 #include "glm/fwd.hpp"
 #include "optixPathTracer.h"
 #include "optixSphere.h"
-#include "TypeCaster.h"
 #include "optix_types.h"
 #include "zeno/utils/vec.h"
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
+#include "curve/optixCurve.h"
+
 #include "LightsWrapper.h"
 
 using m3r4c = std::array<float, 12>;
@@ -62,7 +62,7 @@ public:
     std::unordered_map<std::string, std::vector<m3r4c>> matrix_map{}; 
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
-        matrix_map[key] = matrix_list;
+        matrix_map[key] = std::move(matrix_list);
     }
 
     nlohmann::json sceneJson;
@@ -264,6 +264,7 @@ public:
         processVolumeBox(context);
         prepare_mesh_gas(context);
         prepare_sphere_gas(context);
+        prepareCurveGroup(context);
         
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
 
@@ -359,6 +360,7 @@ public:
         prepare(_spheres_);
         prepare(_sphere_groups_);
         prepare(_vol_boxs);
+        prepare(curveGroupStateCache);
 
         std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                                                 decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
@@ -532,9 +534,9 @@ public:
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
     
-    std::map<std::string, MeshDat> drawdats;
+    std::unordered_map<std::string, MeshDat> drawdats;
 
-    std::set<std::string> uniqueMatsForMesh;
+    std::unordered_set<std::string> uniqueMatsForMesh;
     std::map<std::string, uint16_t> _mesh_materials;
     std::map<shader_key_t, uint16_t> shader_indice_table;
 
@@ -579,26 +581,18 @@ public:
         updateDrawObjects();
     }
 
+    std::map<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
+    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> curveGroupStateCache;
+
+    void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
+    void prepareCurveGroup(OptixDeviceContext& context);
+
 std::unordered_map<std::string, ShaderMark>  geoTypeMap;
 std::unordered_map<std::string, glm::mat4> geoMatrixMap;
 std::unordered_map<std::string, glm::mat4> renderObjectMatrixMap;
 
 void updateGeoType(const std::string& key, ShaderMark mark) {
-    if (geoTypeMap.count(key) > 0) {
-        const auto cached_type = geoTypeMap[key];
-        if (cached_type == mark) return; 
-
-        if (cached_type == ShaderMark::Mesh)
-            _meshes_.erase(key);
-        if (cached_type == ShaderMark::Sphere) {
-            _spheres_.erase(key);
-            _sphere_groups_.erase(key);
-        }
-        if (cached_type == ShaderMark::Volume) {
-            _vol_boxs.erase(key);
-        }
-    }
-    geoTypeMap[key] = mark;
+    geoTypeMap.insert( {key, mark} );
 }
 
 std::shared_ptr<SceneNode> uniform_sphere_gas{};

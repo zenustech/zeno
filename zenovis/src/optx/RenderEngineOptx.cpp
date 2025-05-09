@@ -11,6 +11,7 @@
 #include "zeno/utils/vec.h"
 #include <limits>
 #include <memory>
+#include <tbb/mutex.h>
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
 #include <zeno/types/PrimitiveObject.h>
@@ -46,8 +47,8 @@
 #include <string_view>
 #include <random>
 
-#include <hair/Hair.h>
-#include <hair/optixHair.h>
+#include <curve/Hair.h>
+#include <curve/optixCurve.h>
 
 #include "ShaderBuffer.h"
 #include <zeno/extra/ShaderNode.h>
@@ -405,7 +406,6 @@ struct GraphicsManager {
                 if (prim_in->userData().has("curve") && prim_in->verts->size() && prim_in->verts.has_attr("width")) {
 
                     auto& ud = prim_in->userData();
-                    auto mtlid = ud.get2<std::string>("mtlid", "Default");
                     auto curveTypeIndex = ud.get2<uint>("curve", 0u);
                     auto curveTypeEnum = magic_enum::enum_cast<zeno::CurveType>(curveTypeIndex).value_or(zeno::CurveType::LINEAR);
 
@@ -439,7 +439,9 @@ struct GraphicsManager {
                     }
 
                     auto abcpath = ud.get2<std::string>("abcpath_0", "Default");
-                    loadCurveGroup(points, widths, normals, strands, curveTypeEnum, mtlid, abcpath);
+                    const auto reName = prim_in->userData().get2<std::string>("ObjectName", abcpath);
+
+                    defaultScene.preloadCurveGroup(points, widths, normals, strands, curveTypeEnum, reName);
                     return;
                 }
 
@@ -1295,8 +1297,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         "Light.cu", false, {}, {}, {}
     };
 
-    std::map<std::string, std::vector<zeno::CurveType>> cachedCurvesMaterials;
-
     std::map<std::string, std::set<ShaderMark>> required_shader_names;
     std::map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
 
@@ -1468,6 +1468,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             bool requireTriangObj = false;
             bool requireSphereObj = false;
             bool requireVolumeObj = false;
+
+            unsigned int usesCurveTypeFlags = 0;
+            auto curve_task = [&usesCurveTypeFlags](zeno::CurveType ele) {
+                usesCurveTypeFlags |= CURVE_FLAG_MAP.at(ele);
+                return CURVE_SHADER_MARK.at(ele);
+            };
             
             if ( matNeedUpdate ) {
                 required_shader_names = defaultScene.prepareShaderSet();
@@ -1489,6 +1495,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
 
                     for (const auto& mark : value) {
+
+                        if (mark > ShaderMark::Volume)
+                        {
+                            auto zmark = mark - 3;
+                            curve_task((zeno::CurveType)zmark);
+                        }
 
                         if (mark == ShaderMark::Mesh)
                             requireTriangObj = true;
@@ -1515,27 +1527,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
  
             } // preserve material names for materials-only updating case
-
-            unsigned int usesCurveTypeFlags = 0;
-            auto mark_task = [&usesCurveTypeFlags](zeno::CurveType ele) {
-
-                usesCurveTypeFlags |= CURVE_FLAG_MAP.at(ele);
-                return CURVE_SHADER_MARK.at(ele);
-            };
-
-            if (cachedCurvesMaterials.count("Default") ) {
-
-                auto& ref = required_shader_names.at("Default"); 
-
-                for (auto& ele : ref) {
-
-                    auto tmp = std::make_shared<ShaderPrepared>();
-                    tmp->matid = "Default";
-                    tmp->filename = _default_shader_template.name;
-                    tmp->callable = _default_callable_template.shadtmpl;
-                    tmp->mark = ele;
-                }                
-            }
 
             {
                 std::unordered_set<OptixUtil::TexKey, OptixUtil::TexKeyHash> requiredTexPathSet;
@@ -1755,7 +1746,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             {
                 defaultScene.updateMeshMaterials(meshMatLUT);
 
-                xinxinoptix::updateCurves();
                 xinxinoptix::prepareScene();
 
                 xinxinoptix::configPipeline(ShaderDirty);

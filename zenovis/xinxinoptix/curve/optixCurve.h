@@ -48,8 +48,10 @@
 #include "Hair.h"
 #include "GeometryAux.h"
 
+#include "../optixCommon.h"
+
 struct CurveGroup {
-    std::string mtlid;
+    bool dirty = true;
     zeno::CurveType curveType;
 
     std::vector<uint> strands;
@@ -58,27 +60,22 @@ struct CurveGroup {
     std::vector<float3> normals;
 };
 
-struct HairState
+struct CurveGroupWrapper
 {
     std::shared_ptr<Hair> pHair;
     std::shared_ptr<CurveGroup> curveGroup;
     sutil::Aabb aabb;
 
     zeno::CurveType curveType;
-    std::string mtid;
+    std::shared_ptr<SceneNode> node {};
 
-    OptixTraversableHandle gasHandle = 0;
-    xinxinoptix::raii<CUdeviceptr> gasBuffer {};
     // Aux data
     CurveGroupAux aux {};
 
-    ~HairState() {
-        cudaFree( reinterpret_cast<void*>( aux.strand_u.data ) );
-        aux.strand_u.data = 0;
-        cudaFree( reinterpret_cast<void*>( aux.strand_i.data ) );
-        aux.strand_i.data = 0;
-        cudaFree( reinterpret_cast<void*>( aux.strand_info.data ) );
-        aux.strand_info.data = 0;
+    ~CurveGroupWrapper() {
+        cudaFreeAsync( reinterpret_cast<void*>( aux.strand_u.data ), 0 );
+        cudaFreeAsync( reinterpret_cast<void*>( aux.strand_i.data ), 0 );
+        cudaFreeAsync( reinterpret_cast<void*>( aux.strand_info.data ), 0 );
     }
 
 public:
@@ -101,7 +98,7 @@ std::vector<uint> strandIndices(zeno::CurveType curveType, const std::vector<uin
 };
 
 inline std::map< std::string, std::shared_ptr<Hair> > hair_cache;
-inline std::map< std::tuple<std::string, uint>, std::shared_ptr<HairState> > geo_hair_cache;
+inline std::map< std::tuple<std::string, uint>, std::shared_ptr<CurveGroupWrapper> > geo_hair_cache;
 
 using hair_state_key = std::tuple<std::string, uint, std::string>;
 
@@ -126,12 +123,12 @@ inline void loadHair(const std::string& filePath, const std::string& mtlid, uint
         return hair_cache[filePath];
     } ();
 
-    auto hairState = [&]() {
+    auto wrapper = [&]() {
         auto key = std::tuple {filePath, mode};
 
         if (geo_hair_cache.count( key ) == 0 || neo) {
 
-            auto tmp = std::make_shared<HairState>();
+            auto tmp = std::make_shared<CurveGroupWrapper>();
             tmp->curveType = (zeno::CurveType)mode;
             tmp->pHair = hair;
 
@@ -178,57 +175,10 @@ inline void prepareHairs(OptixDeviceContext context) {
     }
 }
 
-inline std::map<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
-inline std::map<std::string, std::shared_ptr<HairState>> curveGroupStateCache;
-
-inline void loadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, 
-                           zeno::CurveType curveType, std::string mtlid, std::string key) {
-
-    auto cg = std::make_shared<CurveGroup>();
-    cg->mtlid = mtlid; 
-    cg->curveType = curveType;
-
-    cg->points = std::move(points);
-    cg->widths = std::move(widths);
-    cg->normals = std::move(normals);
-    cg->strands = std::move(strands);
-
-    curveGroupCache[key] = cg;
-}
-
-inline void prepareCurveGroup(OptixDeviceContext context) {
-
-    curveGroupStateCache.clear();
-
-    for (auto& [key, ele] : curveGroupCache) {
-        auto state = std::make_shared<HairState>();
-
-        state->curveGroup = ele;
-
-        state->curveType = ele->curveType;
-        state->mtid = ele->mtlid;
-
-        state->makeCurveGroupGAS(context);
-        curveGroupStateCache[key] = state;
-    }
-
-    curveGroupCache.clear();
-}
-
-
 inline void cleanupHairs() {
     hair_cache.clear();
     geo_hair_cache.clear();
 
     hair_xxx_cache.clear();
     hair_yyy_cache.clear();  
-
-    curveGroupCache.clear();
-    curveGroupStateCache.clear();  
-}
-
-namespace xinxinoptix {
-
-void updateCurves();
-
 }
