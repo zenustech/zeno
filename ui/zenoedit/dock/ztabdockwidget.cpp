@@ -5,6 +5,7 @@
 #include <zenoedit/panel/zenoimagepanel.h>
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
+#include "../panel/zenooutline.h"
 #include "../panel/zlogpanel.h"
 #include "../panel/zenocommandparamspanel.h"
 #include "../panel/zenoopenpathpanel.h"
@@ -233,6 +234,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             return new ZenoOpenPathPanel;
         }
+        case PANEL_OUTLINE:
+        {
+            return new zenooutline;
+        }
     }
     return nullptr;
 }
@@ -288,6 +293,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Open Path") || title == "Open Path") {
         type = PANEL_OPEN_PATH;
+    }
+    else if (title == tr("Outline") || title == "Outline") {
+        type = PANEL_OUTLINE;
     }
     return type;
 }
@@ -541,7 +549,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path"), tr("Outline")};
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -570,6 +578,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
                 case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
                 case 9: m_debugPanel = PANEL_OPEN_PATH; break;
+                case 10: m_debugPanel = PANEL_OUTLINE; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }
