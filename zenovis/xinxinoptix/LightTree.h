@@ -236,14 +236,14 @@ struct LightTreeSampler {
         {
             size_t byte_length = sizeof( lightBitTrails[0] ) * lightBitTrails.size();
 
-            CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightBitTrailsPtr ), byte_length) );
+            CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightBitTrailsPtr ), byte_length, 0) );
             CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( lightBitTrailsPtr ),
                                    lightBitTrails.data(), byte_length, cudaMemcpyHostToDevice) );
         }
         {
             size_t byte_length = sizeof( nodes[0] ) * nodes.size();
 
-            CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightTreeNodesPtr ), byte_length) );
+            CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightTreeNodesPtr ), byte_length, 0) );
             CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( lightTreeNodesPtr ),
                                    nodes.data(), byte_length, cudaMemcpyHostToDevice) );
         }

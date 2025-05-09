@@ -7,19 +7,26 @@ target_sources(zenovis PRIVATE
   OptiXStuff.h
   Host.h
 
-  volume/optixVolume.cpp
-  volume/optixVolume.h
+  optixVolume.cpp
+  optixVolume.h
   optixSphere.cpp
   optixSphere.h
+  optixTriMesh.h
+  optixCommon.h
   Portal.h
   Shape.h
   XAS.h
   BCX.h
 
+  Scene.cpp
+  Scene.h
+
   LightTree.cpp
   LightTree.h
   LightBounds.cpp
   LightBounds.h
+  LightsWrapper.h
+  
   ies/ies.cpp
   ies/ies.h
   TypeCaster.cpp
@@ -42,8 +49,8 @@ target_sources(zenovis PRIVATE
 
   )
 
-file(GLOB hair_src "hair/*.h" "hair/*.cpp")
-target_sources(zenovis PRIVATE ${hair_src})
+file(GLOB curve_src "curve/*.h" "curve/*.cpp")
+target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
