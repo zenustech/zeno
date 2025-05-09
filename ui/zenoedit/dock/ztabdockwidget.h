@@ -24,7 +24,8 @@ enum PANEL_TYPE
     PANEL_IMAGE,
     PANEL_OPTIX_VIEW,
     PANEL_COMMAND_PARAMS,
-    PANEL_OPEN_PATH
+    PANEL_OPEN_PATH,
+    PANEL_OUTLINE
 };
 
 class ZTabDockWidget : public QDockWidget
