@@ -1332,8 +1332,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 {
     camera_changed = true;
 
-    CppTimer theTimer;
-    theTimer.tick();
+    timer.tick();
     
     if (refresh) {
 
@@ -1564,8 +1563,6 @@ void configPipeline(bool shaderDirty) {
 
     auto buffers = globalShaderBufferGroup.upload();
     state.params.global_buffers = (void*)buffers;
-
-    CppTimer timer;
 
     if (shaderDirty) {
         timer.tick();

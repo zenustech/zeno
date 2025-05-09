@@ -1137,12 +1137,24 @@ struct GraphicsManager {
             objOrder[key] = idx;
             idx++;
         }
-        for (auto const &[key, obj] : objs) {
-            //auto ikey = key + ':' + std::string(std::to_string(idx));
-            if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
 
-//                zeno::log_info("load_object: loading graphics [{}]", key);
-                changed = true;
+        timer.tick();
+        // tbb::task_arena limited(12);
+        // tbb::task_group run_group;
+        // tbb::mutex ig_mutex;
+        
+        for (auto const &[key, obj] : objs) {
+
+            // limited.execute([&] {
+            //     run_group.run([&]() {
+                    
+                    //ig_mutex.lock();
+                    auto may = ins.may_emplace(key);
+                    //ig_mutex.unlock();
+
+                    if (may && key.find(":static:") == key.npos) {
+                        //                zeno::log_info("load_object: loading graphics [{}]", key);
+                        changed = true;
 
                 if (!scene->drawOptions->updateMatlOnly) {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
@@ -1172,12 +1184,17 @@ struct GraphicsManager {
                     }
                 }
 
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
-
-//                zeno::log_info("load_object: loaded graphics to {}", ig.get());
-                ins.try_emplace(key, std::move(ig));
-            }
+                        auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                        //ig_mutex.lock();
+                        ins.try_emplace(key, std::move(ig));
+                        //ig_mutex.unlock();
+                    }
+            //     });
+            // });
         }
+        //run_group.wait();
+        timer.tock("Prim load");
+
         {   //when turn off last node in always mode
             static int objsNum = 0;
             if (objsNum > objs.size() && !changed)
@@ -1737,7 +1754,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
 
             if(lightNeedUpdate){
-                CppTimer timer; timer.tick();
+                timer.tick();
                 xinxinoptix::buildLightTree();
                 timer.tock("Build LightTree");
             }
