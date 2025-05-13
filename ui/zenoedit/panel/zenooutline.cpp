@@ -30,24 +30,36 @@ void OutlineItemModel::setupModelData()
     if (auto main = zenoApp->getMainWindow()) {
         for (auto view : main->viewports()) {
             if (!view->isGLViewport()) {
+                std::vector<std::string> mesh_names;
+                std::vector<std::string> matrix_names;
                 if (auto vis = view->getZenoVis()) {
                     if (auto sess = vis->getSession()) {
                         if (auto scene = sess->get_scene()) {
                             for (auto& [key, obj] : scene->objectsMan->pairsShared()) {
-                                if (obj->userData().has("ResourceType")) {
-                                    if (obj->userData().get2<std::string>("ResourceType", "none") == "Mesh") {
-                                        meshItem->addChild(QString::fromStdString(key));
-                                    } else if (obj->userData().get2<std::string>("ResourceType", "none") == "Matrixes") {
-                                        matrixItem->addChild(QString::fromStdString(key));
-                                    } else if (obj->userData().get2<std::string>("ResourceType", "none") == "SceneDescriptor") {
-                                        sceneDescItem->addChild(QString::fromStdString(key));
+                                auto &ud = obj->userData();
+                                if (ud.has("ResourceType")) {
+                                    auto object_name = ud.get2<std::string>("ObjectName", key);
+                                    if (ud.get2<std::string>("ResourceType", "none") == "Mesh") {
+                                        mesh_names.emplace_back(object_name);
+                                    } else if (ud.get2<std::string>("ResourceType", "none") == "Matrixes") {
+                                        matrix_names.emplace_back(object_name);
+                                    } else if (ud.get2<std::string>("ResourceType", "none") == "SceneDescriptor") {
+                                        sceneDescItem->addChild(QString::fromStdString(object_name));
                                     } else {
-                                        othersItem->addChild(QString::fromStdString(key));
+                                        othersItem->addChild(QString::fromStdString(object_name));
                                     }
                                 }
                             }
                         }
                     }
+                }
+                std::sort(mesh_names.begin(), mesh_names.end());
+                for (auto &mesh_name: mesh_names) {
+                    meshItem->addChild(QString::fromStdString(mesh_name));
+                }
+                std::sort(matrix_names.begin(), matrix_names.end());
+                for (auto &matrix_name: matrix_names) {
+                    matrixItem->addChild(QString::fromStdString(matrix_name));
                 }
                 rootItem->children[0]->name = QString::fromStdString("Mesh:" + std::to_string(meshItem->children.size()));
                 rootItem->children[1]->name = QString::fromStdString("Matrixes:" + std::to_string(matrixItem->children.size()));
