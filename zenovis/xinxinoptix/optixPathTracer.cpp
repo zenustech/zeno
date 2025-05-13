@@ -1219,6 +1219,8 @@ void buildLightTree() {
             OptixUtil::tex_lut.find(tex_accessor, tex_key);
 
             auto& val = tex_accessor->second;
+            lightsWrapper.texs.push_back(val);
+
             light.tex = val->texture;
             light.texGamma = dat.textureGamma;
         }

@@ -1545,7 +1545,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
  
             } // preserve material names for materials-only updating case
 
-            {
+            bool requireSphereLight = false;
+            bool requireTriangLight = false;
+            
+            {   timer.tick();
+
                 std::unordered_set<OptixUtil::TexKey, OptixUtil::TexKeyHash> requiredTexPathSet;
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (required_shader_names.count( mtldet->mtlidkey ) == 0) continue;
@@ -1555,16 +1559,23 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
                 }
                 
-                for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
-                    if (ld.textureKey.empty()) continue; 
-                    requiredTexPathSet.insert( {ld.textureKey, false});
-                }
+                for (const auto& [_, ld] : xinxinoptix::get_lightdats()) {
 
-                timer.tick();
+                    requiredTexPathSet.insert( {ld.textureKey, false} );
+
+                    if (requireSphereLight && requireTriangLight) continue;
+                    const auto shape_enum = magic_enum::enum_cast<zeno::LightShape>(ld.shape).value_or(zeno::LightShape::Point);
+    
+                    if (shape_enum == zeno::LightShape::Sphere)
+                        requireSphereLight = true;
+                    else if (shape_enum != zeno::LightShape::Point)
+                        requireTriangLight = true;
+                }
+                
                 tbb::task_group texture_group;
-                for (const auto& realNeedTexKey: requiredTexPathSet) {
+                for (const auto& key: requiredTexPathSet) {
                     texture_group.run([&]() {
-                        OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
+                        OptixUtil::addTexture(key.path, key.blockCompression);
                     });
                 }
                 texture_group.wait();
@@ -1656,31 +1667,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
             }
 
-            timer.tick();
-            for (auto it = OptixUtil::tex_lut.cbegin(); it != OptixUtil::tex_lut.cend(); ++it)
-            {
-                if (it->second.use_count()<=1)
-                    OptixUtil::tex_lut.erase(it->first);
-            }
-            timer.tock("Texture unload");
-
-            bool requireSphereLight = false;
-            bool requireTriangLight = false;
-            
-            for (const auto& [_, ld] : xinxinoptix::get_lightdats()) {
-
-                const auto shape_enum = magic_enum::enum_cast<zeno::LightShape>(ld.shape).value_or(zeno::LightShape::Point);
-
-                if (shape_enum == zeno::LightShape::Sphere) {
-                    requireSphereLight = true;
-                } else if (shape_enum != zeno::LightShape::Point) {
-                    requireTriangLight = true;
-                }
-                if (requireSphereLight && requireTriangLight) {
-                    break;
-                }
-            }
-
             const auto prepareLightShader = [&](ShaderMark smark) {
                 const auto shader_key = std::tuple{ "Light", smark };
                 if (cached_shaders.count(shader_key)>0) return;
@@ -1717,8 +1703,24 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     meshMatLUT[std::get<0>(key)] = idx;
             }
 
-            //defaultScene.processVolumeBox(OptixUtil::context);
             defaultScene.shader_indice_table = ShaderKeyIndex;
+
+                if(lightNeedUpdate){
+                    timer.tick();
+                    xinxinoptix::buildLightTree();
+                    timer.tock("Build LightTree");
+                }
+
+                timer.tick();
+                std::vector<OptixUtil::TexKey> dtexs;
+                for (auto& [k, ptr] : OptixUtil::tex_lut) {
+                    if (ptr!=nullptr && ptr.use_count()<=1)
+                        dtexs.push_back(k);
+                }
+                for (auto& k : dtexs) {
+                    OptixUtil::removeTexture(k);
+                }
+                timer.tock("Texture unload");
 
             if (matNeedUpdate)
             {
@@ -1751,12 +1753,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
                 std::map<std::string, uint16_t>().swap(cachedMeshMatLUT);
                 cachedMeshMatLUT = meshMatLUT;
-            }
-
-            if(lightNeedUpdate){
-                timer.tick();
-                xinxinoptix::buildLightTree();
-                timer.tock("Build LightTree");
             }
 
             if (meshNeedUpdate || bMeshMatLUTChanged)

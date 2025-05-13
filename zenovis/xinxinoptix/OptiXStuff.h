@@ -1004,7 +1004,7 @@ inline void removeTexture(const TexKey &key) {
     }
 }
 
-inline std::shared_ptr<cuTexture> getTexturePtr(std::string& path) {
+inline std::shared_ptr<cuTexture> getTexturePtr(const std::string& path) {
     decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
     auto find = OptixUtil::tex_lut.find(tex_accessor, {path, false});
 

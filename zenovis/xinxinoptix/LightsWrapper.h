@@ -1,9 +1,8 @@
 #pragma once
 
 #include "optixCommon.h"
+#include "optixStuff.h"
 #include "optixPathTracer.h"
-
-#include <map>
 #include <vector>
 
 struct LightsWrapper {
@@ -11,6 +10,8 @@ struct LightsWrapper {
     std::vector<float4> _sphereLightGeo;
     std::vector<float3> _triangleLightGeo;
     std::vector<GenericLight> g_lights;
+
+    std::vector<std::shared_ptr<OptixUtil::cuTexture>> texs;
 
     OptixTraversableHandle   lightIasHandle{};
     xinxinoptix::raii<CUdeviceptr>  lightIasBuffer{};

@@ -15,8 +15,6 @@ struct SphereTransformed {
     std::string materialID;
     std::string instanceID;
     
-    glm::mat4 optix_transform;
-
     std::shared_ptr<SceneNode> node;
 };
 

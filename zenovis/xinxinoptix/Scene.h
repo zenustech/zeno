@@ -615,7 +615,6 @@ std::unordered_map<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
         dsphere->instanceID = instID;
 
         auto trans = glm::transpose(transform);
-        dsphere->optix_transform = trans;
         _spheres_[key] = dsphere;
 
         geoMatrixMap[key] = trans;
