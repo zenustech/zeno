@@ -1317,8 +1317,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::map<std::string, std::set<ShaderMark>> required_shader_names;
     std::map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
 
-    std::map<std::string, uint16_t> cachedMeshMatLUT;
-    bool meshMatLUTChanged(std::map<std::string, uint16_t>& newLUT) {
+    std::unordered_map<std::string, uint16_t> cachedMeshMatLUT;
+    bool meshMatLUTChanged(std::unordered_map<std::string, uint16_t>& newLUT) {
         bool changed = false;
         if (cachedMeshMatLUT.size() != newLUT.size()) {
             changed = true;
@@ -1330,6 +1330,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     changed = true;
                 else if (cachedMeshMatLUT[matkey] != newLUT[matkey])
                     changed = true;
+
+                if (changed) break;
             }
         }
         return changed;
@@ -1435,7 +1437,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
 
-            std::map<std::string,  uint16_t> meshMatLUT{};
+            std::unordered_map<std::string,  uint16_t> meshMatLUT{};
             std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
 
             ensure_shadtmpl(_default_callable_template);
@@ -1711,16 +1713,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     timer.tock("Build LightTree");
                 }
 
-                timer.tick();
-                std::vector<OptixUtil::TexKey> dtexs;
-                for (auto& [k, ptr] : OptixUtil::tex_lut) {
-                    if (ptr!=nullptr && ptr.use_count()<=1)
-                        dtexs.push_back(k);
+                if (OptixUtil::tex_lut.size()) {
+
+                    timer.tick();
+                    std::vector<OptixUtil::TexKey> dtexs;
+                    for (auto& [k, ptr] : OptixUtil::tex_lut) {
+                        if (ptr!=nullptr && ptr.use_count()<=1)
+                            dtexs.push_back(k);
+                    }
+                    for (auto& k : dtexs) {
+                        OptixUtil::removeTexture(k);
+                    }
+                    timer.tock("Texture unload");
                 }
-                for (auto& k : dtexs) {
-                    OptixUtil::removeTexture(k);
-                }
-                timer.tock("Texture unload");
+
 
             if (matNeedUpdate)
             {
@@ -1751,7 +1757,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 bMeshMatLUTChanged = meshMatLUTChanged(meshMatLUT);
             }
             if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
-                std::map<std::string, uint16_t>().swap(cachedMeshMatLUT);
                 cachedMeshMatLUT = meshMatLUT;
             }
 

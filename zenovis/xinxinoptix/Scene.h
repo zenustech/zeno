@@ -61,7 +61,6 @@ private:
     std::unordered_map<std::string, std::function<void(const std::string&)>>      cleanTasks;
 
 public:
-    bool camera_changed;
 
     std::unordered_map<std::string, std::vector<m3r4c>> matrix_map{}; 
 
@@ -516,7 +515,7 @@ public:
     std::unordered_map<std::string, MeshDat> drawdats;
 
     std::unordered_set<std::string> uniqueMatsForMesh;
-    std::map<std::string, uint16_t> _mesh_materials;
+    std::unordered_map<std::string, uint16_t> _mesh_materials;
     std::map<shader_key_t, uint16_t> shader_indice_table;
 
     std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
@@ -553,10 +552,9 @@ public:
     void updateStaticDrawObjects();
     void updateDrawObjects();
 
-    void updateMeshMaterials(std::map<std::string, uint16_t> const &mtlidlut) {
+    void updateMeshMaterials(const std::unordered_map<std::string, uint16_t>& mtlidlut) {
 
         _mesh_materials = mtlidlut;
-        camera_changed = true;
         updateDrawObjects();
     }
 

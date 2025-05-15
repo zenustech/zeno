@@ -165,7 +165,7 @@ namespace xinxinoptix {
         buildIAS(context, accel_options, instances, bufferIAS, handleIAS);
     } 
 
-    inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint16_t>& mat_idx, const std::map<std::string, uint16_t>& mtlidlut,
+    inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint16_t>& mat_idx, uint16_t sbt_count,
                                 raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size)
     {
         if (vertices.empty()) { return; }
@@ -195,7 +195,7 @@ namespace xinxinoptix {
                         ) );
         }
         // // Build triangle GAS // // One per SBT record for this build input
-        const auto numSbtRecords = (mtlidlut.empty() || mat_idx.size()<=1) ? 1 : mtlidlut.size();
+        const auto numSbtRecords = (sbt_count==0 || mat_idx.size()<=1) ? 1 : sbt_count;
         std::vector<uint32_t> triangle_input_flags( numSbtRecords, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL );
 
         OptixBuildInput triangle_input                           = {};

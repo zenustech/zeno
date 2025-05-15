@@ -91,13 +91,13 @@ using raii = xinxinoptix::raii<T>;
         return std::vector { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
     }
 
-    void buildGas(OptixDeviceContext context, const std::map<std::string, uint16_t>& mtlidlut) {
+    void buildGas(OptixDeviceContext context, uint16_t sbt_count) {
 
         auto buffers = this->aux();
         std::reverse(buffers.begin(), buffers.end());
         auto extra_size = sizeof(buffers[0]) * buffers.size();
 
-        xinxinoptix::buildMeshGAS(context, vertices, indices, mat_idx, mtlidlut, node->buffer, node->handle, extra_size);
+        xinxinoptix::buildMeshGAS(context, vertices, indices, mat_idx, sbt_count, node->buffer, node->handle, extra_size);
         upload(extra_size);
     }
 

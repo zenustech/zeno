@@ -151,7 +151,7 @@ void Scene::updateDrawObjects() {
             if (nullptr == mesh || mesh->vertices.empty()) return 0ull;
 
             mesh->dirty = false;
-            mesh->buildGas(context, _mesh_materials);
+            mesh->buildGas(context, _mesh_materials.size());
 
             return mesh->node->handle;
         };
