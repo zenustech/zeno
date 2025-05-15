@@ -518,7 +518,7 @@ struct GraphicsManager {
                         memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                         memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                        defaultScene.preload_sphere_transformed(objectName, mtlid, instID, sphere_transform);
+                        defaultScene.preload_sphere_transformed(objectName, sphere_transform);
                     }
                     return;
                 }

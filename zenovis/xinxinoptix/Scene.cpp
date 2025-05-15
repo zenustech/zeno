@@ -146,6 +146,20 @@ void Scene::updateDrawObjects() {
             mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
             mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
         });
+
+        dirtyTasks[name] = [&](OptixDeviceContext& context){
+            if (nullptr == mesh || mesh->vertices.empty()) return 0ull;
+
+            mesh->dirty = false;
+            mesh->buildGas(context, _mesh_materials);
+
+            return mesh->node->handle;
+        };
+
+        cleanTasks[name] = [&](const std::string& k) {
+            _meshes_.erase(k);
+            drawdats.erase(k);
+        };
     }
 
 }
@@ -212,7 +226,10 @@ bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combin
 
 void Scene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key) {
 
-    auto cg = std::make_shared<CurveGroup>();
+    auto& cg = curveGroupCache[key];
+    if (nullptr == cg) {
+        cg = std::make_shared<CurveGroup>();
+    }
     cg->curveType = curveType;
 
     cg->points = std::move(points);
@@ -220,24 +237,26 @@ void Scene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& w
     cg->normals = std::move(normals);
     cg->strands = std::move(strands);
 
-    curveGroupCache[key] = cg;
     auto mark = (uint)curveType + 3;
     updateGeoType( key, ShaderMark(mark) );
-}
 
-void Scene::prepareCurveGroup(OptixDeviceContext& context) {
-
-    for (auto& [key, ele] : curveGroupCache) {
-        if (!ele->dirty) continue;
-        ele->dirty = false;
+    dirtyTasks[key] = [&, key](OptixDeviceContext& context) {
+        cg->dirty = false;
 
         auto state = std::make_shared<CurveGroupWrapper>();
-        state->curveGroup = ele;
-        state->curveType = ele->curveType;
+        state->curveGroup = cg;
+        state->curveType = cg->curveType;
 
         state->makeCurveGroupGAS(context);
         curveGroupStateCache[key] = state;
-    }
+
+        return state->node->handle;
+    };
+
+    cleanTasks[key] = [&](const std::string& k) {
+        curveGroupCache.erase(k);
+        curveGroupStateCache.erase(k);
+    };
 }
 
 void Scene::preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform) {
@@ -247,37 +266,39 @@ void Scene::preloadHair(const std::string& name, const std::string& filePath, ui
 
     auto hair = [&]() -> std::shared_ptr<Hair> {
 
-        if (hair_cache.count(filePath) == 0 || lwt != hair_cache[filePath]->time()) 
+        if (hairCache.count(filePath) == 0 || lwt != hairCache[filePath]->time()) 
         {
             neo = true;
             auto tmp = std::make_shared<Hair>( filePath );
             tmp->prepareWidths();
-            hair_cache[filePath] = tmp;
+            hairCache[filePath] = tmp;
             return tmp;
         }
-        return hair_cache[filePath];
+        return hairCache[filePath];
     } ();
 
     //auto key = std::tuple {filePath, mode};
-    if (hair_state_cache.count( name ) == 0 || neo) {
+    if (hairStateCache.count( name ) == 0 || neo) {
 
-        auto tmp = std::make_shared<CurveGroupWrapper>();
+        auto& tmp = hairStateCache[name];
+        if (nullptr == tmp) {
+            tmp = std::make_shared<CurveGroupWrapper>();
+        }
         tmp->curveType = (zeno::CurveType)mode;
         tmp->pHair = hair;
 
-        hair_state_cache[ name ] = tmp;
+        dirtyTasks[name] = [&](OptixDeviceContext& context) {
+            tmp->dirty = false;
+            tmp->makeHairGAS(context);
+            return tmp->node->handle;
+        };
+
+        cleanTasks[name] = [&](const std::string& k) {
+            hairStateCache.erase(k);
+        };
     } 
         
     geoMatrixMap[name] = glm::transpose(transform);
     auto mark = (uint)mode + 3;
     updateGeoType( name, ShaderMark(mark) );
-}
-
-void Scene::prepareHairs(OptixDeviceContext& context) {
-
-    for (auto& [key, state] : hair_state_cache) {
-        if (!state->dirty) continue;
-        state->dirty = false;
-        state->makeHairGAS(context);
-    }
 }

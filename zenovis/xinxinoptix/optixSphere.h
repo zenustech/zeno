@@ -11,10 +11,7 @@
 
 struct SphereTransformed {
     bool dirty = true;
-    
-    std::string materialID;
-    std::string instanceID;
-    
+        
     std::shared_ptr<SceneNode> node;
 };
 

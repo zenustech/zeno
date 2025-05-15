@@ -56,6 +56,10 @@ const std::string brikey = "BasicRenderInstances";
 
 class Scene {
 
+private:
+    std::unordered_map<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
+    std::unordered_map<std::string, std::function<void(const std::string&)>>      cleanTasks;
+
 public:
     bool camera_changed;
 
@@ -132,17 +136,6 @@ public:
         return ShaderMark::Mesh;
     }
 
-    void prepare_mesh_gas(OptixDeviceContext& context) {
-
-        for (auto& [key, mesh] : _meshes_) {
-            if (nullptr == mesh || mesh->vertices.empty()) { continue; }
-            if (!mesh->dirty) { continue; }            
-            
-            mesh->dirty = false;
-            mesh->buildGas(context, _mesh_materials);
-        }
-    }
-
     LightsWrapper lightsWrapper;
 
     void prepare_light_ias(OptixDeviceContext& context) {
@@ -203,6 +196,15 @@ public:
         xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle);
     }
 
+    struct Candidate {
+        uint64_t handle;
+        uint32_t sbt;
+        glm::mat4* matrix{};
+        VisibilityMask vmask;
+    };
+
+    std::unordered_map<std::string, uint64_t> gas_handles;
+
     inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
         float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
 
@@ -261,33 +263,32 @@ public:
         //nodeCacheStatic = {};
         //nodeDepthCacheStatic = {};
 
-        processVolumeBox(context);
-        prepare_mesh_gas(context);
-        prepare_sphere_gas(context);
-        prepareCurveGroup(context);
-        prepareHairs(context);
-        
+        if (!dirtyTasks.empty()) {
+            
+            for(auto& [key, task] : dirtyTasks) {
+                gas_handles[key] = task(context);
+            }
+            dirtyTasks.clear();
+        }
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
+        static const std::vector fallback_keys { "" };
 
-        std::unordered_map<std::string, uint64_t> candidates{};
-        std::unordered_map<std::string, uint32_t> candidates_sbt{};
-        std::unordered_map<std::string, VisibilityMask> candidates_mark{};
-
-        std::unordered_map<std::string, glm::mat4*> candidates_matrix{};
-
-        std::unordered_map<std::string, std::set<std::string>> geo_to_candidate {};
+        std::unordered_map<std::string, Candidate> candidates {};
         
         const auto& bri = sceneJson[brikey];
         for (auto it = bri.begin(); it != bri.end(); ++it) {
             //std::cout << it.key() << " : " << it.value() << "\n";
             const auto candi_name = it.key();
-            candidates.insert({candi_name, 0u});
-            
             const auto geo_name = it.value()["Geom"].template get<std::string>();
+
+            cleanTasks.erase(geo_name);
+
             glm::mat4* matrix_ptr = nullptr;
             const auto geo_type = checkGeoType(geo_name, &matrix_ptr);
 
-            candidates_matrix[candi_name] = matrix_ptr;
+            Candidate candi {};
+            candi.handle = gas_handles[geo_name];
+            candi.matrix = matrix_ptr;
 
             const auto material_str = it.value().value("Material", "Default");
             auto material_key = std::make_tuple(material_str, geo_type);
@@ -324,56 +325,34 @@ public:
                         shader_visiable = VisibilityMask::NothingMask;
                     } else {
                         auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                        candidates[candi_name] = vdb_ptr->node->handle;
+                        candi.handle = vdb_ptr->node->handle;
                     } //vdb_ptr
                 }
             }
 
-            candidates_sbt.insert( {candi_name, shader_index * RAY_TYPE_COUNT} );
-            candidates_mark.insert( {candi_name, shader_visiable} );
-
-            if (geo_to_candidate.count(geo_name)) {
-                geo_to_candidate[geo_name].insert(candi_name);
-            } else {
-                geo_to_candidate[geo_name] = { candi_name };
-            }
+            candi.sbt = shader_index * RAY_TYPE_COUNT;
+            candi.vmask = shader_visiable;
+            candidates[candi_name] = candi;
         } //bri
 
-        auto prepare = [&candidates, &geo_to_candidate](auto& themap) {
-
-            auto iterator = themap.begin();
-            while (iterator != themap.end()) {
-                auto key = iterator->first;
-                if (geo_to_candidate.count(key) == 0) {
-                    iterator = themap.erase(iterator);
-                } else {
-                    for (auto& ele : geo_to_candidate[key]) {
-                        if (candidates[ele] != 0) continue;
-                        if (iterator->second == nullptr) continue;
-                        candidates[ele] = iterator->second->node->handle;
-                    }
-                    ++iterator;
-                }
+        if (!cleanTasks.empty()) {
+            for (auto& [k, task] : cleanTasks) {
+                task(k);
+                gas_handles.erase(k);
             }
-        };
-
-        prepare(_meshes_);
-        prepare(_spheres_);
-        prepare(_sphere_groups_);
-        prepare(_vol_boxs);
-        prepare(curveGroupStateCache);
-        prepare(hair_state_cache);
+            cleanTasks.clear();
+        }
 
         std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                                                 decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
 
-        treeLook = [this, &treeLook, &context, &candidates, &candidates_matrix, &candidates_sbt, &candidates_mark]
+        treeLook = [this, &treeLook, &context, &candidates]
                         (std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                             decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
         {
             if (candidates.count(obj_key)) { //leaf node
                 test_depth = 1;
-                return candidates[obj_key];
+                return candidates[obj_key].handle;
             }
 
             if (!renderGroup.contains(obj_key)) { return 0; }
@@ -398,23 +377,23 @@ public:
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
-                const glm::mat4* matrix_ptr = candidates_matrix.count(item_key)>0? candidates_matrix.at(item_key) : nullptr;
-
+               
                 uint sbtOffset = 0u;
-
                 auto vMask = EverythingMask;
+                glm::mat4* matrix_ptr = nullptr;
 
                 if (leaf) {
-                    sbtOffset = candidates_sbt.at(item_key);
-                    vMask = candidates_mark.at(item_key);
+                    auto& candi = candidates.at(item_key);
+                    sbtOffset = candi.sbt;
+                    vMask = candi.vmask;
+                    matrix_ptr = candidates.at(item_key).matrix;
                 }
 
                 if (handle == 0u) { continue; }
 
                 auto& matrix_keys = item.value();
-
                 if (matrix_keys.empty()) {
-                    matrix_keys = { "" };
+                    matrix_keys = fallback_keys;
                 }
 
                 for (auto& matrix_key : matrix_keys.items()) {
@@ -480,8 +459,6 @@ public:
 
                 uint depth = 0;
                 auto handle = treeLook(obj_key, rg, false, depth, nodeCache, nodeDepthCache);
-
-                std::cout << "Fetching handle: " << handle << std::endl;
             } //rg
 
             std::vector<OptixInstance> instanced {};
@@ -587,14 +564,11 @@ public:
     std::map<std::string, std::shared_ptr<CurveGroupWrapper>> curveGroupStateCache;
 
     void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
-    void prepareCurveGroup(OptixDeviceContext& context);
 
-    //using hair_state_key = std::tuple<std::string, uint>;
-    std::map<std::string, std::shared_ptr<Hair>> hair_cache;
-    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> hair_state_cache;
+    std::map<std::string, std::shared_ptr<Hair>> hairCache;
+    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> hairStateCache;
 
     void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));
-    void prepareHairs(OptixDeviceContext& context);
 
 std::unordered_map<std::string, ShaderMark>  geoTypeMap;
 std::unordered_map<std::string, glm::mat4> geoMatrixMap;
@@ -607,18 +581,32 @@ void updateGeoType(const std::string& key, ShaderMark mark) {
 std::shared_ptr<SceneNode> uniform_sphere_gas{};
 std::unordered_map<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
 
-    void preload_sphere_transformed(const std::string &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform) 
+    void preload_sphere_transformed(const std::string &key, const glm::mat4& transform) 
     {
-        auto dsphere = std::make_shared<SphereTransformed>();
-
-        dsphere->materialID = mtlid;
-        dsphere->instanceID = instID;
-
+        auto& dsphere = _spheres_[key];
+        if (nullptr == dsphere) {
+            dsphere = std::make_shared<SphereTransformed>();
+        }
         auto trans = glm::transpose(transform);
-        _spheres_[key] = dsphere;
 
         geoMatrixMap[key] = trans;
         updateGeoType(key, ShaderMark::Sphere);
+
+        dirtyTasks[key] = [&](OptixDeviceContext& context){
+           
+            if (nullptr == uniform_sphere_gas) {
+                uniform_sphere_gas = std::make_shared<SceneNode>();
+                buildUnitSphereGAS(context, uniform_sphere_gas->handle, uniform_sphere_gas->buffer);
+            }
+            dsphere->dirty = false;
+            dsphere->node = uniform_sphere_gas;
+
+            return uniform_sphere_gas->handle;
+        };
+
+        cleanTasks[key] = [&](const std::string& k) {
+            _spheres_.erase(k);
+        };
     }
 
 std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
@@ -635,27 +623,16 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
         group->colorV = std::move(colorV);
 
         updateGeoType(key, ShaderMark::Sphere);
-    }
 
-    void prepare_sphere_gas(OptixDeviceContext& context) {
+        dirtyTasks[key] = [&](OptixDeviceContext& context){
+            group->dirty = false;
+            buildSphereGroupGAS(context, *group);
+            return group->node->handle;
+        };
 
-        if (nullptr == uniform_sphere_gas) {
-            uniform_sphere_gas = std::make_shared<SceneNode>();
-            buildUnitSphereGAS(context, uniform_sphere_gas->handle, uniform_sphere_gas->buffer);
-        }
-        for (auto& [k, v] : _spheres_) {
-            if (!v->dirty) continue;
-
-            v->dirty = false;
-            v->node = uniform_sphere_gas;
-        }
-
-        for (auto& [k, v] : _sphere_groups_) {
-            if (!v->dirty) continue;
-
-            v->dirty = false;
-            buildSphereGroupGAS(context, *v);
-        }
+        cleanTasks[key] = [&](const std::string& k) {
+            _sphere_groups_.erase(k);
+        };
     }
 
     std::map<std::string, std::set<ShaderMark>> prepareShaderSet() {
@@ -704,17 +681,18 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
         //buildVolumeAccel(*volume_ptr, context);
         updateGeoType(key, ShaderMark::Volume);
         geoMatrixMap[key] = trans;
-        return true;
-    }
-    
-    bool processVolumeBox(OptixDeviceContext& context) {
 
-        for (const auto& [key, vbox] : _vol_boxs) {
-            if (!vbox->dirty) continue;
-            vbox->dirty = false;
+        dirtyTasks[key] = [&](OptixDeviceContext& context) {
+            
+            volume_ptr->dirty = false;
+            buildVolumeAccel(*volume_ptr, context);
+            return volume_ptr->node->handle;
+        };
 
-            buildVolumeAccel(*vbox, context);
-        }
+        cleanTasks[key] = [&](const std::string& k) {
+            _vol_boxs.erase(k);
+        };
+
         return true;
     }
 
