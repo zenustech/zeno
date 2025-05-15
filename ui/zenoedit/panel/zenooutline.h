@@ -19,6 +19,7 @@ public:
     
     // 自定义数据操作
     void setupModelData();
+    std::unordered_map<std::string, std::string> name2keys;
 
 private:
     struct OutlineItem {
@@ -51,6 +52,6 @@ public:
 private:
     void setupTreeView();
     
-    QTreeView *m_treeView;
-    OutlineItemModel *m_model;
+    QTreeView *m_treeView = nullptr;
+    OutlineItemModel *m_model = nullptr;
 };
