@@ -90,6 +90,13 @@ struct Stamp : zeno::INode {
                 }
             }
             inputObjType = session->globalComm->getObjType(obj);
+            auto &ud = obj->userData();
+            if (!ud.has<std::string>("ResourceType")) {
+                ud.set2("ResourceType", get_input2<std::string>("ResourceType"));
+            }
+            if (!ud.has<std::string>("ObjectName")) {
+                ud.set2("ObjectName", get_input2<std::string>("ObjectName"));
+            }
             set_output("output", std::move(obj));
         }
         else {
@@ -103,8 +110,9 @@ struct Stamp : zeno::INode {
 ZENDEFNODE(Stamp, {
     {
         "input",
-        //{"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
-        {"enum UnChanged TotalChange", "stampMode", "UnChanged"},
+        {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
+        {"enum Mesh Matrixes SceneDescriptor", "ResourceType", "Mesh"},
+        {"string", "ObjectName", ""},
         {"string", "changeHint", ""}
     },
     {"output"},

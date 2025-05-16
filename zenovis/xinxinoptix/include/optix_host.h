@@ -1,23 +1,14 @@
-/*
- * Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
- *
- * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
- * rights in and to this software, related documentation and any modifications thereto.
- * Any use, reproduction, disclosure or distribution of this software and related
- * documentation without an express license agreement from NVIDIA Corporation is strictly
- * prohibited.
- *
- * TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THIS SOFTWARE IS PROVIDED *AS IS*
- * AND NVIDIA AND ITS SUPPLIERS DISCLAIM ALL WARRANTIES, EITHER EXPRESS OR IMPLIED,
- * INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE.  IN NO EVENT SHALL NVIDIA OR ITS SUPPLIERS BE LIABLE FOR ANY
- * SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT
- * LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF
- * BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR
- * INABILITY TO USE THIS SOFTWARE, EVEN IF NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGES
- */
-
+/* 
+* SPDX-FileCopyrightText: Copyright (c) 2010 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
+* SPDX-License-Identifier: LicenseRef-NvidiaProprietary 
+* 
+* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual 
+* property and proprietary rights in and to this material, related 
+* documentation and any modifications thereto. Any use, reproduction, 
+* disclosure or distribution of this material and related documentation 
+* without an express license agreement from NVIDIA CORPORATION or 
+* its affiliates is strictly prohibited. 
+*/
 /// @file
 /// @author NVIDIA Corporation
 /// @brief  OptiX public API header
@@ -28,6 +19,20 @@
 #ifndef OPTIX_OPTIX_HOST_H
 #define OPTIX_OPTIX_HOST_H
 
+/// Mixing multiple SDKs in a single application will result in symbol collisions.
+/// To enable different compilation units to use different SDKs, use OPTIX_ENABLE_SDK_MIXING.
+#ifndef OPTIXAPI
+# ifdef OPTIX_ENABLE_SDK_MIXING
+#   define OPTIXAPI static
+# else  // OPTIX_ENABLE_SDK_MIXING
+#   ifdef __cplusplus
+#     define OPTIXAPI extern "C"
+#   else  // __cplusplus
+#     define OPTIXAPI
+#   endif  // __cplusplus
+# endif  // OPTIX_ENABLE_SDK_MIXING
+#endif  // OPTIXAPI
+
 #include "optix_types.h"
 #if !defined( OPTIX_DONT_INCLUDE_CUDA )
 // If OPTIX_DONT_INCLUDE_CUDA is defined, cuda driver types must be defined through other
@@ -36,10 +41,6 @@
 #endif
 
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /// \defgroup optix_host_api Host API
 /// \brief OptiX Host API
@@ -58,7 +59,7 @@ extern "C" {
 /// \param[in] result  OptixResult enum to generate string name for
 ///
 /// \see #optixGetErrorString
-const char* optixGetErrorName( OptixResult result );
+OPTIXAPI const char* optixGetErrorName( OptixResult result );
 
 /// Returns the description string for an error code.
 ///
@@ -70,7 +71,7 @@ const char* optixGetErrorName( OptixResult result );
 /// \param[in] result  OptixResult enum to generate string description for
 ///
 /// \see #optixGetErrorName
-const char* optixGetErrorString( OptixResult result );
+OPTIXAPI const char* optixGetErrorString( OptixResult result );
 
 //@}
 /// \defgroup optix_host_api_device_context Device context
@@ -95,7 +96,7 @@ const char* optixGetErrorString( OptixResult result );
 ///   Heap allocation failed.
 /// - OPTIX_ERROR_INTERNAL_ERROR
 ///   Internal error
-OptixResult optixDeviceContextCreate( CUcontext fromContext, const OptixDeviceContextOptions* options, OptixDeviceContext* context );
+OPTIXAPI OptixResult optixDeviceContextCreate( CUcontext fromContext, const OptixDeviceContextOptions* options, OptixDeviceContext* context );
 
 /// Destroys all CPU and GPU state associated with the device.
 ///
@@ -105,7 +106,7 @@ OptixResult optixDeviceContextCreate( CUcontext fromContext, const OptixDeviceCo
 /// destroyed.
 ///
 /// Thread safety: A device context must not be destroyed while it is still in use by concurrent API calls in other threads.
-OptixResult optixDeviceContextDestroy( OptixDeviceContext context );
+OPTIXAPI OptixResult optixDeviceContextDestroy( OptixDeviceContext context );
 
 /// Query properties of a device context.
 ///
@@ -113,7 +114,7 @@ OptixResult optixDeviceContextDestroy( OptixDeviceContext context );
 /// \param[in] property    the property to query
 /// \param[out] value      pointer to the returned
 /// \param[in] sizeInBytes size of output
-OptixResult optixDeviceContextGetProperty( OptixDeviceContext context, OptixDeviceProperty property, void* value, size_t sizeInBytes );
+OPTIXAPI OptixResult optixDeviceContextGetProperty( OptixDeviceContext context, OptixDeviceProperty property, void* value, size_t sizeInBytes );
 
 /// Sets the current log callback method.
 ///
@@ -128,10 +129,10 @@ OptixResult optixDeviceContextGetProperty( OptixDeviceContext context, OptixDevi
 /// \param[in] callbackFunction the callback function to call
 /// \param[in] callbackData     pointer to data passed to callback function while invoking it
 /// \param[in] callbackLevel    callback level
-OptixResult optixDeviceContextSetLogCallback( OptixDeviceContext context,
-                                              OptixLogCallback   callbackFunction,
-                                              void*              callbackData,
-                                              unsigned int       callbackLevel );
+OPTIXAPI OptixResult optixDeviceContextSetLogCallback( OptixDeviceContext context,
+                                                       OptixLogCallback   callbackFunction,
+                                                       void*              callbackData,
+                                                       unsigned int       callbackLevel );
 
 /// Enables or disables the disk cache.
 ///
@@ -151,8 +152,7 @@ OptixResult optixDeviceContextSetLogCallback( OptixDeviceContext context,
 ///
 /// \param[in] context the device context
 /// \param[in] enabled 1 to enabled, 0 to disable
-OptixResult optixDeviceContextSetCacheEnabled( OptixDeviceContext context,
-                                               int                enabled );
+OPTIXAPI OptixResult optixDeviceContextSetCacheEnabled( OptixDeviceContext context, int enabled );
 
 /// Sets the location of the disk cache.
 ///
@@ -174,7 +174,7 @@ OptixResult optixDeviceContextSetCacheEnabled( OptixDeviceContext context,
 ///
 /// \param[in] context  the device context
 /// \param[in] location directory of disk cache
-OptixResult optixDeviceContextSetCacheLocation( OptixDeviceContext context, const char* location );
+OPTIXAPI OptixResult optixDeviceContextSetCacheLocation( OptixDeviceContext context, const char* location );
 
 /// Sets the low and high water marks for disk cache garbage collection.
 ///
@@ -203,20 +203,20 @@ OptixResult optixDeviceContextSetCacheLocation( OptixDeviceContext context, cons
 /// \param[in] context       the device context
 /// \param[in] lowWaterMark  the low water mark
 /// \param[in] highWaterMark the high water mark
-OptixResult optixDeviceContextSetCacheDatabaseSizes( OptixDeviceContext context, size_t lowWaterMark, size_t highWaterMark );
+OPTIXAPI OptixResult optixDeviceContextSetCacheDatabaseSizes( OptixDeviceContext context, size_t lowWaterMark, size_t highWaterMark );
 
 /// Indicates whether the disk cache is enabled or disabled.
 ///
 /// \param[in] context   the device context
 /// \param[out] enabled  1 if enabled, 0 if disabled
-OptixResult optixDeviceContextGetCacheEnabled( OptixDeviceContext context, int* enabled );
+OPTIXAPI OptixResult optixDeviceContextGetCacheEnabled( OptixDeviceContext context, int* enabled );
 /// Returns the location of the disk cache.  If the cache has been disabled by setting the environment
 /// variable OPTIX_CACHE_MAXSIZE=0, this function will return an empy string.
 ///
 /// \param[in] context      the device context
 /// \param[out] location    directory of disk cache, null terminated if locationSize > 0
 /// \param[in] locationSize locationSize
-OptixResult optixDeviceContextGetCacheLocation( OptixDeviceContext context, char* location, size_t locationSize );
+OPTIXAPI OptixResult optixDeviceContextGetCacheLocation( OptixDeviceContext context, char* location, size_t locationSize );
 
 /// Returns the low and high water marks for disk cache garbage collection.  If the cache has been disabled by
 /// setting the environment variable OPTIX_CACHE_MAXSIZE=0, this function will return 0 for the low and high
@@ -225,7 +225,7 @@ OptixResult optixDeviceContextGetCacheLocation( OptixDeviceContext context, char
 /// \param[in] context        the device context
 /// \param[out] lowWaterMark  the low water mark
 /// \param[out] highWaterMark the high water mark
-OptixResult optixDeviceContextGetCacheDatabaseSizes( OptixDeviceContext context, size_t* lowWaterMark, size_t* highWaterMark );
+OPTIXAPI OptixResult optixDeviceContextGetCacheDatabaseSizes( OptixDeviceContext context, size_t* lowWaterMark, size_t* highWaterMark );
 
 //@}
 /// \defgroup optix_host_api_pipelines Pipelines
@@ -255,17 +255,17 @@ OptixResult optixDeviceContextGetCacheDatabaseSizes( OptixDeviceContext context,
 /// \param[out] logString             Information will be written to this string. If logStringSize > 0 logString will be null terminated.
 /// \param[in,out] logStringSize
 /// \param[out] pipeline
-OptixResult optixPipelineCreate( OptixDeviceContext                 context,
-                                 const OptixPipelineCompileOptions* pipelineCompileOptions,
-                                 const OptixPipelineLinkOptions*    pipelineLinkOptions,
-                                 const OptixProgramGroup*           programGroups,
-                                 unsigned int                       numProgramGroups,
-                                 char*                              logString,
-                                 size_t*                            logStringSize,
-                                 OptixPipeline*                     pipeline );
+OPTIXAPI OptixResult optixPipelineCreate( OptixDeviceContext                 context,
+                                          const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                          const OptixPipelineLinkOptions*    pipelineLinkOptions,
+                                          const OptixProgramGroup*           programGroups,
+                                          unsigned int                       numProgramGroups,
+                                          char*                              logString,
+                                          size_t*                            logStringSize,
+                                          OptixPipeline*                     pipeline );
 
 /// Thread safety: A pipeline must not be destroyed while it is still in use by concurrent API calls in other threads.
-OptixResult optixPipelineDestroy( OptixPipeline pipeline );
+OPTIXAPI OptixResult optixPipelineDestroy( OptixPipeline pipeline );
 
 /// Sets the stack sizes for a pipeline.
 ///
@@ -273,7 +273,7 @@ OptixResult optixPipelineDestroy( OptixPipeline pipeline );
 /// to understand how to construct the stack sizes based on their particular needs.
 ///
 /// If this method is not used, an internal default implementation is used. The default implementation is correct (but
-/// not necessarily optimal) as long as the maximum depth of call trees of CC and DC programs is at most 2 and no motion transforms are used.
+/// not necessarily optimal) as long as the maximum depth of call trees of CC programs is at most 2, and no DC programs or motion transforms are used.
 ///
 /// The maxTraversableGraphDepth responds to the maximal number of traversables visited when calling trace.
 /// Every acceleration structure and motion transform count as one level of traversal.
@@ -289,11 +289,11 @@ OptixResult optixPipelineDestroy( OptixPipeline pipeline );
 /// \param[in] directCallableStackSizeFromState     The direct stack size requirement for direct callables invoked from RG, MS, or CH.
 /// \param[in] continuationStackSize                The continuation stack requirement.
 /// \param[in] maxTraversableGraphDepth             The maximum depth of a traversable graph passed to trace.
-OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
-                                       unsigned int  directCallableStackSizeFromTraversal,
-                                       unsigned int  directCallableStackSizeFromState,
-                                       unsigned int  continuationStackSize,
-                                       unsigned int  maxTraversableGraphDepth );
+OPTIXAPI OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
+                                                unsigned int  directCallableStackSizeFromTraversal,
+                                                unsigned int  directCallableStackSizeFromState,
+                                                unsigned int  continuationStackSize,
+                                                unsigned int  maxTraversableGraphDepth );
 
 //@}
 /// \defgroup optix_host_api_modules Modules
@@ -329,14 +329,14 @@ OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
 /// \param[out] module
 ///
 /// \return OPTIX_ERROR_INVALID_VALUE - context is 0, moduleCompileOptions is 0, pipelineCompileOptions is 0, input is 0, module is 0.
-OptixResult optixModuleCreate( OptixDeviceContext                 context,
-                               const OptixModuleCompileOptions*   moduleCompileOptions,
-                               const OptixPipelineCompileOptions* pipelineCompileOptions,
-                               const char*                        input,
-                               size_t                             inputSize,
-                               char*                              logString,
-                               size_t*                            logStringSize,
-                               OptixModule*                       module );
+OPTIXAPI OptixResult optixModuleCreate( OptixDeviceContext                 context,
+                                        const OptixModuleCompileOptions*   moduleCompileOptions,
+                                        const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                        const char*                        input,
+                                        size_t                             inputSize,
+                                        char*                              logString,
+                                        size_t*                            logStringSize,
+                                        OptixModule*                       module );
 
 /// This function is designed to do just enough work to create the OptixTask return
 /// parameter and is expected to be fast enough run without needing parallel execution. A
@@ -357,7 +357,7 @@ OptixResult optixModuleCreate( OptixDeviceContext                 context,
 /// to #optixTaskExecute() may execute additional work to collect compilation errors
 /// generated from the input. Currently executing tasks will not necessarily be terminated
 /// immediately but at the next opportunity.
-
+///
 /// Logging will continue to be directed to the logger installed with the
 /// OptixDeviceContext. If logString is provided to #optixModuleCreateWithTasks(),
 /// it will contain all the compiler feedback from all executed tasks. The lifetime of the
@@ -370,7 +370,7 @@ OptixResult optixModuleCreate( OptixDeviceContext                 context,
 /// #optixTaskExecute() is performed the logString may be reclaimed by the application
 /// before calling #optixModuleDestroy(). The contents of logString will contain output
 /// from currently completed tasks.
-
+///
 /// All OptixTask objects associated with a given OptixModule will be cleaned up when
 /// #optixModuleDestroy() is called regardless of whether the compilation was successful
 /// or not. If the compilation state is OPTIX_MODULE_COMPILE_STATE_IMPENDIND_FAILURE, any
@@ -378,15 +378,15 @@ OptixResult optixModuleCreate( OptixDeviceContext                 context,
 /// so.
 ///
 /// \see #optixModuleCreate
-OptixResult optixModuleCreateWithTasks( OptixDeviceContext                 context,
-                                        const OptixModuleCompileOptions*   moduleCompileOptions,
-                                        const OptixPipelineCompileOptions* pipelineCompileOptions,
-                                        const char*                        input,
-                                        size_t                             inputSize,
-                                        char*                              logString,
-                                        size_t*                            logStringSize,
-                                        OptixModule*                       module,
-                                        OptixTask*                         firstTask );
+OPTIXAPI OptixResult optixModuleCreateWithTasks( OptixDeviceContext                 context,
+                                                 const OptixModuleCompileOptions*   moduleCompileOptions,
+                                                 const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                                 const char*                        input,
+                                                 size_t                             inputSize,
+                                                 char*                              logString,
+                                                 size_t*                            logStringSize,
+                                                 OptixModule*                       module,
+                                                 OptixTask*                         firstTask );
 
 /// When creating a module with tasks, the current state of the module can be queried
 /// using this function.
@@ -394,23 +394,23 @@ OptixResult optixModuleCreateWithTasks( OptixDeviceContext                 conte
 /// Thread safety: Safe to call from any thread until optixModuleDestroy is called.
 ///
 /// \see #optixModuleCreateWithTasks
-OptixResult optixModuleGetCompilationState( OptixModule module, OptixModuleCompileState* state );
+OPTIXAPI OptixResult optixModuleGetCompilationState( OptixModule module, OptixModuleCompileState* state );
 
 /// Call for OptixModule objects created with optixModuleCreate and optixModuleDeserialize.
 ///
 /// Modules must not be destroyed while they are still used by any program group.
 ///
 /// Thread safety: A module must not be destroyed while it is still in use by concurrent API calls in other threads.
-OptixResult optixModuleDestroy( OptixModule module );
+OPTIXAPI OptixResult optixModuleDestroy( OptixModule module );
 
 /// Returns a module containing the intersection program for the built-in primitive type specified
 /// by the builtinISOptions.  This module must be used as the moduleIS for the OptixProgramGroupHitgroup
 /// in any SBT record for that primitive type.  (The entryFunctionNameIS should be null.)
-OptixResult optixBuiltinISModuleGet( OptixDeviceContext                 context,
-                                     const OptixModuleCompileOptions*   moduleCompileOptions,
-                                     const OptixPipelineCompileOptions* pipelineCompileOptions,
-                                     const OptixBuiltinISOptions*       builtinISOptions,
-                                     OptixModule*                       builtinModule );
+OPTIXAPI OptixResult optixBuiltinISModuleGet( OptixDeviceContext                 context,
+                                              const OptixModuleCompileOptions*   moduleCompileOptions,
+                                              const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                              const OptixBuiltinISOptions*       builtinISOptions,
+                                              OptixModule*                       builtinModule );
 
 //@}
 /// \defgroup optix_host_api_tasks Tasks
@@ -433,8 +433,11 @@ OptixResult optixBuiltinISModuleGet( OptixDeviceContext                 context,
 /// \param[in] task the OptixTask to execute
 /// \param[in] additionalTasks pointer to array of OptixTask objects to be filled in
 /// \param[in] maxNumAdditionalTasks maximum number of additional OptixTask objects
-/// \param[out] numAdditionalTasksCreated number of OptixTask objects created by OptiX and written into #additionalTasks
-OptixResult optixTaskExecute( OptixTask task, OptixTask* additionalTasks, unsigned int maxNumAdditionalTasks, unsigned int* numAdditionalTasksCreated );
+/// \param[out] numAdditionalTasksCreated number of OptixTask objects created by OptiX and written into additionalTasks
+OPTIXAPI OptixResult optixTaskExecute( OptixTask     task,
+                                       OptixTask*    additionalTasks,
+                                       unsigned int  maxNumAdditionalTasks,
+                                       unsigned int* numAdditionalTasksCreated );
 
 //@}
 /// \defgroup optix_host_api_program_groups Program groups
@@ -449,7 +452,7 @@ OptixResult optixTaskExecute( OptixTask task, OptixTask* additionalTasks, unsign
 /// \param[in] programGroup the program group
 /// \param[out] stackSizes  the corresponding stack sizes
 /// \param[in] pipeline     considering the program group within the given pipeline, can be NULL
-OptixResult optixProgramGroupGetStackSize( OptixProgramGroup programGroup, OptixStackSizes* stackSizes, OptixPipeline pipeline );
+OPTIXAPI OptixResult optixProgramGroupGetStackSize( OptixProgramGroup programGroup, OptixStackSizes* stackSizes, OptixPipeline pipeline );
 
 /// logString is an optional buffer that contains compiler feedback and errors.  This
 /// information is also passed to the context logger (if enabled), however it may be
@@ -476,16 +479,16 @@ OptixResult optixProgramGroupGetStackSize( OptixProgramGroup programGroup, Optix
 /// \param[out] logString             Information will be written to this string. If logStringSize > 0 logString will be null terminated.
 /// \param[in,out] logStringSize
 /// \param[out] programGroups
-OptixResult optixProgramGroupCreate( OptixDeviceContext              context,
-                                     const OptixProgramGroupDesc*    programDescriptions,
-                                     unsigned int                    numProgramGroups,
-                                     const OptixProgramGroupOptions* options,
-                                     char*                           logString,
-                                     size_t*                         logStringSize,
-                                     OptixProgramGroup*              programGroups );
+OPTIXAPI OptixResult optixProgramGroupCreate( OptixDeviceContext              context,
+                                              const OptixProgramGroupDesc*    programDescriptions,
+                                              unsigned int                    numProgramGroups,
+                                              const OptixProgramGroupOptions* options,
+                                              char*                           logString,
+                                              size_t*                         logStringSize,
+                                              OptixProgramGroup*              programGroups );
 
 /// Thread safety: A program group must not be destroyed while it is still in use by concurrent API calls in other threads.
-OptixResult optixProgramGroupDestroy( OptixProgramGroup programGroup );
+OPTIXAPI OptixResult optixProgramGroupDestroy( OptixProgramGroup programGroup );
 
 //@}
 /// \defgroup optix_host_api_launches Launches
@@ -518,18 +521,18 @@ OptixResult optixProgramGroupDestroy( OptixProgramGroup programGroup );
 ///
 /// Thread safety: In the current implementation concurrent launches to the same pipeline are not
 /// supported.  Concurrent launches require separate OptixPipeline objects.
-OptixResult optixLaunch( OptixPipeline                  pipeline,
-                         CUstream                       stream,
-                         CUdeviceptr                    pipelineParams,
-                         size_t                         pipelineParamsSize,
-                         const OptixShaderBindingTable* sbt,
-                         unsigned int                   width,
-                         unsigned int                   height,
-                         unsigned int                   depth );
+OPTIXAPI OptixResult optixLaunch( OptixPipeline                  pipeline,
+                                  CUstream                       stream,
+                                  CUdeviceptr                    pipelineParams,
+                                  size_t                         pipelineParamsSize,
+                                  const OptixShaderBindingTable* sbt,
+                                  unsigned int                   width,
+                                  unsigned int                   height,
+                                  unsigned int                   depth );
 
 /// \param[in]  programGroup               the program group containing the program(s)
 /// \param[out] sbtRecordHeaderHostPointer  the result sbt record header
-OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtRecordHeaderHostPointer );
+OPTIXAPI OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtRecordHeaderHostPointer );
 
 //@}
 /// \defgroup optix_host_api_acceleration_structures Acceleration structures
@@ -541,11 +544,11 @@ OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtR
 /// \param[in] buildInputs    an array of OptixBuildInput objects
 /// \param[in] numBuildInputs number of elements in buildInputs (must be at least 1)
 /// \param[out] bufferSizes   fills in buffer sizes
-OptixResult optixAccelComputeMemoryUsage( OptixDeviceContext            context,
-                                          const OptixAccelBuildOptions* accelOptions,
-                                          const OptixBuildInput*        buildInputs,
-                                          unsigned int                  numBuildInputs,
-                                          OptixAccelBufferSizes*        bufferSizes );
+OPTIXAPI OptixResult optixAccelComputeMemoryUsage( OptixDeviceContext            context,
+                                                   const OptixAccelBuildOptions* accelOptions,
+                                                   const OptixBuildInput*        buildInputs,
+                                                   unsigned int                  numBuildInputs,
+                                                   OptixAccelBufferSizes*        bufferSizes );
 
 /// \param[in] context
 /// \param[in] stream
@@ -559,18 +562,18 @@ OptixResult optixAccelComputeMemoryUsage( OptixDeviceContext            context,
 /// \param[out] outputHandle
 /// \param[in] emittedProperties         types of requested properties and output buffers
 /// \param[in] numEmittedProperties      number of post-build properties to populate (may be zero)
-OptixResult optixAccelBuild( OptixDeviceContext            context,
-                             CUstream                      stream,
-                             const OptixAccelBuildOptions* accelOptions,
-                             const OptixBuildInput*        buildInputs,
-                             unsigned int                  numBuildInputs,
-                             CUdeviceptr                   tempBuffer,
-                             size_t                        tempBufferSizeInBytes,
-                             CUdeviceptr                   outputBuffer,
-                             size_t                        outputBufferSizeInBytes,
-                             OptixTraversableHandle*       outputHandle,
-                             const OptixAccelEmitDesc*     emittedProperties,
-                             unsigned int                  numEmittedProperties );
+OPTIXAPI OptixResult optixAccelBuild( OptixDeviceContext            context,
+                                      CUstream                      stream,
+                                      const OptixAccelBuildOptions* accelOptions,
+                                      const OptixBuildInput*        buildInputs,
+                                      unsigned int                  numBuildInputs,
+                                      CUdeviceptr                   tempBuffer,
+                                      size_t                        tempBufferSizeInBytes,
+                                      CUdeviceptr                   outputBuffer,
+                                      size_t                        outputBufferSizeInBytes,
+                                      OptixTraversableHandle*       outputHandle,
+                                      const OptixAccelEmitDesc*     emittedProperties,
+                                      unsigned int                  numEmittedProperties );
 
 /// Obtain relocation information, stored in OptixRelocationInfo, for a given context
 /// and acceleration structure's traversable handle.
@@ -589,7 +592,7 @@ OptixResult optixAccelBuild( OptixDeviceContext            context,
 /// \param[out] info
 /// \return OPTIX_ERROR_INVALID_VALUE will be returned for traversable handles that are not from
 /// acceleration structure builds.
-OptixResult optixAccelGetRelocationInfo( OptixDeviceContext context, OptixTraversableHandle handle, OptixRelocationInfo* info );
+OPTIXAPI OptixResult optixAccelGetRelocationInfo( OptixDeviceContext context, OptixTraversableHandle handle, OptixRelocationInfo* info );
 
 /// Checks if an optix data structure built using another OptixDeviceContext (that was
 /// used to fill in 'info') is compatible with the OptixDeviceContext specified in the
@@ -602,7 +605,7 @@ OptixResult optixAccelGetRelocationInfo( OptixDeviceContext context, OptixTraver
 /// \param[out] compatible If OPTIX_SUCCESS is returned 'compatible' will have the value of either:
 /// - 0: This context is not compatible with the optix data structure associated with 'info'.
 /// - 1: This context is compatible.
-OptixResult optixCheckRelocationCompatibility( OptixDeviceContext context, const OptixRelocationInfo* info, int* compatible );
+OPTIXAPI OptixResult optixCheckRelocationCompatibility( OptixDeviceContext context, const OptixRelocationInfo* info, int* compatible );
 
 /// optixAccelRelocate is called to update the acceleration structure after it has been
 /// relocated.  Relocation is necessary when the acceleration structure's location in device
@@ -612,7 +615,7 @@ OptixResult optixCheckRelocationCompatibility( OptixDeviceContext context, const
 /// 'targetAccel'.  The original memory (source) is not required to be valid, only the
 /// OptixRelocationInfo.
 ///
-/// Before calling optixAccelRelocate, optixCheckRelocationCompatibility should be 
+/// Before calling optixAccelRelocate, optixCheckRelocationCompatibility should be
 /// called to ensure the copy will be compatible with the destination device context.
 ///
 /// The memory pointed to by 'targetAccel' should be allocated with the same size as the
@@ -624,11 +627,11 @@ OptixResult optixCheckRelocationCompatibility( OptixDeviceContext context, const
 /// The instance traversables referenced by an IAS and the
 /// micromaps referenced by a triangle GAS may themselves require relocation.
 /// 'relocateInputs' and 'numRelocateInputs' should be used to specify the relocated
-/// traversables and micromaps. After relocation, the relocated accel will reference 
+/// traversables and micromaps. After relocation, the relocated accel will reference
 /// these relocated traversables and micromaps instead of their sources.
-/// The number of relocate inputs 'numRelocateInputs' must match the number of build 
-/// inputs 'numBuildInputs' used to build the source accel. Relocation inputs 
-/// correspond with build inputs used to build the source accel and should appear in 
+/// The number of relocate inputs 'numRelocateInputs' must match the number of build
+/// inputs 'numBuildInputs' used to build the source accel. Relocation inputs
+/// correspond with build inputs used to build the source accel and should appear in
 /// the same order (see #optixAccelBuild).
 /// 'relocateInputs' and 'numRelocateInputs' may be zero, preserving any references
 /// to traversables and micromaps from the source accel.
@@ -641,14 +644,14 @@ OptixResult optixCheckRelocationCompatibility( OptixDeviceContext context, const
 /// \param[in] targetAccel
 /// \param[in] targetAccelSizeInBytes
 /// \param[out] targetHandle
-OptixResult optixAccelRelocate( OptixDeviceContext         context,
-                                CUstream                   stream,
-                                const OptixRelocationInfo* info,
-                                const OptixRelocateInput*  relocateInputs,
-                                size_t                     numRelocateInputs,
-                                CUdeviceptr                targetAccel,
-                                size_t                     targetAccelSizeInBytes,
-                                OptixTraversableHandle*    targetHandle );
+OPTIXAPI OptixResult optixAccelRelocate( OptixDeviceContext         context,
+                                         CUstream                   stream,
+                                         const OptixRelocationInfo* info,
+                                         const OptixRelocateInput*  relocateInputs,
+                                         size_t                     numRelocateInputs,
+                                         CUdeviceptr                targetAccel,
+                                         size_t                     targetAccelSizeInBytes,
+                                         OptixTraversableHandle*    targetHandle );
 
 /// After building an acceleration structure, it can be copied in a compacted form to reduce
 /// memory.  In order to be compacted, OPTIX_BUILD_FLAG_ALLOW_COMPACTION must be supplied in
@@ -667,34 +670,34 @@ OptixResult optixAccelRelocate( OptixDeviceContext         context,
 /// \param[in] outputBuffer
 /// \param[in] outputBufferSizeInBytes
 /// \param[out] outputHandle
-OptixResult optixAccelCompact( OptixDeviceContext      context,
-                               CUstream                stream,
-                               OptixTraversableHandle  inputHandle,
-                               CUdeviceptr             outputBuffer,
-                               size_t                  outputBufferSizeInBytes,
-                               OptixTraversableHandle* outputHandle );
+OPTIXAPI OptixResult optixAccelCompact( OptixDeviceContext      context,
+                                        CUstream                stream,
+                                        OptixTraversableHandle  inputHandle,
+                                        CUdeviceptr             outputBuffer,
+                                        size_t                  outputBufferSizeInBytes,
+                                        OptixTraversableHandle* outputHandle );
 
 /// Emit a single property after an acceleration structure was built.
 /// The result buffer of the ' emittedProperty' needs to be large enough to hold the
 /// requested property (\see #OptixAccelPropertyType).
-/// 
+///
 /// \param[in] context
 /// \param[in] stream
 /// \param[in] handle
 /// \param[in] emittedProperty    type of requested property and output buffer
-OptixResult optixAccelEmitProperty( OptixDeviceContext        context,
-                                    CUstream                  stream,
-                                    OptixTraversableHandle    handle,
-                                    const OptixAccelEmitDesc* emittedProperty );
+OPTIXAPI OptixResult optixAccelEmitProperty( OptixDeviceContext        context,
+                                             CUstream                  stream,
+                                             OptixTraversableHandle    handle,
+                                             const OptixAccelEmitDesc* emittedProperty );
 
 /// \param[in] onDevice
 /// \param[in] pointer            pointer to traversable allocated in OptixDeviceContext. This pointer must be a multiple of OPTIX_TRANSFORM_BYTE_ALIGNMENT
 /// \param[in] traversableType    Type of OptixTraversableHandle to create
 /// \param[out] traversableHandle traversable handle. traversableHandle must be in host memory
-OptixResult optixConvertPointerToTraversableHandle( OptixDeviceContext      onDevice,
-                                                    CUdeviceptr             pointer,
-                                                    OptixTraversableType    traversableType,
-                                                    OptixTraversableHandle* traversableHandle );
+OPTIXAPI OptixResult optixConvertPointerToTraversableHandle( OptixDeviceContext      onDevice,
+                                                             CUdeviceptr             pointer,
+                                                             OptixTraversableType    traversableType,
+                                                             OptixTraversableHandle* traversableHandle );
 
 
 /// Determine the amount of memory necessary for a Opacity Micromap Array build.
@@ -702,38 +705,36 @@ OptixResult optixConvertPointerToTraversableHandle( OptixDeviceContext      onDe
 /// \param[in] context
 /// \param[in] buildInput
 /// \param[out] bufferSizes
-OptixResult optixOpacityMicromapArrayComputeMemoryUsage( OptixDeviceContext                         context,
-                                                         const OptixOpacityMicromapArrayBuildInput* buildInput,
-                                                         OptixMicromapBufferSizes*                  bufferSizes );
+OPTIXAPI OptixResult optixOpacityMicromapArrayComputeMemoryUsage( OptixDeviceContext                         context,
+                                                                  const OptixOpacityMicromapArrayBuildInput* buildInput,
+                                                                  OptixMicromapBufferSizes* bufferSizes );
 
 /// Construct an array of Opacity Micromaps.
 ///
-/// Each triangle within an instance/GAS may reference one opacity micromap to give finer 
-/// control over alpha behavior. A opacity micromap consists of a set of 4^N micro-triangles 
-/// in a triangular uniform barycentric grid. Multiple opacity micromaps are collected (built) 
-/// into a opacity micromap array with this function. Each geometry in a GAS may bind a 
+/// Each triangle within an instance/GAS may reference one opacity micromap to give finer
+/// control over alpha behavior. A opacity micromap consists of a set of 4^N micro-triangles
+/// in a triangular uniform barycentric grid. Multiple opacity micromaps are collected (built)
+/// into a opacity micromap array with this function. Each geometry in a GAS may bind a
 /// single opacity micromap array and can use opacity micromaps from that array only.
 ///
-/// Each micro-triangle within a opacity micromap can be in one of four states: Transparent, 
-/// Opaque, Unknown-Transparent or Unknown-Opaque. During traversal, if a triangle with a 
-/// opacity micromap attached is intersected, the opacity micromap is queried to categorize 
-/// the hit as either opaque, unknown (alpha) or a miss. Geometry, ray or instance flags that 
+/// Each micro-triangle within a opacity micromap can be in one of four states: Transparent,
+/// Opaque, Unknown-Transparent or Unknown-Opaque. During traversal, if a triangle with a
+/// opacity micromap attached is intersected, the opacity micromap is queried to categorize
+/// the hit as either opaque, unknown (alpha) or a miss. Geometry, ray or instance flags that
 /// modify the alpha/opaque behavior are applied _after_ this opacity micromap query.
 ///
-/// The opacity micromap query may operate in 2-state mode (alpha testing) or 4-state mode (AHS culling), 
-/// depending on the opacity micromap type and ray/instance flags. When operating in 2-state 
+/// The opacity micromap query may operate in 2-state mode (alpha testing) or 4-state mode (AHS culling),
+/// depending on the opacity micromap type and ray/instance flags. When operating in 2-state
 /// mode, alpha hits will not be reported, and transparent and opaque hits must be accurate.
 ///
 /// \param[in] context
 /// \param[in] stream
 /// \param[in] buildInput             a single build input object referencing many opacity micromaps
 /// \param[in] buffers                the buffers used for build
-/// \param[in/out] emittedProperties  types of requested properties and output buffers
-/// \param[in] numEmittedProperties   number of post-build properties to populate (may be zero)
-OptixResult optixOpacityMicromapArrayBuild( OptixDeviceContext                         context,
-                                            CUstream                                   stream,
-                                            const OptixOpacityMicromapArrayBuildInput* buildInput,
-                                            const OptixMicromapBuffers*                buffers );
+OPTIXAPI OptixResult optixOpacityMicromapArrayBuild( OptixDeviceContext                         context,
+                                                     CUstream                                   stream,
+                                                     const OptixOpacityMicromapArrayBuildInput* buildInput,
+                                                     const OptixMicromapBuffers*                buffers );
 
 /// Obtain relocation information, stored in OptixRelocationInfo, for a given context
 /// and opacity micromap array.
@@ -750,7 +751,9 @@ OptixResult optixOpacityMicromapArrayBuild( OptixDeviceContext                  
 /// \param[in]  context
 /// \param[in]  opacityMicromapArray
 /// \param[out] info
-OptixResult optixOpacityMicromapArrayGetRelocationInfo( OptixDeviceContext context, CUdeviceptr opacityMicromapArray, OptixRelocationInfo* info );
+OPTIXAPI OptixResult optixOpacityMicromapArrayGetRelocationInfo( OptixDeviceContext   context,
+                                                                 CUdeviceptr          opacityMicromapArray,
+                                                                 OptixRelocationInfo* info );
 
 /// optixOpacityMicromapArrayRelocate is called to update the opacity micromap array after it has been
 /// relocated.  Relocation is necessary when the opacity micromap array's location in device
@@ -763,14 +766,14 @@ OptixResult optixOpacityMicromapArrayGetRelocationInfo( OptixDeviceContext conte
 /// to ensure the copy will be compatible with the destination device context.
 ///
 /// The memory pointed to by 'targetOpacityMicromapArray' should be allocated with the same size as the
-/// source opacity micromap array.  Similar to the 'OptixMicromapBuffers::output' used in optixOpacityMicromapArrayBuild, 
+/// source opacity micromap array.  Similar to the 'OptixMicromapBuffers::output' used in optixOpacityMicromapArrayBuild,
 /// this pointer must be a multiple of OPTIX_OPACITY_MICROMAP_ARRAY_BUFFER_BYTE_ALIGNMENT.
 ///
 /// The memory in 'targetOpacityMicromapArray' must be allocated as long as the opacity micromap array is in use.
 ///
 /// Note that any Acceleration Structures build using the original memory (source) as input will
-/// still be associated with this original memory. To associate an existing (possibly relocated) 
-/// Acceleration Structures with the relocated opacity micromap array, use optixAccelBuild 
+/// still be associated with this original memory. To associate an existing (possibly relocated)
+/// Acceleration Structures with the relocated opacity micromap array, use optixAccelBuild
 /// to update the existing Acceleration Structures (See OPTIX_BUILD_OPERATION_UPDATE)
 ///
 /// \param[in] context
@@ -778,23 +781,22 @@ OptixResult optixOpacityMicromapArrayGetRelocationInfo( OptixDeviceContext conte
 /// \param[in] info
 /// \param[in] targetOpacityMicromapArray
 /// \param[in] targetOpacityMicromapArraySizeInBytes
-OptixResult optixOpacityMicromapArrayRelocate( OptixDeviceContext         context,
-                                               CUstream                   stream,
-                                               const OptixRelocationInfo* info,
-                                               CUdeviceptr                targetOpacityMicromapArray,
-                                               size_t                     targetOpacityMicromapArraySizeInBytes );
+OPTIXAPI OptixResult optixOpacityMicromapArrayRelocate( OptixDeviceContext         context,
+                                                        CUstream                   stream,
+                                                        const OptixRelocationInfo* info,
+                                                        CUdeviceptr                targetOpacityMicromapArray,
+                                                        size_t targetOpacityMicromapArraySizeInBytes );
 
 /// Determine the amount of memory necessary for a Displacement Micromap Array build.
 ///
 /// \param[in] context
 /// \param[in] buildInput
 /// \param[out] bufferSizes
-OptixResult optixDisplacementMicromapArrayComputeMemoryUsage( OptixDeviceContext                              context,
-                                                              const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                              OptixMicromapBufferSizes* bufferSizes );
+OPTIXAPI OptixResult optixDisplacementMicromapArrayComputeMemoryUsage( OptixDeviceContext context,
+                                                                       const OptixDisplacementMicromapArrayBuildInput* buildInput,
+                                                                       OptixMicromapBufferSizes* bufferSizes );
 
-/// FIXME
-/// Construct an array of Displacement Micromap (DMMs).
+/// Construct an array of Displacement Micromaps (DMMs).
 ///
 /// Each triangle within a DMM GAS geometry references one DMM that specifies how to subdivide it into micro-triangles.
 /// A DMM gives a subdivision resolution into 4^N micro-triangles, and displacement values for each of the vertices
@@ -806,10 +808,10 @@ OptixResult optixDisplacementMicromapArrayComputeMemoryUsage( OptixDeviceContext
 /// \param[in] stream
 /// \param[in] buildInput    a single build input object referencing many DMMs
 /// \param[in] buffers       the buffers used for build
-OptixResult optixDisplacementMicromapArrayBuild( OptixDeviceContext                              context,
-                                                 CUstream                                        stream,
-                                                 const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                 const OptixMicromapBuffers*                     buffers );
+OPTIXAPI OptixResult optixDisplacementMicromapArrayBuild( OptixDeviceContext                              context,
+                                                          CUstream                                        stream,
+                                                          const OptixDisplacementMicromapArrayBuildInput* buildInput,
+                                                          const OptixMicromapBuffers*                     buffers );
 
 
 //@}
@@ -828,10 +830,10 @@ OptixResult optixDisplacementMicromapArrayBuild( OptixDeviceContext             
 /// \param[in] modelKind
 /// \param[in] options
 /// \param[out] denoiser
-OptixResult optixDenoiserCreate( OptixDeviceContext context,
-                                 OptixDenoiserModelKind modelKind,
-                                 const OptixDenoiserOptions* options,
-                                 OptixDenoiser* denoiser );
+OPTIXAPI OptixResult optixDenoiserCreate( OptixDeviceContext          context,
+                                          OptixDenoiserModelKind      modelKind,
+                                          const OptixDenoiserOptions* options,
+                                          OptixDenoiser*              denoiser );
 
 /// Creates a denoiser object with the given options, using a provided inference model
 ///
@@ -845,11 +847,13 @@ OptixResult optixDenoiserCreate( OptixDeviceContext context,
 /// \param[in] userData
 /// \param[in] userDataSizeInBytes
 /// \param[out] denoiser
-OptixResult optixDenoiserCreateWithUserModel( OptixDeviceContext context,
-                                              const void* userData, size_t userDataSizeInBytes, OptixDenoiser* denoiser );
+OPTIXAPI OptixResult optixDenoiserCreateWithUserModel( OptixDeviceContext context,
+                                                       const void*        userData,
+                                                       size_t             userDataSizeInBytes,
+                                                       OptixDenoiser*     denoiser );
 
 /// Destroys the denoiser object and any associated host resources.
-OptixResult optixDenoiserDestroy( OptixDenoiser denoiser );
+OPTIXAPI OptixResult optixDenoiserDestroy( OptixDenoiser denoiser );
 
 /// Computes the GPU memory resources required to execute the denoiser.
 ///
@@ -870,10 +874,10 @@ OptixResult optixDenoiserDestroy( OptixDenoiser denoiser );
 /// \param[in] outputWidth
 /// \param[in] outputHeight
 /// \param[out] returnSizes
-OptixResult optixDenoiserComputeMemoryResources( const OptixDenoiser denoiser,
-                                                 unsigned int        outputWidth,
-                                                 unsigned int        outputHeight,
-                                                 OptixDenoiserSizes* returnSizes );
+OPTIXAPI OptixResult optixDenoiserComputeMemoryResources( const OptixDenoiser denoiser,
+                                                          unsigned int        outputWidth,
+                                                          unsigned int        outputHeight,
+                                                          OptixDenoiserSizes* returnSizes );
 
 /// Initializes the state required by the denoiser.
 ///
@@ -891,14 +895,14 @@ OptixResult optixDenoiserComputeMemoryResources( const OptixDenoiser denoiser,
 /// \param[in] denoiserStateSizeInBytes
 /// \param[in] scratch
 /// \param[in] scratchSizeInBytes
-OptixResult optixDenoiserSetup( OptixDenoiser denoiser,
-                                CUstream      stream,
-                                unsigned int  inputWidth,
-                                unsigned int  inputHeight,
-                                CUdeviceptr   denoiserState,
-                                size_t        denoiserStateSizeInBytes,
-                                CUdeviceptr   scratch,
-                                size_t        scratchSizeInBytes );
+OPTIXAPI OptixResult optixDenoiserSetup( OptixDenoiser denoiser,
+                                         CUstream      stream,
+                                         unsigned int  inputWidth,
+                                         unsigned int  inputHeight,
+                                         CUdeviceptr   denoiserState,
+                                         size_t        denoiserStateSizeInBytes,
+                                         CUdeviceptr   scratch,
+                                         size_t        scratchSizeInBytes );
 
 /// Invokes denoiser on a set of input data and produces at least one output image.
 /// State memory must be available during the execution of the
@@ -965,18 +969,18 @@ OptixResult optixDenoiserSetup( OptixDenoiser denoiser,
 /// \param[in] inputOffsetY
 /// \param[in] scratch
 /// \param[in] scratchSizeInBytes
-OptixResult optixDenoiserInvoke( OptixDenoiser                   denoiser,
-                                 CUstream                        stream,
-                                 const OptixDenoiserParams*      params,
-                                 CUdeviceptr                     denoiserState,
-                                 size_t                          denoiserStateSizeInBytes,
-                                 const OptixDenoiserGuideLayer*  guideLayer,
-                                 const OptixDenoiserLayer*       layers,
-                                 unsigned int                    numLayers,
-                                 unsigned int                    inputOffsetX,
-                                 unsigned int                    inputOffsetY,
-                                 CUdeviceptr                     scratch,
-                                 size_t                          scratchSizeInBytes );
+OPTIXAPI OptixResult optixDenoiserInvoke( OptixDenoiser                  denoiser,
+                                          CUstream                       stream,
+                                          const OptixDenoiserParams*     params,
+                                          CUdeviceptr                    denoiserState,
+                                          size_t                         denoiserStateSizeInBytes,
+                                          const OptixDenoiserGuideLayer* guideLayer,
+                                          const OptixDenoiserLayer*      layers,
+                                          unsigned int                   numLayers,
+                                          unsigned int                   inputOffsetX,
+                                          unsigned int                   inputOffsetY,
+                                          CUdeviceptr                    scratch,
+                                          size_t                         scratchSizeInBytes );
 
 /// Computes the logarithmic average intensity of the given image. The returned value 'outputIntensity'
 /// is multiplied with the RGB values of the input image/tile in optixDenoiserInvoke if given in the parameter
@@ -1001,12 +1005,12 @@ OptixResult optixDenoiserInvoke( OptixDenoiser                   denoiser,
 /// \param[out] outputIntensity    single float
 /// \param[in] scratch
 /// \param[in] scratchSizeInBytes
-OptixResult optixDenoiserComputeIntensity( OptixDenoiser       denoiser,
-                                           CUstream            stream,
-                                           const OptixImage2D* inputImage,
-                                           CUdeviceptr         outputIntensity,
-                                           CUdeviceptr         scratch,
-                                           size_t              scratchSizeInBytes );
+OPTIXAPI OptixResult optixDenoiserComputeIntensity( OptixDenoiser       denoiser,
+                                                    CUstream            stream,
+                                                    const OptixImage2D* inputImage,
+                                                    CUdeviceptr         outputIntensity,
+                                                    CUdeviceptr         scratch,
+                                                    size_t              scratchSizeInBytes );
 
 /// Compute average logarithmic for each of the first three channels for the given image.
 /// When denoising tiles the intensity of the entire image should be computed, i.e. not per tile to get
@@ -1022,18 +1026,14 @@ OptixResult optixDenoiserComputeIntensity( OptixDenoiser       denoiser,
 /// \param[out] outputAverageColor three floats
 /// \param[in] scratch
 /// \param[in] scratchSizeInBytes
-OptixResult optixDenoiserComputeAverageColor( OptixDenoiser       denoiser,
-                                              CUstream            stream,
-                                              const OptixImage2D* inputImage,
-                                              CUdeviceptr         outputAverageColor,
-                                              CUdeviceptr         scratch,
-                                              size_t              scratchSizeInBytes );
+OPTIXAPI OptixResult optixDenoiserComputeAverageColor( OptixDenoiser       denoiser,
+                                                       CUstream            stream,
+                                                       const OptixImage2D* inputImage,
+                                                       CUdeviceptr         outputAverageColor,
+                                                       CUdeviceptr         scratch,
+                                                       size_t              scratchSizeInBytes );
 
 //@}
-
-#ifdef __cplusplus
-}
-#endif
 
 #include "optix_function_table.h"
 

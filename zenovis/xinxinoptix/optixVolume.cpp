@@ -150,29 +150,29 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     
     file.close();
 
-    const auto parent_matrix = volume.transform;
+    //const auto parent_matrix = volume.transform;
 
-    const auto child_matrix = [&]() -> auto {
+    // const auto child_matrix = [&]() -> auto {
 
-        auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
-        glm::mat4 result;
-        for (uint i=0; i<16; ++i) {
-            auto ele = *(tmp[0]+i);
-            result[i/4][i%4] = ele;
-        }
-        return result;
-    }();
+    //     auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
+    //     glm::mat4 result;
+    //     for (uint i=0; i<16; ++i) {
+    //         auto ele = *(tmp[0]+i);
+    //         result[i/4][i%4] = ele;
+    //     }
+    //     return result;
+    // }();
 
-    auto result_matrix = parent_matrix * child_matrix;  
+    //auto result_matrix = parent_matrix * child_matrix;  
 
-    auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
-    auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
+    //auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
+    //auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
 
-    for (uint i=0; i<16; ++i) {
-        *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
-    }
+    //for (uint i=0; i<16; ++i) {
+    //    *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
+    //}
 
-    auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
+    //auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
 
     volume.grids.clear();
     volume.grids.reserve(tmp_grids.size());
@@ -182,7 +182,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
     for (uint i=0; i<grid_count; ++i) {
         auto grid = tmp_grids[i];
-        grid->setTransform(result_transform);
+        //grid->setTransform(result_transform);
          
         //volume.grids.push_back(GridWrapper());
         //parsing(grid, volume.grids[i].handle);
@@ -220,7 +220,7 @@ static void processGrid(GridWrapper& grid, const std::string& path)
     // NanoVDB files represent the sparse data-structure as flat arrays that can be
     // uploaded to the device "as-is".
     assert( gridHdl.size() != 0 );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size(), 0 ) );
     CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
 
     grid.max_value = grid.analysis(path);
@@ -261,7 +261,7 @@ void loadGrid( GridWrapper& grid, const std::string& path, const uint index )
 void unloadGrid(GridWrapper& grid) {
     //grid.handle.reset();
     if (0 != grid.deviceptr) {
-        CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( grid.deviceptr ) ) );
+        CUDA_CHECK_NOTHROW( cudaFreeAsync( reinterpret_cast<void*>( grid.deviceptr ), 0 ) );
         grid.deviceptr = 0;
     }
 }
@@ -274,13 +274,14 @@ void cleanupVolume( VolumeWrapper& volume )
     }
 }
 
-void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const OptixDeviceContext& context )
+void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context )
 {
     // Build accel for the volume and store it in a VolumeAccel struct.
     //
     // For Optix the NanoVDB volume is represented as a 3D box in index coordinate space. The volume's
     // GAS is created from a single AABB. Because the index space is by definition axis aligned with the
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
+    auto& accel = *volume.node;
     {
 		// get this grid's aabb
         sutil::Aabb aabb = [&]()
@@ -309,9 +310,9 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
         }();
 
 		// up to device
-        CUdeviceptr d_aabb;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ) ) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb ), &aabb, 
+        xinxinoptix::raii<CUdeviceptr> d_aabb;
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ), 0 ) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb.handle ), &aabb, 
             sizeof( sutil::Aabb ), cudaMemcpyHostToDevice ) );
 
         // Make build input for this grid
@@ -330,61 +331,17 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
         accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
         accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
-        OptixAccelBufferSizes gas_buffer_sizes;
-        OPTIX_CHECK( optixAccelComputeMemoryUsage( context, &accel_options, 
-            &build_input, 1, &gas_buffer_sizes ) );
-
-        CUdeviceptr d_temp_buffer_gas;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_temp_buffer_gas ),
-            gas_buffer_sizes.tempSizeInBytes ) );
-        CUdeviceptr d_output_buffer_gas;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_output_buffer_gas ),
-            gas_buffer_sizes.outputSizeInBytes ) );
-        CUdeviceptr d_compacted_size;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_compacted_size ), sizeof( size_t ) ) );
-
-        OptixAccelEmitDesc emit_property = {};
-        emit_property.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-        emit_property.result = d_compacted_size;
-
-        OPTIX_CHECK( optixAccelBuild( context,
-            0,
-            &accel_options,
-            &build_input,
-            1,
-            d_temp_buffer_gas,
-            gas_buffer_sizes.tempSizeInBytes,
-            d_output_buffer_gas,
-            gas_buffer_sizes.outputSizeInBytes,
-            &accel.handle,
-            &emit_property,
-            1 ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_aabb ) ) );
-        size_t compacted_size;
-        CUDA_CHECK( cudaMemcpy( &compacted_size, reinterpret_cast<void*>( emit_property.result ),
-            sizeof( size_t ), cudaMemcpyDeviceToHost ) );
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_compacted_size ) ) );
-        if( compacted_size < gas_buffer_sizes.outputSizeInBytes ) 
-        {
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &accel.d_buffer ), compacted_size ) );
-            OPTIX_CHECK( optixAccelCompact( context, 0, accel.handle,
-                accel.d_buffer, compacted_size, &accel.handle ) );
-            CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_output_buffer_gas ) ) );
-        }
-        else 
-        {
-            accel.d_buffer = d_output_buffer_gas;
-        }
-        CUDA_CHECK( cudaFree( reinterpret_cast<void*>( d_temp_buffer_gas ) ) );
+        xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 8);
+        cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
+        return;
     }
 }
 
 void cleanupVolumeAccel( VolumeAccel& accel )
 {
-    if (accel.d_buffer != 0) {
-	    CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( accel.d_buffer ) ) );
+    if (accel.buffer != 0) {
 
-        accel.d_buffer = 0u;
+        accel.buffer.reset();
         accel.handle = 0u;
     }
 }

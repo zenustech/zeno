@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cuda_gl_interop.h>
-#include <cuda_runtime.h>
-
 #include <optix.h>
 #include <optix_stubs.h>
 
@@ -12,7 +9,7 @@
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
-#include <sutil/GLDisplay.h>
+// #include <sutil/GLDisplay.h>
 #include <sutil/Matrix.h>
 #include <sutil/Trackball.h>
 #include <sutil/sutil.h>
@@ -46,12 +43,12 @@ template <class T> struct raii_traits {
     }
 
     static void allocate(CUdeviceptr **pp, size_t n) {
-        CUDA_CHECK(cudaMalloc(pp, n));
+        CUDA_CHECK(cudaMallocAsync(pp, n));
     }
 
     static void deallocate(CUdeviceptr p) {
         if(p) {
-            CUDA_CHECK(cudaFree((void *)p));
+            CUDA_CHECK(cudaFreeAsync((void *)p, 0));
         }
     }
 };
@@ -101,11 +98,13 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize, std::size_t incSize = 0) {
-#if 0
+    bool resize(std::size_t newSize, std::size_t incSize = 0, bool managed=false) {     
+#if 1
         if (newSize != size) {  // temporary
-            printf("\n\nreallocating %d bytes (previous %d bytes)\n\n\n", (int)size, (int)newSize);
-            CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&reset()), newSize));
+            if (managed)
+                CUDA_CHECK(cudaMallocManaged(reinterpret_cast<void **>(&reset()), newSize));
+            else
+                CUDA_CHECK(cudaMallocAsync(reinterpret_cast<void **>(&reset()), newSize, 0));
             size = newSize;
             capacity = newSize;
             return true;

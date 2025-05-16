@@ -7,19 +7,26 @@ target_sources(zenovis PRIVATE
   OptiXStuff.h
   Host.h
 
-  volume/optixVolume.cpp
-  volume/optixVolume.h
+  optixVolume.cpp
+  optixVolume.h
   optixSphere.cpp
   optixSphere.h
+  optixTriMesh.h
+  optixCommon.h
   Portal.h
   Shape.h
   XAS.h
   BCX.h
 
+  Scene.cpp
+  Scene.h
+
   LightTree.cpp
   LightTree.h
   LightBounds.cpp
   LightBounds.h
+  LightsWrapper.h
+  
   ies/ies.cpp
   ies/ies.h
   TypeCaster.cpp
@@ -42,8 +49,8 @@ target_sources(zenovis PRIVATE
 
   )
 
-file(GLOB hair_src "hair/*.h" "hair/*.cpp")
-target_sources(zenovis PRIVATE ${hair_src})
+file(GLOB curve_src "curve/*.h" "curve/*.cpp")
+target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
@@ -51,7 +58,7 @@ target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 if (ZENO_SYSTEM_OPENVDB)
     message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
 else() # ../../projects/zenvdb/openvdb/nanovdb
-    get_filename_component(NVDB_PATH ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
+    get_filename_component(NVDB_PATH ${CMAKE_SOURCE_DIR}/projects/zenvdb/openvdb/nanovdb ABSOLUTE)
     message(${NVDB_PATH})
 endif()
 
@@ -60,6 +67,7 @@ target_include_directories(zenovis PRIVATE ${NVDB_PATH})
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
+target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/phmap/parallel_hashmap)
 
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
