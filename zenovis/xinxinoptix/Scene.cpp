@@ -10,71 +10,29 @@
 #include <vector>
 #include <zeno/utils/orthonormal.h>
 
-inline std::shared_ptr<MeshObject> StaticMeshes {};
+void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
+    float const *verts, size_t numverts, uint const *tris, size_t numtris,
+    std::map<std::string, std::pair<float const *, size_t>> const &vtab,
+    int const *matids, std::vector<std::string> const &matNameList)
+{
+    MeshDat &dat = meshdats[key];
+    dat.dirty = true;
 
-void Scene::updateStaticDrawObjects() {
-    
-    size_t tri_num = 0;
-    size_t ver_num = 0;
-
-    std::vector<const MeshDat*> candidates;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos) {
-            candidates.push_back(&dat);
-
-            tri_num += dat.tris.size()/3;
-            ver_num += dat.verts.size()/3;
-        }
+    dat.triMats.assign(matids, matids + numtris);
+    dat.mtlidList = matNameList;
+    dat.mtlid = mtlid;
+    dat.verts.assign(verts, verts + numverts * 3);
+    dat.tris.assign(tris, tris + numtris * 3);
+    //TODO: flatten just here... or in renderengineoptx.cpp
+    for (auto const &[key, fptr]: vtab) {
+        dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
     }
 
-    if ( tri_num > 0 ) {
-        StaticMeshes = std::make_shared<MeshObject>();
-        StaticMeshes->resize(tri_num, ver_num);
-    } else {
-        StaticMeshes = nullptr;
-        return;
+    uniqueMatsForMesh.insert(dat.mtlid);
+    for(auto& s : dat.mtlidList) {
+        uniqueMatsForMesh.insert(s);
     }
-
-    size_t tri_offset = 0;
-    size_t ver_offset = 0;
-
-    for (const auto* dat_ptr : candidates) {
-
-        auto& dat = *dat_ptr;
-
-        std::vector<uint16_t> global_matidx(max(dat.mtlidList.size(), 1ull));
-
-        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-            auto matName = dat.mtlidList[j];
-            auto it = _mesh_materials.find(matName);
-            global_matidx[j] = it != _mesh_materials.end() ? it->second : 0;
-        }
-
-        tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
-            int mtidx = dat.triMats[i];
-            StaticMeshes->mat_idx[tri_offset+i] = global_matidx[mtidx];
-            StaticMeshes->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
-        });
-
-        memcpy(StaticMeshes->vertices.data()+ver_offset, dat.verts.data(), sizeof(float)*dat.verts.size() );
-
-        auto& uvAttr = dat.getAttr("uv");
-        auto& clrAttr = dat.getAttr("clr");
-        auto& nrmAttr = dat.getAttr("nrm");
-        auto& tangAttr = dat.getAttr("atang");
-
-        tbb::parallel_for(size_t(0), dat.verts.size()/3, [&](size_t i) {
-
-            StaticMeshes->g_uv[ver_offset + i] = ( *(float2*)&uvAttr[i * 3] );
-            StaticMeshes->g_clr[ver_offset + i] = toHalf( *(float3*)&clrAttr[i * 3] );
-
-            StaticMeshes->g_nrm[ver_offset + i] = toHalf( *(float3*)&nrmAttr[i * 3] );
-            StaticMeshes->g_tan[ver_offset + i] = toHalf( *(float3*)&tangAttr[i * 3] );
-        });
-
-        tri_offset += dat.tris.size() / 3;
-        ver_offset += dat.verts.size() / 3;
-    }
+    updateGeoType(key, ShaderMark::Mesh);
 }
 
 void Scene::updateDrawObjects() {
@@ -82,7 +40,7 @@ void Scene::updateDrawObjects() {
     std::vector<std::string>    names;
     std::vector<const MeshDat*> candidates;
 
-    for (auto &[key, dat]: drawdats) {
+    for (auto &[key, dat]: meshdats) {
 
         if (!dat.dirty) { continue; }
         dat.dirty = false;
@@ -158,7 +116,7 @@ void Scene::updateDrawObjects() {
 
         cleanTasks[name] = [&](const std::string& k) {
             _meshes_.erase(k);
-            drawdats.erase(k);
+            meshdats.erase(k);
         };
     }
 
@@ -301,4 +259,84 @@ void Scene::preloadHair(const std::string& name, const std::string& filePath, ui
     geoMatrixMap[name] = glm::transpose(transform);
     auto mark = (uint)mode + 3;
     updateGeoType( name, ShaderMark(mark) );
+}
+
+void Scene::preload_sphere(const std::string &key, const glm::mat4& transform) 
+{
+    auto& dsphere = _spheres_[key];
+    if (nullptr == dsphere) {
+        dsphere = std::make_shared<SphereTransformed>();
+    }
+    auto trans = glm::transpose(transform);
+
+    geoMatrixMap[key] = trans;
+    updateGeoType(key, ShaderMark::Sphere);
+
+    dirtyTasks[key] = [&](OptixDeviceContext& context){
+       
+        if (nullptr == uniform_sphere_gas) {
+            uniform_sphere_gas = std::make_shared<SceneNode>();
+            buildUnitSphereGAS(context, uniform_sphere_gas->handle, uniform_sphere_gas->buffer);
+        }
+        dsphere->dirty = false;
+        dsphere->node = uniform_sphere_gas;
+
+        return uniform_sphere_gas->handle;
+    };
+
+    cleanTasks[key] = [&](const std::string& k) {
+        _spheres_.erase(k);
+    };
+}
+
+void Scene::preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV) {
+        
+    auto& group = _sphere_groups_[key];
+    if (nullptr == group) {
+        group = std::make_shared<SphereGroup>();
+        group->node = std::make_shared<SceneNode>();
+    }
+    group->centerV = std::move(centerV);
+    group->radiusV = std::move(radiusV);
+    group->colorV = std::move(colorV);
+
+    updateGeoType(key, ShaderMark::Sphere);
+
+    dirtyTasks[key] = [&](OptixDeviceContext& context){
+        group->dirty = false;
+        buildSphereGroupGAS(context, *group);
+        return group->node->handle;
+    };
+
+    cleanTasks[key] = [&](const std::string& k) {
+        _sphere_groups_.erase(k);
+    };
+}
+
+bool Scene::preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
+
+    auto& vbox = _vboxs_[key];
+    if (nullptr == vbox) {
+        vbox = std::make_shared<VolumeWrapper>(); 
+    }
+    auto trans = glm::transpose(transform);
+
+    vbox->dirty = true;
+    vbox->bounds = bounds;
+    vbox->transform = trans;
+    updateGeoType(key, ShaderMark::Volume);
+    geoMatrixMap[key] = trans;
+
+    dirtyTasks[key] = [&](OptixDeviceContext& context) {
+        
+        vbox->dirty = false;
+        buildVolumeAccel(*vbox, context);
+        return vbox->node->handle;
+    };
+
+    cleanTasks[key] = [&](const std::string& k) {
+        _vboxs_.erase(k);
+    };
+
+    return true;
 }

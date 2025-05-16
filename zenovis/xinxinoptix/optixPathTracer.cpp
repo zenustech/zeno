@@ -788,10 +788,8 @@ void show_background(bool enable) {
 
 void updatePortalLights(const std::vector<Portal>& portals) {
 
-    decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
-    OptixUtil::tex_lut.find(tex_accessor, {OptixUtil::sky_tex.value(), false});
-    
-    auto &tex = tex_accessor->second;
+    auto find = OptixUtil::tex_lut.find({OptixUtil::sky_tex.value(), false});
+    auto &tex = find->second;
 
     auto& pll = state.plights;
     auto& pls = pll.list;
@@ -1214,11 +1212,8 @@ void buildLightTree() {
         OptixUtil::TexKey tex_key {dat.textureKey, false};
         
         if ( OptixUtil::tex_lut.count( tex_key ) > 0 ) {
-
-            decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
-            OptixUtil::tex_lut.find(tex_accessor, tex_key);
-
-            auto& val = tex_accessor->second;
+            
+            auto& val = OptixUtil::tex_lut[tex_key];
             lightsWrapper.texs.push_back(val);
 
             light.tex = val->texture;

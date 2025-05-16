@@ -36,6 +36,8 @@
 //#include <GLFW/glfw3.h>
 
 #include <tbb/task_group.h>
+#include <parallel_hashmap/phmap.h>
+
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
 
@@ -691,9 +693,9 @@ struct TexKeyHash
     }
 };
 
-inline tbb::concurrent_hash_map<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
-inline tbb::concurrent_hash_map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
-inline tbb::concurrent_hash_map<std::string, std::string> md5_path_mapping;
+inline phmap::parallel_node_hash_map_m<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
+inline phmap::parallel_flat_hash_map_m<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline phmap::parallel_flat_hash_map_m<std::string, std::string> md5_path_mapping;
 
 inline std::optional<std::string> sky_tex;
 inline std::shared_ptr<cuTexture> sky_tex_ptr;
@@ -798,9 +800,8 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
 
-        decltype(g_tex_last_write_time)::const_accessor time_accessor;
-        if (g_tex_last_write_time.find(time_accessor, path)) {
-            if (time_accessor->second == ftime) return;
+        if (g_tex_last_write_time.count(path)) {
+            if (g_tex_last_write_time[path] == ftime) return;
         } 
         g_tex_last_write_time.insert( {path, ftime} );
 
@@ -812,15 +813,13 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
 
-    decltype(md5_path_mapping)::const_accessor md5_accessor;
-    if ( md5_path_mapping.find(md5_accessor, md5Hash) ) {
+    if ( md5_path_mapping.count(md5Hash) ) {
 
-        auto& alt_path = md5_accessor->second;
+        auto& alt_path = md5_path_mapping[md5Hash];
         auto alt_key = TexKey { alt_path, blockCompression };
 
-        decltype(tex_lut)::const_accessor tex_accessor;
-        if (tex_lut.find(tex_accessor, alt_key)) {
-            tex_lut.insert( {tex_key, tex_accessor->second} );
+        if (tex_lut.count(alt_key)) {
+            tex_lut.insert( {tex_key, tex_lut[alt_key]} );
             //zeno::log_info("path {} reuse {} tex", path, alt_path);
             return;
         }
@@ -990,12 +989,10 @@ inline void removeTexture(const TexKey &key) {
 
     if (path.size()) {
 
-        decltype(tex_lut)::const_accessor tex_accessor;
-        if (tex_lut.find(tex_accessor, key)) {
+        if (tex_lut.count(key)) {
 
-            zeno::log_info("removeTexture: {} blockCompresssion: {}", path, key.blockCompression);
-            md5_path_mapping.erase(tex_accessor->second->md5);
-            tex_lut.erase(tex_accessor);
+            md5_path_mapping.erase(tex_lut[key]->md5);
+            tex_lut.erase(key);
         }
         else {
             zeno::log_error("removeTexture: {} not exists!", path);
@@ -1005,11 +1002,11 @@ inline void removeTexture(const TexKey &key) {
 }
 
 inline std::shared_ptr<cuTexture> getTexturePtr(const std::string& path) {
-    decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
-    auto find = OptixUtil::tex_lut.find(tex_accessor, {path, false});
 
-    if (find)
-        return tex_accessor->second;
+    auto find = OptixUtil::tex_lut.find({path, false});
+
+    if (find != OptixUtil::tex_lut.end())
+        return find->second;
     else
         return nullptr;
 }

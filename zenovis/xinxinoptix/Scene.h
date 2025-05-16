@@ -45,6 +45,8 @@
 
 #include "LightsWrapper.h"
 
+#include <parallel_hashmap/phmap.h>
+
 using m3r4c = std::array<float, 12>;
 
 const m3r4c IdentityMatrix = { 
@@ -57,24 +59,53 @@ const std::string brikey = "BasicRenderInstances";
 class Scene {
 
 private:
-    std::unordered_map<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
-    std::unordered_map<std::string, std::function<void(const std::string&)>>      cleanTasks;
+    phmap::parallel_flat_hash_map_m<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
+    phmap::parallel_flat_hash_map_m<std::string, std::function<void(const std::string&)>>      cleanTasks;
+
+    phmap::parallel_flat_hash_map_m<std::string, ShaderMark>  geoTypeMap;
+    phmap::parallel_flat_hash_map_m<std::string, glm::mat4> geoMatrixMap;
+    phmap::parallel_flat_hash_map_m<std::string, glm::mat4> renderObjectMatrixMap;
+
+    nlohmann::json sceneJson;
+    phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<Hair>> hairCache;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroupWrapper>> hairStateCache;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroupWrapper>> curveGroupStateCache;
+
+    std::shared_ptr<SceneNode> uniform_sphere_gas;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vboxs_;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<MeshObject>> _meshes_;
+
+    phmap::parallel_node_hash_map_m<std::string, MeshDat> meshdats;
+    phmap::parallel_flat_hash_set_m<std::string> uniqueMatsForMesh;
+
+    std::unordered_map<std::string, uint64_t> gas_handles;
 
 public:
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
-    std::unordered_map<std::string, std::vector<m3r4c>> matrix_map{}; 
+    std::unordered_map<std::string, uint16_t> _mesh_materials;
+    std::map<shader_key_t, uint16_t> shader_indice_table;
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
         matrix_map[key] = std::move(matrix_list);
-    }
-
-    nlohmann::json sceneJson;
+    }    
 
     inline void preload_scene(const std::string& jsonString) {
         bool accept = nlohmann::json::accept(jsonString);
         if (!accept) return;
-        
         sceneJson = nlohmann::json::parse(jsonString);
+    }
+
+    inline void updateGeoType(const std::string& key, ShaderMark mark) {
+        geoTypeMap.insert( {key, mark} );
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
@@ -201,8 +232,6 @@ public:
         glm::mat4* matrix{};
         VisibilityMask vmask;
     };
-
-    std::unordered_map<std::string, uint64_t> gas_handles;
 
     inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
         float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
@@ -511,127 +540,30 @@ public:
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
-    
-    std::unordered_map<std::string, MeshDat> drawdats;
-
-    std::unordered_set<std::string> uniqueMatsForMesh;
-    std::unordered_map<std::string, uint16_t> _mesh_materials;
-    std::map<shader_key_t, uint16_t> shader_indice_table;
-
-    std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
     void preload_mesh(std::string const &key, std::string const &mtlid,
                  float const *verts, size_t numverts, uint const *tris, size_t numtris,
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
-                 int const *matids, std::vector<std::string> const &matNameList) 
-    {
-        MeshDat &dat = drawdats[key];
-        dat.dirty = true;
-
-        dat.triMats.assign(matids, matids + numtris);
-        dat.mtlidList = matNameList;
-        dat.mtlid = mtlid;
-        dat.verts.assign(verts, verts + numverts * 3);
-        dat.tris.assign(tris, tris + numtris * 3);
-        //TODO: flatten just here... or in renderengineoptx.cpp
-        for (auto const &[key, fptr]: vtab) {
-            dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
-        }
-
-        uniqueMatsForMesh.insert(dat.mtlid);
-        for(auto& s : dat.mtlidList) {
-            uniqueMatsForMesh.insert(s);
-        }
-        updateGeoType(key, ShaderMark::Mesh);
-    }
+                 int const *matids, std::vector<std::string> const &matNameList);
 
     void unload_object(std::string const &key) {
-        drawdats.erase(key);
+        if (cleanTasks.count(key)==0) return;
+        cleanTasks[key](key);
+        cleanTasks.erase(key);
     }
 
-    void updateStaticDrawObjects();
     void updateDrawObjects();
 
     void updateMeshMaterials(const std::unordered_map<std::string, uint16_t>& mtlidlut) {
-
         _mesh_materials = mtlidlut;
         updateDrawObjects();
     }
 
-    std::map<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
-    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> curveGroupStateCache;
-
-    void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
-
-    std::map<std::string, std::shared_ptr<Hair>> hairCache;
-    std::map<std::string, std::shared_ptr<CurveGroupWrapper>> hairStateCache;
-
     void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));
-
-std::unordered_map<std::string, ShaderMark>  geoTypeMap;
-std::unordered_map<std::string, glm::mat4> geoMatrixMap;
-std::unordered_map<std::string, glm::mat4> renderObjectMatrixMap;
-
-void updateGeoType(const std::string& key, ShaderMark mark) {
-    geoTypeMap.insert( {key, mark} );
-}
-
-std::shared_ptr<SceneNode> uniform_sphere_gas{};
-std::unordered_map<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
-
-    void preload_sphere_transformed(const std::string &key, const glm::mat4& transform) 
-    {
-        auto& dsphere = _spheres_[key];
-        if (nullptr == dsphere) {
-            dsphere = std::make_shared<SphereTransformed>();
-        }
-        auto trans = glm::transpose(transform);
-
-        geoMatrixMap[key] = trans;
-        updateGeoType(key, ShaderMark::Sphere);
-
-        dirtyTasks[key] = [&](OptixDeviceContext& context){
-           
-            if (nullptr == uniform_sphere_gas) {
-                uniform_sphere_gas = std::make_shared<SceneNode>();
-                buildUnitSphereGAS(context, uniform_sphere_gas->handle, uniform_sphere_gas->buffer);
-            }
-            dsphere->dirty = false;
-            dsphere->node = uniform_sphere_gas;
-
-            return uniform_sphere_gas->handle;
-        };
-
-        cleanTasks[key] = [&](const std::string& k) {
-            _spheres_.erase(k);
-        };
-    }
-
-std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
-
-    void preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV) {
-        
-        auto& group = _sphere_groups_[key];
-        if (nullptr == group) {
-            group = std::make_shared<SphereGroup>();
-            group->node = std::make_shared<SceneNode>();
-        }
-        group->centerV = std::move(centerV);
-        group->radiusV = std::move(radiusV);
-        group->colorV = std::move(colorV);
-
-        updateGeoType(key, ShaderMark::Sphere);
-
-        dirtyTasks[key] = [&](OptixDeviceContext& context){
-            group->dirty = false;
-            buildSphereGroupGAS(context, *group);
-            return group->node->handle;
-        };
-
-        cleanTasks[key] = [&](const std::string& k) {
-            _sphere_groups_.erase(k);
-        };
-    }
+    void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
+    
+    void preload_sphere(const std::string &key, const glm::mat4& transform);
+    void preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV);
 
     std::map<std::string, std::set<ShaderMark>> prepareShaderSet() {
 
@@ -660,38 +592,6 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
             cached.insert( ShaderMark::Mesh );
         }
         return shader_key_set;
-    }
-
-    std::map<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
-    std::map<std::string, std::shared_ptr<VolumeWrapper>> _vol_boxs;
-
-    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
-
-        auto& volume_ptr = _vol_boxs[key];
-        if (nullptr == volume_ptr) {
-            volume_ptr = std::make_shared<VolumeWrapper>(); 
-        }
-        auto trans = glm::transpose(transform);
-
-        volume_ptr->dirty = true;
-        volume_ptr->bounds = bounds;
-        volume_ptr->transform = trans;
-        //buildVolumeAccel(*volume_ptr, context);
-        updateGeoType(key, ShaderMark::Volume);
-        geoMatrixMap[key] = trans;
-
-        dirtyTasks[key] = [&](OptixDeviceContext& context) {
-            
-            volume_ptr->dirty = false;
-            buildVolumeAccel(*volume_ptr, context);
-            return volume_ptr->node->handle;
-        };
-
-        cleanTasks[key] = [&](const std::string& k) {
-            _vol_boxs.erase(k);
-        };
-
-        return true;
     }
 
     void prepareVolumeAssets() {
@@ -733,7 +633,8 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
             buildVolumeAccel( *vol, OptixUtil::context );
         }
     }
-    
+
+    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform);
     bool preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key);
 };
 

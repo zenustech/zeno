@@ -518,7 +518,7 @@ struct GraphicsManager {
                         memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                         memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                        defaultScene.preload_sphere_transformed(objectName, sphere_transform);
+                        defaultScene.preload_sphere(objectName, sphere_transform);
                     }
                     return;
                 }
@@ -1139,22 +1139,20 @@ struct GraphicsManager {
         }
 
         timer.tick();
-        // tbb::task_arena limited(12);
-        // tbb::task_group run_group;
-        // tbb::mutex ig_mutex;
+        //tbb::task_arena limited(12);
+        tbb::task_group run_group;
+        tbb::mutex ig_mutex;
         
         for (auto const &[key, obj] : objs) {
 
-            // limited.execute([&] {
-            //     run_group.run([&]() {
+            run_group.run([&]() {
                     
-                    //ig_mutex.lock();
-                    auto may = ins.may_emplace(key);
-                    //ig_mutex.unlock();
+                ig_mutex.lock();
+                auto may = ins.may_emplace(key);
+                ig_mutex.unlock();
 
-                    if (may && key.find(":static:") == key.npos) {
-                        //                zeno::log_info("load_object: loading graphics [{}]", key);
-                        changed = true;
+                if (may && key.find(":static:") == key.npos) {
+                    changed = true;
 
                 if (!scene->drawOptions->updateMatlOnly) {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
@@ -1184,16 +1182,15 @@ struct GraphicsManager {
                     }
                 }
 
-                        auto ig = std::make_unique<ZxxGraphic>(key, obj);
-                        //ig_mutex.lock();
-                        ins.try_emplace(key, std::move(ig));
-                        //ig_mutex.unlock();
-                    }
-            //     });
-            // });
+                    auto ig = std::make_unique<ZxxGraphic>(key, obj);
+                    ig_mutex.lock();
+                    ins.try_emplace(key, std::move(ig));
+                    ig_mutex.unlock();
+                }
+            });
         }
-        //run_group.wait();
-        timer.tock("Prim load");
+        run_group.wait();
+        timer.tock("Objects load");
 
         {   //when turn off last node in always mode
             static int objsNum = 0;
@@ -1626,10 +1623,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                         for(auto tex:mtldet->tex2Ds)
                         {
-                            decltype(OptixUtil::tex_lut)::const_accessor tex_accessor;
-                            OptixUtil::tex_lut.find(tex_accessor, {tex->path, tex->blockCompression} );
-    
-                            auto &tex_ptr = tex_accessor->second;
+                            auto find = OptixUtil::tex_lut.find({tex->path, tex->blockCompression} );
+                            auto &tex_ptr = find->second;
                             shaderP.texs.push_back( tex_ptr);
                         }
 
