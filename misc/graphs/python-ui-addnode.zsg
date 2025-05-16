@@ -144,6 +144,170 @@
                 },
                 "14617837-Blackboard": {
                     "name": "Blackboard",
+                    "inputs": {},
+                    "params": {},
+                    "outputs": {},
+                    "uipos": [
+                        -1100.0,
+                        800.0
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "special": false,
+                        "width": 2809.477783203125,
+                        "height": 1414.608642578125,
+                        "title": "title",
+                        "content": "PythonNode吐节点只能在UI端，点击Execute进行，无法在解算端动态吐节点，\n吐节点时留意日志面板，可能因为错误中断，也可能因为重复创建而抛异常"
+                    }
+                },
+                "361ba87b-PythonNode": {
+                    "name": "PythonNode",
+                    "inputs": {
+                        "script": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "s1 = \"%1\"\t#%1代表args第一个参数，obj0\n\ns2 = \"%2\"\n\nprint(\"s1=%s\" % s1)\nprint(\"s2=%s\" % s2)\n\n",
+                            "control": {
+                                "name": "Multiline String"
+                            }
+                        },
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": null,
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "args": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {
+                                    "obj0": {
+                                        "link": "main:412c8abc-MakeString:[node]/outputs/value"
+                                    },
+                                    "obj1": {
+                                        "link": "main:abeea29c-MakeString:[node]/outputs/value"
+                                    }
+                                }
+                            },
+                            "link": null,
+                            "type": "dict",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "onlyui": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
+                    "outputs": {
+                        "rets": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "type": "dict"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -2300.0,
+                        1500.0
+                    ],
+                    "options": []
+                },
+                "412c8abc-MakeString": {
+                    "name": "MakeString",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "value": {
+                            "value": "first text",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "value": {
+                            "type": "string"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3100.0,
+                        1600.0
+                    ],
+                    "options": []
+                },
+                "abeea29c-MakeString": {
+                    "name": "MakeString",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "value": {
+                            "value": "another text",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "value": {
+                            "type": "string"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3300.0,
+                        2200.0
+                    ],
+                    "options": []
+                },
+                "47250d5-Blackboard": {
+                    "name": "Blackboard",
                     "inputs": {
                         "SRC": {
                             "link": null,
@@ -161,16 +325,16 @@
                         }
                     },
                     "uipos": [
-                        -1100.0,
-                        800.0
+                        -3400.0,
+                        1400.0
                     ],
                     "options": [],
                     "blackboard": {
                         "special": false,
-                        "width": 2809.4778855112974,
-                        "height": 1414.608592476124,
+                        "width": 1863.984495131401,
+                        "height": 1586.5979341477478,
                         "title": "title",
-                        "content": "PythonNode吐节点只能在UI端，点击Execute进行，无法在解算端动态吐节点，\n吐节点时留意日志面板，可能因为错误中断，也可能因为重复创建而抛异常"
+                        "content": "先点击Generate，让args的上游解算，然后再点击Execute，就可以执行脚本"
                     }
                 }
             },
@@ -43248,7 +43412,7 @@
                         "x": 0.0022358859423547985,
                         "y": 0.0208037830889225,
                         "width": 0.9955282211303711,
-                        "height": 0.39054372906684878
+                        "height": 0.22742316126823426
                     },
                     "tabs": [
                         {
@@ -43267,16 +43431,32 @@
                 }
             },
             "right": {
-                "widget": {
-                    "geometry": {
-                        "x": 0.0022358859423547985,
-                        "y": 0.41513001918792727,
-                        "width": 0.9955282211303711,
-                        "height": 0.4680851101875305
-                    },
-                    "tabs": [
-                        "Editor"
-                    ]
+                "orientation": "H",
+                "left": {
+                    "widget": {
+                        "geometry": {
+                            "x": 0.0022358859423547985,
+                            "y": 0.25200945138931277,
+                            "width": 0.5866405963897705,
+                            "height": 0.631205677986145
+                        },
+                        "tabs": [
+                            "Editor"
+                        ]
+                    }
+                },
+                "right": {
+                    "widget": {
+                        "geometry": {
+                            "x": 0.5911123752593994,
+                            "y": 0.25200945138931277,
+                            "width": 0.4066517651081085,
+                            "height": 0.631205677986145
+                        },
+                        "tabs": [
+                            "Logger"
+                        ]
+                    }
                 }
             }
         },
