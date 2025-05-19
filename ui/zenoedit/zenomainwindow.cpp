@@ -1213,7 +1213,7 @@ void ZenoMainWindow::updateViewport(const QString& action)
             }
         }
         if (action == "newFrame") {
-            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames();
             int beginframe = m_pTimeline->fromTo().first;
             if (endFrame == beginframe) {   //run的时候起始帧计算完成后，将timeline重置为起始帧
                 runType oldtype = m_runtype;
