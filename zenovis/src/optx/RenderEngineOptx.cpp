@@ -1192,6 +1192,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         posWS += cam.m_pos;
         return posWS;
     }
+    std::optional<std::tuple<uint64_t, uint32_t, uint32_t>> getClickedId(int x, int y) override {
+        auto ids = xinxinoptix::get_click_id(x, y);
+        if (ids == glm::uvec4()) {
+            return {};
+        }
+        return std::tuple<uint64_t, uint32_t, uint32_t>(*reinterpret_cast<uint64_t *>(&ids), ids[2], ids[3]);
+    }
 
     auto setupState() {
         return std::tuple{

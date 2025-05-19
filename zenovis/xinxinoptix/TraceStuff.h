@@ -110,6 +110,7 @@ struct RadiancePRD
     unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;
+    uint4 record;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);

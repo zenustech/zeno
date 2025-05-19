@@ -327,6 +327,9 @@ extern "C" __global__ void __closesthit__radiance()
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
+    *reinterpret_cast<OptixTraversableHandle*>(&prd->record.x) = gas;
+    prd->record.z = sbtGASIndex;
+    prd->record.w = primIdx;
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();

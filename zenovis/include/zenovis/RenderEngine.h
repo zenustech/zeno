@@ -24,6 +24,7 @@ struct RenderEngine {
 
     virtual ~RenderEngine() = default;
     virtual std::optional<glm::vec3> getClickedPos(int x, int y) { return {}; }
+    virtual std::optional<std::tuple<uint64_t, uint32_t, uint32_t>> getClickedId(int x, int y) { return {}; }
 };
 
 class RenderManager {

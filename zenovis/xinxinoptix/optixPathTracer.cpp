@@ -170,6 +170,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
     raii<CUdeviceptr> frame_buffer_p;
+    raii<CUdeviceptr> frame_buffer_pick;
     raii<CUdeviceptr> accum_buffer_m;
 
     raii<CUdeviceptr> finite_lights_ptr;
@@ -360,6 +361,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.frame_buffer_pick .reset()),
+        params.width * params.height * sizeof( uint4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
         params.width * params.height * sizeof( ushort1 )
             ) );
@@ -378,6 +383,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
     state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
     state.params.frame_buffer_P = (float3*)(CUdeviceptr)state.frame_buffer_p;
+    state.params.frame_buffer_Pick = (uint4*)(CUdeviceptr)state.frame_buffer_pick;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
@@ -1947,6 +1953,15 @@ glm::vec3 get_click_pos(int x, int y) {
     auto index = x + (h - 1 - y) * w;
     auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
     return posWS;
+}
+
+glm::uvec4 get_click_id(int x, int y) {
+    int w = state.params.width;
+    int h = state.params.height;
+    std::vector<glm::uvec4> tex_data(w * h);
+    cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_pick.handle, sizeof(tex_data[0]) * tex_data.size(), cudaMemcpyDeviceToHost);
+    auto index = x + (h - 1 - y) * w;
+    return tex_data[index];
 }
 
 static void save_exr(float3* ptr, int w, int h, std::string path) {

@@ -161,6 +161,7 @@ struct Params
     uchar4*      frame_buffer;
     ushort3*     frame_buffer_M;
     float3*      frame_buffer_P;
+    uint4*       frame_buffer_Pick;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;

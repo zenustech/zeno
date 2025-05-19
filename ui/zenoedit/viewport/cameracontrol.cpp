@@ -102,6 +102,13 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
+    if (event->button() == Qt::LeftButton) {
+        auto ids = scene->renderMan->getEngine()->getClickedId(event->x(), event->y());
+        if (ids.has_value()) {
+            auto [obj_id, mat_id, prim_id] = ids.value();
+            zeno::log_info("click: {} {} {}", obj_id, mat_id, prim_id);
+        }
+    }
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
