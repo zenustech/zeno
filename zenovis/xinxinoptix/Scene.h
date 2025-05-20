@@ -59,6 +59,7 @@ public:
     }
 
     nlohmann::json sceneJson;
+    std::unordered_map<uint64_t, std::string> gas_to_obj_id;
 
     inline void preload_scene(const std::string& jsonString) {
 //        bool accept = nlohmann::json::accept(jsonString);
@@ -269,7 +270,7 @@ public:
             }
         } //bri
 
-        auto prepare = [&candidates, &geo_to_candidate](auto& themap) {
+        auto prepare = [&](auto& themap) {
 
             auto iterator = themap.begin();
             while (iterator != themap.end()) {
@@ -280,6 +281,7 @@ public:
                     for (auto& ele : geo_to_candidate[key]) {
                         if (candidates[ele] != 0) continue;
                         candidates[ele] = iterator->second->node->handle;
+                        gas_to_obj_id[candidates[ele]] = key;
                     }
                     ++iterator;
                 }
