@@ -20,8 +20,6 @@ OutlineItemModel::~OutlineItemModel()
 void OutlineItemModel::setupModelData()
 {
     beginResetModel();
-
-    name2keys.clear();
     
     rootItem = std::make_unique<OutlineItem>();  // 重置rootItem
     auto* meshItem = rootItem->addChild("Mesh");
@@ -41,7 +39,6 @@ void OutlineItemModel::setupModelData()
                                 auto &ud = obj->userData();
                                 if (ud.has("ResourceType")) {
                                     auto object_name = ud.get2<std::string>("ObjectName", key);
-                                    name2keys[object_name] = key;
                                     if (ud.get2<std::string>("ResourceType", "none") == "Mesh") {
                                         mesh_names.emplace_back(object_name);
                                     } else if (ud.get2<std::string>("ResourceType", "none") == "Matrixes") {
@@ -159,9 +156,6 @@ void zenooutline::setupTreeView()
         }
         QVariant data = m_model->data(index, Qt::DisplayRole);
         auto object_name = data.toString().toStdString();
-        if (m_model && m_model->name2keys.count(object_name)) {
-            object_name = m_model->name2keys[object_name];
-        }
         ZenoMainWindow *mainWin = zenoApp->getMainWindow();
         mainWin->onPrimitiveSelected({object_name});
     });

@@ -106,7 +106,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         auto ids = scene->renderMan->getEngine()->getClickedId(event->x(), event->y());
         if (ids.has_value()) {
             auto [obj_id, mat_id, prim_id] = ids.value();
-            zeno::log_info("click: {} {} {}", obj_id, mat_id, prim_id);
+            ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+            mainWin->onPrimitiveSelected({obj_id});
         }
     }
     if (event->button() == Qt::MiddleButton) {

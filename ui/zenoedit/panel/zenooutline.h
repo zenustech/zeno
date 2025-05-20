@@ -19,7 +19,6 @@ public:
     
     // 自定义数据操作
     void setupModelData();
-    std::unordered_map<std::string, std::string> name2keys;
 
 private:
     struct OutlineItem {
