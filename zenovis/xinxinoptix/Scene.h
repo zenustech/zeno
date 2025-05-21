@@ -565,9 +565,9 @@ public:
     void preload_sphere(const std::string &key, const glm::mat4& transform);
     void preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV);
 
-    std::map<std::string, std::set<ShaderMark>> prepareShaderSet() {
+    auto prepareShaderSet() {
 
-        std::map<std::string, std::set<ShaderMark>> shader_key_set;
+        std::unordered_map<std::string, std::unordered_set<ShaderMark>> shader_key_set;
 
         if (sceneJson.contains(brikey)) {
             auto& bri = sceneJson[brikey];
@@ -581,7 +581,7 @@ public:
                 auto material_key = std::make_tuple(material_str, geo_type);
 
                 if (shader_key_set.count(material_str)==0) {
-                    shader_key_set[material_str] = std::set<ShaderMark>();
+                    shader_key_set[material_str] = std::unordered_set<ShaderMark>();
                 }
                 shader_key_set[material_str].insert(geo_type);
             }

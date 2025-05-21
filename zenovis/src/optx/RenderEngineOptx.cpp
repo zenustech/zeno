@@ -1311,7 +1311,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         "Light.cu", false, {}, {}, {}
     };
 
-    std::map<std::string, std::set<ShaderMark>> required_shader_names;
+    std::unordered_map<std::string, std::unordered_set<ShaderMark>> required_shader_names;
     std::map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
 
     std::unordered_map<std::string, uint16_t> cachedMeshMatLUT;
@@ -1550,16 +1550,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             {   timer.tick();
 
                 std::unordered_set<OptixUtil::TexKey, OptixUtil::TexKeyHash> requiredTexPathSet;
-                for(auto const &[matkey, mtldet] : matMap) {
-                    if (required_shader_names.count( mtldet->mtlidkey ) == 0) continue;
+                for(auto const &matkey : dirtyShaderNames) {
+                    if (required_shader_names.count( matkey ) == 0) continue;
 
-                    for(auto& tex: mtldet->tex2Ds) {
+                    const auto& texs = matMap[matkey]->tex2Ds;
+                    for(auto& tex: texs) {
                         requiredTexPathSet.insert( {tex->path, tex->blockCompression} );
                     }
                 }
                 
                 for (const auto& [_, ld] : xinxinoptix::get_lightdats()) {
 
+                    if (ld.textureKey.empty()) continue;
                     requiredTexPathSet.insert( {ld.textureKey, false} );
 
                     if (requireSphereLight && requireTriangLight) continue;
@@ -1708,7 +1710,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     timer.tock("Build LightTree");
                 }
 
-                if (OptixUtil::tex_lut.size()) {
+                if (OptixUtil::tex_lut.size()>1) {
 
                     timer.tick();
                     std::vector<OptixUtil::TexKey> dtexs;
