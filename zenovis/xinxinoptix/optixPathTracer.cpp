@@ -1431,7 +1431,8 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         rtShader.texs = {};
         rtShader.texs.reserve(texs.size());
         for(int j=0; j<texs.size(); j++) {
-            rtShader.texs.push_back(texs[j]->texture);
+            auto tid = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
+            rtShader.texs.push_back(tid);
         }
 
         auto& vdbs = shaders[i]->vdb_keys;

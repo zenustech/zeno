@@ -1623,11 +1623,17 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         shaderP.matid = mtldet->mtlidkey;
                         shaderP.texs.reserve(mtldet->tex2Ds.size());
 
-                        for(auto tex:mtldet->tex2Ds)
+                        for (auto tex : mtldet->tex2Ds)
                         {
-                            auto find = OptixUtil::tex_lut.find({tex->path, tex->blockCompression} );
-                            auto &tex_ptr = find->second;
-                            shaderP.texs.push_back( tex_ptr);
+                            auto find = OptixUtil::tex_lut.find({ tex->path, tex->blockCompression });
+
+                            if (find != OptixUtil::tex_lut.end()) {
+                                auto& tex_ptr = find->second;
+                                shaderP.texs.push_back(tex_ptr);
+                            }
+                            else {
+                                shaderP.texs.push_back(nullptr);
+                            }
                         }
 
                         if (mtldet->tex3Ds.size() > 0) {
