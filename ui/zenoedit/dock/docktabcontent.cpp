@@ -943,7 +943,11 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_pause->setCheckable(true);
         pToolLayout->addWidget(m_pause);
         m_matNeedUpdate = new QCheckBox(tr("UpdateMat"));
-        m_matNeedUpdate->setChecked(false);
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant varViewportUpdateMat = inst.getValue(zsViewportUpdateMat);
+        bool needUpdateMat = varViewportUpdateMat.isValid()? varViewportUpdateMat.toBool(): false;
+        zeno::getSession().userData().set2("viewport-optix-matNeedUpdate", needUpdateMat);
+        m_matNeedUpdate->setChecked(needUpdateMat);
         m_matNeedUpdate->setStyleSheet("color: white;");
         pToolLayout->addWidget(m_matNeedUpdate);
     }
@@ -1044,6 +1048,8 @@ void DockContent_View::initConnections()
         connect(m_matNeedUpdate, &QCheckBox::stateChanged, this, [=](int state) {
             bool bChecked = (state == Qt::Checked);
             zeno::getSession().userData().set2("viewport-optix-matNeedUpdate", bChecked);
+            auto& inst = ZenoSettingsManager::GetInstance();
+            inst.setValue(zsViewportUpdateMat, bChecked);
         });
     }
     if (m_Reset) {
