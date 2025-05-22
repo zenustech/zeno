@@ -120,7 +120,7 @@ public:
             const auto geo_type = checkGeoType(geo_name);
             if (geo_type != ShaderMark::Volume) continue;
 
-            const auto material_str = it.value().value("Material", "Default");
+            const auto material_str = it.value().value("Material", "");
             const auto material_key = std::make_tuple(material_str, geo_type);
 
             auto shader_index = shader_indice_table[material_key];
@@ -318,7 +318,7 @@ public:
             candi.handle = gas_handles[geo_name];
             candi.matrix = matrix_ptr;
 
-            const auto material_str = it.value().value("Material", "Default");
+            const auto material_str = it.value().value("Material", "");
             auto material_key = std::make_tuple(material_str, geo_type);
 
             uint16_t shader_index = 0u;
@@ -332,7 +332,7 @@ public:
 
                 auto mesh = _meshes_[geo_name];
                 if (mesh != nullptr && mesh->mat_idx.size()==1) {
-                    shader_index = max(shader_index, mesh->mat_idx[0]);
+                    shader_index = mesh->mat_idx[0];
                 } else {
                     shader_index = 0u;
                 }
@@ -583,7 +583,7 @@ public:
                 std::string geo_name = it.value()["Geom"].template get<std::string>();
                 const auto geo_type = checkGeoType(geo_name);
 
-                const auto material_str = it.value().value("Material", "Default");
+                const auto material_str = it.value().value("Material", "");
                 auto material_key = std::make_tuple(material_str, geo_type);
 
                 if (shader_key_set.count(material_str)==0) {

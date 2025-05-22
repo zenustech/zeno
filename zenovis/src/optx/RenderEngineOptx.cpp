@@ -730,13 +730,13 @@ struct GraphicsManager {
                         for(int i=0;i<matNum;i++)
                         {
                             auto matIdx = "Material_" + std::to_string(i);
-                            auto matName = prim_in->userData().get2<std::string>(matIdx, "Default");
+                            auto matName = prim_in->userData().get2<std::string>(matIdx, "");
                             matNameList.emplace_back(matName);
                         }
                     }
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "");
                     if ("" == mtlid) {
-                        mtlid = prim_in->userData().get2<std::string>("Material_0", "Default");
+                        mtlid = prim_in->userData().get2<std::string>("Material_0", "");
                     }
                     auto& matids = prim_in->tris.attr<int>("matid");
 
@@ -1470,7 +1470,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             const auto make_default_shader = [&](ShaderMark mark) {
                 auto default_shader = std::make_shared<ShaderPrepared>();
                 default_shader->mark = mark;
-                default_shader->matid = "Default";
+                default_shader->matid = "";
                 default_shader->filename = _default_shader_template.name;
                 default_shader->callable = _default_callable_template.shadtmpl;
                 return default_shader;
@@ -1525,7 +1525,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                             requireVolumeObj = true;
 
                         auto shader_key = std::tuple {key, mark};
-                        //auto default_key = std::tuple {"Default", mark};
                         
                         if (is_default) {
                             auto shader_ref = cached_shaders[shader_key];

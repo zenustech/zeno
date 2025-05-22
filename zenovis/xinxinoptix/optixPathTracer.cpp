@@ -1455,7 +1455,7 @@ OptixUtil::_compile_group.wait();
 
         OptixUtil::_compile_group.run([&shaders, i] () {
 
-            auto fallback = shaders[i]->matid == "Default";
+            auto fallback = shaders[i]->matid == "";
             fallback |= shaders[i]->matid == "Light";
             
             //("now compiling %d'th shader \n", i);
