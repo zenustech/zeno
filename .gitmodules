@@ -37,3 +37,6 @@
 [submodule "project/phmap"]
 	path = project/phmap
 	url = https://github.com/greg7mdp/parallel-hashmap.git
+[submodule "projects/ordered-map"]
+	path = projects/ordered-map
+	url = https://github.com/Tessil/ordered-map.git

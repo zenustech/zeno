@@ -567,7 +567,13 @@ public:
 
     auto prepareShaderSet() {
 
-        std::unordered_map<std::string, std::unordered_set<ShaderMark>> shader_key_set;
+        std::map<std::string, std::set<ShaderMark>> shader_key_set;
+
+        uniqueMatsForMesh.insert("");
+        for (auto& mat : uniqueMatsForMesh) {
+            auto& cached = shader_key_set[mat];
+            cached.insert( ShaderMark::Mesh );
+        }
 
         if (sceneJson.contains(brikey)) {
             auto& bri = sceneJson[brikey];
@@ -581,16 +587,12 @@ public:
                 auto material_key = std::make_tuple(material_str, geo_type);
 
                 if (shader_key_set.count(material_str)==0) {
-                    shader_key_set[material_str] = std::unordered_set<ShaderMark>();
+                    shader_key_set[material_str] = std::set<ShaderMark>();
                 }
                 shader_key_set[material_str].insert(geo_type);
             }
         }
 
-        for (auto& mat : uniqueMatsForMesh) {
-            auto& cached = shader_key_set[mat];
-            cached.insert( ShaderMark::Mesh );
-        }
         return shader_key_set;
     }
 

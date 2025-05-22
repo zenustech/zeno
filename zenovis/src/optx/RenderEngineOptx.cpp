@@ -5,8 +5,7 @@
 #ifdef ZENO_ENABLE_OPTIX
 
 #include "Scene.h"
-#include "optixPathTracer.h"
-#include "vec_math.h"
+#include <tsl/ordered_map.h>
 #include "xinxinoptixapi.h"
 #include "zeno/utils/vec.h"
 #include <limits>
@@ -1311,8 +1310,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         "Light.cu", false, {}, {}, {}
     };
 
-    std::unordered_map<std::string, std::unordered_set<ShaderMark>> required_shader_names;
-    std::map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
+    std::map<std::string, std::set<ShaderMark>> required_shader_names;
+    tsl::ordered_map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
 
     std::unordered_map<std::string, uint16_t> cachedMeshMatLUT;
     bool meshMatLUTChanged(std::unordered_map<std::string, uint16_t>& newLUT) {

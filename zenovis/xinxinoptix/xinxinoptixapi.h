@@ -1,5 +1,4 @@
 #pragma once
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -53,6 +52,23 @@ struct ByShaderKey
     
         return a1 < b1;
     }
+
+    size_t operator()(const shader_key_t& key) const
+    {
+        return hash(key);
+    }
+
+    static size_t hash(const shader_key_t& key) noexcept
+    {
+        std::size_t h1 = std::hash<std::string>{}(std::get<0>(key));
+        std::size_t h2 = std::hash<int>{}(std::get<1>(key));
+        return h1 ^ (h2 << 1);
+    }
+
+    static bool equal( const shader_key_t& x, const shader_key_t& y ) {
+        return std::get<0>(x) == std::get<0>(y) && std::get<1>(x) == std::get<1>(y);
+    }
+
 };
 
 static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
