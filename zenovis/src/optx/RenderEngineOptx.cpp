@@ -485,22 +485,10 @@ struct GraphicsManager {
                 if (is_sphere) {
 
                     auto& ud = prim_in_lslislSp->userData();
-                    
-                    auto mtlid = ud.get2<std::string>("mtlid", "Default");
-                    auto instID = ud.get2<std::string>("instID", "Default");
-
-                    bool instanced = (instID != "Default" && instID != "");
 
                     auto sphere_scale = ud.get2<zeno::vec3f>("sphere_scale");
                     auto uniform_scaling = sphere_scale[0] == sphere_scale[1] && sphere_scale[2] == sphere_scale[0];
-
-                    if (instanced) { 
-                        auto sphere_center = ud.get2<zeno::vec3f>("sphere_center");
-                        auto sphere_radius = ud.get2<float>("sphere_radius");
-                             sphere_radius *= fmaxf(fmaxf(sphere_scale[0], sphere_scale[1]), sphere_scale[2]);
-
-                    } else {
-
+                    {
                         const auto objectName = prim_in->userData().get2<std::string>("ObjectName", key); 
 
                         //zeno::vec4f row0, row1, row2, row3;
@@ -919,15 +907,7 @@ struct GraphicsManager {
 
                     clr = color;
                     extraStep();
-
-                    std::cout << "light: v"<<v3[0]<<" "<<v3[1]<<" "<<v3[2]<<"\n";
-                    std::cout << "light: v"<<v1[0]<<" "<<v1[1]<<" "<<v1[2]<<"\n";
-                    std::cout << "light: v"<<v0[0]<<" "<<v0[1]<<" "<<v0[2]<<"\n";
-                    std::cout << "light: e"<<e1[0]<<" "<<e1[1]<<" "<<e1[2]<<"\n";
-                    std::cout << "light: e"<<e2[0]<<" "<<e2[1]<<" "<<e2[2]<<"\n";
-                    std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
-                    std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
-
+                    
                     xinxinoptix::load_light(key, ld, v3.data(), e1.data(), e2.data());
                 }
             }
