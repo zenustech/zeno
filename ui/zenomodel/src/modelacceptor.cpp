@@ -734,7 +734,7 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
     ZASSERT_EXIT(inNodeIdx.isValid());
 
     QModelIndex sockIdx = m_currentGraph->nodeParamIndex(inNodeIdx, bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
-    ZASSERT_EXIT(sockIdx.isValid());
+    //ZASSERT_EXIT(sockIdx.isValid());
 
     DictKeyModel *keyModel = QVariantPtr<DictKeyModel>::asPtr(sockIdx.data(ROLE_VPARAM_LINK_MODEL));
     if (!keyModel) {

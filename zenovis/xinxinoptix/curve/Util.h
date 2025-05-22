@@ -43,7 +43,7 @@ void copyToDevice( const T& source, CUdeviceptr destination )
 template <typename T>
 void createOnDevice( const T& source, CUdeviceptr* destination )
 {
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( destination ), sizeof( T ) ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( destination ), sizeof( T ), 0 ) );
     copyToDevice( source, *destination );
 }
 
@@ -56,6 +56,6 @@ void copyToDevice( const std::vector<T>& source, CUdeviceptr destination )
 template <typename T>
 void createOnDevice( const std::vector<T>& source, CUdeviceptr* destination )
 {
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( destination ), source.size() * sizeof( T ) ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( destination ), source.size() * sizeof( T ), 0 ) );
     copyToDevice( source, *destination );
 }

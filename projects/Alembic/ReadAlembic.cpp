@@ -1022,6 +1022,7 @@ void traverseABC(
     bool skipInvisibleObject,
     bool outOfRangeAsEmpty
 ) {
+    tree.instanceSourcePath = obj.instanceSourcePath();
     {
         auto const &md = obj.getMetaData();
         if (!read_done) {
