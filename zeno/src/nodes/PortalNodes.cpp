@@ -5,6 +5,8 @@
 #include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/core/Graph.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 
 namespace zeno {
 
@@ -124,20 +126,33 @@ ZENDEFNODE(Stamp, {
 
 struct SetRuntype : zeno::INode {
     virtual void apply() override {
+        std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                for (auto o : lst->arr)
+                    setruntype(o, type);
+            } else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+                for (auto [_, o] : dict->lut) {
+                    setruntype(o, type);
+                }
+            }
+            if (obj) {
+                obj->userData().set2("objRunType", type);
+            }
+        };
         if (has_input("input")) {
             auto obj = get_input("input");
             if (has_input("RunType")) {
                 std::string runttype = get_input2<std::string>("RunType");
                 if (runttype == "normal") {
-                    obj->userData().set2("objRunType", "normal");
+                    setruntype(obj, "normal");
                 } else if (runttype == "lightCamera") {
-                    obj->userData().set2("objRunType", "lightCamera");
+                    setruntype(obj, "lightCamera");
                 } else if (runttype == "material") {
-                    obj->userData().set2("objRunType", "material");
+                    setruntype(obj, "material");
                 } else if (runttype == "matrix") {
-                    obj->userData().set2("objRunType", "matrix");
+                    setruntype(obj, "matrix");
                 } else {
-                    obj->userData().set2("objRunType", "normal");
+                    setruntype(obj, "normal");
                 }
             }
             set_output("output", std::move(obj));
