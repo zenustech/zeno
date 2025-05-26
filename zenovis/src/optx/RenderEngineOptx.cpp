@@ -1293,26 +1293,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::map<std::string, std::set<ShaderMark>> required_shader_names;
     tsl::ordered_map<shader_key_t, std::shared_ptr<ShaderPrepared>, ByShaderKey> cached_shaders{};
 
-    std::unordered_map<std::string, uint16_t> cachedMeshMatLUT;
-    bool meshMatLUTChanged(std::unordered_map<std::string, uint16_t>& newLUT) {
-        bool changed = false;
-        if (cachedMeshMatLUT.size() != newLUT.size()) {
-            changed = true;
-        }
-        else {
-            for (auto const& [matkey, matidx] : newLUT)
-            {
-                if (cachedMeshMatLUT.count(matkey) == 0)
-                    changed = true;
-                else if (cachedMeshMatLUT[matkey] != newLUT[matkey])
-                    changed = true;
-
-                if (changed) break;
-            }
-        }
-        return changed;
-    }
-
     void ensure_shadtmpl(ShaderTemplateInfo &_template) 
     {
         if (_template.ensured) return;
@@ -1413,8 +1393,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
 
-            std::unordered_map<std::string,  uint16_t> meshMatLUT{};
-            std::map<shader_key_t, uint16_t> ShaderKeyIndex{};
+            std::unordered_map<shader_key_t, uint16_t, ByShaderKey> ShaderKeyIndex{};
 
             ensure_shadtmpl(_default_callable_template);
             ensure_shadtmpl(_volume_callable_template);
@@ -1681,9 +1660,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                 allShaders.push_back(shader);
                 ShaderKeyIndex[key] = idx;
-                
-                if (std::get<1>(key) == ShaderMark::Mesh)
-                    meshMatLUT[std::get<0>(key)] = idx;
             }
 
             defaultScene.shader_indice_table = ShaderKeyIndex;
@@ -1733,29 +1709,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 defaultScene.prepareVolumeAssets();
             }
 
-            bool bMeshMatLUTChanged = false;    //if meshMatLUT need update
-            if (scene->drawOptions->updateMatlOnly) {
-                bMeshMatLUTChanged = meshMatLUTChanged(meshMatLUT);
-            }
-            if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
-                cachedMeshMatLUT = meshMatLUT;
-            }
-
-            if (meshNeedUpdate || bMeshMatLUTChanged)
+            if (meshNeedUpdate)
             {
-                defaultScene.updateMeshMaterials(meshMatLUT);
-
+                defaultScene.updateMeshMaterials();
                 xinxinoptix::prepareScene();
+            }
 
+            if (matNeedUpdate || scene->drawOptions->updateMatlOnly)
+            {
                 xinxinoptix::configPipeline(ShaderDirty);
                 std::cout<< "Finish optix update" << std::endl;
-            }
-
-            if (scene->drawOptions->updateMatlOnly && !bMeshMatLUTChanged)
-            {
-
-                xinxinoptix::configPipeline(ShaderDirty);
-                std::cout << "Finish optix update" << std::endl;
             }
 
         }

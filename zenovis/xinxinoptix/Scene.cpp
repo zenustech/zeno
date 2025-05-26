@@ -35,7 +35,7 @@ void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
     updateGeoType(key, ShaderMark::Mesh);
 }
 
-void Scene::updateDrawObjects() {
+void Scene::updateDrawObjects(uint16_t sbt_count) {
 
     std::vector<std::string>    names;
     std::vector<const MeshDat*> candidates;
@@ -67,9 +67,10 @@ void Scene::updateDrawObjects() {
             std::vector<uint16_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
             for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-                auto matName = dat.mtlidList[j];
-                auto it = _mesh_materials.find(matName);
-                global_matidx[j] = it != _mesh_materials.end() ? it->second : 0;
+                const auto& matName = dat.mtlidList[j];
+                const auto matKey = std::tuple { matName, ShaderMark::Mesh };
+                auto it = shader_indice_table.find(matKey);
+                global_matidx[j] = it != shader_indice_table.end() ? it->second : 0;
             }
 
             for (size_t i=0; i<dat.tris.size()/3; ++i) {
@@ -80,8 +81,11 @@ void Scene::updateDrawObjects() {
 
             mesh->mat_idx = {0};
 
-            if (_mesh_materials.count(dat.mtlid)>0) {
-                auto idx = _mesh_materials.at(dat.mtlid);
+            const auto matKey = std::tuple { dat.mtlid, ShaderMark::Mesh };
+            auto it = shader_indice_table.find(matKey);
+
+            if (it != shader_indice_table.end()) {
+                auto idx = it->second;
                 mesh->mat_idx[0] = idx;
             }
         }
@@ -109,7 +113,7 @@ void Scene::updateDrawObjects() {
             if (nullptr == mesh || mesh->vertices.empty()) return 0ull;
 
             mesh->dirty = false;
-            mesh->buildGas(context, _mesh_materials.size());
+            mesh->buildGas(context, sbt_count);
 
             return mesh->node->handle;
         };

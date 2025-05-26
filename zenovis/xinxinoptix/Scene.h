@@ -91,8 +91,7 @@ private:
 public:
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
-    std::unordered_map<std::string, uint16_t> _mesh_materials;
-    std::map<shader_key_t, uint16_t> shader_indice_table;
+    std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
         matrix_map[key] = std::move(matrix_list);
@@ -552,11 +551,16 @@ public:
         cleanTasks.erase(key);
     }
 
-    void updateDrawObjects();
+    void updateDrawObjects(uint16_t sbt_count);
 
-    void updateMeshMaterials(const std::unordered_map<std::string, uint16_t>& mtlidlut) {
-        _mesh_materials = mtlidlut;
-        updateDrawObjects();
+    void updateMeshMaterials() {
+
+        uint16_t sbt_max = 0;
+        for (const auto& [k, v] : shader_indice_table) {
+            const auto& [_, mark] = k;
+            if (mark == ShaderMark::Mesh) sbt_max = max(sbt_max, v);
+        }
+        updateDrawObjects(sbt_max+1);
     }
 
     void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));

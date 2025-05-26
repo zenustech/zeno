@@ -39,6 +39,7 @@ using raii = xinxinoptix::raii<T>;
 
     raii<CUdeviceptr> d_uv, d_clr, d_nrm, d_tan;
     raii<CUdeviceptr> d_idx;
+    raii<CUdeviceptr> d_mat;
 
     std::shared_ptr<SceneNode> node = std::make_shared<SceneNode>();
 
@@ -77,10 +78,16 @@ using raii = xinxinoptix::raii<T>;
         upload(indices, d_idx);
 
         auto offset = roundUp<size_t>(extra_size, 128u);
-
         auto gas_ptr = node->buffer.handle + offset;
 
         auto buffers = this->aux();
+        if (0) {
+            upload(mat_idx, d_mat);
+            buffers.push_back(d_mat.handle);
+        } else {
+            d_mat.reset();
+            buffers.push_back(0);
+        }
         std::reverse(buffers.begin(), buffers.end());
 
         auto byte_size = sizeof(buffers[0]) * buffers.size();
