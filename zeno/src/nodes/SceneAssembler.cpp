@@ -418,6 +418,7 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 std::string object_name = mesh_name + "_m";
                 matrix->userData().set2("ObjectName", object_name);
+                matrix->userData().set2("objRunType", "matrix");
                 scene->arr.push_back(matrix);
             }
             dict->userData().set2("matrix_count", int(tmp_matrix_xforms.size()));
@@ -640,14 +641,10 @@ struct FormSceneTree : zeno::INode {
                     p->userData().set2("stamp-change", "TotalChange");
                 } else if (mode == "DataChange") {
                     p->userData().set2("stamp-change", "DataChange");
-                    std::string changehint = get_input2<std::string>("changeHint");
-                    p->userData().set2("stamp-dataChange-hint", changehint);
                 } else if (mode == "ShapeChange") {
                     p->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
                 }
-                if (!p->userData().has<std::string>("ResourceType")) {
-                    p->userData().set2("ResourceType", get_input2<std::string>("ResourceType"));
-                }
+                p->userData().set2("ResourceType", "Mesh");
             }
             auto prim = std::static_pointer_cast<PrimitiveObject>(p);
             prim->userData().set2("ObjectName", abc_path);
@@ -663,9 +660,7 @@ ZENDEFNODE( FormSceneTree, {
     {
         "scene_info",
         "prim_list",
-        {"enum Mesh Matrixes SceneDescriptor", "ResourceType", "Mesh"},
         {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
-        {"string", "changeHint", ""}
     },
     {
         {"scene"},

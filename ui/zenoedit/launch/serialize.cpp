@@ -419,22 +419,40 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 		if (bView && (opts & OPT_VIEW))
         {
             QString objruntype("normal");   //按runtype分类
-            if (name == "SetRuntype") {
-                for (QModelIndex& inSockIdx : inputsIndice) {
-                    if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
-                        objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
-                        break;
+            if (launchParam.runtype == RunMatrix) { //matrix特殊处理
+                if (name == "SetRuntype") {
+                    for (QModelIndex& inSockIdx : inputsIndice) {
+                        if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
+                            objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
+                            break;
+                        }
+                    }
+                    if (objruntype != "matrix") {
+                        continue;
+                    }
+                }
+                else {
+                    if (name != "RenderScene") {
+                        continue;
                     }
                 }
             } else {
-                objruntype = lightCameraNodes.contains(name) ? "lightCamera" :
-                    ((matNodeNames.count(name.toStdString()) != 0) || pGraphsModel->IsSubGraphNode(idx) && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) ?
-                    "material" : "normal";
-            }
-            if (launchParam.runtype == RunLightCamera && objruntype != "lightCamera" ||
-                launchParam.runtype == RunMaterial && objruntype != "material" ||
-                launchParam.runtype == RunMatrix && objruntype != "matrix") {
-                continue;
+                if (name == "SetRuntype") {
+                    for (QModelIndex& inSockIdx : inputsIndice) {
+                        if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
+                            objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
+                            break;
+                        }
+                    }
+                } else {
+                    objruntype = lightCameraNodes.contains(name) ? "lightCamera" :
+                        ((matNodeNames.count(name.toStdString()) != 0) || pGraphsModel->IsSubGraphNode(idx) && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) ?
+                        "material" : "normal";
+                }
+                if (launchParam.runtype == RunLightCamera && objruntype != "lightCamera" ||
+                    launchParam.runtype == RunMaterial && objruntype != "material") {
+                    continue;
+                }
             }
 
             if (name == "SubOutput")

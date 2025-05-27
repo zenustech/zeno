@@ -196,19 +196,21 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
                 texture_path = std::filesystem::temp_directory_path().string() + '/' + "heatmap-" + std::to_string(std::rand()) + ".png";
             }
             auto heatmap = get_input<zeno::HeatmapObject>("heatmap");
-            std::vector<uint8_t> col;
-            int width = heatmap->colors.size();
-            int height = width;
-            col.reserve(width * height * 3);
-            for (auto i = 0; i < height; i++) {
-                for (auto & color : heatmap->colors) {
-                    col.push_back(zeno::clamp(int(color[0] * 255.99), 0, 255));
-                    col.push_back(zeno::clamp(int(color[1] * 255.99), 0, 255));
-                    col.push_back(zeno::clamp(int(color[2] * 255.99), 0, 255));
+            if (heatmap && !heatmap->colors.empty()) {
+                std::vector<uint8_t> col;
+                int width = heatmap->colors.size();
+                int height = width;
+                col.reserve(width * height * 3);
+                for (auto i = 0; i < height; i++) {
+                    for (auto & color : heatmap->colors) {
+                        col.push_back(zeno::clamp(int(color[0] * 255.99), 0, 255));
+                        col.push_back(zeno::clamp(int(color[1] * 255.99), 0, 255));
+                        col.push_back(zeno::clamp(int(color[2] * 255.99), 0, 255));
+                    }
                 }
+                stbi_flip_vertically_on_write(false);
+                stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
             }
-            stbi_flip_vertically_on_write(false);
-            stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
         }
         if(!std::filesystem::exists(std::filesystem::u8path(texture_path))){
             //zeno::log_warn("texture file not found!");
