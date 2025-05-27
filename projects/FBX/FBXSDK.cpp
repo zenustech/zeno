@@ -30,7 +30,7 @@
 #include "zeno/extra/TempNode.h"
 #include "magic_enum.hpp"
 #include <tinygltf/json.hpp>
-using Json = nlohmann::ordered_json;
+using Json = nlohmann::json;
 namespace fs = std::filesystem;
 
 #ifdef ZENO_FBXSDK
@@ -449,7 +449,7 @@ void PrintAttribute(FbxNodeAttribute* pAttribute) {
 template<typename T>
 void getAttr(T* arr, std::string name, std::shared_ptr<PrimitiveObject> prim) {
     if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
-        zeno::log_info("{}, eByControlPoint", name);
+//        zeno::log_info("{}, eByControlPoint", name);
         auto &attr = prim->verts.add_attr<vec3f>(name);
         for (auto i = 0; i < prim->verts.size(); i++) {
             int pIndex = i;
@@ -485,9 +485,14 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
     ) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
+    auto mesh_name = pMesh->GetName();
     std::string nodeName = pNode->GetName();
+    if (nodeName == "RootNode") {
+        nodeName = "ABC";
+    }
     auto prim = std::make_shared<PrimitiveObject>();
     prim->userData().set2("RootName", nodeName);
+    prim->userData().set2("_abc_name", nodeName);
     prim->userData().set2("fbx_path", fbx_path);
 
     FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform();
@@ -630,7 +635,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         }
     }
     ud.set2("faceset_count", mat_count);
-    prim_set_abcpath(prim.get(), format("/ABC/{}", nodeName));
+    prim_set_abcpath(prim.get(), fbx_path + '/' + mesh_name);
     if (mat_count > 0) {
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
@@ -885,6 +890,9 @@ static std::shared_ptr<PrimitiveObject> GetSkeleton(FbxNode* pNode) {
         }
     }
     std::string nodeName = pNode->GetName();
+    if (nodeName == "RootNode") {
+        nodeName = "ABC";
+    }
     auto prim = std::make_shared<PrimitiveObject>();
     prim->userData().set2("RootName", nodeName);
     prim->verts.resize(bone_names.size());
@@ -934,6 +942,14 @@ static void TraverseNodesToGetNames(FbxNode* pNode, std::vector<std::string> &na
 static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
+    if (nodeName == "RootNode") {
+        nodeName = "ABC";
+    }
+    auto pMesh = pNode->GetMesh();
+    if (pMesh) {
+        auto mesh_name = pMesh->GetName();
+        json["mesh"] = mesh_name;
+    }
     json["visibility"] = int(pNode->GetVisibility());
     json["node_name"] = nodeName;
     {
@@ -959,29 +975,6 @@ static void TraverseNodesToGetJson(FbxNode* pNode, Json &json, FbxTime curTime) 
             json["t"]  = {t[0], t[1], t[2]};
         }
     }
-    if (true) {
-        FbxAMatrix bindMatrix = pNode->EvaluateGlobalTransform(curTime);
-        auto r0 = bindMatrix.GetRow(0);
-        auto r1 = bindMatrix.GetRow(1);
-        auto r2 = bindMatrix.GetRow(2);
-        auto t = bindMatrix.GetRow(3);
-        if (
-            std::isnan(r0[0]) || std::isnan(r0[1]) || std::isnan(r0[2])
-            || std::isnan(r1[0]) || std::isnan(r1[1]) || std::isnan(r1[2])
-            || std::isnan(r2[0]) || std::isnan(r2[1]) || std::isnan(r2[2])
-            || std::isnan(t[0]) || std::isnan(t[1]) || std::isnan(t[2])
-        ) {
-            json["gr0"] = {0.0, 0.0, 0.0};
-            json["gr1"] = {0.0, 0.0, 0.0};
-            json["gr2"] = {0.0, 0.0, 0.0};
-            json["gt"]  = {0.0, 0.0, 0.0};
-        } else {
-            json["gr0"] = {r0[0], r0[1], r0[2]};
-            json["gr1"] = {r1[0], r1[1], r1[2]};
-            json["gr2"] = {r2[0], r2[1], r2[2]};
-            json["gt"]  = {t[0], t[1], t[2]};
-        }
-    }
     json["children_name"] = Json::array();
     for (int i = 0; i < pNode->GetChildCount(); i++) {
         Json child;
@@ -1002,6 +995,9 @@ static void TraverseNodesToGetPrim(
 ) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
+    if (nodeName == "RootNode") {
+        nodeName = "ABC";
+    }
     fbx_path = fbx_path + '/' + nodeName;
 
     FbxMesh* mesh = pNode->GetMesh();
@@ -1028,6 +1024,9 @@ static void TraverseNodesToGetPrims(
 ) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
+    if (nodeName == "RootNode") {
+        nodeName = "ABC";
+    }
     fbx_path = fbx_path + '/' + nodeName;
 
     FbxMesh* mesh = pNode->GetMesh();
@@ -1825,10 +1824,7 @@ struct NewFBXSceneInfo : INode {
         FbxNode* lRootNode = lScene->GetRootNode();
         auto json_obj = std::make_shared<JsonObject>();
         if (lRootNode != nullptr){
-            std::string nodeName = lRootNode->GetName();
-            Json json;
-            TraverseNodesToGetJson(lRootNode, json, curTime);
-            json_obj->json[nodeName] = json;
+            TraverseNodesToGetJson(lRootNode, json_obj->json, curTime);
         }
         set_output2("json", json_obj);
     }

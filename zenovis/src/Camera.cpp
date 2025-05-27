@@ -5,7 +5,7 @@
 namespace zenovis {
 
 void Camera::setCamera(zeno::CameraData const &cam) {
-    zeno::log_info("set camera");
+//    zeno::log_info("set camera");
     m_far = cam.ffar;
     m_near = cam.fnear;
     m_ortho_mode = cam.fov <= 0;

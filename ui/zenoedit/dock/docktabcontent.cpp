@@ -49,6 +49,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setMargins(QMargins(marginLeft, marginTop, marginRight, marginBottom));
     setRadius(ZenoStyle::dpiScaled(2));
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
+    //允许无限小
+    setMinimumWidth(1);
 }
 
 
@@ -388,6 +390,15 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     cbSubgType = new ZComboBox(this);
     cbSubgType->addItems({ tr("Normal"), tr("Material"), tr("Preset")});
     cbSubgType->setFixedSize(ZenoStyle::dpiScaled(80), ZenoStyle::dpiScaled(20));
+
+    //允许无限窄
+    pAlways->setMinimumWidth(1);
+    pSearchBtn->setMinimumWidth(1);
+    pSettings->setMinimumWidth(1);
+    m_btnRun->setMinimumWidth(1);
+    m_btnKill->setMinimumWidth(1);
+    cbZoom->setMinimumWidth(1);
+    cbSubgType->setMinimumWidth(1);
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
@@ -931,6 +942,14 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_pause = new QPushButton("Pause");
         m_pause->setCheckable(true);
         pToolLayout->addWidget(m_pause);
+        m_matNeedUpdate = new QCheckBox(tr("UpdateMat"));
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant varViewportUpdateMat = inst.getValue(zsViewportUpdateMat);
+        bool needUpdateMat = varViewportUpdateMat.isValid()? varViewportUpdateMat.toBool(): false;
+        zeno::getSession().userData().set2("viewport-optix-matNeedUpdate", needUpdateMat);
+        m_matNeedUpdate->setChecked(needUpdateMat);
+        m_matNeedUpdate->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_matNeedUpdate);
     }
 
     {
@@ -945,6 +964,22 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_Reset = new QPushButton(tr("Reset"));
         pToolLayout->addWidget(m_Reset);
     }
+
+    //允许无限窄
+    if (m_bGLView) {
+        m_uv_mode->setMinimumWidth(1);
+    } else {
+        m_camera_setting->setMinimumWidth(1);
+        m_camera_setting->setMinimumWidth(1);
+        m_pause->setMinimumWidth(1);
+        m_matNeedUpdate->setMinimumWidth(1);
+        m_background->setMinimumWidth(1);
+        m_depth->setMinimumWidth(1);
+        m_FPN->setMinimumWidth(1);
+        m_Reset->setMinimumWidth(1);
+        m_cbRes->setMinimumWidth(1);
+    }
+
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
     pToolLayout->addWidget(m_recordVideo);
@@ -1007,6 +1042,14 @@ void DockContent_View::initConnections()
     if (m_pause) {
         connect(m_pause, &QPushButton::clicked, this, [=](bool bToggled) {
             zeno::getSession().userData().set2("viewport-optix-pause", bToggled);
+        });
+    }
+    if (m_matNeedUpdate) {
+        connect(m_matNeedUpdate, &QCheckBox::stateChanged, this, [=](int state) {
+            bool bChecked = (state == Qt::Checked);
+            zeno::getSession().userData().set2("viewport-optix-matNeedUpdate", bChecked);
+            auto& inst = ZenoSettingsManager::GetInstance();
+            inst.setValue(zsViewportUpdateMat, bChecked);
         });
     }
     if (m_Reset) {

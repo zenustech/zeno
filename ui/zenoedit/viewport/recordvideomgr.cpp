@@ -81,7 +81,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         qDir.setNameFilters(QStringList("*.jpg"));
         QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
         for (auto i = 0; i < fileList.size(); i++) {
-            qDir.remove(fileList.at(i));
+//            qDir.remove(fileList.at(i));
         }
     }
 

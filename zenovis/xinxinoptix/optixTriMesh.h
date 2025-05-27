@@ -26,6 +26,7 @@ struct MeshDat {
 
 struct MeshObject {
     bool dirty = true;
+    std::string matid;
 
     std::vector<float3> vertices{};
     std::vector<uint3>  indices {};

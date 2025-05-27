@@ -97,10 +97,18 @@ public:
         matrix_map[key] = std::move(matrix_list);
     }    
 
+    std::unordered_map<uint64_t, std::string> gas_to_obj_id;
+
     inline void preload_scene(const std::string& jsonString) {
-        bool accept = nlohmann::json::accept(jsonString);
-        if (!accept) return;
-        sceneJson = nlohmann::json::parse(jsonString);
+//        bool accept = nlohmann::json::accept(jsonString);
+//        if (!accept) return;
+        
+        try {
+            sceneJson = nlohmann::json::parse(jsonString);
+        }
+        catch (...) {
+            zeno::log_error("Can not parse json in preload_scene");
+        }
     }
 
     inline void updateGeoType(const std::string& key, ShaderMark mark) {

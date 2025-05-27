@@ -149,8 +149,11 @@ extern "C" __global__ void __raygen__rg()
 
     int seedy = idx.y/4, seedx = idx.x/8;
     int sid = (idx.y%4) * 8 + idx.x%8;
-    unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
-    unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
+
+    unsigned int seed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
+    unsigned int seed1 = pcg_hash((idx.y * w + idx.x) * 8192) + params.outside_random_number + subframe_index;
+    seed = pcg_hash(seed);
+    unsigned int eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
     seed += params.outside_random_number;
     eventseed += params.outside_random_number;
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
@@ -178,14 +181,16 @@ extern "C" __global__ void __raygen__rg()
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = sobolRnd(sobolseed);
+        float2 subpixel_jitter = sobolRnd(subframe_index,0,eventseed);
+//        subpixel_jitter.x = pcg_rng(seed);
+//        subpixel_jitter.y = pcg_rng(seed);
 
         float2 d = 2.0f * make_float2(
             ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
             ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
             ) - 1.0f;
 
-        float2 r01 = sobolRnd(eventseed);
+        float2 r01 = sobolRnd(subframe_index,1,eventseed);
 
         float r0 = r01.x * 2.0f * M_PIf;
         float r1 = sqrtf(r01.y) * physical_aperture;
@@ -264,6 +269,7 @@ extern "C" __global__ void __raygen__rg()
         }
 
         RadiancePRD prd;
+        prd.offset = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
 
         prd.emission     = make_float3(0.f);
@@ -323,10 +329,13 @@ extern "C" __global__ void __raygen__rg()
                 traceRadiance(params.handle, ray_origin, ray_direction, testPRD._tmin_, testPRD.maxDistance, &testPRD, test_mask);
             } while(testPRD.test_distance && !testPRD.done);
             float3 click_pos = make_float3( 0.0f );
+            uint4 record = {0, 0, 0, 0};
             if (testPRD.maxDistance < FLT_MAX) {
                 click_pos = ray_origin + ray_direction * testPRD.maxDistance;
+                record = testPRD.record;
             }
             params.frame_buffer_P[ image_index ] = click_pos;
+            params.frame_buffer_Pick[ image_index ] = record;
         }
 
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);

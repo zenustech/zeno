@@ -313,7 +313,7 @@ inline float PointIntensity(float d2, float d, float r2) {
 // }
 
 //https://www.reedbeta.com/blog/hash-functions-for-gpu-rendering/
-static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t &seed )
+static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t seed )
 {
     auto state = seed * 747796405u + 2891336453u;
     auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;

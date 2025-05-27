@@ -418,6 +418,25 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
 		if (bView && (opts & OPT_VIEW))
         {
+            QString objruntype("normal");   //按runtype分类
+            if (name == "SetRuntype") {
+                for (QModelIndex& inSockIdx : inputsIndice) {
+                    if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
+                        objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
+                        break;
+                    }
+                }
+            } else {
+                objruntype = lightCameraNodes.contains(name) ? "lightCamera" :
+                    ((matNodeNames.count(name.toStdString()) != 0) || pGraphsModel->IsSubGraphNode(idx) && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) ?
+                    "material" : "normal";
+            }
+            if (launchParam.runtype == RunLightCamera && objruntype != "lightCamera" ||
+                launchParam.runtype == RunMaterial && objruntype != "material" ||
+                launchParam.runtype == RunMatrix && objruntype != "matrix") {
+                continue;
+            }
+
             if (name == "SubOutput")
             {
                 auto viewerIdent = ident + ":TOVIEW";
@@ -429,12 +448,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if ((launchParam.runtype == RunLightCamera && !lightCameraNodes.contains(name) || 
-                    launchParam.runtype == RunMaterial && matNodeNames.count(name.toStdString())==0) && !pGraphsModel->IsSubGraphNode(idx) ||
-                    launchParam.runtype == RunMatrix && name != "SetToMatrix")
-                {
-                    continue;
-                }
                 for (OUTPUT_SOCKET output : outputs)
                 {
                     //if (output.info.name == "DST" && outputs.size() > 1)
@@ -464,15 +477,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
 
-            if (lightCameraNodes.contains(name)) {
-                AddStringList({ "objRunType", ident, "lightCamera"}, writer);
-            } else if ((matNodeNames.count(name.toStdString()) == 1) || pGraphsModel->IsSubGraphNode(idx)) {
-                AddStringList({ "objRunType", ident, "material"}, writer);
-            } else if (name == "SetToMatrix") {
-                AddStringList({ "objRunType", ident, "matrix"}, writer);
-            } else {
-                AddStringList({ "objRunType", ident, "normal"}, writer);
-            }
+            AddStringList({ "objRunType", ident, objruntype }, writer);
         }
     }
 }

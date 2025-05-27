@@ -30,12 +30,25 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
         m_spTmpCacheDir->setAutoRemove(true);
         lastRunCachePath = QDir(m_spTmpCacheDir->path());
         m_isNew = false;
-    } else {
-        QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-        bool ret = dirCacheRoot.mkdir(tempDirPath);
+    }
+    else {
+        //QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
+        QString eternalFolder = "zeno__cache__file__storage__path";
+        QDir enternalFullPath = QDir::cleanPath(dirCacheRoot.absoluteFilePath(eternalFolder));
+        if (enternalFullPath.exists()) {
+            QFileInfo enternalFullPathinfo(dirCacheRoot.absoluteFilePath(eternalFolder));
+            if (enternalFullPath == QDir::currentPath() ||
+                enternalFullPath == QDir::current().absolutePath() ||
+                enternalFullPath == QDir::rootPath() || !enternalFullPathinfo.isDir()) {
+            }
+            else {
+                enternalFullPath.removeRecursively();
+            }
+        }
+        bool ret = dirCacheRoot.mkdir(eternalFolder);
         if (ret) {
             m_spCacheDir = dirCacheRoot;
-            ret = m_spCacheDir.cd(tempDirPath);
+            ret = m_spCacheDir.cd(eternalFolder);
             ZASSERT_EXIT(ret, false);
             m_isNew = false;
             lastRunCachePath = m_spCacheDir;

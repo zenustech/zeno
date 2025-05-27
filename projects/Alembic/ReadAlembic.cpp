@@ -1020,15 +1020,21 @@ void traverseABC(
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
     bool skipInvisibleObject,
-    bool outOfRangeAsEmpty
+    bool outOfRangeAsEmpty,
+    int use_instance
 ) {
-    tree.instanceSourcePath = obj.instanceSourcePath();
+    if (use_instance) {
+        tree.instanceSourcePath = obj.instanceSourcePath();
+    }
     {
         auto const &md = obj.getMetaData();
         if (!read_done) {
             log_debug("[alembic] meta data: [{}]", md.serialize());
         }
         tree.name = obj.getName();
+        if (tree.instanceSourcePath.size()) {
+            return;
+        }
         path = zeno::format("{}/{}", path, tree.name);
         auto visible_prop = obj.getProperties().getPropertyHeader("visible");
         if (visible_prop) {
@@ -1117,6 +1123,9 @@ void traverseABC(
             }
         }
     }
+    if (tree.prim) {
+        return;
+    }
 
     size_t nch = obj.getNumChildren();
     if (!read_done) {
@@ -1132,7 +1141,7 @@ void traverseABC(
         Alembic::AbcGeom::IObject child(obj, name);
 
         auto childTree = std::make_shared<ABCTree>();
-        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, skipInvisibleObject, outOfRangeAsEmpty);
+        traverseABC(child, *childTree, frameid, read_done, read_face_set, path, iTimeMap, tree.visible, skipInvisibleObject, outOfRangeAsEmpty, use_instance);
         tree.children.push_back(std::move(childTree));
     }
 }
@@ -1166,6 +1175,7 @@ struct ReadAlembic : INode {
     std::string usedPath;
     bool read_done = false;
     virtual void apply() override {
+        int use_instance = get_input2<int>("use_instance");
         int frameid;
         if (has_input("frameid")) {
             frameid = std::lround(get_input<NumericObject>("frameid")->get<float>());
@@ -1197,7 +1207,7 @@ struct ReadAlembic : INode {
             }
 
             traverseABC(obj, *abctree, frameid, read_done, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred,
-                        skipInvisibleObject, outOfRangeAsEmpty);
+                        skipInvisibleObject, outOfRangeAsEmpty, use_instance);
             read_done = true;
             usedPath = path;
         }
@@ -1232,6 +1242,7 @@ ZENDEFNODE(ReadAlembic, {
         {"bool", "outOfRangeAsEmpty", "0"},
         {"bool", "skipInvisibleObject", "1"},
         {"bool", "CopyFacesetToMatid", "1"},
+        {"bool", "use_instance", "1"},
         {"frameid"},
     },
     {
@@ -1389,7 +1400,7 @@ ZENDEFNODE(CopyPosAndNrmByIndex, {
 
 struct PrimsFilterInUserdata: INode {
     void apply() override {
-        auto prims = get_input<ListObject>("list")->get<PrimitiveObject>();
+        auto prims = get_input<ListObject>("list");
         auto filter_str = get_input2<std::string>("filters");
         std::vector<std::string> filters = zeno::split_str(filter_str, {' ', '\n'});
         std::vector<std::string> filters_;
@@ -1404,7 +1415,7 @@ struct PrimsFilterInUserdata: INode {
         auto name = get_input2<std::string>("name");
         auto contain = get_input2<bool>("contain");
         auto fuzzy = get_input2<bool>("fuzzy");
-        for (auto p: prims) {
+        for (auto p: prims->arr) {
             auto &ud = p->userData();
             bool this_contain = false;
             if (ud.has<std::string>(name)) {

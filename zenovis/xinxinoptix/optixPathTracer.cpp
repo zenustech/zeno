@@ -167,6 +167,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
     raii<CUdeviceptr> frame_buffer_p;
+    raii<CUdeviceptr> frame_buffer_pick;
     raii<CUdeviceptr> accum_buffer_m;
 
     raii<CUdeviceptr> finite_lights_ptr;
@@ -322,6 +323,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         params.width * params.height * sizeof( float3 )
             ) );
     CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.frame_buffer_pick .reset()),
+        params.width * params.height * sizeof( uint4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
         reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
         params.width * params.height * sizeof( ushort1 )
             ) );
@@ -332,6 +337,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
     state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
     state.params.frame_buffer_P = (float3*)(CUdeviceptr)state.frame_buffer_p;
+    state.params.frame_buffer_Pick = (uint4*)(CUdeviceptr)state.frame_buffer_pick;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
@@ -348,10 +354,10 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
+static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
     // Launch
-    uchar4* result_buffer_data = output_buffer.map();
+    //uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
@@ -375,7 +381,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                     ) );
 
         //timer.tock("frame time");
-        output_buffer.unmap();
+        //output_buffer.unmap();
 }
 
 
@@ -730,7 +736,7 @@ void unload_light(){
 
     OptixUtil::portal_delayed.reset();
 
-    std::cout << "Lights unload done. \n"<< std::endl;
+//    std::cout << "Lights unload done. \n"<< std::endl;
 }
 
 void load_triangle_light(std::string const &key, LightDat& ld,
@@ -1731,6 +1737,15 @@ glm::vec3 get_click_pos(int x, int y) {
     return posWS;
 }
 
+glm::uvec4 get_click_id(int x, int y) {
+    int w = state.params.width;
+    int h = state.params.height;
+    std::vector<glm::uvec4> tex_data(w * h);
+    cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_pick.handle, sizeof(tex_data[0]) * tex_data.size(), cudaMemcpyDeviceToHost);
+    auto index = x + (h - 1 - y) * w;
+    return tex_data[index];
+}
+
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
     std::copy_n(ptr, w * h, data.data());
@@ -1796,16 +1811,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
+    uchar4* result_buffer_data = output_buffer_o->map();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         if (ud.get2<bool>("viewport-optix-pause", false)) {
             continue;
         }
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state, denoise);
+        launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
-
+    output_buffer_o->unmap();
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif

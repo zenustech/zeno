@@ -46,7 +46,29 @@ void Zenovis::paintGL()
         session->set_viewport_point_size_scale(viewportPointSizeScale);
     }
     int frameid = session->get_curr_frameid();
-    doFrameUpdate();
+
+    //判断doframeupdate执行
+    bool frameCacheExists = false;
+    std::string frame_brief_curr = zeno::getSession().globalComm->cacheTimeStamp(frameid, frameCacheExists);
+    if (frameid != rememberedFrameid) {
+        if (frameCacheExists) {
+            doFrameUpdate();
+            global_frame_brief[frameid] = frame_brief_curr;
+        }
+        rememberedFrameid = frameid;
+    } else {
+        bool cacheChanged = false;
+        if (global_frame_brief.count(frameid) == 0) {
+            cacheChanged = true;
+        }
+        else if (global_frame_brief[frameid] != frame_brief_curr) {
+            cacheChanged = true;
+        }
+        if (cacheChanged && frameCacheExists) {
+            doFrameUpdate();
+            global_frame_brief[frameid] = frame_brief_curr;
+        }
+    }
     session->new_frame();
     emit frameDrawn(frameid);
 }
@@ -133,6 +155,13 @@ void Zenovis::cleanupView()
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
+    if (m_playing) {
+        int currentid = getCurrentFrameId();
+        if (currentid != zeno::getSession().globalComm->frameRange().second)
+        {
+            setCurrentFrameId(currentid + 1);
+        }
+    }
 }
 
 bool Zenovis::isPlaying() const
@@ -183,7 +212,7 @@ int Zenovis::setCurrentFrameId(int frameid)
     return frameid;
 }
 
-void Zenovis::doFrameUpdate()
+bool Zenovis::doFrameUpdate()
 {
     int frameid = getCurrentFrameId();
 
@@ -217,6 +246,7 @@ void Zenovis::doFrameUpdate()
         }
         setCurrentFrameId(frameid + 1);
     }
+    return inserted;
 }
 
 /*

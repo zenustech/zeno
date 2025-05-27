@@ -126,6 +126,7 @@ void set_perspective_by_fov(float const *U, float const *V, float const *W, floa
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 
 glm::vec3 get_click_pos(int x, int y);
+glm::uvec4 get_click_id(int x, int y);
 
 struct LightDat {
     std::vector<float> v0;

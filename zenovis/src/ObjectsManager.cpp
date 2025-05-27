@@ -29,6 +29,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
     for (auto const &[key, obj] : objs) {
         if (ins.may_emplace(key)) {
             std::shared_ptr<zeno::IObject> newobj = obj;
+#if 0
             std::string stampChange = obj->userData().get2<std::string>("stamp-change", "TotalChange");
             if (stampChange != "TotalChange") {
                 auto begin = objects.m_curr.begin();
@@ -52,7 +53,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
                     }
                 }
             }
-
+#endif
             if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(newobj.get())) {
                 auto isRealTimeObject = prim_in->userData().get2<int>("isRealTimeObject", 0);
                 if(isRealTimeObject){
@@ -64,6 +65,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             inserted = true;
         }
     }
+#if 0
     if (runtype != "RunAll" && runtype != "LoadAsset") {
         std::set<std::string> keys;
         for (auto& [k, _] : objs) {
@@ -78,6 +80,7 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
             }
         }
     }
+#endif
     return inserted;
 }
 

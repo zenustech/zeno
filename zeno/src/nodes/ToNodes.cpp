@@ -29,7 +29,7 @@ struct ToView : zeno::INode {
         auto addtoview = [&] (auto const &addtoview, zany const &p, std::string const &postfix, 
             std::string const &mode, std::string const &name) -> void {
             if (auto *lst = dynamic_cast<ListObject *>(p.get())) {
-                log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
+//                log_info("ToView got ListObject (size={}), expanding", lst->arr.size());
                 for (size_t i = 0; i < lst->arr.size(); i++) {
                     zany const &lp = lst->arr[i];
                     addtoview(addtoview, lp, postfix + ":LIST" + std::to_string(i), mode, name);

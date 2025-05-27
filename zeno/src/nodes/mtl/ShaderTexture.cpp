@@ -211,7 +211,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
         }
         if(!std::filesystem::exists(std::filesystem::u8path(texture_path))){
-            zeno::log_warn("texture file not found!");
+            //zeno::log_warn("texture file not found!");
             auto type = get_input2<std::string>("type");
             vec4f number= vec4f(0,0,0,0);
             if(has_input2<float>("value"))
@@ -336,6 +336,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
         }else if (postprocess == "normal_map"){
             em->emitCode(zeno::format("({}(texture2D(zenotex[{}], vec2({}) * {})) * 2.0f - 1.0f){}", type, texId, coord, uvtiling, suffix));
+        }else if (postprocess == "1-x"){
+            em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
         }
     }
 };
@@ -352,7 +354,7 @@ ZENDEFNODE(SmartTexture2D, {
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
-        {"enum raw srgb normal_map", "post_process", "raw"},
+        {"enum raw srgb normal_map 1-x", "post_process", "raw"},
         {"bool", "blockCompression", "false"}
     },
     {

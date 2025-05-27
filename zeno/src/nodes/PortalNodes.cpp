@@ -122,10 +122,24 @@ ZENDEFNODE(Stamp, {
     {"lifecycle"}
 });
 
-struct SetToMatrix : zeno::INode {
+struct SetRuntype : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
+            if (has_input("RunType")) {
+                std::string runttype = get_input2<std::string>("RunType");
+                if (runttype == "normal") {
+                    obj->userData().set2("objRunType", "normal");
+                } else if (runttype == "lightCamera") {
+                    obj->userData().set2("objRunType", "lightCamera");
+                } else if (runttype == "material") {
+                    obj->userData().set2("objRunType", "material");
+                } else if (runttype == "matrix") {
+                    obj->userData().set2("objRunType", "matrix");
+                } else {
+                    obj->userData().set2("objRunType", "normal");
+                }
+            }
             set_output("output", std::move(obj));
         }
         else {
@@ -134,8 +148,10 @@ struct SetToMatrix : zeno::INode {
     }
 };
 
-ZENDEFNODE(SetToMatrix, {
-    {"input"},
+ZENDEFNODE(SetRuntype, {
+    {"input",
+        {"enum normal lightCamera material matrix", "RunType", "normal"},
+    },
     {"output"},
     {},
     {"lifecycle"},
@@ -299,17 +315,25 @@ ZENDEFNODE(GetUserData, {
 
 struct GetUserData2 : zeno::INode {
   virtual void apply() override {
+    std::shared_ptr<IObject> default_value = std::make_shared<DummyObject>();
+    if (has_input("default_value")) {
+        default_value = get_input("default_value");
+    }
     auto object = get_input("object");
     auto key = get_input2<std::string>("key");
     auto hasValue = object->userData().has(key);
-    auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+    auto data = hasValue ? object->userData().get(key) : default_value->clone();
     set_output2("hasValue", hasValue);
     set_output("data", std::move(data));
   }
 };
 
 ZENDEFNODE(GetUserData2, {
-                            {"object",{"string", "key", ""}},
+                            {
+                                "object",
+                                {"string", "key", ""},
+                                "default_value",
+                            },
                             {"data", {"bool", "hasValue"}},
                             {},
                             {"lifecycle"},

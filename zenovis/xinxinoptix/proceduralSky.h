@@ -354,27 +354,9 @@ static __inline__ __device__ vec3 envSky(
     float isclamp = 0.0f
 ){
     vec3 color;
-    if (!params.usingHdrSky) {
-        color = proceduralSky(
-            dir,
-            sunLightDir,
-            windDir,
-            steps,
-            coverage,
-            thickness,
-            absorption,
-            t
-        );
-    }
-    else {
-        color = hdrSky(
-            dir, upperBound, isclamp, pdf
-        );
-    }
-    if (params.colorTemperatureMix > 0) {
-        vec3 colorTemp = colorTemperatureToRGB(params.colorTemperature);
-        colorTemp = mix(vec3(1, 1, 1), colorTemp, params.colorTemperatureMix);
-        color = color * colorTemp;
-    }
+
+    color = hdrSky(
+        dir, upperBound, isclamp, pdf
+    );
     return color;
 }

@@ -556,7 +556,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
             vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
 
             vec3 sample_dir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
-                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf)
+                                                            params.skynx, params.skyny, vdcrnd(prd->offset), envpdf)
                                     : BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                     params.sunSoftness * 0.0f);
             sample_dir = normalize(sample_dir);

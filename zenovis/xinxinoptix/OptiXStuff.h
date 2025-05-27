@@ -145,7 +145,7 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
 #if defined( NDEBUG )
-    options.logCallbackLevel          = 4;
+    options.logCallbackLevel          = 0;
 #else
     options.logCallbackLevel          = 4;
 #endif
@@ -382,8 +382,8 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
     size_t sizeof_log = sizeof( log );
-    std::cout<<kind<<std::endl;
-    std::cout<<entry<<std::endl;
+//    std::cout<<kind<<std::endl;
+//    std::cout<<entry<<std::endl;
 
     OptixProgramGroupDesc desc        = {};
     desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
@@ -1076,7 +1076,7 @@ struct OptixShaderCore {
          
         if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro_list, _c_group))
         {
-            std::cout<<"module created"<<std::endl;
+            // std::cout<<"module created"<<std::endl;
 
             m_radiance_hit_group.reset();
             m_occlusion_hit_group.reset();

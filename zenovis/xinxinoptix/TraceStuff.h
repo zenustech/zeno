@@ -67,6 +67,7 @@ struct ShadowPRD {
 
 struct RadiancePRD
 {
+    unsigned int offset = 0;
     bool test_distance;
     float maxDistance;
     // TODO: move some state directly into payload registers?
@@ -109,6 +110,7 @@ struct RadiancePRD
     unsigned char max_depth;
 
     uint16_t lightmask = EverythingMask;
+    uint4 record;
 
     __forceinline__ float rndf() {
         return rnd(this->seed);

@@ -253,7 +253,7 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
 
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid) {
+        if (key != primid && ptr->userData().get2<std::string>("ObjectName", key) != primid) {
             continue;
         }
         if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {

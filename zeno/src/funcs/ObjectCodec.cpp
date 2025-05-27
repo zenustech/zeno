@@ -116,7 +116,7 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
     } else {
-        log_error("invalid object type to encode `{}`", cppdemangle(typeid(*object)));
+        log_warn("invalid object type to encode `{}`", cppdemangle(typeid(*object)));
         return false;
     }
 }
