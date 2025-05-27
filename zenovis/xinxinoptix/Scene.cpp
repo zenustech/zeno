@@ -18,6 +18,8 @@ void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
     MeshDat &dat = meshdats[key];
     dat.dirty = true;
 
+    meshesDirty.insert(key);
+
     dat.triMats.assign(matids, matids + numtris);
     dat.mtlidList = matNameList;
     dat.mtlid = mtlid;
@@ -37,23 +39,11 @@ void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
 
 void Scene::updateDrawObjects(uint16_t sbt_count) {
 
-    std::vector<std::string>    names;
-    std::vector<const MeshDat*> candidates;
-
-    for (auto &[key, dat]: meshdats) {
-
-        if (!dat.dirty) { continue; }
+    for(const auto& name : meshesDirty) {
+        auto& dat = meshdats[name];
         dat.dirty = false;
 
-        candidates.push_back(&dat);
-        names.push_back(key);
-    }
-
-    for (size_t i=0; i<candidates.size(); ++i) {
-        auto& name = names[i];
-
         auto& mesh = _meshes_[name];
-        auto& dat = *candidates[i];
         if (mesh == nullptr) {
             mesh = std::make_shared<MeshObject>();
         }
@@ -124,6 +114,7 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
         };
     }
 
+    meshesDirty.clear();
 }
 
 bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key)

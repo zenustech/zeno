@@ -83,15 +83,26 @@ private:
 
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
+    phmap::parallel_node_hash_set_m<std::string> meshesDirty;
     phmap::parallel_node_hash_map_m<std::string, MeshDat> meshdats;
     phmap::parallel_flat_hash_set_m<std::string> uniqueMatsForMesh;
 
     std::unordered_map<std::string, uint64_t> gas_handles;
 
+    uint16_t mesh_sbt_max = 0;
+    std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
+
 public:
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
-    std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
+    inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
+        shader_indice_table = table;
+
+        for (const auto& [k, v] : shader_indice_table) {
+            const auto& [_, mark] = k;
+            if (mark == ShaderMark::Mesh) mesh_sbt_max = max(mesh_sbt_max, v);
+        }
+    }
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
         matrix_map[key] = std::move(matrix_list);
@@ -100,9 +111,6 @@ public:
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
 
     inline void preload_scene(const std::string& jsonString) {
-//        bool accept = nlohmann::json::accept(jsonString);
-//        if (!accept) return;
-        
         try {
             sceneJson = nlohmann::json::parse(jsonString);
         }
@@ -301,7 +309,9 @@ public:
         if (!dirtyTasks.empty()) {
             
             for(auto& [key, task] : dirtyTasks) {
-                gas_handles[key] = task(context);
+                auto handle = task(context);
+                gas_handles[key] = handle;
+                gas_to_obj_id[handle] = key;
             }
             dirtyTasks.clear();
         }
@@ -562,13 +572,7 @@ public:
     void updateDrawObjects(uint16_t sbt_count);
 
     void updateMeshMaterials() {
-
-        uint16_t sbt_max = 0;
-        for (const auto& [k, v] : shader_indice_table) {
-            const auto& [_, mark] = k;
-            if (mark == ShaderMark::Mesh) sbt_max = max(sbt_max, v);
-        }
-        updateDrawObjects(sbt_max+1);
+        updateDrawObjects(mesh_sbt_max+1);
     }
 
     void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));

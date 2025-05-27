@@ -1654,7 +1654,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 ShaderKeyIndex[key] = idx;
             }
 
-            defaultScene.shader_indice_table = ShaderKeyIndex;
+            defaultScene.load_shader_indice_table(ShaderKeyIndex);
 
                 if(lightNeedUpdate){
                     timer.tick();
@@ -1712,8 +1712,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::configPipeline(ShaderDirty);
                 std::cout<< "Finish optix update" << std::endl;
             }
-
         }
+            if (meshNeedUpdate)
+            {
+                defaultScene.updateMeshMaterials();
+                xinxinoptix::prepareScene();
+            }
 
             lightNeedUpdate = false;
            
