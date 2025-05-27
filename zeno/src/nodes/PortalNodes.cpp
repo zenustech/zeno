@@ -149,9 +149,11 @@ struct SetRuntype : zeno::INode {
                     setruntype(obj, "lightCamera");
                 } else if (runttype == "material") {
                     setruntype(obj, "material");
-                } else if (runttype == "matrix") {
-                    setruntype(obj, "matrix");
-                } else {
+                }
+                else if (runttype == "matrix") {
+                    //setruntype(obj, "matrix"); //由RenderScene控制这个userdata的设置
+                }
+                else {
                     setruntype(obj, "normal");
                 }
             }
@@ -165,7 +167,7 @@ struct SetRuntype : zeno::INode {
 
 ZENDEFNODE(SetRuntype, {
     {"input",
-        {"enum normal lightCamera material matrix", "RunType", "normal"},
+        {"enum normal lightCamera material", "RunType", "normal"},
     },
     {"output"},
     {},

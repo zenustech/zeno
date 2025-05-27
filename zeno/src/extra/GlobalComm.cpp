@@ -310,7 +310,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 
     for (int i = 0; i < 4; i++)
     {
-        if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2))
+        //if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2))
+        if (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2)
             continue;
         keys[i].push_back('\a');
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
@@ -344,7 +345,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 
     for (int i = 0; i < 4; i++)
     {
-        if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2))
+        //if (poses[i].size() == 0 && (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2))
+        if (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2)
             continue;
         log_debug("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);
