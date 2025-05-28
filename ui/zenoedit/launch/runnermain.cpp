@@ -243,12 +243,13 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
             QLockFile lckFile(QString::fromStdString(sLockFile));
             bool ret = lckFile.tryLock();
             //dump cache to disk.
-            session->globalComm->dumpFrameCache(frame, 
-                param.runtype == LoadAsset ? "LoadAsset" :
+            std::string run_type = param.runtype == LoadAsset ? "LoadAsset" :
                 (param.runtype == RunALL ? "RunAll" :
                 (param.runtype == RunLightCamera ? "RunLightCamera" :
                 (param.runtype == RunMaterial ? "RunMaterial" :
-                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll")))));
+                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll"))));
+            session->userData().set2("run_type", run_type);
+            session->globalComm->dumpFrameCache(frame, run_type);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());

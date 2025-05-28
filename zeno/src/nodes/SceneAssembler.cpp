@@ -4,6 +4,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/core/Graph.h>
+#include <zeno/core/Session.h>
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/types/ListObject.h"
 #include "zeno/types/UserData.h"
@@ -312,7 +313,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto &ud = scene_descriptor->userData();
             ud.set2("ResourceType", std::string("SceneDescriptor"));
             Json json;
-            Json BasicRenderInstances = Json();
+            Json BasicRenderInstances = Json::object();
             for (const auto &[path, prim]: prim_list) {
                 BasicRenderInstances[path]["Geom"] = path;
                 BasicRenderInstances[path]["Material"] = "Default";
@@ -428,7 +429,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto &ud = scene_descriptor->userData();
             ud.set2("ResourceType", std::string("SceneDescriptor"));
             Json json;
-            json["BasicRenderInstances"] = Json();
+            json["BasicRenderInstances"] = Json::object();
             for (const auto &[path, prim]: prim_list) {
                 json["BasicRenderInstances"][path]["Geom"] = path;
                 json["BasicRenderInstances"][path]["Material"] = "Default";
@@ -623,32 +624,35 @@ struct FormSceneTree : zeno::INode {
         auto sceneTree = std::make_shared<SceneObject>();
         auto scene_json = get_input2<JsonObject>("scene_info");
         sceneTree->root_name = "/ABC";
-        auto prim_list = get_input2<ListObject>("prim_list");
-//        zeno::log_info("prim_list: {}", prim_list->arr.size());
-        for (auto p: prim_list->arr) {
-            auto abc_path = p->userData().get2<std::string>("abcpath_0");
-            {
-                auto session = &zeno::getSession();
-                int currframe = session->globalState->frameid;
-                int beginframe = session->globalComm->beginFrameNumber;
-                std::string mode = get_input2<std::string>("stampMode");
-                if (mode == "UnChanged") {
-                    if (currframe != beginframe) {
-                        p = session->globalComm->constructEmptyObj(inputObjType);
+        auto prim_list = std::make_shared<ListObject>();
+        if (getThisSession()->userData().get2<std::string>("run_type", "LoadAsset") != "RunMatrix") {
+            prim_list = get_input2<ListObject>("prim_list");
+    //        zeno::log_info("prim_list: {}", prim_list->arr.size());
+            for (auto p: prim_list->arr) {
+                auto abc_path = p->userData().get2<std::string>("abcpath_0");
+                {
+                    auto session = &zeno::getSession();
+                    int currframe = session->globalState->frameid;
+                    int beginframe = session->globalComm->beginFrameNumber;
+                    std::string mode = get_input2<std::string>("stampMode");
+                    if (mode == "UnChanged") {
+                        if (currframe != beginframe) {
+                            p = session->globalComm->constructEmptyObj(inputObjType);
+                        }
+                        p->userData().set2("stamp-change", "UnChanged");
+                    } else if (mode == "TotalChange") {
+                        p->userData().set2("stamp-change", "TotalChange");
+                    } else if (mode == "DataChange") {
+                        p->userData().set2("stamp-change", "DataChange");
+                    } else if (mode == "ShapeChange") {
+                        p->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
                     }
-                    p->userData().set2("stamp-change", "UnChanged");
-                } else if (mode == "TotalChange") {
-                    p->userData().set2("stamp-change", "TotalChange");
-                } else if (mode == "DataChange") {
-                    p->userData().set2("stamp-change", "DataChange");
-                } else if (mode == "ShapeChange") {
-                    p->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
+                    p->userData().set2("ResourceType", "Mesh");
                 }
-                p->userData().set2("ResourceType", "Mesh");
+                auto prim = std::static_pointer_cast<PrimitiveObject>(p);
+                prim->userData().set2("ObjectName", abc_path);
+                sceneTree->prim_list[abc_path] = prim;
             }
-            auto prim = std::static_pointer_cast<PrimitiveObject>(p);
-            prim->userData().set2("ObjectName", abc_path);
-            sceneTree->prim_list[abc_path] = prim;
         }
         get_local_matrix_map(scene_json->json, "", sceneTree);
         auto scene = sceneTree->to_layer_structure();
