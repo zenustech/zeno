@@ -1555,7 +1555,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     needToRemoveTexPaths.emplace_back(key);
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
-                    OptixUtil::removeTexture(need_remove_tex);
+//                    OptixUtil::removeTexture(need_remove_tex);
                 }
                 for (const auto& realNeedTexKey: realNeedTexPaths) {
                     OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
