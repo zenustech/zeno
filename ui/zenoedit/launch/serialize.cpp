@@ -420,10 +420,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         {
             QString objruntype("normal");   //按runtype分类
             if (launchParam.runtype == RunMatrix) { //matrix特殊处理
-                if (name == "SetRuntype") {
-                    for (QModelIndex& inSockIdx : inputsIndice) {
-                        if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
-                            objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
+                if (name == "Route") {
+                    for (QModelIndex& paramSockIdx : paramsIndice) {
+                        if (paramSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
+                            objruntype = paramSockIdx.data(ROLE_PARAM_VALUE).toString();
                             break;
                         }
                     }
@@ -437,10 +437,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     }
                 }
             } else {
-                if (name == "SetRuntype") {
-                    for (QModelIndex& inSockIdx : inputsIndice) {
-                        if (inSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
-                            objruntype = inSockIdx.data(ROLE_PARAM_VALUE).toString();
+                if (name == "Route") {
+                    for (QModelIndex& paramSockIdx : paramsIndice) {
+                        if (paramSockIdx.data(ROLE_PARAM_NAME).toString() == "RunType") {
+                            objruntype = paramSockIdx.data(ROLE_PARAM_VALUE).toString();
                             break;
                         }
                     }
