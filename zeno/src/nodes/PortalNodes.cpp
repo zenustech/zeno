@@ -52,6 +52,40 @@ struct Route : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
+            {
+                std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+                    if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                        for (auto o : lst->arr)
+                            setruntype(o, type);
+                    }
+                    else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+                        for (auto [_, o] : dict->lut) {
+                            setruntype(o, type);
+                        }
+                    }
+                    if (obj) {
+                        obj->userData().set2("objRunType", type);
+                    }
+                };
+                if (has_input("RunType:")) {
+                    std::string runttype = get_input2<std::string>("RunType:");
+                    if (runttype == "normal") {
+                        setruntype(obj, "normal");
+                    }
+                    else if (runttype == "lightCamera") {
+                        setruntype(obj, "lightCamera");
+                    }
+                    else if (runttype == "material") {
+                        setruntype(obj, "material");
+                    }
+                    else if (runttype == "matrix") {
+                        //setruntype(obj, "matrix"); //由RenderScene控制这个userdata的设置
+                    }
+                    else {
+                        setruntype(obj, "normal");
+                    }
+                }
+            }
             set_output("output", std::move(obj));
         } else {
             set_output("output", std::make_shared<zeno::DummyObject>());
@@ -62,7 +96,7 @@ struct Route : zeno::INode {
 ZENDEFNODE(Route, {
     {"input"},
     {"output"},
-    {},
+    {{"enum normal lightCamera material", "RunType", "normal"}},
     {"layout"},
 });
 
@@ -122,56 +156,6 @@ ZENDEFNODE(Stamp, {
         //{"string", "name", ""}
     },
     {"lifecycle"}
-});
-
-struct SetRuntype : zeno::INode {
-    virtual void apply() override {
-        std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
-            if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
-                for (auto o : lst->arr)
-                    setruntype(o, type);
-            } else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
-                for (auto [_, o] : dict->lut) {
-                    setruntype(o, type);
-                }
-            }
-            if (obj) {
-                obj->userData().set2("objRunType", type);
-            }
-        };
-        if (has_input("input")) {
-            auto obj = get_input("input");
-            if (has_input("RunType")) {
-                std::string runttype = get_input2<std::string>("RunType");
-                if (runttype == "normal") {
-                    setruntype(obj, "normal");
-                } else if (runttype == "lightCamera") {
-                    setruntype(obj, "lightCamera");
-                } else if (runttype == "material") {
-                    setruntype(obj, "material");
-                }
-                else if (runttype == "matrix") {
-                    //setruntype(obj, "matrix"); //由RenderScene控制这个userdata的设置
-                }
-                else {
-                    setruntype(obj, "normal");
-                }
-            }
-            set_output("output", std::move(obj));
-        }
-        else {
-            set_output("output", std::make_shared<zeno::DummyObject>());
-        }
-    }
-};
-
-ZENDEFNODE(SetRuntype, {
-    {"input",
-        {"enum normal lightCamera material", "RunType", "normal"},
-    },
-    {"output"},
-    {},
-    {"lifecycle"},
 });
 
 struct Clone : zeno::INode {

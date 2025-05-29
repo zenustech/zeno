@@ -1245,17 +1245,17 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
-            meshNeedUpdate = matNeedUpdate = true;
-            if (scene->drawOptions->updateMatlOnly)
-            {
-                lightNeedUpdate = meshNeedUpdate = false;
-                matNeedUpdate = true;
-            }
-            if (scene->drawOptions->updateLightCameraOnly)
-            {
-                lightNeedUpdate = true;
-                matNeedUpdate = meshNeedUpdate = false;
-            }
+        }
+        meshNeedUpdate = matNeedUpdate = true;
+        if (scene->drawOptions->updateMatlOnly)
+        {
+            lightNeedUpdate = meshNeedUpdate = false;
+            matNeedUpdate = true;
+        }
+        if (scene->drawOptions->updateLightCameraOnly)
+        {
+            lightNeedUpdate = true;
+            matNeedUpdate = meshNeedUpdate = false;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
@@ -1471,7 +1471,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
 
                 ShaderDirty |= (cached_shaders.size() != shaderCount);
-
                 // for (auto& [key, _] : hair_xxx_cache) 
                 // {
                 //     auto& [filePath, mode, mtid] = key;
