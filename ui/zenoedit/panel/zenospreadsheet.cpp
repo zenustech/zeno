@@ -252,11 +252,9 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(scene);
 
     bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid && ptr->userData().get2<std::string>("ObjectName", key) != primid) {
-            continue;
-        }
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+    auto ptr = scene->objectsMan->get(primid);
+    if (ptr.has_value()) {
+        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr.value())) {
             found = true;
             size_t sizeUserData = obj->userData().size();
             size_t num_attrs = obj->num_attrs();

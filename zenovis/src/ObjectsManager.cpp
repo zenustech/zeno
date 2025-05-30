@@ -19,6 +19,14 @@ bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IO
     for (auto const &[key, obj] : objs) {
         if (ins.may_emplace(key)) {
             changed = true;
+            auto const &ud = obj->userData();
+            if (
+                    ud.get2<std::string>("ResourceType", "") == "Mesh"
+                    && ud.has<std::string>("ObjectName")
+            ) {
+                auto obj_name = obj->userData().get2<std::string>("ObjectName");
+                cached_mesh[obj_name] = obj;
+            }
         }
     }
     if(changed){
@@ -91,10 +99,13 @@ void ObjectsManager::clear_objects() {
 
 std::optional<zeno::IObject* > ObjectsManager::get(std::string nid) {
     for (auto &[key, ptr]: this->pairs()) {
-        if (key != nid) {
+        if (key != nid && ptr->userData().get2<std::string>("ObjectName", key) != nid) {
             continue;
         }
         return ptr;
+    }
+    if (cached_mesh.count(nid)) {
+        return cached_mesh[nid].get();
     }
 
     return std::nullopt;
