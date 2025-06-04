@@ -3,6 +3,9 @@
 #include "zenoapplication.h"
 #include "viewport/displaywidget.h"
 #include <zenovis/ObjectsManager.h>
+#include <tinygltf/json.hpp>
+
+using Json = nlohmann::json;
 
 // 修改构造函数
 OutlineItemModel::OutlineItemModel(QObject *parent)
@@ -32,6 +35,7 @@ void OutlineItemModel::setupModelData()
             if (!view->isGLViewport()) {
                 std::vector<std::string> mesh_names;
                 std::vector<std::string> matrix_names;
+                auto sd_json = Json();
                 if (auto vis = view->getZenoVis()) {
                     if (auto sess = vis->getSession()) {
                         if (auto scene = sess->get_scene()) {
@@ -44,7 +48,11 @@ void OutlineItemModel::setupModelData()
                                     } else if (ud.get2<std::string>("ResourceType", "none") == "Matrixes") {
                                         matrix_names.emplace_back(object_name);
                                     } else if (ud.get2<std::string>("ResourceType", "none") == "SceneDescriptor") {
-                                        sceneDescItem->addChild(QString::fromStdString(object_name));
+//                                        sceneDescItem->addChild(QString::fromStdString(object_name));
+                                        if (obj->userData().has<std::string>("Scene")) {
+                                            auto sd_str = obj->userData().get2<std::string>("Scene");
+                                            sd_json = Json::parse(sd_str);
+                                        }
                                     } else {
                                         othersItem->addChild(QString::fromStdString(object_name));
                                     }
@@ -61,9 +69,39 @@ void OutlineItemModel::setupModelData()
                 for (auto &matrix_name: matrix_names) {
                     matrixItem->addChild(QString::fromStdString(matrix_name));
                 }
+                // SceneDescriptor
+                if (sd_json.is_null() == false) {
+                    if (sd_json.contains("BasicRenderInstances")) {
+                        auto sub_root = sceneDescItem->addChild(QString::fromStdString("BasicRenderInstances"));
+                        for (auto& [key, _value] : sd_json["BasicRenderInstances"].items()) {
+                            sub_root->addChild(QString::fromStdString(key));
+                        }
+                    }
+
+                    if (sd_json.contains("StaticRenderGroups")) {
+                        auto sub_root = sceneDescItem->addChild(QString::fromStdString("StaticRenderGroups"));
+                        auto *StaticRenderGroups = &sd_json["StaticRenderGroups"];
+                        for (auto& [key, _value] : StaticRenderGroups->items()) {
+                            auto sub_node = sub_root->addChild(QString::fromStdString(key));
+                            for (auto& [key_0, _value_0] : StaticRenderGroups->operator[](key).items()) {
+                                sub_node->addChild(QString::fromStdString(key_0));
+                            }
+                        }
+                    }
+                    if (sd_json.contains("DynamicRenderGroups")) {
+                        auto sub_root = sceneDescItem->addChild(QString::fromStdString("DynamicRenderGroups"));
+                        auto *DynamicRenderGroups = &sd_json["DynamicRenderGroups"];
+                        for (auto& [key, _value] : DynamicRenderGroups->items()) {
+                            auto sub_node = sub_root->addChild(QString::fromStdString(key));
+                            for (auto& [key_0, _value_0] : DynamicRenderGroups->operator[](key).items()) {
+                                sub_node->addChild(QString::fromStdString(key_0));
+                            }
+                        }
+                    }
+                }
                 rootItem->children[0]->name = QString::fromStdString("Mesh:" + std::to_string(meshItem->children.size()));
                 rootItem->children[1]->name = QString::fromStdString("Matrixes:" + std::to_string(matrixItem->children.size()));
-                rootItem->children[2]->name = QString::fromStdString("SceneDescriptor:" + std::to_string(sceneDescItem->children.size()));
+                rootItem->children[2]->name = QString::fromStdString("SceneDescriptor");
                 rootItem->children[3]->name = QString::fromStdString("Others:" + std::to_string(othersItem->children.size()));
                 break;
             }
