@@ -497,6 +497,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
             AddStringList({ "objRunType", ident, objruntype }, writer);
         }
+        if (opts & OPT_CACHE)
+        {
+            AddStringList({ "cacheToDisk", ident }, writer);
+        }
     }
 }
 
