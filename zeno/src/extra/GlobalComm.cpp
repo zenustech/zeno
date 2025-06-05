@@ -616,8 +616,12 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                 auto it = newFrameStampInfo.find(k.substr(0, secondLastColonIdx(k)));
                 if (it != newFrameStampInfo.end()) {
                     if (std::get<0>(it->second) == "TotalChange") {
-                        std::streampos originalPos = file.tellg();
+                        int64_t originalPos = file.tellg();
                         file.seekg(std::get<5>(it->second), std::ios::cur);
+                        int64_t startPos = file.tellg();
+                        if(startPos + std::get<6>(it->second) > szBuffer) {
+                            continue;
+                        }
                         std::vector<char> objbuff(std::get<6>(it->second));
                         file.read(objbuff.data(), std::get<6>(it->second));
                         file.seekg(originalPos);
