@@ -114,7 +114,6 @@ ZENO_API void zeno::INode::writeTmpCaches()
 }
 
 ZENO_API void INode::preApply() {
-#if 0
     auto& dc = graph->getDirtyChecker();
     if (!dc.amIDirty(myname) && bTmpCache)
     {
@@ -132,7 +131,7 @@ ZENO_API void INode::preApply() {
             zeno::log_info("remove cache file: {}", path.string());
         }
     }
-#endif
+
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -143,10 +142,10 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
-#if 0
+
         if (bTmpCache)
             writeTmpCaches();
-#endif
+
         std::function<bool(std::shared_ptr<IObject>)> hasStampUd = [&hasStampUd](std::shared_ptr<IObject> obj) -> bool {
             if (auto l = std::dynamic_pointer_cast<ListObject>(obj)) {
                 for (auto i : l->arr)

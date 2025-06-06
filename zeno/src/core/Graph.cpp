@@ -150,6 +150,11 @@ ZENO_API std::map<std::string, zany> Graph::callTempNode(std::string const &id,
     return std::move(se->outputs);
 }
 
+ZENO_API void Graph::setTempCache(std::string const& id)
+{
+    safe_at(nodes, id, "node name")->bTmpCache = true;
+}
+
 ZENO_API void Graph::setObjRunType(std::string const& id, std::string const& type)
 {
     safe_at(nodes, id, "node name")->objRunType = type;

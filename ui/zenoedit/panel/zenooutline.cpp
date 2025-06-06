@@ -198,6 +198,29 @@ void zenooutline::setupTreeView()
         mainWin->onPrimitiveSelected({object_name});
     });
 
+    connect(m_treeView, &QTreeView::doubleClicked, this, [this](const QModelIndex& index) {
+        if (index.isValid() == false) {
+            return;
+        }
+        QVariant data = m_model->data(index, Qt::DisplayRole);
+        auto object_name = data.toString().toStdString();
+        auto parent = index.parent();
+        if (!parent.isValid()) {
+            return;
+        }
+        auto grouproot = parent.parent();
+        if (!grouproot.isValid()) {
+            return;
+        }
+        int rowCount = m_model->rowCount(grouproot);
+        for (int row = 0; row < rowCount; ++row) {
+            QModelIndex index = m_model->index(row, 0, grouproot);
+            if (index.data(Qt::DisplayRole).toString().toStdString() == object_name) {
+                m_treeView->scrollTo(index, QAbstractItemView::PositionAtTop);
+            }
+        }
+    });
+
     if (auto main = zenoApp->getMainWindow()) {
         for (auto view : main->viewports()) {
             if (!view->isGLViewport()) {
