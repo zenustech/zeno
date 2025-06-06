@@ -216,7 +216,8 @@ void zenooutline::setupTreeView()
         for (int row = 0; row < rowCount; ++row) {
             QModelIndex index = m_model->index(row, 0, grouproot);
             if (index.data(Qt::DisplayRole).toString().toStdString() == object_name) {
-                m_treeView->scrollTo(index, QAbstractItemView::PositionAtTop);
+                m_treeView->scrollTo(index, QAbstractItemView::EnsureVisible);
+                m_treeView->setCurrentIndex(index);
             }
         }
     });
