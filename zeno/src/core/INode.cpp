@@ -158,7 +158,9 @@ ZENO_API void INode::preApply() {
             return false;
         };
         for (auto& [k, obj] : outputs) {
-            obj->userData().set2("objRunType", objRunType);
+            if (!obj->userData().has("objRunType")) {
+                obj->userData().set2("objRunType", objRunType);
+            }
             if (!zeno::getSession().userData().has("graphHasStampNode")) {
                 if (hasStampUd(obj)) {
                     zeno::getSession().userData().set2("graphHasStampNode", true);

@@ -125,6 +125,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--cachenum", QString::number(param.cacheNum),
         "--cachedir", cachedir,
         "--runType", QString::number(param.runtype),
+        "--always", QString::number(param.always),
         "--cacheautorm", QString::number(param.autoRmCurcache),
         "--zsg", param.zsgPath,
         "--projectFps", QString::number(param.projectFps),

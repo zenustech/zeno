@@ -248,7 +248,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 (param.runtype == RunALL ? "RunAll" :
                 (param.runtype == RunLightCamera ? "RunLightCamera" :
                 (param.runtype == RunMaterial ? "RunMaterial" :
-                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll")))));
+                (param.runtype == RunMatrix ? "RunMatrix" : "RunAll")))), param.always);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());
@@ -290,6 +290,7 @@ int runner_main(const QCoreApplication& app) {
         {"cachenum", "cachenum", "max cached frames"},
         {"cachedir", "cachedir", "cache dir for this run"},
         {"runType", "runType", "run type"},
+        {"always", "always", "is always mode"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"zsg", "zsg", "zsg"},
         {"projectFps", "current project fps", "fps"},
@@ -311,6 +312,8 @@ int runner_main(const QCoreApplication& app) {
         param.objCacheDir = cmdParser.value("objcachedir");
     if (cmdParser.isSet("runType"))
         param.runtype = (runType)cmdParser.value("runType").toInt();
+    if (cmdParser.isSet("always"))
+        param.always = cmdParser.value("always").toInt();
     if (cmdParser.isSet("cacheautorm"))
         param.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
     if (cmdParser.isSet("zsg"))
