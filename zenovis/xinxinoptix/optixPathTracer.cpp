@@ -3195,6 +3195,23 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
             }
             else {
+                {
+                    std::string jpg_native_path = zeno::create_directories_when_write_file(path);
+                    stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
+                    if (denoise) {
+                        const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                        //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                        auto a_path = path + ".albedo.pfm";
+                        std::string native_a_path = zeno::create_directories_when_write_file(a_path);
+                        zeno::write_pfm(native_a_path.c_str(), w, h, _albedo_buffer);
+
+                        const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                        //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                        auto n_path = path + ".normal.pfm";
+                        std::string native_n_path = zeno::create_directories_when_write_file(n_path);
+                        zeno::write_pfm(native_n_path.c_str(), w, h, _normal_buffer);
+                    }
+                }
                 path = path.substr(0, path.size() - 4);
                 save_png_color(path + ".aov.diffuse.png",   w, h,  optixgetimg_extra2("diffuse", w, h).data());
                 save_png_color(path + ".aov.specular.png",  w, h,  optixgetimg_extra2("specular", w, h).data());
