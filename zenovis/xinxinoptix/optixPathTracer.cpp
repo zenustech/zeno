@@ -1676,8 +1676,8 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
     return tex_data;
 }
 
-std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
-    std::vector<half> tex_data(w * h * 3);
+std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
+    std::vector<Imath::half> tex_data(w * h * 3);
     if (name == "diffuse") {
         std::vector<float> temp_buffer(w * h * 3);
         cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_d.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
@@ -1700,7 +1700,7 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
         }
     }
     else if (name == "background") {
-        std::vector<half> temp_buffer(w * h);
+        std::vector<Imath::half> temp_buffer(w * h);
         cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
         for (auto i = 0; i < temp_buffer.size(); i++) {
             tex_data[i * 3 + 0] = temp_buffer[i];

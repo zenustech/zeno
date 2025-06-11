@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(zenovis PRIVATE
+  ChiefDesignerEXR.cpp
+  ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
