@@ -3171,28 +3171,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         if (enable_output_aov) {
             if (enable_output_exr) {
                 zeno::create_directories_when_write_file(exr_path);
-                SaveMultiLayerEXR_half(
-                        {
-                                optixgetimg_extra3("color", w, h).data(),
-                                optixgetimg_extra3("diffuse", w, h).data(),
-                                optixgetimg_extra3("specular", w, h).data(),
-                                optixgetimg_extra3("transmit", w, h).data(),
-                                optixgetimg_extra3("background", w, h).data(),
-                                optixgetimg_extra3("mask", w, h).data(),
-                        },
-                        w,
-                        h,
-                        {
-                                "",
-                                "diffuse.",
-                                "specular.",
-                                "transmit.",
-                                "background.",
-                                "mask.",
-                        },
-                        exr_path.c_str()
-                );
-
+                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
+                path = path.substr(0, path.size() - 4);
+                save_exr((float3 *)optixgetimg_extra2("diffuse", w, h).data(), w, h, path + ".aov.diffuse.exr");
+                save_exr((float3 *)optixgetimg_extra2("specular", w, h).data(), w, h, path + ".aov.specular.exr");
+                save_exr((float3 *)optixgetimg_extra2("transmit", w, h).data(), w, h, path + ".aov.transmit.exr");
+                save_exr((float3 *)optixgetimg_extra2("background", w, h).data(), w, h, path + ".aov.background.exr");
+                save_exr((float3 *)optixgetimg_extra2("mask", w, h).data(), w, h, path + ".aov.mask.exr");
             }
             else {
                 {
