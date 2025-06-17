@@ -69,51 +69,6 @@ public:
 struct JsonObject : IObjectClone<JsonObject> {
     Json json;
 };
-static std::string get_parent_path(const std::string& path) {
-    if (path.empty() || path == "/") {
-        return path;  // 根目录的父目录是它自己
-    }
-
-    // 移除末尾的斜杠（如果有）
-    std::string normalized = path;
-    if (normalized.back() == '/') {
-        normalized.pop_back();
-    }
-
-    // 查找最后一个斜杠
-    auto last_slash = normalized.find_last_of('/');
-
-    if (last_slash == std::string::npos) {
-        return "/";  // 没有斜杠，返回根目录
-    }
-
-    if (last_slash == 0) {
-        return "/";  // 已经是根目录的直接子目录
-    }
-
-    return normalized.substr(0, last_slash);
-}
-
-struct CppTimer {
-    void tick() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    void tock() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    float elapsed() const noexcept {return cur-last;}
-    void tock(std::string_view tag) {
-        tock();
-        printf("%s: %f ms\n", tag.data(), elapsed());
-    }
-
-  private:
-    double last, cur;
-};
 
 struct SceneTreeNode {
     std::vector<std::string> meshes;
@@ -123,10 +78,12 @@ struct SceneTreeNode {
 };
 
 struct SceneObject : IObjectClone<SceneObject> {
-    IndexMap<std::string, SceneTreeNode> scene_tree;
+    std::unordered_map<std::string, SceneTreeNode> scene_tree;
     std::unordered_map<std::string, glm::mat4> node_to_matrix;
     std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> prim_list;
     std::string root_name;
+    std::string type = "static";
+    bool flattened = true;
 
     std::string get_new_root_name(const std::string &root_name, const std::string &new_root_name, const std::string &path) {
         return new_root_name + path.substr(root_name.size());
@@ -135,10 +92,9 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::shared_ptr<SceneObject> root_rename(std::string new_root_name, std::optional<glm::mat4> root_xform) {
         auto new_scene_obj = std::make_shared<SceneObject>();
 
-        for (auto const &path: scene_tree) {
+        for (auto const &[path, stn]: scene_tree) {
             auto new_key = get_new_root_name(root_name, new_root_name, path);
 //            zeno::log_info("path_rename {} -> {}", path, new_key);
-            auto &stn = scene_tree.at(path);
             SceneTreeNode nstn;
             nstn.visibility = stn.visibility;
             if (stn.matrix.size()) {
@@ -150,7 +106,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             for (auto & child: stn.children) {
                 nstn.children.push_back(get_new_root_name(root_name, new_root_name, child));
             }
-            new_scene_obj->scene_tree.insert(new_key, nstn);
+            new_scene_obj->scene_tree[new_key] = nstn;
         }
 
         for (auto &[k, v]: node_to_matrix) {
@@ -176,13 +132,14 @@ struct SceneObject : IObjectClone<SceneObject> {
         return new_scene_obj;
     }
 
-    Json to_json() {
+    std::string to_json() {
         Json json;
         json["root_name"] = root_name;
+        json["type"] = type;
+        json["flattened"] = flattened;
         {
             Json part;
-            for (auto &path: scene_tree) {
-                auto &stn = scene_tree.at(path);
+            for (auto &[path, stn]: scene_tree) {
                 Json node;
                 node["meshes"] = Json::array();
                 for (auto &mesh: stn.meshes) {
@@ -211,10 +168,13 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             json["node_to_matrix"] = mat_json;
         }
-        return json;
+        return json.dump();
     }
-    void from_json(Json &json) {
+    void from_json(std::string const &json_str) {
+        Json json = Json::parse(json_str);
         root_name = json["root_name"];
+        type = json["type"];
+        flattened = json["flattened"];
         {
             Json &mat_json = json["node_to_matrix"];
             for (auto& [path, mat_json] : mat_json.items()) {
@@ -240,7 +200,7 @@ struct SceneObject : IObjectClone<SceneObject> {
                 for (auto &mesh : jstn["meshes"]) {
                     stn.meshes.push_back(mesh);
                 }
-                scene_tree.insert(path, stn);
+                scene_tree[path] = stn;
             }
         }
     }
@@ -257,9 +217,8 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
         {
             int matrix_count = 0;
-            for (auto const &path: scene_tree) {
+            for (auto &[path, stn]: scene_tree) {
                 auto matrix = glm::mat4(1);
-                auto &stn = scene_tree.at(path);
                 if (stn.visibility) {
                     if (stn.matrix.size() && node_to_matrix.count(stn.matrix)) {
                         matrix = node_to_matrix[stn.matrix];
@@ -320,8 +279,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             json["BasicRenderInstances"] = BasicRenderInstances;
 
             Json RenderGroups = Json();
-            for (auto const &path: scene_tree) {
-                auto &stn = scene_tree.at(path);
+            for (auto &[path, stn]: scene_tree) {
                 Json render_group = Json();
                 for (auto &child: stn.children) {
                     render_group[child] = Json::array({path+"_m"});
@@ -341,8 +299,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             scene->arr.push_back(scene_descriptor);
         }
         {
-            auto st = std::make_shared<JsonObject>();
-            st->json = to_json();
+            auto st = std::make_shared<PrimitiveObject>();
+            st->userData().set2("json", to_json());
+            st->userData().set2("ResourceType", std::string("SceneTree"));
             scene->arr.push_back(st);
         }
         return scene;
@@ -443,8 +402,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             scene->arr.push_back(scene_descriptor);
         }
         {
-            auto st = std::make_shared<JsonObject>();
-            st->json = to_json();
+            auto st = std::make_shared<PrimitiveObject>();
+            st->userData().set2("json", to_json());
+            st->userData().set2("ResourceType", std::string("SceneTree"));
             scene->arr.push_back(st);
         }
         return scene;
@@ -453,8 +413,8 @@ struct SceneObject : IObjectClone<SceneObject> {
 
 static std::shared_ptr<SceneObject> get_scene_tree_from_list(std::shared_ptr<ListObject> list_obj) {
     auto scene_tree = std::make_shared<SceneObject>();
-    auto json_obj = std::static_pointer_cast<JsonObject>(list_obj->arr.back());
-    scene_tree->from_json(json_obj->json);
+    auto json_obj = std::static_pointer_cast<PrimitiveObject>(list_obj->arr.back());
+    scene_tree->from_json(json_obj->userData().get2<std::string>("json"));
     auto prim_list_size = list_obj->arr.front()->userData().get2<int>("prim_count");
     for (auto i = 1; i <= prim_list_size; i++) {
         auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
@@ -464,6 +424,30 @@ static std::shared_ptr<SceneObject> get_scene_tree_from_list(std::shared_ptr<Lis
     return scene_tree;
 }
 #if 0
+static std::string get_parent_path(const std::string& path) {
+    if (path.empty() || path == "/") {
+        return path;  // 根目录的父目录是它自己
+    }
+
+    // 移除末尾的斜杠（如果有）
+    std::string normalized = path;
+    if (normalized.back() == '/') {
+        normalized.pop_back();
+    }
+
+    // 查找最后一个斜杠
+    auto last_slash = normalized.find_last_of('/');
+
+    if (last_slash == std::string::npos) {
+        return "/";  // 没有斜杠，返回根目录
+    }
+
+    if (last_slash == 0) {
+        return "/";  // 已经是根目录的直接子目录
+    }
+
+    return normalized.substr(0, last_slash);
+}
 std::shared_ptr<zeno::ListObject> scene_tree_to_structure(SceneObject* sceneSource) {
     std::unordered_map<std::string, glm::mat4> global_matrices;
     std::unordered_map<std::string, std::vector<std::shared_ptr<PrimitiveObject>>> temp_matrices;
@@ -607,7 +591,7 @@ static void get_local_matrix_map(
             stn.children.push_back(child_path);
         }
     }
-    scene->scene_tree.insert(node_path, stn);
+    scene->scene_tree[node_path] = stn;
 
     for (auto i = 0; i < json["children_name"].size(); i++) {
         std::string child_name = json["children_name"][i];
@@ -676,9 +660,8 @@ static void scene_add_prefix(
     , glm::mat4 xform
     , std::shared_ptr<SceneObject> sceneObject
 ) {
-    IndexMap<std::string, SceneTreeNode> scene_tree;
-    for (const auto &key: sceneObject->scene_tree) {
-        auto &value = sceneObject->scene_tree.at(key);
+    std::unordered_map<std::string, SceneTreeNode> scene_tree;
+    for (const auto &[key, value]: sceneObject->scene_tree) {
         SceneTreeNode stn;
         stn.visibility = value.visibility;
         if (value.matrix.size()) {
@@ -690,7 +673,7 @@ static void scene_add_prefix(
         for (auto &mesh: value.meshes) {
             stn.meshes.push_back(path + mesh);
         }
-        scene_tree.insert(path + key, stn);
+        scene_tree[path + key] = stn;
     }
     std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> new_prim_list;
     for (auto& [key, value] : sceneObject->prim_list) {
@@ -734,9 +717,8 @@ static void merge_scene(
     std::shared_ptr<SceneObject> main_object
     , std::shared_ptr<SceneObject> second_object
 ) {
-    for (const auto& key : second_object->scene_tree) {
-        auto &stn = second_object->scene_tree.at(key);
-        main_object->scene_tree.insert(key, stn);
+    for (const auto& [key, stn] : second_object->scene_tree) {
+        main_object->scene_tree[key] = stn;
     }
     for (const auto& [key, mat] : second_object->node_to_matrix) {
         main_object->node_to_matrix[key] = mat;
@@ -785,7 +767,7 @@ struct MergeScene : zeno::INode {
         if (append_path1.size()) {
             auto abc_stn = SceneTreeNode();
             abc_stn.children.push_back(append_path1 + main_scene->root_name);
-            main_scene->scene_tree.insert(append_path1, abc_stn);
+            main_scene->scene_tree[append_path1] = abc_stn;
             main_scene->root_name = append_path1;
         }
         {
@@ -840,48 +822,6 @@ ZENDEFNODE( FlattenSceneTree, {
         "Scene",
     },
 });
-
-
-static void scene_add_prefix2(
-    std::string path
-    , glm::mat4 xform
-    , std::shared_ptr<SceneObject> sceneObject
-) {
-    IndexMap<std::string, SceneTreeNode> scene_tree;
-    for (const auto &key: sceneObject->scene_tree) {
-        auto &value = sceneObject->scene_tree.at(key);
-        SceneTreeNode stn;
-        stn.visibility = value.visibility;
-        if (value.matrix.size()) {
-            stn.matrix = "/ABC" + path + value.matrix.substr(4);
-        }
-        for (auto &child: value.children) {
-            stn.children.push_back("/ABC" + path + child.substr(4));
-        }
-        for (auto &mesh: value.meshes) {
-            stn.meshes.push_back("/ABC" + path + mesh.substr(4));
-        }
-        scene_tree.insert("/ABC" + path + key.substr(4), stn);
-    }
-    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> new_prim_list;
-    for (auto& [key, value] : sceneObject->prim_list) {
-        auto obj_name = value->userData().get2<std::string>("ObjectName");
-        obj_name = "/ABC" + path + obj_name.substr(4);
-        value->userData().set2("ObjectName", obj_name);
-        new_prim_list["/ABC" + path + key.substr(4)] = value;
-    }
-    std::unordered_map<std::string, glm::mat4> new_node_to_matrix;
-    for (const auto& [key, value] : sceneObject->node_to_matrix) {
-        new_node_to_matrix["/ABC" + path + key.substr(4)] = value;
-    }
-    sceneObject->scene_tree = scene_tree;
-    sceneObject->prim_list = new_prim_list;
-    sceneObject->node_to_matrix = new_node_to_matrix;
-    {
-        std::string xform_name = "/ABC" + path + "_m";
-        sceneObject->node_to_matrix[xform_name] = xform;
-    }
-}
 
 struct SceneRootRename : zeno::INode {
     void apply() override {
@@ -1031,5 +971,32 @@ ZENDEFNODE( MakeXform, {
     },
 });
 
+struct MarkSceneState : zeno::INode {
+    void apply() override {
+        auto scene_tree_list = get_input2<ListObject>("scene");
+        std::shared_ptr<PrimitiveObject> json_ptr = std::dynamic_pointer_cast<PrimitiveObject>(scene_tree_list->arr.back());
+        auto json = Json::parse(json_ptr->userData().get2<std::string>("json"));
+        json["type"] = get_input2<std::string>("type");
+        json["flattened"] = get_input2<bool>("flattened");
+        json_ptr->userData().set2("json", json.dump());
+        set_output2("scene", scene_tree_list);
+    }
+};
+
+ZENDEFNODE( MarkSceneState, {
+    {
+        {"scene"},
+        {"enum static dynamic", "type", "static"},
+        {"bool", "flattened", "1"},
+    },
+    {
+        {"scene"},
+    },
+    {
+    },
+    {
+        "Scene",
+    },
+});
 
 }
