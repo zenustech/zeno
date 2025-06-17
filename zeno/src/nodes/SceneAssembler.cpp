@@ -24,48 +24,6 @@
 
 using Json = nlohmann::json;
 namespace zeno {
-
-template <typename Key, typename Value>
-class IndexMap {
-private:
-    std::vector<Key> insertion_order;
-    std::unordered_map<Key, std::pair<Value, size_t>> data_map;
-
-public:
-    void insert(const Key& key, const Value& value) {
-        auto it = data_map.find(key);
-        if (it == data_map.end()) {
-            data_map[key] = {value, insertion_order.size()};
-            insertion_order.push_back(key);
-        }
-    }
-
-    Value& at(const Key& key) {
-        return data_map.at(key).first;
-    }
-
-    Value& at_index(size_t index) {
-        if (index >= insertion_order.size()) {
-            throw std::out_of_range("Index out of range");
-        }
-        return data_map.at(insertion_order[index]).first;
-    }
-
-    size_t get_index(const Key& key) const {
-        return data_map.at(key).second;
-    }
-
-    size_t size() const {
-        return insertion_order.size();
-    }
-
-    size_t count(const Key& key) const {
-        return data_map.count(key);
-    }
-
-    auto begin() { return insertion_order.begin(); }
-    auto end() { return insertion_order.end(); }
-};
 struct JsonObject : IObjectClone<JsonObject> {
     Json json;
 };
