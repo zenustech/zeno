@@ -1,9 +1,11 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/string.h>
 #include <set>
 
 namespace zenovis {
@@ -11,7 +13,68 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
+std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree_to_descriptor(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
+    for (auto const &[key, obj] : objs) {
+        if (obj->userData().get2("ResourceType", std::string("")) == "SceneTree") {
+            auto json_str = obj->userData().get2<std::string>("json", "");
+            if (json_str.size()) {
+                Json json = Json::parse(json_str);
+                if (json["type"] == "static") {
+                    staticSceneTree = key;
+                }
+                else if (json["type"] == "dynamic") {
+                    dynamicSceneTree = key;
+                }
+            }
+        }
+    }
+    std::map<std::string, std::shared_ptr<zeno::IObject>> output;
+    auto staticSceneList = std::make_shared<zeno::ListObject>();
+    auto dynamicSceneList = std::make_shared<zeno::ListObject>();
+
+    auto get_index = [] (std::string const &key) -> int {
+        std::string count_str = key.substr(key.find("LIST")+4);
+        count_str = count_str.substr(0, count_str.find(':'));
+        auto count = std::stoi(count_str);
+        return count;
+    };
+    if (staticSceneTree.size()) {
+        auto static_size = get_index(staticSceneTree) + 1;
+        staticSceneList->arr.resize(static_size);
+    }
+    if (dynamicSceneTree.size()) {
+        auto dynamic_size = get_index(dynamicSceneTree) + 1;
+        dynamicSceneList->arr.resize(dynamic_size);
+    }
+
+    std::string static_prefix = staticSceneTree.substr(0, staticSceneTree.find(':'));
+    std::string dynamic_prefix = dynamicSceneTree.substr(0, dynamicSceneTree.find(':'));
+    for (auto const &[key, obj] : objs) {
+        if (staticSceneTree.size() && zeno::starts_with(key, static_prefix)) {
+            auto index = get_index(key);
+            if (index >= staticSceneList->arr.size()) {
+                zeno::log_info("index >= staticSceneList->arr.size(): {}, {}", index, staticSceneList->arr.size());
+            }
+            staticSceneList->arr[index] = obj;
+        }
+        else if (dynamicSceneTree.size() && zeno::starts_with(key, dynamic_prefix)) {
+            auto index = get_index(key);
+            if (index >= dynamicSceneList->arr.size()) {
+                zeno::log_info("index >= dynamicSceneList->arr.size(): {}, {}", index, dynamicSceneList->arr.size());
+            }
+            dynamicSceneList->arr[index] = obj;
+        }
+        else {
+            output[key] = obj;
+        }
+    }
+
+
+    return output;
+}
+
 bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs, std::string& runtype) {
+    scene_tree_to_descriptor(objs);
     bool inserted = false;
     auto ins = objects.insertPass();
 
