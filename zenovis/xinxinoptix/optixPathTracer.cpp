@@ -489,7 +489,7 @@ static void createSBT( PathTracerState& state )
         if (!has_vdb) {
 
             hitgroup_records[sbt_idx] = {};
-            hitgroup_records[sbt_idx].data.uniforms = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+            if (!shader_ref.parameters.empty()) {
 
             for(int t=0;t<32;t++)
             {
@@ -504,8 +504,6 @@ static void createSBT( PathTracerState& state )
         } else {
 
             HitGroupRecord rec = {};
-
-            rec.data.uniforms = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
 
                 const auto& vdbs = shader_ref.vbds;
 				for(uint t=0; t<min(vdbs.size(), 8ull); ++t)
@@ -913,9 +911,9 @@ void optixUpdateUniforms(void *inConstants, std::size_t size) {
     CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
                           sizeof(float4)*size, cudaMemcpyHostToDevice));
-
+    
+    state.params.d_uniforms = (float4*)state.d_uniforms.handle;
     uniformBufferInitialized = true;
-
 }
 
 static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& lightMesh, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas)
@@ -1516,7 +1514,7 @@ void configPipeline(bool shaderDirty) {
     camera_changed = true;
 
     auto buffers = globalShaderBufferGroup.upload();
-    state.params.global_buffers = (void*)buffers;
+    state.params.global_buffers = (void**)buffers;
 
     if (shaderDirty) {
         timer.tick();

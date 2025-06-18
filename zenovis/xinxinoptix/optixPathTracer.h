@@ -166,8 +166,9 @@ struct Params
     float3*      debug_buffer;
     float3*      albedo_buffer;
     float3*      normal_buffer;
-
-    void* global_buffers;
+    
+    float4* d_uniforms;
+    void** global_buffers;
     
     unsigned int width;
     unsigned int height;
@@ -270,22 +271,7 @@ struct HitGroupData
     bool equiangular  = false;
     bool multiscatter = false;
 
-#ifdef USE_SHORT
-    ushort3* instPos;
-    ushort3* instNrm;
-    ushort3* instUv;
-    ushort3* instClr;
-    ushort3* instTang;
-#else
-    float3* instPos;
-    float3* instNrm;
-    float3* instUv;
-    float3* instClr;
-    float3* instTang;
-#endif
-    float4* uniforms;
     cudaTextureObject_t textures[32];
-
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];
 };

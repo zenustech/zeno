@@ -9,8 +9,10 @@
 
 //COMMON_CODE
 
-extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], const float4* uniforms, const void** buffers, const MatInput& attrs) {
+extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
 
+    let uniforms = params.d_uniforms;
+    let buffers = params.global_buffers;
     /* MODMA */
     auto att_pos = attrs.pos;
     auto att_clr = attrs.clr;

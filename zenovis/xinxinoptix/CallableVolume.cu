@@ -240,7 +240,10 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
     return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
 }
 
-extern "C" __device__ void __direct_callable__evalmat(const float4* uniforms, void** buffers, void* attrs_ptr, VolumeOut& output) {
+extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut& output) {
+
+    let uniforms = params.d_uniforms;
+    let buffers = params.global_buffers;
 
     auto& attrs = *reinterpret_cast<VolumeIn2*>(attrs_ptr);
     auto& prd = attrs;
