@@ -2,6 +2,14 @@
 #include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
+#ifndef var
+#define var auto
+#endif
+
+#ifndef let
+#define let auto const
+#endif
+
 __forceinline__ __device__ float to_radians(float degrees) {
     return degrees * M_PIf / 180.0f;
 }
@@ -53,6 +61,14 @@ struct vec3{
         auto ptr= &this->x;
         ptr += index;
         return *ptr;
+    }
+
+    __forceinline__ __device__ const bool operator==(vec3 other) const {
+        return x==other.x && y==other.y && z==other.z;
+    }
+
+    __forceinline__ __device__ const bool operator!=(vec3 other) const {
+        return !(*this==other);
     }
 
     __forceinline__ __device__ vec3(const float3 &_v)
@@ -899,15 +915,9 @@ __forceinline__ __device__ vec4 faceforward(vec4 n, vec4 i, vec4 nref)
 {
     return dot(nref, i) >= 0 ? n : -n;
 }
-__forceinline__ __device__ float length(vec2 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec3 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec4 a)
+
+template <typename T>
+__forceinline__ __device__ float length(T a)
 {
     return sqrtf(dot(a,a));
 }
@@ -1306,4 +1316,42 @@ __forceinline__ __device__ float3 decodeColor(float4 c)
 __forceinline__ __device__ float3 decodeNormal(float4 c)
 {
   return make_float3(c.x, c.y, c.z);
+}
+
+struct half3 {
+    half x, y, z;
+};
+
+__forceinline__ __device__ half3 operator*(half3 a, half3 b)
+{
+    return {__hmul(a.x, b.x), __hmul(a.y, b.y), __hmul(a.z, b.z)};
+}
+
+__forceinline__ __device__ half3 operator*(half3 a, half b)
+{
+    return {__hmul(a.x, b), __hmul(a.y, b), __hmul(a.z, b)};
+}
+
+__forceinline__ __device__ half3 operator*(half b, half3 a)
+{
+    return a * b;;
+}
+
+__forceinline__ __device__ half3 operator+(half3 a, half3 b)
+{
+    return {__hadd(a.x, b.x), __hadd(a.y, b.y), __hadd(a.z, b.z)};
+}
+
+__forceinline__ half3 interp(float2 barys, half3 a, half3 b, half3 c) 
+{    
+    half w0 = __float2half(1.f - barys.x - barys.y);
+    half w1 = __float2half(barys.x);
+    half w2 = __float2half(barys.y);
+
+    return w0*a + w1*b + w2*c;
+}
+
+__forceinline__ __device__ float3 decodeHalf(half3 c)
+{
+    return { __half2float(c.x), __half2float(c.y), __half2float(c.z) };
 }
