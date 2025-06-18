@@ -9,6 +9,8 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/UserData.h>
 
+#include <tinygltf/json.hpp>
+
 namespace zeno {
 
 struct ShaderFinalize : INode {
@@ -135,6 +137,15 @@ struct ShaderFinalize : INode {
         auto mtl = std::make_shared<MaterialObject>();
         mtl->mtlidkey = get_input2<std::string>("mtlid");
         mtl->frag = std::move(code);
+
+        if (has_input2<float>("opacity")) {
+            auto opacity = get_input2<float>("opacity"); // It's actually transparency not opacity
+            opacity = max(0.0f, 1.0f - opacity);
+            
+            nlohmann::json j;
+            j["opacity"] = opacity;
+            mtl->parameters = j.dump();
+        }
 
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();

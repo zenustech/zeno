@@ -488,8 +488,20 @@ static void createSBT( PathTracerState& state )
 
         if (!has_vdb) {
 
-            hitgroup_records[sbt_idx] = {};
+            HitGroupRecord rec = {};
             if (!shader_ref.parameters.empty()) {
+                auto j = nlohmann::json::parse(shader_ref.parameters);
+
+                if (!j["opacity"].is_null()) {
+                    rec.data.opacity = j["opacity"];
+                } else {
+                    rec.data.opacity = FLT_MAX;
+                }
+            } else {
+                rec.data.opacity = FLT_MAX;
+            }
+
+            hitgroup_records[sbt_idx] = rec;
 
             for(int t=0;t<32;t++)
             {

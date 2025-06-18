@@ -47,6 +47,15 @@ __inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs, const OptixTr
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
+    auto rt_data = (HitGroupData*)optixGetSbtDataPointer();
+    auto dc_index = rt_data->dc_index;
+
+    auto prd = getPRD<ShadowPRD>();
+    if (rt_data->opacity == 1.0f) {
+        prd->attanuation = {};
+        optixTerminateRay();
+        return;
+    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
