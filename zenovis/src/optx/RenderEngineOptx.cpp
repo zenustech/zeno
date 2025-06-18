@@ -84,10 +84,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &uv,
                std::vector<zeno::vec3i> &idxBuffer)
 {
-    if(prim->has_attr("clr")==false)
-    {
-        prim->verts.add_attr<zeno::vec3f>("clr");
-    }
+    const bool has_clr = prim->has_attr("clr");
   //first pass, scan the prim to see if verts require duplication
   std::vector<std::vector<zeno::vec3f>> vert_uv;
   std::vector<std::vector<zeno::vec2i>> idx_mapping;
@@ -143,14 +140,11 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
   // [old_idx, new_idx ] = idx_mapping[vid][k] tells index mapping of old and new vert
 
   //run a pass to assemble new data
-  verts.resize(0);
-  nrm.resize(0);
-  clr.resize(0);
-  uv.resize(0);
-  tang.resize(0);
   verts.reserve(count);
   nrm.reserve(count);
-  clr.reserve(count);
+    if (has_clr) {
+        clr.reserve(count);
+    }
   uv.reserve(count);
   tang.reserve(count);
   for(int i=0;i<vert_uv.size();i++)
@@ -161,11 +155,13 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
       auto uvt = vert_uv[i][j];
       auto v  = prim->verts[vid];
       auto n  = prim->verts.attr<zeno::vec3f>("nrm")[vid];
-      auto c  = prim->verts.attr<zeno::vec3f>("clr")[vid];
       auto t  = prim->verts.attr<zeno::vec3f>("atang")[vid];
       verts.push_back(v);
       nrm.push_back(n);
-      clr.push_back(c);
+        if (has_clr) {
+            auto c  = prim->verts.attr<zeno::vec3f>("clr")[vid];
+            clr.push_back(c);
+        }
       tang.push_back(t);
       uv.push_back(uvt);
     }
@@ -637,6 +633,7 @@ struct GraphicsManager {
                     }
                     if(prim_in->has_attr("uv") && has_uv == false)
                     {
+                        has_uv = true;
                         auto &uv = prim_in->attr<zeno::vec3f>("uv");
                         auto &uv0 = prim_in->tris.add_attr<zeno::vec3f>("uv0");
                         auto &uv1 = prim_in->tris.add_attr<zeno::vec3f>("uv1");
@@ -649,7 +646,9 @@ struct GraphicsManager {
                             uv2[i]=uv[prim_in->tris[i][2]];
                         }
                     }
-                    prim_in->add_attr<zeno::vec3f>("uv");
+                    if (!has_uv) {
+                        prim_in->add_attr<zeno::vec3f>("uv");
+                    }
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
                     if(prim_in->tris.size() && need_computeNormal)
@@ -670,18 +669,21 @@ struct GraphicsManager {
                     auto oPrim = std::make_shared<zeno::PrimitiveObject>();
                     oPrim->verts.resize(verts.size());
                     oPrim->add_attr<zeno::vec3f>("nrm");
-                    oPrim->add_attr<zeno::vec3f>("clr");
-                    oPrim->add_attr<zeno::vec3f>("uv");
-                    oPrim->add_attr<zeno::vec3f>("atang");
+                    if (!clr.empty()) {
+                        oPrim->add_attr<zeno::vec3f>("clr");
+                        oPrim->verts.attr<zeno::vec3f>("clr") = clr;
+                    }
                     oPrim->tris.resize(idxBuffer.size());
-
                     oPrim->verts.attr<zeno::vec3f>("pos") = verts;
                     oPrim->verts.attr<zeno::vec3f>("nrm") = nrm;
-                    oPrim->verts.attr<zeno::vec3f>("clr") = clr;
-                    oPrim->verts.attr<zeno::vec3f>("uv") = uv;
-                    oPrim->verts.attr<zeno::vec3f>("atang") = tang;
                     oPrim->tris = idxBuffer;
-
+                    
+                    if (has_uv) {
+                        oPrim->add_attr<zeno::vec3f>("uv");
+                        oPrim->add_attr<zeno::vec3f>("atang");
+                        oPrim->verts.attr<zeno::vec3f>("uv") = uv;
+                        oPrim->verts.attr<zeno::vec3f>("atang") = tang;
+                    }
                     auto vs = (float const *)oPrim->verts.data();
                     std::map<std::string, std::pair<float const *, size_t>> vtab;
                     oPrim->verts.foreach_attr([&] (auto const &key, auto const &arr) {

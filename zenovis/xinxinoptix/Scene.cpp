@@ -48,7 +48,15 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
             mesh = std::make_shared<MeshObject>();
         }
         mesh->dirty = true;
-        mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
+
+        auto& clrAttr = dat.getAttr("clr");
+        const auto has_clr = !clrAttr.empty();
+
+        auto& tangAttr = dat.getAttr("atang");
+        auto& uvAttr = dat.getAttr("uv");
+        const auto has_uv = !uvAttr.empty();
+
+        mesh->resize(dat.tris.size()/3, dat.verts.size()/3, has_clr, has_uv);
 
         if (dat.mtlidList.size()>1) {
 
@@ -83,20 +91,18 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
         memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
         memcpy(mesh->vertices.data(), dat.verts.data(), sizeof(float)*dat.verts.size() );
 
-        auto ver_count = dat.verts.size()/3;
-
-        auto& uvAttr = dat.getAttr("uv");
-        auto& clrAttr = dat.getAttr("clr");
+        auto ver_count = dat.verts.size()/3;        
         auto& nrmAttr = dat.getAttr("nrm");
-        auto& tangAttr = dat.getAttr("atang");
 
         tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
-            
-            mesh->g_uv[i] = ( *(float2*)&(uvAttr[i * 3]) );
-            mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
-
+            if (has_uv) {
+                mesh->g_uv[i] = ( *(float2*)&(uvAttr[i * 3]) );
+                mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
+            }
+            if (has_clr) {
+                mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
+            }
             mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
-            mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
         });
 
         dirtyTasks[name] = [&](OptixDeviceContext& context){

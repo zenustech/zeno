@@ -14,13 +14,15 @@ struct MeshDat {
     std::vector<uint> tris;
     std::vector<int> triMats;
 
+    std::vector<float> dummy{};
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
-        //if(vertattrs.find(s)!=vertattrs.end())
-        //{
-            return vertattrs.at(s);//->second;
-        //}
+        auto find = vertattrs.find(s);
+        if(find!=vertattrs.end())
+            return find->second;
+        else
+            return dummy;
     }
 };
 
@@ -46,16 +48,28 @@ using raii = xinxinoptix::raii<T>;
 
     MeshObject() = default;
 
-    void resize(size_t tri_num, size_t vert_num) {
+    void resize(size_t tri_num, size_t vert_num, bool has_clr, bool has_uv) {
 
         indices.resize(tri_num);
         //mat_idx.resize(tri_num);
-
         vertices.resize(vert_num);
         g_nrm.resize(vert_num);
-        g_tan.resize(vert_num);
-        g_clr.resize(vert_num);
-        g_uv.resize(vert_num);
+
+        if (has_clr) {
+            g_clr.resize(vert_num);
+        } else {
+            g_clr.resize(0);
+            g_clr.shrink_to_fit();
+        }
+        if (has_uv) {
+            g_tan.resize(vert_num);
+            g_uv.resize(vert_num);
+        } else {
+            g_tan.resize(0);
+            g_tan.shrink_to_fit();
+            g_uv.resize(0);
+            g_uv.shrink_to_fit();
+        }
     }
 
     template<class T>
