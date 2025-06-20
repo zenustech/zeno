@@ -10,7 +10,7 @@
 #include "Portal.h"
 
 static __inline__ __device__
-vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf)
+vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf, float2& uv)
 {
     if(nx*ny == 0)
     {
@@ -21,29 +21,27 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     while(start<end-1)
     {
         int mid = (start + end)/2;
-        if(env_cdf[mid]<p)
-        {
+        if(__ldg(env_cdf+mid) < p)
             start = mid;
-        }
         else
-        {
             end = mid;
-        }
     }
     pdf = 1.0f;
-    start = env_start[start];
+    start = __ldg(env_start+start);
     int i = start%nx;
     int j = start/nx;
-    float theta = ((float)i + 0.5f)/(float) nx * 2.0f * 3.1415926f - 3.1415926f;
-    float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
-    float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
+
+    uv = { (i+0.5f)/nx, (j+0.5f)/ny };
+
+    float theta = uv.x * 2.0f * M_PIf - M_PIf;
+    float phi = uv.y * M_PIf;
+    //float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sinf(phi);
     //pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
-    vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5f * 3.1415926f), sin(theta)));
-    dir = dir.rotY(to_radians(-params.sky_rot))
-             .rotZ(to_radians(-params.sky_rot_z))
-             .rotX(to_radians(-params.sky_rot_x))
-             .rotY(to_radians(-params.sky_rot_y));
-    return dir;
+    vec3 dir = vec3(cosf(theta), sinf(phi - 0.5f * M_PIf), sinf(theta));
+
+    const auto& rotation = params.sky_onitator;
+    dir = optix_impl::optixTransformVector(rotation[0], rotation[1], rotation[2], dir);
+    return normalize(dir);
 }
 
 static __inline__ __device__ void cihouSphereLightUV(LightSampleRecord &lsr, GenericLight &light) {
@@ -554,16 +552,13 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
             vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
 
+            float2 skyuv = {};
             vec3 sample_dir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
-                                                            params.skynx, params.skyny, vdcrnd(prd->offset), envpdf)
+                                                            params.skynx, params.skyny, vdcrnd(prd->offset), envpdf, skyuv)
                                     : BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                     params.sunSoftness * 0.0f);
-            sample_dir = normalize(sample_dir);
-
             float samplePDF;
-            float3 illum = envSky(sample_dir, sunLightDir, make_float3(0., 0., 1.),
-                                        40, // be careful
-                                        .45, 15., 1.030725f * 0.3f, params.elapsedTime, samplePDF);
+            float3 illum = sampleSkyTexture(skyuv, 100, 0, samplePDF);
             samplePDF *= _SKY_PROB_;
             if(samplePDF <= 0.0f) { return; }
 

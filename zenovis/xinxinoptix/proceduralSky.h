@@ -292,24 +292,21 @@ static __inline__ __device__ vec3 proceduralSky(
     return col;
 }
 
-static __inline__ __device__ vec3 hdrSky(
-        vec3 dir, float upperBound,  float isclamp, float &pdf
-){
-    dir = dir
-            .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z))
-            .rotY(to_radians(params.sky_rot));
+static __forceinline__ __device__ vec3 sampleSkyTexture(vec2 uv, float upperBound, float isclamp, float &pdf)
+{
+    vec3 col = texture2D<float4, vec3>(params.sky_texture, uv);
+    vec3 col_safe = clamp(col, vec3(0.0f), vec3(upperBound));
+    pdf = luminance(col) / params.envavg  / (2.0f * M_PIf * M_PIf);
+    return mix(col, col_safe, isclamp) * params.sky_strength;
+}
+
+static __forceinline__ __device__ vec3 sampleSkyTexture(vec3 dir, float upperBound, float isclamp, float &pdf)
+{
+    const auto& rotation = params.sky_rotation;
+    dir = optix_impl::optixTransformVector(rotation[0], rotation[1], rotation[2], dir);
 
     vec3 uv = sphereUV(dir, true);
-
-    vec3 col = (vec3)texture2D(params.sky_texture, vec2(uv[0], uv[1]));//* params.sky_strength;
-    vec3 col2 = clamp(col, vec3(0.0f), vec3(upperBound));
-    int i = uv[0] * params.skynx;
-    int j = uv[1] * params.skyny;
-    //float p = params.skycdf[params.skynx * params.skyny + j * params.skynx + i];
-    pdf = luminance(col) / params.envavg  / (2.0f * M_PIf * M_PIf);
-    return mix(col, col2, isclamp) * params.sky_strength;
+    return sampleSkyTexture(*(vec2*)&uv, upperBound, isclamp, pdf);
 }
 
 static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
@@ -355,7 +352,7 @@ static __inline__ __device__ vec3 envSky(
 ){
     vec3 color;
 
-    color = hdrSky(
+    color = sampleSkyTexture(
         dir, upperBound, isclamp, pdf
     );
     return color;

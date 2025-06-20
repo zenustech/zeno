@@ -784,11 +784,22 @@ void load_light(std::string const &key, LightDat& ld, float const*v0, float cons
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
-    state.params.sky_rot = sky_rot;
-    state.params.sky_rot_x = sky_rot3d[0];
-    state.params.sky_rot_y = sky_rot3d[1];
-    state.params.sky_rot_z = sky_rot3d[2];
+
     state.params.sky_strength = sky_strength;
+
+    glm::mat4 rotation(1.0f);
+    rotation = glm::rotate(rotation, glm::radians(sky_rot)     , glm::vec3(0,1,0));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[2]), glm::vec3(0,0,1));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[0]), glm::vec3(1,0,0));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[1]), glm::vec3(0,1,0));
+
+    auto tmp = glm::transpose(rotation);
+    auto ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
+    
+    tmp = glm::transpose(glm::inverse(rotation));
+    ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
 }
 
 void using_hdr_sky(bool enable) {
@@ -812,11 +823,9 @@ void updatePortalLights(const std::vector<Portal>& portals) {
     pls.clear();
     pls.reserve(std::max(portals.size(), size_t(0)) );
 
-    glm::mat4 rotation = glm::mat4(1.0f);
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_y), glm::vec3(0,1,0));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_x), glm::vec3(1,0,0));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_z), glm::vec3(0,0,1));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot), glm::vec3(0,1,0));
+    glm::mat4 rotation(1.0); 
+    memcpy(glm::value_ptr(rotation), state.params.sky_rotation, sizeof(float)*12);
+    rotation = glm::transpose(rotation);
     
     glm::mat4* rotation_ptr = nullptr;
     if ( glm::mat4(1.0f) != rotation ) {

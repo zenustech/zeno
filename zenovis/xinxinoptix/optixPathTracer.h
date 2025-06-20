@@ -215,11 +215,9 @@ struct Params
     uint32_t skyny;
     float envavg;
 
-    float sky_rot;
-    float sky_rot_x;
-    float sky_rot_y;
-    float sky_rot_z;
     float sky_strength;
+    float4 sky_rotation[3];
+    float4 sky_onitator[3];
 
     float sunLightDirX;
     float sunLightDirY;
