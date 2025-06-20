@@ -362,9 +362,9 @@ struct PortalLight {
 
         if (z <= 0) {return {};}
 
-        auto sinL = sqrt(1.0f - z * z);
-        auto angleX = asin(x / sinL);
-        auto angleY = -acos(y / sinL);
+        auto sinL = sqrtf(1.0f - z * z);
+        auto angleX = asinf(x / sinL);
+        auto angleY = -acosf(y / sinL);
 
          Vector2f uv = {
             ( angleX + M_PI_2f ) / M_PIf,
@@ -389,8 +389,8 @@ struct PortalLight {
 
         if (z0 <= 0) { return false; }
 
-        auto angleX0 = atan2(x0, z0);
-        auto angleY0 = atan2(y0, z0);
+        auto angleX0 = atan2f(x0, z0);
+        auto angleY0 = atan2f(y0, z0);
 
         auto x1 = dot(v1, X);
         auto y1 = dot(v1, Y);
@@ -398,8 +398,8 @@ struct PortalLight {
         
         if (z1 <= 0) { return false; }
 
-        auto angleX1 = atan2(x1, z1);
-        auto angleY1 = atan2(y1, z1);
+        auto angleX1 = atan2f(x1, z1);
+        auto angleY1 = atan2f(y1, z1);
 
         if (angleX0 >= angleX1 || angleY0 >= angleY1) 
         {
@@ -428,7 +428,7 @@ struct PortalLight {
 
             DCHECK(P(min) <= u);
             DCHECK(P(max) >= u);
-            float mid = (min + max) / 2;
+            float mid = (min + max) / 2.f;
             auto PM = P(mid);
             //PM = clamp(PM, 0.0f, 1.0f); 
 
@@ -461,11 +461,11 @@ struct PortalLight {
         auto w = Vector3f{x, y, z};
 
         if (duvdw)
-            *duvdw = pbrt::Sqr(M_PIf) * (1 - pbrt::Sqr(w[0])) * (1 - pbrt::Sqr(w[1])) / w[2]; 
+            *duvdw = pbrt::Sqr(M_PIf) * (1.f - pbrt::Sqr(w[0])) * (1.f - pbrt::Sqr(w[1])) / w[2]; 
 
-        auto sinL = sqrt(1.0f - z * z);
-        auto angleX = asin(x / sinL);
-        auto angleY = -acos(y / sinL);
+        auto sinL = sqrtf(1.0f - z * z);
+        auto angleX = asinf(x / sinL);
+        auto angleY = -acosf(y / sinL);
 
          Vector2f uv = {
             ( angleX + M_PI_2f ) / M_PIf,
@@ -475,8 +475,8 @@ struct PortalLight {
 
     Vector3f uv_direction(float2 uv, float* duvdw=nullptr) {
 
-        float alpha = -M_PIf / 2 + uv.x * M_PIf; 
-        float beta  = -M_PIf / 2 + uv.y * M_PIf;
+        float alpha = -M_PIf / 2.f + uv.x * M_PIf; 
+        float beta  = -M_PIf / 2.f + uv.y * M_PIf;
         float x = tanf(alpha), y = tanf(beta);
 
         DCHECK(!IsInf(x) && !IsInf(y));
@@ -484,7 +484,7 @@ struct PortalLight {
         Vector3f w = normalize(Vector3f(x, y, 1));
         
         if (duvdw)
-            *duvdw = pbrt::Sqr(M_PIf) * (1 - pbrt::Sqr(w[0])) * (1 - pbrt::Sqr(w[1])) / w[2];
+            *duvdw = pbrt::Sqr(M_PIf) * (1.f - pbrt::Sqr(w[0])) * (1.f - pbrt::Sqr(w[1])) / w[2];
         
         Vector3f dir {};
         dir = dir + X * w[0];
