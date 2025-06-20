@@ -221,11 +221,6 @@ struct SceneObject : IObjectClone<SceneObject> {
             ud.set2("ResourceType", std::string("SceneDescriptor"));
             Json json;
             Json BasicRenderInstances = Json();
-            for (const auto &[path, prim]: prim_list) {
-                BasicRenderInstances[path]["Geom"] = path;
-                BasicRenderInstances[path]["Material"] = "Default";
-            }
-            json["BasicRenderInstances"] = BasicRenderInstances;
 
             Json RenderGroups = Json();
             for (auto &[path, stn]: scene_tree) {
@@ -235,9 +230,13 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 for (auto &child: stn.meshes) {
                     render_group[child] = Json::array({path + "_m"});
+                    BasicRenderInstances[child]["Geom"] = child;
+                    BasicRenderInstances[child]["Material"] = "Default";
                 }
                 RenderGroups[path] = render_group;
             }
+            json["BasicRenderInstances"] = BasicRenderInstances;
+
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
             } else {
@@ -334,13 +333,15 @@ struct SceneObject : IObjectClone<SceneObject> {
             ud.set2("ResourceType", std::string("SceneDescriptor"));
             Json json;
             json["BasicRenderInstances"] = Json();
-            for (const auto &[path, prim]: prim_list) {
-                json["BasicRenderInstances"][path]["Geom"] = path;
-                json["BasicRenderInstances"][path]["Material"] = "Default";
-                if (use_static) {
-                    json["StaticRenderGroups"]["StaticObjects"][path] = Json::array({path + "_m"});
-                } else {
-                    json["DynamicRenderGroups"]["DynamicObjects"][path] = Json::array({path + "_m"});
+            for (auto &[path, stn]: scene_tree) {
+                for (auto &child: stn.meshes) {
+                    json["BasicRenderInstances"][child]["Geom"] = child;
+                    json["BasicRenderInstances"][child]["Material"] = "Default";
+                    if (use_static) {
+                        json["StaticRenderGroups"]["StaticObjects"][child] = Json::array({child + "_m"});
+                    } else {
+                        json["DynamicRenderGroups"]["DynamicObjects"][child] = Json::array({child + "_m"});
+                    }
                 }
             }
             ud.set2("Scene", std::string(json.dump()));

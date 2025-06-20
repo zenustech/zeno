@@ -444,7 +444,7 @@ struct SceneRootRename : zeno::INode {
         auto new_scene_tree = scene_tree->root_rename(new_root_name, root_xform);
 //        zeno::log_info("SceneRootRename output root_name {}", new_scene_tree->root_name);
 
-        auto scene = new_scene_tree->to_layer_structure(false);
+        auto scene = new_scene_tree->to_layer_structure(true);
         set_output2("scene", scene);
     }
 };
