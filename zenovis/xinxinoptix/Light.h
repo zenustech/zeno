@@ -450,8 +450,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
     
     } else {
 
-        auto shadeTask = [&](float3 sampleDir, float samplePDF, float3 illum, const bool mis) {\
-
+        auto shadeTask = [&](float3 sampleDir, float samplePDF, float3 illum, const bool mis) {
 
             shadowPRD.attanuation = vec3(1.0);
             shadowPRD.maxDistance = FLT_MAX;

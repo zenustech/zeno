@@ -63,11 +63,11 @@ struct vec3{
         return *ptr;
     }
 
-    __forceinline__ __device__ const bool operator==(vec3 other) const {
+    __forceinline__ __device__ bool operator==(vec3 other) const {
         return x==other.x && y==other.y && z==other.z;
     }
 
-    __forceinline__ __device__ const bool operator!=(vec3 other) const {
+    __forceinline__ __device__ bool operator!=(vec3 other) const {
         return !(*this==other);
     }
 
@@ -979,10 +979,11 @@ T tex2D(unsigned long long t, float x, float y) {
 }
 #endif
 
-__forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
+template <typename T=float4, typename R=vec4>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
 {
-    float4 res = tex2D<float4>(texObj, uv.x, uv.y);
-    return vec4(res.x, res.y, res.z, res.w);
+    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
+    return *(R*)&tmp;
 }
 
 /////////////end of geometry math/////////////////////////////////////////////////
