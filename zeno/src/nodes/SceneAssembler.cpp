@@ -235,7 +235,7 @@ struct FormSceneTree : zeno::INode {
             sceneTree->prim_list[abc_path] = prim;
         }
         get_local_matrix_map(scene_json->json, "", sceneTree);
-        auto scene = sceneTree->to_layer_structure();
+        auto scene = sceneTree->to_layer_structure(false);
         set_output2("scene", scene);
     }
 };
@@ -374,7 +374,7 @@ struct MergeScene : zeno::INode {
             auto inner_parent = append_path1 + (insert_path == ""? "" : "/") + insert_path;
             main_scene->scene_tree.at(inner_parent).children.push_back( namespace2==""?append_path2+second_scene->root_name:append_path2);
         }
-        auto scene = main_scene->to_layer_structure();
+        auto scene = main_scene->to_layer_structure(false);
         set_output2("scene", scene);
     }
 };
@@ -444,7 +444,7 @@ struct SceneRootRename : zeno::INode {
         auto new_scene_tree = scene_tree->root_rename(new_root_name, root_xform);
 //        zeno::log_info("SceneRootRename output root_name {}", new_scene_tree->root_name);
 
-        auto scene = new_scene_tree->to_layer_structure();
+        auto scene = new_scene_tree->to_layer_structure(false);
         set_output2("scene", scene);
     }
 };

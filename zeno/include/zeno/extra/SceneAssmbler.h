@@ -156,7 +156,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
     }
 
-    std::shared_ptr <zeno::ListObject> to_layer_structure(bool use_static = true) {
+    std::shared_ptr <zeno::ListObject> to_layer_structure(bool use_static) {
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
         scene->arr.push_back(dict);
@@ -363,8 +363,10 @@ static std::shared_ptr <SceneObject> get_scene_tree_from_list(std::shared_ptr <L
     auto prim_list_size = list_obj->arr.front()->userData().get2<int>("prim_count");
     for (auto i = 1; i <= prim_list_size; i++) {
         auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
-        auto object_name = prim->userData().get2<std::string>("ObjectName");
-        scene_tree->prim_list[object_name] = prim;
+        if (prim->userData().has<std::string>("ObjectName")) {
+            auto object_name = prim->userData().get2<std::string>("ObjectName");
+            scene_tree->prim_list[object_name] = prim;
+        }
     }
     return scene_tree;
 }

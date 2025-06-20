@@ -5,8 +5,13 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/fileio.h>
 #include <zeno/utils/string.h>
 #include <set>
+#include <cstdlib>
+#include <ctime>
+#include "zeno/extra/SceneAssmbler.h"
+#include "zeno/types/PrimitiveObject.h"
 
 namespace zenovis {
 
@@ -33,7 +38,7 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree
     auto dynamicSceneList = std::make_shared<zeno::ListObject>();
 
     auto get_index = [] (std::string const &key) -> int {
-        std::string count_str = key.substr(key.find("LIST")+4);
+        std::string count_str = key.substr(key.find(":LIST")+5);
         count_str = count_str.substr(0, count_str.find(':'));
         auto count = std::stoi(count_str);
         return count;
@@ -68,7 +73,41 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree
             output[key] = obj;
         }
     }
+    auto get_format = [] (std::string const &key) -> std::string {
+        auto prefix = key.substr(0, key.find(":LIST")+5);
+        std::string count_str = key.substr(key.find(":LIST")+5);
+        auto postfix = count_str.substr(count_str.find(':'));
+        return prefix+"{}"+postfix;
+    };
+    Json scene_descriptor_json;
+    if (!dynamicSceneList->arr.empty()) {
+        auto json_str = dynamicSceneList->arr[dynamicSceneList->arr.size() - 1]->userData().get2<std::string>("json", "");
+        auto dynamic_scene_tree = zeno::get_scene_tree_from_list(dynamicSceneList);
+        auto new_dynamic_scene_tree = dynamic_scene_tree->root_rename("DRG", std::nullopt);
+        auto json = Json::parse(json_str);
+        auto dynamic_scene = json["flattened"]? new_dynamic_scene_tree->to_flatten_structure(false) : new_dynamic_scene_tree->to_layer_structure(false);
+        auto format_str = get_format(dynamicSceneTree);
+        for (auto i = 1; i < dynamic_scene->arr.size() - 2; i++) {
+            auto key = zeno::format(format_str, i);
+            output[key] = dynamic_scene->arr[i];
+        }
+        auto scene_str = dynamic_scene->arr[dynamic_scene->arr.size() - 2]->userData().get2<std::string>("Scene");
+        auto filename = zeno::replace_all(dynamicSceneTree, ":", "") + ".json";
+        zeno::file_put_content("E:/fuck/"+filename, scene_str);
+//        auto dynamic_scene_descriptor = Json::parse(scene_str);
+//        scene_descriptor_json["DynamicRenderGroups"] = dynamic_scene_descriptor["DynamicRenderGroups"];
+//        scene_descriptor_json["BasicRenderInstances"].update(dynamic_scene_descriptor["BasicRenderInstances"]);
+    }
 
+//    {
+//        auto scene_descriptor = std::make_shared<zeno::PrimitiveObject>();
+//        auto &ud = scene_descriptor->userData();
+//        ud.set2("ResourceType", std::string("SceneDescriptor"));
+//        ud.set2("Scene", std::string(scene_descriptor_json.dump()));
+//        std::srand(std::time(0));
+//        auto json_key = zeno::format("GeneratedJson:{}", std::rand());
+//        output[json_key] = scene_descriptor;
+//    }
 
     return output;
 }
