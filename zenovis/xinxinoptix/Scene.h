@@ -231,12 +231,12 @@ public:
                 shader_visiable = VisibilityMask::DefaultMatMask;
             }
             if (ShaderMark::Mesh == geo_type) {
-
-                auto mesh = _meshes_[geo_name];
-                if (mesh->mat_idx.size()==1) {
-                    shader_index = max(shader_index, mesh->mat_idx[0]);
-                } else {
-                    shader_index = 0u;
+                shader_index = 0u;
+                if (_meshes_.count(geo_name)) {
+                    auto mesh = _meshes_[geo_name];
+                    if (mesh->mat_idx.size()==1) {
+                        shader_index = max(shader_index, mesh->mat_idx[0]);
+                    }
                 }
                 shader_visiable = VisibilityMask::DefaultMatMask;
                 
