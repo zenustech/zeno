@@ -34,17 +34,6 @@ __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
-__inline__ __device__ void cihouSphereInstanceAux(MatInput& attrs, const OptixTraversableHandle& gas) {
-
-    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-
-    float3* color_ptr  = reinterpret_cast<float3*>( *(gas_ptr-1) );
-    if (color_ptr == nullptr) return;
-        
-    attrs.instIdx = optixGetPrimitiveIndex();
-    attrs.instClr = (color_ptr != nullptr)? color_ptr[attrs.instIdx] : float3{}; 
-}
-
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
     auto rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -65,138 +54,78 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 ray_dir  = optixGetWorldRayDirection();
     const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    auto dc_index = rt_data->dc_index;
+    MatInput attrs {};
+    attrs.ptype = optixGetPrimitiveType();
+    attrs.gas = gas;
+    attrs.priIdx = primIdx;
+    attrs.sbtIdx = sbtGASIndex;
+    attrs.instIdx = optixGetInstanceId();
+    attrs.rayLength = optixGetRayTmax();
+    attrs.isBackFace = optixIsBackFaceHit();
+    attrs.seed = prd->seed;
 
-    ShadowPRD* prd = getPRD<ShadowPRD>();
-    MatInput attrs{};
+    float3& objPos = attrs.objPos; 
+    float3& objNorm = attrs.objNorm; 
+    float3& wldPos = attrs.wldPos; 
+    float3& wldNorm = attrs.wldNorm; 
 
-    auto pType = optixGetPrimitiveType();
-    if (pType != OPTIX_PRIMITIVE_TYPE_SPHERE && pType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
-        
-        prd->attanuation = vec3(0);
-        optixTerminateRay();
-        return;
-    }
+    float3 shadingNorm;
 
-    bool sphere_external_ray = false;
+    optixGetObjectToWorldTransformMatrix((float*)attrs.objectToWorld);
+    optixGetWorldToObjectTransformMatrix((float*)attrs.worldToObject);
 
 #if (_P_TYPE_==2)
-    float3 N = {};
-    printf("Should not reach here\n");
+    prd->attanuation = vec3(0);
+    optixTerminateRay();
     return;
 #elif (_P_TYPE_==1)
-
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
     optixGetSphereData( gas, primIdx, sbtGASIndex, 0.f, &q );
 
-    float3 _pos_world_      = P;
-    float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
+    wldPos = P;
+    objPos = optixTransformPointFromWorldToObjectSpace( wldPos );
 
     float3& _center_object_ = *(float3*)&q; 
 
-    float3 _normal_object_  = ( _pos_object_ - _center_object_ ) / q.w;
-    float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
+    objNorm  = ( objPos - _center_object_ ) / q.w;
+    wldNorm  = normalize( optixTransformNormalFromObjectToWorldSpace( objNorm ) );
 
     auto _origin_object_ = optixGetObjectRayOrigin();
-    sphere_external_ray = length(_origin_object_ - _center_object_) > q.w;
+    bool sphere_external_ray = length(_origin_object_ - _center_object_) > q.w;
 
-    float3 N = _normal_world_;
-    N = faceforward( N, -ray_dir, N );
-
-    attrs.pos = P;
-    attrs.nrm = N;
-    attrs.uv = sphereUV(_normal_object_, false);
-
-    attrs.instPos = _center_object_;
-    cihouSphereInstanceAux(attrs, gas);
-
+    wldNorm = faceforward( wldNorm, -ray_dir, wldNorm );
 #else
 
-    size_t inst_idx = optixGetInstanceId();
-
-    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-    
-    uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    float2* uv_ptr   = reinterpret_cast<float2*>( *(gas_ptr-2) );
-    ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
-    ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
-    ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
-
-    uint16_t* mat_ptr = reinterpret_cast<uint16_t*>(*(gas_ptr-6) );
-    if ((uint64_t)mat_ptr != 0) {
-        dc_index = mat_ptr[primIdx];
-    }
-
-    auto vertex_idx = idx_ptr[primIdx];
-
     float3 _vertices_[3];
-    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
-
+    attrs.vertices = _vertices_;
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
+    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
 
-    float3 N_Local = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) );
-    
-    /* MODMA */
-    float2       barys    = optixGetTriangleBarycentrics();
+    float2 barys = optixGetTriangleBarycentrics();
+    objPos = interp(barys, v0, v1, v2);
+    objNorm = normalize(cross(v1-v0, v2-v0));
 
-    float3 n0 = normalize( decodeHalf(nrm_ptr[vertex_idx.x]) );
-    n0 = dot(n0, N_Local)>0.8f?n0:N_Local;
-    float3 n1 = normalize( decodeHalf(nrm_ptr[vertex_idx.y]) );
-    n1 = dot(n1, N_Local)>0.8f?n1:N_Local;
-    float3 n2 = normalize( decodeHalf(nrm_ptr[vertex_idx.z]) );
-    n2 = dot(n2, N_Local)>0.8f?n2:N_Local;
+    wldPos = optixTransformPointFromObjectToWorldSpace(objPos);
+    wldNorm = optixTransformNormalFromObjectToWorldSpace(objNorm);
+    wldNorm = normalize(wldNorm);
 
-    N_Local = normalize(interp(barys, n0, n1, n2));
-    float3 N_World = optixTransformNormalFromObjectToWorldSpace(N_Local);
+    let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+    let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+    attrs.vertex_idx = idx_ptr[primIdx];
 
-    if (isBadVector(N_World)) 
-    {  
-        N_World = DisneyBSDF::SampleScatterDirection(prd->seed);
-    }
-
-    float3 N = faceforward( N_World, -ray_dir, N_World );
-    
-    attrs.pos = P;
-    attrs.nrm = N;
-
-    const auto& uv0  = uv_ptr[ vertex_idx.x ];
-    const auto& uv1  = uv_ptr[ vertex_idx.y ];
-    const auto& uv2  = uv_ptr[ vertex_idx.z ];
-    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
-    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
-    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
-    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
-    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
-    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
-
-    auto _uv_ = interp(barys, uv0, uv1, uv2);
-    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
-    attrs.clr = interp(barys, clr0, clr1, clr2);
-    attrs.tang = interp(barys, tan0, tan1, tan2);
-    attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
-    attrs.rayLength = optixGetRayTmax();
-
-    attrs.instIdx = inst_idx;
-
-    attrs._barys = barys;
+    attrs.barys2 = barys;
+    attrs.N = reinterpret_cast<TriangleInput&>(attrs).interpNorm();
+    attrs.T = reinterpret_cast<TriangleInput&>(attrs).interpTang();
 #endif
 
-    attrs.pos = attrs.pos + vec3(params.cam.eye);
     attrs.isShadowRay = true;
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>( dc_index, rt_data->textures, attrs );
+    shadingNorm = mats.nrm;
+    shadingNorm = faceforward( shadingNorm, -ray_dir, shadingNorm );
     
-
-    if(length(attrs.tang)>0)
-    {
-        vec3 b = cross(attrs.tang, attrs.nrm);
-        attrs.tang = cross(attrs.nrm, b);
-        N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
-    }
-
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -283,7 +212,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                     return;
                 }
 
-                float nDi = fabs(dot(N,normalize(ray_dir)));
+                float nDi = fabs(dot(shadingNorm, normalize(ray_dir)));
                 vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
                 prd->attanuation = prd->attanuation * fakeTrans;
 
@@ -342,26 +271,38 @@ extern "C" __global__ void __closesthit__radiance()
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
-    *reinterpret_cast<OptixTraversableHandle*>(&prd->record.x) = gas;
-    prd->record.z = sbtGASIndex;
-    prd->record.w = primIdx;
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
-    float3 P = ray_orig + optixGetRayTmax() * ray_dir;
+    const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    
+    let rt_data = (HitGroupData*)optixGetSbtDataPointer();
+
     MatInput attrs {};
+    attrs.ptype = optixGetPrimitiveType();
+    attrs.gas = gas;
+    attrs.priIdx = primIdx;
+    attrs.sbtIdx = sbtGASIndex;
+    attrs.instIdx = optixGetInstanceId();
+    attrs.rayLength = optixGetRayTmax();
     attrs.isBackFace = optixIsBackFaceHit();
-    
-    vec3 bezierOff {};
+    attrs.seed = prd->seed;
+
+    float3 bezierOff {};
     auto dc_index = rt_data->dc_index;
+    
+    float3& objPos = attrs.objPos; 
+    float3& objNorm = attrs.objNorm; 
+    float3& wldPos = attrs.wldPos; 
+    float3& wldNorm = attrs.wldNorm; 
+
+    float objOffset; float wldOffset;
+    float3 shadingNorm;
+    
+    optixGetObjectToWorldTransformMatrix((float*)attrs.objectToWorld);
+    optixGetWorldToObjectTransformMatrix((float*)attrs.worldToObject);
 
 #if (_P_TYPE_==2)
-
-    float3 N = {}; 
-
     auto pType = optixGetPrimitiveType();
     if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
         prd->done = true;
@@ -373,17 +314,10 @@ extern "C" __global__ void __closesthit__radiance()
     if (dot(normal, -ray_dir) < 0) {
         normal = -normal;
     }
-
-    N = normal;
         
-    float3 wldPos = P; 
-    float3 wldNorm = normal;
-    float wldOffset = 0.0f;
-
-    prd->geometryNormal = N;
-
-    attrs.pos = P;
-    attrs.nrm = N;
+    wldPos = P;
+    wldNorm = normal;
+    wldOffset = 0.0f;
 
     auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
     auto& aux = *(CurveGroupAux*)(gas_ptr-sizeof(CurveGroupAux));
@@ -393,19 +327,16 @@ extern "C" __global__ void __closesthit__radiance()
     float  segmentU   = optixGetCurveParameter();
     float2 strand_u = aux.strand_u[primIdx];
     float u = strand_u.x + segmentU * strand_u.y;
-
-    attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
+    //attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
 
 #elif (_P_TYPE_==1)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
     optixGetSphereData( gas, primIdx, sbtGASIndex, 0.0f, &q );
-
     float3& sphere_center = *(float3*)&q;
-
-    float3 objPos   = optixTransformPointFromWorldToObjectSpace(P);
-    float3 objNorm  = normalize( ( objPos - sphere_center ) / q.w );
+    objPos   = optixTransformPointFromWorldToObjectSpace(P);
+    objNorm  = normalize( ( objPos - sphere_center ) / q.w );
 
     objPos = sphere_center + objNorm * q.w;
 
@@ -418,126 +349,63 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     vec3 objErr = fma( vec3( c0 ), abs( sphere_center ), vec3( c1 * q.w * 2.0f ) );
-    float objOffset = dot( objErr, abs( objNorm ) );
+    objOffset = dot( objErr, abs( objNorm ) );
 
-    float3 wldPos, wldNorm; float wldOffset;
     SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
-
-    P = wldPos;
-    float3 N = wldNorm;
-
-    prd->geometryNormal = N;
-
-    attrs.pos = P;
-    attrs.nrm = N;
-    attrs.uv = sphereUV(objNorm, false);
-
-    attrs.instPos = sphere_center;
-    cihouSphereInstanceAux(attrs, gas);
-
+    attrs.N = wldNorm;
 #else
-
+    
     float3 _vertices_[3];
-    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
-
+    attrs.vertices = _vertices_;
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
+    optixGetTriangleVertexData(gas, primIdx, sbtGASIndex, 0, _vertices_);
 
-    float3 objPos, objNorm; float objOffset; 
-    //SelfIntersectionAvoidance::getSafeTriangleSpawnOffset( objPos, objNorm, objOffset );
-    float2 barys = optixGetTriangleBarycentrics();
+    const float2 barys = optixGetTriangleBarycentrics();
     SelfIntersectionAvoidance::getSafeTriangleSpawnOffset( objPos, objNorm, objOffset, v0, v1, v2, barys );
-
-    float3 wldPos, wldNorm; float wldOffset;
     SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
-
-     auto _v0 = optixTransformPointFromObjectToWorldSpace(v0);
-     auto _v1 = optixTransformPointFromObjectToWorldSpace(v1);
-     auto _v2 = optixTransformPointFromObjectToWorldSpace(v2);
-
-
-    /* MODMA */
-    P = wldPos;
-    attrs.pos = P;
-
-    const float3& N_Local = objNorm;
-    float3 N = wldNorm;
-
-    if (isBadVector(N)) 
+    
+    if (isBadVector(wldNorm)) 
     {  
-        N = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
-        N = faceforward( N, -ray_dir, N );
+        wldNorm = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
+        wldNorm = faceforward( wldNorm, -ray_dir, wldNorm );
     }
-    prd->geometryNormal = N;
 
-    attrs.nrm = N;
-
-    size_t inst_idx = optixGetInstanceId();
-    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-
-    uint3*  idx_ptr  = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    float2* uv_ptr   = reinterpret_cast<float2*>( *(gas_ptr-2) );
-    ushort3* clr_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-3) );
-    ushort3* nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
-    ushort3* tan_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-5) );
-
-    auto vertex_idx = idx_ptr[primIdx];
+    let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+    let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+    attrs.vertex_idx = idx_ptr[primIdx];
 
     uint16_t* mat_ptr = reinterpret_cast<uint16_t*>(*(gas_ptr-6) );
     if ((uint64_t)mat_ptr != 0) {
         dc_index = mat_ptr[primIdx];
     }
-    
-    const auto& uv0  = uv_ptr[ vertex_idx.x ];
-    const auto& uv1  = uv_ptr[ vertex_idx.y ];
-    const auto& uv2  = uv_ptr[ vertex_idx.z ];
 
-    auto clr0 = decodeHalf( clr_ptr[ vertex_idx.x ] );
-    auto clr1 = decodeHalf( clr_ptr[ vertex_idx.y ] );
-    auto clr2 = decodeHalf( clr_ptr[ vertex_idx.z ] );
-    auto tan0 = decodeHalf( tan_ptr[ vertex_idx.x ] );
-    auto tan1 = decodeHalf( tan_ptr[ vertex_idx.y ] );
-    auto tan2 = decodeHalf( tan_ptr[ vertex_idx.z ] );
-    
-    auto _uv_ = interp(barys, uv0, uv1, uv2);
-    attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
-    attrs.clr = interp(barys, clr0, clr1, clr2);
-    attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
-    attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
-    attrs.rayLength = optixGetRayTmax();
+    attrs.barys2 = barys;
+    attrs.N = reinterpret_cast<const TriangleInput&>(attrs).interpNorm();
+    attrs.T = reinterpret_cast<const TriangleInput&>(attrs).interpTang();
 
-    attrs.instIdx = inst_idx;
-
-    float3 n0 = normalize( decodeHalf(nrm_ptr[ vertex_idx.x ]) );
-    float3 n1 = normalize( decodeHalf(nrm_ptr[ vertex_idx.y ]) );
-    float3 n2 = normalize( decodeHalf(nrm_ptr[ vertex_idx.z ]) );
-
-    auto N_smooth = normalize(interp(barys, n0, n1, n2));
-    attrs.N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
-
-    attrs._barys = barys;
-    attrs.e1 = vec3(_v1 - _v0);
-    attrs.e2 = vec3(_v2 - _v0);
-    float a = 0.5 * length(cross(attrs.e1, attrs.e2));
-    attrs.els = vec3(a/(length(_v2 - _v1)+0.000001), a/(length(_v2 - _v0)+0.000001), a/(length(_v0 - _v1)+0.000001));
 #endif
 
-    attrs.pos = attrs.pos + vec3(params.cam.eye);
-    if(! (length(attrs.tang)>0.0f) )
-    {
-      Onb a(attrs.N);
-      attrs.T = a.m_tangent;
+    if(float3{} == attrs.T) {
+        Onb a(attrs.N);
+        attrs.T = a.m_tangent;
+        attrs.B = a.m_binormal;
+    } else {
+        attrs.B = cross(attrs.T, attrs.N);
     }
-    else
-    {
-      attrs.T = attrs.tang;
-    }
+
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
 
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(dc_index , rt_data->textures, attrs );
+    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index , rt_data->textures, attrs );
     prd->mask_value = mats.mask_value;
+    prd->geometryNormal = attrs.wldNorm;
+
+    if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
+        //mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
+        prd->geometryNormal  = faceforward( prd->geometryNormal , -ray_dir, prd->geometryNormal  );
+    }
 
     if (prd->test_distance) {
     
@@ -548,71 +416,40 @@ extern "C" __global__ void __closesthit__radiance()
         } else {
             prd->test_distance = false;
             prd->maxDistance = optixGetRayTmax();
+
+            *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
+            prd->record.z = sbtGASIndex;
+            prd->record.w = primIdx;
         }
         return;
     }
 
-#if (_P_TYPE_==2)
-    if(mats.doubleSide>0.5f||mats.thin>0.5f){
-        N = faceforward( N, -ray_dir, N );
-        prd->geometryNormal = N;
-    }
-#elif (_P_TYPE_==1)
+    shadingNorm = mats.nrm;
 
-    if(mats.doubleSide>0.5f||mats.thin>0.5f){
-        N = faceforward( N, -ray_dir, N );
-        prd->geometryNormal = N;
-    }
-
+#if (_P_TYPE_!=0)
 #else
-
-    n0 = dot(n0, N_Local)>(1-mats.smoothness)?n0:N_Local;
-    n1 = dot(n1, N_Local)>(1-mats.smoothness)?n1:N_Local;
-    n2 = dot(n2, N_Local)>(1-mats.smoothness)?n2:N_Local;
-   
     if (mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
 
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
+        let nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
+
+        float3 n0 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.x ]) );
+        float3 n1 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.y ]) );
+        float3 n2 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.z ]) );
 
         bezierOff = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3) - (*(vec3*)&objPos);
         const auto local_len = length(bezierOff);
 
-        if (local_len >0) {
+        if (local_len > 0) {
 
             auto tmp = optixTransformNormalFromObjectToWorldSpace(bezierOff);
-            
             auto len = local_len/length(tmp); len = len * len;
             bezierOff = mats.shadowTerminatorOffset * len * tmp;
-            // auto _v0 = optixTransformPointFromObjectToWorldSpace(v0);
-            // auto _v1 = optixTransformPointFromObjectToWorldSpace(v1);
-            // auto _v2 = optixTransformPointFromObjectToWorldSpace(v2);
-            // auto _n0 = optixTransformNormalFromObjectToWorldSpace(n0);
-            // auto _n1 = optixTransformNormalFromObjectToWorldSpace(n1);
-            // auto _n2 = optixTransformNormalFromObjectToWorldSpace(n2);
-            // _n0 = normalize(_n0); _n1 = normalize(_n1); _n2 = normalize(_n2);
-            // auto _bezierOff = bezierOffset(wldPos, _v0, _v1, _v2, _n0, _n1, _n2, barys3) - (*(vec3*)&wldPos);
         }
-    }
-
-    N_smooth = normalize(interp(barys, n0, n1, n2));
-    N = optixTransformNormalFromObjectToWorldSpace(N_smooth);
-    N = normalize(N);
-
-    if(mats.doubleSide>0.5f||mats.thin>0.5f){
-        N = faceforward( N, -ray_dir, N );
-        prd->geometryNormal = faceforward( prd->geometryNormal, -ray_dir, prd->geometryNormal );
     }
 #endif
 
-    attrs.nrm = N;
-  
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
-    if(length(attrs.tang)>0)
-    {
-        vec3 b = cross(attrs.tang, attrs.nrm);
-        attrs.tang = cross(attrs.nrm, b);
-        N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
-    }
 
     if (prd->trace_denoise_albedo) {
 
@@ -624,7 +461,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if (prd->trace_denoise_normal) {
-        prd->tmp_normal = N;
+        prd->tmp_normal = shadingNorm;
     }
 
     bool next_ray_is_going_inside = false;
@@ -659,12 +496,10 @@ extern "C" __global__ void __closesthit__radiance()
             prd->attenuation *= trans;
             //prd->origin = P;
             prd->direction = ray_dir;
-            //auto n = prd->geometryNormal;
-            //n = faceforward(n, -ray_dir, n);
             prd->_tmin_ = optixGetRayTmax();
             return;
         }
-        if(mats.subsurface>0.0f && dot(normalize(ray_dir),N)<0.0f){
+        if(mats.subsurface>0.0f && dot(normalize(ray_dir), shadingNorm)<0.0f){
             prd->attenuation2 = make_float3(0.0f,0.0f,0.0f);
             prd->attenuation = make_float3(0.0f,0.0f,0.0f);
             prd->radiance = make_float3(0.0f,0.0f,0.0f);
@@ -717,12 +552,11 @@ extern "C" __global__ void __closesthit__radiance()
     float fPdf = 0.0f;
     float rrPdf = 0.0f;
 
-    float3 T = attrs.tang;
-    float3 B;
-    if(length(T)>0)
-    {
-        B = cross(N, T);
-    } else
+    float3 T = attrs.T;
+    float3 B = attrs.B;
+    float3 N = shadingNorm;
+
+    if (float3{}==T || float3{}==B)
     {
         Onb a(N);
         T = a.m_tangent;
@@ -979,15 +813,14 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
     shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
     
-    auto shadingP = rtgems::offset_ray(P + float3(bezierOff) + params.cam.eye, prd->geometryNormal); // world space
+    auto shadingP = frontPos + params.cam.eye; // world space
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-        shadingP = rtgems::offset_ray(P + params.cam.eye,  -prd->geometryNormal);
-        //shadingP = rtgems::offset_ray(P + params.cam.eye, dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal);
+        shadingP = backPos + params.cam.eye;
     }
+
     prd->radiance = {};
     prd->direction = normalize(wi);
     prd->origin = dot(prd->direction, wldNorm) > 0 ? frontPos : backPos;
-
 
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;

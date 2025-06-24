@@ -71,13 +71,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
-static __inline__ __device__
-vec3 HdrToLDR(vec3 in)
-{
-  vec3 mapped = in;//vec3(1.0f) - exp(-in * 1.0/32.0);
-  //mapped = pow(mapped, 1.0f/2.2f);
-  return mapped;
-}
+
 static __inline__ __device__
 vec3 PhysicalCamera(vec3 in,
                    float aperture = 2,
@@ -167,11 +161,13 @@ extern "C" __global__ void __raygen__rg()
     
 
     float3 result = make_float3( 0.0f );
-    float3 result_d = make_float3( 0.0f );
-    float3 result_s = make_float3( 0.0f );
-    float3 result_t = make_float3( 0.0f );
-    float3 result_b = make_float3( 0.0f );
-    float3 aov[4];
+   
+    float3 aov[3] {};
+    float3& result_d = aov[1];
+    float3& result_s = aov[2];
+    float3& result_t = aov[3];
+    float&  result_b = aov[0].x;
+
     int i = params.samples_per_launch;
 
     float3 tmp_albedo{};
@@ -357,11 +353,6 @@ extern "C" __global__ void __raygen__rg()
         prd.trace_denoise_albedo = false;
         prd.trace_denoise_normal = false;
 
-        aov[0] = result_b;
-        aov[1] = result_d;
-        aov[2] = result_s;
-        aov[3] = result_t;
-
         for(;;)
         {
             _tmin_ = prd._tmin_;
@@ -428,7 +419,7 @@ extern "C" __global__ void __raygen__rg()
         seed = prd.seed;
 
         if (!(background_trace == 0)) {
-            result_b += make_float3(1);
+            result_b += 1.0f;
         }
     }
     while( --i );
@@ -444,7 +435,7 @@ extern "C" __global__ void __raygen__rg()
     vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
     vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
     vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    float3         accum_color_b  = result_b / samples_per_launch;
+    float        accum_color_b  = result_b / samples_per_launch;
     float3         accum_mask     = mask_value / samples_per_launch;
     
     if( subframe_index > 0 )
@@ -454,17 +445,14 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
         const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
         const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
-        const float3 accum_color_prev_b = {
-                half_to_float(params.accum_buffer_B[ image_index ]),
-                half_to_float(params.accum_buffer_B[ image_index ]),
-                half_to_float(params.accum_buffer_B[ image_index ]),
-        };
+        const float accum_color_prev_b = __half2float(*(__half*)&params.accum_buffer_B[image_index]);
+
         const float3 accum_mask_prev    = half3_to_float3(params.frame_buffer_M[ image_index ]);
         accum_color   = mix( vec3(accum_color_prev), accum_color, a );
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
         accum_color_s = mix( vec3(accum_color_prev_s), accum_color_s, a );
         accum_color_t = mix( vec3(accum_color_prev_t), accum_color_t, a );
-        accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
+        accum_color_b = mix( accum_color_prev_b, accum_color_b, a );
         accum_mask    = lerp( accum_mask_prev, accum_mask, a);
 
         if (params.denoise) {
@@ -477,13 +465,13 @@ extern "C" __global__ void __raygen__rg()
         }
     }
 
-    params.accum_buffer[ image_index ]   = make_float3( accum_color.x, accum_color.y, accum_color.z);
-    params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
-    params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
-    params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
-    params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
-
-    params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
+    params.accum_buffer[ image_index ] = accum_color;
+    // params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
+    // params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
+    // params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
+    // params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
+    // auto accum_buffer_B = reinterpret_cast<__half*>(params.accum_buffer_B);
+    // accum_buffer_B[image_index] = __float2half(accum_color_b);
 
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);

@@ -15,30 +15,26 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     let uniforms = params.d_uniforms;
     let buffers = params.global_buffers;
     /* MODMA */
-    auto att_pos = attrs.pos;
-    auto att_clr = attrs.clr;
-    auto att_uv = attrs.uv;
-    auto att_nrm = attrs.nrm;
-    auto att_tang = attrs.tang;
+    auto att_pos = attrs.wldPos + params.cam.eye;
+    auto att_clr = attrs.clr();
+    auto att_uv = attrs.uv();
+    auto att_nrm = attrs.N;
+    auto att_tang = attrs.T;
 
     auto att_instIdx = attrs.instIdx;
-    auto att_instPos = attrs.instPos;
-    auto att_instNrm = attrs.instNrm;
-    auto att_instUv = attrs.instUv;
-    auto att_instClr = attrs.instClr;
-    auto att_instTang = attrs.instTang;
-    auto att_rayLength = attrs.rayLength;
+    vec3 att_instPos{}, att_instNrm{}, att_instUv{}, att_instClr{}, att_instTang{};
 
+    auto att_rayLength = attrs.rayLength;
     auto att_isBackFace = attrs.isBackFace;
     auto att_isShadowRay = attrs.isShadowRay;
 
     vec3 b = normalize(cross(attrs.T, attrs.N));
     vec3 t = normalize(cross(attrs.N, b));
-    vec3 n = normalize(attrs.N);
+    vec3 n = attrs.N;
 
     auto att_N        = vec3(0.0f,0.0f,1.0f);
     auto att_T        = vec3(1.0f,0.0f,0.0f);
-    auto att_L        = normalize(vec3(dot(t, attrs.L), dot(b, attrs.L), dot(n, attrs.L)));
+    auto att_L        = vec3();
     auto att_V        = normalize(vec3(dot(t, attrs.V), dot(b, attrs.V), dot(n, attrs.V)));
     auto att_H        = vec3(0.0f,0.0f,1.0f);
     auto att_NoL      = att_L.z;
@@ -151,7 +147,6 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.diffractColor = clamp(mat_diffractColor, vec3(0.0f), vec3(1.0f));
 
     mats.opacity = mat_opacity;
-    mats.nrm = mat_normal;
     mats.emission = mat_emissionIntensity * mat_emission;
 
     mats.flatness = mat_flatness;
@@ -165,5 +160,28 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
 
+    const bool has_nrm = mat_normal != vec3{0,0,1};
+    if (mats.smoothness > 0.0f || has_nrm) {
+        mats.nrm = attrs.interpNorm(mats.smoothness);
+    } else {
+        mats.nrm = attrs.wldNorm; // geometry normal
+    }
+
+    if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
+        mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
+    }
+
+    n = mats.nrm;
+    b = cross(t, n);
+    t = cross(n, b);
+
+    if (has_nrm) { // has input from node graph
+        n = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;
+        b = cross(t, n);
+        t = cross(n, b);
+    }
+    attrs.B = b;
+    attrs.T = t;
+    mats.nrm = n;
     return mats;
 }

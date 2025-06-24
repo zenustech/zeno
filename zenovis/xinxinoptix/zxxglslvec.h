@@ -1319,6 +1319,14 @@ __forceinline__ __device__ float3 decodeNormal(float4 c)
   return make_float3(c.x, c.y, c.z);
 }
 
+__forceinline__ __device__ bool operator==(float3 a, float3 b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+__forceinline__ __device__ bool operator!=(float3 a, float3 b) {
+    return !(a == b);
+}
+
 struct half3 {
     half x, y, z;
 };

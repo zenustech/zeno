@@ -607,7 +607,7 @@ namespace DisneyBSDF{
     bool SampleDisney2(
         unsigned int& seed,
         unsigned int& eventseed,
-        struct MatOutput mat,
+        const MatOutput& mat,
         vec3 T,
         vec3 B,
         vec3 N,
