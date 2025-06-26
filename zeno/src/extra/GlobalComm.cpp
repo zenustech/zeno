@@ -138,6 +138,11 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             writer.String(stamptag.c_str());
             writer.Key("stamp-base");
             writer.Int(baseframe);
+            if (true) {
+                writer.Key("ObjectName");
+                auto obj_name = obj->userData().get2("ObjectName", std::string("None"));
+                writer.String(obj_name.c_str());
+            }
 
             writer.Key("objRunType");
             writer.Int(idx);

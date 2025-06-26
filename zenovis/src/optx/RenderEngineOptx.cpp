@@ -343,7 +343,7 @@ struct GraphicsManager {
         {
             const auto stamp_work = [](const zeno::UserData& ud) {
 
-                auto stamp_base = ud.get2<int>("stamp-base", 0);
+                auto stamp_base = ud.get2<int>("stamp-base", -9999);
                 auto stamp_change = ud.get2<std::string>("stamp-change", "TotalChange");
                 std::transform(stamp_change.begin(), stamp_change.end(), stamp_change.begin(), ::tolower);
 
@@ -357,7 +357,11 @@ struct GraphicsManager {
                 // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
                 auto prim_in = prim_in_lslislSp.get();
 
+                auto obj_name = obj->userData().get2("ObjectName", std::string("None"));
+
                 const auto [stamp_base, stamp_change] = stamp_work(prim_in_lslislSp->userData());
+                auto resource_type_ = prim_in->userData().get2("ResourceType", std::string("None"));
+//                zeno::log_error("{} > {} + {}: {}", obj_name, stamp_base, stamp_change, resource_type_);
                 if (stamp_change == "unchanged") { return; }
 
                 if ( prim_in->userData().has("ShaderAttributes") ) {
@@ -607,6 +611,8 @@ struct GraphicsManager {
                 
                 if (reType == "SceneDescriptor") 
                 {
+                    auto obj_name = prim_in->userData().get2("ObjectName", std::string("None"));
+//                    zeno::log_error("SceneDescriptor: obj_name: {}", obj_name);
                     const auto sceneConfig = prim_in->userData().get2<std::string>("Scene", "");
                     defaultScene.preload_scene(sceneConfig);
                     return;

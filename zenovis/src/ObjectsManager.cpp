@@ -81,17 +81,19 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree
     };
     Json scene_descriptor_json;
 
-    zeno::log_info("staticSceneTree: {}", staticSceneTree);
+    zeno::log_error("staticSceneTree: {}", staticSceneTree);
     if (!staticSceneList->arr.empty()) {
         auto json_str = staticSceneList->arr[staticSceneList->arr.size() - 1]->userData().get2<std::string>("json", "");
         auto scene_tree = zeno::get_scene_tree_from_list(staticSceneList);
-        auto new_scene_tree = scene_tree->root_rename("DRG", std::nullopt);
+        auto new_scene_tree = scene_tree->root_rename("SRG", std::nullopt);
         auto json = Json::parse(json_str);
-        auto scene = json["flattened"]? new_scene_tree->to_flatten_structure(false) : new_scene_tree->to_layer_structure(false);
+        auto scene = json["flattened"]? new_scene_tree->to_flatten_structure(true) : new_scene_tree->to_layer_structure(true);
         auto format_str = get_format(staticSceneTree);
         for (auto i = 1; i < scene->arr.size() - 2; i++) {
             auto key = zeno::format(format_str, i);
             output[key] = scene->arr[i];
+            auto obj_name = scene->arr[i]->userData().get2("ObjectName", std::string("None"));
+//            zeno::log_error("obj_name: {}", obj_name);
         }
         auto scene_str = scene->arr[scene->arr.size() - 2]->userData().get2<std::string>("Scene");
         auto filename = zeno::replace_all(staticSceneTree, ":", "") + ".json";
@@ -100,6 +102,7 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree
         scene_descriptor_json["StaticRenderGroups"] = scene_descriptor["StaticRenderGroups"];
         scene_descriptor_json["BasicRenderInstances"].update(scene_descriptor["BasicRenderInstances"]);
     }
+//    zeno::log_error("dynamicSceneTree: {}", dynamicSceneTree);
 //    if (!dynamicSceneList->arr.empty()) {
 //        auto json_str = dynamicSceneList->arr[dynamicSceneList->arr.size() - 1]->userData().get2<std::string>("json", "");
 //        auto scene_tree = zeno::get_scene_tree_from_list(dynamicSceneList);
@@ -126,6 +129,7 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::scene_tree
         ud.set2("Scene", std::string(scene_descriptor_json.dump()));
         std::srand(std::time(0));
         auto json_key = zeno::format("GeneratedJson:{}", std::rand());
+        zeno::file_put_content("E:/fuck/Generated.json", ud.get2<std::string>("Scene"));
         output[json_key] = scene_descriptor;
     }
 
