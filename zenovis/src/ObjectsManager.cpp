@@ -36,7 +36,7 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filte
                 if (json["type"] == "static") {
                     staticSceneDescriptor = json;
                 }
-                else if (json["type"] == "json") {
+                else if (json["type"] == "dynamic") {
                     dynamicSceneDescriptor = json;
                 }
             }
@@ -52,7 +52,7 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filte
             scene_descriptor_json["BasicRenderInstances"].update(staticSceneDescriptor["BasicRenderInstances"]);
         }
         if (dynamicSceneDescriptor.empty() == false) {
-            scene_descriptor_json["DynamicRenderGroups"] = dynamicSceneDescriptor["StaticRenderGroups"];
+            scene_descriptor_json["DynamicRenderGroups"] = dynamicSceneDescriptor["DynamicRenderGroups"];
             scene_descriptor_json["BasicRenderInstances"].update(dynamicSceneDescriptor["BasicRenderInstances"]);
         }
         if (scene_descriptor_json.empty() == false) {
