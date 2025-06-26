@@ -34,8 +34,8 @@
 [submodule "projects/CUDA/projects/CUDA/zpc_jit"]
 	path = projects/CUDA/zpc_jit
 	url = https://github.com/zenustech/POC_zpc_jit.git
-[submodule "project/phmap"]
-	path = project/phmap
+[submodule "projects/phmap"]
+	path = projects/phmap
 	url = https://github.com/greg7mdp/parallel-hashmap.git
 [submodule "projects/ordered-map"]
 	path = projects/ordered-map
