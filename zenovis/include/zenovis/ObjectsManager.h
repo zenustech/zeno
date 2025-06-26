@@ -5,11 +5,13 @@
 #include <zeno/utils/PolymorphicMap.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/core/IObject.h>
+#include <tinygltf/json.hpp>
 #include <string>
 #include <memory>
 #include <map>
 
 namespace zenovis {
+using Json = nlohmann::json;
 
 struct ObjectsManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<std::map<
@@ -35,6 +37,11 @@ struct ObjectsManager : zeno::disable_copy {
     bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs, std::string& runtype);
 
     std::optional<zeno::IObject*> get(std::string nid);
+    std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filter(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs);
+    Json staticSceneTree;
+    Json staticSceneDescriptor;
+    Json dynamicSceneTree;
+    Json dynamicSceneDescriptor;
 };
 
 }
