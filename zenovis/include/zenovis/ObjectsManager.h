@@ -42,6 +42,13 @@ struct ObjectsManager : zeno::disable_copy {
     Json staticSceneDescriptor;
     Json dynamicSceneTree;
     Json dynamicSceneDescriptor;
+
+    std::string str_staticSceneTree;
+    std::string str_staticSceneDescriptor;
+    std::string str_dynamicSceneTree;
+    std::string str_dynamicSceneDescriptor;
+    void update_scene_tree(std::string_view str);
+    void update_scene_descriptor(std::string_view str);
 };
 
 }

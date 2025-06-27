@@ -12,6 +12,42 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
+void ObjectsManager::update_scene_tree(std::string_view json_str) {
+    if (json_str.empty()) {
+        return;
+    }
+    if (json_str == str_staticSceneTree || json_str == str_dynamicSceneTree) {
+        return;
+    }
+    Json json = Json::parse(json_str);
+    if (json["type"] == "static") {
+        staticSceneTree = json;
+        str_staticSceneTree = json_str;
+    }
+    else if (json["type"] == "dynamic") {
+        dynamicSceneTree = json;
+        str_dynamicSceneTree = json_str;
+    }
+}
+
+void ObjectsManager::update_scene_descriptor(std::string_view json_str) {
+    if (json_str.empty()) {
+        return;
+    }
+    if (json_str == str_staticSceneDescriptor || json_str == str_dynamicSceneDescriptor) {
+        return;
+    }
+    Json json = Json::parse(json_str);
+    if (json["type"] == "static") {
+        staticSceneDescriptor = json;
+        str_staticSceneDescriptor = json_str;
+    }
+    else if (json["type"] == "dynamic") {
+        dynamicSceneDescriptor = json;
+        str_dynamicSceneDescriptor = json_str;
+    }
+}
+
 std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filter(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
     std::map<std::string, std::shared_ptr<zeno::IObject>> output;
 
@@ -19,27 +55,11 @@ std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filte
         auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
         if (ResourceType == "SceneTree") {
             auto json_str = obj->userData().get2<std::string>("json", "");
-            if (json_str.size()) {
-                Json json = Json::parse(json_str);
-                if (json["type"] == "static") {
-                    staticSceneTree = json;
-                }
-                else if (json["type"] == "dynamic") {
-                    dynamicSceneTree = json;
-                }
-            }
+            update_scene_tree(json_str);
         }
         else if (ResourceType == "SceneDescriptor") {
             auto json_str = obj->userData().get2<std::string>("Scene", "");
-            if (json_str.size()) {
-                Json json = Json::parse(json_str);
-                if (json["type"] == "static") {
-                    staticSceneDescriptor = json;
-                }
-                else if (json["type"] == "dynamic") {
-                    dynamicSceneDescriptor = json;
-                }
-            }
+            update_scene_descriptor(json_str);
         }
         else {
             output[key] = obj;
