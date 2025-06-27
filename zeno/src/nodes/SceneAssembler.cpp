@@ -163,8 +163,8 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
     }
     std::shared_ptr<zeno::ListObject> to_layer_structure(bool use_static) {
-        std::string type = use_static ? "static" : "dynamic";;
-        bool flattened = false;
+        type = use_static ? "static" : "dynamic";
+        flattened = false;
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
         scene->arr.push_back(dict);
@@ -269,8 +269,8 @@ struct SceneObject : IObjectClone<SceneObject> {
     }
 
     std::shared_ptr<zeno::ListObject> to_flatten_structure(bool use_static) {
-        std::string type = use_static ? "static" : "dynamic";;
-        bool flattened = false;
+        type = use_static ? "static" : "dynamic";
+        flattened = false;
 //        zeno::log_info("to_flatten_structure root_name: {}", root_name);
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
