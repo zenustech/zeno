@@ -12,7 +12,7 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-void ObjectsManager::update_scene_tree(std::string_view json_str) {
+void ObjectsManager::update_scene_tree(const std::string& json_str) {
     if (json_str.empty()) {
         return;
     }
@@ -30,7 +30,7 @@ void ObjectsManager::update_scene_tree(std::string_view json_str) {
     }
 }
 
-void ObjectsManager::update_scene_descriptor(std::string_view json_str) {
+void ObjectsManager::update_scene_descriptor(const std::string& json_str) {
     if (json_str.empty()) {
         return;
     }
