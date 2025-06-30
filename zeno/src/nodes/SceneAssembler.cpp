@@ -49,6 +49,8 @@ struct SceneObject : IObjectClone<SceneObject> {
 
     std::shared_ptr<SceneObject> root_rename(std::string new_root_name, std::optional<glm::mat4> root_xform) {
         auto new_scene_obj = std::make_shared<SceneObject>();
+        new_scene_obj->type = this->type;
+        new_scene_obj->flattened = this->flattened;
 
         for (auto const &[path, stn]: scene_tree) {
             auto new_key = get_new_root_name(root_name, new_root_name, path);
@@ -163,8 +165,6 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
     }
     std::shared_ptr<zeno::ListObject> to_layer_structure(bool use_static) {
-        type = use_static ? "static" : "dynamic";
-        flattened = false;
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
         scene->arr.push_back(dict);
@@ -269,8 +269,6 @@ struct SceneObject : IObjectClone<SceneObject> {
     }
 
     std::shared_ptr<zeno::ListObject> to_flatten_structure(bool use_static) {
-        type = use_static ? "static" : "dynamic";
-        flattened = false;
 //        zeno::log_info("to_flatten_structure root_name: {}", root_name);
         auto scene = std::make_shared<zeno::ListObject>();
         auto dict = std::make_shared<PrimitiveObject>();
@@ -372,6 +370,14 @@ struct SceneObject : IObjectClone<SceneObject> {
             scene->arr.push_back(st);
         }
         return scene;
+    }
+    std::shared_ptr<zeno::ListObject> to_structure() {
+        if (flattened) {
+            return to_flatten_structure(type == "static");
+        }
+        else {
+            return to_layer_structure(type == "static");
+        }
     }
 };
 
@@ -599,7 +605,9 @@ struct FormSceneTree : zeno::INode {
             sceneTree->prim_list[abc_path] = prim;
         }
         get_local_matrix_map(scene_json->json, "", sceneTree);
-        auto scene = sceneTree->to_layer_structure(false);
+        sceneTree->type = get_input2<std::string>("type");
+        sceneTree->flattened = get_input2<bool>("flattened");
+        auto scene = sceneTree->to_structure();
         set_output2("scene", scene);
     }
 };
@@ -609,6 +617,8 @@ ZENDEFNODE( FormSceneTree, {
         "scene_info",
         "prim_list",
         {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
+        {"enum static dynamic", "type", "dynamic"},
+        {"bool", "flattened", "1"},
     },
     {
         {"scene"},
@@ -808,7 +818,7 @@ struct SceneRootRename : zeno::INode {
         auto new_scene_tree = scene_tree->root_rename(new_root_name, root_xform);
 //        zeno::log_info("SceneRootRename output root_name {}", new_scene_tree->root_name);
 
-        auto scene = new_scene_tree->to_layer_structure(false);
+        auto scene = new_scene_tree->to_structure();
         set_output2("scene", scene);
     }
 };
