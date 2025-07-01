@@ -5,92 +5,13 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/log.h>
 #include <set>
-#include "zeno/utils/fileio.h"
 
 namespace zenovis {
 
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-void ObjectsManager::update_scene_tree(const std::string& json_str) {
-    if (json_str.empty()) {
-        return;
-    }
-    if (json_str == str_staticSceneTree || json_str == str_dynamicSceneTree) {
-        return;
-    }
-    Json json = Json::parse(json_str);
-    if (json["type"] == "static") {
-        staticSceneTree = json;
-        str_staticSceneTree = json_str;
-    }
-    else if (json["type"] == "dynamic") {
-        dynamicSceneTree = json;
-        str_dynamicSceneTree = json_str;
-    }
-}
-
-void ObjectsManager::update_scene_descriptor(const std::string& json_str) {
-    if (json_str.empty()) {
-        return;
-    }
-    if (json_str == str_staticSceneDescriptor || json_str == str_dynamicSceneDescriptor) {
-        return;
-    }
-    Json json = Json::parse(json_str);
-    if (json["type"] == "static") {
-        staticSceneDescriptor = json;
-        str_staticSceneDescriptor = json_str;
-    }
-    else if (json["type"] == "dynamic") {
-        dynamicSceneDescriptor = json;
-        str_dynamicSceneDescriptor = json_str;
-    }
-}
-
-std::map<std::string, std::shared_ptr<zeno::IObject>> ObjectsManager::objs_filter(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
-    std::map<std::string, std::shared_ptr<zeno::IObject>> output;
-
-    for (auto const &[key, obj] : objs) {
-        auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
-        if (ResourceType == "SceneTree") {
-            auto json_str = obj->userData().get2<std::string>("json", "");
-            update_scene_tree(json_str);
-        }
-        else if (ResourceType == "SceneDescriptor") {
-            auto json_str = obj->userData().get2<std::string>("Scene", "");
-            update_scene_descriptor(json_str);
-        }
-        else {
-            output[key] = obj;
-        };
-    }
-    {
-        Json scene_descriptor_json;
-        if (staticSceneDescriptor.empty() == false) {
-            scene_descriptor_json["StaticRenderGroups"] = staticSceneDescriptor["StaticRenderGroups"];
-            scene_descriptor_json["BasicRenderInstances"].update(staticSceneDescriptor["BasicRenderInstances"]);
-        }
-        if (dynamicSceneDescriptor.empty() == false) {
-            scene_descriptor_json["DynamicRenderGroups"] = dynamicSceneDescriptor["DynamicRenderGroups"];
-            scene_descriptor_json["BasicRenderInstances"].update(dynamicSceneDescriptor["BasicRenderInstances"]);
-        }
-        if (scene_descriptor_json.empty() == false) {
-            auto scene_descriptor = std::make_shared<zeno::PrimitiveObject>();
-            auto &ud = scene_descriptor->userData();
-            ud.set2("ResourceType", std::string("SceneDescriptor"));
-            ud.set2("Scene", std::string(scene_descriptor_json.dump()));
-            std::srand(std::time(0));
-            auto json_key = zeno::format("GeneratedJson:{}", std::rand());
-//            zeno::file_put_content("E:/fuck/Generated.json", ud.get2<std::string>("Scene"));
-            output[json_key] = scene_descriptor;
-        }
-    }
-    return output;
-}
-
-bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs_, std::string& runtype) {
-    auto objs = objs_filter(objs_);
+bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs, std::string& runtype) {
     bool inserted = false;
     auto ins = objects.insertPass();
 

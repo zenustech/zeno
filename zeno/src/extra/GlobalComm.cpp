@@ -20,6 +20,7 @@
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/core/Session.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <tinygltf/json.hpp>
 
 #ifdef __linux__
     #include<unistd.h>
@@ -33,7 +34,7 @@ enum class ObjectType : int32_t {
 };
 
 namespace zeno {
-
+using Json = nlohmann::json;
 int secondLastColonIdx(const std::string& str) {
     int count = 0;
     for (int i = str.length() - 1; i >= 0; --i) {
@@ -829,6 +830,36 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
     std::lock_guard lck(m_mtx);
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
+        {
+            Json scene_descriptor_json;
+            for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
+                auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
+                if (ResourceType == "SceneDescriptor") {
+                    auto json_str = obj->userData().get2<std::string>("Scene", "");
+                    if (!json_str.empty()) {
+                        Json json = Json::parse(json_str);
+                        scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                        if (json.contains("StaticRenderGroups") && !json["StaticRenderGroups"].is_null()) {
+                            scene_descriptor_json["StaticRenderGroups"].update(json["StaticRenderGroups"]);
+                        }
+                        if (json.contains("DynamicRenderGroups") && !json["DynamicRenderGroups"].is_null()) {
+                            scene_descriptor_json["DynamicRenderGroups"].update(json["DynamicRenderGroups"]);
+                        }
+                    }
+                    obj->userData().set2("ResourceType", std::string("DeletedSceneDescriptor"));
+                }
+            }
+            if (scene_descriptor_json.empty() == false) {
+                auto scene_descriptor = std::make_shared<zeno::PrimitiveObject>();
+                auto &ud = scene_descriptor->userData();
+                ud.set2("ResourceType", std::string("SceneDescriptor"));
+                ud.set2("Scene", std::string(scene_descriptor_json.dump()));
+                std::srand(std::time(0));
+                auto json_key = zeno::format("GeneratedJson:{}", std::rand());
+    //            zeno::file_put_content("E:/fuck/Generated.json", ud.get2<std::string>("Scene"));
+                m_frames[frameIdx].view_objects.m_curr[json_key] = scene_descriptor;
+            }
+        }
         log_debug("dumping frame {}", frameid);
 
         if (frameid == beginFrameNumber && runtype == "LoadAsset") {
