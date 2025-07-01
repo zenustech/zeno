@@ -40,3 +40,6 @@
 [submodule "projects/ordered-map"]
 	path = projects/ordered-map
 	url = https://github.com/Tessil/ordered-map.git
+[submodule "projects/optix-toolkit"]
+	path = projects/optix-toolkit
+	url = https://github.com/NVIDIA/optix-toolkit.git
