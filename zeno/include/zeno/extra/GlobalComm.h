@@ -10,9 +10,10 @@
 #include <set>
 #include <functional>
 #include <filesystem>
+#include <tinygltf/json.hpp>
 
 namespace zeno {
-
+using Json = nlohmann::json;
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
 
@@ -40,6 +41,8 @@ struct GlobalComm {
 
     std::map<uintptr_t, std::tuple<bool, bool, bool>> sceneLoadedFlag;  //assetneedLoad, run, load
     bool assetsInitialized = false;
+    Json static_scene_descriptor;
+    Json dynamic_scene_descriptor;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);

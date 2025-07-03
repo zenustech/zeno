@@ -22,7 +22,6 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/string.h>
 #include <zeno/extra/SceneAssembler.h>
-#include <tinygltf/json.hpp>
 
 #ifdef __linux__
     #include<unistd.h>
@@ -36,7 +35,6 @@ enum class ObjectType : int32_t {
 };
 
 namespace zeno {
-using Json = nlohmann::json;
 int secondLastColonIdx(const std::string& str) {
     int count = 0;
     for (int i = str.length() - 1; i >= 0; --i) {
@@ -875,14 +873,28 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                 auto pattern = get_format(dynamic_json_key);
                 auto scene = get_scene_tree_from_list2(dynamic_list);
                 auto new_list = scene->to_structure();
+                auto count = new_list->arr.size();
+                auto sd = new_list->arr[count - 2];
+                auto json_str = sd->userData().get2<std::string>("Scene", "");
+                if (!json_str.empty()) {
+                    dynamic_scene_descriptor = Json::parse(json_str);
+                }
+                sd->userData().set2("ResourceType", std::string("DeletedSceneDescriptor"));
                 for (auto i = 0; i < new_list->arr.size(); i++) {
                     view_objects.m_curr[zeno::format(pattern, i)] = new_list->arr[i];
                 }
             }
-            if (static_json_key.size()) {
+            if (frameid == beginFrameNumber && runtype == "LoadAsset" && static_json_key.size() > 0) {
                 auto pattern = get_format(static_json_key);
                 auto scene = get_scene_tree_from_list2(static_list);
                 auto new_list = scene->to_structure();
+                auto count = new_list->arr.size();
+                auto sd = new_list->arr[count - 2];
+                auto json_str = sd->userData().get2<std::string>("Scene", "");
+                if (!json_str.empty()) {
+                    static_scene_descriptor = Json::parse(json_str);
+                }
+                sd->userData().set2("ResourceType", std::string("DeletedSceneDescriptor"));
                 for (auto i = 0; i < new_list->arr.size(); i++) {
                     view_objects.m_curr[zeno::format(pattern, i)] = new_list->arr[i];
                 }
@@ -891,21 +903,18 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
         }
         {
             Json scene_descriptor_json;
-            for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
-                auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
-                if (ResourceType == "SceneDescriptor") {
-                    auto json_str = obj->userData().get2<std::string>("Scene", "");
-                    if (!json_str.empty()) {
-                        Json json = Json::parse(json_str);
-                        scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
-                        if (json.contains("StaticRenderGroups") && !json["StaticRenderGroups"].is_null()) {
-                            scene_descriptor_json["StaticRenderGroups"].update(json["StaticRenderGroups"]);
-                        }
-                        if (json.contains("DynamicRenderGroups") && !json["DynamicRenderGroups"].is_null()) {
-                            scene_descriptor_json["DynamicRenderGroups"].update(json["DynamicRenderGroups"]);
-                        }
-                    }
-                    obj->userData().set2("ResourceType", std::string("DeletedSceneDescriptor"));
+            if (!static_scene_descriptor.is_null()) {
+                auto &json = static_scene_descriptor;
+                scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                if (json.contains("StaticRenderGroups") && !json["StaticRenderGroups"].is_null()) {
+                    scene_descriptor_json["StaticRenderGroups"].update(json["StaticRenderGroups"]);
+                }
+            }
+            if (!dynamic_scene_descriptor.is_null()) {
+                auto &json = dynamic_scene_descriptor;
+                scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                if (json.contains("DynamicRenderGroups") && !json["DynamicRenderGroups"].is_null()) {
+                    scene_descriptor_json["DynamicRenderGroups"].update(json["DynamicRenderGroups"]);
                 }
             }
             if (scene_descriptor_json.empty() == false) {
