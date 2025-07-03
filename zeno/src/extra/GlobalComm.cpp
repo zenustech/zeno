@@ -20,6 +20,8 @@
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/core/Session.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <zeno/utils/string.h>
+#include <zeno/extra/SceneAssembler.h>
 #include <tinygltf/json.hpp>
 
 #ifdef __linux__
@@ -596,7 +598,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     };
     const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
-            return nullptr;
+            return false;
 
         cachepath[0] = dir / "lightCameraObj.zencache";
         cachepath[1] = dir / "materialObj.zencache";
@@ -828,8 +830,65 @@ ZENO_API void GlobalComm::finishFrame() {
 
 ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool balways) {
     std::lock_guard lck(m_mtx);
+    auto get_format = [] (std::string const &key) -> std::string {
+        auto prefix = key.substr(0, key.find(":LIST")+5);
+        std::string count_str = key.substr(key.find(":LIST")+5);
+        auto postfix = count_str.substr(count_str.find(':'));
+        return prefix+"{}"+postfix;
+    };
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
+        {
+            std::string dynamic_json_key;
+            std::string dynamic_prefix;
+            std::string static_json_key;
+            std::string static_prefix;
+            for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
+                auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
+                if (ResourceType == "SceneTree") {
+                    Json json = Json::parse(obj->userData().get2<std::string>("json"));
+                    if (json["type"] == "dynamic") {
+                        dynamic_json_key = key;
+                        dynamic_prefix = key.substr(0, key.find(":LIST"));
+                    }
+                    else if (json["type"] == "static") {
+                        static_json_key = key;
+                        static_prefix = key.substr(0, key.find(":LIST"));
+                    }
+                }
+            }
+            ViewObjects view_objects;
+            auto dynamic_list = std::make_shared<ListObject>();
+            auto static_list = std::make_shared<ListObject>();
+            for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
+                if (zeno::starts_with(key, dynamic_prefix)) {
+                    dynamic_list->arr.push_back(obj);
+                }
+                else if (zeno::starts_with(key, static_prefix)) {
+                    static_list->arr.push_back(obj);
+                }
+                else {
+                    view_objects.m_curr[key] = obj;
+                }
+            }
+            if (dynamic_json_key.size()) {
+                auto pattern = get_format(dynamic_json_key);
+                auto scene = get_scene_tree_from_list2(dynamic_list);
+                auto new_list = scene->to_structure();
+                for (auto i = 0; i < new_list->arr.size(); i++) {
+                    view_objects.m_curr[zeno::format(pattern, i)] = new_list->arr[i];
+                }
+            }
+            if (static_json_key.size()) {
+                auto pattern = get_format(static_json_key);
+                auto scene = get_scene_tree_from_list2(static_list);
+                auto new_list = scene->to_structure();
+                for (auto i = 0; i < new_list->arr.size(); i++) {
+                    view_objects.m_curr[zeno::format(pattern, i)] = new_list->arr[i];
+                }
+            }
+            m_frames[frameIdx].view_objects = view_objects;
+        }
         {
             Json scene_descriptor_json;
             for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {

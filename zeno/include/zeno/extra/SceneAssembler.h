@@ -382,12 +382,17 @@ struct SceneObject : IObjectClone<SceneObject> {
 
 static std::shared_ptr <SceneObject> get_scene_tree_from_list2(std::shared_ptr <ListObject> list_obj) {
     auto scene_tree = std::make_shared<SceneObject>();
-    auto json_obj = std::static_pointer_cast<PrimitiveObject>(list_obj->arr.back());
-    scene_tree->from_json(json_obj->userData().get2<std::string>("json"));
-    for (auto i = 0; i < list_obj->arr.size() - 1; i++) {
-        auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
-        auto object_name = prim->userData().get2<std::string>("ObjectName");
-        scene_tree->prim_list[object_name] = prim;
+    for (auto i = 0; i < list_obj->arr.size(); i++) {
+        auto &ud = list_obj->arr[i]->userData();
+        auto resource_type = ud.get2("ResourceType", std::string("None"));
+        if (resource_type == "SceneTree") {
+            scene_tree->from_json(ud.get2<std::string>("json"));
+        }
+        else if (resource_type == "Mesh") {
+            auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
+            auto object_name = ud.get2<std::string>("ObjectName");
+            scene_tree->prim_list[object_name] = prim;
+        }
     }
     return scene_tree;
 }
