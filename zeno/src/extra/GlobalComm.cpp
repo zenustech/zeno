@@ -859,10 +859,10 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
             auto dynamic_list = std::make_shared<ListObject>();
             auto static_list = std::make_shared<ListObject>();
             for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
-                if (zeno::starts_with(key, dynamic_prefix)) {
+                if (dynamic_prefix.size() > 0 && zeno::starts_with(key, dynamic_prefix)) {
                     dynamic_list->arr.push_back(obj);
                 }
-                else if (zeno::starts_with(key, static_prefix)) {
+                else if (static_prefix.size() > 0 && zeno::starts_with(key, static_prefix)) {
                     static_list->arr.push_back(obj);
                 }
                 else {
