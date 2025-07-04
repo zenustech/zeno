@@ -540,61 +540,6 @@ ZENDEFNODE( RenderScene, {
 });
 
 
-struct RenderStaticScene : zeno::INode {
-    std::shared_ptr<ListObject> m_static_scene = nullptr;
-    void apply() override {
-        if (!m_static_scene) {
-            auto static_scene_tree = get_scene_tree_from_list(get_input2<ListObject>("scene"));
-            auto new_static_scene_tree = static_scene_tree->root_rename("SRG", std::nullopt);
-            auto static_scene = get_input2<bool>("flatten_scene")? new_static_scene_tree->to_flatten_structure(true) : new_static_scene_tree->to_layer_structure(true);
-            m_static_scene = static_scene;
-            set_output2("scene", static_scene);
-        }
-        else {
-            set_output2("scene", std::make_shared<ListObject>());
-        }
-    }
-};
-
-ZENDEFNODE( RenderStaticScene, {
-    {
-        "scene",
-        {"bool", "flatten_scene", "1"},
-    },
-    {
-        {"scene"},
-    },
-    {},
-    {
-        "Scene",
-    },
-});
-
-struct RenderDynamicScene : zeno::INode {
-    void apply() override {
-        auto dynamic_scene_tree = get_scene_tree_from_list(get_input2<ListObject>("scene"));
-        auto new_dynamic_scene_tree = dynamic_scene_tree->root_rename("DRG", std::nullopt);
-        auto dynamic_scene = get_input2<bool>("flatten_scene")? new_dynamic_scene_tree->to_flatten_structure(false) : new_dynamic_scene_tree->to_layer_structure(false);
-        set_output2("scene", dynamic_scene);
-    }
-};
-
-ZENDEFNODE( RenderDynamicScene, {
-    {
-        "scene",
-        {"bool", "flatten_scene", "1"},
-    },
-    {
-        {"scene"},
-    },
-    {},
-    {
-        "Scene",
-    },
-});
-
-
-
 struct MakeXform : zeno::INode {
     void apply() override {
         auto translate = get_input2<vec3f>("translate");
