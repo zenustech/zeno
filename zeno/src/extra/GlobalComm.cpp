@@ -21,6 +21,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/string.h>
+#include <zeno/utils/CppTimer.h>
 #include <zeno/extra/SceneAssembler.h>
 
 #ifdef __linux__
@@ -844,7 +845,11 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
             for (auto &[key, obj]: m_frames[frameIdx].view_objects.m_curr) {
                 auto ResourceType = obj->userData().get2("ResourceType", std::string(""));
                 if (ResourceType == "SceneTree") {
-                    Json json = Json::parse(obj->userData().get2<std::string>("json"));
+                    auto scene_tree = obj->userData().get2<std::string>("json");
+                    if (scene_tree == static_scene_tree) {
+                        continue;
+                    }
+                    Json json = Json::parse(scene_tree);
                     if (json["type"] == "dynamic") {
                         dynamic_json_key = key;
                         dynamic_prefix = key.substr(0, key.find(":LIST"));
@@ -852,6 +857,7 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                     else if (json["type"] == "static") {
                         static_json_key = key;
                         static_prefix = key.substr(0, key.find(":LIST"));
+                        static_scene_tree = scene_tree;
                     }
                 }
             }

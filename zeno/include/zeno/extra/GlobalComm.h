@@ -41,6 +41,7 @@ struct GlobalComm {
 
     std::map<uintptr_t, std::tuple<bool, bool, bool>> sceneLoadedFlag;  //assetneedLoad, run, load
     bool assetsInitialized = false;
+    std::string static_scene_tree;
     Json static_scene_descriptor;
     Json dynamic_scene_descriptor;
 
