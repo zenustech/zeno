@@ -2,7 +2,9 @@
 
 #include <QtWidgets>
 #include <QAbstractItemModel>
+#include <tinygltf/json.hpp>
 
+using Json = nlohmann::json;
 class OutlineItemModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -38,6 +40,10 @@ private:
     };
     
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
+    void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name);
+    std::string static_scene_tree_str;
+    Json static_scene_tree;
+    Json dynamic_scene_tree;
 };
 
 class zenooutline : public QWidget

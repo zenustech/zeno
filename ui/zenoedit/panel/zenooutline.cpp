@@ -19,12 +19,20 @@ OutlineItemModel::~OutlineItemModel()
 {
 }
 
+void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name) {
+    auto sub_node = item->addChild(QString::fromStdString(name));
+    for (auto &value: json[name]["children"]) {
+        set_child_node(json, sub_node, std::string(value));
+    }
+};
 // 修改setupModelData
 void OutlineItemModel::setupModelData()
 {
     beginResetModel();
     
     rootItem = std::make_unique<OutlineItem>();  // 重置rootItem
+    auto* staticSceneItem = rootItem->addChild("StaticScene");
+    auto* dynamicSceneItem = rootItem->addChild("DynamicScene");
     auto* meshItem = rootItem->addChild("Mesh");
     auto* matrixItem = rootItem->addChild("Matrixes");
     auto* sceneDescItem = rootItem->addChild("SceneDescriptor");
@@ -52,6 +60,19 @@ void OutlineItemModel::setupModelData()
                                         if (obj->userData().has<std::string>("Scene")) {
                                             auto sd_str = obj->userData().get2<std::string>("Scene");
                                             sd_json = Json::parse(sd_str);
+                                        }
+                                    } else if (ud.get2<std::string>("ResourceType", "none") == "SceneTree") {
+                                        auto scene_tree = obj->userData().get2<std::string>("json");
+                                        if (scene_tree == static_scene_tree_str) {
+                                            continue;
+                                        }
+                                        Json json = Json::parse(scene_tree);
+                                        if (json["type"] == "dynamic") {
+                                            dynamic_scene_tree = json;
+                                        }
+                                        else if (json["type"] == "static") {
+                                            static_scene_tree = json;
+                                            static_scene_tree_str = scene_tree;
                                         }
                                     } else {
                                         othersItem->addChild(QString::fromStdString(object_name));
@@ -99,10 +120,17 @@ void OutlineItemModel::setupModelData()
                         }
                     }
                 }
-                rootItem->children[0]->name = QString::fromStdString("Mesh:" + std::to_string(meshItem->children.size()));
-                rootItem->children[1]->name = QString::fromStdString("Matrixes:" + std::to_string(matrixItem->children.size()));
-                rootItem->children[2]->name = QString::fromStdString("SceneDescriptor");
-                rootItem->children[3]->name = QString::fromStdString("Others:" + std::to_string(othersItem->children.size()));
+                if (!static_scene_tree.empty()) {
+                    std::string root_name = static_scene_tree["root_name"];
+                    set_child_node(static_scene_tree["scene_tree"], staticSceneItem, root_name);
+                }
+                if (!dynamic_scene_tree.empty()) {
+                    std::string root_name = dynamic_scene_tree["root_name"];
+                    set_child_node(dynamic_scene_tree["scene_tree"], dynamicSceneItem, root_name);
+                }
+                rootItem->children[2]->name = QString::fromStdString("Mesh:" + std::to_string(meshItem->children.size()));
+                rootItem->children[3]->name = QString::fromStdString("Matrixes:" + std::to_string(matrixItem->children.size()));
+                rootItem->children[5]->name = QString::fromStdString("Others:" + std::to_string(othersItem->children.size()));
                 break;
             }
         }
@@ -185,8 +213,6 @@ void zenooutline::setupTreeView()
     layout->addWidget(m_treeView);
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
-    
-    m_treeView->expandAll();
 
     connect(m_treeView, &QTreeView::clicked, this, [this](const QModelIndex &index) {
         if (index.isValid() == false) {
@@ -202,7 +228,7 @@ void zenooutline::setupTreeView()
         if (index.isValid() == false) {
             return;
         }
-        QVariant data = m_model->data(index, Qt::DisplayRole);
+        QVariant data = m_model->data(index, Qt::DisgitplayRole);
         auto object_name = data.toString().toStdString();
         auto parent = index.parent();
         if (!parent.isValid()) {
@@ -228,7 +254,6 @@ void zenooutline::setupTreeView()
                 if (auto vis = view->getZenoVis()) {
                     connect(vis, &Zenovis::objectsUpdated, this, [=](int frame) {
                         m_model->setupModelData();
-                        m_treeView->expandAll();
                     });
                     break;
                 }
