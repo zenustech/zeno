@@ -1175,6 +1175,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 #endif
     Scene *scene;
 
+    std::unordered_map<std::string, std::vector<OptixUtil::TexKey>> shader_tex_stat;
 
     bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
@@ -1524,11 +1525,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 for(auto const &[matkey, mtldet] : matMap) {
                     if (required_shader_names.count( mtldet->mtlidkey ) > 0) 
                     {
+                        std::vector<OptixUtil::TexKey> value;
                         for(auto& tex: mtldet->tex2Ds) {
-                            realNeedTexPaths.insert( {tex->path, tex->blockCompression} );
+                            value.push_back( {tex->path, tex->blockCompression} );
                         }
+                        shader_tex_stat[matkey] = value;
                     }
-                    
+                }
+                for (auto const&[_, tex2d]: shader_tex_stat) {
+                    realNeedTexPaths.insert(tex2d.begin(), tex2d.end());
                 }
                 // add light map
                 for(auto const &[_, ld]: xinxinoptix::get_lightdats()) {
@@ -1551,7 +1556,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     needToRemoveTexPaths.emplace_back(key);
                 }
                 for (const auto& need_remove_tex: needToRemoveTexPaths) {
-//                    OptixUtil::removeTexture(need_remove_tex);
+                    OptixUtil::removeTexture(need_remove_tex);
                 }
                 for (const auto& realNeedTexKey: realNeedTexPaths) {
                     OptixUtil::addTexture(realNeedTexKey.path, realNeedTexKey.blockCompression);
