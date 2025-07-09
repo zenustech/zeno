@@ -228,7 +228,7 @@ void zenooutline::setupTreeView()
         if (index.isValid() == false) {
             return;
         }
-        QVariant data = m_model->data(index, Qt::DisgitplayRole);
+        QVariant data = m_model->data(index, Qt::DisplayRole);
         auto object_name = data.toString().toStdString();
         auto parent = index.parent();
         if (!parent.isValid()) {
