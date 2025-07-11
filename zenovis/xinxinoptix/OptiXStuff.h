@@ -171,6 +171,7 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
     pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_USER;
     //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
     pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+    pipeline_compile_options.allowOpacityMicromaps = true;
 
     OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
@@ -361,15 +362,14 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
-        desc.miss.entryFunctionName = nullptr;
+        desc.miss.module            = _module;
+        desc.miss.entryFunctionName = "__miss__occlusion";
         sizeof_log                  = sizeof( log );
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
                     &program_group_options,
-                    log,
-                    &sizeof_log,
+                    log, &sizeof_log,
                     &occlusion_miss_group.reset()
                     ) );
     }
@@ -431,6 +431,7 @@ struct cuTexture{
     cudaArray_t gpuImageArray = nullptr;
     cudaTextureObject_t texture = 0llu;
 
+    uint8_t channel;
     uint32_t width, height;
     float average = 0.0f;
 
@@ -456,8 +457,6 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
 
     return loadPPMTexture( ppm_filename, make_float3(1,1,1), nullptr );
 }
-
-
 
 inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc, bool blockCompression)
 {
@@ -556,9 +555,16 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     }
 
     texture->blockCompression = blockCompression;
+    texture->channel = nc;
     return texture;
 
 }
+
+inline std::shared_ptr<cuTexture> makeFallbackAlphaTexture() {
+    std::vector<uint8_t> img(4, 255);
+    return makeCudaTexture(img.data(), 2, 2, 1, false);
+}
+
 inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
@@ -613,6 +619,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
         texture->gpuImageArray = nullptr;
         return 0;
     }
+    texture->channel = nc;
     return texture;
 }
 

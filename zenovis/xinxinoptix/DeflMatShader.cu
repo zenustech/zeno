@@ -40,7 +40,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto dc_index = rt_data->dc_index;
 
     auto prd = getPRD<ShadowPRD>();
-    if (rt_data->opacity == 1.0f) {
+    
+    bool opaque = rt_data->opacity == +1.0f;
+    bool useomm = rt_data->opacity == -1.0f;
+    
+    if (opaque || (useomm && prd->depth>1) ) {
         prd->attanuation = {};
         optixTerminateRay();
         return;
@@ -799,6 +803,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     ShadowPRD shadowPRD {};
     shadowPRD.seed = prd->seed;
+    shadowPRD.depth = prd->depth;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 

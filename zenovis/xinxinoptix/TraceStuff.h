@@ -51,10 +51,12 @@ struct ShadowPRD {
     bool test_distance;
     float maxDistance;
     uint32_t lightIdx = UINT_MAX;
-
+    
     float3 origin;
     uint32_t seed;
     float3 attanuation;
+    
+    uint8_t depth;
     uint8_t nonThinTransHit;
 
     VolumePRD vol;
@@ -207,6 +209,31 @@ static __forceinline__ __device__ void traceRadiance(
             u0, u1);
 }
 
+static __forceinline__ __device__ bool traceShadowCheap(
+        OptixTraversableHandle handle,
+        float3                 ray_origin,
+        float3                 ray_direction,
+        float                  tmin,
+        float                  tmax,
+        void                   *prd,
+        OptixVisibilityMask    mask=255u) 
+{
+    unsigned int u0, u1;
+    packPointer( prd, u0, u1 );
+
+    optixTraverse(handle,
+            ray_origin, ray_direction,
+            tmin, tmax,
+            0.0f,  // rayTime
+            (mask),
+            OPTIX_RAY_FLAG_FORCE_OPACITY_MICROMAP_2_STATE,
+            RAY_TYPE_RADIANCE,      // SBT offset
+            RAY_TYPE_COUNT,          // SBT stride
+            RAY_TYPE_RADIANCE,      // missSBTIndex
+            u0, u1);
+    
+    return !optixHitObjectIsMiss() ;   
+}
 
 static __forceinline__ __device__ void traceOcclusion(
         OptixTraversableHandle handle,

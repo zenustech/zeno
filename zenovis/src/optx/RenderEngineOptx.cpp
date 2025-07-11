@@ -1678,7 +1678,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     timer.tock("Texture unload");
                 }
 
-
             if (matNeedUpdate)
             {
                 unsigned int usesPrimitiveTypeFlags = 0u;

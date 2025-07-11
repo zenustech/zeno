@@ -166,7 +166,7 @@ namespace xinxinoptix {
     } 
 
     inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint16_t>& mat_idx, uint16_t sbt_count,
-                                raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size)
+                                raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size, OptixBuildInputOpacityMicromap* inputOMM=nullptr)
     {
         if (vertices.empty()) { return; }
 
@@ -209,14 +209,16 @@ namespace xinxinoptix {
         triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
         triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint16_t );
         triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint16_t );
-        
+        if (inputOMM != nullptr) {
+            triangle_input.triangleArray.opacityMicromap = *inputOMM;
+        }
         triangle_input.triangleArray.indexBuffer                 = didx;
         triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
         triangle_input.triangleArray.indexStrideInBytes          = sizeof(uint)*3;
         triangle_input.triangleArray.numIndexTriplets            = indices.size();
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+        accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_DISABLE_OPACITY_MICROMAPS | OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
         accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
         buildXAS(context, accel_options, triangle_input, _bufferXAS_, _handleXAS_, extra_size);

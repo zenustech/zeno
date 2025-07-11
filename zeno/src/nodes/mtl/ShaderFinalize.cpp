@@ -138,14 +138,15 @@ struct ShaderFinalize : INode {
         mtl->mtlidkey = get_input2<std::string>("mtlid");
         mtl->frag = std::move(code);
 
+        nlohmann::json j;
         if (has_input2<float>("opacity")) {
             auto opacity = get_input2<float>("opacity"); // It's actually transparency not opacity
             opacity = max(0.0f, 1.0f - opacity);
-            
-            nlohmann::json j;
             j["opacity"] = opacity;
-            mtl->parameters = j.dump();
+        } else {
+            j["opacity"] = em.ommJson; 
         }
+        mtl->parameters = j.dump();
 
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();

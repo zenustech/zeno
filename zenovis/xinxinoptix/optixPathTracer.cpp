@@ -491,9 +491,13 @@ static void createSBT( PathTracerState& state )
             HitGroupRecord rec = {};
             if (!shader_ref.parameters.empty()) {
                 auto j = nlohmann::json::parse(shader_ref.parameters);
-
-                if (!j["opacity"].is_null()) {
-                    rec.data.opacity = j["opacity"];
+                auto& jopacity = j["opacity"];
+                if (!jopacity.is_null()) {
+                    if(jopacity.is_number_float()) {
+                        rec.data.opacity = jopacity;
+                    } else if(!jopacity.is_primitive()) {
+                        rec.data.opacity = -1;
+                    }
                 } else {
                     rec.data.opacity = FLT_MAX;
                 }

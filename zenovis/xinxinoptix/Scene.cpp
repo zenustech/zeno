@@ -2,6 +2,8 @@
 #include "TypeCaster.h"
 #include "optix_types.h"
 
+#include "magic_enum.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,7 +50,6 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
             mesh = std::make_shared<MeshObject>();
         }
         mesh->dirty = true;
-
         auto& clrAttr = dat.getAttr("clr");
         const auto has_clr = !clrAttr.empty();
 
@@ -57,6 +58,28 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
         const auto has_uv = !uvAttr.empty();
 
         mesh->resize(dat.tris.size()/3, dat.verts.size()/3, has_clr, has_uv);
+
+        std::map<uint16_t, zeno::OpacityMicroMapConfig> omm_binding_cfgs {};
+
+        auto load_omm_cfg = [&omm_binding_cfgs](uint16_t shader_idx) {
+
+            auto& shader_ref = OptixUtil::rtMaterialShaders[shader_idx];
+            if (shader_ref.parameters == "") return;
+            auto json = nlohmann::json::parse(shader_ref.parameters);
+            auto& jopacity = json["opacity"];
+            if ( jopacity.is_null() || jopacity.is_primitive() ) return; 
+
+            nlohmann::json& ommj = jopacity;
+            zeno::OpacityMicroMapConfig cfg; 
+            cfg.path = ommj["path"];
+            cfg.transparencyCutoff = ommj["transparencyCutoff"];
+            cfg.opacityCutoff = ommj["transparencyCutoff"];
+            using ommc = zeno::OpacityMicroMapConfig;
+            cfg.alphaMode = magic_enum::enum_cast<ommc::AlphaMode>( ommj["alphaMode"].template get<std::string>() ).value_or(ommc::AlphaMode::Auto);
+            cfg.outMode = magic_enum::enum_cast<ommc::OutMode>( ommj["outMode"].template get<std::string>() ).value_or(ommc::OutMode::opacity);   
+            
+            omm_binding_cfgs[shader_idx] = cfg;
+        };
 
         if (dat.mtlidList.size()>1) {
 
@@ -68,7 +91,10 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
                 const auto& matName = dat.mtlidList[j];
                 const auto matKey = std::tuple { matName, ShaderMark::Mesh };
                 auto it = shader_indice_table.find(matKey);
-                global_matidx[j] = it != shader_indice_table.end() ? it->second : 0;
+                auto pick = it!=shader_indice_table.end() ? it->second : 0;
+                global_matidx[j] = pick;
+
+                load_omm_cfg(pick);
             }
 
             for (size_t i=0; i<dat.tris.size()/3; ++i) {
@@ -86,6 +112,7 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
                 auto idx = it->second;
                 mesh->mat_idx[0] = idx;
             }
+            load_omm_cfg(mesh->mat_idx[0]);
         }
         
         memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
@@ -105,12 +132,17 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
             mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
         });
 
-        dirtyTasks[name] = [&](OptixDeviceContext& context){
+        for (auto& [k, v] : omm_binding_cfgs) {
+            OptixUtil::addTexture(v.path);
+            auto tex = OptixUtil::getTexturePtr(v.path);
+            v.reference = tex->texture;
+        }
+
+        dirtyTasks[name] = [&, omm_cfgs=omm_binding_cfgs](OptixDeviceContext& context){
             if (nullptr == mesh || mesh->vertices.empty()) return 0ull;
 
             mesh->dirty = false;
-            mesh->buildGas(context, sbt_count);
-
+            mesh->buildGas(context, sbt_count, omm_cfgs);
             return mesh->node->handle;
         };
 

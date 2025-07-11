@@ -371,4 +371,53 @@ ZENDEFNODE(SmartTexture2D, {
     },
 });
 
+struct OpacityMicroMap : ShaderNodeClone<OpacityMicroMap> {
+
+    virtual int determineType(EmissionPass *em) override {
+        return TypeHint.at("float");
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto texId = em->tex2Ds.size();
+        auto texObject = std::make_shared<zeno::Texture2DObject>();
+        
+        auto path = get_input2<std::string>("path", "");
+        texObject->path = path;
+        em->tex2Ds.push_back(texObject);
+
+        std::string code = "texture2D<float,float>(zenotex[{}], vec2({}))";
+        auto outMode = get_input2<std::string>("outMode", "");
+        if (outMode != "opacity") {
+            code = "1.0f-" + code;
+        }
+        std::string coord = "att_uv";
+        em->emitCode(zeno::format(code, texId, coord));
+
+        nlohmann::json ommj;
+        ommj["path"] = path;
+        ommj["transparencyCutoff"] = get_input2<float>("transparencyCutoff");
+        ommj["opacityCutoff"] = get_input2<float>("opacityCutoff");
+        ommj["alphaMode"] = get_input2<std::string>("alphaMode");
+        ommj["outMode"] = get_input2<std::string>("outMode");
+        em->ommJson = ommj;
+    }
+};
+
+ZENDEFNODE(OpacityMicroMap, {
+    {
+        {"readpath", "path"},
+        {"enum Auto RGB Max", "alphaMode", "Auto"},
+        {"float", "transparencyCutoff", "0.89"},
+        {"float", "opacityCutoff", "0.99"},
+        {"enum opacity transparency", "outMode", "opacity"},
+    },
+    {
+        {"shader", "out"},
+    },
+    {},
+    {
+        "shader",
+    },
+});
+
 } // namespace zeno

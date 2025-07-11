@@ -575,6 +575,10 @@ extern "C" __global__ void __miss__radiance()
 
 extern "C" __global__ void __miss__occlusion()
 {
-    //setPayloadOcclusion( false );
+    auto flags = OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT; 
+    if (optixGetRayFlags() == flags){
+        ShadowPRD* prd = getPRD<ShadowPRD>();
+        prd->attanuation = vec3(1.0f);
+    }
 }
 
