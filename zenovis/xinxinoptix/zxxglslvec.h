@@ -94,6 +94,23 @@ struct vec3{
     __forceinline__ __device__ operator float3() const {
         return make_float3(x, y, z);
     }
+
+    inline vec3& operator*= (float in)
+    {
+        x = x * in;
+        y = y * in;
+        z = z * in;
+        return *this;    
+    }
+
+    inline vec3& operator+= (vec3 in)
+    {
+        x = x + in.x;
+        y = y + in.y;
+        z = z + in.z;
+        return *this;    
+    }
+
     __forceinline__ __device__ vec3 rotX(float a) {
         return vec3(x, cosf(a) * y - sinf(a) * z, sinf(a) * y + cosf(a) * z);
     }

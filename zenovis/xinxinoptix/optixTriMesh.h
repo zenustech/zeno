@@ -6,7 +6,7 @@
 #include <vector>
 #include "OptiXStuff.h"
 
-#include <OptiXToolkit/CuOmmBaking/CuBuffer.h>
+//#include <OptiXToolkit/CuOmmBaking/CuBuffer.h>
 #include <OptiXToolkit/CuOmmBaking/CuOmmBaking.h>
 
 // Check status returned by a CUDA call.
@@ -62,8 +62,8 @@ struct MeshObject {
     std::vector<float2> g_uv;
     std::vector<ushort3> g_clr, g_nrm, g_tan;
 
-template<typename T>
-using raii = xinxinoptix::raii<T>;
+template<class T, class E=uint8_t>
+using raii = xinxinoptix::raii<T, E>;
 
     raii<CUdeviceptr> d_uv, d_clr, d_nrm, d_tan;
     raii<CUdeviceptr> d_idx;
@@ -173,7 +173,7 @@ using raii = xinxinoptix::raii<T>;
         const std::map<uint16_t, zeno::OpacityMicroMapConfig>& binding_cfg_map) 
     {
         // Upload geometry data.
-        std::vector<uint32_t> tri_tex_idx;
+        std::vector<uint8_t> tri_tex_idx;
         tri_tex_idx.reserve(indices.size());
 
         auto fallback_cfg = zeno::OpacityMicroMapConfig();
@@ -186,7 +186,7 @@ using raii = xinxinoptix::raii<T>;
         tex_array.reserve(binding_cfg_map.size()+1);
         tex_array.push_back(fallback_tex->texture);
 
-        std::map<uint16_t, uint16_t> binding_to_tex_array_idx;
+        std::map<uint16_t, uint8_t> binding_to_tex_array_idx;
         
         for (auto& [binding, cfg] : binding_cfg_map) 
         {
@@ -215,13 +215,13 @@ using raii = xinxinoptix::raii<T>;
             }
         }
 
-        CuBuffer<uint3> d_geoIndices;
+        raii<CUdeviceptr, uint3> d_geoIndices;
         d_geoIndices.allocAndUpload(indices);
 
-        CuBuffer<float2> d_geoTexCoords;
+        raii<CUdeviceptr, float2> d_geoTexCoords;
         d_geoTexCoords.allocAndUpload(g_uv);
 
-        CuBuffer<uint32_t> textureIndexBuffer;
+        raii<CUdeviceptr, uint8_t> textureIndexBuffer;
         textureIndexBuffer.allocAndUpload(tri_tex_idx);
 
         // Bake the Opacity Micromap data.
@@ -260,17 +260,17 @@ using raii = xinxinoptix::raii<T>;
             bakeInput.numTextures = tex_array.size();
             bakeInput.textures = textures.data();
             bakeInput.textureIndexBuffer = textureIndexBuffer.get();
-            bakeInput.textureIndexFormat = cuOmmBaking::IndexFormat::I32_UINT;
+            bakeInput.textureIndexFormat = cuOmmBaking::IndexFormat::I8_UINT;
 
             check( cuOmmBaking::GetPreBakeInfo( &ommOptions, 1, &bakeInput, &bakeInputBuffers, &bakeBuffers ) );
         }
 
         // Allocate baking output buffers.
-        CuBuffer<>                                   d_ommOutput;
-        CuBuffer<OptixOpacityMicromapDesc>           d_ommDescs;
-        CuBuffer<OptixOpacityMicromapUsageCount>     d_usageCounts;
-        CuBuffer<OptixOpacityMicromapHistogramEntry> d_histogramEntries;
-        CuBuffer<>                                   d_temp;
+        raii<CUdeviceptr>                            d_temp;
+        raii<CUdeviceptr>                            d_ommOutput;
+        raii<CUdeviceptr, OptixOpacityMicromapDesc>           d_ommDescs;
+        raii<CUdeviceptr, OptixOpacityMicromapUsageCount>     d_usageCounts;
+        raii<CUdeviceptr, OptixOpacityMicromapHistogramEntry> d_histogramEntries;
 
         check( d_ommIndices.alloc( bakeInputBuffers.indexBufferSizeInBytes ) );
         check( d_usageCounts.alloc( bakeInputBuffers.numMicromapUsageCounts ) );
@@ -343,8 +343,8 @@ using raii = xinxinoptix::raii<T>;
         return opacityMicromap;
     }
 
-    CuBuffer<> d_ommArray;
-    CuBuffer<> d_ommIndices;
+    raii<CUdeviceptr> d_ommArray;
+    raii<CUdeviceptr> d_ommIndices;
 
     std::vector<OptixOpacityMicromapUsageCount> usageOMM;
     std::shared_ptr<OptixBuildInputOpacityMicromap> inputOMM;

@@ -430,16 +430,17 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
                     misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
             }
+                misWeight = misWeight / (lsr.PDF + 1e-4f);
 
                 float3 radianceNoShadow = emission * bxdf_value;
-                radianceNoShadow *= misWeight / (lsr.PDF + 1e-4f);
+                radianceNoShadow *= misWeight;
 
                 if (nullptr != RadianceWithoutShadow) {
                     *RadianceWithoutShadow = radianceNoShadow;
                 }
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
-                    auto tmp = light_attenuation * misWeight / (lsr.PDF + 1e-4f);
+                    auto tmp = light_attenuation * misWeight;
                     (*taskAux)(emission * tmp);
                 }// TypeAux
 

@@ -797,8 +797,6 @@ extern "C" __global__ void __closesthit__radiance()
     vec3 auxRadiance = {};
     auto taskAux = [&](const vec3& radiance) {
         auxRadiance = auxRadiance + radiance;
-        auxRadiance = auxRadiance + radiance;
-        auxRadiance = auxRadiance + radiance;
     };
 
     ShadowPRD shadowPRD {};
@@ -836,14 +834,15 @@ extern "C" __global__ void __closesthit__radiance()
     prd->lightmask = DefaultMatMask;
     shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
     if(prd->hit_type==DIFFUSE_HIT && prd->depth <=1 ) {
-        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        prd->radiance *= 0.25f;
-        prd->radiance_d *= auxRadiance * 0.25;
-        prd->radiance_s *= auxRadiance * 0.25;
-        prd->radiance_t *= auxRadiance * 0.25;
+        uint8_t diffuse_sample_count = 1;
+        for (auto i=0; i<diffuse_sample_count; ++i) {
+            DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        }
+        prd->radiance *= 1.0f/diffuse_sample_count;
+        auxRadiance   *= 1.0f/diffuse_sample_count;
+        prd->radiance_d *= auxRadiance;
+        prd->radiance_s *= auxRadiance;
+        prd->radiance_t *= auxRadiance;
     }
     else {
         DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
