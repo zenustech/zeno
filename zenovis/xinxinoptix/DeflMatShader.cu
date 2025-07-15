@@ -44,7 +44,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     bool opaque = rt_data->opacity == +1.0f;
     bool useomm = rt_data->opacity == -1.0f;
     
-    if (opaque || (useomm && prd->depth>1) ) {
+    auto skip = opaque;
+    if (useomm) {
+        skip |= prd->depth<=1 && rt_data->binaryShadowTestDirectRay;
+        skip |= prd->depth>=2 && rt_data->binaryShadowTestIndirectRay;
+    }
+    if ( skip ) {
         prd->attanuation = {};
         optixTerminateRay();
         return;

@@ -64,9 +64,9 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
         auto load_omm_cfg = [&omm_binding_cfgs](uint16_t shader_idx) {
 
             auto& shader_ref = OptixUtil::rtMaterialShaders[shader_idx];
-            if (shader_ref.parameters == "") return;
-            auto json = nlohmann::json::parse(shader_ref.parameters);
-            auto& jopacity = json["opacity"];
+            if (shader_ref.parameters.empty()) return;
+            auto& json = shader_ref.parameters;
+            auto& jopacity = json["omm"];
             if ( jopacity.is_null() || jopacity.is_primitive() ) return; 
 
             nlohmann::json& ommj = jopacity;
@@ -76,8 +76,7 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
             cfg.opacityCutoff = ommj["transparencyCutoff"];
             using ommc = zeno::OpacityMicroMapConfig;
             cfg.alphaMode = magic_enum::enum_cast<ommc::AlphaMode>( ommj["alphaMode"].template get<std::string>() ).value_or(ommc::AlphaMode::Auto);
-            cfg.outMode = magic_enum::enum_cast<ommc::OutMode>( ommj["outMode"].template get<std::string>() ).value_or(ommc::OutMode::opacity);   
-            
+
             omm_binding_cfgs[shader_idx] = cfg;
         };
 
@@ -136,6 +135,7 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
             OptixUtil::addTexture(v.path);
             auto tex = OptixUtil::getTexturePtr(v.path);
             v.reference = tex->texture;
+            dirtyTextures.insert( {v.path, false} );
         }
 
         dirtyTasks[name] = [&, omm_cfgs=omm_binding_cfgs](OptixDeviceContext& context){

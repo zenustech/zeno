@@ -490,16 +490,20 @@ static void createSBT( PathTracerState& state )
 
             HitGroupRecord rec = {};
             if (!shader_ref.parameters.empty()) {
-                auto j = nlohmann::json::parse(shader_ref.parameters);
-                auto& jopacity = j["opacity"];
-                if (!jopacity.is_null()) {
-                    if(jopacity.is_number_float()) {
-                        rec.data.opacity = jopacity;
-                    } else if(!jopacity.is_primitive()) {
-                        rec.data.opacity = -1;
-                    }
+
+                const auto& json = shader_ref.parameters;
+                auto& jopacity = json["opacity"];
+                if (!jopacity.is_null() && jopacity.is_number_float()) {
+                    rec.data.opacity = jopacity;
                 } else {
                     rec.data.opacity = FLT_MAX;
+                }
+
+                auto& jomm = json["omm"];
+                if(!jomm.is_null() && !jomm.is_primitive()) {
+                    rec.data.opacity = -1;
+                    rec.data.binaryShadowTestDirectRay   = jomm["binaryShadowTestDirectRay"].template get<bool>();
+                    rec.data.binaryShadowTestIndirectRay = jomm["binaryShadowTestIndirectRay"].template get<bool>();
                 }
             } else {
                 rec.data.opacity = FLT_MAX;
@@ -539,7 +543,7 @@ static void createSBT( PathTracerState& state )
             if (!shader_ref.parameters.empty())
             {
 
-                auto j = nlohmann::json::parse(shader_ref.parameters);
+                const auto& j = shader_ref.parameters;
 
                 if (!j["vol_depth"].is_null()) {
                     rec.data.vol_depth = j["vol_depth"];
@@ -1447,8 +1451,9 @@ OptixUtil::_compile_group.run([&shaders, i] () {
 
         rtShader.core = shaderCore;
         rtShader.callable = shaders[i]->callable;
-        rtShader.parameters = shaders[i]->parameters;
-        
+        if (shaders[i]->parameters != "") {
+            rtShader.parameters = nlohmann::json::parse(shaders[i]->parameters);
+        }
         auto macro = globalShaderBufferGroup.code(callable_string);
         rtShader.macros = macro;
 

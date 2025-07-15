@@ -266,6 +266,9 @@ struct HitGroupData
     float opacity = FLT_MAX;
     uint16_t vol_depth=999;
     float vol_extinction=1.0f;
+
+    bool binaryShadowTestDirectRay;
+    bool binaryShadowTestIndirectRay;
     
     bool equiangular  = false;
     bool multiscatter = false;

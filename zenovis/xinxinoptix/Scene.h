@@ -61,6 +61,7 @@ class Scene {
 private:
     phmap::parallel_flat_hash_map_m<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
     phmap::parallel_flat_hash_map_m<std::string, std::function<void(const std::string&)>>      cleanTasks;
+    std::set<OptixUtil::TexKey> dirtyTextures;
 
     phmap::parallel_flat_hash_map_m<std::string, ShaderMark>  geoTypeMap;
     phmap::parallel_flat_hash_map_m<std::string, glm::mat4> geoMatrixMap;
@@ -315,6 +316,16 @@ public:
             }
             dirtyTasks.clear();
         }
+        if (!dirtyTextures.empty()) {
+            for (auto& key : dirtyTextures) {
+                auto& ref = OptixUtil::tex_lut.at(key);
+                if (ref.use_count()==1) {
+                    OptixUtil::removeTexture(key);
+                }
+            }
+            dirtyTextures.clear();
+        }
+
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
         static const std::vector fallback_keys { "" };
 

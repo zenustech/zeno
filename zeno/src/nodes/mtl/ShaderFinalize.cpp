@@ -143,8 +143,6 @@ struct ShaderFinalize : INode {
             auto opacity = get_input2<float>("opacity"); // It's actually transparency not opacity
             opacity = max(0.0f, 1.0f - opacity);
             j["opacity"] = opacity;
-        } else {
-            j["opacity"] = em.ommJson; 
         }
         mtl->parameters = j.dump();
 

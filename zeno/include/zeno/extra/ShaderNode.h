@@ -98,7 +98,6 @@ struct EmissionPass {
     std::string commonCode;           /* other common codes written directly in GLSL, e.g. "void myutilfunc() {...}" */
     std::string extensionsCode;       /* OpenGL extensions, e.g. "#extension GL_EXT_gpu_shader4 : enable" */
     std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-    nlohmann::json ommJson;
 
     ZENO_API std::string typeNameOf(int type) const;
     ZENO_API std::string funcName(std::string const &fun) const;

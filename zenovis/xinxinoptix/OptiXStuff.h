@@ -53,6 +53,7 @@
 
 #include "BCX.h"
 #include "ies/ies.h"
+#include <tinygltf/json.hpp>
 
 #include "zeno/utils/fileio.h"
 #include "zeno/extra/TempNode.h"
@@ -990,6 +991,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     }
     cleanupTexture();
 }
+
 inline void removeTexture(const TexKey &key) {
 
     auto& path = key.path;
@@ -1116,7 +1118,7 @@ struct OptixShaderWrapper
     bool                                has_vdb {};
     std::vector<std::string>               vbds {};
 
-    std::string                       parameters{};
+    nlohmann::json                    parameters{};
     std::map<std::string, std::string>   macros {};
 
     OptixShaderWrapper() = default;

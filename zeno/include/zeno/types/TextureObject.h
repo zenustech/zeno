@@ -11,18 +11,13 @@ namespace zeno
         enum struct AlphaMode {
             Auto, RGB, Max, X, Y, Z, W
         };
-        enum struct OutMode {
-            opacity, transparency
-        };
 
         std::string path;
         uint64_t reference;
 
         float transparencyCutoff;
         float opacityCutoff;
-
         AlphaMode alphaMode;
-        OutMode     outMode;
     };
 
     struct Texture2DObject

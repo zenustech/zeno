@@ -719,8 +719,19 @@ struct GraphicsManager {
             {
                 const auto [stamp_base, stamp_change] = stamp_work(mtl->userData());
                 const auto dirty = stamp_change != "unchanged";
-                det = DetMaterial{mtl->tex2Ds, mtl->tex3Ds, mtl->common, mtl->frag, mtl->extensions, mtl->mtlidkey, mtl->parameters,
-                        stamp_base,  dirty};
+                
+                DetMaterial detm {}; 
+                detm.tex2Ds = mtl->tex2Ds; 
+                detm.tex3Ds = mtl->tex3Ds; 
+                detm.common = mtl->common; 
+                detm.shader = mtl->frag;
+                detm.extensions = mtl->extensions;
+                detm.mtlidkey = mtl->mtlidkey;
+                detm.parameters = mtl->parameters;
+                detm.stamp_base = stamp_base;
+                detm.dirty = dirty;
+                
+                det = std::move(detm);
             }
         }
 
