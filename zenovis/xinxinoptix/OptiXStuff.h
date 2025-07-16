@@ -569,28 +569,36 @@ inline std::shared_ptr<cuTexture> makeFallbackAlphaTexture() {
 inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
-    std::vector<float4> data;
-    data.resize(nx*ny);
-    for(int j=0;j<ny;j++)
-        for(int i=0;i<nx;i++)
-        {
-            size_t idx = j*nx + i;
-            data[idx] = {
-                    nc>=1?img[idx*nc + 0]:0,
-                    nc>=2?img[idx*nc + 1]:0,
-                    nc>=3?img[idx*nc + 2]:0,
-                    nc>=4?img[idx*nc + 3]:0,
-            };
+    auto channel = (nc==3) ? 4:nc;
+
+    std::vector<half> data(nx * ny * channel, 0);
+    if (nc == channel) {
+        for (size_t i=0; i<data.size(); ++i) {
+            data[i] = (Imath::half)img[i];
         }
-    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    } else {
+        auto count = nx * ny;
+        for (size_t i=0; i<count; ++i) {
+            size_t dst_idx = i * channel;
+            size_t src_idx = i * nc;
+
+            for (int c=0; c<nc; ++c)
+                data[dst_idx+c] = (Imath::half)img[src_idx+c];
+        }
+    }
+
+    std::vector<int> xyzw(4, 0);
+    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(Imath::half) * 8;}
+
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindFloat);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
     }
     rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
-                             nx * sizeof(float) * 4,
-                             nx * sizeof(float) * 4,
+                             nx * sizeof(Imath::half) * channel,
+                             nx * sizeof(Imath::half) * channel,
                              ny,
                              cudaMemcpyHostToDevice);
     if (rc != cudaSuccess) {
@@ -620,7 +628,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
         texture->gpuImageArray = nullptr;
         return 0;
     }
-    texture->channel = nc;
+    texture->channel = channel;
     return texture;
 }
 
