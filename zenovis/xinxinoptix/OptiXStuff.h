@@ -710,7 +710,7 @@ struct TexKeyHash
 };
 
 inline phmap::parallel_node_hash_map_m<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
-inline phmap::parallel_flat_hash_map_m<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
+inline phmap::parallel_flat_hash_map_m<TexKey, std::filesystem::file_time_type, TexKeyHash> g_tex_last_write_time;
 inline phmap::parallel_flat_hash_map_m<std::string, std::string> md5_path_mapping;
 
 inline std::optional<std::string> sky_tex;
@@ -816,10 +816,10 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
 
-        if (g_tex_last_write_time.count(path)) {
-            if (g_tex_last_write_time[path] == ftime) return;
+        if (g_tex_last_write_time.count(tex_key)) {
+            if (g_tex_last_write_time[tex_key] == ftime) return;
         } 
-        g_tex_last_write_time.insert( {path, ftime} );
+        g_tex_last_write_time.insert( {tex_key, ftime} );
 
     } else {
         zeno::log_info("file {} doesn't exist", path);
@@ -1004,7 +1004,7 @@ inline void removeTexture(const TexKey &key) {
 
     auto& path = key.path;
 
-    if (path.size()) {
+    if (!path.empty()) {
 
         if (tex_lut.count(key)) {
 
@@ -1014,7 +1014,7 @@ inline void removeTexture(const TexKey &key) {
         else {
             zeno::log_error("removeTexture: {} not exists!", path);
         }
-        g_tex_last_write_time.erase(path);
+        g_tex_last_write_time.erase(key);
     }
 }
 
