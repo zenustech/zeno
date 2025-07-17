@@ -139,27 +139,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
 
-    /* MODME */
-    auto basecolor = mats.basecolor;
-    auto metallic = mats.metallic;
-    auto roughness = mats.roughness;
-    auto subsurface = mats.subsurface;
-    auto specular = mats.specular;
-    auto specularTint = mats.specularTint;
-    auto anisotropic = mats.anisotropic;
-    auto sheen = mats.sheen;
-    auto sheenTint = mats.sheenTint;
-    auto clearcoat = mats.clearcoat;
     auto opacity = mats.opacity;
-    auto flatness = mats.flatness;
     auto specTrans = mats.specTrans;
-    auto scatterDistance = mats.scatterDistance;
     auto ior = mats.ior;
     auto thin = mats.thin;
-    auto doubleSide = mats.doubleSide;
-    auto sssParam = mats.sssParam;
-    auto scatterStep = mats.scatterStep;
-
 
     if(params.simpleRender==true)
         opacity = 0;
@@ -460,16 +443,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
 
-    if (prd->trace_denoise_albedo) {
+    if (params.denoise) {
 
         if(0.0f == mats.roughness) {
             prd->tmp_albedo = make_float3(1.0f);
         } else {
             prd->tmp_albedo = mats.basecolor;
         }
-    }
 
-    if (prd->trace_denoise_normal) {
         prd->tmp_normal = shadingNorm;
     }
 
@@ -478,15 +459,13 @@ extern "C" __global__ void __closesthit__radiance()
     mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
-
-    if(prd->diffDepth>=1)
-        mats.roughness = clamp(mats.roughness, 0.2,0.99);
-    if(prd->diffDepth>=2)
-        mats.roughness = clamp(mats.roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         mats.roughness = clamp(mats.roughness, 0.5,0.99);
+    else if(prd->diffDepth>=2)
+        mats.roughness = clamp(mats.roughness, 0.3,0.99);
+    else if(prd->diffDepth>=1)
+        mats.roughness = clamp(mats.roughness, 0.2,0.99);
 
-    
     if(prd->isSS == true) {
         mats.basecolor = vec3(1.0f);
         mats.roughness = 1.0f;
@@ -496,7 +475,6 @@ extern "C" __global__ void __closesthit__radiance()
         mats.specTrans = 0.0f;
         mats.ior = 1.0f;
         if(mats.subsurface==0.0f){
-            prd->passed = true;
             prd->samplePdf = 1.0f;
             prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
             prd->readMat(prd->sigma_t, prd->ss_alpha);
@@ -519,8 +497,6 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
-    prd->prob2 = prd->prob;
-    prd->passed = false;
 
     if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
     {
@@ -535,13 +511,10 @@ extern "C" __global__ void __closesthit__radiance()
           }
         }
         prd->attenuation2 = prd->attenuation;
-        prd->passed = true;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
         prd->_tmin_ = optixGetRayTmax();
-        prd->alphaHit = true;
 
-        prd->prob *= 1;
         prd->countEmitted = false;
         return;
     }
@@ -626,8 +599,7 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->depth>=3 && prd->hit_type==DIFFUSE_HIT)
         prd->done = true;
 
-
-    prd->passed = false;
+    
     bool inToOut = false;
     bool outToIn = false;
 
@@ -875,7 +847,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += mats.emission;
-    if(length(mats.emission)>0)
+    if(lengthSquared(mats.emission)>0)
     {
       prd->done = true;
     }

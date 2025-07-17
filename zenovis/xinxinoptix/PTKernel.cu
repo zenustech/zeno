@@ -232,13 +232,10 @@ extern "C" __global__ void __raygen__rg()
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
         prd.attenuation2 = make_float3(1.f);
-        prd.prob         = 1.0f;
-        prd.prob2        = 1.0f;
         prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;
         prd.eventseed    = eventseed;
-        prd.flags        = 0;
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
@@ -269,7 +266,6 @@ extern "C" __global__ void __raygen__rg()
 
         // Primary Ray
         unsigned char background_trace = 0;
-        prd.alphaHit = false;
 
         if (subframe_index == 0) {
             RadiancePRD testPRD {};
@@ -307,8 +303,10 @@ extern "C" __global__ void __raygen__rg()
             result_t = prd.radiance_t * prd.attenuation2;
         }
 
-        tmp_albedo = prd.tmp_albedo;
-        tmp_normal = prd.tmp_normal;
+        if (params.denoise) {
+            tmp_albedo = prd.tmp_albedo;
+            tmp_normal = prd.tmp_normal;
+        }
 
         prd.trace_denoise_albedo = false;
         prd.trace_denoise_normal = false;
@@ -356,14 +354,10 @@ extern "C" __global__ void __raygen__rg()
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
             }
-            if(prd.countEmitted == true)
-                prd.passed = true;
-
 
             prd.radiance_d = make_float3(0);
             prd.radiance_s = make_float3(0);
             prd.radiance_t = make_float3(0);
-            prd.alphaHit = false;
             prd._tmin_ = 0;
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
 
@@ -456,7 +450,6 @@ extern "C" __global__ void __miss__radiance()
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
     prd->attenuation2 = prd->attenuation;
-    prd->passed = false;
     prd->countEmitted = false;
     
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){

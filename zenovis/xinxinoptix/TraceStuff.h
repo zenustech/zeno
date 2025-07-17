@@ -21,6 +21,7 @@
 #define DIFFUSE_HIT 1
 #define SPECULAR_HIT 2
 #define TRANSMIT_HIT 3
+
 static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned int i1 )
 {
     const unsigned long long uptr = static_cast<unsigned long long>( i0 ) << 32 | i1;
@@ -85,12 +86,9 @@ struct RadiancePRD
     float3       direction;
     
     float        minSpecRough;
-    bool         passed;
-    float        prob;
-    float        prob2;
+
     unsigned int seed;
     unsigned int eventseed;
-    unsigned int flags;
     int          countEmitted;
     int          done;
 
@@ -107,7 +105,6 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
-    bool         alphaHit;
     vec3         mask_value;
     unsigned char max_depth;
 
