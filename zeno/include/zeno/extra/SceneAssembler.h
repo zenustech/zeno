@@ -124,11 +124,15 @@ struct SceneObject : IObjectClone<SceneObject> {
 
     void from_json(std::string const &json_str) {
         Json json = Json::parse(json_str);
+        from_json(json);
+    }
+    void from_json(Json const &json) {
         root_name = json["root_name"];
         type = json["type"];
         flattened = json["flattened"];
         {
-            Json &mat_json = json["node_to_matrix"];
+            node_to_matrix.clear();
+            Json const &mat_json = json["node_to_matrix"];
             for (auto &[path, mat_json]: mat_json.items()) {
                 auto matrix = glm::mat4(1);
                 for (auto i = 0; i < 4; i++) {
@@ -141,7 +145,8 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
         }
         {
-            Json &part = json["scene_tree"];
+            scene_tree.clear();
+            Json const &part = json["scene_tree"];
             for (auto &[path, jstn]: part.items()) {
                 SceneTreeNode stn;
                 stn.matrix = jstn["matrix"];
@@ -354,6 +359,71 @@ struct SceneObject : IObjectClone<SceneObject> {
             st->userData().set2("json", to_json());
             st->userData().set2("ResourceType", std::string("SceneTree"));
             scene->arr.push_back(st);
+        }
+        return scene;
+    }
+
+    std::shared_ptr <zeno::ListObject> to_flatten_structure_matrix(std::unordered_map<std::string, glm::mat4> &modified_xfroms) {
+        auto scene = std::make_shared<zeno::ListObject>();
+        std::unordered_map <std::string, std::vector<glm::mat4>> tmp_matrix_xforms;
+        std::deque <std::pair<std::string, glm::mat4>> worker;
+        worker.emplace_back(root_name, glm::mat4(1));
+        while (worker.size()) {
+            auto [path, parent_global_matrix] = worker.front();
+            if (scene_tree.count(path) == 0) {
+                zeno::log_error("path: {} not found, size: {}", path, path.size());
+            }
+            auto stn = scene_tree.at(path);
+            worker.pop_front();
+
+            auto local_mat = glm::mat4(1);
+            if (stn.visibility) {
+                if (modified_xfroms.count(path)) {
+                    local_mat = modified_xfroms[path];
+                }
+                else {
+                    if (stn.matrix.size()) {
+                        local_mat = node_to_matrix[stn.matrix];
+                    }
+                }
+            } else {
+                local_mat = glm::mat4(0);
+            }
+            auto global_matrix = parent_global_matrix * local_mat;
+            for (auto &mesh: stn.meshes) {
+                tmp_matrix_xforms[mesh].push_back(global_matrix);
+            }
+            for (auto &child: stn.children) {
+                worker.emplace_back(child, global_matrix);
+                if (child.empty()) {
+                    zeno::log_info("path child empty: {}", path);
+                }
+            }
+        }
+        for (auto &[mesh_name, mats]: tmp_matrix_xforms) {
+            auto matrix = std::make_shared<PrimitiveObject>();
+            matrix->resize(mats.size() * 4);
+            for (auto i = 0; i < mats.size(); i++) {
+                auto &mat = mats[i];
+                matrix->verts[i * 4 + 0][0] = mat[0][0];
+                matrix->verts[i * 4 + 0][1] = mat[1][0];
+                matrix->verts[i * 4 + 0][2] = mat[2][0];
+                matrix->verts[i * 4 + 1][0] = mat[3][0];
+                matrix->verts[i * 4 + 1][1] = mat[0][1];
+                matrix->verts[i * 4 + 1][2] = mat[1][1];
+                matrix->verts[i * 4 + 2][0] = mat[2][1];
+                matrix->verts[i * 4 + 2][1] = mat[3][1];
+                matrix->verts[i * 4 + 2][2] = mat[0][2];
+                matrix->verts[i * 4 + 3][0] = mat[1][2];
+                matrix->verts[i * 4 + 3][1] = mat[2][2];
+                matrix->verts[i * 4 + 3][2] = mat[3][2];
+            }
+            matrix->userData().set2("ResourceType", "Matrixes");
+            matrix->userData().set2("stamp-change", "TotalChange");
+            std::string object_name = mesh_name + "_m";
+            matrix->userData().set2("ObjectName", object_name);
+            matrix->userData().set2("objRunType", "matrix");
+            scene->arr.push_back(matrix);
         }
         return scene;
     }

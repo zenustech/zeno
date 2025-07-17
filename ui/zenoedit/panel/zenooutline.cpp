@@ -69,6 +69,7 @@ void OutlineItemModel::setupModelData()
                                         Json json = Json::parse(scene_tree);
                                         if (json["type"] == "dynamic") {
                                             dynamic_scene_tree = json;
+                                            dynamic_scene->from_json(json);
                                         }
                                         else if (json["type"] == "static") {
                                             static_scene_tree = json;
@@ -199,6 +200,43 @@ zenooutline::~zenooutline()
 {
 }
 
+bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
+    std::optional<glm::mat4> xform = {};
+    if (watched == m_treeView) {
+        auto *treeView = qobject_cast<QTreeView *>(watched);
+        if (treeView) {
+            if (event->type() == QEvent::KeyPress) {
+                if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
+                    if(keyEvent->key() == Qt::Key_Up) {
+                        xform = glm::translate(glm::mat4(1), glm::vec3(0, 1, 0));
+                    }
+                    else if(keyEvent->key() == Qt::Key_Down) {
+                        xform = glm::translate(glm::mat4(1), glm::vec3(0, -1, 0));
+                    }
+                }
+            }
+        }
+    }
+    if (xform.has_value()) {
+        if (this->cur_node.has_value()) {
+            auto &[name, lmat, pmat] = cur_node.value();
+            if (this->modified_xfroms.count(name) == 0) {
+                this->modified_xfroms[name] = lmat;
+            }
+            auto g_mat = pmat * this->modified_xfroms[name];
+            g_mat = xform.value() * g_mat;
+            auto n_mat = glm::inverse(pmat) * g_mat;
+            this->modified_xfroms[name] = n_mat;
+            zeno::log_info("pos: {}", g_mat * glm::vec4(0, 0, 0, 1));
+
+        }
+        return true;
+    }
+    else {
+        return QObject::eventFilter(watched, event);
+    }
+}
+
 void zenooutline::setupTreeView()
 {
     m_treeView = new QTreeView(this);
@@ -208,6 +246,7 @@ void zenooutline::setupTreeView()
     m_treeView->setHeaderHidden(true);
     m_treeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_treeView->installEventFilter(this);
     
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_treeView);
@@ -220,6 +259,49 @@ void zenooutline::setupTreeView()
         }
         QVariant data = m_model->data(index, Qt::DisplayRole);
         auto object_name = data.toString().toStdString();
+
+        std::vector<std::string> link;
+        link.push_back(object_name);
+
+        QModelIndex parentIndex = index.parent();
+        while (parentIndex.isValid()) {
+            QVariant parentData = m_model->data(parentIndex, Qt::DisplayRole);
+            auto parent_name = parentData.toString().toStdString();
+            link.push_back(parent_name);
+            parentIndex = parentIndex.parent();
+        }
+        std::reverse(link.begin(), link.end());
+        if (this->m_model != nullptr && link.size() >= 2) {
+            Json *json = nullptr;
+            if (link[0] == "StaticScene") {
+                json = &this->m_model->static_scene_tree;
+            }
+            else {
+                json = &this->m_model->dynamic_scene_tree;
+            }
+            Json &scene_tree = json->operator[]("scene_tree");
+            Json &node_to_matrix = json->operator[]("node_to_matrix");
+            glm::mat4 p_matrix = glm::mat4(1);
+            glm::mat4 l_matrix = glm::mat4(1);
+            for (auto idx = 1; idx < link.size(); idx++) {
+                auto &node_name = link[idx];
+                auto matrix_node_json = scene_tree[node_name];
+                if (matrix_node_json.is_null()) {
+                    break;
+                }
+                p_matrix = p_matrix * l_matrix;
+                std::string matrix_name = matrix_node_json["matrix"];
+                auto mat_json = node_to_matrix[matrix_name];
+                for (auto i = 0; i < 4; i++) {
+                    for (auto j = 0; j < 3; j++) {
+                        int index = i * 3 + j;
+                        l_matrix[i][j] = float(mat_json[index]);
+                    }
+                }
+            }
+            this->cur_node = {object_name, l_matrix, p_matrix};
+        }
+
         ZenoMainWindow *mainWin = zenoApp->getMainWindow();
         mainWin->onPrimitiveSelected({object_name});
     });

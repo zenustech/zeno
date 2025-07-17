@@ -3,6 +3,9 @@
 #include <QtWidgets>
 #include <QAbstractItemModel>
 #include <tinygltf/json.hpp>
+#include <glm/glm.hpp>
+#include <optional>
+#include "zeno/extra/SceneAssembler.h"
 
 using Json = nlohmann::json;
 class OutlineItemModel : public QAbstractItemModel
@@ -42,8 +45,10 @@ private:
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
     void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name);
     std::string static_scene_tree_str;
+public:
     Json static_scene_tree;
     Json dynamic_scene_tree;
+    std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
 };
 
 class zenooutline : public QWidget
@@ -54,9 +59,14 @@ public:
     zenooutline(QWidget *parent = nullptr);
     ~zenooutline();
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void setupTreeView();
     
     QTreeView *m_treeView = nullptr;
     OutlineItemModel *m_model = nullptr;
+    std::unordered_map<std::string, glm::mat4> modified_xfroms;
+    std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
 };
