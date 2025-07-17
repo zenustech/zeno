@@ -71,7 +71,7 @@ struct vec3{
         return !(*this==other);
     }
 
-    __forceinline__ __device__ vec3(const float3 &_v)
+    __forceinline__ __host__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;
         y = _v.y;
@@ -1376,7 +1376,7 @@ __forceinline__ __device__ half3 operator*(half3 a, half b)
 
 __forceinline__ __device__ half3 operator*(half b, half3 a)
 {
-    return a * b;;
+    return a * b;
 }
 
 __forceinline__ __device__ half3 operator+(half3 a, half3 b)

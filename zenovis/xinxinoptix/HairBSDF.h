@@ -125,6 +125,7 @@ namespace HairBSDF{
         }else if(p==2){
             return tmp * color * f;
         }
+        return tmp;
     }
     static __inline__ __device__ vec3 
     EvaluteHair(float sinTheta_i, float cosTheta_i,

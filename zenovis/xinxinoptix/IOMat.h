@@ -100,7 +100,7 @@ struct MatInput {
     float4 worldToObject[3];
 
     __forceinline__ auto getGasPointer() const {
-        return (void** __restrict__)optixGetGASPointerFromHandle(gas);
+        return (void**)optixGetGASPointerFromHandle(gas);
     }
 
     float rayLength;
