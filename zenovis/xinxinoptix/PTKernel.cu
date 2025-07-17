@@ -87,46 +87,6 @@ vec3 PhysicalCamera(vec3 in,
   return  enableExposure? (enableACES? ACESFilm(mapped):mapped ) : (enableACES? ACESFilm(in) : in);
 }
 
-static __inline__ __device__
-ushort3 float3_to_half3(float3 in)
-{
-    half x = __float2half(in.x);
-    half y = __float2half(in.y);
-    half z = __float2half(in.z);
-    ushort3 v;
-    v.x = reinterpret_cast<unsigned short&>(x);
-    v.y = reinterpret_cast<unsigned short&>(y);
-    v.z = reinterpret_cast<unsigned short&>(z);
-    return v;
-}
-
-static __inline__ __device__
-float3 half3_to_float3(ushort3 in)
-{
-    half x = reinterpret_cast<half&>(in.x);
-    half y = reinterpret_cast<half&>(in.y);
-    half z = reinterpret_cast<half&>(in.z);
-    float3 v;
-    v.x = __half2float(x);
-    v.y = __half2float(y);
-    v.z = __half2float(z);
-    return v;
-}
-
-static __inline__ __device__
-ushort1 float_to_half(float in)
-{
-    half x = __float2half(in);
-    return reinterpret_cast<ushort1&>(x);
-}
-
-static __inline__ __device__
-float half_to_float(ushort1 in)
-{
-    half x = reinterpret_cast<half&>(in);
-    return __half2float(x);
-}
-
 extern "C" __global__ void __raygen__rg()
 {
 
@@ -292,7 +252,7 @@ extern "C" __global__ void __raygen__rg()
         prd.isSS = false;
         prd.curMatIdx = 0;
         prd.test_distance = false;
-        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.ss_alpha_queue[0] = half3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;

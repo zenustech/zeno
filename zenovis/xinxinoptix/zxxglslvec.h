@@ -1346,6 +1346,22 @@ __forceinline__ __device__ bool operator!=(float3 a, float3 b) {
 
 struct half3 {
     half x, y, z;
+    half3() = default;
+    half3(half3& h3) = default;
+
+    half3(half a, half b, half c) {
+        x=a; y=b; z=c;
+    }
+
+    half3(float f) {
+        x = y = z = __float2half(f);
+    }
+
+    half3(float3& f3) {
+        x = f3.x;
+        y = f3.y;
+        z = f3.z;
+    }
 };
 
 __forceinline__ __device__ half3 operator*(half3 a, half3 b)
@@ -1380,4 +1396,39 @@ __forceinline__ half3 interp(float2 barys, half3 a, half3 b, half3 c)
 __forceinline__ __device__ float3 decodeHalf(half3 c)
 {
     return { __half2float(c.x), __half2float(c.y), __half2float(c.z) };
+}
+
+__forceinline__ __device__ half3 float3_to_half3(const float3& in)
+{
+    return {
+        __float2half(in.x), 
+        __float2half(in.y),
+        __float2half(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const half3& in)
+{
+    return {
+        __half2float(in.x),
+        __half2float(in.y),
+        __half2float(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const ushort3& in) 
+{
+    return half3_to_float3(reinterpret_cast<const half3&>(in));
+}
+
+__forceinline__ __device__ ushort1 float_to_half(float in)
+{
+    half x = __float2half(in);
+    return reinterpret_cast<ushort1&>(x);
+}
+
+__forceinline__ __device__ float half_to_float(ushort1 in)
+{
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
 }

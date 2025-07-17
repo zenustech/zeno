@@ -102,9 +102,8 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     float        pixel_area;
-    float        Lweight;
-    vec3         sigma_t_queue[8];
-    vec3         ss_alpha_queue[8];
+    half3        sigma_t_queue[8];
+    half3        ss_alpha_queue[8];
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
@@ -123,7 +122,7 @@ struct RadiancePRD
     unsigned char hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
-        return sigma_t_queue[idx];
+        return half3_to_float3(sigma_t_queue[idx]);
     }
 
     //cihou SS
@@ -155,16 +154,15 @@ struct RadiancePRD
     
     int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f))
     {
-        vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
+        auto cached = this->extinction();
+        vec3 d = abs(cached - extinction);
         float c = dot(d, vec3(1,1,1));
         if(curMatIdx<7 && c > 1e-6f )
         {
             curMatIdx++;
-            sigma_t_queue[curMatIdx] = extinction;
-            ss_alpha_queue[curMatIdx] = ss_alpha;
-            
+            sigma_t_queue[curMatIdx] = float3_to_half3(extinction);
+            ss_alpha_queue[curMatIdx] = float3_to_half3(ss_alpha);
         }
-
         return curMatIdx;
     }
 
@@ -172,15 +170,15 @@ struct RadiancePRD
 
         auto idx = clamp(curMatIdx, 0, 7);
 
-        sigma_t = sigma_t_queue[idx];
-        ss_alpha = ss_alpha_queue[idx];
+        sigma_t = half3_to_float3(sigma_t_queue[idx]);
+        ss_alpha = half3_to_float3(ss_alpha_queue[idx]);
     }
 
     int popMat(vec3& sigma_t, vec3& ss_alpha)
     {
         curMatIdx = clamp(--curMatIdx, 0, 7);
-        sigma_t = sigma_t_queue[curMatIdx];
-        ss_alpha = ss_alpha_queue[curMatIdx];
+        sigma_t = half3_to_float3(sigma_t_queue[curMatIdx]);
+        ss_alpha = half3_to_float3(ss_alpha_queue[curMatIdx]);
         return curMatIdx;
     }
     
