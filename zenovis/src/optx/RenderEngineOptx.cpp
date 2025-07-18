@@ -1166,6 +1166,41 @@ struct GraphicsManager {
         // return ins.has_changed();
         return changed;
     }
+    void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {
+        std::unordered_map<std::string, std::shared_ptr<zeno::IObject>> map;
+        for (auto i = 0; i < matrixs.size(); i++) {
+            if (matrixs[i]->userData().get2<std::string>("ResourceType", "") != "Matrixes") {
+                continue;
+            }
+            auto obj_name = matrixs[i]->userData().get2<std::string>("ObjectName", "");
+            if (obj_name == "") {
+                continue;
+            }
+            map[obj_name] = matrixs[i];
+        }
+        for (auto &[k, v]: graphics.m_curr) {
+            if (auto* ptr = std::get_if<DetPrimitive>(&v->det)) {
+                if (ptr == nullptr) {
+                    continue;
+                }
+                if (ptr->primSp == nullptr) {
+                    continue;
+                }
+                auto obj_name = ptr->primSp->userData().get2<std::string>("ObjectName", "");
+                if (map.count(obj_name)) {
+                    auto prim_ptr = std::dynamic_pointer_cast<zeno::PrimitiveObject>(map[obj_name]);
+                    if (ptr->primSp->verts.size() == prim_ptr->verts.size()) {
+                        ptr->primSp->verts = prim_ptr->verts;
+                        auto count = ptr->primSp->verts->size() / 4;
+                        std::vector<m3r4c> matrix_list(count);
+                        std::copy_n((float*)ptr->primSp->verts.data(), count * 12, (float*)matrix_list.data());
+                        defaultScene.load_matrix_list(obj_name, matrix_list);
+                    }
+                }
+            }
+        }
+
+    }
 };
 
 struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
@@ -1226,6 +1261,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         char *argv[] = {nullptr};
         xinxinoptix::optixinit(std::size(argv), argv);
     }
+    void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) override {
+        if (matrixs.empty()) {
+            return;
+        }
+        graphicsMan->load_matrix_objects(matrixs);
+        meshNeedUpdate = true;
+    };
+
 
     void update() override {
 

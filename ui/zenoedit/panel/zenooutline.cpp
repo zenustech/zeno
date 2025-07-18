@@ -4,6 +4,9 @@
 #include "viewport/displaywidget.h"
 #include <zenovis/ObjectsManager.h>
 #include <tinygltf/json.hpp>
+#include "viewport/zenovis.h"
+#include "viewport/displaywidget.h"
+#include "viewport/zoptixviewport.h"
 
 using Json = nlohmann::json;
 
@@ -227,8 +230,18 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
             g_mat = xform.value() * g_mat;
             auto n_mat = glm::inverse(pmat) * g_mat;
             this->modified_xfroms[name] = n_mat;
-            zeno::log_info("pos: {}", g_mat * glm::vec4(0, 0, 0, 1));
+            auto new_matrixs = m_model->dynamic_scene->to_flatten_structure_matrix(modified_xfroms);
 
+            if(ZenoMainWindow *mainWin = zenoApp->getMainWindow()) {
+                for(auto displaywidget : mainWin->viewports()) {
+                    if(displaywidget) {
+                        if(!displaywidget->isGLViewport()) {
+                            ZOptixViewport* opixView = displaywidget->optixViewport();
+                            emit opixView->sig_updateMatrix(new_matrixs);
+                        }
+                    }
+                }
+            }
         }
         return true;
     }

@@ -11,6 +11,7 @@
 #include <zenovis/Camera.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "viewport/displaywidget.h"
+#include <zenovis/RenderEngine.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -363,6 +364,17 @@ void OptixWorker::onSetSampleNumber(int sample_number) {
     updateFrame();
 }
 
+void OptixWorker::onUpdateMatrix(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    if(auto engine = scene->renderMan->getEngine("optx")) {
+        engine->load_matrix_objects(matrixs);
+    }
+}
+
 void OptixWorker::onSetData(
     float aperture,
     float shutter_speed,
@@ -466,6 +478,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
+    connect(this, &ZOptixViewport::sig_updateMatrix, m_worker, &OptixWorker::onUpdateMatrix, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();

@@ -25,6 +25,7 @@ struct RenderEngine {
     virtual ~RenderEngine() = default;
     virtual std::optional<glm::vec3> getClickedPos(int x, int y) { return {}; }
     virtual std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(int x, int y) { return {}; }
+    virtual void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {};
 };
 
 class RenderManager {

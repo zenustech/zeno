@@ -31,6 +31,9 @@ PyMODINIT_FUNC PyInit_spam(void);
 int main(int argc, char *argv[]) 
 {
     ZenoApplication a(argc, argv);
+
+    qRegisterMetaType<std::vector<std::shared_ptr<zeno::IObject>>>();
+
     a.setStyle(new ZenoStyle);
 
 #ifdef DEBUG_NORMAL_WIDGET
