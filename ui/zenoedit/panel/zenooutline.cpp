@@ -298,11 +298,15 @@ void zenooutline::setupTreeView()
             glm::mat4 l_matrix = glm::mat4(1);
             for (auto idx = 1; idx < link.size(); idx++) {
                 auto &node_name = link[idx];
+                p_matrix = p_matrix * l_matrix;
+                if (this->modified_xfroms.count(node_name)) {
+                    l_matrix = modified_xfroms[node_name];
+                    continue;
+                }
                 auto matrix_node_json = scene_tree[node_name];
                 if (matrix_node_json.is_null()) {
                     break;
                 }
-                p_matrix = p_matrix * l_matrix;
                 std::string matrix_name = matrix_node_json["matrix"];
                 auto mat_json = node_to_matrix[matrix_name];
                 for (auto i = 0; i < 4; i++) {
