@@ -186,7 +186,7 @@ static void get_local_matrix_map(
     mat[1] = {float(r1[0]), float(r1[1]), float(r1[2]), 0.0f};
     mat[2] = {float(r2[0]), float(r2[1]), float(r2[2]), 0.0f};
     mat[3] = {float(t[0]),  float(t[1]),  float(t[2]),  1.0f};
-    scene->node_to_matrix[node_path+"_m"] = mat;
+    scene->node_to_matrix[node_path+"_m"].push_back(mat);
     stn.matrix = node_path+"_m";
     stn.visibility = json["visibility"] == 0? 0 : 1;
     if (json.contains("mesh")) {
@@ -248,7 +248,9 @@ struct FormSceneTree : zeno::INode {
         }
         get_local_matrix_map(scene_json->json, "", sceneTree);
         sceneTree->type = get_input2<std::string>("type");
-        sceneTree->flattened = get_input2<bool>("flattened");
+        if (get_input2<bool>("flattened")) {
+            sceneTree->flatten();
+        }
         auto scene = sceneTree->to_list();
         set_output2("scene", scene);
     }
@@ -271,45 +273,6 @@ ZENDEFNODE( FormSceneTree, {
     },
 });
 
-static void scene_add_prefix(
-    std::string path
-    , glm::mat4 xform
-    , std::shared_ptr<SceneObject> sceneObject
-) {
-    std::unordered_map<std::string, SceneTreeNode> scene_tree;
-    for (const auto &[key, value]: sceneObject->scene_tree) {
-        SceneTreeNode stn;
-        stn.visibility = value.visibility;
-        if (value.matrix.size()) {
-            stn.matrix = path + value.matrix;
-        }
-        for (auto &child: value.children) {
-            stn.children.push_back(path + child);
-        }
-        for (auto &mesh: value.meshes) {
-            stn.meshes.push_back(path + mesh);
-        }
-        scene_tree[path + key] = stn;
-    }
-    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> new_prim_list;
-    for (auto& [key, value] : sceneObject->prim_list) {
-        auto obj_name = value->userData().get2<std::string>("ObjectName");
-        obj_name = path + obj_name;
-        value->userData().set2("ObjectName", obj_name);
-        new_prim_list[path + key] = value;
-    }
-    std::unordered_map<std::string, glm::mat4> new_node_to_matrix;
-    for (const auto& [key, value] : sceneObject->node_to_matrix) {
-        new_node_to_matrix[path + key] = value;
-    }
-    sceneObject->scene_tree = scene_tree;
-    sceneObject->prim_list = new_prim_list;
-    sceneObject->node_to_matrix = new_node_to_matrix;
-    {
-        std::string xform_name = path + "_m";
-        sceneObject->node_to_matrix[xform_name] = xform;
-    }
-}
 static std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> result;
     if (path.empty()) return result;
@@ -354,6 +317,46 @@ glm::mat4 get_xform_from_prim(std::shared_ptr<PrimitiveObject> prim) {
     mat[2] = {r2[0], r2[1], r2[2], 0};
     mat[3] = {pos[0], pos[1], pos[2], 1};
     return mat;
+}
+/*
+static void scene_add_prefix(
+    std::string path
+    , glm::mat4 xform
+    , std::shared_ptr<SceneObject> sceneObject
+) {
+    std::unordered_map<std::string, SceneTreeNode> scene_tree;
+    for (const auto &[key, value]: sceneObject->scene_tree) {
+        SceneTreeNode stn;
+        stn.visibility = value.visibility;
+        if (value.matrix.size()) {
+            stn.matrix = path + value.matrix;
+        }
+        for (auto &child: value.children) {
+            stn.children.push_back(path + child);
+        }
+        for (auto &mesh: value.meshes) {
+            stn.meshes.push_back(path + mesh);
+        }
+        scene_tree[path + key] = stn;
+    }
+    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> new_prim_list;
+    for (auto& [key, value] : sceneObject->prim_list) {
+        auto obj_name = value->userData().get2<std::string>("ObjectName");
+        obj_name = path + obj_name;
+        value->userData().set2("ObjectName", obj_name);
+        new_prim_list[path + key] = value;
+    }
+    std::unordered_map<std::string, glm::mat4> new_node_to_matrix;
+    for (const auto& [key, value] : sceneObject->node_to_matrix) {
+        new_node_to_matrix[path + key] = value;
+    }
+    sceneObject->scene_tree = scene_tree;
+    sceneObject->prim_list = new_prim_list;
+    sceneObject->node_to_matrix = new_node_to_matrix;
+    {
+        std::string xform_name = path + "_m";
+        sceneObject->node_to_matrix[xform_name] = xform;
+    }
 }
 
 struct MergeScene : zeno::INode {
@@ -413,7 +416,7 @@ ZENDEFNODE( MergeScene, {
         "Scene",
     },
 });
-
+*/
 
 struct FlattenSceneTree : zeno::INode {
     void apply() override {
