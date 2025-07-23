@@ -336,16 +336,69 @@ struct SceneObject : IObjectClone<SceneObject> {
     }
 
     void flatten() {
-        std::unordered_map <std::string, SceneTreeNode> scene_tree;
-        std::unordered_map <std::string, std::vector<glm::mat4>> node_to_matrix;
+        std::unordered_map <std::string, SceneTreeNode> temp_scene_tree;
+        std::unordered_map <std::string, std::vector<glm::mat4>> temp_node_to_matrix;
 
-        auto new_scene_obj = std::make_shared<SceneObject>();
-        new_scene_obj->prim_list = this->prim_list;
-        new_scene_obj->root_name = this->root_name;
-        new_scene_obj->type = this->type;
+        SceneTreeNode new_root_node;
+        new_root_node.visibility = this->scene_tree[this->root_name].visibility;
+        new_root_node.matrix = this->scene_tree[this->root_name].matrix;
+        temp_node_to_matrix[this->root_name] = {glm::mat4(1)};
+        {
+            std::unordered_map<std::string, std::vector<glm::mat4>> tmp_matrix_xforms;
+            std::deque<std::pair<std::string, std::vector<glm::mat4>>> worker;
+            std::vector<glm::mat4> init;
+            init.emplace_back(1);
+            worker.emplace_back(root_name, init);
+            while (worker.size()) {
+                auto [path, parent_global_matrix] = worker.front();
+                if (scene_tree.count(path) == 0) {
+                    zeno::log_error("path: {} not found, size: {}", path, path.size());
+                }
+                auto stn = scene_tree.at(path);
+                worker.pop_front();
 
+                std::vector<glm::mat4> local_mats;
+                if (stn.visibility) {
+                    if (stn.matrix.size()) {
+                        local_mats = node_to_matrix[stn.matrix];
+                    }
+                    else {
+                        local_mats.emplace_back(1);
+                    }
+                } else {
+                    local_mats.emplace_back(0);
+                }
+                std::vector<glm::mat4> global_matrix;
+                for (auto const &p_g_mat: parent_global_matrix) {
+                    for (auto const &l_mat: local_mats) {
+                        global_matrix.push_back(p_g_mat * l_mat);
 
-//        *this = *new_scene_obj;
+                    }
+                }
+                for (auto &mesh: stn.meshes) {
+                    tmp_matrix_xforms[mesh].insert(tmp_matrix_xforms[mesh].end(), global_matrix.begin(), global_matrix.end());
+                }
+                for (auto &child: stn.children) {
+                    worker.emplace_back(child, global_matrix);
+                    if (child.empty()) {
+                        zeno::log_info("path child empty: {}", path);
+                    }
+                }
+            }
+            for(auto const&[mesh_name, mats]: tmp_matrix_xforms) {
+                SceneTreeNode stn;
+                std::string node_name = mesh_name + "_node";
+                stn.matrix = mesh_name + "_node_m";
+                temp_node_to_matrix[stn.matrix] = mats;
+                new_root_node.children.push_back(node_name);
+                stn.meshes.push_back(mesh_name);
+                temp_scene_tree[node_name] = stn;
+            }
+            temp_scene_tree[this->root_name] = new_root_node;
+
+        }
+        this->node_to_matrix = temp_node_to_matrix;
+        this->scene_tree = temp_scene_tree;
     }
 
     std::shared_ptr <zeno::ListObject> to_flatten_structure(bool use_static) {

@@ -420,10 +420,11 @@ ZENDEFNODE( MergeScene, {
 
 struct FlattenSceneTree : zeno::INode {
     void apply() override {
-        auto scene_tree = get_scene_tree_from_list(get_input2<ListObject>("scene"));
+        auto scene = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
         auto use_static = get_input2<bool>("use_static");
+        scene->type = use_static? "static" : "dynamic";
+        scene->flatten();
 
-        auto scene = scene_tree->to_flatten_structure(use_static);
         set_output2("scene", scene);
     }
 };
