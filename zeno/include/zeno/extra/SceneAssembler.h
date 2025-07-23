@@ -186,7 +186,7 @@ struct SceneObject : IObjectClone<SceneObject> {
                     if (stn.matrix.size() && node_to_matrix.count(stn.matrix)) {
                         matrixs = node_to_matrix[stn.matrix];
                     } else {
-                        continue;
+                        matrixs = {glm::mat4(1)};
                     }
                 } else {
                     matrixs = {glm::mat4(0)};
@@ -242,7 +242,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
 
-            Json RenderGroups = Json();
+            Json RenderGroups = Json::object();
             for (auto &[path, stn]: scene_tree) {
                 Json render_group = Json();
                 for (auto &child: stn.children) {
@@ -250,6 +250,9 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 for (auto &child: stn.meshes) {
                     render_group[child] = Json::array({path + "_m"});
+                }
+                if (render_group.is_null()) {
+                    continue;
                 }
                 RenderGroups[path] = render_group;
             }
@@ -342,7 +345,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         SceneTreeNode new_root_node;
         new_root_node.visibility = this->scene_tree[this->root_name].visibility;
         new_root_node.matrix = this->scene_tree[this->root_name].matrix;
-        temp_node_to_matrix[this->root_name] = {glm::mat4(1)};
+        temp_node_to_matrix[this->root_name+"_m"] = {glm::mat4(1)};
         {
             std::unordered_map<std::string, std::vector<glm::mat4>> tmp_matrix_xforms;
             std::deque<std::pair<std::string, std::vector<glm::mat4>>> worker;
