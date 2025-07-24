@@ -25,6 +25,8 @@ signals:
     void sig_frameRecordFinished(int frame);
     void sig_recordCanceled();
 
+    void sig_sendToOutline(QString);
+
 public slots:
     void stop();
     void work();
@@ -47,6 +49,7 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onUpdateMatrix(std::vector<std::shared_ptr<zeno::IObject>> matris);
+    void onOutlineInit(QString);
 
     void onSetData(float, float, float, bool, bool, bool, bool, float);
 
@@ -117,7 +120,10 @@ signals:
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
     void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
+
     void sig_updateMatrix(std::vector<std::shared_ptr<zeno::IObject>>);
+    void sig_viewportSendToOutline(QString);
+    void sig_outlineInit(QString);
 
 public slots:
     void onFrameRunFinished(int frame);

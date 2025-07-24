@@ -40,15 +40,16 @@
 #include "TypeCaster.h"
 #include "optix_types.h"
 #include "zeno/utils/vec.h"
+#include "zeno/extra/SceneAssembler.h"
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
 
 using m3r4c = std::array<float, 12>;
 const std::string brikey = "BasicRenderInstances";
+using Json = nlohmann::json;
 
-class Scene {
-
+class OptixScene {
 public:
     bool camera_changed;
 
@@ -60,6 +61,12 @@ public:
 
     nlohmann::json sceneJson;
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
+
+    Json static_scene_tree;
+    Json dynamic_scene_tree;
+    std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
+    std::unordered_map<std::string, glm::mat4> modified_xfroms;
+    std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
 
     inline void preload_scene(const std::string& jsonString) {
 //        bool accept = nlohmann::json::accept(jsonString);
@@ -692,4 +699,4 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
 };
 
 
-inline Scene defaultScene;
+inline OptixScene defaultScene;

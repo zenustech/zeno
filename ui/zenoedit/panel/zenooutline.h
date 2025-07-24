@@ -23,7 +23,7 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     
     // 自定义数据操作
-    void setupModelData();
+    void setupModelDataFromMessage(Json const& content);
 
 private:
     struct OutlineItem {
@@ -44,11 +44,6 @@ private:
     
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
     void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name);
-    std::string static_scene_tree_str;
-public:
-    Json static_scene_tree;
-    Json dynamic_scene_tree;
-    std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
 };
 
 class zenooutline : public QWidget
@@ -64,9 +59,8 @@ protected:
 
 private:
     void setupTreeView();
+    void sendOptixMessage(Json &msg);
     
     QTreeView *m_treeView = nullptr;
     OutlineItemModel *m_model = nullptr;
-    std::unordered_map<std::string, glm::mat4> modified_xfroms;
-    std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
 };

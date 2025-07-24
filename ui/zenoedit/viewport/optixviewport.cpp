@@ -13,6 +13,9 @@
 #include "viewport/displaywidget.h"
 #include <zenovis/RenderEngine.h>
 
+#include "tinygltf/json.hpp"
+using Json = nlohmann::json;
+
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
@@ -22,6 +25,17 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    auto engin = scene->renderMan->getEngine("optx");
+    engin->fun = [this](std::string content) {
+        emit sig_sendToOutline(QString::fromStdString(content));
+    };
+
 }
 
 OptixWorker::~OptixWorker()
@@ -375,6 +389,19 @@ void OptixWorker::onUpdateMatrix(std::vector<std::shared_ptr<zeno::IObject>> mat
     }
 }
 
+void OptixWorker::onOutlineInit(QString msg_str) {
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    if(auto engine = scene->renderMan->getEngine("optx")) {
+        std::string msg_std_str = msg_str.toStdString();
+        Json msg = Json::parse(msg_std_str);
+        engine->outlineInit(msg);
+    }
+}
+
 void OptixWorker::onSetData(
     float aperture,
     float shutter_speed,
@@ -465,6 +492,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
+    connect(m_worker, &OptixWorker::sig_sendToOutline, this, &ZOptixViewport::sig_viewportSendToOutline);
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
@@ -478,7 +506,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
+
     connect(this, &ZOptixViewport::sig_updateMatrix, m_worker, &OptixWorker::onUpdateMatrix, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sig_outlineInit, m_worker, &OptixWorker::onOutlineInit, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();

@@ -1216,6 +1216,110 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
+    void outlineInit(Json const &in_msg) override {
+        zeno::log_error("MessageType: {}", in_msg.dump());
+        if (in_msg["MessageType"] == "Init") {
+            Json message;
+            if (!defaultScene.static_scene_tree.is_null()) {
+                Json scene_tree;
+                scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
+                scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
+                message["StaticSceneTree"] = scene_tree;
+            }
+            if (!defaultScene.dynamic_scene_tree.is_null()) {
+                Json scene_tree;
+                scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
+                scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
+                message["DynamicSceneTree"] = scene_tree;
+            }
+
+            if (message.is_null()) {
+                return;
+            }
+
+            message["MessageType"] = "SceneTree";
+            fun(message.dump());
+        }
+        else if (in_msg["MessageType"] == "Select") {
+            auto &link = in_msg["Content"];
+            {
+                std::string object_name = link.back();
+                Json *json = nullptr;
+                if (link[0] == "StaticScene") {
+                    json = &defaultScene.static_scene_tree;
+                }
+                else {
+                    json = &defaultScene.dynamic_scene_tree;
+                }
+                Json &scene_tree = json->operator[]("scene_tree");
+                Json &node_to_matrix = json->operator[]("node_to_matrix");
+                glm::mat4 p_matrix = glm::mat4(1);
+                glm::mat4 l_matrix = glm::mat4(1);
+                for (auto idx = 1; idx < link.size(); idx++) {
+                    auto &node_name = link[idx];
+                    p_matrix = p_matrix * l_matrix;
+                    if (defaultScene.modified_xfroms.count(node_name)) {
+                        l_matrix = defaultScene.modified_xfroms[node_name];
+                        continue;
+                    }
+                    auto matrix_node_json = scene_tree[node_name];
+                    if (matrix_node_json.is_null()) {
+                        break;
+                    }
+                    std::string matrix_name = matrix_node_json["matrix"];
+                    auto mat_json = node_to_matrix[matrix_name][0];
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            int index = i * 3 + j;
+                            l_matrix[i][j] = float(mat_json[index]);
+                        }
+                    }
+                }
+                defaultScene.cur_node = {object_name, l_matrix, p_matrix};
+            }
+        }
+        else if (in_msg["MessageType"] == "Xform") {
+            std::string axis = in_msg["Axis"];
+            std::string mode = in_msg["Mode"];
+            float value = in_msg["Value"];
+            glm::mat4 xform = glm::mat4(1);
+            if (mode == "Translate") {
+                xform = glm::translate(glm::mat4(1), glm::vec3(0, value, 0));
+            }
+            else if (mode == "Rotate") {
+            }
+            else if (mode == "Scale") {
+            }
+            if (defaultScene.cur_node.has_value()) {
+                auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+                if (defaultScene.modified_xfroms.count(name) == 0) {
+                    defaultScene.modified_xfroms[name] = lmat;
+                }
+                auto g_mat = pmat * defaultScene.modified_xfroms[name];
+                g_mat = xform * g_mat;
+                auto n_mat = glm::inverse(pmat) * g_mat;
+                defaultScene.modified_xfroms[name] = n_mat;
+                auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+                mat_prim->verts.resize(4);
+                mat_prim->verts[0][0] = n_mat[0][0];
+                mat_prim->verts[0][1] = n_mat[1][0];
+                mat_prim->verts[0][2] = n_mat[2][0];
+                mat_prim->verts[1][0] = n_mat[3][0];
+                mat_prim->verts[1][1] = n_mat[0][1];
+                mat_prim->verts[1][2] = n_mat[1][1];
+                mat_prim->verts[2][0] = n_mat[2][1];
+                mat_prim->verts[2][1] = n_mat[3][1];
+                mat_prim->verts[2][2] = n_mat[0][2];
+                mat_prim->verts[3][0] = n_mat[1][2];
+                mat_prim->verts[3][1] = n_mat[2][2];
+                mat_prim->verts[3][2] = n_mat[3][2];
+
+                mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+                mat_prim->userData().set2("ObjectName", name+"_m");
+                load_matrix_objects({mat_prim});
+            }
+        }
+    }
     std::optional<glm::vec3> getClickedPos(int x, int y) override {
         glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
         if (posWS == glm::vec3()) {
@@ -1269,8 +1373,50 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         meshNeedUpdate = true;
     };
 
+    void update_json(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+        for (auto const&[key, obj]: objs) {
+            Json message;
+            message["MessageType"] = "SceneTree";
+            if (obj == nullptr) {
+                continue;
+            }
+            auto &ud = obj->userData();
+            if (ud.get2<std::string>("ResourceType", "") == "SceneTree") {
+                if (ud.get2<std::string>("SceneTreeType", "") == "static") {
+                    if (!defaultScene.static_scene_tree.is_null()) {
+                        continue;
+                    }
+                    auto content = ud.get2<std::string>("json");
+                    defaultScene.static_scene_tree = Json::parse(content);
+                    Json scene_tree;
+                    scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
+                    scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
+                    message["StaticSceneTree"] = scene_tree;
+                }
+                else if (ud.get2<std::string>("SceneTreeType", "") == "dynamic") {
+                    auto content = ud.get2<std::string>("json");
+                    defaultScene.dynamic_scene_tree = Json::parse(content);
+
+                    Json scene_tree;
+                    scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
+                    scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
+                    message["DynamicSceneTree"] = scene_tree;
+
+                    defaultScene.dynamic_scene->from_json(defaultScene.dynamic_scene_tree);
+                }
+                else {
+                    continue;
+                }
+                auto msg_str = message.dump();
+                fun(std::move(msg_str));
+            }
+        }
+    }
+
 
     void update() override {
+        zeno::log_error("update");
+        update_json(scene->objectsMan->pairs());
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
             || scene->objectsMan->needUpdateLight)

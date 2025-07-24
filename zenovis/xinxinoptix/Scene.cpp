@@ -12,7 +12,7 @@
 
 inline std::shared_ptr<MeshObject> StaticMeshes {};
 
-void Scene::updateStaticDrawObjects() {
+void OptixScene::updateStaticDrawObjects() {
     
     size_t tri_num = 0;
     size_t ver_num = 0;
@@ -77,7 +77,7 @@ void Scene::updateStaticDrawObjects() {
     }
 }
 
-void Scene::updateDrawObjects() {
+void OptixScene::updateDrawObjects() {
 
     std::vector<std::string>    names;
     std::vector<const MeshDat*> candidates;
@@ -153,7 +153,7 @@ void Scene::updateDrawObjects() {
 
 }
 
-bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key)
+bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key)
 {
     auto path = texVDB.path;
     auto channel = texVDB.channel;

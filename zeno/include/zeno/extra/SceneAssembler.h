@@ -268,6 +268,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto st = std::make_shared<PrimitiveObject>();
             st->userData().set2("json", to_json());
             st->userData().set2("ResourceType", std::string("SceneTree"));
+            st->userData().set2("SceneTreeType", this->type);
             scene->arr.push_back(st);
         }
         return scene;
@@ -511,6 +512,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto st = std::make_shared<PrimitiveObject>();
             st->userData().set2("json", to_json());
             st->userData().set2("ResourceType", std::string("SceneTree"));
+            st->userData().set2("SceneTreeType", this->type);
             scene->arr.push_back(st);
         }
         return scene;
