@@ -410,7 +410,7 @@ void updateRootIAS()
     state.params.maxInstanceID = MAX_INSTANCE_ID;
 }
 
-static void createSBT( PathTracerState& state )
+static void createSBT( PathTracerState& state, bool raygen=false)
 {
     raii<CUdeviceptr>  &d_raygen_record = OptixUtil::d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
@@ -442,6 +442,13 @@ static void createSBT( PathTracerState& state )
                 miss_record_size * RAY_TYPE_COUNT,
                 cudaMemcpyHostToDevice
                 ) );
+
+    state.sbt.raygenRecord                = d_raygen_record;
+    state.sbt.missRecordBase              = d_miss_records;
+    state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
+    state.sbt.missRecordCount             = RAY_TYPE_COUNT;
+    //state.sbt.exceptionRecord;
+    if (raygen) return;
 
     const auto shader_count = OptixUtil::rtMaterialShaders.size();
 
@@ -557,14 +564,9 @@ static void createSBT( PathTracerState& state )
                 cudaMemcpyHostToDevice
                 ) );
 
-    state.sbt.raygenRecord                = d_raygen_record;
-    state.sbt.missRecordBase              = d_miss_records;
-    state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
-    state.sbt.missRecordCount             = RAY_TYPE_COUNT;
     state.sbt.hitgroupRecordBase          = d_hitgroup_records;
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
     state.sbt.hitgroupRecordCount         = hitgroup_records.size();
-    //state.sbt.exceptionRecord;
 
     {
         raii<CUdeviceptr>& d_callable_records = OptixUtil::d_callable_records;
@@ -1302,6 +1304,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
 
+            OptixUtil::raygen_config = std::tuple {false, false};
             OptixUtil::createRenderGroups(OptixUtil::context, OptixUtil::raygen_module);
         });
 
@@ -1778,6 +1781,27 @@ static void save_png_color(std::string path, int w, int h, float* ptr) {
     stbi_flip_vertically_on_write(1);
     stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
 }
+
+static void updateRayGen(bool aov, bool denoise) {
+    using namespace OptixUtil;
+
+    auto new_config = std::tuple {aov, denoise};
+    if (new_config == raygen_config) return;
+    raygen_config = new_config;
+
+    auto source = sutil::lookupIncFile("PTKernel.cu");
+    std::vector<std::string> macros {
+        "--define-macro=__AOV__="+std::to_string(aov),
+        "--define-macro=DENOISE="+std::to_string(denoise)
+    };
+
+    createModule(raygen_module.reset(), context, source, "PTKernel.cu", macros);
+    createRenderGroups(context, raygen_module);
+
+    createSBT(state, true);
+    createPipeline(defaultScene.maxNodeDepth, true);
+}
+
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     bool imageRendered = false;
@@ -1789,11 +1813,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 #ifdef OPTIX_BASE_GL
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
 #endif
-    updateState( *output_buffer_o, state.params );
-//    updateState( *output_buffer_diffuse, state.params);
-//    updateState( *output_buffer_specular, state.params);
-//    updateState( *output_buffer_transmit, state.params);
-//    updateState( *output_buffer_background, state.params);
+    
+    bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
+    state.params.needAOV = enable_output_aov;
+    updateRayGen(enable_output_aov, denoise);
+    printf("enable_aov = %d \n", enable_output_aov);
+
+    updateState( *output_buffer_o, state.params, true );
 
     if (denoise) {
         auto w = state.params.width;
@@ -1808,8 +1834,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.albedo_buffer = (float3*)state.albedo_buffer_p.handle;
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
-    bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
-    state.params.needAOV = enable_output_aov;
     
     auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
