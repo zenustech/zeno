@@ -1730,22 +1730,46 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
     return tex_data;
 }
 
+#include <mutex>
+#include <condition_variable>
+
+std::mutex click_mutex;
+std::condition_variable click_cv;
+
 glm::vec3 get_click_pos(int x, int y) {
     int w = state.params.width;
     int h = state.params.height;
-    auto frame_buffer_pos = optixgetimg_extra2("pos", w, h);
-    auto index = x + (h - 1 - y) * w;
-    auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
-    return posWS;
+
+    std::unique_lock<std::mutex> lock(click_mutex);
+    state.params.click_dirty = true;
+    state.params.click_coord = make_uint2(x, h - 1 - y);
+
+    click_cv.wait(lock, []{
+        return !state.params.click_dirty; 
+    });
+
+    float3 click_result;
+    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
+    cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
+    return glm::vec3(click_result.x, click_result.y, click_result.z);
 }
 
 glm::uvec4 get_click_id(int x, int y) {
     int w = state.params.width;
     int h = state.params.height;
-    std::vector<glm::uvec4> tex_data(w * h);
-    cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_pick.handle, sizeof(tex_data[0]) * tex_data.size(), cudaMemcpyDeviceToHost);
-    auto index = x + (h - 1 - y) * w;
-    return tex_data[index];
+    
+    std::unique_lock<std::mutex> lock(click_mutex);
+    state.params.click_dirty = true;
+    state.params.click_coord = make_uint2(x, h - 1 - y);
+
+    click_cv.wait(lock, []{
+        return !state.params.click_dirty; 
+    });
+
+    uint4 click_meta;
+    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
+    cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
+    return glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
 }
 
 static void save_exr(float3* ptr, int w, int h, std::string path) {
@@ -1834,10 +1858,16 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.albedo_buffer = (float3*)state.albedo_buffer_p.handle;
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
-    
     auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
+
+    bool should_notify = false;
+    {
+        std::lock_guard<std::mutex> lock(click_mutex);
+        should_notify = state.params.click_dirty;
+    }
+
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         if (ud.get2<bool>("viewport-optix-pause", false)) {
             continue;
@@ -1848,6 +1878,12 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.params.subframe_index++;
     }
     output_buffer_o->unmap();
+
+    if (should_notify) {
+        state.params.click_dirty = false;
+        click_cv.notify_all();
+    }
+
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
