@@ -95,7 +95,7 @@ struct vec3{
         return make_float3(x, y, z);
     }
 
-    inline vec3& operator*= (float in)
+    __forceinline__ __device__ vec3& operator*= (float in)
     {
         x = x * in;
         y = y * in;
@@ -103,11 +103,19 @@ struct vec3{
         return *this;    
     }
 
-    inline vec3& operator+= (vec3 in)
+    __forceinline__ __device__ vec3& operator+= (vec3 in)
     {
         x = x + in.x;
         y = y + in.y;
         z = z + in.z;
+        return *this;    
+    }
+    
+    __forceinline__ __device__ vec3& operator/= (float in)
+    {
+        x /= in;
+        y /= in;
+        z /= in;
         return *this;    
     }
 

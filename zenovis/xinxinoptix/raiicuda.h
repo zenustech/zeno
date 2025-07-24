@@ -98,7 +98,11 @@ struct raii {
     }
 
     template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
-    bool resize(std::size_t newSize, std::size_t incSize = 0, bool managed=false) {     
+    bool resize(std::size_t newSize, std::size_t incSize = 0, bool managed=false) {
+
+        if (newSize ==0 ) {
+            reset(); return true;
+        }
 
         if (newSize != size) {  // temporary
             if (managed)

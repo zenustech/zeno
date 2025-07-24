@@ -150,6 +150,11 @@ struct CameraInfo
     float height;   //sensor physical height
 };
 
+struct PickInfo {
+    float3 pos;
+    uint4 meta;
+};
+
 struct Params
 {
     unsigned int subframe_index;
@@ -160,8 +165,8 @@ struct Params
     ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
     ushort3*     frame_buffer_M;
-    float3*      frame_buffer_P;
-    uint4*       frame_buffer_Pick;
+    
+    PickInfo*    pick_buffer;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
@@ -169,7 +174,10 @@ struct Params
     
     float4* d_uniforms;
     void** global_buffers;
-    
+
+    uint2 click_coord;
+    bool click_dirty;
+
     unsigned int width;
     unsigned int height;
     unsigned int samples_per_launch;
@@ -234,10 +242,10 @@ struct Params
     float elapsedTime;
 
     int32_t outside_random_number;
-    bool simpleRender     :1;
     bool show_background  :1;
 
     bool denoise : 1;
+    bool needAOV : 1;
 
     float physical_camera_aperture;
     float physical_camera_shutter_speed;

@@ -343,10 +343,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
         new_dir = normalize(new_dir);
         scattering = vol_out.albedo;
 
-        if (prd->trace_denoise_normal) {
+        if (prd->denoise) {
             prd->tmp_normal = normalize(-ray_dir + new_dir);
-        }
-        if(prd->trace_denoise_albedo) {
             prd->tmp_albedo = vol_out.albedo;
         }
         break;

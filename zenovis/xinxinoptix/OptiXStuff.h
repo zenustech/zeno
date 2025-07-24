@@ -75,6 +75,7 @@ inline raii<OptixDeviceContext>             context                  ;
 inline OptixPipelineCompileOptions          pipeline_compile_options ;
 inline raii<OptixPipeline>                  pipeline                 ;
 
+inline std::tuple<bool, bool>  raygen_config;
 inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;

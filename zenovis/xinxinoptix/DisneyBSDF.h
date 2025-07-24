@@ -620,7 +620,7 @@ namespace DisneyBSDF{
         float& rPdf,
         float& fPdf,
         SurfaceEventFlags& flag,
-        int& medium,
+        uint8_t& medium,
         vec3& extinction,
         bool& isDiff,
         bool& isSS,

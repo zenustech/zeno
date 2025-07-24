@@ -166,9 +166,9 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
-    raii<CUdeviceptr> frame_buffer_p;
-    raii<CUdeviceptr> frame_buffer_pick;
     raii<CUdeviceptr> accum_buffer_m;
+    
+    raii<CUdeviceptr> pick_buffer;
 
     raii<CUdeviceptr> finite_lights_ptr;
 
@@ -185,9 +185,8 @@ struct PathTracerState
     OptixShaderBindingTable sbt {};
 };
 
+
 PathTracerState state;
-
-
 
 static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
     using id_t = unsigned int;
@@ -288,69 +287,47 @@ static void handleCameraUpdate( Params& params )
 }
 
 
-static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
-    
     if( !resize_dirty )
         return;
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
 
-    // Realloc accumulation buffer
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_d .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_s .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_m .reset()),
-        params.width * params.height * sizeof( ushort3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.frame_buffer_p .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.frame_buffer_pick .reset()),
-        params.width * params.height * sizeof( uint4 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
-        params.width * params.height * sizeof( ushort1 )
-            ) );
-    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
+    auto count = params.width * params.height;
+    state.accum_buffer_p.resize( sizeof(float3) * count );
+
+    if (!enable_aov) { count = 0; }
+
+    state.accum_buffer_d.resize( sizeof(float3) * count );
+    state.accum_buffer_s.resize( sizeof(float3) * count );
+    state.accum_buffer_t.resize( sizeof(float3) * count );
     
+    state.accum_buffer_m.resize( sizeof(ushort3) * count );
+    state.accum_buffer_b.resize( sizeof(ushort1) * count );
+
+    state.pick_buffer.resize(sizeof(PickInfo));
+
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
     state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
-    state.params.frame_buffer_P = (float3*)(CUdeviceptr)state.frame_buffer_p;
-    state.params.frame_buffer_Pick = (uint4*)(CUdeviceptr)state.frame_buffer_pick;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
+
+    state.params.pick_buffer    = (PickInfo*)state.pick_buffer.handle;
     state.params.subframe_index = 0;
 }
 
-
-static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void updateState(sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
     // Update params on device
     if( camera_changed || resize_dirty )
         params.subframe_index = 0;
 
     handleCameraUpdate( params );
-    handleResize( output_buffer, params );
+    handleResize( output_buffer, params, enable_aov);
 }
 
 
@@ -1692,9 +1669,6 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
             tex_data[i * 3 + 2] = v.z;
         }
     }
-    else if (name == "pos") {
-        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
-    }
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
@@ -1738,9 +1712,6 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
     }
     else if (name == "mask") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_m.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
-    }
-    else if (name == "pos") {
-        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "color") {
         std::vector<float> temp_buffer(w * h * 3);
@@ -1813,7 +1784,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
-    state.params.simpleRender = false;//simpleRender;
+
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
 #ifdef OPTIX_BASE_GL
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
@@ -1837,6 +1808,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.albedo_buffer = (float3*)state.albedo_buffer_p.handle;
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
+    bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+    state.params.needAOV = enable_output_aov;
+    
     auto &ud = zeno::getSession().userData();
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
@@ -1859,7 +1833,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
         bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";

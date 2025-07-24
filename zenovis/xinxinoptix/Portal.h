@@ -471,6 +471,7 @@ struct PortalLight {
             ( angleX + M_PI_2f ) / M_PIf,
             ( angleY + M_PIf ) / M_PIf
         };
+        return uv;
     }
 
     Vector3f uv_direction(float2 uv, float* duvdw=nullptr) {

@@ -76,80 +76,83 @@ struct RadiancePRD
     unsigned int offset = 0;
     // TODO: move some state directly into payload registers?
     float3       radiance;
-    float3       radiance_d;
-    float3       radiance_s;
-    float3       radiance_t;
+    float3       aov[3];
     float3       emission;
     float3       attenuation;
-    float3       attenuation2;
     float3       origin;
     float3       direction;
+
+    float3 tmp_albedo {};
+    float3 tmp_normal {};
     
     float        minSpecRough;
 
     unsigned int seed;
     unsigned int eventseed;
-    int          countEmitted;
-    int          done;
 
-    int          medium;
     float        scatterDistance;
     float        scatterPDF;
-    int          depth;
-    int          diffDepth;
-    bool         isSS;
     float        scatterStep;
-    float        pixel_area;
-    half3        sigma_t_queue[8];
-    half3        ss_alpha_queue[8];
-    int          curMatIdx;
-    float        samplePdf;
-    bool         fromDiff;
-    vec3         mask_value;
-    unsigned char max_depth;
 
+    float        pixel_area;
+
+    float        samplePdf;
+    vec3         mask_value;
+    
     uint16_t lightmask = EverythingMask;
     uint4 record;
 
-    __forceinline__ float rndf() {
-        return rnd(this->seed);
-        //return pcg_rng(this->seed); 
-    }
+    uint8_t      depth;
+    uint8_t      max_depth;
+    uint8_t      diffDepth;
 
-    unsigned char hit_type;
-    vec3 extinction() {
-        auto idx = clamp(curMatIdx, 0, 7);
-        return half3_to_float3(sigma_t_queue[idx]);
-    }
+    bool done         : 1;
+    bool countEmitted : 1;
+
+    bool isSS         : 1;
+    bool alphaHit     : 1;
+    bool fromDiff     : 1; 
+    bool denoise      : 1;
+    uint8_t hit_type  : 4;
+
+    uint8_t _mask_ = EverythingMask;
+    float   _tmin_ = 0.0f;
 
     //cihou SS
     vec3 sigma_t;
     vec3 ss_alpha;
 
-    vec3 sigma_s() {
-        return sigma_t * ss_alpha;
-    }
-    vec3 channelPDF;
+    uint8_t medium;
+    uint8_t curMatIdx;
 
-    bool trace_denoise_albedo = false;
-    bool trace_denoise_normal = false;
-    float3 tmp_albedo {};
-    float3 tmp_normal {};
+    half3 sigma_t_queue[8];
+    half3 ss_alpha_queue[8];
+    
+    vec3 channelPDF;
 
     // cihou nanovdb
     VolumePRD vol;
-
-    float _tmin_ = 0;
     float3 geometryNormal;
 
-    uint8_t _mask_ = EverythingMask;
+    __device__ __forceinline__ float rndf() {
+        return rnd(this->seed);
+        //return pcg_rng(this->seed); 
+    }
 
-    void updateAttenuation(float3& multiplier) {
-        attenuation2 = attenuation;
+    __device__ __forceinline__ vec3 sigma_s() {
+        return sigma_t * ss_alpha;
+    }
+
+    __device__ __forceinline__ void updateAttenuation(float3& multiplier) {
         attenuation *= multiplier;
     }
-    
-    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f))
+
+    __device__ __forceinline__ vec3 extinction() {
+        auto idx = min(curMatIdx, 7);
+        return half3_to_float3(sigma_t_queue[idx]);
+    }
+
+    __device__ int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f))
     {
         auto cached = this->extinction();
         vec3 d = abs(cached - extinction);
@@ -163,22 +166,21 @@ struct RadiancePRD
         return curMatIdx;
     }
 
-    void readMat(vec3& sigma_t, vec3& ss_alpha) {
+    __device__ void readMat(vec3& sigma_t, vec3& ss_alpha) {
 
-        auto idx = clamp(curMatIdx, 0, 7);
+        auto idx = min(curMatIdx, 7);
 
         sigma_t = half3_to_float3(sigma_t_queue[idx]);
         ss_alpha = half3_to_float3(ss_alpha_queue[idx]);
     }
 
-    int popMat(vec3& sigma_t, vec3& ss_alpha)
+    __device__ int popMat(vec3& sigma_t, vec3& ss_alpha)
     {
-        curMatIdx = clamp(--curMatIdx, 0, 7);
+        curMatIdx = min(--curMatIdx, 7);
         sigma_t = half3_to_float3(sigma_t_queue[curMatIdx]);
         ss_alpha = half3_to_float3(ss_alpha_queue[curMatIdx]);
         return curMatIdx;
     }
-    
 };
 
 static __forceinline__ __device__ void traceRadiance(

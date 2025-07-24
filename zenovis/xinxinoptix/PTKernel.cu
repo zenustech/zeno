@@ -11,6 +11,11 @@
 
 #include <cuda_fp16.h>
 
+#ifndef __CUDACC_RTC__
+#define __AOV__ 1
+#define DENOISE 1
+#endif
+
 extern "C" {
 __constant__ Params params;
 
@@ -89,9 +94,8 @@ vec3 PhysicalCamera(vec3 in,
 
 extern "C" __global__ void __raygen__rg()
 {
-
-    const int    w   = params.width;
-    const int    h   = params.height;
+    const auto w = params.width;
+    const auto h = params.height;
 
     uint3 idx = optixGetLaunchIndex();
     if(idx.x>w || idx.y>h)
@@ -119,19 +123,23 @@ extern "C" __global__ void __raygen__rg()
         physical_aperture = cam.focal_length / aperture;
     }
     
-
     float3 result = make_float3( 0.0f );
-   
-    float3 aov[3] {};
+
+#if __AOV__
+    float3 aov[4] {};
     float3& result_d = aov[1];
     float3& result_s = aov[2];
     float3& result_t = aov[3];
     float&  result_b = aov[0].x;
+#endif
 
     int i = params.samples_per_launch;
-
+    
+#if DENOISE
     float3 tmp_albedo{};
     float3 tmp_normal{};
+#endif 
+
     unsigned int sobolseed = subframe_index;
     float3 mask_value = make_float3( 0.0f );
 
@@ -231,7 +239,6 @@ extern "C" __global__ void __raygen__rg()
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
-        prd.attenuation2 = make_float3(1.f);
         prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;
@@ -256,18 +263,12 @@ extern "C" __global__ void __raygen__rg()
         prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
+    #if DENOISE 
+        prd.denoise = true;
+    #endif
         
-        //if constexpr(params.denoise) 
-        if (params.denoise) 
-        {
-            prd.trace_denoise_albedo = true;
-            prd.trace_denoise_normal = true;
-        }
+        if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y ) {
 
-        // Primary Ray
-        unsigned char background_trace = 0;
-
-        if (subframe_index == 0) {
             RadiancePRD testPRD {};
             testPRD.done = false;
             testPRD.seed = seed;
@@ -280,36 +281,42 @@ extern "C" __global__ void __raygen__rg()
             do {
                 traceRadiance(params.handle, ray_origin, ray_direction, testPRD._tmin_, testPRD.maxDistance, &testPRD, test_mask);
             } while(testPRD.test_distance && !testPRD.done);
-            float3 click_pos = make_float3( 0.0f );
+            float3 click_pos = make_float3( 0 );
             uint4 record = {0, 0, 0, 0};
             if (testPRD.maxDistance < FLT_MAX) {
                 click_pos = ray_origin + ray_direction * testPRD.maxDistance;
                 record = testPRD.record;
             }
-            params.frame_buffer_P[ image_index ] = click_pos;
-            params.frame_buffer_Pick[ image_index ] = record;
+            *params.pick_buffer = PickInfo { click_pos, record };
         }
 
-        traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        // Primary Ray
+        auto _attenuation = prd.attenuation;
+        do {
+            prd.alphaHit = false;
+            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+        } while (prd.alphaHit); // skip alpha
+
+        prd._tmin_ = 0;
+        
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
 
-        auto primary_hit_type = prd.hit_type;
-        background_trace = primary_hit_type;
-
+    #if __AOV__
+        const auto primary_hit_type = prd.hit_type;
+        result_b += primary_hit_type? 1:0;
         if(primary_hit_type > 0) {
-            result_d = prd.radiance_d * prd.attenuation2;
-            result_s = prd.radiance_s * prd.attenuation2;
-            result_t = prd.radiance_t * prd.attenuation2;
+            result_d = prd.aov[0] * _attenuation;
+            result_s = prd.aov[1] * _attenuation;
+            result_t = prd.aov[2] * _attenuation;
         }
+    #endif
 
-        if (params.denoise) {
-            tmp_albedo = prd.tmp_albedo;
-            tmp_normal = prd.tmp_normal;
-        }
-
-        prd.trace_denoise_albedo = false;
-        prd.trace_denoise_normal = false;
+    #if DENOISE
+        tmp_albedo = prd.tmp_albedo;
+        tmp_normal = prd.tmp_normal;
+        prd.denoise = false;
+    #endif
 
         for(;;)
         {
@@ -323,16 +330,17 @@ extern "C" __global__ void __raygen__rg()
             ray_direction = prd.direction;
 
             if(prd.countEmitted==false || prd.depth>0) {
-                auto temp_radiance = prd.radiance * prd.attenuation2;
+                auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
                 float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(40));
 
                 result += prd.depth>1?clampped:temp_radiance;
-
+            #if __AOV__
                 if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
                     aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
                 }
+            #endif
             }
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
@@ -354,90 +362,96 @@ extern "C" __global__ void __raygen__rg()
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
             }
-
-            prd.radiance_d = make_float3(0);
-            prd.radiance_s = make_float3(0);
-            prd.radiance_t = make_float3(0);
-            prd._tmin_ = 0;
+            
+            _attenuation = prd.attenuation;
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-
-            if(prd.hit_type>0 && primary_hit_type==0)
-            {
-              primary_hit_type = prd.hit_type;
-              aov[primary_hit_type] += (prd.hit_type==1?prd.radiance_d:(prd.hit_type==2?prd.radiance_s:prd.radiance_t))*prd.attenuation2;
-            }
-            background_trace += prd.hit_type>0?1:0;
-
         }
-        
         seed = prd.seed;
-
-        if (!(background_trace == 0)) {
-            result_b += 1.0f;
-        }
     }
     while( --i );
     aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
     float shutter_speed = params.physical_camera_shutter_speed;
     float iso           = params.physical_camera_iso;
-    float aces          = params.physical_camera_aces;
-    float exposure      = params.physical_camera_exposure;
     float midGray       = 0.18f;
+
+    bool need_manual_exposure = params.physical_camera_exposure;
+    bool need_tone_mapping = params.physical_camera_aces;
+
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
-    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, false) / samples_per_launch;
-    float        accum_color_b  = result_b / samples_per_launch;
-    float3         accum_mask     = mask_value / samples_per_launch;
-    
+    const auto tmp = 1.0f / params.samples_per_launch;
+    auto& accum_color    = result; accum_color *= tmp;
+#if __AOV__
+    auto& accum_color_d  = aov[1]; accum_color_d *= tmp;
+    auto& accum_color_s  = aov[2]; accum_color_s *= tmp;
+    auto& accum_color_t  = aov[3]; accum_color_t *= tmp;
+
+    auto accum_color_b  = result_b * tmp;
+    auto accum_mask     = mask_value * tmp;
+#endif
+
+    if (need_manual_exposure) {
+        auto manual_exposure = [&](float3& color){
+            color = PhysicalCamera(color, aperture, shutter_speed, iso, midGray, true, false);
+        };
+        manual_exposure(accum_color);
+    #if __AOV__ 
+        manual_exposure(accum_color_d);
+        manual_exposure(accum_color_s);
+        manual_exposure(accum_color_t);
+    #endif
+    }
+
     if( subframe_index > 0 )
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
         const float3 accum_color_prev   = params.accum_buffer[ image_index ];
+        accum_color = mix( accum_color_prev, accum_color, a );
+    #if __AOV__
         const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
         const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
         const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
-        const float accum_color_prev_b = __half2float(*(__half*)&params.accum_buffer_B[image_index]);
-
+        const float accum_color_prev_b  = __half2float(*(__half*)&params.accum_buffer_B[image_index]);
         const float3 accum_mask_prev    = half3_to_float3(params.frame_buffer_M[ image_index ]);
-        accum_color   = mix( vec3(accum_color_prev), accum_color, a );
+
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
         accum_color_s = mix( vec3(accum_color_prev_s), accum_color_s, a );
         accum_color_t = mix( vec3(accum_color_prev_t), accum_color_t, a );
         accum_color_b = mix( accum_color_prev_b, accum_color_b, a );
         accum_mask    = lerp( accum_mask_prev, accum_mask, a);
+    #endif
 
-        if (params.denoise) {
-
+        #if DENOISE
             const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
             tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
-
             const float3 accum_normal_prev = params.normal_buffer[ image_index ];
             tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
-        }
+
+            params.albedo_buffer[ image_index ] = tmp_albedo;
+            params.normal_buffer[ image_index ] = tmp_normal;
+        #endif
     }
 
     params.accum_buffer[ image_index ] = accum_color;
-    // params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
-    // params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
-    // params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
-    // params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
-    // auto accum_buffer_B = reinterpret_cast<__half*>(params.accum_buffer_B);
-    // accum_buffer_B[image_index] = __float2half(accum_color_b);
+
+    #if __AOV__
+        params.accum_buffer_D[ image_index ] = accum_color_d;
+        params.accum_buffer_S[ image_index ] = accum_color_s;
+        params.accum_buffer_T[ image_index ] = accum_color_t;
+        auto h3 = float3_to_half3(accum_mask);
+        params.frame_buffer_M[ image_index ] = reinterpret_cast<ushort3&>(h3);
+        auto accum_buffer_B = reinterpret_cast<__half*>(params.accum_buffer_B);
+        accum_buffer_B[image_index] = __float2half(accum_color_b);
+    #endif
 
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
     dither = (dither-0.5f);
-    accum_color  = PhysicalCamera(accum_color, aperture, shutter_speed, iso, midGray, false, aces);
-    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
-
-    if (params.denoise) {
-        params.albedo_buffer[ image_index ] = tmp_albedo;
-        params.normal_buffer[ image_index ] = tmp_normal;
+    if (need_tone_mapping) {
+        accum_color = ACESFilm(accum_color);
     }
+    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
 }
 
 extern "C" __global__ void __miss__radiance()
@@ -449,7 +463,6 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-    prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
     
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
@@ -504,7 +517,6 @@ extern "C" __global__ void __miss__radiance()
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 

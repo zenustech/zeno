@@ -259,7 +259,6 @@ extern "C" __global__ void __closesthit__radiance()
             }
             prd->depth = 1;
             prd->attenuation = vec3(1.0f); 
-            prd->attenuation2 = vec3(1.0f);
             return;
         }
         

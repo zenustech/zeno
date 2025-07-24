@@ -144,8 +144,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto ior = mats.ior;
     auto thin = mats.thin;
 
-    if(params.simpleRender==true)
-        opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99f) // No need to calculate an expensive random number if the test is going to fail anyway.
@@ -443,14 +441,13 @@ extern "C" __global__ void __closesthit__radiance()
 
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
 
-    if (params.denoise) {
+    if (prd->denoise) {
 
         if(0.0f == mats.roughness) {
             prd->tmp_albedo = make_float3(1.0f);
         } else {
             prd->tmp_albedo = mats.basecolor;
         }
-
         prd->tmp_normal = shadingNorm;
     }
 
@@ -479,7 +476,6 @@ extern "C" __global__ void __closesthit__radiance()
             prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
             prd->readMat(prd->sigma_t, prd->ss_alpha);
             auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-            prd->attenuation2 *= trans;
             prd->attenuation *= trans;
             //prd->origin = P;
             prd->direction = ray_dir;
@@ -487,7 +483,6 @@ extern "C" __global__ void __closesthit__radiance()
             return;
         }
         if(mats.subsurface>0.0f && dot(normalize(ray_dir), shadingNorm)<0.0f){
-            prd->attenuation2 = make_float3(0.0f,0.0f,0.0f);
             prd->attenuation = make_float3(0.0f,0.0f,0.0f);
             prd->radiance = make_float3(0.0f,0.0f,0.0f);
             prd->done = true;
@@ -495,7 +490,6 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
-    prd->attenuation2 = prd->attenuation;
     prd->countEmitted = false;
 
     if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
@@ -510,11 +504,10 @@ extern "C" __global__ void __closesthit__radiance()
             prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
           }
         }
-        prd->attenuation2 = prd->attenuation;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
         prd->_tmin_ = optixGetRayTmax();
-
+        prd->alphaHit = true;
         prd->countEmitted = false;
         return;
     }
@@ -623,7 +616,6 @@ extern "C" __global__ void __closesthit__radiance()
                 trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
             prd->attenuation *= trans;
-            prd->attenuation2 *= trans;
         }
 
         next_ray_is_going_inside = false;
@@ -692,7 +684,6 @@ extern "C" __global__ void __closesthit__radiance()
                 }
 
                 prd->attenuation *= trans;
-                prd->attenuation2 *= trans;
                 
                 prd->popMat(sigma_t, ss_alpha);
 
@@ -728,8 +719,6 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->isSS = true;
                     }
-
-                    prd->attenuation2 *= trans;
                     prd->attenuation *= trans;
             }
             else
@@ -747,7 +736,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
-      prd->attenuation2 *= reflectance;
+        //prd->attenuation2 *= reflectance;
     }
     prd->depth++;
 
@@ -758,19 +747,17 @@ extern "C" __global__ void __closesthit__radiance()
 
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
-        vec3 rd, rs, rt; // captured by lambda
+        auto& rd = reinterpret_cast<vec3&>(prd->aov[0]);
+        auto& rs = reinterpret_cast<vec3&>(prd->aov[1]);
+        auto& rt = reinterpret_cast<vec3&>(prd->aov[2]);
 
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
-        prd->radiance_d = rd;
-        prd->radiance_s = rs;
-        prd->radiance_t = rt;
-
         return lbrdf;
-
     };
+
     vec3 auxRadiance = {};
     auto taskAux = [&](const vec3& radiance) {
         auxRadiance = auxRadiance + radiance;
@@ -817,15 +804,15 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->radiance *= 1.0f/diffuse_sample_count;
         auxRadiance   *= 1.0f/diffuse_sample_count;
-        prd->radiance_d *= auxRadiance;
-        prd->radiance_s *= auxRadiance;
-        prd->radiance_t *= auxRadiance;
+        prd->aov[0] *= auxRadiance;
+        prd->aov[1] *= auxRadiance;
+        prd->aov[2] *= auxRadiance;
     }
     else {
         DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        prd->radiance_d *= auxRadiance;
-        prd->radiance_s *= auxRadiance;
-        prd->radiance_t *= auxRadiance;
+        prd->aov[0] *= auxRadiance;
+        prd->aov[1] *= auxRadiance;
+        prd->aov[2] *= auxRadiance;
     }
     if(mats.shadowReceiver > 0.5f)
     {
