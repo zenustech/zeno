@@ -1448,6 +1448,35 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
 
+    void replace_with_modified_matrix() {
+        if (defaultScene.modified_xfroms.empty()) {
+            return;
+        }
+        std::vector<std::shared_ptr<zeno::IObject>> mat_prims;
+        for (auto const&[name, n_mat]: defaultScene.modified_xfroms) {
+            auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+            mat_prim->verts.resize(4);
+            mat_prim->verts[0][0] = n_mat[0][0];
+            mat_prim->verts[0][1] = n_mat[1][0];
+            mat_prim->verts[0][2] = n_mat[2][0];
+            mat_prim->verts[1][0] = n_mat[3][0];
+            mat_prim->verts[1][1] = n_mat[0][1];
+            mat_prim->verts[1][2] = n_mat[1][1];
+            mat_prim->verts[2][0] = n_mat[2][1];
+            mat_prim->verts[2][1] = n_mat[3][1];
+            mat_prim->verts[2][2] = n_mat[0][2];
+            mat_prim->verts[3][0] = n_mat[1][2];
+            mat_prim->verts[3][1] = n_mat[2][2];
+            mat_prim->verts[3][2] = n_mat[3][2];
+
+            mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+            mat_prim->userData().set2("ObjectName", name+"_m");
+            mat_prims.push_back(mat_prim);
+        }
+        load_matrix_objects(mat_prims);
+    }
+
+
     void update() override {
         zeno::log_error("update");
         update_json(scene->objectsMan->pairs());
@@ -1479,6 +1508,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             matNeedUpdate = meshNeedUpdate = false;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+        replace_with_modified_matrix();
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
