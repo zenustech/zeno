@@ -1281,7 +1281,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         else if (in_msg["MessageType"] == "Xform") {
             std::string mode = in_msg["Mode"];
             if (mode == "Reset") {
-
+                if (defaultScene.cur_node.has_value()) {
+                    auto &[name, _lmat, _pmat] = defaultScene.cur_node.value();
+                    if (defaultScene.modified_xfroms.count(name)) {
+                        defaultScene.modified_xfroms.erase(name);
+                    }
+                    std::string mat_name = name + "_m";
+                    if (defaultScene.dynamic_scene->node_to_matrix.count(mat_name)) {
+                        auto matrixs = defaultScene.dynamic_scene->node_to_matrix[mat_name];
+                        auto prim = defaultScene.dynamic_scene->mats_to_prim(mat_name, matrixs, false);
+                        load_matrix_objects({prim});
+                    }
+                }
             }
             else {
                 std::string axis = in_msg["Axis"];
