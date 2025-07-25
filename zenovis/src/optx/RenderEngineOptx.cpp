@@ -1279,44 +1279,78 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         }
         else if (in_msg["MessageType"] == "Xform") {
-            std::string axis = in_msg["Axis"];
             std::string mode = in_msg["Mode"];
-            float value = in_msg["Value"];
-            glm::mat4 xform = glm::mat4(1);
-            if (mode == "Translate") {
-                xform = glm::translate(glm::mat4(1), glm::vec3(0, value, 0));
-            }
-            else if (mode == "Rotate") {
-            }
-            else if (mode == "Scale") {
-            }
-            if (defaultScene.cur_node.has_value()) {
-                auto &[name, lmat, pmat] = defaultScene.cur_node.value();
-                if (defaultScene.modified_xfroms.count(name) == 0) {
-                    defaultScene.modified_xfroms[name] = lmat;
-                }
-                auto g_mat = pmat * defaultScene.modified_xfroms[name];
-                g_mat = xform * g_mat;
-                auto n_mat = glm::inverse(pmat) * g_mat;
-                defaultScene.modified_xfroms[name] = n_mat;
-                auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
-                mat_prim->verts.resize(4);
-                mat_prim->verts[0][0] = n_mat[0][0];
-                mat_prim->verts[0][1] = n_mat[1][0];
-                mat_prim->verts[0][2] = n_mat[2][0];
-                mat_prim->verts[1][0] = n_mat[3][0];
-                mat_prim->verts[1][1] = n_mat[0][1];
-                mat_prim->verts[1][2] = n_mat[1][1];
-                mat_prim->verts[2][0] = n_mat[2][1];
-                mat_prim->verts[2][1] = n_mat[3][1];
-                mat_prim->verts[2][2] = n_mat[0][2];
-                mat_prim->verts[3][0] = n_mat[1][2];
-                mat_prim->verts[3][1] = n_mat[2][2];
-                mat_prim->verts[3][2] = n_mat[3][2];
+            if (mode == "Reset") {
 
-                mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
-                mat_prim->userData().set2("ObjectName", name+"_m");
-                load_matrix_objects({mat_prim});
+            }
+            else {
+                std::string axis = in_msg["Axis"];
+                float value = in_msg["Value"];
+                glm::mat4 xform = glm::mat4(1);
+                if (mode == "Translate") {
+                    if (axis == "Y") {
+                        xform = glm::translate(glm::mat4(1), glm::vec3(0, value, 0));
+                    }
+                    else if (axis == "X") {
+                        xform = glm::translate(glm::mat4(1), glm::vec3(value, 0, 0));
+                    }
+                    else if (axis == "Z") {
+                        xform = glm::translate(glm::mat4(1), glm::vec3(0, 0, value));
+                    }
+                }
+                else if (mode == "Rotate") {
+                    if (axis == "Y") {
+                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(0, 1, 0));
+                    }
+                    else if (axis == "X") {
+                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(1, 0, 0));
+                    }
+                    else if (axis == "Z") {
+                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(0, 0, 1));
+                    }
+                }
+                else if (mode == "Scale") {
+                    if (axis == "Y") {
+                        xform = glm::scale(glm::mat4(1), glm::vec3(0, glm::pow(1.1, value), 0));
+                    }
+                    else if (axis == "X") {
+                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), 0, 0));
+                    }
+                    else if (axis == "Z") {
+                        xform = glm::scale(glm::mat4(1), glm::vec3(0, 0, glm::pow(1.1, value)));
+                    }
+                    else {
+                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), glm::pow(1.1, value), glm::pow(1.1, value)));
+                    }
+                }
+                if (defaultScene.cur_node.has_value()) {
+                    auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+                    if (defaultScene.modified_xfroms.count(name) == 0) {
+                        defaultScene.modified_xfroms[name] = lmat;
+                    }
+                    auto g_mat = pmat * defaultScene.modified_xfroms[name];
+                    g_mat = xform * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    defaultScene.modified_xfroms[name] = n_mat;
+                    auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+                    mat_prim->verts.resize(4);
+                    mat_prim->verts[0][0] = n_mat[0][0];
+                    mat_prim->verts[0][1] = n_mat[1][0];
+                    mat_prim->verts[0][2] = n_mat[2][0];
+                    mat_prim->verts[1][0] = n_mat[3][0];
+                    mat_prim->verts[1][1] = n_mat[0][1];
+                    mat_prim->verts[1][2] = n_mat[1][1];
+                    mat_prim->verts[2][0] = n_mat[2][1];
+                    mat_prim->verts[2][1] = n_mat[3][1];
+                    mat_prim->verts[2][2] = n_mat[0][2];
+                    mat_prim->verts[3][0] = n_mat[1][2];
+                    mat_prim->verts[3][1] = n_mat[2][2];
+                    mat_prim->verts[3][2] = n_mat[3][2];
+
+                    mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+                    mat_prim->userData().set2("ObjectName", name+"_m");
+                    load_matrix_objects({mat_prim});
+                }
             }
         }
     }

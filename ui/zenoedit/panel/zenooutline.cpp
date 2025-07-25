@@ -126,18 +126,108 @@ zenooutline::~zenooutline()
 bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
     Json msg;
     msg["MessageType"] = "Xform";
-    msg["Mode"] = "Translate";
-    msg["Axis"] = "Y";
     if (watched == m_treeView) {
         auto *treeView = qobject_cast<QTreeView *>(watched);
         if (treeView) {
             if (event->type() == QEvent::KeyPress) {
                 if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
-                    if(keyEvent->key() == Qt::Key_Up) {
-                        msg["Value"] = 1.0;
+                    if (keyEvent->key() == Qt::Key_R) {
+                        msg["Mode"] = "Reset";
+                        msg["Value"] = 0.0;
                     }
-                    else if(keyEvent->key() == Qt::Key_Down) {
-                        msg["Value"] = -1.0;
+                    else {
+                        auto modifiers = keyEvent->modifiers();
+                        bool shiftPressed = modifiers & Qt::ShiftModifier;
+                        bool ctrlPressed = modifiers & Qt::ControlModifier;
+                        if (shiftPressed == false && ctrlPressed == false) {
+                            msg["Mode"] = "Translate";
+                            if(keyEvent->key() == Qt::Key_E) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_Q) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_D) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_A) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_S) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_W) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = -1.0;
+                            }
+                        }
+                        else if (shiftPressed == true && ctrlPressed == false) {
+                            msg["Mode"] = "Rotate";
+                            if(keyEvent->key() == Qt::Key_E) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_Q) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_D) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_A) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_S) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_W) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = -1.0;
+                            }
+                        }
+                        else if (shiftPressed == false && ctrlPressed == true) {
+                            msg["Mode"] = "Scale";
+                            if(keyEvent->key() == Qt::Key_E) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_Q) {
+                                msg["Axis"] = "Y";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_D) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_A) {
+                                msg["Axis"] = "X";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_S) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_W) {
+                                msg["Axis"] = "Z";
+                                msg["Value"] = -1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_Up) {
+                                msg["Axis"] = "XYZ";
+                                msg["Value"] = 1.0;
+                            }
+                            else if(keyEvent->key() == Qt::Key_Down) {
+                                msg["Axis"] = "XYZ";
+                                msg["Value"] = -1.0;
+                            }
+                        }
                     }
                 }
             }
