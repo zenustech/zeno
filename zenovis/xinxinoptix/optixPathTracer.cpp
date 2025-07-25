@@ -1898,8 +1898,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
         if (enable_output_mask) {
-            path = path.substr(0, path.size() - 4);
-            save_png_data(path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
+            auto mask_path = path.substr(0, path.size() - 4);
+            save_png_data(mask_path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
         // AOV
         if (enable_output_aov) {
