@@ -117,6 +117,7 @@ struct RadiancePRD
 
     uint8_t _mask_ = EverythingMask;
     float   _tmin_ = 0.0f;
+    float   _tmax_ = FLT_MAX;
 
     //cihou SS
     vec3 sigma_t;

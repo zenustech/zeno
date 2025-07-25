@@ -266,29 +266,6 @@ extern "C" __global__ void __raygen__rg()
     #if DENOISE 
         prd.denoise = true;
     #endif
-        
-        if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y ) {
-
-            RadiancePRD testPRD {};
-            testPRD.done = false;
-            testPRD.seed = seed;
-            testPRD.depth == 0;
-            testPRD._tmin_ = 0;
-            testPRD.maxDistance = FLT_MAX;
-            testPRD.test_distance = true;
-
-            uint8_t test_mask = EverythingMask ^ VolumeMatMask;
-            do {
-                traceRadiance(params.handle, ray_origin, ray_direction, testPRD._tmin_, testPRD.maxDistance, &testPRD, test_mask);
-            } while(testPRD.test_distance && !testPRD.done);
-            float3 click_pos = make_float3( 0 );
-            uint4 record = {0, 0, 0, 0};
-            if (testPRD.maxDistance < FLT_MAX) {
-                click_pos = ray_origin + ray_direction * testPRD.maxDistance;
-                record = testPRD.record;
-            }
-            *params.pick_buffer = PickInfo { click_pos, record };
-        }
 
         // Primary Ray
         auto _attenuation = prd.attenuation;
@@ -296,8 +273,21 @@ extern "C" __global__ void __raygen__rg()
             prd.alphaHit = false;
             traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
+        
+        if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
+        {
+            float3 click_pos {0,0,0};
+            uint4 record {0,0,0,0};
 
+            if (prd._tmax_ < FLT_MAX) {
+                click_pos = ray_origin + ray_direction * prd._tmax_;
+                record = prd.record;
+            }
+            *params.pick_buffer = PickInfo { click_pos, record };
+        }
         prd._tmin_ = 0;
+        prd._tmax_ = FLT_MAX;
+        prd.maxDistance = FLT_MAX;
         
         float3 m = prd.mask_value;
         mask_value = mask_value + m;

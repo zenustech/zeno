@@ -1841,8 +1841,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
-    printf("enable_aov = %d \n", enable_output_aov);
-
     updateState( *output_buffer_o, state.params, true );
 
     if (denoise) {
@@ -1859,6 +1857,10 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
     auto &ud = zeno::getSession().userData();
+    if (ud.get2<bool>("viewport-optix-pause", false)) {
+        return;
+    }
+
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
 
@@ -1869,9 +1871,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     }
 
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
-        if (ud.get2<bool>("viewport-optix-pause", false)) {
-            continue;
-        }
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( result_buffer_data, state, denoise);
@@ -2027,9 +2026,6 @@ void optixCleanup() {
     using namespace OptixUtil;
 
     pipelineMark = {};
-    // raygen_module            .handle=0;
-    // sphere_ism               .handle=0;
-    // raygen_prog_group        .handle=0;
 
     try {
         CUDA_SYNC_CHECK();

@@ -403,13 +403,6 @@ extern "C" __global__ void __closesthit__radiance()
             prd->_tmin_ = optixGetRayTmax();
         } else if(rnd(prd->seed)<mats.opacity) {
             prd->_tmin_ = optixGetRayTmax();
-        } else {
-            prd->test_distance = false;
-            prd->maxDistance = optixGetRayTmax();
-
-            *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
-            prd->record.z = sbtGASIndex;
-            prd->record.w = primIdx;
         }
         return;
     }
@@ -510,6 +503,13 @@ extern "C" __global__ void __closesthit__radiance()
         prd->alphaHit = true;
         prd->countEmitted = false;
         return;
+    }
+    
+    if (prd->depth==0) {
+        prd->_tmax_ = optixGetRayTmax();
+        *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
+        prd->record.z = sbtGASIndex;
+        prd->record.w = primIdx;
     }
 
     if(prd->depth==0&&mats.flatness>0.5)
