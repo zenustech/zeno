@@ -1217,7 +1217,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
     void outlineInit(Json const &in_msg) override {
-        zeno::log_error("MessageType: {}", in_msg.dump());
+//        zeno::log_error("MessageType: {}", in_msg.dump());
         if (in_msg["MessageType"] == "Init") {
             Json message;
             if (!defaultScene.static_scene_tree.is_null()) {
@@ -1322,13 +1322,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 else if (mode == "Scale") {
                     if (axis == "Y") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(0, glm::pow(1.1, value), 0));
+                        xform = glm::scale(glm::mat4(1), glm::vec3(1, glm::pow(1.1, value), 1));
                     }
                     else if (axis == "X") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), 0, 0));
+                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), 1, 1));
                     }
                     else if (axis == "Z") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(0, 0, glm::pow(1.1, value)));
+                        xform = glm::scale(glm::mat4(1), glm::vec3(1, 1, glm::pow(1.1, value)));
                     }
                     else {
                         xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), glm::pow(1.1, value), glm::pow(1.1, value)));
@@ -1340,7 +1340,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         defaultScene.modified_xfroms[name] = lmat;
                     }
                     auto g_mat = pmat * defaultScene.modified_xfroms[name];
-                    g_mat = xform * g_mat;
+                    auto pivot = g_mat * glm::vec4(0, 0, 0, 1);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
                     auto n_mat = glm::inverse(pmat) * g_mat;
                     defaultScene.modified_xfroms[name] = n_mat;
                     auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
@@ -1489,7 +1492,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
 
     void update() override {
-        zeno::log_error("update");
+//        zeno::log_error("update");
         update_json(scene->objectsMan->pairs());
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())

@@ -135,11 +135,21 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
                         msg["Mode"] = "Reset";
                         msg["Value"] = 0.0;
                     }
+                    else if(keyEvent->key() == Qt::Key_Up) {
+                        msg["Mode"] = "Scale";
+                        msg["Axis"] = "XYZ";
+                        msg["Value"] = 1.0;
+                    }
+                    else if(keyEvent->key() == Qt::Key_Down) {
+                        msg["Mode"] = "Scale";
+                        msg["Axis"] = "XYZ";
+                        msg["Value"] = -1.0;
+                    }
                     else {
                         auto modifiers = keyEvent->modifiers();
                         bool shiftPressed = modifiers & Qt::ShiftModifier;
-                        bool ctrlPressed = modifiers & Qt::ControlModifier;
-                        if (shiftPressed == false && ctrlPressed == false) {
+                        bool altPressed = modifiers & Qt::AltModifier;
+                        if (shiftPressed == false && altPressed == false) {
                             msg["Mode"] = "Translate";
                             if(keyEvent->key() == Qt::Key_E) {
                                 msg["Axis"] = "Y";
@@ -166,7 +176,7 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
                                 msg["Value"] = -1.0;
                             }
                         }
-                        else if (shiftPressed == true && ctrlPressed == false) {
+                        else if (shiftPressed == true && altPressed == false) {
                             msg["Mode"] = "Rotate";
                             if(keyEvent->key() == Qt::Key_E) {
                                 msg["Axis"] = "Y";
@@ -193,7 +203,7 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
                                 msg["Value"] = -1.0;
                             }
                         }
-                        else if (shiftPressed == false && ctrlPressed == true) {
+                        else if (shiftPressed == false && altPressed == true) {
                             msg["Mode"] = "Scale";
                             if(keyEvent->key() == Qt::Key_E) {
                                 msg["Axis"] = "Y";
@@ -217,14 +227,6 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
                             }
                             else if(keyEvent->key() == Qt::Key_W) {
                                 msg["Axis"] = "Z";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_Up) {
-                                msg["Axis"] = "XYZ";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_Down) {
-                                msg["Axis"] = "XYZ";
                                 msg["Value"] = -1.0;
                             }
                         }
