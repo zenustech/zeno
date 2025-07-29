@@ -603,6 +603,12 @@ extern "C" __global__ void __closesthit__radiance()
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
     prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?12:prd->max_depth;
+    if (mats.thin && prd->curMatIdx==0) 
+    {
+        isSS = false; // thin SSS
+        prd->max_depth = 4;
+    }
+
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
