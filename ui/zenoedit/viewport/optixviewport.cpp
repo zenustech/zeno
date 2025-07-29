@@ -378,18 +378,7 @@ void OptixWorker::onSetSampleNumber(int sample_number) {
     updateFrame();
 }
 
-void OptixWorker::onUpdateMatrix(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {
-    ZASSERT_EXIT(m_zenoVis);
-    auto session = m_zenoVis->getSession();
-    ZASSERT_EXIT(session);
-    auto scene = session->get_scene();
-    ZASSERT_EXIT(scene);
-    if(auto engine = scene->renderMan->getEngine("optx")) {
-        engine->load_matrix_objects(matrixs);
-    }
-}
-
-void OptixWorker::onOutlineInit(QString msg_str) {
+void OptixWorker::onSendOptixMessage(QString msg_str) {
     ZASSERT_EXIT(m_zenoVis);
     auto session = m_zenoVis->getSession();
     ZASSERT_EXIT(session);
@@ -507,8 +496,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
-    connect(this, &ZOptixViewport::sig_updateMatrix, m_worker, &OptixWorker::onUpdateMatrix, Qt::QueuedConnection);
-    connect(this, &ZOptixViewport::sig_outlineInit, m_worker, &OptixWorker::onOutlineInit, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();

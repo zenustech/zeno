@@ -298,7 +298,7 @@ void zenooutline::sendOptixMessage(Json &msg) {
         for (DisplayWidget* view : main->viewports()) {
             ZOptixViewport* optxview = view->optixViewport();
             QString msg_str = QString::fromStdString(msg.dump());
-            emit optxview->sig_outlineInit(msg_str);
+            emit optxview->sig_sendOptixMessage(msg_str);
         }
     }
 
