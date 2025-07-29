@@ -1523,9 +1523,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 
                 for (const auto& [_, ld] : xinxinoptix::get_lightdats()) {
 
-                    if (ld.textureKey.empty()) continue;
-                    requiredTexPathSet.insert( {ld.textureKey, false} );
-
+                    if (!ld.textureKey.empty()) {
+                        requiredTexPathSet.insert( {ld.textureKey, false} );
+                    }
                     if (requireSphereLight && requireTriangLight) continue;
                     const auto shape_enum = magic_enum::enum_cast<zeno::LightShape>(ld.shape).value_or(zeno::LightShape::Point);
     
