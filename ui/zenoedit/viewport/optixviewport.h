@@ -1,4 +1,4 @@
-#ifndef __ZOPTIX_VIEWPORT_H__
+﻿#ifndef __ZOPTIX_VIEWPORT_H__
 #define __ZOPTIX_VIEWPORT_H__
 
 #include <QtWidgets>
@@ -49,7 +49,9 @@ public slots:
     void onCleanUpView();
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
+
     void onSendOptixMessage(QString);
+    void onNodeRemoved(QString);
 
     void onSetData(float, float, float, bool, bool, bool, bool, float);
 
@@ -126,6 +128,7 @@ signals:
     void sig_viewportSendToOutline(QString);
     void sig_viewportSendToNodeEditor(QString);
     void sig_sendOptixMessage(QString);
+    void sig_nodeRemoved(QString);
 
 public slots:
     void onFrameRunFinished(int frame);

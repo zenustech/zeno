@@ -1,4 +1,4 @@
-#include "optixviewport.h"
+﻿#include "optixviewport.h"
 #include "zenovis.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -468,6 +468,10 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
     }
 }
 
+void OptixWorker::onNodeRemoved(QString removedNode) {
+    int a = 0;
+}
+
 void OptixWorker::onSetData(
     float aperture,
     float shutter_speed,
@@ -574,7 +578,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
-    connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
+	connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
+	connect(this, &ZOptixViewport::sig_nodeRemoved, m_worker, &OptixWorker::onNodeRemoved, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();
