@@ -63,8 +63,6 @@ private:
     VideoRecInfo m_recordInfo;
     int m_slidFeq = 1000 / 24;
     const int m_sampleFeq = 16;
-    std::optional<std::string> cur_node_uuid;
-    std::unordered_map<std::string, std::string> outline_node_to_uuid;
 };
 
 class ZOptixViewport : public QWidget

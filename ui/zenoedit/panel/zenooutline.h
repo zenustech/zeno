@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QtWidgets>
 #include <QAbstractItemModel>
@@ -63,4 +63,7 @@ private:
     
     QTreeView *m_treeView = nullptr;
     OutlineItemModel *m_model = nullptr;
+
+	std::optional<std::string> cur_node_uuid;
+	std::unordered_map<std::string, std::string> outline_node_to_uuid;
 };
