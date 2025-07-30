@@ -105,13 +105,14 @@ zenooutline::zenooutline(QWidget *parent)
 
     if (auto main = zenoApp->getMainWindow()) {
         for (DisplayWidget* view : main->viewports()) {
-            ZOptixViewport* optxview = view->optixViewport();
-            connect(optxview, &ZOptixViewport::sig_viewportSendToOutline, this, [this](QString content) {
-                Json msg = Json::parse(content.toStdString());
-                if (msg["MessageType"] == "SceneTree" && this->m_model) {
-                    this->m_model->setupModelDataFromMessage(msg);
-                }
-            });
+            if (auto optxview = view->optixViewport()) {
+                connect(optxview, &ZOptixViewport::sig_viewportSendToOutline, this, [this](QString content) {
+                    Json msg = Json::parse(content.toStdString());
+                    if (msg["MessageType"] == "SceneTree" && this->m_model) {
+                        this->m_model->setupModelDataFromMessage(msg);
+                    }
+                });
+            }
         }
     }
     Json msg;

@@ -123,6 +123,17 @@ ZENO_HANDLE Zeno_GetItem(int idx)
     return subgIdx.internalId();
 }
 
+std::optional<ZENO_HANDLE> Zeno_GetNode(ZENO_HANDLE hGraph, const std::string& nodeuuid)
+{
+    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return std::nullopt;
+
+    QModelIndex subgIdx = pModel->subgIndex(hGraph);
+    QModelIndex nodeIdx = pModel->index(QString::fromStdString(nodeuuid), subgIdx);
+    return nodeIdx.internalId();
+}
+
 ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
@@ -157,6 +168,17 @@ ZENO_ERROR Zeno_GetName(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, std::string& name)
 
     QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     name = idx.data(ROLE_OBJNAME).toString().toStdString();
+    return Err_NoError;
+}
+
+ZENO_ERROR Zeno_GetNodeUuid(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, std::string& name)
+{
+    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return Err_ModelNull;
+
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
+    name = idx.data(ROLE_OBJID).toString().toStdString();
     return Err_NoError;
 }
 
@@ -492,10 +514,11 @@ ZENO_ERROR Zeno_SetView(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
     if (bOn) {
         options |= OPT_VIEW;
     } else {
-        options ^= OPT_VIEW;
+        options = options & (~OPT_VIEW);
     }
     info.role = ROLE_OPTIONS;
     info.newValue = options;
+    zeno::log_info("old: {}, new: {}", info.oldValue.toInt(), info.newValue.toInt());
 
     pModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
     return Err_NoError;
@@ -625,3 +648,68 @@ ZENO_ERROR Zeno_SetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, const std::pair<flo
     pModel->updateNodeStatus(nodeid, info, subgIdx, false);
     return Err_NoError;
 }
+
+std::optional<zeno::vec2f> Zeno_GetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode) {
+    std::pair<float, float> _pt = {};
+    auto err = Zeno_GetPos(hSubg, hNode, _pt);
+    if (err == 0) {
+        return zeno::vec2f(_pt.first, _pt.second);
+    }
+    else {
+        return std::nullopt;
+    }
+}
+
+
+std::optional<std::string> Zeno_EmitNode(
+    ZENO_HANDLE hSubg
+    , const std::string &nodeCls
+    , std::vector<std::pair<std::string, ZVARIANT>> inputs
+    , std::vector<std::pair<std::string, ZVARIANT>> params
+){
+    auto new_node_handle = Zeno_AddNode(hSubg, nodeCls);
+    if (new_node_handle != 0) {
+        return std::nullopt;
+    }
+    for (auto const&[in_soc, value]: inputs) {
+        auto err = Zeno_SetInputDefl(hSubg, new_node_handle, in_soc, value);
+        if (err != 0) {
+            return std::nullopt;
+        }
+    }
+    for (auto const&[in_param, value]: params) {
+        auto err = Zeno_SetParam(hSubg, new_node_handle, in_param, value);
+        if (err != 0) {
+            return std::nullopt;
+        }
+    }
+    std::string uuid;
+    auto err = Zeno_GetNodeUuid(hSubg, new_node_handle, uuid);
+    if (err == 0) {
+        return uuid;
+    }
+    else {
+        return std::nullopt;
+    }
+};
+
+ZENO_ERROR Zeno_ConnectNode(
+    ZENO_HANDLE hSubg
+    , std::string const &out_uuid
+    , std::string const &out_socket
+    , std::string const &in_uuid
+    , std::string const &in_socket
+) {
+    auto hOutnode = Zeno_GetNode(hSubg, out_uuid);
+    if (!hOutnode.has_value()) {
+        return Err_NodeNotExist;
+    }
+    auto hInnode = Zeno_GetNode(hSubg, in_uuid);
+    if (!hInnode.has_value()) {
+        return Err_NodeNotExist;
+    }
+    return Zeno_AddLink(hSubg,
+                    hOutnode.value(), out_socket,
+                    hInnode.value(), in_socket);
+}
+

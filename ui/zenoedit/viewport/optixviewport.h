@@ -26,6 +26,7 @@ signals:
     void sig_recordCanceled();
 
     void sig_sendToOutline(QString);
+    void sig_sendToNodeEditor(QString);
 
 public slots:
     void stop();
@@ -60,6 +61,8 @@ private:
     VideoRecInfo m_recordInfo;
     int m_slidFeq = 1000 / 24;
     const int m_sampleFeq = 16;
+    std::optional<std::string> cur_node_uuid;
+    std::unordered_map<std::string, std::string> outline_node_to_uuid;
 };
 
 class ZOptixViewport : public QWidget
@@ -121,6 +124,7 @@ signals:
     void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
 
     void sig_viewportSendToOutline(QString);
+    void sig_viewportSendToNodeEditor(QString);
     void sig_sendOptixMessage(QString);
 
 public slots:

@@ -1228,6 +1228,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
             if (!defaultScene.dynamic_scene_tree.is_null()) {
                 Json scene_tree;
+                scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
                 scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
                 scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
                 message["DynamicSceneTree"] = scene_tree;
@@ -1291,6 +1292,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         auto matrixs = defaultScene.dynamic_scene->node_to_matrix[mat_name];
                         auto prim = defaultScene.dynamic_scene->mats_to_prim(mat_name, matrixs, false);
                         load_matrix_objects({prim});
+                    }
+                    {
+                        Json xform_json;
+                        xform_json["MessageType"] = "SetNodeXform";
+                        xform_json["Mode"] = "Reset";
+                        xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+                        xform_json["NodeName"] = name;
+                        fun(xform_json.dump());
                     }
                 }
             }
@@ -1364,6 +1373,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
                     mat_prim->userData().set2("ObjectName", name+"_m");
                     load_matrix_objects({mat_prim});
+                    {
+                        Json xform_json;
+                        xform_json["MessageType"] = "SetNodeXform";
+                        xform_json["Mode"] = "Set";
+                        xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+                        xform_json["NodeName"] = name;
+                        xform_json["r0"] = {n_mat[0][0], n_mat[0][1] , n_mat[0][2]};
+                        xform_json["r1"] = {n_mat[1][0], n_mat[1][1] , n_mat[1][2]};
+                        xform_json["r2"] = {n_mat[2][0], n_mat[2][1] , n_mat[2][2]};
+                        xform_json["t"]  = {n_mat[3][0], n_mat[3][1] , n_mat[3][2]};
+                        fun(xform_json.dump());
+                    }
                 }
             }
         }
@@ -1444,10 +1465,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 else if (ud.get2<std::string>("SceneTreeType", "") == "dynamic") {
                     auto content = ud.get2<std::string>("json");
                     defaultScene.dynamic_scene_tree = Json::parse(content);
+                    defaultScene.dynamic_scene_tree["node_key"] = key;
 
                     Json scene_tree;
                     scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
                     scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
+                    scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
                     message["DynamicSceneTree"] = scene_tree;
 
                     defaultScene.dynamic_scene->from_json(defaultScene.dynamic_scene_tree);
