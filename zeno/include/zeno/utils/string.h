@@ -107,4 +107,8 @@ static std::string remove_all(const std::string& inout, std::string_view what) {
     return replace_all(inout, what, "");
 }
 
+static bool str_contains(std::string const &line, std::string const &pattern) {
+    return line.find(pattern) != std::string::npos;
+}
+
 }

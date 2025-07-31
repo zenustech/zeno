@@ -98,6 +98,8 @@ public:
 
     zenovis::ZOptixCameraSettingInfo getdata_from_optix_thread();
     void setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo value);
+    std::tuple<std::string, std::string, bool> get_srt_mode_axis();
+    void set_srt_mode_axis(std::string const& mode, std::string const& axis, bool local_space);
 
 signals:
     void cameraAboutToRefresh();
@@ -147,8 +149,14 @@ private:
     QThread m_thdOptix;
     bool updateLightOnce;
     bool m_bMovingCamera;
+    bool m_bMovingNode = false;
+    std::optional<zeno::vec2f> start_pos;
+    std::optional<zeno::vec2f> last_pos;
     QImage m_renderImage;
     OptixWorker* m_worker;
+    std::string mode;
+    std::string axis;
+    bool local_space = false;
 };
 
 #endif

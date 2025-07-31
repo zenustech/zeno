@@ -464,6 +464,10 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
     if(auto engine = scene->renderMan->getEngine("optx")) {
         std::string msg_std_str = msg_str.toStdString();
         Json msg = Json::parse(msg_std_str);
+        if (msg["MessageType"] == "Xform") {
+            auto res = m_zenoVis->m_camera_control->res();
+            msg["Resolution"] = {res.x(), res.y()};
+        }
         engine->outlineInit(msg);
     }
 }
@@ -758,6 +762,14 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
         m_bMovingCamera = true;
         setSimpleRenderOption();
     }
+    else if (event->button() == Qt::LeftButton) {
+        m_bMovingNode = true;
+        auto currentPos = event->pos();
+        start_pos = zeno::vec2f(currentPos.x(), currentPos.y());
+        last_pos = start_pos;
+
+        setSimpleRenderOption();
+    }
     _base::mousePressEvent(event);
     m_camera->fakeMousePressEvent(event);
     update();
@@ -768,6 +780,11 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = false;
     }
+    else if (event->button() == Qt::LeftButton) {
+        m_bMovingNode = false;
+        start_pos = {};
+        last_pos = {};
+    }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event);
     update();
@@ -775,6 +792,30 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
 
 void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 {
+    if (m_bMovingNode) {
+        auto currentPos = event->pos();
+        auto cur_pos = zeno::vec2f(currentPos.x(), currentPos.y());
+        if (!last_pos.has_value()) {
+            start_pos = cur_pos;
+            last_pos = cur_pos;
+            return;
+        }
+        auto delta = cur_pos - last_pos.value();
+        Json msg;
+        msg["MessageType"] = "Xform";
+        msg["Mode"] = mode;
+        msg["Axis"] = axis;
+        msg["LocalSpace"] = local_space;
+        msg["Delta"] = {delta[0], delta[1]};
+        msg["LastPos"] = {last_pos.value()[0], last_pos.value()[1]};
+        msg["CurPos"] = {cur_pos[0], cur_pos[1]};
+        last_pos = cur_pos;
+        auto msg_str = msg.dump();
+        emit sig_sendOptixMessage(QString::fromStdString(msg_str));
+
+        update();
+        return;
+    }
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = true;
     }
@@ -895,5 +936,21 @@ void ZOptixViewport::paintEvent(QPaintEvent* event)
         else {
             painter.drawImage(0, 0, m_renderImage);
         }
+    }
+}
+
+std::tuple<std::string, std::string, bool> ZOptixViewport::get_srt_mode_axis() {
+    return {mode, axis, local_space};
+}
+
+void ZOptixViewport::set_srt_mode_axis(const std::string &_mode, const std::string &_axis, bool _local_space) {
+    mode = _mode;
+    axis = _axis;
+    local_space = _local_space;
+    if (mode.size()) {
+        zenoApp->getMainWindow()->statusbarShowMessage(zeno::format("Mode: {}, Axis: {}, local: {}", mode, axis, local_space));
+    }
+    else {
+        zenoApp->getMainWindow()->statusbarShowMessage("");
     }
 }

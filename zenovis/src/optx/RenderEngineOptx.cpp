@@ -1203,6 +1203,62 @@ struct GraphicsManager {
     }
 };
 
+static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
+    auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
+    if (t > 0)
+        return ori + dir * t;
+    else
+        return {};
+}
+
+// x, y from [0, 1]
+static glm::vec3 screenPosToRayWS(float x, float y, float fov_degree, glm::vec2 res, glm::quat rot)  {
+    x = (x - 0.5) * 2;
+    y = (y - 0.5) * (-2);
+    float v = std::tan(glm::radians(fov_degree) * 0.5f);
+    float aspect = res.x / res.y;
+    auto dir = glm::normalize(glm::vec3(v * x * aspect, v * y, -1));
+    return rot * dir;
+}
+
+static std::optional<glm::vec3> get_proj_pos_on_plane(
+        Json const &in_msg
+        , float pos_x
+        , float pos_y
+        , zenovis::Camera *camera
+        , glm::vec3 const & pivot
+        , glm::vec3 const & plane_dir
+) {
+    float res_x = in_msg["Resolution"][0];
+    float res_y = in_msg["Resolution"][1];
+    auto ori = camera->getPos();
+    auto fov_degree = camera->m_fov;
+    auto rot = camera->m_rotation;
+    glm::vec3 dir = screenPosToRayWS(
+        pos_x / res_x
+        , pos_y / res_y
+        , fov_degree
+        , {res_x, res_y}
+        , rot
+    );
+    std::optional<glm::vec3> t = hitOnPlane(ori, dir, plane_dir, pivot);
+    return t;
+}
+std::optional<glm::quat> rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis) {
+    start_vec = glm::normalize(start_vec);
+    end_vec = glm::normalize(end_vec);
+    if (glm::length(start_vec - end_vec) < 0.0001) {
+        return std::nullopt;
+    }
+    auto cross_vec = glm::cross(start_vec, end_vec);
+    float direct = 1.0f;
+    if (glm::dot(cross_vec, axis) < 0) {
+        direct = -1.0f;
+    }
+    float angle = acos(glm::clamp(glm::dot(start_vec, end_vec), -1.0f, 1.0f));
+    glm::quat q(glm::rotate(angle * direct, axis));
+    return q;
+}
 struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
 #ifdef OPTIX_BASE_GL
@@ -1280,111 +1336,186 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         }
         else if (in_msg["MessageType"] == "Xform") {
-            std::string mode = in_msg["Mode"];
-            if (mode == "Reset") {
-                if (defaultScene.cur_node.has_value()) {
-                    auto &[name, _lmat, _pmat] = defaultScene.cur_node.value();
-                    if (defaultScene.modified_xfroms.count(name)) {
-                        defaultScene.modified_xfroms.erase(name);
-                    }
-                    std::string mat_name = name + "_m";
-                    if (defaultScene.dynamic_scene->node_to_matrix.count(mat_name)) {
-                        auto matrixs = defaultScene.dynamic_scene->node_to_matrix[mat_name];
-                        auto prim = defaultScene.dynamic_scene->mats_to_prim(mat_name, matrixs, false);
-                        load_matrix_objects({prim});
-                    }
-                    {
-                        Json xform_json;
-                        xform_json["MessageType"] = "SetNodeXform";
-                        xform_json["Mode"] = "Reset";
-                        xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
-                        xform_json["NodeName"] = name;
-                        fun(xform_json.dump());
-                    }
-                }
+            if (!defaultScene.cur_node.has_value()) {
+                return;
             }
-            else {
-                std::string axis = in_msg["Axis"];
-                float value = in_msg["Value"];
+            auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+            if (defaultScene.modified_xfroms.count(name) == 0) {
+                defaultScene.modified_xfroms[name] = lmat;
+            }
+            auto g_mat = pmat * defaultScene.modified_xfroms[name];
+            auto pivot = glm::vec3(g_mat * glm::vec4(0, 0, 0, 1));
+
+            const auto x_axis = glm::vec3(1, 0, 0);
+            const auto y_axis = glm::vec3(0, 1, 0);
+            const auto z_axis = glm::vec3(0, 0, 1);
+
+            std::string mode = in_msg["Mode"];
+            bool is_local_space = in_msg["LocalSpace"];
+            std::map<std::string, glm::vec3> axis_mapping = {
+                {"X", {1, 0, 0}},
+                {"Y", {0, 1, 0}},
+                {"Z", {0, 0, 1}},
+                {"XY", {1, 1, 0}},
+                {"YZ", {0, 1, 1}},
+                {"XZ", {1, 0, 1}},
+                {"", {1, 1, 1}},
+                {"XYZ", {1, 1, 1}},
+            };
+            std::optional<std::pair<std::string, glm::mat4>> result;
+
+            if (mode == "Translate") {
+                std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                    {"X", {0, 0, 1}},
+                    {"Y", {0, 0, 1}},
+                    {"Z", {0, 1, 0}},
+                    {"XY", {0, 0, 1}},
+                    {"YZ", {1, 0, 0}},
+                    {"XZ", {0, 1, 0}},
+                };
+                glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
+                if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
+                    selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
+                }
+                auto trans_start = get_proj_pos_on_plane(
+                    in_msg
+                    , float(in_msg["LastPos"][0])
+                    , float(in_msg["LastPos"][1])
+                    , scene->camera.get()
+                    , pivot
+                    , selected_plane_dir
+                );
+                if (!trans_start.has_value()) {
+                    return;
+                }
+                auto trans_end = get_proj_pos_on_plane(
+                    in_msg
+                    , float(in_msg["CurPos"][0])
+                    , float(in_msg["CurPos"][1])
+                    , scene->camera.get()
+                    , pivot
+                    , selected_plane_dir
+                );
+                if (!trans_end.has_value()) {
+                    return;
+                }
+                auto trans = trans_end.value() - trans_start.value();
+                glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                trans *= axis;
                 glm::mat4 xform = glm::mat4(1);
-                if (mode == "Translate") {
-                    if (axis == "Y") {
-                        xform = glm::translate(glm::mat4(1), glm::vec3(0, value, 0));
-                    }
-                    else if (axis == "X") {
-                        xform = glm::translate(glm::mat4(1), glm::vec3(value, 0, 0));
-                    }
-                    else if (axis == "Z") {
-                        xform = glm::translate(glm::mat4(1), glm::vec3(0, 0, value));
+                xform = glm::translate(glm::mat4(1), trans);
+                auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                auto trans2local_inv = glm::inverse(trans2local);
+                g_mat = trans2local_inv * xform * trans2local * g_mat;
+                auto n_mat = glm::inverse(pmat) * g_mat;
+                result = {name, n_mat};
+            }
+            else if (mode == "Scale") {
+                auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
+                glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+                pivot_SS = pivot_SS * 0.5f + 0.5f;
+                pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
+                glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
+                glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                auto start_len = glm::distance(pivot_SS, start_pos_SS);
+                if (start_len < 1) {
+                    return;
+                }
+                auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
+                glm::vec3 scale(1.0f);
+                for (int i = 0; i < 3; i++) {
+                    if (axis[i] == 1) {
+                        scale[i] = std::max(scale_size, 0.1f);
                     }
                 }
-                else if (mode == "Rotate") {
-                    if (axis == "Y") {
-                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(0, 1, 0));
+                glm::mat4 xform = glm::mat4(1);
+                xform = glm::scale(glm::mat4(1), scale);
+                auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                auto trans2local_inv = glm::inverse(trans2local);
+                g_mat = trans2local_inv * xform * trans2local * g_mat;
+                auto n_mat = glm::inverse(pmat) * g_mat;
+                result = {name, n_mat};
+            }
+            else if (mode == "Rotate") {
+                std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                    {"X", {1, 0, 0}},
+                    {"Y", {0, 1, 0}},
+                    {"Z", {0, 0, 1}},
+                };
+                std::string axis = in_msg["Axis"];
+                if (axis == "X" || axis == "Y" || axis == "Z") {
+                    auto plane_dir = selected_plane_dir_mapping[axis];
+                    auto rot_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_start.has_value()) {
+                        return;
                     }
-                    else if (axis == "X") {
-                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(1, 0, 0));
+                    auto rot_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_end.has_value()) {
+                        return;
                     }
-                    else if (axis == "Z") {
-                        xform = glm::rotate(glm::mat4(1), glm::radians(value * 5), glm::vec3(0, 0, 1));
+                    auto start_vec = rot_start.value() - pivot;
+                    auto end_vec = rot_end.value() - pivot;
+                    auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                    if (!rot_quat.has_value()) {
+                        return;
                     }
-                }
-                else if (mode == "Scale") {
-                    if (axis == "Y") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(1, glm::pow(1.1, value), 1));
-                    }
-                    else if (axis == "X") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), 1, 1));
-                    }
-                    else if (axis == "Z") {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(1, 1, glm::pow(1.1, value)));
-                    }
-                    else {
-                        xform = glm::scale(glm::mat4(1), glm::vec3(glm::pow(1.1, value), glm::pow(1.1, value), glm::pow(1.1, value)));
-                    }
-                }
-                if (defaultScene.cur_node.has_value()) {
-                    auto &[name, lmat, pmat] = defaultScene.cur_node.value();
-                    if (defaultScene.modified_xfroms.count(name) == 0) {
-                        defaultScene.modified_xfroms[name] = lmat;
-                    }
-                    auto g_mat = pmat * defaultScene.modified_xfroms[name];
-                    auto pivot = g_mat * glm::vec4(0, 0, 0, 1);
+                    glm::mat4 xform = glm::toMat4(rot_quat.value());
                     auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
                     auto trans2local_inv = glm::inverse(trans2local);
                     g_mat = trans2local_inv * xform * trans2local * g_mat;
                     auto n_mat = glm::inverse(pmat) * g_mat;
-                    defaultScene.modified_xfroms[name] = n_mat;
-                    auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
-                    mat_prim->verts.resize(4);
-                    mat_prim->verts[0][0] = n_mat[0][0];
-                    mat_prim->verts[0][1] = n_mat[1][0];
-                    mat_prim->verts[0][2] = n_mat[2][0];
-                    mat_prim->verts[1][0] = n_mat[3][0];
-                    mat_prim->verts[1][1] = n_mat[0][1];
-                    mat_prim->verts[1][2] = n_mat[1][1];
-                    mat_prim->verts[2][0] = n_mat[2][1];
-                    mat_prim->verts[2][1] = n_mat[3][1];
-                    mat_prim->verts[2][2] = n_mat[0][2];
-                    mat_prim->verts[3][0] = n_mat[1][2];
-                    mat_prim->verts[3][1] = n_mat[2][2];
-                    mat_prim->verts[3][2] = n_mat[3][2];
+                    result = {name, n_mat};
+                }
+            }
+            if (result.has_value()) {
+                std::string name = result.value().first;
+                glm::mat4 n_mat = result.value().second;
+                defaultScene.modified_xfroms[name] = n_mat;
+                auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+                mat_prim->verts.resize(4);
+                mat_prim->verts[0][0] = n_mat[0][0];
+                mat_prim->verts[0][1] = n_mat[1][0];
+                mat_prim->verts[0][2] = n_mat[2][0];
+                mat_prim->verts[1][0] = n_mat[3][0];
+                mat_prim->verts[1][1] = n_mat[0][1];
+                mat_prim->verts[1][2] = n_mat[1][1];
+                mat_prim->verts[2][0] = n_mat[2][1];
+                mat_prim->verts[2][1] = n_mat[3][1];
+                mat_prim->verts[2][2] = n_mat[0][2];
+                mat_prim->verts[3][0] = n_mat[1][2];
+                mat_prim->verts[3][1] = n_mat[2][2];
+                mat_prim->verts[3][2] = n_mat[3][2];
 
-                    mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
-                    mat_prim->userData().set2("ObjectName", name+"_m");
-                    load_matrix_objects({mat_prim});
-                    {
-                        Json xform_json;
-                        xform_json["MessageType"] = "SetNodeXform";
-                        xform_json["Mode"] = "Set";
-                        xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
-                        xform_json["NodeName"] = name;
-                        xform_json["r0"] = {n_mat[0][0], n_mat[0][1] , n_mat[0][2]};
-                        xform_json["r1"] = {n_mat[1][0], n_mat[1][1] , n_mat[1][2]};
-                        xform_json["r2"] = {n_mat[2][0], n_mat[2][1] , n_mat[2][2]};
-                        xform_json["t"]  = {n_mat[3][0], n_mat[3][1] , n_mat[3][2]};
-                        fun(xform_json.dump());
-                    }
+                mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+                mat_prim->userData().set2("ObjectName", name+"_m");
+                load_matrix_objects({mat_prim});
+                {
+                    Json xform_json;
+                    xform_json["MessageType"] = "SetNodeXform";
+                    xform_json["Mode"] = "Set";
+                    xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+                    xform_json["NodeName"] = name;
+                    xform_json["r0"] = {n_mat[0][0], n_mat[0][1] , n_mat[0][2]};
+                    xform_json["r1"] = {n_mat[1][0], n_mat[1][1] , n_mat[1][2]};
+                    xform_json["r2"] = {n_mat[2][0], n_mat[2][1] , n_mat[2][2]};
+                    xform_json["t"]  = {n_mat[3][0], n_mat[3][1] , n_mat[3][2]};
+                    fun(xform_json.dump());
                 }
             }
         }

@@ -7,6 +7,7 @@
 #include "viewport/zenovis.h"
 #include "viewport/displaywidget.h"
 #include "viewport/zoptixviewport.h"
+#include "zeno/utils/string.h"
 
 using Json = nlohmann::json;
 
@@ -125,119 +126,86 @@ zenooutline::~zenooutline()
 }
 
 bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
-    Json msg;
-    msg["MessageType"] = "Xform";
+    std::string mode;
+    std::string axis;
+    bool local_space;
+    if (auto main = zenoApp->getMainWindow()) {
+        for (DisplayWidget* view : main->viewports()) {
+            if (ZOptixViewport* optxview = view->optixViewport()) {
+                std::tie(mode, axis, local_space) = optxview->get_srt_mode_axis();
+            }
+        }
+    }
+    bool changed = false;
     if (watched == m_treeView) {
         auto *treeView = qobject_cast<QTreeView *>(watched);
         if (treeView) {
             if (event->type() == QEvent::KeyPress) {
                 if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
                     if (keyEvent->key() == Qt::Key_R) {
-                        msg["Mode"] = "Reset";
-                        msg["Value"] = 0.0;
+                        mode = "Rotate";
+                        changed = true;
                     }
-                    else if(keyEvent->key() == Qt::Key_Up) {
-                        msg["Mode"] = "Scale";
-                        msg["Axis"] = "XYZ";
-                        msg["Value"] = 1.0;
+                    else if (keyEvent->key() == Qt::Key_E) {
+                        mode = "Scale";
+                        changed = true;
                     }
-                    else if(keyEvent->key() == Qt::Key_Down) {
-                        msg["Mode"] = "Scale";
-                        msg["Axis"] = "XYZ";
-                        msg["Value"] = -1.0;
+                    else if (keyEvent->key() == Qt::Key_T) {
+                        mode = "Translate";
+                        changed = true;
                     }
-                    else {
-                        auto modifiers = keyEvent->modifiers();
-                        bool shiftPressed = modifiers & Qt::ShiftModifier;
-                        bool altPressed = modifiers & Qt::AltModifier;
-                        if (shiftPressed == false && altPressed == false) {
-                            msg["Mode"] = "Translate";
-                            if(keyEvent->key() == Qt::Key_E) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_Q) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_D) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_A) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_S) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_W) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = -1.0;
-                            }
+                    else if (keyEvent->key() == Qt::Key_X) {
+                        if (zeno::str_contains(axis, "X")) {
+                            axis = zeno::remove_all(axis, "X");
                         }
-                        else if (shiftPressed == true && altPressed == false) {
-                            msg["Mode"] = "Rotate";
-                            if(keyEvent->key() == Qt::Key_E) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_Q) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_D) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_A) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_S) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_W) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = -1.0;
-                            }
+                        else {
+                            axis += 'X';
                         }
-                        else if (shiftPressed == false && altPressed == true) {
-                            msg["Mode"] = "Scale";
-                            if(keyEvent->key() == Qt::Key_E) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_Q) {
-                                msg["Axis"] = "Y";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_D) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_A) {
-                                msg["Axis"] = "X";
-                                msg["Value"] = -1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_S) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = 1.0;
-                            }
-                            else if(keyEvent->key() == Qt::Key_W) {
-                                msg["Axis"] = "Z";
-                                msg["Value"] = -1.0;
-                            }
+                        changed = true;
+                    }
+                    else if (keyEvent->key() == Qt::Key_Y) {
+                        if (zeno::str_contains(axis, "Y")) {
+                            axis = zeno::remove_all(axis, "Y");
                         }
+                        else {
+                            axis += 'Y';
+                        }
+                        changed = true;
+                    }
+                    else if (keyEvent->key() == Qt::Key_Z) {
+                        if (zeno::str_contains(axis, "Z")) {
+                            axis = zeno::remove_all(axis, "Z");
+                        }
+                        else {
+                            axis += 'Z';
+                        }
+                        changed = true;
+                    }
+                    else if (keyEvent->key() == Qt::Key_L) {
+                        local_space = !local_space;
+                        changed = true;
+                    }
+                    else if (keyEvent->key() == Qt::Key_Escape) {
+                        mode = "";
+                        axis = "";
+                        local_space = false;
+                        changed = true;
+                    }
+                    if (axis.size() >= 2) {
+                        std::sort(axis.begin(), axis.end());
                     }
                 }
             }
         }
     }
-    if (msg.contains("Value")) {
-        sendOptixMessage(msg);
+    if (changed) {
+        if (auto main = zenoApp->getMainWindow()) {
+            for (DisplayWidget* view : main->viewports()) {
+                if (ZOptixViewport* optxview = view->optixViewport()) {
+                    optxview->set_srt_mode_axis(mode, axis, local_space);
+                }
+            }
+        }
         return true;
     }
     else {
