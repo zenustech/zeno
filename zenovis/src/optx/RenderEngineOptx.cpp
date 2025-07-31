@@ -1362,127 +1362,248 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 {"", {1, 1, 1}},
                 {"XYZ", {1, 1, 1}},
             };
+
+            glm::mat3 local_mat;
+            local_mat[0] = glm::normalize(glm::vec3(g_mat[0]));
+            local_mat[1] = glm::normalize(glm::vec3(g_mat[1]));
+            local_mat[2] = glm::normalize(glm::vec3(g_mat[2]));
+
             std::optional<std::pair<std::string, glm::mat4>> result;
 
-            if (mode == "Translate") {
-                std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
-                    {"X", {0, 0, 1}},
-                    {"Y", {0, 0, 1}},
-                    {"Z", {0, 1, 0}},
-                    {"XY", {0, 0, 1}},
-                    {"YZ", {1, 0, 0}},
-                    {"XZ", {0, 1, 0}},
-                };
-                glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
-                if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
-                    selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
-                }
-                auto trans_start = get_proj_pos_on_plane(
-                    in_msg
-                    , float(in_msg["LastPos"][0])
-                    , float(in_msg["LastPos"][1])
-                    , scene->camera.get()
-                    , pivot
-                    , selected_plane_dir
-                );
-                if (!trans_start.has_value()) {
-                    return;
-                }
-                auto trans_end = get_proj_pos_on_plane(
-                    in_msg
-                    , float(in_msg["CurPos"][0])
-                    , float(in_msg["CurPos"][1])
-                    , scene->camera.get()
-                    , pivot
-                    , selected_plane_dir
-                );
-                if (!trans_end.has_value()) {
-                    return;
-                }
-                auto trans = trans_end.value() - trans_start.value();
-                glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
-                trans *= axis;
-                glm::mat4 xform = glm::mat4(1);
-                xform = glm::translate(glm::mat4(1), trans);
-                auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
-                auto trans2local_inv = glm::inverse(trans2local);
-                g_mat = trans2local_inv * xform * trans2local * g_mat;
-                auto n_mat = glm::inverse(pmat) * g_mat;
-                result = {name, n_mat};
-            }
-            else if (mode == "Scale") {
-                auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
-                auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
-                glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
-                pivot_SS = pivot_SS * 0.5f + 0.5f;
-                pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
-                glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
-                glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
-                glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
-                auto start_len = glm::distance(pivot_SS, start_pos_SS);
-                if (start_len < 1) {
-                    return;
-                }
-                auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
-                glm::vec3 scale(1.0f);
-                for (int i = 0; i < 3; i++) {
-                    if (axis[i] == 1) {
-                        scale[i] = std::max(scale_size, 0.1f);
+            if (is_local_space && !(mode == "Translate" && (in_msg["Axis"] == "" || in_msg["Axis"] == "XYZ"))) {
+                if (mode == "Translate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {0, 0, 1}},
+                        {"Y", {0, 0, 1}},
+                        {"Z", {0, 1, 0}},
+                        {"XY", {0, 0, 1}},
+                        {"YZ", {1, 0, 0}},
+                        {"XZ", {0, 1, 0}},
+                    };
+                    glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
+                    if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
+                        selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
                     }
-                }
-                glm::mat4 xform = glm::mat4(1);
-                xform = glm::scale(glm::mat4(1), scale);
-                auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
-                auto trans2local_inv = glm::inverse(trans2local);
-                g_mat = trans2local_inv * xform * trans2local * g_mat;
-                auto n_mat = glm::inverse(pmat) * g_mat;
-                result = {name, n_mat};
-            }
-            else if (mode == "Rotate") {
-                std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
-                    {"X", {1, 0, 0}},
-                    {"Y", {0, 1, 0}},
-                    {"Z", {0, 0, 1}},
-                };
-                std::string axis = in_msg["Axis"];
-                if (axis == "X" || axis == "Y" || axis == "Z") {
-                    auto plane_dir = selected_plane_dir_mapping[axis];
-                    auto rot_start = get_proj_pos_on_plane(
+                    selected_plane_dir = local_mat * selected_plane_dir;
+                    auto trans_start = get_proj_pos_on_plane(
                         in_msg
                         , float(in_msg["LastPos"][0])
                         , float(in_msg["LastPos"][1])
                         , scene->camera.get()
                         , pivot
-                        , plane_dir
+                        , selected_plane_dir
                     );
-                    if (!rot_start.has_value()) {
+                    if (!trans_start.has_value()) {
                         return;
                     }
-                    auto rot_end = get_proj_pos_on_plane(
+                    auto trans_end = get_proj_pos_on_plane(
                         in_msg
                         , float(in_msg["CurPos"][0])
                         , float(in_msg["CurPos"][1])
                         , scene->camera.get()
                         , pivot
-                        , plane_dir
+                        , selected_plane_dir
                     );
-                    if (!rot_end.has_value()) {
+                    if (!trans_end.has_value()) {
                         return;
                     }
-                    auto start_vec = rot_start.value() - pivot;
-                    auto end_vec = rot_end.value() - pivot;
-                    auto rot_quat = rotate(start_vec, end_vec, plane_dir);
-                    if (!rot_quat.has_value()) {
-                        return;
-                    }
-                    glm::mat4 xform = glm::toMat4(rot_quat.value());
+                    auto trans = trans_end.value() - trans_start.value();
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    axis = local_mat * axis;
+                    trans = glm::dot(trans, axis) * axis;
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::translate(glm::mat4(1), trans);
                     auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
                     auto trans2local_inv = glm::inverse(trans2local);
                     g_mat = trans2local_inv * xform * trans2local * g_mat;
                     auto n_mat = glm::inverse(pmat) * g_mat;
                     result = {name, n_mat};
                 }
+                else if (mode == "Scale") {
+                    auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                    auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
+                    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+                    pivot_SS = pivot_SS * 0.5f + 0.5f;
+                    pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
+                    glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    auto start_len = glm::distance(pivot_SS, start_pos_SS);
+                    if (start_len < 1) {
+                        return;
+                    }
+                    auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
+                    glm::vec3 scale(1.0f);
+                    for (int i = 0; i < 3; i++) {
+                        if (axis[i] == 1) {
+                            scale[i] = std::max(scale_size, 0.1f);
+                        }
+                    }
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::scale(glm::mat4(1), scale);
+                    auto n_mat = g_mat * xform;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Rotate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", glm::vec3(1, 0, 0)},
+                        {"Y", glm::vec3(0, 1, 0)},
+                        {"Z", glm::vec3(0, 0, 1)},
+                    };
+                    std::string axis = in_msg["Axis"];
+                    if (axis == "X" || axis == "Y" || axis == "Z") {
+                        auto plane_dir = local_mat * selected_plane_dir_mapping[axis];
+                        auto rot_start = get_proj_pos_on_plane(
+                                in_msg, float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1]), scene->camera.get(),
+                                pivot, plane_dir
+                        );
+                        if (!rot_start.has_value()) {
+                            return;
+                        }
+                        auto rot_end = get_proj_pos_on_plane(
+                                in_msg, float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1]), scene->camera.get(),
+                                pivot, plane_dir
+                        );
+                        if (!rot_end.has_value()) {
+                            return;
+                        }
+                        auto start_vec = rot_start.value() - pivot;
+                        auto end_vec = rot_end.value() - pivot;
+                        auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                        if (!rot_quat.has_value()) {
+                            return;
+                        }
+                        glm::mat4 xform = glm::toMat4(rot_quat.value());
+                        auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                        auto trans2local_inv = glm::inverse(trans2local);
+                        g_mat = trans2local_inv * xform * trans2local * g_mat;
+                        auto n_mat = glm::inverse(pmat) * g_mat;
+                        result = {name, n_mat};
+                    }
+                }
             }
+            else {
+                if (mode == "Translate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {0, 0, 1}},
+                        {"Y", {0, 0, 1}},
+                        {"Z", {0, 1, 0}},
+                        {"XY", {0, 0, 1}},
+                        {"YZ", {1, 0, 0}},
+                        {"XZ", {0, 1, 0}},
+                    };
+                    glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
+                    if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
+                        selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
+                    }
+                    auto trans_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_start.has_value()) {
+                        return;
+                    }
+                    auto trans_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_end.has_value()) {
+                        return;
+                    }
+                    auto trans = trans_end.value() - trans_start.value();
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    trans *= axis;
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::translate(glm::mat4(1), trans);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Scale") {
+                    auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                    auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
+                    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+                    pivot_SS = pivot_SS * 0.5f + 0.5f;
+                    pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
+                    glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    auto start_len = glm::distance(pivot_SS, start_pos_SS);
+                    if (start_len < 1) {
+                        return;
+                    }
+                    auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
+                    glm::vec3 scale(1.0f);
+                    for (int i = 0; i < 3; i++) {
+                        if (axis[i] == 1) {
+                            scale[i] = std::max(scale_size, 0.1f);
+                        }
+                    }
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::scale(glm::mat4(1), scale);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Rotate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {1, 0, 0}},
+                        {"Y", {0, 1, 0}},
+                        {"Z", {0, 0, 1}},
+                    };
+                    std::string axis = in_msg["Axis"];
+                    if (axis == "X" || axis == "Y" || axis == "Z") {
+                        auto plane_dir = selected_plane_dir_mapping[axis];
+                        auto rot_start = get_proj_pos_on_plane(
+                            in_msg
+                            , float(in_msg["LastPos"][0])
+                            , float(in_msg["LastPos"][1])
+                            , scene->camera.get()
+                            , pivot
+                            , plane_dir
+                        );
+                        if (!rot_start.has_value()) {
+                            return;
+                        }
+                        auto rot_end = get_proj_pos_on_plane(
+                            in_msg
+                            , float(in_msg["CurPos"][0])
+                            , float(in_msg["CurPos"][1])
+                            , scene->camera.get()
+                            , pivot
+                            , plane_dir
+                        );
+                        if (!rot_end.has_value()) {
+                            return;
+                        }
+                        auto start_vec = rot_start.value() - pivot;
+                        auto end_vec = rot_end.value() - pivot;
+                        auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                        if (!rot_quat.has_value()) {
+                            return;
+                        }
+                        glm::mat4 xform = glm::toMat4(rot_quat.value());
+                        auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                        auto trans2local_inv = glm::inverse(trans2local);
+                        g_mat = trans2local_inv * xform * trans2local * g_mat;
+                        auto n_mat = glm::inverse(pmat) * g_mat;
+                        result = {name, n_mat};
+                    }
+                }
+            }
+
             if (result.has_value()) {
                 std::string name = result.value().first;
                 glm::mat4 n_mat = result.value().second;
