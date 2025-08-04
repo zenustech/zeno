@@ -1259,6 +1259,15 @@ std::optional<glm::quat> rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec
     glm::quat q(glm::rotate(angle * direct, axis));
     return q;
 }
+
+static glm::vec2 pos_ws2ss(glm::vec3 pos_WS, glm::mat4 const &vp_mat, glm::vec2 resolution) {
+    auto pivot_CS = vp_mat * glm::vec4(pos_WS, 1.0f);
+    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+    pivot_SS = pivot_SS * 0.5f + 0.5f;
+    pivot_SS[1] = 1 - pivot_SS[1];
+    pivot_SS = pivot_SS * resolution;
+    return pivot_SS;
+}
 struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
 #ifdef OPTIX_BASE_GL
@@ -1333,9 +1342,21 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
                 }
                 defaultScene.cur_node = {object_name, l_matrix, p_matrix};
+                {
+                    Json message;
+                    message["MessageType"] = "SetGizmoAxis";
+                    auto g_mat = p_matrix * l_matrix;
+                    message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                    message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                    message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                    message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                    fun(message.dump());
+                }
             }
         }
         else if (in_msg["MessageType"] == "Xform") {
+
+//            zeno::log_info("Axis: {}", in_msg["Axis"]);
             if (!defaultScene.cur_node.has_value()) {
                 return;
             }
@@ -1369,8 +1390,31 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             local_mat[2] = glm::normalize(glm::vec3(g_mat[2]));
 
             std::optional<std::pair<std::string, glm::mat4>> result;
+            if (mode == "RotateScreen" || (mode == "Rotate" && in_msg["Axis"]!="X" && in_msg["Axis"]!="Y" && in_msg["Axis"]!="Z") ) {
+                glm::vec3 cam_pos = scene->camera->getPos();
+                glm::vec3 cam_up = scene->camera->get_lodup();
+                auto local_z = glm::normalize(cam_pos - pivot);
+                auto local_x = glm::normalize(glm::cross(cam_up, local_z));
+                auto local_y = glm::normalize(glm::cross(local_z, local_x));
+                auto local_mat = glm::mat3(1);
+                local_mat[0] = local_x;
+                local_mat[1] = local_y;
+                local_mat[2] = local_z;
 
-            if (is_local_space && !(mode == "Translate" && (in_msg["Axis"] == "" || in_msg["Axis"] == "XYZ"))) {
+                {
+                    auto delta_x = float(in_msg["Delta"][0]);
+                    auto delta_y = float(in_msg["Delta"][1]);
+                    glm::mat4 xform = glm::rotate(glm::mat4(1.0f), glm::radians(delta_x), local_y);
+                    xform = glm::rotate(xform, glm::radians(delta_y), local_x);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+            }
+            else if (is_local_space && !(mode == "Translate" && (in_msg["Axis"] == "" || in_msg["Axis"] == "XYZ"))) {
+                zeno::log_info("Axis: {}", in_msg["Axis"]);
                 if (mode == "Translate") {
                     std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
                         {"X", {0, 0, 1}},
@@ -1409,10 +1453,17 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
                     auto trans = trans_end.value() - trans_start.value();
                     glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
-                    axis = local_mat * axis;
-                    trans = glm::dot(trans, axis) * axis;
+                    auto proj_trans = glm::vec3();
+                    for (auto i = 0; i < 3; i++) {
+                        if (axis[i]) {
+                            auto temp_axis = glm::vec3();
+                            temp_axis[i] = 1;
+                            temp_axis = local_mat * temp_axis;
+                            proj_trans += glm::dot(trans, temp_axis) * temp_axis;
+                        }
+                    }
                     glm::mat4 xform = glm::mat4(1);
-                    xform = glm::translate(glm::mat4(1), trans);
+                    xform = glm::translate(glm::mat4(1), proj_trans);
                     auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
                     auto trans2local_inv = glm::inverse(trans2local);
                     g_mat = trans2local_inv * xform * trans2local * g_mat;
@@ -1421,13 +1472,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 else if (mode == "Scale") {
                     auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
-                    auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
-                    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
-                    pivot_SS = pivot_SS * 0.5f + 0.5f;
-                    pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto pivot_SS = pos_ws2ss(pivot, vp, resolution);
                     glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
                     glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
                     glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    if(in_msg["Axis"]==""||in_msg["Axis"]=="XYZ")
+                        axis = {1,1,1};
                     auto start_len = glm::distance(pivot_SS, start_pos_SS);
                     if (start_len < 1) {
                         return;
@@ -1531,10 +1582,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 else if (mode == "Scale") {
                     auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
-                    auto pivot_CS = vp * glm::vec4(pivot, 1.0f);
-                    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
-                    pivot_SS = pivot_SS * 0.5f + 0.5f;
-                    pivot_SS = pivot_SS * glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto pivot_SS = pos_ws2ss(pivot, vp, resolution);
                     glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
                     glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
                     glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
@@ -1637,6 +1686,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     xform_json["r2"] = {n_mat[2][0], n_mat[2][1] , n_mat[2][2]};
                     xform_json["t"]  = {n_mat[3][0], n_mat[3][1] , n_mat[3][2]};
                     fun(xform_json.dump());
+                }
+                {
+                    auto &[_name, _lmat, pmat] = defaultScene.cur_node.value();
+                    auto l_matrix = result.value().second;
+                    Json message;
+                    message["MessageType"] = "SetGizmoAxis";
+                    auto g_mat = pmat * l_matrix;
+                    message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                    message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                    message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                    message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                    fun(message.dump());
                 }
             }
         }

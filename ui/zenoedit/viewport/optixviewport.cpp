@@ -26,7 +26,7 @@ static void add_set_node_xform(
         , Json const &mat
         , std::unordered_map<std::string, std::string> &outline_node_to_uuid
 ) {
-    zeno::log_info("outline_node_name: {}", outline_node_name);
+//    zeno::log_info("outline_node_name: {}", outline_node_name);
     if (mat["Mode"] == "Set") {
         if (outline_node_to_uuid.count(outline_node_name) == 0) {
             auto node = Zeno_GetNode(hGraph, cur_output_uuid.value());
@@ -107,6 +107,9 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
             if (this->cur_node_uuid.has_value()) {
                 add_set_node_xform(hGraph, this->cur_node_uuid, outline_node_name, json, this->outline_node_to_uuid);
             }
+        }
+        else if (json["MessageType"] == "SetGizmoAxis") {
+            emit sig_sendToOptixViewport(QString::fromStdString(content));
         }
         else {
             emit sig_sendToOutline(QString::fromStdString(content));
@@ -502,6 +505,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     , updateLightOnce(false)
     , m_bMovingCamera(false)
 {
+    setMouseTracking(true);
     m_zenovis = new Zenovis(this);
 
     setFocusPolicy(Qt::ClickFocus);
@@ -551,7 +555,23 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(&m_thdOptix, &QThread::started, m_worker, &OptixWorker::work);
     connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
         m_renderImage = img;
+        drawAxis(m_renderImage);
         update();
+    });
+    connect(m_worker, &OptixWorker::sig_sendToOptixViewport, this, [=](QString const &content) {
+        Json message = Json::parse(content.toStdString());
+        if (message["MessageType"] == "SetGizmoAxis") {
+            glm::mat4 mat = glm::mat4(1);
+            auto const &r0 = message["r0"];
+            auto const &r1 = message["r1"];
+            auto const &r2 = message["r2"];
+            auto const &t  = message["t"];
+            mat[0] = {r0[0], r0[1], r0[2], 0.0f};
+            mat[1] = {r1[0], r1[1], r1[2], 0.0f};
+            mat[2] = {r2[0], r2[1], r2[2], 0.0f};
+            mat[3] = { t[0],  t[1],  t[2], 1.0f};
+            this->axis_coord = mat;
+        }
     });
     connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop, Qt::BlockingQueuedConnection);
@@ -767,6 +787,18 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
         auto currentPos = event->pos();
         start_pos = zeno::vec2f(currentPos.x(), currentPos.y());
         last_pos = start_pos;
+        try_axis = {};
+
+        if (!gizmo_id_buffer.isNull()) {
+            auto gizmo_id = gizmo_id_buffer.pixelColor(currentPos);
+            if (gizmo_id.isValid()) {
+                auto gizmo_painted = gizmo_id.red();
+                auto gizmo_mode = gizmo_id.green();
+                auto gizmo_type = gizmo_id.blue();
+                axis = gizmo_type_to_axis.at(gizmo_type);
+                try_axis = axis;
+            }
+        }
 
         setSimpleRenderOption();
     }
@@ -784,6 +816,7 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
         m_bMovingNode = false;
         start_pos = {};
         last_pos = {};
+        try_axis = {};
     }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event);
@@ -792,6 +825,25 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
 
 void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 {
+    if (event->buttons() == Qt::NoButton) {
+        if (!m_bMovingNode) {
+            auto currentPos = event->pos();
+            if (!gizmo_id_buffer.isNull()) {
+                auto gizmo_id = gizmo_id_buffer.pixelColor(currentPos);
+                if (gizmo_id.isValid()) {
+                    auto gizmo_painted = gizmo_id.red();
+                    auto gizmo_mode = gizmo_id.green();
+                    auto gizmo_type = gizmo_id.blue();
+                    auto old_try_axis = try_axis;
+                    try_axis = gizmo_type_to_axis.at(gizmo_type);
+                    if (old_try_axis != try_axis) {
+                        update();
+                    }
+                }
+            }
+        }
+        return;
+    }
     if (m_bMovingNode) {
         auto currentPos = event->pos();
         auto cur_pos = zeno::vec2f(currentPos.x(), currentPos.y());
@@ -911,6 +963,22 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
     key = settings.getShortCut(ShortCut_ReduceHandler);
     if (uKey == key)
         m_camera->resizeTransformHandler(2);
+    {
+        auto old_mode = mode;
+        if (uKey == Qt::Key_Escape) {
+            mode = "";
+        }
+        else if(uKey == Qt::Key_E) {
+            mode = "Scale";
+        }
+        else if(uKey == Qt::Key_R) {
+            mode = (mode == "Rotate")? "RotateScreen": "Rotate";
+        }
+        else if(uKey == Qt::Key_T) {
+            mode = "Translate";
+        }
+        zeno::log_info("{} -> {}", old_mode, mode);
+    }
 }
 
 void ZOptixViewport::keyReleaseEvent(QKeyEvent* event)
@@ -953,4 +1021,203 @@ void ZOptixViewport::set_srt_mode_axis(const std::string &_mode, const std::stri
     else {
         zenoApp->getMainWindow()->statusbarShowMessage("");
     }
+}
+
+static glm::vec2 pos_ws2ss(glm::vec3 pos_WS, glm::mat4 const &vp_mat, glm::vec2 resolution) {
+    auto pivot_CS = vp_mat * glm::vec4(pos_WS, 1.0f);
+    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+    pivot_SS = pivot_SS * 0.5f + 0.5f;
+    pivot_SS[1] = 1 - pivot_SS[1];
+    pivot_SS = pivot_SS * resolution;
+    return pivot_SS;
+}
+
+void draw_3d_segment_to_screen(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 p1_WS, glm::vec3 p2_WS, QColor color, float line_width, QColor color_id) {
+    auto p1_SS = pos_ws2ss(p1_WS, vp_mat, resolution);
+    auto p2_SS = pos_ws2ss(p2_WS, vp_mat, resolution);
+    painter.setPen(QPen(color, line_width));
+    painter.drawLine(p1_SS.x, p1_SS.y, p2_SS.x, p2_SS.y);
+    painter2.setPen(QPen(color_id, line_width * 5));
+    painter2.drawLine(p1_SS.x, p1_SS.y, p2_SS.x, p2_SS.y);
+}
+
+void draw_3d_point_to_screen(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 p1_WS, QColor color, float half_width, QColor color_id) {
+    auto p1_SS = pos_ws2ss(p1_WS, vp_mat, resolution);
+    painter.fillRect(p1_SS.x - half_width, p1_SS.y - half_width, half_width * 2, half_width * 2, color);
+    painter2.fillRect(p1_SS.x - half_width, p1_SS.y - half_width, half_width * 2, half_width * 2, color_id);
+}
+
+void draw_2d_circle(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 p1_WS, QColor color, float radius, float line_width, QColor color_id) {
+    auto p1_SS = pos_ws2ss(p1_WS, vp_mat, resolution);
+    painter.setPen(QPen(color, line_width));
+    painter.drawEllipse(QPointF(p1_SS.x, p1_SS.y), radius, radius);
+    painter2.setPen(QPen(color_id, line_width * 2));
+    painter2.drawEllipse(QPointF(p1_SS.x, p1_SS.y), radius, radius);
+}
+
+void draw_2d_circle_with_filled_id(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 p1_WS, QColor color, float radius, float line_width, QColor color_id) {
+    auto p1_SS = pos_ws2ss(p1_WS, vp_mat, resolution);
+    painter.setPen(QPen(color, line_width));
+    painter.drawEllipse(QPointF(p1_SS.x, p1_SS.y), radius, radius);
+    painter2.setBrush(QBrush(color_id));
+    painter2.setPen(QPen(color_id, line_width * 2));
+    painter2.drawEllipse(QPointF(p1_SS.x, p1_SS.y), radius, radius);
+}
+
+static void draw_translate_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat
+               , glm::vec3 center_WS, glm::vec3 e0, glm::vec3 e1, glm::vec3 e2
+               , float axis_len, const std::string &try_axis
+) {
+    auto x_axis_tip_WS = center_WS + e0 * axis_len;
+    auto y_axis_tip_WS = center_WS + e1 * axis_len;
+    auto z_axis_tip_WS = center_WS + e2 * axis_len;
+
+    auto r_color = QColor(200, 50, 50);
+    auto g_color = QColor(50, 200, 50);
+    auto b_color = QColor(50, 50, 200);
+    auto gray_color = QColor(200, 200, 200);
+
+    auto l_r_color = QColor(255, 50, 50);
+    auto l_g_color = QColor(50, 255, 50);
+    auto l_b_color = QColor(50, 50, 255);
+    auto white_color = QColor(255, 255, 255);
+
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, x_axis_tip_WS, try_axis == "X"? l_r_color: r_color, 2, QColor(1, 1, 1));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, y_axis_tip_WS, try_axis == "Y"? l_g_color: g_color, 2, QColor(1, 1, 2));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, z_axis_tip_WS, try_axis == "Z"? l_b_color: b_color, 2, QColor(1, 1, 3));
+
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, center_WS, try_axis == "XYZ"? white_color: gray_color, 5, QColor(1, 1, 4));
+
+    auto x_plane_tip_WS = center_WS + e1 * axis_len + e2 * axis_len;
+    auto y_plane_tip_WS = center_WS + e0 * axis_len + e2 * axis_len;
+    auto z_plane_tip_WS = center_WS + e0 * axis_len + e1 * axis_len;
+
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, x_plane_tip_WS, try_axis == "YZ"? l_r_color: r_color, 5, QColor(1, 1, 5));
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, y_plane_tip_WS, try_axis == "XZ"? l_g_color: g_color, 5, QColor(1, 1, 6));
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, z_plane_tip_WS, try_axis == "XY"? l_b_color: b_color, 5, QColor(1, 1, 7));
+}
+
+static void draw_display_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat
+               , glm::vec3 center_WS, glm::vec3 e0, glm::vec3 e1, glm::vec3 e2
+               , float axis_len
+) {
+    auto x_axis_tip_WS = center_WS + e0 * axis_len;
+    auto y_axis_tip_WS = center_WS + e1 * axis_len;
+    auto z_axis_tip_WS = center_WS + e2 * axis_len;
+
+    auto r_color = QColor(200, 50, 50);
+    auto g_color = QColor(50, 200, 50);
+    auto b_color = QColor(50, 50, 200);
+
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, x_axis_tip_WS, r_color, 2, QColor(0, 0, 0));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, y_axis_tip_WS, g_color, 2, QColor(0, 0, 0));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, z_axis_tip_WS, b_color, 2, QColor(0, 0, 0));
+}
+
+static void draw_scale_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat
+               , glm::vec3 center_WS, glm::vec3 e0, glm::vec3 e1, glm::vec3 e2
+               , float axis_len, const std::string &try_axis
+) {
+    auto x_axis_tip_WS = center_WS + e0 * axis_len;
+    auto y_axis_tip_WS = center_WS + e1 * axis_len;
+    auto z_axis_tip_WS = center_WS + e2 * axis_len;
+
+    auto r_color = QColor(200, 50, 50);
+    auto g_color = QColor(50, 200, 50);
+    auto b_color = QColor(50, 50, 200);
+    auto gray_color = QColor(200, 200, 200);
+
+    auto l_r_color = QColor(255, 50, 50);
+    auto l_g_color = QColor(50, 255, 50);
+    auto l_b_color = QColor(50, 50, 255);
+    auto white_color = QColor(255, 255, 255);
+
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, x_axis_tip_WS, try_axis == "X"? l_r_color: r_color, 2, QColor(1, 3, 1));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, y_axis_tip_WS, try_axis == "Y"? l_g_color: g_color, 2, QColor(1, 3, 2));
+    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, z_axis_tip_WS, try_axis == "Z"? l_b_color: b_color, 2, QColor(1, 3, 3));
+
+    auto x_plane_tip_WS = center_WS + e1 * axis_len + e2 * axis_len;
+    auto y_plane_tip_WS = center_WS + e0 * axis_len + e2 * axis_len;
+    auto z_plane_tip_WS = center_WS + e0 * axis_len + e1 * axis_len;
+
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, x_plane_tip_WS, try_axis == "YZ"? l_r_color: r_color, 5, QColor(1, 3, 5));
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, y_plane_tip_WS, try_axis == "XZ"? l_g_color: g_color, 5, QColor(1, 3, 6));
+    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, z_plane_tip_WS, try_axis == "XY"? l_b_color: b_color, 5, QColor(1, 3, 7));
+
+    draw_2d_circle(painter, painter2, resolution, vp_mat, center_WS, try_axis == "XYZ"? white_color: gray_color, 50, 4, QColor(1, 3, 4));
+}
+void draw_circle(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 center, glm::vec3 e0, glm::vec3 e1, float radius, QColor color, int segment, QColor color_id) {
+    float dtheta = glm::radians(360.0f / float(segment));
+    for (int i = 0; i < segment; i++) {
+        float theta0 = float(i) * dtheta;
+        float theta1 = float(i + 1) * dtheta;
+        glm::vec3 p0 = cos(theta0) * e0 * radius + sin(theta0) * e1 * radius + center;
+        glm::vec3 p1 = cos(theta1) * e0 * radius + sin(theta1) * e1 * radius + center;
+        draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, p0, p1, color, 2, color_id);
+    }
+}
+void draw_rotation_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 center, glm::vec3 e0, glm::vec3 e1, glm::vec3 e2, float radius, const std::string &try_axis)
+{
+    auto r_color = QColor(200, 50, 50);
+    auto g_color = QColor(50, 200, 50);
+    auto b_color = QColor(50, 50, 200);
+
+    auto l_r_color = QColor(255, 50, 50);
+    auto l_g_color = QColor(50, 255, 50);
+    auto l_b_color = QColor(50, 50, 255);
+
+    draw_circle(painter, painter2, resolution, vp_mat, center, e1, e2, radius, try_axis == "X"? l_r_color: r_color, 30, QColor(1, 2, 1));
+    draw_circle(painter, painter2, resolution, vp_mat, center, e0, e2, radius, try_axis == "Y"? l_g_color: g_color, 30, QColor(1, 2, 2));
+    draw_circle(painter, painter2, resolution, vp_mat, center, e0, e1, radius, try_axis == "Z"? l_b_color: b_color, 30, QColor(1, 2, 3));
+}
+
+void draw_rotation_screen_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat, glm::vec3 center, const std::string &try_axis)
+{
+    auto color_CameraUpRight = QColor(50, 50, 200);
+    auto l_color_CameraUpRight = QColor(50, 50, 255);
+
+    draw_2d_circle_with_filled_id(painter, painter2, resolution, vp_mat, center
+                                  , try_axis == "CameraUpRight"? l_color_CameraUpRight: color_CameraUpRight, 50, 4, QColor(1, 2, 8));
+}
+void ZOptixViewport::drawAxis(QImage &img) {
+    gizmo_id_buffer = QImage(img.size(), img.format());
+    gizmo_id_buffer.fill(Qt::black);
+
+    if (!axis_coord.has_value()) {
+        return;
+    }
+
+    auto center_WS = glm::vec3(axis_coord.value()[3]);
+    float axis_len = 1.0f / 10.0f;
+    auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
+    auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
+    auto y_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[1]));
+    auto z_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[2]));
+    auto res = m_camera->res();
+    auto resolution = glm::vec2(res.x(), res.y());
+    auto scene = m_zenovis->getSession()->get_scene();
+    auto vp_mat = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+
+    QPainter painter(&img);
+
+    QPainter painter2(&gizmo_id_buffer);
+
+    if (mode.empty()) {
+        draw_display_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len);
+    }
+    else if (mode == "Rotate") {
+        draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+    }
+    else if (mode == "RotateScreen") {
+        draw_rotation_screen_axis(painter, painter2, resolution, vp_mat, center_WS, try_axis);
+    }
+    else if (mode == "Translate") {
+        draw_translate_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+    }
+    else if (mode == "Scale") {
+        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+    }
+
+    painter.end();
+    painter2.end();
 }

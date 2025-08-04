@@ -38,7 +38,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         return new_root_name + path.substr(root_name.size());
     }
 
-    std::shared_ptr <SceneObject> root_rename(std::string new_root_name, std::optional <glm::mat4> root_xform) {
+    std::shared_ptr <SceneObject> root_rename(std::string new_root_name, std::vector<glm::mat4> root_xform) {
         auto new_scene_obj = std::make_shared<SceneObject>();
         new_scene_obj->type = this->type;
 
@@ -71,8 +71,8 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
         new_scene_obj->root_name = new_root_name;
         std::string xform_name = new_root_name + "_m";
-        if (root_xform.has_value()) {
-            new_scene_obj->node_to_matrix[xform_name] = {root_xform.value()};
+        if (root_xform.size()) {
+            new_scene_obj->node_to_matrix[xform_name] = root_xform;
         } else {
             if (new_scene_obj->node_to_matrix.count(xform_name) == 0) {
                 new_scene_obj->node_to_matrix[xform_name] = {glm::mat4(1)};
@@ -245,6 +245,10 @@ struct SceneObject : IObjectClone<SceneObject> {
             for (const auto &[path, prim]: prim_list) {
                 BasicRenderInstances[path]["Geom"] = path;
                 BasicRenderInstances[path]["Material"] = "Default";
+                auto vol_mat = prim->userData().get2<std::string>("vol_mat", "");
+                if (vol_mat.size()) {
+                    BasicRenderInstances[path]["Material"] = vol_mat;
+                }
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
 

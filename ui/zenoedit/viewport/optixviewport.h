@@ -27,6 +27,7 @@ signals:
 
     void sig_sendToOutline(QString);
     void sig_sendToNodeEditor(QString);
+    void sig_sendToOptixViewport(QString);
 
 public slots:
     void stop();
@@ -156,7 +157,22 @@ private:
     OptixWorker* m_worker;
     std::string mode;
     std::string axis;
-    bool local_space = false;
+    std::string try_axis;
+    bool local_space = true;
+    QImage gizmo_id_buffer;
+    std::optional<glm::mat4> axis_coord;
+    void drawAxis(QImage &img);
+    const std::map<int, std::string> gizmo_type_to_axis =  {
+        {0, ""},
+        {1, "X"},
+        {2, "Y"},
+        {3, "Z"},
+        {4, "XYZ"},
+        {5, "YZ"},
+        {6, "XZ"},
+        {7, "XY"},
+        {8, "CameraUpRight"},
+    };
 };
 
 #endif

@@ -273,6 +273,7 @@ ZENDEFNODE( FormSceneTree, {
     },
 });
 
+/*
 static std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> result;
     if (path.empty()) return result;
@@ -306,22 +307,9 @@ static void merge_scene(
         main_object->prim_list[key] = prim;
     }
 }
-glm::mat4 get_xform_from_prim(std::shared_ptr<PrimitiveObject> prim) {
-    auto pos = prim->verts[0];
-    auto r0 = prim->verts.add_attr<vec3f>("r0")[0];
-    auto r1 = prim->verts.add_attr<vec3f>("r1")[0];
-    auto r2 = prim->verts.add_attr<vec3f>("r2")[0];
-    glm::mat4 mat;
-    mat[0] = {r0[0], r0[1], r0[2], 0};
-    mat[1] = {r1[0], r1[1], r1[2], 0};
-    mat[2] = {r2[0], r2[1], r2[2], 0};
-    mat[3] = {pos[0], pos[1], pos[2], 1};
-    return mat;
-}
-/*
 static void scene_add_prefix(
     std::string path
-    , glm::mat4 xform
+    , std::vector<glm::mat4> xform
     , std::shared_ptr<SceneObject> sceneObject
 ) {
     std::unordered_map<std::string, SceneTreeNode> scene_tree;
@@ -346,7 +334,7 @@ static void scene_add_prefix(
         value->userData().set2("ObjectName", obj_name);
         new_prim_list[path + key] = value;
     }
-    std::unordered_map<std::string, glm::mat4> new_node_to_matrix;
+    std::unordered_map<std::string, std::vector<glm::mat4>> new_node_to_matrix;
     for (const auto& [key, value] : sceneObject->node_to_matrix) {
         new_node_to_matrix[path + key] = value;
     }
@@ -355,28 +343,31 @@ static void scene_add_prefix(
     sceneObject->node_to_matrix = new_node_to_matrix;
     {
         std::string xform_name = path + "_m";
+        if (xform.empty()) {
+            xform.push_back(glm::mat4(1));
+        }
         sceneObject->node_to_matrix[xform_name] = xform;
     }
 }
 
 struct MergeScene : zeno::INode {
     void apply() override {
-        auto main_scene = get_scene_tree_from_list(get_input2<ListObject>("main_scene"));
-        auto second_scene = get_scene_tree_from_list(get_input2<ListObject>("second_scene"));
+        auto main_scene = get_scene_tree_from_list2(get_input2<ListObject>("main_scene"));
+        auto second_scene = get_scene_tree_from_list2(get_input2<ListObject>("second_scene"));
         auto namespace1 = get_input2<std::string>("namespace1");
         auto namespace2 = get_input2<std::string>("namespace2");
         auto insert_path = get_input2<std::string>("insert_path");
 
         auto append_path1 = (namespace1 == ""? "" : "/") + namespace1;
         if (append_path1.size()) {
-            glm::mat4 xform1 = glm::mat4(1);
+            std::vector<glm::mat4> xform1;
             if (has_input2<PrimitiveObject>("xform1")) {
                 xform1 = get_xform_from_prim(get_input2<PrimitiveObject>("xform1"));
             }
             scene_add_prefix(append_path1, xform1, main_scene);
         }
         auto append_path2 = append_path1 + (insert_path == ""? "" : "/") + insert_path + (namespace2 == ""? "" : "/") + namespace2;
-        glm::mat4 xform2 = glm::mat4(1);
+        std::vector<glm::mat4> xform2;
         if (has_input2<PrimitiveObject>("xform2")) {
             xform2 = get_xform_from_prim(get_input2<PrimitiveObject>("xform2"));
         }
@@ -393,7 +384,8 @@ struct MergeScene : zeno::INode {
             auto inner_parent = append_path1 + (insert_path == ""? "" : "/") + insert_path;
             main_scene->scene_tree.at(inner_parent).children.push_back( namespace2==""?append_path2+second_scene->root_name:append_path2);
         }
-        auto scene = main_scene->to_layer_structure(false);
+        main_scene->type = get_input2<std::string>("type");
+        auto scene = main_scene->to_structure();
         set_output2("scene", scene);
     }
 };
@@ -402,6 +394,7 @@ ZENDEFNODE( MergeScene, {
     {
         "main_scene",
         "second_scene",
+        {"enum static dynamic", "type", "static"},
         {"string", "namespace1", ""},
         {"string", "namespace2", "namespace2"},
         {"string", "insert_path", ""},
@@ -417,6 +410,162 @@ ZENDEFNODE( MergeScene, {
     },
 });
 */
+
+static std::vector<glm::mat4> get_xform_from_prim(std::shared_ptr<PrimitiveObject> prim) {
+    std::vector<glm::mat4> mats;
+    for (auto i = 0; i < prim->verts.size(); i++) {
+        auto pos = prim->verts[i];
+        auto r0 = prim->verts.add_attr<vec3f>("r0")[i];
+        auto r1 = prim->verts.add_attr<vec3f>("r1")[i];
+        auto r2 = prim->verts.add_attr<vec3f>("r2")[i];
+        glm::mat4 mat;
+        mat[0] = {r0[0], r0[1], r0[2], 0};
+        mat[1] = {r1[0], r1[1], r1[2], 0};
+        mat[2] = {r2[0], r2[1], r2[2], 0};
+        mat[3] = {pos[0], pos[1], pos[2], 1};
+        mats.push_back(mat);
+    }
+    return mats;
+}
+
+static void scene_add_prefix_node(
+    std::string prefix_node_name
+    , std::vector<glm::mat4> xform
+    , std::shared_ptr<SceneObject> sceneObject
+) {
+    std::unordered_map<std::string, SceneTreeNode> scene_tree;
+    for (const auto &[key, value]: sceneObject->scene_tree) {
+        SceneTreeNode stn;
+        stn.visibility = value.visibility;
+        if (value.matrix.size()) {
+            stn.matrix = prefix_node_name + value.matrix;
+        }
+        for (auto &child: value.children) {
+            stn.children.push_back(prefix_node_name + child);
+        }
+        for (auto &mesh: value.meshes) {
+            stn.meshes.push_back(prefix_node_name + mesh);
+        }
+        scene_tree[prefix_node_name + key] = stn;
+    }
+    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> new_prim_list;
+    for (auto& [key, value] : sceneObject->prim_list) {
+        auto obj_name = value->userData().get2<std::string>("ObjectName");
+        obj_name = prefix_node_name + obj_name;
+        value->userData().set2("ObjectName", obj_name);
+        new_prim_list[prefix_node_name + key] = value;
+    }
+    std::unordered_map<std::string, std::vector<glm::mat4>> new_node_to_matrix;
+    for (const auto& [key, value] : sceneObject->node_to_matrix) {
+        new_node_to_matrix[prefix_node_name + key] = value;
+    }
+    sceneObject->scene_tree = scene_tree;
+    sceneObject->prim_list = new_prim_list;
+    sceneObject->node_to_matrix = new_node_to_matrix;
+
+
+    {
+        std::string xform_name = prefix_node_name + "_m";
+        if (xform.empty()) {
+            xform.push_back(glm::mat4(1));
+        }
+        sceneObject->node_to_matrix[xform_name] = xform;
+        SceneTreeNode stn;
+        stn.matrix = xform_name;
+        stn.children.push_back(prefix_node_name + sceneObject->root_name);
+        sceneObject->scene_tree[prefix_node_name] = stn;
+    }
+    sceneObject->root_name = prefix_node_name;
+}
+
+void merge_scene2_into_scene1(std::shared_ptr<SceneObject> main_object, std::shared_ptr<SceneObject> second_object, std::string insert_path) {
+    for (const auto &[key, value]: second_object->scene_tree) {
+        SceneTreeNode stn;
+        stn.visibility = value.visibility;
+        if (value.matrix.size()) {
+            stn.matrix = insert_path + value.matrix;
+        }
+        for (auto &child: value.children) {
+            stn.children.push_back(insert_path + child);
+        }
+        for (auto &mesh: value.meshes) {
+            stn.meshes.push_back(insert_path + mesh);
+        }
+        main_object->scene_tree[insert_path + key] = stn;
+    }
+    for (auto& [key, value] : second_object->prim_list) {
+        auto obj_name = value->userData().get2<std::string>("ObjectName");
+        obj_name = insert_path + obj_name;
+        value->userData().set2("ObjectName", obj_name);
+        main_object->prim_list[insert_path + key] = value;
+    }
+
+    for (const auto& [key, value] : second_object->node_to_matrix) {
+        main_object->node_to_matrix[insert_path + key] = value;
+    }
+    main_object->scene_tree[insert_path].children.push_back(insert_path+ second_object->root_name);
+}
+struct MergeScene : zeno::INode {
+    void apply() override {
+        auto main_scene = get_scene_tree_from_list2(get_input2<ListObject>("main_scene"));
+        auto namespace1 = get_input2<std::string>("namespace1");
+        if (namespace1.size()) {
+            if (!zeno::starts_with(namespace1, "/")) {
+                namespace1 = "/" + namespace1;
+            }
+            std::vector<glm::mat4> xform1;
+            if (has_input2<PrimitiveObject>("xform1")) {
+                xform1 = get_xform_from_prim(get_input2<PrimitiveObject>("xform1"));
+            }
+            scene_add_prefix_node(namespace1, xform1, main_scene);
+        }
+        if (has_input("second_scene")) {
+            auto second_scene = get_scene_tree_from_list2(get_input2<ListObject>("second_scene"));
+
+            auto namespace2 = get_input2<std::string>("namespace2");
+            if (namespace2.size()) {
+                if (!zeno::starts_with(namespace2, "/")) {
+                    namespace2 = "/" + namespace2;
+                }
+                std::vector<glm::mat4> xform2;
+                if (has_input2<PrimitiveObject>("xform2")) {
+                    xform2 = get_xform_from_prim(get_input2<PrimitiveObject>("xform2"));
+                }
+                scene_add_prefix_node(namespace2, xform2, second_scene);
+            }
+            auto insert_path = get_input2<std::string>("insert_path");
+            if (insert_path.size()) {
+                if (!zeno::starts_with(insert_path, "/")) {
+                    insert_path = "/" + insert_path;
+                }
+            }
+            merge_scene2_into_scene1(main_scene, second_scene, namespace1 + insert_path);
+        }
+        main_scene->type = get_input2<std::string>("type");
+        auto scene = main_scene->to_list();
+        set_output2("scene", scene);
+    }
+};
+
+ZENDEFNODE( MergeScene, {
+    {
+        "main_scene",
+        "second_scene",
+        {"enum static dynamic", "type", "static"},
+        {"string", "insert_path", ""},
+        {"string", "namespace1", ""},
+        {"xform1"},
+        {"string", "namespace2", "namespace2"},
+        {"xform2"},
+    },
+    {
+        {"scene"},
+    },
+    {},
+    {
+        "Scene",
+    },
+});
 
 struct FlattenSceneTree : zeno::INode {
     void apply() override {
@@ -457,7 +606,7 @@ struct SceneRootRename : zeno::INode {
         if (zeno::starts_with(new_root_name, "/") == false) {
             new_root_name = "/" + new_root_name;
         }
-        std::optional<glm::mat4> root_xform = std::nullopt;
+        std::vector<glm::mat4> root_xform;
         if (has_input2<PrimitiveObject>("xform")) {
             root_xform = get_xform_from_prim(get_input2<PrimitiveObject>("xform"));
         }
@@ -610,5 +759,49 @@ ZENDEFNODE( SetNodeXform, {
         "Scene",
     },
 });
+struct MakeSceneNode : zeno::INode {
+    void apply() override {
+        auto scene_tree = std::make_shared<SceneObject>();
+        scene_tree->root_name = get_input2<std::string>("root_name");
+        if (!zeno::starts_with(scene_tree->root_name, "/")) {
+            scene_tree->root_name = "/" + scene_tree->root_name;
+        }
+        scene_tree->type = get_input2<std::string>("type");
+        auto prim = get_input2<PrimitiveObject>("prim");
+        SceneTreeNode root_node;
+        root_node.matrix = scene_tree->root_name + "_m";
+        scene_tree->node_to_matrix[root_node.matrix] = {glm::mat4(1)};
+        auto obj_name = prim->userData().get2<std::string>("ObjectName");
+        scene_tree->prim_list[obj_name] = prim;
+        {
+            std::string node_name = scene_tree->root_name + '/' + obj_name + "_node";
+            SceneTreeNode prim_node;
+            prim_node.meshes.push_back(obj_name);
+            root_node.children.push_back(node_name);
+            prim_node.matrix = node_name + "_m";
+            scene_tree->scene_tree[node_name] = prim_node;
+            scene_tree->node_to_matrix[prim_node.matrix] = {glm::mat4(1)};
+        }
 
+        scene_tree->scene_tree[scene_tree->root_name] = root_node;
+
+        auto scene = scene_tree->to_list();
+        set_output2("scene", scene);
+    }
+};
+ZENDEFNODE( MakeSceneNode, {
+    {
+        {"prim"},
+        {"enum static dynamic", "type", "dynamic"},
+        {"string", "root_name", "new_node"},
+    },
+    {
+        "scene",
+    },
+    {
+    },
+    {
+        "Scene",
+    },
+});
 }
