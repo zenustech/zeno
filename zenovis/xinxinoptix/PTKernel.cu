@@ -270,6 +270,7 @@ extern "C" __global__ void __raygen__rg()
 
         RadiancePRD prd;
         prd.offset = seed1;
+        prd.offset2 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
 
         prd.emission     = make_float3(0.f);
@@ -300,7 +301,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
-        prd.max_depth = 4;
+        prd.max_depth = 12;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -396,7 +397,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 1){
+            if(prd.depth > 4){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
@@ -570,11 +571,11 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
+        prd->maxDistance = DisneyBSDF::SampleDistance(prd->offset2, prd->scatterDistance);
     } else
     {
         prd->maxDistance =
-            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+            DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
         prd->channelPDF = channelPDF;
     }
 

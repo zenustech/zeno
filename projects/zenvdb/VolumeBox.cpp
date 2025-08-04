@@ -269,39 +269,40 @@ struct CreateVolumeBox : zeno::INode {
             transforms.push_back(transform);
         }
 
-auto list = std::make_shared<zeno::ListObject>();
+        auto list = std::make_shared<zeno::ListObject>();
 
-for (auto& transform : transforms) {
-        
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        for (auto& transform : transforms) {
 
-        float dummy[] = {-0.5f, 0.5f};
+            auto prim = std::make_shared<zeno::PrimitiveObject>();
+            prim->userData().set2("vol_mat", get_input2<std::string>("vol_mat", ""));
 
-        for (int i=0; i<=1; ++i) {
-            for (int j=0; j<=1; ++j) {
-                for (int k=0; k<=1; ++k) {
-                    auto p = glm::vec4(dummy[i], dummy[j], dummy[k], 1.0f);
-                    p = transform * p; 
-                    prim->verts.push_back(zeno::vec3f(p.x, p.y, p.z));
+            float dummy[] = {-0.5f, 0.5f};
+
+            for (int i=0; i<=1; ++i) {
+                for (int j=0; j<=1; ++j) {
+                    for (int k=0; k<=1; ++k) {
+                        auto p = glm::vec4(dummy[i], dummy[j], dummy[k], 1.0f);
+                        p = transform * p;
+                        prim->verts.push_back(zeno::vec3f(p.x, p.y, p.z));
+                    }
                 }
             }
-        }
-        
-        // enough to draw box wire frame
-        prim->quads->push_back(zeno::vec4i(0, 1, 3, 2));
-        prim->quads->push_back(zeno::vec4i(4, 5, 7, 6));
-        prim->quads->push_back(zeno::vec4i(0, 1, 5, 4));
-        prim->quads->push_back(zeno::vec4i(3, 2, 6, 7));
 
-        primWireframe(prim.get(), true);
-        prim->userData().set2("bounds", bounds);
-    
-        auto transform_ptr = glm::value_ptr(transform);
-            
+            // enough to draw box wire frame
+            prim->quads->push_back(zeno::vec4i(0, 1, 3, 2));
+            prim->quads->push_back(zeno::vec4i(4, 5, 7, 6));
+            prim->quads->push_back(zeno::vec4i(0, 1, 5, 4));
+            prim->quads->push_back(zeno::vec4i(3, 2, 6, 7));
+
+            primWireframe(prim.get(), true);
+            prim->userData().set2("bounds", bounds);
+
+            auto transform_ptr = glm::value_ptr(transform);
+
             zeno::vec4f row0, row1, row2, row3;
             memcpy(row0.data(), transform_ptr, sizeof(float)*4);
             memcpy(row1.data(), transform_ptr+4, sizeof(float)*4);
-            memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
+            memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);
             memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
 
             prim->userData().set2("_transform_row0", row0);
@@ -310,15 +311,15 @@ for (auto& transform : transforms) {
             prim->userData().set2("_transform_row3", row3);
             prim->userData().set2("vbox", true);
 
-        list->arr.push_back(prim);        
-}
+            list->arr.push_back(prim);
+        }
 
-if (list->arr.size()==1) {
-    set_output("prim", std::move(list->arr.front()));
-    return;
-}
+        if (list->arr.size()==1) {
+            set_output("prim", std::move(list->arr.front()));
+            return;
+        }
 
-set_output("prim", std::move(list));
+        set_output("prim", std::move(list));
 
     }
 };
@@ -330,6 +331,7 @@ ZENDEFNODE(CreateVolumeBox, {
         {"vec3f", "rotate", "0, 0, 0"},
         {"bool", "greedy", "0"},
         {"vdbGrid" },
+        {"string", "vol_mat", ""},
     },
     {"prim"},
     {

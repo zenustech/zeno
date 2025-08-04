@@ -172,19 +172,19 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance2(unsigned int &seed, vec3 a/*throughput * alpha*/, const vec3& sigma_t, vec3& channelPDF)
     {
-        float r0 = rnd(seed);
+        float r0 = vdcrnd(seed);
         int channel = volume_sample_channel(a, r0, channelPDF);
         channel = clamp(channel, 0, 2);
         float c = sigma_t[channel];
         
-        float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
+        float s = -log(max(1.0f-vdcrnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
         return s;
     }
 
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, float scatterDistance){
-        float r = rnd(seed);
-        return -logf(max(1.0f-rnd(seed),_FLT_MIN_)) * scatterDistance;
+        //float r = vdcrnd(offset);
+        return -logf(max(1.0f-vdcrnd(seed),_FLT_MIN_)) * scatterDistance;
 
     }
 
@@ -742,7 +742,7 @@ namespace DisneyBSDF{
           else{
             //switch between scattering or diffuse reflection
             float diffp = p0/p1;
-            if(rnd(seed)<diffp || prd->fromDiff==true)
+            if(vdcrnd(prd->offset)<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);

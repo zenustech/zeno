@@ -1481,7 +1481,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         axis = {1,1,1};
                     auto start_len = glm::distance(pivot_SS, start_pos_SS);
                     if (start_len < 1) {
-                        return;
+                        start_len = 1;
                     }
                     auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
                     glm::vec3 scale(1.0f);
@@ -1589,7 +1589,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
                     auto start_len = glm::distance(pivot_SS, start_pos_SS);
                     if (start_len < 1) {
-                        return;
+                        start_len = 1;
                     }
                     auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
                     glm::vec3 scale(1.0f);
