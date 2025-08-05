@@ -140,13 +140,9 @@ zenooutline::~zenooutline()
 }
 
 bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
-    std::string mode;
-    std::string axis;
-    bool local_space;
     if (auto main = zenoApp->getMainWindow()) {
         for (DisplayWidget* view : main->viewports()) {
             if (ZOptixViewport* optxview = view->optixViewport()) {
-                std::tie(mode, axis, local_space) = optxview->get_srt_mode_axis();
             }
         }
     }
@@ -156,57 +152,8 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
         if (treeView) {
             if (event->type() == QEvent::KeyPress) {
                 if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
-                    if (keyEvent->key() == Qt::Key_R) {
-                        mode = "Rotate";
+                    if (keyEvent->key() == Qt::Key_F) {
                         changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_E) {
-                        mode = "Scale";
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_T) {
-                        mode = "Translate";
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_X) {
-                        if (zeno::str_contains(axis, "X")) {
-                            axis = zeno::remove_all(axis, "X");
-                        }
-                        else {
-                            axis += 'X';
-                        }
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_Y) {
-                        if (zeno::str_contains(axis, "Y")) {
-                            axis = zeno::remove_all(axis, "Y");
-                        }
-                        else {
-                            axis += 'Y';
-                        }
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_Z) {
-                        if (zeno::str_contains(axis, "Z")) {
-                            axis = zeno::remove_all(axis, "Z");
-                        }
-                        else {
-                            axis += 'Z';
-                        }
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_L) {
-                        local_space = !local_space;
-                        changed = true;
-                    }
-                    else if (keyEvent->key() == Qt::Key_Escape) {
-                        mode = "";
-                        axis = "";
-                        local_space = false;
-                        changed = true;
-                    }
-                    if (axis.size() >= 2) {
-                        std::sort(axis.begin(), axis.end());
                     }
                 }
             }
@@ -216,7 +163,6 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
         if (auto main = zenoApp->getMainWindow()) {
             for (DisplayWidget* view : main->viewports()) {
                 if (ZOptixViewport* optxview = view->optixViewport()) {
-                    optxview->set_srt_mode_axis(mode, axis, local_space);
                 }
             }
         }

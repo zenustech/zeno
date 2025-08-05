@@ -12,6 +12,7 @@
 #include "zeno/types/ListObject.h"
 #include "zeno/types/UserData.h"
 #include "zeno/utils/log.h"
+#include "zeno/utils/bit_operations.h"
 
 using Json = nlohmann::json;
 namespace zeno {
@@ -33,23 +34,98 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::string root_name;
     std::string type = "static";
 
-    std::optional<std::pair<vec3f, vec3f>> get_node_bbox(const std::string& node_name) {
-        std::vector<std::pair<vec3f, vec3f>> bbox;
+    // return value is in world space
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::string& node_name, const std::vector<glm::mat4> &parent_mat) {
         if (scene_tree.count(node_name) == 0) {
             return std::nullopt;
         }
         SceneTreeNode stn = scene_tree.at(node_name);
-        for (const auto& mesh: stn.meshes) {
+        std::vector<glm::mat4> local_mat;
+        if (node_to_matrix.count(node_name + "_m")) {
+            local_mat = node_to_matrix[node_name];
+        }
+        if (local_mat.empty()) {
+            local_mat = {glm::mat4(1)};
+        }
+        std::vector<glm::mat4> global_mat;
+        for (const auto &pm: parent_mat) {
+            for (const auto &lm: local_mat) {
+                global_mat.emplace_back(pm * lm);
+            }
+        }
+        std::vector<glm::vec3> bbox_points;
+        for (const auto &mesh: stn.meshes) {
             if (prim_list.count(mesh) == 0) {
                 continue;
             }
             auto prim = prim_list[mesh];
             if (prim->userData().has<vec3f>("_bboxMin")) {
-                auto bmin = prim->userData().get2<vec3f>("_bboxMin");
-                auto bmax = prim->userData().get2<vec3f>("_bboxMin");
-
+                auto bmin_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
+                auto bmax_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
+                for (const auto &gm: global_mat) {
+                    auto bmin_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
+                    auto bmax_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
+                    bbox_points.emplace_back(bmin_WS);
+                    bbox_points.emplace_back(bmax_WS);
+                }
             }
         }
+        for (const auto &child: stn.children) {
+            auto bboxWS = get_node_bbox(child, global_mat);
+            if (bboxWS.has_value()) {
+                bbox_points.emplace_back(bboxWS->first);
+                bbox_points.emplace_back(bboxWS->second);
+            }
+        }
+
+        if (bbox_points.empty()) {
+            return std::nullopt;
+        }
+        else {
+            // Initialize min and max with first point
+            glm::vec3 bmin = bbox_points[0];
+            glm::vec3 bmax = bbox_points[0];
+
+            // Iterate through all points to find min and max
+            for (const auto& point : bbox_points) {
+                bmin.x = std::min(bmin.x, point.x);
+                bmin.y = std::min(bmin.y, point.y);
+                bmin.z = std::min(bmin.z, point.z);
+
+                bmax.x = std::max(bmax.x, point.x);
+                bmax.y = std::max(bmax.y, point.y);
+                bmax.z = std::max(bmax.z, point.z);
+            }
+            return std::pair{bmin, bmax};
+        }
+    }
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::vector<std::string> &links) {
+        if (links.empty()) {
+            return std::nullopt;
+        }
+        std::vector<glm::mat4> parent_mat = {glm::mat4(1)};
+        for (auto i = 0; i < links.size() - 1; i++) {
+            const auto& node_name = links[i];
+            if (scene_tree.count(node_name) == 0) {
+                return std::nullopt;
+            }
+            SceneTreeNode stn = scene_tree.at(node_name);
+            std::vector<glm::mat4> local_mat;
+            if (node_to_matrix.count(node_name + "_m")) {
+                local_mat = node_to_matrix[node_name];
+            }
+            if (local_mat.empty()) {
+                local_mat = {glm::mat4(1)};
+            }
+            std::vector<glm::mat4> global_mat;
+            for (const auto &pm: parent_mat) {
+                for (const auto &lm: local_mat) {
+                    global_mat.emplace_back(pm * lm);
+                }
+            }
+            parent_mat = global_mat;
+        }
+        return get_node_bbox(links.back(), parent_mat);
     }
 
     std::string
