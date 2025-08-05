@@ -1,4 +1,4 @@
-#include "zenooutline.h"
+﻿#include "zenooutline.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "viewport/displaywidget.h"
@@ -271,17 +271,19 @@ void zenooutline::setupTreeView()
             }
         }
 
-        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-        mainWin->onPrimitiveSelected({object_name});
+        if (ZenoMainWindow* mainWin = zenoApp->getMainWindow()) {
+            mainWin->onPrimitiveSelected({object_name});
+        }
     });
 }
 
 void zenooutline::sendOptixMessage(Json &msg) {
     if (auto main = zenoApp->getMainWindow()) {
         for (DisplayWidget* view : main->viewports()) {
-            ZOptixViewport* optxview = view->optixViewport();
-            QString msg_str = QString::fromStdString(msg.dump());
-            emit optxview->sig_sendOptixMessage(msg_str);
+            if (ZOptixViewport* optxview = view->optixViewport()) {
+                QString msg_str = QString::fromStdString(msg.dump());
+                emit optxview->sig_sendOptixMessage(msg_str);
+            }
         }
     }
 
