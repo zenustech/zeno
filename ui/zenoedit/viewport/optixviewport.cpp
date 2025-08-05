@@ -108,6 +108,10 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
                 add_set_node_xform(hGraph, this->cur_node_uuid, outline_node_name, json, this->outline_node_to_uuid);
             }
         }
+        else if (json["MessageType"] == "CleanupAssets") {
+            emit sig_sendToOptixViewport(QString::fromStdString(content));
+            emit sig_sendToOutline(QString::fromStdString(content));
+        }
         else if (json["MessageType"] == "SetGizmoAxis") {
             emit sig_sendToOptixViewport(QString::fromStdString(content));
         }
@@ -572,6 +576,13 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             mat[3] = { t[0],  t[1],  t[2], 1.0f};
             this->axis_coord = mat;
         }
+        else if (message["MessageType"] == "CleanupAssets") {
+            this->mode = "";
+            this->axis = "";
+            this->try_axis = "";
+            this->local_space = true;
+            this->axis_coord = std::nullopt;
+        }
     });
     connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop, Qt::BlockingQueuedConnection);
@@ -977,7 +988,7 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
         else if(uKey == Qt::Key_T) {
             mode = "Translate";
         }
-        zeno::log_info("{} -> {}", old_mode, mode);
+//        zeno::log_info("{} -> {}", old_mode, mode);
     }
 }
 

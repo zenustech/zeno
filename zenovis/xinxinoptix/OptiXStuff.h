@@ -297,9 +297,12 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
     }
 
     if (_c_group == nullptr) {
-        OPTIX_CHECK(
-            optixModuleCreate( context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module )
-        );
+        //OPTIX_CHECK(
+        auto resu = optixModuleCreate(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module);
+        if (resu != OPTIX_SUCCESS) {
+            printf(" optix error %d \n source = %s \n", resu, source);
+        }
+        //);
     } else {
         
         OptixTask firstTask;

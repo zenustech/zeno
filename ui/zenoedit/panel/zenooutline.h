@@ -24,6 +24,7 @@ public:
     
     // 自定义数据操作
     void setupModelDataFromMessage(Json const& content);
+    void clearModelData();
 
 private:
     struct OutlineItem {

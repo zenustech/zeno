@@ -24,6 +24,7 @@ struct SceneTreeNode {
     std::string matrix;
     std::vector <std::string> children;
     int visibility = 1;
+    std::optional<std::pair<zeno::vec3f, zeno::vec3f>> bbox;
 };
 
 struct SceneObject : IObjectClone<SceneObject> {

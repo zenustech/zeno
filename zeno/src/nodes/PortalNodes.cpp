@@ -112,7 +112,11 @@ struct Stamp : zeno::INode {
                 std::string mode = get_input2<std::string>("stampMode");
                 if (mode == "UnChanged") {
                     if (currframe != beginframe) {
-                        obj = session->globalComm->constructEmptyObj(inputObjType);
+//                        obj = session->globalComm->constructEmptyObj(inputObjType);
+                        std::shared_ptr<IObject> unchangeObj;
+						unchangeObj = session->globalComm->constructEmptyObj(inputObjType);
+						unchangeObj->m_userData = std::move(obj->userData());
+						obj = unchangeObj;
                     }
                     obj->userData().set2("stamp-change", "UnChanged");
                 } else if (mode == "TotalChange") {

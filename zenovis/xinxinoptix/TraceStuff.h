@@ -115,6 +115,7 @@ struct RadiancePRD
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
+        //return vdcrnd(this->offset2);
         //return pcg_rng(this->seed); 
     }
 

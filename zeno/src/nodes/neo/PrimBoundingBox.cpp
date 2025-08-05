@@ -16,6 +16,12 @@ ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim) {
     return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
 }
 
+ZENO_API std::optional<std::pair<vec3f, vec3f>> primBoundingBox2(PrimitiveObject *prim) {
+    if (!prim->verts.size())
+        return std::nullopt;
+    return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
+}
+
 namespace {
 
 struct PrimBoundingBox : INode {

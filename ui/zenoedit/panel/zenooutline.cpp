@@ -49,6 +49,15 @@ void OutlineItemModel::setupModelDataFromMessage(Json const& content)
     endResetModel();
 }
 
+void OutlineItemModel::clearModelData()
+{
+    beginResetModel();
+
+    rootItem = std::make_unique<OutlineItem>();
+
+    endResetModel();
+}
+
 QModelIndex OutlineItemModel::index(int row, int column, const QModelIndex& parent) const
 {
     if (!hasIndex(row, column, parent))
@@ -109,8 +118,13 @@ zenooutline::zenooutline(QWidget *parent)
             if (auto optxview = view->optixViewport()) {
                 connect(optxview, &ZOptixViewport::sig_viewportSendToOutline, this, [this](QString content) {
                     Json msg = Json::parse(content.toStdString());
-                    if (msg["MessageType"] == "SceneTree" && this->m_model) {
-                        this->m_model->setupModelDataFromMessage(msg);
+                    if (this->m_model) {
+                        if (msg["MessageType"] == "SceneTree") {
+                            this->m_model->setupModelDataFromMessage(msg);
+                        }
+                        else if (msg["MessageType"] == "CleanupAssets") {
+                            this->m_model->clearModelData();
+                        }
                     }
                 });
             }

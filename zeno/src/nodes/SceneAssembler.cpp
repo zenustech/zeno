@@ -20,6 +20,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <zeno/utils/eulerangle.h>
+#include <zeno/funcs/PrimitiveTools.h>
 #include "zeno/extra/SceneAssembler.h"
 
 namespace zeno {
@@ -222,6 +223,16 @@ struct FormSceneTree : zeno::INode {
         auto prim_list = get_input2<ListObject>("prim_list");
 //        zeno::log_info("prim_list: {}", prim_list->arr.size());
         for (auto p: prim_list->arr) {
+            if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(p)) {
+                auto bbox = zeno::primBoundingBox2(prim.get());
+                if (bbox.has_value()) {
+                    vec3f bmin = {};
+                    vec3f bmax = {};
+                    std::tie(bmax, bmax) = bbox.value();
+                    prim->userData().setLiterial("_bboxMin", bmin);
+                    prim->userData().setLiterial("_bboxMax", bmax);
+                }
+            }
             auto abc_path = p->userData().get2<std::string>("abcpath_0");
             {
                 auto session = &zeno::getSession();
@@ -768,6 +779,15 @@ struct MakeSceneNode : zeno::INode {
         }
         scene_tree->type = get_input2<std::string>("type");
         auto prim = get_input2<PrimitiveObject>("prim");
+        auto bbox = zeno::primBoundingBox2(prim.get());
+        if (bbox.has_value()) {
+            vec3f bmin = {};
+            vec3f bmax = {};
+            std::tie(bmax, bmax) = bbox.value();
+            prim->userData().setLiterial("_bboxMin", bmin);
+            prim->userData().setLiterial("_bboxMax", bmax);
+        }
+
         SceneTreeNode root_node;
         root_node.matrix = scene_tree->root_name + "_m";
         scene_tree->node_to_matrix[root_node.matrix] = {glm::mat4(1)};

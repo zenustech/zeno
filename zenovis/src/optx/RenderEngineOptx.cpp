@@ -1176,6 +1176,12 @@ struct GraphicsManager {
             if (obj_name == "") {
                 continue;
             }
+            if (auto mat = std::dynamic_pointer_cast<zeno::PrimitiveObject>(matrixs[i])) {
+                auto count = mat->verts->size() / 4;
+                std::vector<m3r4c> matrix_list(count);
+                std::copy_n((float*)mat->verts.data(), count * 12, (float*)matrix_list.data());
+                defaultScene.load_matrix_list(obj_name, matrix_list);
+            }
             map[obj_name] = matrixs[i];
         }
         for (auto &[k, v]: graphics.m_curr) {
@@ -1191,10 +1197,6 @@ struct GraphicsManager {
                     auto prim_ptr = std::dynamic_pointer_cast<zeno::PrimitiveObject>(map[obj_name]);
                     if (ptr->primSp->verts.size() == prim_ptr->verts.size()) {
                         ptr->primSp->verts = prim_ptr->verts;
-                        auto count = ptr->primSp->verts->size() / 4;
-                        std::vector<m3r4c> matrix_list(count);
-                        std::copy_n((float*)ptr->primSp->verts.data(), count * 12, (float*)matrix_list.data());
-                        defaultScene.load_matrix_list(obj_name, matrix_list);
                     }
                 }
             }
@@ -2407,6 +2409,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         defaultScene = {};
         zeno::log_info("assetLoad, clear cached_shaders.size() = {}", cached_shaders.size());
         cached_shaders = {};
+        {
+            Json message;
+            message["MessageType"] = "CleanupAssets";
+            fun(message.dump());
+        }
     }
 
     void run() {
@@ -2426,6 +2433,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         OptixUtil::rtMaterialShaders.clear();
 
         xinxinoptix::optixCleanup();
+        {
+            Json message;
+            message["MessageType"] = "CleanupAssets";
+            fun(message.dump());
+        }
     }
 
     void cleanupWhenExit() override {

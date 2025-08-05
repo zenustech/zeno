@@ -22,6 +22,7 @@
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/CppTimer.h>
+#include <zeno/utils/fileio.h>
 #include <zeno/extra/SceneAssembler.h>
 
 #ifdef __linux__
@@ -168,8 +169,21 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 if (frameid == beginFrameNumber && objRunType != "normal" ||
                     balways && objRunType != "normal") {
                 } else {
-                    writer.EndObject();
-                    continue;
+					//writer.EndObject();
+					//continue;
+					std::shared_ptr<IObject> unchangeObj;
+					if (0) {
+#define _PER_OBJECT_TYPE(TypeName, ...) \
+                    } else if (auto o = dynamic_cast<TypeName const *>(obj.get())) { \
+                        unchangeObj = constructEmptyObj((int)ObjectType::TypeName);
+						ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
+#undef _PER_OBJECT_TYPE
+					}
+					else {
+						auto unchangeObj = constructEmptyObj(0);
+					}
+					unchangeObj->m_userData = std::move(obj->userData());
+                    obj = unchangeObj;
                 }
             }
             else if (stamptag == "DataChange") {
@@ -659,7 +673,22 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
                             spobj->userData().set2("stamp-change", "TotalChange");
                         }
                         objs.try_emplace(std::get<3>(it->second), spobj);
-                    }
+                    } else if (std::get<0>(it->second) == "UnChanged") {
+						int64_t originalPos = file.tellg();
+						file.seekg(std::get<5>(it->second), std::ios::cur);
+						int64_t startPos = file.tellg();
+						if (startPos + std::get<6>(it->second) > szBuffer) {
+							continue;
+						}
+						std::vector<char> objbuff(std::get<6>(it->second));
+						file.read(objbuff.data(), std::get<6>(it->second));
+						file.seekg(originalPos);
+						auto spobj = decodeObject(objbuff.data(), std::get<6>(it->second));
+						if (spobj) {
+							spobj->userData().set2("stamp-change", "UnChanged");
+						}
+						objs.try_emplace(std::get<3>(it->second), spobj);
+					}
                 }
             }
         }
@@ -667,15 +696,15 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     };
     //if (!loadPartial) {
         bool ret = load(cacheFramePath, objs, runtype);
-        for (auto& [key, tup] : newFrameStampInfo) {
-            //if (std::get<0>(tup) == "UnChanged") {
-            if (std::get<0>(tup) != "TotalChange") {//不是Totalchange的，暂时全部按照unchange处理
-                std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
-                emptyobj->userData().set2("stamp-change", std::get<0>(tup));
-                emptyobj->userData().set2("stamp-base", std::get<1>(tup));
-                objs.try_emplace(std::get<3>(tup), emptyobj);
-            }
-        }
+//        for (auto& [key, tup] : newFrameStampInfo) {
+//            //if (std::get<0>(tup) == "UnChanged") {
+//            if (std::get<0>(tup) != "TotalChange") {//不是Totalchange的，暂时全部按照unchange处理
+//                std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
+//                emptyobj->userData().set2("stamp-change", std::get<0>(tup));
+//                emptyobj->userData().set2("stamp-base", std::get<1>(tup));
+//                objs.try_emplace(std::get<3>(tup), emptyobj);
+//            }
+//        }
         return ret;
     //}
 #if 0
