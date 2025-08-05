@@ -52,7 +52,7 @@ public slots:
     void onSetSampleNumber(int sample_number);
     void onSendOptixMessage(QString);
 
-    void onSetData(float, float, float, bool, bool, bool, bool, float);
+    void onSetData(float, float, float, int, bool, bool, bool, bool, float);
 
 private:
     Zenovis *m_zenoVis;
@@ -79,6 +79,7 @@ public:
     void updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void updatePerspective();
     void setCameraRes(const QVector2D& res);
+    void setCameraScale(const int scale);
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     void showBackground(bool bShow);
@@ -124,7 +125,7 @@ signals:
     void sig_cleanUpView();
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
-    void sig_setdata_on_optix_thread(float, float, float, bool, bool, bool, bool, float);
+    void sig_setdata_on_optix_thread(float, float, float, int, bool, bool, bool, bool, float);
 
     void sig_viewportSendToOutline(QString);
     void sig_viewportSendToNodeEditor(QString);

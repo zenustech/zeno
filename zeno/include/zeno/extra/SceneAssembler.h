@@ -24,7 +24,6 @@ struct SceneTreeNode {
     std::string matrix;
     std::vector <std::string> children;
     int visibility = 1;
-    std::optional<std::pair<zeno::vec3f, zeno::vec3f>> bbox;
 };
 
 struct SceneObject : IObjectClone<SceneObject> {
@@ -33,6 +32,25 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::unordered_map <std::string, std::shared_ptr<PrimitiveObject>> prim_list;
     std::string root_name;
     std::string type = "static";
+
+    std::optional<std::pair<vec3f, vec3f>> get_node_bbox(const std::string& node_name) {
+        std::vector<std::pair<vec3f, vec3f>> bbox;
+        if (scene_tree.count(node_name) == 0) {
+            return std::nullopt;
+        }
+        SceneTreeNode stn = scene_tree.at(node_name);
+        for (const auto& mesh: stn.meshes) {
+            if (prim_list.count(mesh) == 0) {
+                continue;
+            }
+            auto prim = prim_list[mesh];
+            if (prim->userData().has<vec3f>("_bboxMin")) {
+                auto bmin = prim->userData().get2<vec3f>("_bboxMin");
+                auto bmax = prim->userData().get2<vec3f>("_bboxMin");
+
+            }
+        }
+    }
 
     std::string
     get_new_root_name(const std::string &root_name, const std::string &new_root_name, const std::string &path) {

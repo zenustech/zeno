@@ -104,6 +104,7 @@ struct SetPhysicalCamera : INode {
         ud.set2("aperture", get_input2<float>("aperture"));
         ud.set2("shutter_speed", get_input2<float>("shutter_speed"));
         ud.set2("iso", get_input2<float>("iso"));
+        ud.set2("renderRatio", get_input2<int>("renderRatio"));
         ud.set2("aces", get_input2<bool>("aces"));
         ud.set2("exposure", get_input2<bool>("exposure"));
         ud.set2("panorama_camera", get_input2<bool>("panorama_camera"));
@@ -120,6 +121,7 @@ ZENO_DEFNODE(SetPhysicalCamera)({
         {"float", "aperture", "2"},
         {"float", "shutter_speed", "0.04"},
         {"float", "iso", "150"},
+        {"int", "renderRatio", "1"},
         {"bool", "aces", "0"},
         {"bool", "exposure", "0"},
         {"bool", "exposure", "0"},

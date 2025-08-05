@@ -1777,7 +1777,7 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
     state.params.physical_camera_aperture = aperture;
     state.params.physical_camera_shutter_speed = shutter_speed;
     state.params.physical_camera_iso = iso;
@@ -1946,20 +1946,22 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
     return tex_data;
 }
 
-glm::vec3 get_click_pos(int x, int y) {
+glm::vec3 get_click_pos(float xx, float yy) {
     int w = state.params.width;
     int h = state.params.height;
     auto frame_buffer_pos = optixgetimg_extra2("pos", w, h);
+    int x = max(min(xx*w,w-1),0); int y = max(min(yy*h,h-1),0);
     auto index = x + (h - 1 - y) * w;
     auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
     return posWS;
 }
 
-glm::uvec4 get_click_id(int x, int y) {
+glm::uvec4 get_click_id(float xx, float yy) {
     int w = state.params.width;
     int h = state.params.height;
     std::vector<glm::uvec4> tex_data(w * h);
     cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_pick.handle, sizeof(tex_data[0]) * tex_data.size(), cudaMemcpyDeviceToHost);
+    int x = max(min(xx*w,w-1),0); int y = max(min(yy*h,h-1),0);
     auto index = x + (h - 1 - y) * w;
     return tex_data[index];
 }

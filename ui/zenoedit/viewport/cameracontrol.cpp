@@ -33,6 +33,9 @@ CameraControl::CameraControl(
 void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
+void CameraControl::setScale(int scale) {
+    m_scale = scale;
+}
 
 glm::vec3 CameraControl::getPos() const {
     auto *scene = m_zenovis->getSession()->get_scene();
@@ -103,7 +106,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::LeftButton) {
-        auto ids = scene->renderMan->getEngine()->getClickedId(event->x(), event->y());
+        auto &cam = scene->camera;
+        auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
         if (ids.has_value()) {
             auto [obj_id, mat_id, prim_id] = ids.value();
             ZenoMainWindow *mainWin = zenoApp->getMainWindow();
@@ -113,7 +117,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
-            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+            auto &cam = scene->camera;
+            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
             if (m_hit_posWS.has_value()) {
                 scene->camera->setPivot(m_hit_posWS.value());
             }
@@ -442,7 +447,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
             if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
                 auto session = m_zenovis->getSession();
                 auto scene = session->get_scene();
-                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+                auto &cam = scene->camera;
+                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
                 if (hit_posWS.has_value()) {
                     auto pivot = hit_posWS.value();
                     setPivot(pivot);

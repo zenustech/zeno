@@ -153,8 +153,21 @@ void OptixWorker::updateFrame()
     m_zenoVis->paintGL();
     int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
-
-    m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
+    int scale = zeno::getSession().userData().has("optix_image_path")?1:m_zenoVis->getSession()->get_scene()->camera->zOptixCameraSettingInfo.renderRatio;
+    //m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
+    std::vector<int32_t> img;
+    img.resize(w*h*scale*scale);
+    for(int j=0;j<h*scale;j++)
+        for(int i=0;i<w*scale;i++)
+        {
+            int jj = j/scale;
+            int ii = i/scale;
+            if(ii<w && jj<h)
+            {
+                img[j*w*scale + i]  = ((int32_t *)data)[jj*w + ii];
+            }
+        }
+    m_renderImg = QImage((uchar *)img.data(), w*scale, h*scale, QImage::Format_RGBA8888);
     m_renderImg = m_renderImg.mirrored(false, true);
 
     emit renderIterate(m_renderImg);
@@ -483,6 +496,7 @@ void OptixWorker::onSetData(
     float aperture,
     float shutter_speed,
     float iso,
+    int renderRatio,
     bool aces,
     bool exposure,
     bool panorama_camera,
@@ -494,6 +508,7 @@ void OptixWorker::onSetData(
     scene->camera->zOptixCameraSettingInfo.aperture = aperture;
     scene->camera->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
     scene->camera->zOptixCameraSettingInfo.iso = iso;
+    scene->camera->zOptixCameraSettingInfo.renderRatio = renderRatio;
     scene->camera->zOptixCameraSettingInfo.aces = aces;
     scene->camera->zOptixCameraSettingInfo.exposure = exposure;
     scene->camera->zOptixCameraSettingInfo.panorama_camera = panorama_camera;
@@ -634,6 +649,7 @@ void ZOptixViewport::setdata_on_optix_thread(zenovis::ZOptixCameraSettingInfo va
             value.aperture,
             value.shutter_speed,
             value.iso,
+            value.renderRatio,
             value.aces,
             value.exposure,
             value.panorama_camera,
@@ -744,7 +760,10 @@ void ZOptixViewport::updatePerspective()
 {
     m_camera->updatePerspective();
 }
-
+void ZOptixViewport::setCameraScale(const int scale)
+{
+    m_camera->setScale(scale);
+}
 void ZOptixViewport::setCameraRes(const QVector2D& res)
 {
     m_camera->setRes(res);

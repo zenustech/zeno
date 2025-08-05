@@ -127,7 +127,7 @@ struct RenderEngineBate : RenderEngine {
         primHighlight = nullptr;
         fbr = nullptr;
     }
-    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+    std::optional<glm::vec3> getClickedPos(float x, float y) override {
         auto depth = fbr->getDepth(x, y);
         if (depth == 0) {
             return {};

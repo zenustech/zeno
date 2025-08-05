@@ -1089,6 +1089,7 @@ struct GraphicsManager {
                             ud.get2<float>("aperture"),
                             ud.get2<float>("shutter_speed"),
                             ud.get2<float>("iso"),
+                            zeno::getSession().userData().has("optix_image_path")?1:ud.get2<int>("renderRatio"),
                             ud.get2<bool>("aces"),
                             ud.get2<bool>("exposure"),
                             ud.get2<bool>("panorama_camera"),
@@ -1132,6 +1133,7 @@ struct GraphicsManager {
                                 ud.get2<float>("aperture"),
                                 ud.get2<float>("shutter_speed"),
                                 ud.get2<float>("iso"),
+                                zeno::getSession().userData().has("optix_image_path")?1:ud.get2<int>("renderRatio"),
                                 ud.get2<bool>("aces"),
                                 ud.get2<bool>("exposure"),
                                 ud.get2<bool>("panorama_camera"),
@@ -1704,7 +1706,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         }
     }
-    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+    std::optional<glm::vec3> getClickedPos(float x, float y) override {
         glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
         if (posWS == glm::vec3()) {
             return {};
@@ -1713,7 +1715,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         posWS += cam.m_pos;
         return posWS;
     }
-    std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(int x, int y) override {
+    std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(float x, float y) override {
         auto ids = xinxinoptix::get_click_id(x, y);
         if (ids == glm::uvec4()) {
             return {};
@@ -1863,8 +1865,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         replace_with_modified_matrix();
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
-#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny,cam.zOptixCameraSettingInfo.renderRatio
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
@@ -1967,8 +1969,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
-
+            auto scale = zeno::getSession().userData().has("optix_image_path")?1:cam.zOptixCameraSettingInfo.renderRatio;
+            xinxinoptix::set_window_size(max(cam.m_nx/scale,1), max(cam.m_ny/scale,1));
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
@@ -1990,6 +1992,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.aperture,
                 cam.zOptixCameraSettingInfo.shutter_speed,
                 cam.zOptixCameraSettingInfo.iso,
+                cam.zOptixCameraSettingInfo.renderRatio,
                 cam.zOptixCameraSettingInfo.aces,
                 cam.zOptixCameraSettingInfo.exposure,
                 cam.zOptixCameraSettingInfo.panorama_camera,

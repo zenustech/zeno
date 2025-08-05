@@ -24,6 +24,14 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     m_shutter_speed->setRange(0.0, 10000);
     m_shutter_speed->setValue(info.shutter_speed);
 
+    QComboBox *m_renderRatio = new QComboBox(this);
+    m_renderRatio->setEditable(true);
+    m_renderRatio->addItem("1");
+    m_renderRatio->addItem("2");
+    m_renderRatio->addItem("4");
+    m_renderRatio->addItem("8");
+    m_renderRatio->setEditText(QString::number(info.renderRatio));
+
     QComboBox *m_iso = new QComboBox(this);
     m_iso->setEditable(true);
     m_iso->addItem("100");
@@ -63,6 +71,8 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
     mainLayout->addWidget(m_shutter_speed);
     mainLayout->addWidget(new QLabel("ISO"));
     mainLayout->addWidget(m_iso);
+    mainLayout->addWidget(new QLabel("RenderRatio"));
+    mainLayout->addWidget(m_renderRatio);
     mainLayout->addWidget(m_aces);
     mainLayout->addWidget(m_exposure);
     mainLayout->addWidget(m_panorama_camera);
@@ -88,6 +98,9 @@ ZOptixCameraSetting::ZOptixCameraSetting(zenovis::ZOptixCameraSettingInfo &info,
 
     connect(m_iso, &QComboBox::currentTextChanged, this, [&](const QString &text) {
         info.iso = text.toFloat();
+    });
+    connect(m_renderRatio, &QComboBox::currentTextChanged, this, [&](const QString &text) {
+        info.renderRatio = text.toInt();
     });
     connect(m_aces, &QCheckBox::stateChanged, this, [&](int state) {
         info.aces = state == Qt::Checked;
