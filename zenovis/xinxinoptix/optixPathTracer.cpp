@@ -483,7 +483,8 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                     rec.data.opacity = FLT_MAX;
                 }
 
-                auto& jomm = json["omm"];
+                auto hasomm = json.contains("omm");
+                auto& jomm = hasomm? json["omm"] : nlohmann::json();
                 if(!jomm.is_null() && !jomm.is_primitive()) {
                     rec.data.opacity = -1;
                     rec.data.binaryShadowTestDirectRay   = jomm["binaryShadowTestDirectRay"].template get<bool>();
