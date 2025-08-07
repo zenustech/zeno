@@ -590,6 +590,15 @@ namespace DisneyBSDF{
         }
         return 1.0f / ( n * n) - (1.0f - c * c);
     }
+    static __inline__ __device__
+    void SampleNormal(vec3 wo, vec3& wm, float rough, float aniso, float r1, float r2)
+    {
+        float ax, ay;
+        BRDFBasics::CalculateAnisotropicParams(rough,aniso,ax,ay);
+        vec3 vtmp = wo;
+        vtmp.z = abs(vtmp.z);
+        wm = BRDFBasics::SampleGGXVNDF(vtmp, ax, ay, r1, r2);
+    }
 
     static __inline__ __device__
     void SampleSpecular(vec3 wo, vec3& wi, float rough, float aniso, float r1, float r2){
@@ -737,7 +746,7 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
             if(dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
           }
           else{
             //switch between scattering or diffuse reflection
@@ -753,7 +762,7 @@ namespace DisneyBSDF{
               tbn.inverse_transform(wi);
               wi = normalize(wi);
               if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
             }else
             {
               //go inside
@@ -774,7 +783,7 @@ namespace DisneyBSDF{
               tbn.inverse_transform(wi);
               wi = normalize(wi);
               if(dot(wi,N2)>0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
 
             }
           }
@@ -795,7 +804,7 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
             if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
 
         }else if(r3<p4)//glass
         {
@@ -838,7 +847,7 @@ namespace DisneyBSDF{
           bool sameside2 = (dot(wi, N) * dot(wi, N2))>0.0f;
           if(sameside2 == false)
           {
-            wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
           }
 
         }else if(r3<p5)//cc
@@ -848,7 +857,7 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
             if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
             reflection_fromCC = true;
         }
 

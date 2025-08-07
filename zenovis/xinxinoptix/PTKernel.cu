@@ -301,7 +301,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
-        prd.max_depth = 12;
+        prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
         
@@ -397,7 +397,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 4){
+            if(prd.depth > 2){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {

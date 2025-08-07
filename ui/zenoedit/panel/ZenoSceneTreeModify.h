@@ -15,12 +15,12 @@ public:
 	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
-class scenetreeModifyModel : public QAbstractTableModel {
+class SceneTreeModifyModel : public QAbstractTableModel {
 	Q_OBJECT
 
 public:
-	explicit scenetreeModifyModel(QObject* parent = nullptr);
-	~scenetreeModifyModel();
+	explicit SceneTreeModifyModel(QObject* parent = nullptr);
+	~SceneTreeModifyModel();
 
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -46,19 +46,21 @@ private:
 	QVector<ModifyItem> m_items;
 };
 
-class zenoScenetreeModify  : public QWidget
+class ZenoSceneTreeModify  : public QWidget
 {
 	Q_OBJECT
 
 public:
-	zenoScenetreeModify(QWidget *parent = nullptr);
-	~zenoScenetreeModify();
+	ZenoSceneTreeModify(QWidget *parent = nullptr);
+	~ZenoSceneTreeModify();
 
 private:
 	void initUi();
 	void generateModificationNode(QString outNodeId, QString outSock, QString inNodeType, QString inSock, QString inModifyInfoSock, Json& msg);
-
+    void sendOptixMessage(Json &msg);
 	QTableView* m_tableView = nullptr;
-	scenetreeModifyModel* m_model = nullptr;
+	SceneTreeModifyModel* m_model = nullptr;
+    Json xforms;
+    std::string node_uuid;
 };
 

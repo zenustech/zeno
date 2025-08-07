@@ -722,31 +722,55 @@ struct SetNodeXform : zeno::INode {
     void apply() override {
         auto scene = get_input2<ListObject>("scene");
         auto node = get_input2<std::string>("node");
-        auto index = get_input2<int>("index");
-        auto r0 = get_input2<vec3f>("r0");
-        auto r1 = get_input2<vec3f>("r1");
-        auto r2 = get_input2<vec3f>("r2");
-        auto t  = get_input2<vec3f>("t");
         auto json_str = scene->arr.back()->userData().get2<std::string>("json");
         auto st = Json::parse(json_str);
         auto &node_to_matrix = st["node_to_matrix"];
-        if (node_to_matrix.contains(node + "_m")) {
-            Json matrix = Json::array();
-            for (auto j = 0; j < 3; j++) {
-                matrix.push_back(r0[j]);
+        if (has_input("xforms")) {
+            auto xforms = get_xform_from_prim(get_input2<PrimitiveObject>("xforms"));
+            Json mats = Json::array();
+            for (const auto &xform: xforms) {
+                Json matrix = Json::array();
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(xform[0][j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(xform[1][j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(xform[2][j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(xform[3][j]);
+                }
+                mats.push_back(matrix);
             }
-            for (auto j = 0; j < 3; j++) {
-                matrix.push_back(r1[j]);
-            }
-            for (auto j = 0; j < 3; j++) {
-                matrix.push_back(r2[j]);
-            }
-            for (auto j = 0; j < 3; j++) {
-                matrix.push_back(t[j]);
-            }
-            node_to_matrix[node + "_m"][index] = matrix;
-            scene->arr.back()->userData().set2("json", st.dump());
+            node_to_matrix[node + "_m"] = mats;
         }
+        else {
+            auto index = get_input2<int>("index");
+            auto r0 = get_input2<vec3f>("r0");
+            auto r1 = get_input2<vec3f>("r1");
+            auto r2 = get_input2<vec3f>("r2");
+            auto t  = get_input2<vec3f>("t");
+
+            if (node_to_matrix.contains(node + "_m")) {
+                Json matrix = Json::array();
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(r0[j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(r1[j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(r2[j]);
+                }
+                for (auto j = 0; j < 3; j++) {
+                    matrix.push_back(t[j]);
+                }
+                node_to_matrix[node + "_m"][index] = matrix;
+            }
+        }
+        scene->arr.back()->userData().set2("json", st.dump());
         set_output2("scene", scene);
     }
 };
@@ -760,6 +784,50 @@ ZENDEFNODE( SetNodeXform, {
         {"vec3f", "r1", "0, 1, 0"},
         {"vec3f", "r2", "0, 0, 1"},
         {"vec3f", "t", "0, 0, 0"},
+        "xforms"
+    },
+    {
+        "scene",
+    },
+    {
+    },
+    {
+        "Scene",
+    },
+});
+
+struct SetSceneXform : zeno::INode {
+    void apply() override {
+        auto scene_tree = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
+        auto xformsList = get_input<ListObject>("xformsList")->get2<std::string>();
+        for (const auto &xforms_str: xformsList) {
+            if (xforms_str.size()) {
+                auto xforms = Json::parse(xforms_str);
+                for (const auto& [node_name, mat]: xforms.items()) {
+                    auto &stn = scene_tree->scene_tree.at(node_name);
+                    if (stn.matrix.empty()) {
+                        stn.matrix = node_name + "_m";
+                    }
+                    auto m = glm::mat4(1);
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            m[i][j] = float(mat[i * 3 + j]);
+                        }
+                    }
+                    scene_tree->node_to_matrix[stn.matrix] = {m};
+                }
+            }
+        }
+        auto scene = scene_tree->to_list();
+        set_output2("scene", scene);
+    }
+};
+
+ZENDEFNODE( SetSceneXform, {
+    {
+        "scene",
+        {"list", "xformsList"},
+//        {"multiline_string", "xformsInfo", ""},
     },
     {
         "scene",
@@ -805,6 +873,10 @@ struct MakeSceneNode : zeno::INode {
 
         scene_tree->scene_tree[scene_tree->root_name] = root_node;
 
+        if (has_input("xforms")) {
+            auto xforms = get_xform_from_prim(get_input2<PrimitiveObject>("xforms"));
+            scene_tree->node_to_matrix[scene_tree->root_name + "_m"] = xforms;
+        }
         auto scene = scene_tree->to_list();
         set_output2("scene", scene);
     }
@@ -814,6 +886,7 @@ ZENDEFNODE( MakeSceneNode, {
         {"prim"},
         {"enum static dynamic", "type", "dynamic"},
         {"string", "root_name", "new_node"},
+        {"xforms"},
     },
     {
         "scene",

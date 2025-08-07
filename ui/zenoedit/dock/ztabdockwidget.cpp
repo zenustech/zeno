@@ -6,7 +6,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zenooutline.h"
-#include "../panel/zenoScenetreeModify.h"
+#include "../panel/ZenoSceneTreeModify.h"
 #include "../panel/zlogpanel.h"
 #include "../panel/zenocommandparamspanel.h"
 #include "../panel/zenoopenpathpanel.h"
@@ -241,7 +241,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_XFORM:
         {
-            return new zenoScenetreeModify;
+            return new ZenoSceneTreeModify;
         }
     }
     return nullptr;

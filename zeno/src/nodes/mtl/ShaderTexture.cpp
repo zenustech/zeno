@@ -167,6 +167,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         texFiltering[] = "NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR";
     virtual int determineType(EmissionPass *em) override {
         auto uvtiling = em->determineType(get_input("uvtiling").get());
+        auto normalScale = em->determineType(get_input("normalScale").get());
         if (has_input("coord")) {
             auto coord = em->determineType(get_input("coord").get());
             if (coord < 2)
@@ -327,6 +328,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             type = "";
         }
         auto uvtiling = em->determineExpr(get_input("uvtiling").get());
+        auto nscale = em->determineExpr(get_input("normalScale").get());
         std::string coord = "att_uv";
         if (has_input("coord")) {
             coord = em->determineExpr(get_input("coord").get());
@@ -337,7 +339,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         }else if (postprocess == "srgb"){
             em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
         }else if (postprocess == "normal_map"){
-            em->emitCode(zeno::format("({}(texture2D(zenotex[{}], vec2({}) * {})) * 2.0f - 1.0f){}", type, texId, coord, uvtiling, suffix));
+            em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], vec2({}) * {})) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
         }else if (postprocess == "1-x"){
             em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
         }
@@ -355,6 +357,7 @@ ZENDEFNODE(SmartTexture2D, {
         {"coord"},
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
+        {"float", "normalScale", "1.0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
         {"enum raw srgb normal_map 1-x", "post_process", "raw"},
         {"bool", "blockCompression", "false"}

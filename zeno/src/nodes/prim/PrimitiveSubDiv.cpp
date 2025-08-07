@@ -12,6 +12,7 @@
 #include <tbb/tbb.h>
 #include <functional>
 #include <set>
+#include "zeno/extra/TempNode.h"
 
 namespace zeno {
 struct EdgeInfo {
@@ -36,7 +37,7 @@ struct PairHash {
     std::size_t operator()(const std::pair<T1, T2>& p) const {
         auto h1 = std::hash<T1>{}(p.first);
         auto h2 = std::hash<T2>{}(p.second);
-        // ¼òµ¥µÄ¹þÏ£×éºÏ·½Ê½£¨¿ÉÄÜ»á³åÍ»£¬µ«ÊÊÓÃÓÚ´ó¶àÊýÇé¿ö£©
+        // ï¿½òµ¥µÄ¹ï¿½Ï£ï¿½ï¿½Ï·ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Ü»ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         return h1 ^ (h2 << 1);
     }
 };
@@ -177,7 +178,7 @@ int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, 
         return 0;
     }
     if (v0_vS[2] * v1_vS[2] < 0 && abs(v0_vS[2] * v1_vS[2])>0.0001 && iter<20) {
-        //ÎÒÊµÔÚ²»Ã÷°×ÎªÉ¶ÕâÌõÕâÃ´ÖØÒª£¬ ÄãÊÔ×Å°ÑËü¸Äµô¾Í²»workÁË£¬ È»¶øÏñÓÒ±ßÕâÖÖÇé¿ö²»Ó¦¸ÃÓÐ¹ØÏµ°¡£¡£¡
+        //ï¿½ï¿½Êµï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ÎªÉ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½Òªï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å°ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½Í²ï¿½workï¿½Ë£ï¿½ È»ï¿½ï¿½ï¿½ï¿½ï¿½Ò±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½Ð¹ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         t = v0_vS[2] / (v0_vS[2] - v1_vS[2]);
         return 1;
     }
@@ -453,6 +454,7 @@ void split_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info,
 }
 void emit_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, std::vector<vec3i> &tri_edges, std::vector<int> &tri_new) {
     std::vector<zeno::vec3i> new_tris;
+    std::vector<int> new_old_map;
 
     std::vector<int> tri_sum;
     std::vector<int> tri_count;
@@ -473,6 +475,7 @@ void emit_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
     }
     int total_num = tri_sum.back();
     new_tris.resize(total_num);
+    new_old_map.resize(total_num);
     tri_new.assign(total_num, 0);
     //begin tri emit
      tbb::parallel_for(tbb::blocked_range<size_t>(0, tri_count.size()),
@@ -484,6 +487,7 @@ void emit_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
                 split_tris(prim, edge_flatten_info, tri_edges, i, v);
                 for (int j = 0; j < emit_count; j++) {
                     new_tris[emit_start + j] = v[j];
+                    new_old_map[emit_start + j] = prim->polys.attr<int>("parentID")[i];
                     if(emit_count > 1) {
                         tri_new[emit_start + j] = 1;
                     }
@@ -498,11 +502,223 @@ void emit_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
     prim->polys.resize(new_tris.size());
     for (auto i = 0; i < prim->polys.size(); i++) {
         prim->polys[i] = { 3 * i, 3 };
+        prim->polys.attr<int>("parentID")[i] = new_old_map[i];
     }
 }
+static float area(zeno::vec3f v0, zeno::vec3f v1, zeno::vec3f v2)
+{
+    vec3f e0 = v1 - v0;
+    vec3f e1 = v2 - v0;
+    return 0.5 * length(cross(e0,e1));
+}
+
+//result = w.x*v0_attr + w.y*v1_attr + w.z*v2_attr
+static zeno::vec3f findBarycentric(zeno::vec3f p, zeno::vec3f v0, zeno::vec3f v1, zeno::vec3f v2)
+{
+    float t_area = area(v0, v1, v2);
+    if(t_area<0.000001)
+        return zeno::vec3f (1,0,0);
+    float w0 = min(area(p, v1, v2)/t_area, 1.0f);
+    float w1 = min(area(p, v0, v2)/t_area, 1.0f - w0);
+    float w2 = max(1.0f -  w0 - w1, 0.0f);
+    return zeno::vec3f (w0, w1, w2);
+}
+
+static void prim_interp(PrimitiveObject *origin_prim,  PrimitiveObject *prim) {
+    origin_prim->polys.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+        using T = std::decay_t<decltype(arr[0])>;
+        auto &parentIDs = prim->polys.attr<int>("parentID");
+        auto &attr = prim->polys.add_attr<T>(key);
+        #pragma omp parallel for
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            int parentID = parentIDs[i];
+            attr[i] = arr[parentID];
+        }
+    });
+
+    origin_prim->verts.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto const &arr) {
+        using T = std::decay_t<decltype(arr[0])>;
+        auto &attr = prim->verts.add_attr<T>(key);
+        auto &parentIDs = prim->polys.attr<int>("parentID");
+        auto &bw = prim->loops.attr<vec3f>("bw");
+        #pragma omp parallel for
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            int parentID = parentIDs[i];
+            auto vid0 = prim->loops[prim->polys[i][0]];
+            auto vid1 = prim->loops[prim->polys[i][0]+1];
+            auto vid2 = prim->loops[prim->polys[i][0]+2];
+
+            auto ovid0 = origin_prim->loops[origin_prim->polys[parentID][0]];
+            auto ovid1 = origin_prim->loops[origin_prim->polys[parentID][0]+1];
+            auto ovid2 = origin_prim->loops[origin_prim->polys[parentID][0]+2];
+
+            auto odata0 = arr[ovid0];
+            auto odata1 = arr[ovid1];
+            auto odata2 = arr[ovid2];
+
+            auto bw0 = bw[prim->polys[i][0]];
+            auto bw1 = bw[prim->polys[i][0]+1];
+            auto bw2 = bw[prim->polys[i][0]+2];
+
+            auto data0 = bw0[0] * odata0 + bw0[1] * odata1 + bw0[2] * odata2;
+            auto data1 = bw1[0] * odata0 + bw1[1] * odata1 + bw1[2] * odata2;
+            auto data2 = bw2[0] * odata0 + bw2[1] * odata1 + bw2[2] * odata2;
+
+            attr[vid0] = data0;
+            attr[vid1] = data1;
+            attr[vid2] = data2;
+        }
+    });
+
+
+    auto &parentIDs = prim->polys.attr<int>("parentID");
+    auto &ouv = origin_prim->loops.attr<int>("uvs");
+    auto &bw = prim->loops.attr<vec3f>("bw");
+    auto &puv = prim->loops.add_attr<int>("uvs");
+    prim->uvs.resize(prim->loops.size());
+    #pragma omp parallel for
+    for(auto i=0;i<prim->polys.size();i++)
+    {
+        size_t parentID = parentIDs[i];
+
+        auto ovid0 = ouv[origin_prim->polys[parentID][0]];
+        auto ovid1 = ouv[origin_prim->polys[parentID][0]+1];
+        auto ovid2 = ouv[origin_prim->polys[parentID][0]+2];
+
+        auto odata0 = origin_prim->uvs[ovid0];
+        auto odata1 = origin_prim->uvs[ovid1];
+        auto odata2 = origin_prim->uvs[ovid2];
+
+        auto bw0 = bw[prim->polys[i][0]];
+        auto bw1 = bw[prim->polys[i][0]+1];
+        auto bw2 = bw[prim->polys[i][0]+2];
+
+        auto data0 = bw0[0] * odata0 + bw0[1] * odata1 + bw0[2] * odata2;
+        auto data1 = bw1[0] * odata0 + bw1[1] * odata1 + bw1[2] * odata2;
+        auto data2 = bw2[0] * odata0 + bw2[1] * odata1 + bw2[2] * odata2;
+
+        prim->uvs[i*3 + 0] = data0;
+        prim->uvs[i*3 + 1] = data1;
+        prim->uvs[i*3 + 2] = data2;
+        puv[i*3 + 0] = i*3 + 0;
+        puv[i*3 + 1] = i*3 + 1;
+        puv[i*3 + 2] = i*3 + 2;
+    }
+}
+struct PrimInterp : INode{
+    void apply() override{
+        auto origin_prim = get_input2<PrimitiveObject>("original_prim");
+        auto prim = get_input2<PrimitiveObject>("interp_prim");
+        prim_interp(origin_prim.get(), prim.get());
+        set_output2("prim", prim);
+    }
+};
+
+ZENDEFNODE(PrimInterp,
+{ /* inputs: */ {
+    "original_prim",
+    "interp_prim",
+}, /* outputs: */ {
+    "prim"
+}, /* params: */ {
+}, /* category: */ {
+    "primitive",
+}});
+struct PrimDisplacement : INode {
+    void apply() override {
+        auto prim_in = get_input2<PrimitiveObject>("prim_in");
+        if(!prim_in->verts.has_attr("disp"))
+            prim_in->verts.add_attr<vec3f>("disp");
+        if(!prim_in->verts.has_attr("sample_disp"))
+            prim_in->verts.add_attr<vec3f>("sample_disp");
+        std::string image_file = get_input2<std::string>("image_file");
+        std::string mat_name = get_input2<std::string>("mat_name");
+        std::string displacement_code = get_input2<std::string>("displacement_code");
+
+        auto img = zeno::TempNodeSimpleCaller("ReadImageFile_v2")
+                .set2("path", image_file)
+                .set2("srgb_to_linear", int(0))
+                .call()
+                .get<zeno::PrimitiveObject>("image");
+
+        auto oPrim = zeno::TempNodeSimpleCaller("PrimSample2D")
+                .set2("prim", prim_in)
+                .set2("image", img)
+                .set2("uvChannel", std::string("uv"))
+                .set2("uvSource", std::string("loopsuv"))
+                .set2("targetChannel",std::string("h"))
+                .set2("remapMin",float(0))
+                .set2("remapMax",float(1))
+                .set2("wrap",std::string("REPEAT"))
+                .set2("filter", std::string("linear"))
+                .set2("borderColor", zeno::vec3f(0,0,0))
+                .set2("invert U", int(0))
+                .set2("invert V", int(0))
+                .set2("scale", float(1))
+                .set2("rotate", float(0))
+                .set2("translate", zeno::vec2f(0))
+                .call()
+                .get<zeno::PrimitiveObject>("outPrim");
+
+
+        auto disp_prim = zeno::TempNodeSimpleCaller("ParticlesWrangle")
+                .set2("prim", oPrim)
+                .set2("zfxCode", displacement_code)
+                .call()
+                .get<zeno::PrimitiveObject>("prim");
+
+        auto &matIds = disp_prim->polys.attr<int>("matid");
+        auto &sample_disp = disp_prim->verts.attr<zeno::vec3f>("sample_disp");
+        auto &disp = disp_prim->verts.attr<zeno::vec3f>("disp");
+        int matNum = disp_prim->userData().get2<int>("matNum");
+        std::vector<int> mat_mark(matNum);
+        for(int i=0;i<matNum;i++)
+        {
+            mat_mark[i] = 0;
+            if (disp_prim->userData().get2<std::string>(format("Material_{}", i)) == mat_name)
+            {
+                mat_mark[i] = 1;
+            }
+        }
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, disp_prim->polys.size()),
+        [&](const tbb::blocked_range<size_t>& r) {
+            for (size_t i = r.begin(); i != r.end(); ++i) {
+                int mat_id = matIds[i];
+                if (mat_mark[mat_id]==1) {
+                    //get the three points of this poly
+                    auto [start, len] = disp_prim->polys[i];
+                    for (auto j = 0; j < len; j++) {
+                        int vid = disp_prim->loops[start + j];
+                        disp[vid] = sample_disp[vid];
+                    }
+                }
+            }
+        });
+
+
+        set_output2("out", disp_prim);
+    }
+};
+
+ZENDEFNODE(PrimDisplacement,
+{ /* inputs: */ {
+    "prim_in",
+    {"readpath", "image_file"},
+    {"string", "mat_name"},
+    {"multiline_string", "displacement_code"},
+}, /* outputs: */ {
+    "out",
+}, /* params: */ {
+}, /* category: */ {
+    "primitive",
+}});
+
+
 struct PrimDice : INode {
     void apply() override {
-        auto prim = get_input2<PrimitiveObject>("prim");
+        auto origin_prim = get_input2<PrimitiveObject>("prim");
+        primTriangulateIntoPolys(origin_prim.get());
+        auto prim = std::dynamic_pointer_cast<PrimitiveObject>(origin_prim->clone());
         primTriangulateIntoPolys(prim.get());
         auto camera = get_input2<CameraObject>("camera");
         auto width = get_input2<int>("width");
@@ -516,6 +732,11 @@ struct PrimDice : INode {
         std::vector<vec3i> tri_edges;
         std::vector<int> tri_new;
         tri_new.assign(prim->polys.size(),1);
+        prim->polys.add_attr<int>("parentID");
+        for(int i=0;i<prim->polys.size();i++)
+        {
+            prim->polys.attr<int>("parentID")[i] = i;
+        }
         std::vector<float> T;
         while (iter_count < maxIterNum) {
 //            zeno::log_info("======={}==========", iter_count);
@@ -533,6 +754,40 @@ struct PrimDice : INode {
         if (iter_count >= maxIterNum) {
             zeno::log_warn("iter_count:{} >= maxIterNum:{}", iter_count, maxIterNum);
         }
+        prim->loops.add_attr<zeno::vec3f>("bw");
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, prim->polys.size()),
+        [&](const tbb::blocked_range<size_t>& r) {
+            for (size_t i = r.begin(); i != r.end(); ++i) {
+                auto tri = prim->polys[i];
+                auto new_v0_idx = prim->loops[tri[0]];
+                auto new_v1_idx = prim->loops[tri[0] + 1];
+                auto new_v2_idx = prim->loops[tri[0] + 2];
+
+                int from_idx = prim->polys.attr<int>("parentID")[i];
+                auto from_tri = origin_prim->polys[from_idx];
+                auto from_v0_idx = origin_prim->loops[from_tri[0]];
+                auto from_v1_idx = origin_prim->loops[from_tri[0] + 1];
+                auto from_v2_idx = origin_prim->loops[from_tri[0] + 2];
+
+                zeno::vec3f new_v0 = prim->verts[new_v0_idx];
+                zeno::vec3f new_v1 = prim->verts[new_v1_idx];
+                zeno::vec3f new_v2 = prim->verts[new_v2_idx];
+
+                zeno::vec3f from_v0 = origin_prim->verts[from_v0_idx];
+                zeno::vec3f from_v1 = origin_prim->verts[from_v1_idx];
+                zeno::vec3f from_v2 = origin_prim->verts[from_v2_idx];
+
+                zeno::vec3f bw0 = findBarycentric(new_v0, from_v0, from_v1, from_v2);
+                zeno::vec3f bw1 = findBarycentric(new_v1, from_v0, from_v1, from_v2);
+                zeno::vec3f bw2 = findBarycentric(new_v2, from_v0, from_v1, from_v2);
+
+                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 0] = bw0;
+                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 1] = bw1;
+                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 2] = bw2;
+            }
+        });
+        prim_interp(origin_prim.get(), prim.get());
+
         set_output2("out", prim);
     }
 };
@@ -545,7 +800,7 @@ ZENDEFNODE(PrimDice,
     {"int", "maxIterNum", "1"},
     {"float", "factor", "0.5"},
 }, /* outputs: */ {
-    "out"
+    "out",
 }, /* params: */ {
 }, /* category: */ {
     "primitive",

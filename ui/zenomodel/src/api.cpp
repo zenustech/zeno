@@ -518,7 +518,7 @@ ZENO_ERROR Zeno_SetView(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
     }
     info.role = ROLE_OPTIONS;
     info.newValue = options;
-    zeno::log_info("old: {}, new: {}", info.oldValue.toInt(), info.newValue.toInt());
+//    zeno::log_info("old: {}, new: {}", info.oldValue.toInt(), info.newValue.toInt());
 
     pModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
     return Err_NoError;

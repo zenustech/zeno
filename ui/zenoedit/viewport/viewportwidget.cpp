@@ -76,13 +76,14 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         clearTransformer();
     });
 
-    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
-        auto scene = m_zenovis->getSession()->get_scene();
-        scene->drawOptions->simpleRender = false;
-        scene->drawOptions->needRefresh = true;
-        m_pauseRenderDally->stop();
-        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
-    });
+//    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
+//        zeno::log_info("time out\n");
+//        auto scene = m_zenovis->getSession()->get_scene();
+//        scene->drawOptions->simpleRender = false;
+//        scene->drawOptions->needRefresh = true;
+//        m_pauseRenderDally->stop();
+//        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
+//    });
 
     connect(m_wheelEventDally, &QTimer::timeout, [&](){
         m_wheelEventDally->stop();
@@ -97,7 +98,7 @@ void ViewportWidget::setSimpleRenderOption() {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
     m_pauseRenderDally->stop();
-    m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
+    m_pauseRenderDally->start(3*1000);  // Second to millisecond
 }
 
 void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)

@@ -16,6 +16,13 @@
 #include <zenomodel/include/nodesmgr.h>
 #include <zeno/utils/string.h>
 
+#include "viewport/zoptixviewport.h"
+#include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphscene.h"
+#include <zenomodel/include/nodeparammodel.h>
+#include <zenomodel/include/uihelper.h>
+
+
 #include "tinygltf/json.hpp"
 using Json = nlohmann::json;
 
@@ -97,16 +104,22 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     engin->fun = [this](std::string content) {
         Json json = Json::parse(content);
         if (json["MessageType"] == "SetNodeXform") {
-//            emit sig_sendToNodeEditor(QString::fromStdString(content));
-            ZENO_HANDLE hGraph = Zeno_GetGraph("main");
-            auto outline_node_name = std::string(json["NodeName"]);
-            if (!this->cur_node_uuid.has_value()) {
-                auto node_key = std::string(json["NodeKey"]);
-                cur_node_uuid = zeno::split_str(node_key, ':')[0];
-            }
-            if (this->cur_node_uuid.has_value()) {
-                add_set_node_xform(hGraph, this->cur_node_uuid, outline_node_name, json, this->outline_node_to_uuid);
-            }
+            emit sig_sendToXformPanel(QString::fromStdString(content));
+//            ZENO_HANDLE hGraph = Zeno_GetGraph("main");
+//            auto outline_node_name = std::string(json["NodeName"]);
+//            if (!this->cur_node_uuid.has_value()) {
+//                auto node_key = std::string(json["NodeKey"]);
+//                cur_node_uuid = zeno::split_str(node_key, ':')[0];
+//            }
+//            if (this->cur_node_uuid.has_value()) {
+//                add_set_node_xform(hGraph, this->cur_node_uuid, outline_node_name, json, this->outline_node_to_uuid);
+//            }
+        }
+        else if (json["MessageType"] == "XformPanelInitFeedback") {
+            emit sig_sendToXformPanel(QString::fromStdString(content));
+        }
+        else if (json["MessageType"] == "SetSceneXform") {
+            emit sig_sendToOptixViewport(QString::fromStdString(content));
         }
         else if (json["MessageType"] == "CleanupAssets") {
             emit sig_sendToOptixViewport(QString::fromStdString(content));
@@ -154,6 +167,11 @@ void OptixWorker::updateFrame()
     int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
     int scale = zeno::getSession().userData().has("optix_image_path")?1:m_zenoVis->getSession()->get_scene()->camera->zOptixCameraSettingInfo.renderRatio;
+    int scale2 = m_zenoVis->getSession()->get_scene()->drawOptions->simpleRender?scale:1;
+    if(scale2 == 1 && (w != m_zenoVis->getSession()->get_scene()->camera->m_nx || h!= m_zenoVis->getSession()->get_scene()->camera->m_ny) )
+        scale = scale;
+    else
+        scale = scale2;
     //m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
     std::vector<int32_t> img;
     img.resize(w*h*scale*scale);
@@ -523,6 +541,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(false)
     , m_bMovingCamera(false)
+    , m_pauseRenderDally(new QTimer)
 {
     setMouseTracking(true);
     m_zenovis = new Zenovis(this);
@@ -598,7 +617,29 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             this->local_space = true;
             this->axis_coord = std::nullopt;
         }
+        else if (message["MessageType"] == "SetSceneXform") {
+            auto content_std = content.toStdString();
+            Json json = Json::parse(content_std);
+            auto node_key = std::string(json["NodeKey"]);
+            auto cur_node_uuid = zeno::split_str(node_key, ':')[0];
+//            auto mat_str = json["Matrixs"].dump();
+//            zeno::log_info("json: {}", json.dump());
+//            return;
+
+            std::string outnode = cur_node_uuid;
+            generateModificationNode(outnode, "scene", "MakeMultilineString", "scene", "value", json["Matrixs"]);
+        }
     });
+
+    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
+//        zeno::log_info("time out\n");
+        auto scene = m_zenovis->getSession()->get_scene();
+        scene->drawOptions->simpleRender = false;
+        scene->drawOptions->needRefresh = true;
+        m_pauseRenderDally->stop();
+        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
+    });
+
     connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop, Qt::BlockingQueuedConnection);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work, Qt::BlockingQueuedConnection);
@@ -610,6 +651,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
     connect(m_worker, &OptixWorker::sig_sendToOutline, this, &ZOptixViewport::sig_viewportSendToOutline);
     connect(m_worker, &OptixWorker::sig_sendToNodeEditor, this, &ZOptixViewport::sig_viewportSendToOutline);
+    connect(m_worker, &OptixWorker::sig_sendToXformPanel, this, &ZOptixViewport::sig_viewportSendToXformPanel);
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
@@ -662,6 +704,8 @@ void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
+    m_pauseRenderDally->stop();
+    m_pauseRenderDally->start(3*1000);  // Second to millisecond
 }
 
 void ZOptixViewport::setRenderSeparately(runType runtype) {
@@ -830,6 +874,8 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
             }
         }
 
+        setSimpleRenderOption();
+    } else if(event->button() == Qt::RightButton) {
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
@@ -1301,4 +1347,101 @@ void ZOptixViewport::drawAxis(QImage &img) {
 
     painter.end();
     painter2.end();
+}
+
+void ZOptixViewport::generateModificationNode(std::string _outNodeId, std::string _outSock, std::string _inNodeType, std::string _inSock, std::string _inModifyInfoSock, Json& msg)
+{
+    auto outNodeId = QString::fromStdString(_outNodeId);
+//    auto outSock = QString::fromStdString(_outSock);
+    auto inNodeType = QString::fromStdString(_inNodeType);
+//    auto inSock = QString::fromStdString(_inSock);
+    auto inModifyInfoSock = QString::fromStdString(_inModifyInfoSock);
+	auto main = zenoApp->getMainWindow();
+	ZASSERT_EXIT(main);
+	auto editor = main->getAnyEditor();
+	ZASSERT_EXIT(editor);
+	auto view = editor->getCurrentSubGraphView();
+	ZASSERT_EXIT(view);
+	auto scene = view->scene();
+	ZASSERT_EXIT(scene);
+
+
+	IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+	ZASSERT_EXIT(pModel);
+	QModelIndex subgIdx = scene->subGraphIndex();
+	ZASSERT_EXIT(subgIdx.isValid());
+	QModelIndex nodeIdx = pModel->index(outNodeId, subgIdx);
+	ZASSERT_EXIT(nodeIdx.isValid());
+
+	QModelIndex existModifyNode;
+	OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+//	OUTPUT_SOCKET output = outputs[outSock];
+//	for (auto link : output.info.links)
+//	{
+//		QString inNode = UiHelper::getSockNode(link.inSockPath);
+//		QModelIndex inIdx = pModel->index(inNode, subgIdx);
+//		if (inIdx.data(ROLE_OBJNAME).toString() == inNodeType) {
+//			existModifyNode = inIdx;
+//			break;
+//		}
+//	}
+	if (existModifyNode.isValid()) {
+		INPUT_SOCKETS inputs = existModifyNode.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+		INPUT_SOCKET input = inputs[inModifyInfoSock];
+
+		PARAM_UPDATE_INFO info;
+		info.name = inModifyInfoSock;
+		info.newValue = QString::fromStdString(msg.dump());
+		info.oldValue = input.info.defaultValue;
+		pModel->updateSocketDefl(existModifyNode.data(ROLE_OBJID).toString(), info, subgIdx);
+	}
+	else {
+		QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+		STATUS_UPDATE_INFO info;
+		info.oldValue = pos;
+		pos.setX(pos.x() + 500);
+		info.newValue = pos;
+		info.role = ROLE_OBJPOS;
+
+		QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, QPointF(0, 0));
+		pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
+
+		QModelIndex newNodeIdx = pModel->index(newNodeident, subgIdx);
+//		NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
+//		QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, inSock);
+//		NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+//		QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, outSock);
+//		pModel->addLink(subgIdx, outSockIdx, inSockIdx);
+
+		STATUS_UPDATE_INFO viewinfo;
+		int options = nodeIdx.data(ROLE_OPTIONS).toInt();
+		info.role = ROLE_OPTIONS;
+		info.oldValue = options;
+		options = options & (~OPT_VIEW);
+		info.newValue = options;
+		pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
+
+		options = newNodeIdx.data(ROLE_OPTIONS).toInt();
+		info.oldValue = options;
+		options |= OPT_VIEW;
+		info.newValue = options;
+		pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
+
+        {
+            PARAMS_INFO params = newNodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+            PARAM_INFO input = params[inModifyInfoSock];
+            PARAM_UPDATE_INFO sockinfo;
+            sockinfo.name = inModifyInfoSock;
+            sockinfo.newValue = QString::fromStdString(msg.dump());
+            sockinfo.oldValue = input.value;
+            pModel->updateParamInfo(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
+        }
+//		INPUT_SOCKETS inputs = newNodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+//		INPUT_SOCKET input = inputs[inModifyInfoSock];
+//		PARAM_UPDATE_INFO sockinfo;
+//		sockinfo.name = inModifyInfoSock;
+//		sockinfo.newValue = QString::fromStdString(msg.dump());
+//		sockinfo.oldValue = input.info.defaultValue;
+//		pModel->updateSocketDefl(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
+	}
 }

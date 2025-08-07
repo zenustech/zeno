@@ -1,4 +1,4 @@
-﻿#include "zenoScenetreeModify.h"
+﻿#include "ZenoSceneTreeModify.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "viewport/zoptixviewport.h"
@@ -28,29 +28,29 @@ void ResetIconDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
 	}
 }
 
-scenetreeModifyModel::scenetreeModifyModel(QObject* parent) : QAbstractTableModel(parent)
+SceneTreeModifyModel::SceneTreeModifyModel(QObject* parent) : QAbstractTableModel(parent)
 {
-	m_items.append({ "1", "1", "1","1","1" });
-	m_items.append({ "5", "5", "5", "5", "5" });
-	m_items.append({ "2", "2", "2", "2", "2"});
+//	m_items.append({ "1", "1", "1","1","1" });
+//	m_items.append({ "5", "5", "5", "5", "5" });
+//	m_items.append({ "2", "2", "2", "2", "2"});
 }
 
-scenetreeModifyModel::~scenetreeModifyModel()
+SceneTreeModifyModel::~SceneTreeModifyModel()
 {
 
 }
 
-int scenetreeModifyModel::rowCount(const QModelIndex& parent) const
+int SceneTreeModifyModel::rowCount(const QModelIndex& parent) const
 {
 	return m_items.size();
 }
 
-int scenetreeModifyModel::columnCount(const QModelIndex& parent) const
+int SceneTreeModifyModel::columnCount(const QModelIndex& parent) const
 {
 	return 6;
 }
 
-QVariant scenetreeModifyModel::data(const QModelIndex& index, int role) const
+QVariant SceneTreeModifyModel::data(const QModelIndex& index, int role) const
 {
 	if (!index.isValid() || index.row() >= m_items.size() || index.row() < 0 || index.column() < 0 || index.column() >= 6)
 		return QVariant();
@@ -69,7 +69,7 @@ QVariant scenetreeModifyModel::data(const QModelIndex& index, int role) const
 	return QVariant();
 }
 
-QVariant scenetreeModifyModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant SceneTreeModifyModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (role != Qt::DisplayRole)
 		return QVariant();
@@ -90,7 +90,7 @@ QVariant scenetreeModifyModel::headerData(int section, Qt::Orientation orientati
 	return QVariant();
 }
 
-bool scenetreeModifyModel::setData(const QModelIndex& index, const QVariant& value, int role)
+bool SceneTreeModifyModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
 	if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size() || index.column() < 0 || index.column() >= 5)
 		return false;
@@ -111,14 +111,14 @@ bool scenetreeModifyModel::setData(const QModelIndex& index, const QVariant& val
 	return false;
 }
 
-void scenetreeModifyModel::insertRow(const QString id, const QString r0, const QString r1, const QString r2, const QString t)
+void SceneTreeModifyModel::insertRow(const QString id, const QString r0, const QString r1, const QString r2, const QString t)
 {
 	beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
 	m_items.append({ id, r0, r1, r2, t });
 	endInsertRows();
 }
 
-void scenetreeModifyModel::removeRow(int row)
+void SceneTreeModifyModel::removeRow(int row)
 {
 	if (row < 0 || row >= m_items.size())
 		return;
@@ -127,7 +127,7 @@ void scenetreeModifyModel::removeRow(int row)
 	endRemoveRows();
 }
 
-QModelIndex& scenetreeModifyModel::indexFromId(QString id)
+QModelIndex& SceneTreeModifyModel::indexFromId(QString id)
 {
 	for (int i = 0; i < m_items.size(); ++i) {
 		if (m_items[i].id == id) {
@@ -137,7 +137,7 @@ QModelIndex& scenetreeModifyModel::indexFromId(QString id)
 	return QModelIndex();
 }
 
-std::vector<std::string> scenetreeModifyModel::getRow(int row) const
+std::vector<std::string> SceneTreeModifyModel::getRow(int row) const
 {
 	if (row < 0 || row > m_items.size()) {
 		return {};
@@ -146,46 +146,57 @@ std::vector<std::string> scenetreeModifyModel::getRow(int row) const
 	return { item.id.toStdString(), item.r0.toStdString(), item.r1.toStdString(), item.r2.toStdString(), item.t.toStdString() };
 }
 
-void scenetreeModifyModel::setupModelDataFromMessage(Json const& content)
+void SceneTreeModifyModel::setupModelDataFromMessage(Json const& content)
 {
 	beginResetModel();
 
 	m_items.clear();
-	for (auto& value : content["id"]) {
-		m_items.append({ QString::fromStdString(value["id"]), 
-			QString::fromStdString(value["r0"]) , 
-			QString::fromStdString(value["r1"]) , 
-			QString::fromStdString(value["r2"]) ,
-			QString::fromStdString(value["t"]) });
-	}
+
+    auto matrixs = content["Matrixs"];
+
+    for (auto& [key, _mat] : matrixs.items()) {
+        auto mat = _mat[0];
+        m_items.append({
+            QString::fromStdString(key)
+            , QString::fromStdString(zeno::format("{} {} {}", float(mat[0]), float(mat[1]), float(mat[2])))
+            , QString::fromStdString(zeno::format("{} {} {}", float(mat[3]), float(mat[4]), float(mat[5])))
+            , QString::fromStdString(zeno::format("{} {} {}", float(mat[6]), float(mat[7]), float(mat[8])))
+            , QString::fromStdString(zeno::format("{} {} {}", float(mat[9]), float(mat[10]), float(mat[11])))
+        });
+    }
 
 	endResetModel();
 }
 
-zenoScenetreeModify::zenoScenetreeModify(QWidget *parent)
-	: QWidget(parent), m_tableView(new QTableView(this)), m_model(new scenetreeModifyModel(this))
+ZenoSceneTreeModify::ZenoSceneTreeModify(QWidget *parent)
+	: QWidget(parent), m_tableView(new QTableView(this)), m_model(new SceneTreeModifyModel(this))
 {
 	initUi();
 
 	if (auto main = zenoApp->getMainWindow()) {
 		for (DisplayWidget* view : main->viewports()) {
 			if (auto optxview = view->optixViewport()) {
-				connect(optxview, &ZOptixViewport::sig_viewportSendToOutline, this, [this](QString content) {//处理光追发过来的消息
+				connect(optxview, &ZOptixViewport::sig_viewportSendToXformPanel, this, [this](QString content) {//处理光追发过来的消息
 					if (this->m_model) {
 						Json msg = Json::parse(content.toStdString());
-						if (msg["MessageType"] == "SceneTreeModification") {//初始化
+						if (msg["MessageType"] == "XformPanelInitFeedback") {//初始化
 							m_model->setupModelDataFromMessage(msg);
-						} else if (msg["MessageType"] == "SceneTreeObjModifyInfo") {//平移旋转缩放某个物体后新增/修改条目
-							auto idx = m_model->indexFromId("物体的id");
+						} else if (msg["MessageType"] == "SetNodeXform") {
+                            auto node_name = QString::fromStdString(std::string(msg["NodeName"]));
+                            auto r0 = QString::fromStdString(zeno::format("{}, {}, {}", float(msg["r0"][0]), float(msg["r0"][1]), float(msg["r0"][2])));
+                            auto r1 = QString::fromStdString(zeno::format("{}, {}, {}", float(msg["r1"][0]), float(msg["r1"][1]), float(msg["r1"][2])));
+                            auto r2 = QString::fromStdString(zeno::format("{}, {}, {}", float(msg["r2"][0]), float(msg["r2"][1]), float(msg["r2"][2])));
+                            auto  t = QString::fromStdString(zeno::format("{}, {}, {}", float(msg[ "t"][0]), float(msg[ "t"][1]), float(msg[ "t"][2])));
+							auto idx = m_model->indexFromId(node_name);
 							if (idx.isValid()) {
 								int r = idx.row();
-								m_model->setData(m_model->index(r, 1), "r0");
-								m_model->setData(m_model->index(r, 2), "r1");
-								m_model->setData(m_model->index(r, 3), "r2");
-								m_model->setData(m_model->index(r, 4), "t");
+								m_model->setData(m_model->index(r, 1), r0);
+								m_model->setData(m_model->index(r, 2), r1);
+								m_model->setData(m_model->index(r, 3), r2);
+								m_model->setData(m_model->index(r, 4), t);
 							}
 							else {
-								m_model->insertRow("id", "r0", "r1", "r2", "t");
+								m_model->insertRow(node_name, r0, r1, r2, t);
 							}
 						}
 					}
@@ -193,8 +204,8 @@ zenoScenetreeModify::zenoScenetreeModify(QWidget *parent)
 				connect(m_tableView, &QTableView::clicked, this, [this, optxview](const QModelIndex& index) {//点击删除modification
 					if (index.column() == 5) {
 						Json msg;
-						msg["MessageType"] = "resetObjectModify";
-						msg["objectId"] = m_model->data(m_model->index(index.row(), 0)).toString().toStdString();
+						msg["MessageType"] = "ResetNodeModify";
+						msg["NodeName"] = m_model->data(m_model->index(index.row(), 0)).toString().toStdString();
 
 						m_model->removeRow(index.row());
 
@@ -208,14 +219,17 @@ zenoScenetreeModify::zenoScenetreeModify(QWidget *parent)
 			}
 		}
 	}
+    Json msg;
+    msg["MessageType"] = "XformPanelInit";
+    sendOptixMessage(msg);
 }
 
-zenoScenetreeModify::~zenoScenetreeModify()
+ZenoSceneTreeModify::~ZenoSceneTreeModify()
 {
 
 }
 
-void zenoScenetreeModify::initUi()
+void ZenoSceneTreeModify::initUi()
 {
 	QSortFilterProxyModel* proxyModel = new QSortFilterProxyModel(this);
 	proxyModel->setSourceModel(m_model);
@@ -243,22 +257,25 @@ void zenoScenetreeModify::initUi()
 
 	connect(synctonode, &QPushButton::clicked, this, [this]() {
 		Json msg;
-		for (int i = 0; i < m_model->rowCount(); i++) {
-			std::vector<std::string> rowdata = m_model->getRow(i);
-			std::string key = rowdata[0];
-			rowdata.erase(rowdata.begin());
-			if (!rowdata.empty()) {
-				msg[key] = rowdata;
-			}
-		}
+        msg["MessageType"] = "NeedSetSceneXform";
+        sendOptixMessage(msg);
 
-		//生成/修改节点
-		QString outnode("ee371442-CreateCube"), outsock("prim"), innode("SetNodeXform"), insock("scene"), inModifyInfoSock("node");
-		generateModificationNode(outnode, outsock, innode, insock, inModifyInfoSock, msg);
+//		for (int i = 0; i < m_model->rowCount(); i++) {
+//			std::vector<std::string> rowdata = m_model->getRow(i);
+//			std::string key = rowdata[0];
+//			rowdata.erase(rowdata.begin());
+//			if (!rowdata.empty()) {
+//				msg[key] = rowdata;
+//			}
+//		}
+//
+//		//生成/修改节点
+//		QString outnode("a7a03d7c-MergeScene"), outsock("scene"), innode("SetSceneXform"), insock("scene"), inModifyInfoSock("xformsInfo");
+//		generateModificationNode(outnode, outsock, innode, insock, inModifyInfoSock, msg);
 	});
 }
 
-void zenoScenetreeModify::generateModificationNode(QString outNodeId, QString outSock, QString inNodeType, QString inSock, QString inModifyInfoSock, Json& msg)
+void ZenoSceneTreeModify::generateModificationNode(QString outNodeId, QString outSock, QString inNodeType, QString inSock, QString inModifyInfoSock, Json& msg)
 {
 	auto main = zenoApp->getMainWindow();
 	ZASSERT_EXIT(main);
@@ -339,4 +356,15 @@ void zenoScenetreeModify::generateModificationNode(QString outNodeId, QString ou
 		sockinfo.oldValue = input.info.defaultValue;
 		pModel->updateSocketDefl(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
 	}
+}
+
+void ZenoSceneTreeModify::sendOptixMessage(Json &msg) {
+    if (auto main = zenoApp->getMainWindow()) {
+        for (DisplayWidget* view : main->viewports()) {
+            if (ZOptixViewport* optxview = view->optixViewport()) {
+                QString msg_str = QString::fromStdString(msg.dump());
+                emit optxview->sig_sendOptixMessage(msg_str);
+            }
+        }
+    }
 }

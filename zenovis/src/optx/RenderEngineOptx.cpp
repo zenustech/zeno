@@ -51,7 +51,7 @@
 
 #include "ShaderBuffer.h"
 #include <zeno/extra/ShaderNode.h>
-
+static bool recordedSimpleRender = false;
 namespace zenovis::optx {
 
 struct CppTimer {
@@ -116,7 +116,9 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
         for(int k=0;k<vert_uv[vid].size();k++)
         {
           auto & tester = vert_uv[vid][k];
-          if(tester[0] == uv[0] && tester[1] == uv[1] && tester[2] == uv[2] )
+          float close_enough = 1e-5;
+          bool OK = (abs(tester[0] - uv[0])<=close_enough) && (abs(tester[1] - uv[1])<=close_enough) && (abs(tester[2] - uv[2])<=close_enough);
+          if( OK )
           {
             have = true;
           }
@@ -1358,6 +1360,34 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
         }
+        else if (in_msg["MessageType"] == "ResetNodeModify") {
+            auto node_name = std::string(in_msg["NodeName"]);
+            defaultScene.modified_xfroms.erase(node_name);
+            std::string mat_name = node_name + "_m";
+            std::vector<glm::mat4> matrixs = {glm::mat4(1)};
+            if (defaultScene.dynamic_scene->node_to_matrix.count(mat_name)) {
+                matrixs = defaultScene.dynamic_scene->node_to_matrix[mat_name];
+                auto prim = defaultScene.dynamic_scene->mats_to_prim(mat_name, matrixs, false);
+                load_matrix_objects({prim});
+            }
+            if (defaultScene.cur_node.has_value()) {
+                auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+                if (name == node_name) {
+                    lmat = matrixs[0];
+                    {
+                        auto &[_name, _lmat, pmat] = defaultScene.cur_node.value();
+                        Json message;
+                        message["MessageType"] = "SetGizmoAxis";
+                        auto g_mat = pmat * _lmat;
+                        message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                        message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                        message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                        message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                        fun(message.dump());
+                    }
+                }
+            }
+        }
         else if (in_msg["MessageType"] == "Xform") {
 
 //            zeno::log_info("Axis: {}", in_msg["Axis"]);
@@ -1418,7 +1448,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
             else if (is_local_space && !(mode == "Translate" && (in_msg["Axis"] == "" || in_msg["Axis"] == "XYZ"))) {
-                zeno::log_info("Axis: {}", in_msg["Axis"]);
+//                zeno::log_info("Axis: {}", in_msg["Axis"]);
                 if (mode == "Translate") {
                     std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
                         {"X", {0, 0, 1}},
@@ -1705,6 +1735,40 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
         }
+        else if (in_msg["MessageType"] == "NeedSetSceneXform") {
+            Json message;
+            message["MessageType"] = "SetSceneXform";
+            message["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+            Json matrixs;
+            for (const auto &[id, mat]: defaultScene.modified_xfroms) {
+                Json matrix;
+                for (auto i = 0; i < 4; i++) {
+                    for (auto j = 0; j < 3; j++) {
+                        matrix.push_back(mat[i][j]);
+                    }
+                }
+                matrixs[id] = matrix;
+            }
+            message["Matrixs"] = matrixs;
+            fun(message.dump());
+        }
+        else if (in_msg["MessageType"] == "XformPanelInit") {
+            Json message;
+            message["MessageType"] = "XformPanelInitFeedback";
+            Json matrixs;
+            for (const auto &[id, mat]: defaultScene.modified_xfroms) {
+                Json matrix;
+                for (auto i = 0; i < 4; i++) {
+                    for (auto j = 0; j < 3; j++) {
+                        matrix.push_back(mat[i][j]);
+                    }
+                }
+                matrixs[id] = Json::array();
+                matrixs[id].push_back(matrix);
+            }
+            message["Matrixs"] = matrixs;
+            fun(message.dump());
+        }
     }
     std::optional<glm::vec3> getClickedPos(float x, float y) override {
         glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
@@ -1951,6 +2015,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             std::tuple newsizeid{MY_SIZE_ID(cam)};
             if (!oldsizeid || *oldsizeid != newsizeid)
                 sizeNeedUpdate = true;
+            if(scene->drawOptions->simpleRender!=recordedSimpleRender)
+            {
+                sizeNeedUpdate = true;
+                recordedSimpleRender = scene->drawOptions->simpleRender;
+            }
             oldsizeid = newsizeid;
         }
 
@@ -1970,6 +2039,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
             auto scale = zeno::getSession().userData().has("optix_image_path")?1:cam.zOptixCameraSettingInfo.renderRatio;
+            scale = scene->drawOptions->simpleRender?scale:1;
             xinxinoptix::set_window_size(max(cam.m_nx/scale,1), max(cam.m_ny/scale,1));
         }
 

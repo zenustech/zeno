@@ -6,6 +6,8 @@
 #include "zenovis/Camera.h"
 #include <zenomodel/include/modeldata.h>
 #include "launch/corelaunch.h"
+#include "tinygltf/json.hpp"
+using Json = nlohmann::json;
 
 class Zenovis;
 class CameraControl;
@@ -28,6 +30,7 @@ signals:
     void sig_sendToOutline(QString);
     void sig_sendToNodeEditor(QString);
     void sig_sendToOptixViewport(QString);
+    void sig_sendToXformPanel(QString);
 
 public slots:
     void stop();
@@ -129,6 +132,7 @@ signals:
 
     void sig_viewportSendToOutline(QString);
     void sig_viewportSendToNodeEditor(QString);
+    void sig_viewportSendToXformPanel(QString);
     void sig_sendOptixMessage(QString);
 
 public slots:
@@ -146,6 +150,7 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    void generateModificationNode(std::string _outNodeId, std::string _outSock, std::string _inNodeType, std::string _inSock, std::string _inModifyInfoSock, Json& msg);
     CameraControl* m_camera;
     Zenovis* m_zenovis;
     QThread m_thdOptix;
@@ -174,6 +179,8 @@ private:
         {7, "XY"},
         {8, "CameraUpRight"},
     };
+
+    QTimer* m_pauseRenderDally;
 };
 
 #endif
