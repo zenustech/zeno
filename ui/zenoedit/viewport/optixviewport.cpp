@@ -1,4 +1,4 @@
-#include "optixviewport.h"
+﻿#include "optixviewport.h"
 #include "zenovis.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -119,7 +119,7 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
             emit sig_sendToXformPanel(QString::fromStdString(content));
         }
         else if (json["MessageType"] == "SetSceneXform") {
-            emit sig_sendToOptixViewport(QString::fromStdString(content));
+			emit sig_sendToXformPanel(QString::fromStdString(content));
         }
         else if (json["MessageType"] == "CleanupAssets") {
             emit sig_sendToOptixViewport(QString::fromStdString(content));
@@ -616,18 +616,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             this->try_axis = "";
             this->local_space = true;
             this->axis_coord = std::nullopt;
-        }
-        else if (message["MessageType"] == "SetSceneXform") {
-            auto content_std = content.toStdString();
-            Json json = Json::parse(content_std);
-            auto node_key = std::string(json["NodeKey"]);
-            auto cur_node_uuid = zeno::split_str(node_key, ':')[0];
-//            auto mat_str = json["Matrixs"].dump();
-//            zeno::log_info("json: {}", json.dump());
-//            return;
-
-            std::string outnode = cur_node_uuid;
-            generateModificationNode(outnode, "scene", "MakeMultilineString", "scene", "value", json["Matrixs"]);
         }
     });
 
@@ -1347,101 +1335,4 @@ void ZOptixViewport::drawAxis(QImage &img) {
 
     painter.end();
     painter2.end();
-}
-
-void ZOptixViewport::generateModificationNode(std::string _outNodeId, std::string _outSock, std::string _inNodeType, std::string _inSock, std::string _inModifyInfoSock, Json& msg)
-{
-    auto outNodeId = QString::fromStdString(_outNodeId);
-//    auto outSock = QString::fromStdString(_outSock);
-    auto inNodeType = QString::fromStdString(_inNodeType);
-//    auto inSock = QString::fromStdString(_inSock);
-    auto inModifyInfoSock = QString::fromStdString(_inModifyInfoSock);
-	auto main = zenoApp->getMainWindow();
-	ZASSERT_EXIT(main);
-	auto editor = main->getAnyEditor();
-	ZASSERT_EXIT(editor);
-	auto view = editor->getCurrentSubGraphView();
-	ZASSERT_EXIT(view);
-	auto scene = view->scene();
-	ZASSERT_EXIT(scene);
-
-
-	IGraphsModel* pModel = GraphsManagment::instance().currentModel();
-	ZASSERT_EXIT(pModel);
-	QModelIndex subgIdx = scene->subGraphIndex();
-	ZASSERT_EXIT(subgIdx.isValid());
-	QModelIndex nodeIdx = pModel->index(outNodeId, subgIdx);
-	ZASSERT_EXIT(nodeIdx.isValid());
-
-	QModelIndex existModifyNode;
-	OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-//	OUTPUT_SOCKET output = outputs[outSock];
-//	for (auto link : output.info.links)
-//	{
-//		QString inNode = UiHelper::getSockNode(link.inSockPath);
-//		QModelIndex inIdx = pModel->index(inNode, subgIdx);
-//		if (inIdx.data(ROLE_OBJNAME).toString() == inNodeType) {
-//			existModifyNode = inIdx;
-//			break;
-//		}
-//	}
-	if (existModifyNode.isValid()) {
-		INPUT_SOCKETS inputs = existModifyNode.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-		INPUT_SOCKET input = inputs[inModifyInfoSock];
-
-		PARAM_UPDATE_INFO info;
-		info.name = inModifyInfoSock;
-		info.newValue = QString::fromStdString(msg.dump());
-		info.oldValue = input.info.defaultValue;
-		pModel->updateSocketDefl(existModifyNode.data(ROLE_OBJID).toString(), info, subgIdx);
-	}
-	else {
-		QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
-		STATUS_UPDATE_INFO info;
-		info.oldValue = pos;
-		pos.setX(pos.x() + 500);
-		info.newValue = pos;
-		info.role = ROLE_OBJPOS;
-
-		QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, QPointF(0, 0));
-		pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
-
-		QModelIndex newNodeIdx = pModel->index(newNodeident, subgIdx);
-//		NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
-//		QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, inSock);
-//		NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-//		QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, outSock);
-//		pModel->addLink(subgIdx, outSockIdx, inSockIdx);
-
-		STATUS_UPDATE_INFO viewinfo;
-		int options = nodeIdx.data(ROLE_OPTIONS).toInt();
-		info.role = ROLE_OPTIONS;
-		info.oldValue = options;
-		options = options & (~OPT_VIEW);
-		info.newValue = options;
-		pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
-
-		options = newNodeIdx.data(ROLE_OPTIONS).toInt();
-		info.oldValue = options;
-		options |= OPT_VIEW;
-		info.newValue = options;
-		pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
-
-        {
-            PARAMS_INFO params = newNodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-            PARAM_INFO input = params[inModifyInfoSock];
-            PARAM_UPDATE_INFO sockinfo;
-            sockinfo.name = inModifyInfoSock;
-            sockinfo.newValue = QString::fromStdString(msg.dump());
-            sockinfo.oldValue = input.value;
-            pModel->updateParamInfo(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
-        }
-//		INPUT_SOCKETS inputs = newNodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-//		INPUT_SOCKET input = inputs[inModifyInfoSock];
-//		PARAM_UPDATE_INFO sockinfo;
-//		sockinfo.name = inModifyInfoSock;
-//		sockinfo.newValue = QString::fromStdString(msg.dump());
-//		sockinfo.oldValue = input.info.defaultValue;
-//		pModel->updateSocketDefl(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
-	}
 }

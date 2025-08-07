@@ -7,6 +7,8 @@
 #include "nodesys/zenosubgraphscene.h"
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/uihelper.h>
+#include <zeno/utils/string.h>
+#include <zenomodel/include/command.h>
 
 using Json = nlohmann::json;
 
@@ -181,6 +183,7 @@ ZenoSceneTreeModify::ZenoSceneTreeModify(QWidget *parent)
 						Json msg = Json::parse(content.toStdString());
 						if (msg["MessageType"] == "XformPanelInitFeedback") {//初始化
 							m_model->setupModelDataFromMessage(msg);
+							multistring_uuid.clear();
 						} else if (msg["MessageType"] == "SetNodeXform") {
                             auto node_name = QString::fromStdString(std::string(msg["NodeName"]));
                             auto r0 = QString::fromStdString(zeno::format("{}, {}, {}", float(msg["r0"][0]), float(msg["r0"][1]), float(msg["r0"][2])));
@@ -198,6 +201,15 @@ ZenoSceneTreeModify::ZenoSceneTreeModify(QWidget *parent)
 							else {
 								m_model->insertRow(node_name, r0, r1, r2, t);
 							}
+						} else if (msg["MessageType"] == "SetSceneXform") {
+							auto content_std = content.toStdString();
+							Json json = Json::parse(content_std);
+							auto node_key = std::string(json["NodeKey"]);
+							auto cur_node_uuid = zeno::split_str(node_key, ':')[0];
+
+							std::string outnode = cur_node_uuid;
+							//generateModificationNode(outnode, "scene", "MakeMultilineString", "scene", "value", json["Matrixs"]);
+							generateModificationNode(QString::fromStdString(outnode), "scene", "SetSceneXform", "scene", "xformsList", json["Matrixs"]);
 						}
 					}
 				});
@@ -259,19 +271,6 @@ void ZenoSceneTreeModify::initUi()
 		Json msg;
         msg["MessageType"] = "NeedSetSceneXform";
         sendOptixMessage(msg);
-
-//		for (int i = 0; i < m_model->rowCount(); i++) {
-//			std::vector<std::string> rowdata = m_model->getRow(i);
-//			std::string key = rowdata[0];
-//			rowdata.erase(rowdata.begin());
-//			if (!rowdata.empty()) {
-//				msg[key] = rowdata;
-//			}
-//		}
-//
-//		//生成/修改节点
-//		QString outnode("a7a03d7c-MergeScene"), outsock("scene"), innode("SetSceneXform"), insock("scene"), inModifyInfoSock("xformsInfo");
-//		generateModificationNode(outnode, outsock, innode, insock, inModifyInfoSock, msg);
 	});
 }
 
@@ -286,11 +285,31 @@ void ZenoSceneTreeModify::generateModificationNode(QString outNodeId, QString ou
 	auto scene = view->scene();
 	ZASSERT_EXIT(scene);
 
-
 	IGraphsModel* pModel = GraphsManagment::instance().currentModel();
 	ZASSERT_EXIT(pModel);
 	QModelIndex subgIdx = scene->subGraphIndex();
 	ZASSERT_EXIT(subgIdx.isValid());
+
+	if (multistring_uuid.size()) {
+		QModelIndex multilinestrIdx = pModel->index(QString::fromStdString(multistring_uuid), subgIdx);
+		PARAMS_INFO params = multilinestrIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+		PARAM_INFO param = params["value"];
+		PARAM_UPDATE_INFO paraminfo;
+		paraminfo.name = "value";
+		paraminfo.newValue = QString::fromStdString(msg.dump());
+		paraminfo.oldValue = param.value;
+		pModel->updateParamInfo(multilinestrIdx.data(ROLE_OBJID).toString(), paraminfo, subgIdx);
+
+		return;
+	}
+
+	if (outNodeId.contains("SetSceneXform"))
+	{
+		QModelIndex xformIdx = pModel->index(outNodeId, subgIdx);
+		multistring_uuid = addMultilineStr(xformIdx, msg, inModifyInfoSock);
+		return;
+	}
+
 	QModelIndex nodeIdx = pModel->index(outNodeId, subgIdx);
 	ZASSERT_EXIT(nodeIdx.isValid());
 
@@ -307,25 +326,18 @@ void ZenoSceneTreeModify::generateModificationNode(QString outNodeId, QString ou
 		}
 	}
 	if (existModifyNode.isValid()) {
-		INPUT_SOCKETS inputs = existModifyNode.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-		INPUT_SOCKET input = inputs[inModifyInfoSock];
-
-		PARAM_UPDATE_INFO info;
-		info.name = inModifyInfoSock;
-		info.newValue = QString::fromStdString(msg.dump());
-		info.oldValue = input.info.defaultValue;
-		pModel->updateSocketDefl(existModifyNode.data(ROLE_OBJID).toString(), info, subgIdx);
+		multistring_uuid = addMultilineStr(existModifyNode, msg, inModifyInfoSock);
 	}
 	else {
 		QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
 		STATUS_UPDATE_INFO info;
 		info.oldValue = pos;
-		pos.setX(pos.x() + 500);
+		pos.setX(pos.x() + 600);
 		info.newValue = pos;
 		info.role = ROLE_OBJPOS;
 
-		QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, QPointF(0, 0));
-		pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
+		QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, pos);
+		//pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
 
 		QModelIndex newNodeIdx = pModel->index(newNodeident, subgIdx);
 		NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
@@ -340,22 +352,60 @@ void ZenoSceneTreeModify::generateModificationNode(QString outNodeId, QString ou
 		info.oldValue = options;
 		options = options & (~OPT_VIEW);
 		info.newValue = options;
-		pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
+		pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//关掉旧节点的view
 
 		options = newNodeIdx.data(ROLE_OPTIONS).toInt();
 		info.oldValue = options;
 		options |= OPT_VIEW;
 		info.newValue = options;
-		pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);
+		pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//新节点开view
 
-		INPUT_SOCKETS inputs = newNodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-		INPUT_SOCKET input = inputs[inModifyInfoSock];
-		PARAM_UPDATE_INFO sockinfo;
-		sockinfo.name = inModifyInfoSock;
-		sockinfo.newValue = QString::fromStdString(msg.dump());
-		sockinfo.oldValue = input.info.defaultValue;
-		pModel->updateSocketDefl(newNodeIdx.data(ROLE_OBJID).toString(), sockinfo, subgIdx);
+		//multilinestr节点
+		multistring_uuid = addMultilineStr(newNodeIdx, msg, inModifyInfoSock);
 	}
+}
+
+std::string ZenoSceneTreeModify::addMultilineStr(QModelIndex newNodeIdx, Json& msg, QString inModifyInfoSock)
+{
+	auto main = zenoApp->getMainWindow();
+	ZASSERT_EXIT(main, "");
+	auto editor = main->getAnyEditor();
+	ZASSERT_EXIT(editor, "");
+	auto view = editor->getCurrentSubGraphView();
+	ZASSERT_EXIT(view, "");
+	auto scene = view->scene();
+	ZASSERT_EXIT(scene, "");
+
+	IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+	ZASSERT_EXIT(pModel, "");
+	QModelIndex subgIdx = scene->subGraphIndex();
+	ZASSERT_EXIT(subgIdx.isValid(), "");
+
+	NodeParamModel* newNodeIdxParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
+	QModelIndex newNodeIdxSockIdx = newNodeIdxParams->getParam(PARAM_INPUT, inModifyInfoSock);
+
+	QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(newNodeIdxSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+	int n = pKeyObjModel->rowCount();
+
+	QPointF pos = newNodeIdx.data(ROLE_OBJPOS).toPointF();
+	QString multilinestrNodeident = NodesMgr::createNewNode(pModel, subgIdx, "MakeMultilineString", { pos.x() - 300, pos.y() + (n + 1) * 300 });
+
+	QModelIndex multilinestrIdx = pModel->index(multilinestrNodeident, subgIdx);
+	NodeParamModel* multilinestrIdxParams = QVariantPtr<NodeParamModel>::asPtr(multilinestrIdx.data(ROLE_NODE_PARAMS));
+	QModelIndex multilinestrSockIdx = multilinestrIdxParams->getParam(PARAM_OUTPUT, "value");
+
+	pModel->addExecuteCommand(new DictKeyAddRemCommand(true, pModel, newNodeIdxSockIdx.data(ROLE_OBJPATH).toString(), n));
+	pModel->addLink(subgIdx, multilinestrSockIdx, pKeyObjModel->index(n, 0));
+
+	PARAMS_INFO params = multilinestrIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+	PARAM_INFO param = params["value"];
+	PARAM_UPDATE_INFO paraminfo;
+	paraminfo.name = "value";
+	paraminfo.newValue = QString::fromStdString(msg.dump());
+	paraminfo.oldValue = param.value;
+	pModel->updateParamInfo(multilinestrIdx.data(ROLE_OBJID).toString(), paraminfo, subgIdx);
+
+	return multilinestrNodeident.toStdString();
 }
 
 void ZenoSceneTreeModify::sendOptixMessage(Json &msg) {
