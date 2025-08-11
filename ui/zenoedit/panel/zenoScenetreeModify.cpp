@@ -290,78 +290,132 @@ void ZenoSceneTreeModify::generateModificationNode(QString outNodeId, QString ou
 	QModelIndex subgIdx = scene->subGraphIndex();
 	ZASSERT_EXIT(subgIdx.isValid());
 
-	if (multistring_uuid.size()) {
-		QModelIndex multilinestrIdx = pModel->index(QString::fromStdString(multistring_uuid), subgIdx);
-		PARAMS_INFO params = multilinestrIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-		PARAM_INFO param = params["value"];
-		PARAM_UPDATE_INFO paraminfo;
-		paraminfo.name = "value";
-		paraminfo.newValue = QString::fromStdString(msg.dump());
-		paraminfo.oldValue = param.value;
-		pModel->updateParamInfo(multilinestrIdx.data(ROLE_OBJID).toString(), paraminfo, subgIdx);
-
-		return;
-	}
-
-	if (outNodeId.contains("SetSceneXform"))
+	if (outNodeId.contains("SetSceneXform"))//输出来自SetSceneXform节点
 	{
-		QModelIndex xformIdx = pModel->index(outNodeId, subgIdx);
-		multistring_uuid = addMultilineStr(xformIdx, msg, inModifyInfoSock);
-		return;
+		addMultiLineStrToXform(outNodeId, msg, inModifyInfoSock);
 	}
+	else {//输出不来自SetSceneXform节点
+		QModelIndex nodeIdx = pModel->index(outNodeId, subgIdx);
+		ZASSERT_EXIT(nodeIdx.isValid());
 
-	QModelIndex nodeIdx = pModel->index(outNodeId, subgIdx);
-	ZASSERT_EXIT(nodeIdx.isValid());
+		QModelIndex existModifyNode;
+		OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+		OUTPUT_SOCKET output = outputs[outSock];
+		for (auto link : output.info.links)
+		{
+			QString inNode = UiHelper::getSockNode(link.inSockPath);
+			QModelIndex inIdx = pModel->index(inNode, subgIdx);
+			if (inIdx.data(ROLE_OBJNAME).toString() == inNodeType) {
+				existModifyNode = inIdx;
+				break;
+			}
+		}
+		if (existModifyNode.isValid()) {
+			addMultiLineStrToXform(existModifyNode.data(ROLE_OBJID).toString(), msg, inModifyInfoSock);
+		}
+		else {
+			QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+			STATUS_UPDATE_INFO info;
+			info.oldValue = pos;
+			pos.setX(pos.x() + 600);
+			info.newValue = pos;
+			info.role = ROLE_OBJPOS;
 
-	QModelIndex existModifyNode;
-	OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-	OUTPUT_SOCKET output = outputs[outSock];
-	for (auto link : output.info.links)
-	{
-		QString inNode = UiHelper::getSockNode(link.inSockPath);
-		QModelIndex inIdx = pModel->index(inNode, subgIdx);
-		if (inIdx.data(ROLE_OBJNAME).toString() == inNodeType) {
-			existModifyNode = inIdx;
-			break;
+			QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, pos);
+			//pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
+
+			QModelIndex newNodeIdx = pModel->index(newNodeident, subgIdx);
+			NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
+			QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, inSock);
+			NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+			QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, outSock);
+			pModel->addLink(subgIdx, outSockIdx, inSockIdx);
+
+			STATUS_UPDATE_INFO viewinfo;
+			int options = nodeIdx.data(ROLE_OPTIONS).toInt();
+			info.role = ROLE_OPTIONS;
+			info.oldValue = options;
+			options = options & (~OPT_VIEW);
+			info.newValue = options;
+			pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//关掉旧节点的view
+
+			options = newNodeIdx.data(ROLE_OPTIONS).toInt();
+			info.oldValue = options;
+			options |= OPT_VIEW;
+			info.newValue = options;
+			pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//新节点开view
+
+			//multilinestr节点
+			multistring_uuid = addMultilineStr(newNodeIdx, msg, inModifyInfoSock);
 		}
 	}
-	if (existModifyNode.isValid()) {
-		multistring_uuid = addMultilineStr(existModifyNode, msg, inModifyInfoSock);
+}
+
+void ZenoSceneTreeModify::addMultiLineStrToXform(QString outNodeId, Json& msg, QString inModifyInfoSock)
+{
+	auto main = zenoApp->getMainWindow();
+	ZASSERT_EXIT(main);
+	auto editor = main->getAnyEditor();
+	ZASSERT_EXIT(editor);
+	auto view = editor->getCurrentSubGraphView();
+	ZASSERT_EXIT(view);
+	auto scene = view->scene();
+	ZASSERT_EXIT(scene);
+
+	IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+	ZASSERT_EXIT(pModel);
+	QModelIndex subgIdx = scene->subGraphIndex();
+	ZASSERT_EXIT(subgIdx.isValid());
+
+	QModelIndex xformIdx = pModel->index(outNodeId, subgIdx);
+	ZASSERT_EXIT(xformIdx.isValid());
+
+	if (multistring_uuid.size()) {//还在修改状态没有运行，
+		QModelIndex multilinestrIdx = pModel->index(QString::fromStdString(multistring_uuid), subgIdx);
+		if (multilinestrIdx.isValid()) {//multilinestr的idx有效
+			bool linkedToSetSceneXform = false;
+			OUTPUT_SOCKETS outputs = multilinestrIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+			OUTPUT_SOCKET output = outputs["value"];
+			for (auto link : output.info.links)
+			{
+				QString inNode = UiHelper::getSockNode(link.inSockPath);
+				std::string insock = UiHelper::getSockName(link.inSockPath).toStdString();
+				int slashpos = insock.find_first_of('/');
+				QModelIndex inIdx = pModel->index(inNode, subgIdx);
+				if (inIdx.isValid() && inIdx.data(ROLE_OBJID).toString() == outNodeId && slashpos != std::string::npos && insock.substr(0, slashpos) == "xformsList") {
+					linkedToSetSceneXform = true;
+					break;
+				}
+			}
+			if (!linkedToSetSceneXform) {//如果没连上SetSceneXform节点的槽，连上
+				QModelIndex outnodeIdx = pModel->index(outNodeId, subgIdx);
+				NodeParamModel* newNodeIdxParams = QVariantPtr<NodeParamModel>::asPtr(outnodeIdx.data(ROLE_NODE_PARAMS));
+				QModelIndex newNodeIdxSockIdx = newNodeIdxParams->getParam(PARAM_INPUT, inModifyInfoSock);
+				QAbstractItemModel* pKeyObjModel = QVariantPtr<QAbstractItemModel>::asPtr(newNodeIdxSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+				int n = pKeyObjModel->rowCount();
+
+				NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(multilinestrIdx.data(ROLE_NODE_PARAMS));
+				QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, "value");
+
+				pModel->addExecuteCommand(new DictKeyAddRemCommand(true, pModel, newNodeIdxSockIdx.data(ROLE_OBJPATH).toString(), n));
+				pModel->addLink(subgIdx, outSockIdx, pKeyObjModel->index(n, 0));
+			}
+			PARAMS_INFO params = multilinestrIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+			PARAM_INFO param = params["value"];
+			PARAM_UPDATE_INFO paraminfo;
+			paraminfo.name = "value";
+			paraminfo.newValue = QString::fromStdString(msg.dump());
+			paraminfo.oldValue = param.value;
+			pModel->updateParamInfo(multilinestrIdx.data(ROLE_OBJID).toString(), paraminfo, subgIdx);
+		}
+		else {//无效的multilinestrIdx，也要新增
+			QModelIndex xformIdx = pModel->index(outNodeId, subgIdx);
+			multistring_uuid = addMultilineStr(xformIdx, msg, inModifyInfoSock);
+		}
 	}
-	else {
-		QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
-		STATUS_UPDATE_INFO info;
-		info.oldValue = pos;
-		pos.setX(pos.x() + 600);
-		info.newValue = pos;
-		info.role = ROLE_OBJPOS;
-
-		QString newNodeident = NodesMgr::createNewNode(pModel, subgIdx, inNodeType, pos);
-		//pModel->updateNodeStatus(newNodeident, info, subgIdx, false);
-
-		QModelIndex newNodeIdx = pModel->index(newNodeident, subgIdx);
-		NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(newNodeIdx.data(ROLE_NODE_PARAMS));
-		QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, inSock);
-		NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
-		QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, outSock);
-		pModel->addLink(subgIdx, outSockIdx, inSockIdx);
-
-		STATUS_UPDATE_INFO viewinfo;
-		int options = nodeIdx.data(ROLE_OPTIONS).toInt();
-		info.role = ROLE_OPTIONS;
-		info.oldValue = options;
-		options = options & (~OPT_VIEW);
-		info.newValue = options;
-		pModel->updateNodeStatus(nodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//关掉旧节点的view
-
-		options = newNodeIdx.data(ROLE_OPTIONS).toInt();
-		info.oldValue = options;
-		options |= OPT_VIEW;
-		info.newValue = options;
-		pModel->updateNodeStatus(newNodeIdx.data(ROLE_OBJID).toString(), info, subgIdx);//新节点开view
-
-		//multilinestr节点
-		multistring_uuid = addMultilineStr(newNodeIdx, msg, inModifyInfoSock);
+	else {//运行过了，新增multilinestr
+		QModelIndex xformIdx = pModel->index(outNodeId, subgIdx);
+		multistring_uuid = addMultilineStr(xformIdx, msg, inModifyInfoSock);
 	}
 }
 
