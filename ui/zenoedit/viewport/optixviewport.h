@@ -1,4 +1,4 @@
-#ifndef __ZOPTIX_VIEWPORT_H__
+﻿#ifndef __ZOPTIX_VIEWPORT_H__
 #define __ZOPTIX_VIEWPORT_H__
 
 #include <QtWidgets>
@@ -150,7 +150,6 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
-    void generateModificationNode(std::string _outNodeId, std::string _outSock, std::string _inNodeType, std::string _inSock, std::string _inModifyInfoSock, Json& msg);
     CameraControl* m_camera;
     Zenovis* m_zenovis;
     QThread m_thdOptix;

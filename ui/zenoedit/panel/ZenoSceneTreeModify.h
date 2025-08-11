@@ -57,10 +57,14 @@ public:
 private:
 	void initUi();
 	void generateModificationNode(QString outNodeId, QString outSock, QString inNodeType, QString inSock, QString inModifyInfoSock, Json& msg);
+	void addMultiLineStrToXform(QString outNodeId, Json& msg, QString inModifyInfoSoc);
+	std::string addMultilineStr(QModelIndex newNodeIdx, Json& msg, QString inModifyInfoSock);
+
     void sendOptixMessage(Json &msg);
 	QTableView* m_tableView = nullptr;
 	SceneTreeModifyModel* m_model = nullptr;
     Json xforms;
-    std::string node_uuid;
+
+	std::string multistring_uuid;
 };
 

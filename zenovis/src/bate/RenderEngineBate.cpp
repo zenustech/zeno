@@ -1,4 +1,4 @@
-#include <zenovis/RenderEngine.h>
+﻿#include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/ObjectsManager.h>
@@ -127,7 +127,11 @@ struct RenderEngineBate : RenderEngine {
         primHighlight = nullptr;
         fbr = nullptr;
     }
-    std::optional<glm::vec3> getClickedPos(float x, float y) override {
+    std::optional<glm::vec3> getClickedPos(float _x, float _y) override {
+		auto w = scene->camera->m_nx;
+		auto h = scene->camera->m_ny;
+        int x = glm::clamp(int(_x * w), 0, w - 1);
+        int y = glm::clamp(int(_y * h), 0, h - 1);
         auto depth = fbr->getDepth(x, y);
         if (depth == 0) {
             return {};
@@ -136,8 +140,7 @@ struct RenderEngineBate : RenderEngine {
 
         auto fov = scene->camera->m_fov;
         float cz = scene->camera->inf_z_near / depth;
-        auto w = scene->camera->m_nx;
-        auto h = scene->camera->m_ny;
+
 //        zeno::log_info("{} {} {} {}", x, y, w, h);
 //        zeno::log_info("fov: {}", fov);
 //        zeno::log_info("w: {}, h: {}", w, h);

@@ -1,4 +1,4 @@
-#include <tuple>
+﻿#include <tuple>
 #include <unordered_map>
 #include <vcruntime_string.h>
 #include <vector_types.h>
@@ -1752,7 +1752,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 matrixs[id] = matrix;
             }
             message["Matrixs"] = matrixs;
-            fun(message.dump());
+            if (defaultScene.modified_xfroms.size()) {
+				fun(message.dump());
+            }
         }
         else if (in_msg["MessageType"] == "XformPanelInit") {
             Json message;
@@ -1864,6 +1866,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 auto msg_str = message.dump();
                 fun(std::move(msg_str));
             }
+        }
+        {
+			Json message;
+			message["MessageType"] = "XformPanelInitFeedback";
+			message["Matrixs"] = Json::object();
+			fun(message.dump());
         }
     }
 
