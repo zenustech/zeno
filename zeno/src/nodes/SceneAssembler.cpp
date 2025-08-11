@@ -259,6 +259,7 @@ struct FormSceneTree : zeno::INode {
         }
         get_local_matrix_map(scene_json->json, "", sceneTree);
         sceneTree->type = get_input2<std::string>("type");
+        sceneTree->matrixMode = get_input2<std::string>("matrixMode");
         if (get_input2<bool>("flattened")) {
             sceneTree->flatten();
         }
@@ -273,6 +274,7 @@ ZENDEFNODE( FormSceneTree, {
         "prim_list",
         {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
         {"enum static dynamic", "type", "dynamic"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"bool", "flattened", "1"},
     },
     {
@@ -553,6 +555,7 @@ struct MergeScene : zeno::INode {
             merge_scene2_into_scene1(main_scene, second_scene, namespace1 + insert_path);
         }
         main_scene->type = get_input2<std::string>("type");
+        main_scene->matrixMode = get_input2<std::string>("matrixMode");
         auto scene = main_scene->to_list();
         set_output2("scene", scene);
     }
@@ -563,6 +566,7 @@ ZENDEFNODE( MergeScene, {
         "main_scene",
         "second_scene",
         {"enum static dynamic", "type", "static"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"string", "insert_path", ""},
         {"string", "namespace1", ""},
         {"xform1"},
@@ -578,11 +582,66 @@ ZENDEFNODE( MergeScene, {
     },
 });
 
+struct MergeMultiScenes : zeno::INode {
+    void apply() override {
+        auto main_scene = std::make_shared<SceneObject>();
+        main_scene->root_name = get_input2<std::string>("root_name");
+        if (zeno::starts_with(main_scene->root_name, "/") == false) {
+            main_scene->root_name = "/" + main_scene->root_name;
+        }
+        std::unordered_map<std::string, int> sub_root_names;
+        if (has_input("scene_list")) {
+            auto input_scene_list = std::make_shared<ListObject>();
+            auto scene_list = get_input2<ListObject>("scene_list");
+            {
+                auto sub_list = std::make_shared<ListObject>();
+                for (auto i = 0; i < scene_list->arr.size(); i++) {
+                    auto obj = scene_list->arr[i];
+                    sub_list->arr.push_back(obj);
+                    if (obj->userData().get2<std::string>("ResourceType", "") == "SceneTree") {
+                        input_scene_list->arr.push_back(sub_list);
+                        sub_list = std::make_shared<ListObject>();
+                    }
+                }
+            }
+
+            for (auto i = 0; i < input_scene_list->arr.size(); i++) {
+                auto sub_list = std::dynamic_pointer_cast<ListObject>(input_scene_list->arr[i]);
+                auto second_scene = get_scene_tree_from_list2(sub_list);
+                auto sub_root_name = second_scene->root_name;
+                sub_root_names[sub_root_name] += 1;
+                if (sub_root_names[sub_root_name] > 1) {
+                    zeno::log_warn("MergeMultiScenes: root_name {} is duplicate!", sub_root_name);
+                }
+                merge_scene2_into_scene1(main_scene, second_scene, main_scene->root_name);
+            }
+        }
+
+        auto scene = main_scene->to_list();
+        set_output2("scene", scene);
+    }
+};
+ZENDEFNODE( MergeMultiScenes, {
+    {
+        {"list", "scene_list"},
+        {"string", "root_name", "/dummyRoot"},
+        {"enum static dynamic", "type", "static"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
+    },
+    {
+        {"scene"},
+    },
+    {},
+    {
+        "Scene",
+    },
+});
 struct FlattenSceneTree : zeno::INode {
     void apply() override {
         auto scene = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
         auto use_static = get_input2<bool>("use_static");
         scene->type = use_static? "static" : "dynamic";
+        scene->matrixMode = get_input2<std::string>("matrixMode");
         scene->flatten();
 
         set_output2("scene", scene);
@@ -593,6 +652,7 @@ ZENDEFNODE( FlattenSceneTree, {
     {
         "scene",
         {"bool", "use_static", "1"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
     },
     {
         {"scene"}
@@ -698,6 +758,7 @@ struct MarkSceneState : zeno::INode {
         std::shared_ptr<PrimitiveObject> json_ptr = std::dynamic_pointer_cast<PrimitiveObject>(scene_tree_list->arr.back());
         auto json = Json::parse(json_ptr->userData().get2<std::string>("json"));
         json["type"] = get_input2<std::string>("type");
+        json["matrixMode"] = get_input2<std::string>("matrixMode");
         json_ptr->userData().set2("json", json.dump());
         set_output2("scene", scene_tree_list);
     }
@@ -707,6 +768,7 @@ ZENDEFNODE( MarkSceneState, {
     {
         {"scene"},
         {"enum static dynamic", "type", "static"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
     },
     {
         {"scene"},
@@ -846,6 +908,7 @@ struct MakeSceneNode : zeno::INode {
             scene_tree->root_name = "/" + scene_tree->root_name;
         }
         scene_tree->type = get_input2<std::string>("type");
+        scene_tree->matrixMode = get_input2<std::string>("matrixMode");
         auto prim = get_input2<PrimitiveObject>("prim");
         auto bbox = zeno::primBoundingBox2(prim.get());
         if (bbox.has_value()) {
@@ -885,6 +948,7 @@ ZENDEFNODE( MakeSceneNode, {
     {
         {"prim"},
         {"enum static dynamic", "type", "dynamic"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"string", "root_name", "new_node"},
         {"xforms"},
     },

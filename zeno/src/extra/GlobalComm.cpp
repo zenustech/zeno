@@ -940,14 +940,18 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
             Json scene_descriptor_json;
             if (!static_scene_descriptor.is_null()) {
                 auto &json = static_scene_descriptor;
-                scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                if (!json["BasicRenderInstances"].is_null()) {
+                    scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                }
                 if (json.contains("StaticRenderGroups") && !json["StaticRenderGroups"].is_null()) {
                     scene_descriptor_json["StaticRenderGroups"].update(json["StaticRenderGroups"]);
                 }
             }
             if (!dynamic_scene_descriptor.is_null()) {
                 auto &json = dynamic_scene_descriptor;
-                scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                if (!json["BasicRenderInstances"].is_null()) {
+                    scene_descriptor_json["BasicRenderInstances"].update(json["BasicRenderInstances"]);
+                }
                 if (json.contains("DynamicRenderGroups") && !json["DynamicRenderGroups"].is_null()) {
                     scene_descriptor_json["DynamicRenderGroups"].update(json["DynamicRenderGroups"]);
                 }

@@ -33,6 +33,7 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::unordered_map <std::string, std::shared_ptr<PrimitiveObject>> prim_list;
     std::string root_name;
     std::string type = "static";
+    std::string matrixMode = "TotalChange";
 
     // return value is in world space
     std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::string& node_name, const std::vector<glm::mat4> &parent_mat) {
@@ -180,6 +181,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         Json json;
         json["root_name"] = root_name;
         json["type"] = type;
+        json["matrixMode"] = matrixMode;
         {
             Json part;
             for (auto &[path, stn]: scene_tree) {
@@ -223,6 +225,7 @@ struct SceneObject : IObjectClone<SceneObject> {
     void from_json(Json const &json) {
         root_name = json["root_name"];
         type = json["type"];
+        matrixMode = json["matrixMode"];
         {
             node_to_matrix.clear();
             Json const &mat_json = json["node_to_matrix"];
@@ -262,7 +265,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
     }
 
-    static std::shared_ptr<PrimitiveObject> mats_to_prim(std::string &obj_name, std::vector<glm::mat4> &matrixs, bool use_static) {
+    static std::shared_ptr<PrimitiveObject> mats_to_prim(std::string &obj_name, std::vector<glm::mat4> &matrixs, bool use_static, const std::string& matrixMode) {
         auto prim = std::make_shared<PrimitiveObject>();
         prim->verts.resize(4 * matrixs.size());
         for (auto i = 0; i < matrixs.size(); i++) {
@@ -289,7 +292,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         if (use_static) {
             prim->userData().set2("stamp-change", "UnChanged");
         } else {
-            prim->userData().set2("stamp-change", "TotalChange");
+            prim->userData().set2("stamp-change", matrixMode);
         }
         prim->userData().set2("ObjectName", obj_name);
         return prim;
@@ -324,7 +327,7 @@ struct SceneObject : IObjectClone<SceneObject> {
                 if (stn.matrix.size()) {
                     object_name = path + "_m";
                 }
-                auto prim = mats_to_prim(object_name, matrixs, use_static);
+                auto prim = mats_to_prim(object_name, matrixs, use_static, this->matrixMode);
                 scene->arr.push_back(prim);
                 matrix_count += 1;
             }
