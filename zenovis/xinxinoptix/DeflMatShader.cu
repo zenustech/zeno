@@ -27,7 +27,7 @@
 __inline__ __device__ bool isBadVector(const vec3& vector) {
 
     bool bad = !isfinite(vector[0]) || !isfinite(vector[1]) || !isfinite(vector[2]);
-    return bad? true : length(vector) == 0.0f;
+    return bad? true : lengthSquared(vector) == 0.0f;
 }
 
 __inline__ __device__ bool isBadVector(const float3& vector) {
@@ -365,8 +365,8 @@ extern "C" __global__ void __closesthit__radiance()
     
     if (isBadVector(wldNorm)) 
     {  
-        wldNorm = normalize(DisneyBSDF::SampleScatterDirection(prd->seed));
-        wldNorm = faceforward( wldNorm, -ray_dir, wldNorm );
+        prd->done = true;
+        return;
     }
 
     let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
@@ -555,7 +555,6 @@ extern "C" __global__ void __closesthit__radiance()
     bool isTrans = false;
     flag = DisneyBSDF::scatterEvent;
 
-    //sssColor = mix(basecolor, sssColor, subsurface);
     if(prd->depth>1 && mats.roughness>0.4) mats.specular = 0.0f;
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
@@ -588,6 +587,12 @@ extern "C" __global__ void __closesthit__radiance()
             prd->done = fPdf>0?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
+
+    if (isBadVector(wi)) {
+        prd->done = true;
+        prd->depth += 1;
+        return;
+    }
         
     prd->samplePdf = fPdf;
     reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
