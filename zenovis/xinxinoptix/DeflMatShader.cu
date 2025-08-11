@@ -292,6 +292,19 @@ extern "C" __global__ void __closesthit__radiance()
     optixGetObjectToWorldTransformMatrix((float*)attrs.objectToWorld);
     optixGetWorldToObjectTransformMatrix((float*)attrs.worldToObject);
 
+    const float c0 = 5.9604644775390625E-8f;
+    const float c1 = 1.788139769587360206060111522674560546875E-7f;
+    const float c2 = 1.19209317972490680404007434844970703125E-7f;
+
+    auto FMA = [](vec3 a, vec3 b, vec3 c) -> vec3 {
+        return {
+            fmaf(a.x, b.x, c.x),
+            fmaf(a.y, b.y, c.y),
+            fmaf(a.z, b.z, c.z)
+        };
+        //return a * b + c;
+    };
+
 #if (_P_TYPE_==2)
     auto pType = optixGetPrimitiveType();
     if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
@@ -330,15 +343,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     objPos = sphere_center + objNorm * q.w;
 
-    const float c0 = 5.9604644775390625E-8f;
-    const float c1 = 1.788139769587360206060111522674560546875E-7f;
-    const float c2 = 1.19209317972490680404007434844970703125E-7f;
-
-    auto fma = [](auto a, auto b, auto c) -> auto {
-        return a * b + c;
-    };
-
-    vec3 objErr = fma( vec3( c0 ), abs( sphere_center ), vec3( c1 * q.w * 2.0f ) );
+    vec3 objErr = FMA( vec3( c0 ), abs( sphere_center ), vec3( c1 * q.w ) );
     objOffset = dot( objErr, abs( objNorm ) );
 
     SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
