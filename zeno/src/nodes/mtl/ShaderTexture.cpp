@@ -168,6 +168,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
     virtual int determineType(EmissionPass *em) override {
         auto uvtiling = em->determineType(get_input("uvtiling").get());
         auto normalScale = em->determineType(get_input("normalScale").get());
+        auto h_scale = em->determineType(get_input("heightScale").get());
         if (has_input("coord")) {
             auto coord = em->determineType(get_input("coord").get());
             if (coord < 2)
@@ -329,6 +330,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         }
         auto uvtiling = em->determineExpr(get_input("uvtiling").get());
         auto nscale = em->determineExpr(get_input("normalScale").get());
+        auto hscale = em->determineExpr(get_input("heightScale").get());
         std::string coord = "att_uv";
         if (has_input("coord")) {
             coord = em->determineExpr(get_input("coord").get());
@@ -342,6 +344,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], vec2({}) * {})) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
         }else if (postprocess == "1-x"){
             em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
+        }else if (postprocess == "displacement"){
+            em->emitCode(zeno::format("{}(parallex2D(zenotex[{}], vec2({}), {},  vec3(1.0f - attrs._barys.x - attrs._barys.y, attrs._barys.x, attrs._barys.y), vec2(attrs.uv0), vec2(attrs.uv1), vec2(attrs.uv2), attrs.v0, attrs.v1, attrs.v2, attrs.pos, attrs.ray, attrs.N, attrs.isShadowRay, attrs.pOffset, attrs.depth, {})){}",type, texId, coord, uvtiling,hscale,suffix));
         }
     }
 };
@@ -358,8 +362,9 @@ ZENDEFNODE(SmartTexture2D, {
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
         {"float", "normalScale", "1.0"},
+        {"vec4f", "heightScale", "1.0,1.0,0.0,1.0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
-        {"enum raw srgb normal_map 1-x", "post_process", "raw"},
+        {"enum raw srgb normal_map 1-x displacement", "post_process", "raw"},
         {"bool", "blockCompression", "false"}
     },
     {

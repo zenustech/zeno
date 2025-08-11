@@ -328,6 +328,7 @@ extern "C" __global__ void __raygen__rg()
             uint8_t test_mask = EverythingMask ^ VolumeMatMask;
             do {
                 traceRadiance(params.handle, ray_origin, ray_direction, testPRD._tmin_, testPRD.maxDistance, &testPRD, test_mask);
+                //ray_origin = testPRD.ray_orig;
             } while(testPRD.test_distance && !testPRD.done);
             float3 click_pos = make_float3( 0.0f );
             uint4 record = {0, 0, 0, 0};
@@ -340,6 +341,7 @@ extern "C" __global__ void __raygen__rg()
         }
 
         traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+        //ray_origin = prd.ray_orig;
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
 
@@ -416,7 +418,7 @@ extern "C" __global__ void __raygen__rg()
             prd.alphaHit = false;
             prd._tmin_ = 0;
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-
+            //ray_origin = prd.ray_orig;
             if(prd.hit_type>0 && primary_hit_type==0)
             {
               primary_hit_type = prd.hit_type;

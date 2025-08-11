@@ -968,13 +968,79 @@ T tex2D(unsigned long long t, float x, float y) {
     return T{};
 }
 #endif
-
+__forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
+{
+    return 0.5 * length(cross(v1-v0, v2-v0));
+}
 __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
 {
     float4 res = tex2D<float4>(texObj, uv.x, uv.y);
     return vec4(res.x, res.y, res.z, res.w);
 }
+__forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
+                                           vec2 uv0, vec2 uv1, vec2 uv2, vec3 v0,
+                                           vec3 v1, vec3 v2, vec3 p, vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset,int depth, vec4 h)
+{
 
+
+    if(depth>1)
+        return vec4(uv.x, uv.y, 1, 0);
+    pOffset = vec3(0);
+    auto r = normalize(ray);
+    // number of depth layers
+    float a0 = area(v0,v1,v2);
+    if(a0<=0.0001 || isShadowRay)
+        return vec4(uv.x, uv.y, 1, 0);
+    const float minLayers = 8;
+    const float maxLayers = 32;
+    float numLayers = mix(maxLayers, minLayers, abs(dot(N, r)));
+    float height_amp = mix(6.0, 1.0, abs(dot(N, r)));
+    float layerDepth = 1.0 / numLayers;
+    float currentLayerDepth = 0.0;
+    vec3 ddir = r * h.x * layerDepth * height_amp;
+    vec3 p1 = p + ddir;
+    vec3 p11 = p1 - dot(ddir, N) * N;
+    //w, u, v, v0, v1, v2
+    //             1
+    //        v
+    //  0         w
+    //      u      2
+    float wp = min(area(p11, v1, v2)/a0, 1.0f);
+    float up = min(area(p11, v0, v2)/a0, 1.0f);
+    float vp = max(1.0 - wp - up, 0.0f);
+    vec3 duvw = vec3(wp - uvw.x, up - uvw.y, vp - uvw.z);
+    vec3 current_uvw = uvw;
+    vec2 uvp = wp * uv0 + up * uv1 + vp * uv2;
+    vec2 duv = uvp - uv;
+    vec2  currentTexCoords = uv;
+    float currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
+
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        current_uvw = current_uvw + duvw;
+        currentTexCoords = currentTexCoords + duv;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
+        // get depth of next layer
+        currentLayerDepth += layerDepth;
+    }
+    vec2 prevTexCoords = currentTexCoords - duv;
+    vec3 prev_uvw = current_uvw - duvw;
+    bool hit = prev_uvw.x>=0 && prev_uvw.x<=1 && prev_uvw.y>=0 && prev_uvw.y<=1 && prev_uvw.z>=0 && prev_uvw.z<=1;
+    // get depth after and before collision for linear interpolation
+    float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = (1.0f - texture2D(texObj, vec2(prevTexCoords)*uvtiling).x) - currentLayerDepth + layerDepth;
+
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+    float c = smoothstep(h.z, h.w, abs(dot(r,N)));
+    pOffset = hit?vec3(0,0,0): h.y * h.x * N * height_amp;
+    float opacity = hit? 1.0 : c;
+    return vec4(finalTexCoords.x, finalTexCoords.y, opacity, 0);
+}
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////

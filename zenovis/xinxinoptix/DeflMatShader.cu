@@ -162,7 +162,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
-    attrs.tang = optixTransformVectorFromObjectToWorldSpace(attrs.tang);
+    attrs.tang = normalize(optixTransformVectorFromObjectToWorldSpace(attrs.tang));
     attrs.rayLength = optixGetRayTmax();
 
     attrs.instIdx = inst_idx;
@@ -332,7 +332,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->record.w = primIdx;
 
     const float3 ray_orig = optixGetWorldRayOrigin();
-    const float3 ray_dir  = optixGetWorldRayDirection();
+    float3 ray_dir  = optixGetWorldRayDirection();
     float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -485,7 +485,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.uv = vec3{ _uv_.x, _uv_.y, 0 };
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
-    attrs.tang = optixTransformNormalFromObjectToWorldSpace(attrs.tang);
+    attrs.tang = normalize(optixTransformNormalFromObjectToWorldSpace(attrs.tang));
     attrs.rayLength = optixGetRayTmax();
 
     attrs.instIdx = inst_idx;
@@ -516,15 +516,25 @@ extern "C" __global__ void __closesthit__radiance()
     }
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
-    
+    attrs.ray = vec3(ray_dir);
+    attrs.N = normalize(attrs.N);
+    attrs.uv0 = vec2(uv0);
+    attrs.uv1 = vec2(uv1);
+    attrs.uv2 = vec2(uv2);
+    attrs.v0 = vec3(_v0) + vec3(params.cam.eye);
+    attrs.v1 = vec3(_v1) + vec3(params.cam.eye);
+    attrs.v2 = vec3(_v2) + vec3(params.cam.eye);
+    attrs.depth = prd->depth;
+    attrs.pOffset = vec3(0);
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], const float4*, const void**,  const MatInput&>( rt_data->dc_index, rt_data->textures, rt_data->uniforms, (const void**)params.global_buffers, attrs );
     prd->mask_value = mats.mask_value;
 
     if (prd->test_distance) {
-    
         if(mats.opacity>0.99f) { // it's actually transparency not opacity
+            prd->origin = prd->origin + float3(attrs.pOffset);
             prd->_tmin_ = optixGetRayTmax();
         } else if(rnd(prd->seed)<mats.opacity) {
+            prd->origin = prd->origin + float3(attrs.pOffset);
             prd->_tmin_ = optixGetRayTmax();
         } else {
             prd->test_distance = false;
@@ -661,6 +671,8 @@ extern "C" __global__ void __closesthit__radiance()
 
     if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
     {
+        //prd->ray_orig = ray_orig + float3(attrs.pOffset);
+        prd->origin = prd->origin + float3(attrs.pOffset);
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
           //vec3 sigma_t, ss_alpha;
@@ -748,13 +760,13 @@ extern "C" __global__ void __closesthit__radiance()
             isSS = false;
             isDiff = false;
             prd->samplePdf = fPdf;
-            reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+            reflectance = fPdf>0?(reflectance/fPdf):vec3(0.0f);
             prd->done = fPdf>0?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
         
     prd->samplePdf = fPdf;
-    reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+    reflectance = fPdf>0?(reflectance/fPdf):vec3(0.0f);
     prd->done = fPdf>0?prd->done:true;
     prd->isSS = isSS;
     pdf = 1.0;
@@ -917,8 +929,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->depth++;
 
-    if(prd->depth>=3)
-        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
+//    if(prd->depth_diff>=3)
+//        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
@@ -967,7 +979,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->radiance = {};
     prd->direction = normalize(wi);
-    prd->origin = dot(prd->direction, wldNorm) > 0 ? frontPos : backPos;
+    prd->origin = dot(prd->direction, prd->geometryNormal) > 0 ? frontPos : backPos;
 
 
     float3 radianceNoShadow = {};

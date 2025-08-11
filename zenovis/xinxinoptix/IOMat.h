@@ -64,6 +64,11 @@ struct MatInput {
     vec3 uv;
     vec3 clr;
     vec3 tang;
+    vec2 uv0,uv1,uv2;
+    vec3 v0, v1, v2;
+    vec3 ray;
+    vec3 pOffset = vec3(0);
+    int depth;
 
     float2 _barys;
     inline float3 barys() const {

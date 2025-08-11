@@ -74,7 +74,10 @@ struct CppTimer {
   private:
     double last, cur;
 };
-
+float norm_infvec2(zeno::vec3f &p1,  zeno::vec3f &p2)
+{
+    return std::max(abs(p1[0] - p2[0]), abs(p1[1] - p2[1]) );
+}
 static CppTimer timer, localTimer;
 static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &verts,
@@ -84,6 +87,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &uv,
                std::vector<zeno::vec3i> &idxBuffer)
 {
+    float tol = 1e-5;
     if(prim->has_attr("clr")==false)
     {
         prim->verts.add_attr<zeno::vec3f>("clr");
@@ -116,9 +120,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
         for(int k=0;k<vert_uv[vid].size();k++)
         {
           auto & tester = vert_uv[vid][k];
-          float close_enough = 1e-5;
-          bool OK = (abs(tester[0] - uv[0])<=close_enough) && (abs(tester[1] - uv[1])<=close_enough) && (abs(tester[2] - uv[2])<=close_enough);
-          if( OK )
+          if(norm_infvec2(tester, uv)<tol )
           {
             have = true;
           }
@@ -192,7 +194,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
         for(int k=0;k<vert_uv[old_vid].size();k++)
         {
           auto &vuv = vert_uv[old_vid][k];
-          if(vuv[0] == tuv[0] && vuv[1] == tuv[1] && vuv[2] == tuv[2])
+          if(norm_infvec2(tuv, vuv)<tol)
           {
             idxBuffer[i][j] = idx_mapping[old_vid][k][1];
           }
