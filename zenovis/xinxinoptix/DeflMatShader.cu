@@ -306,21 +306,23 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
 #if (_P_TYPE_==2)
-    auto pType = optixGetPrimitiveType();
-    if (pType == OPTIX_PRIMITIVE_TYPE_SPHERE || pType == OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
+
+    auto curveAttr = CurveAttributes( optixGetPrimitiveType(), primIdx );
+    objNorm = curveAttr.normal;
+    // bound object space error due to reconstruction and intersection
+    vec3 objErr = FMA( vec3( c0 ), abs( curveAttr.center ), vec3( c1 * curveAttr.radius ) );
+    objOffset = dot( objErr, abs( objNorm ) );
+    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
+
+    if (isBadVector(objNorm)) {
         prd->done = true;
         return;
     }
 
-    float3 normal = computeCurveNormal( optixGetPrimitiveType(), primIdx );
-
-    if (dot(normal, -ray_dir) < 0) {
-        normal = -normal;
-    }
-        
-    wldPos = P;
-    wldNorm = normal;
-    wldOffset = 0.0f;
+    attrs.N = wldNorm;
+    attrs.T = normalize( optixTransformVectorFromObjectToWorldSpace(curveAttr.tangent) );
+    assert( dot(attrs.N, attrs.T) );
+    attrs.B = cross(attrs.T, attrs.N);
 
     auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
     auto& aux = *(CurveGroupAux*)(gas_ptr-sizeof(CurveGroupAux));
@@ -415,6 +417,7 @@ extern "C" __global__ void __closesthit__radiance()
     shadingNorm = mats.nrm;
 
 #if (_P_TYPE_!=0)
+    mats.smoothness = 0;
 #else
     if (mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
 
