@@ -792,6 +792,9 @@ struct SetNodeXform : zeno::INode {
     void apply() override {
         auto scene = get_input2<ListObject>("scene");
         auto node = get_input2<std::string>("node");
+        if (!zeno::starts_with(node, "/")) {
+            node = "/" + node;
+        }
         auto json_str = scene->arr.back()->userData().get2<std::string>("json");
         auto st = Json::parse(json_str);
         auto &node_to_matrix = st["node_to_matrix"];
@@ -957,7 +960,7 @@ ZENDEFNODE( MakeSceneNode, {
         {"prim"},
         {"enum static dynamic", "type", "dynamic"},
         {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
-        {"string", "root_name", "new_node"},
+        {"string", "root_name", "/ABC"},
         {"xforms"},
     },
     {
