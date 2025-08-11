@@ -586,6 +586,14 @@ struct MergeMultiScenes : zeno::INode {
     void apply() override {
         auto main_scene = std::make_shared<SceneObject>();
         main_scene->root_name = get_input2<std::string>("root_name");
+        main_scene->type = get_input2<std::string>("type");
+        main_scene->matrixMode = get_input2<std::string>("matrixMode");
+        {
+            SceneTreeNode root_node;
+            root_node.matrix = main_scene->root_name + "_m";
+            main_scene->node_to_matrix[root_node.matrix] = {glm::mat4(1)};
+            main_scene->scene_tree[main_scene->root_name] = root_node;
+        }
         if (zeno::starts_with(main_scene->root_name, "/") == false) {
             main_scene->root_name = "/" + main_scene->root_name;
         }
@@ -624,8 +632,8 @@ struct MergeMultiScenes : zeno::INode {
 ZENDEFNODE( MergeMultiScenes, {
     {
         {"list", "scene_list"},
-        {"string", "root_name", "/dummyRoot"},
-        {"enum static dynamic", "type", "static"},
+        {"string", "root_name", "dummyRoot"},
+        {"enum static dynamic", "type", "dynamic"},
         {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
     },
     {
