@@ -1528,7 +1528,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     }
                     glm::mat4 xform = glm::mat4(1);
                     xform = glm::scale(glm::mat4(1), scale);
-                    auto n_mat = g_mat * xform;
+                    auto n_mat = defaultScene.modified_xfroms[name] * xform;
                     result = {name, n_mat};
                 }
                 else if (mode == "Rotate") {

@@ -615,6 +615,10 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
             }
         }
     }
+    if (pMesh->GetElementVertexColorCount()>0)
+    {
+        getAttr(pMesh->GetElementVertexColor(0),"clr",prim);
+    }
     if (pMesh->GetElementNormalCount() > 0) {
         getAttr(pMesh->GetElementNormal(0), "nrm", prim);
     }
@@ -1934,15 +1938,31 @@ struct NewFBXPrimList : INode {
                 }
                 for (auto &vector: vectors) {
                     if (prim->verts.attr_is<vec3f>(vector)) {
-                        auto &attr = prim->verts.attr<vec3f>(vector);
-                        for (auto &v: attr) {
-                            v = transform_nrm(xform, v);
+                        if(vector!="clr"){
+                            auto &attr = prim->verts.attr<vec3f>(vector);
+                            for (auto &v: attr) {
+                                v = transform_nrm(xform, v);
+                            }
+                        }else
+                        {
+                            auto &attr = prim->verts.attr<vec3f>(vector);
+                            for (auto &v: attr) {
+                                v = v;
+                            }
                         }
                     }
                     else if (prim->loops.attr_is<vec3f>(vector)) {
-                        auto &attr = prim->loops.attr<vec3f>(vector);
-                        for (auto &v: attr) {
-                            v = transform_nrm(xform, v);
+                        if(vector!="clr") {
+                            auto &attr = prim->loops.attr<vec3f>(vector);
+                            for (auto &v: attr) {
+                                v = transform_nrm(xform, v);
+                            }
+                        }else
+                        {
+                            auto &attr = prim->verts.attr<vec3f>(vector);
+                            for (auto &v: attr) {
+                                v = v;
+                            }
                         }
                     }
                 }
