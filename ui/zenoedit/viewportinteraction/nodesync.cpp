@@ -135,6 +135,7 @@ std::string NodeSyncMgr::getParamValString(const QModelIndex& node,
 }
 
 void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
+    zeno::log_info("updateNodeVisibility");
     auto graph_model = zenoApp->graphsManagment()->currentModel();
     if (!graph_model) {
         return;

@@ -697,6 +697,7 @@ void ZenoMainWindow::initTimelineDock()
                 launchParam.endFrame = nFrame;
                 launchParam.projectFps = timeline()->fps();
                 launchParam.runtype = m_runtype;
+                launchParam.always = m_bAlways;
                 AppHelper::initLaunchCacheParam(launchParam);
                 view->onRun(launchParam);
             }
@@ -809,6 +810,7 @@ void ZenoMainWindow::onRunTriggered(runType runtype)
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
         launchParam.runtype = runtype;
+        launchParam.always = false;
         QString path = pModel->filePath();
         path = path.left(path.lastIndexOf("/"));
         launchParam.zsgPath = path;

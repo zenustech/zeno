@@ -84,6 +84,9 @@ struct MatInput {
     uint32_t sbtIdx;
     uint32_t priIdx;
     uint32_t instIdx;
+    vec3 ray;
+    vec3 pOffset = vec3(0);
+    int depth;
 
     uint32_t seed;
 

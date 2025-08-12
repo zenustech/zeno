@@ -172,19 +172,19 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance2(unsigned int &seed, vec3 a/*throughput * alpha*/, const vec3& sigma_t, vec3& channelPDF)
     {
-        float r0 = rnd(seed);
+        float r0 = vdcrnd(seed);
         int channel = volume_sample_channel(a, r0, channelPDF);
         channel = clamp(channel, 0, 2);
         float c = sigma_t[channel];
         
-        float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
+        float s = -log(max(1.0f-vdcrnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
         return s;
     }
 
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, float scatterDistance){
-        float r = rnd(seed);
-        return -logf(max(1.0f-rnd(seed),_FLT_MIN_)) * scatterDistance;
+        //float r = vdcrnd(offset);
+        return -logf(max(1.0f-vdcrnd(seed),_FLT_MIN_)) * scatterDistance;
 
     }
 
@@ -351,11 +351,13 @@ namespace DisneyBSDF{
 
     {
         mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
-        bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
-        if(sameside == false)
-        {
-          N = N2;
-        }
+        //bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
+//        if(reflectance == true)
+//        {
+//          N = N2;
+//          T = cross(B,N2);
+//          B = cross(N2, T);
+//        }
         float eta = dot(wo, N)>0?mat.ior:1.0f/mat.ior;
         vec3 f = vec3(0.0f);
         fPdf = 0.0f;
@@ -363,12 +365,12 @@ namespace DisneyBSDF{
         // Onb tbn = Onb(N);
         world2local(wi, T, B, N);
         world2local(wo, T, B, N);
-        world2local(N2, T, B, N);
+        //world2local(N2, T, B, N);
 
-        bool reflect = (dot(wi, N2) * dot(wo, N2) > 0.0f) || (wi.z * wo.z > 0.0f);
+        bool reflect = ( wi.z * wo.z > 0.0f);
         if(reflect && wi.z*wo.z<0)
         {
-            wi.z = -0.01*wi.z;
+            wi.z = -wi.z;
         }
         vec3 Csheen, Cspec0;
         float F0;
@@ -590,6 +592,15 @@ namespace DisneyBSDF{
         }
         return 1.0f / ( n * n) - (1.0f - c * c);
     }
+    static __inline__ __device__
+    void SampleNormal(vec3 wo, vec3& wm, float rough, float aniso, float r1, float r2)
+    {
+        float ax, ay;
+        BRDFBasics::CalculateAnisotropicParams(rough,aniso,ax,ay);
+        vec3 vtmp = wo;
+        vtmp.z = abs(vtmp.z);
+        wm = BRDFBasics::SampleGGXVNDF(vtmp, ax, ay, r1, r2);
+    }
 
     static __inline__ __device__
     void SampleSpecular(vec3 wo, vec3& wi, float rough, float aniso, float r1, float r2){
@@ -628,14 +639,17 @@ namespace DisneyBSDF{
         float& minSpecRough
     )
     {
+        vec3 w_eval;
         bool reflection_fromCC = false;
         auto woo = normalize(wo);
         RadiancePRD* prd = getPRD();
-        bool sameside = (dot(woo, N)*dot(woo, N2))>0.0f;
-        if(sameside == false)
-        {
-          N = N2;
-        }
+//        bool sameside = (dot(woo, N)*dot(woo, N2))>0.0f;
+//        if(sameside == false)
+//        {
+//          N = N2;
+//          T = cross(B,N2);
+//          B = cross(N2, T);
+//        }
         float eta = dot(woo, N)>0?mat.ior:1.0f/mat.ior;
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         world2local(woo, T, B, N);
@@ -736,13 +750,15 @@ namespace DisneyBSDF{
             isSS = false;
             tbn.inverse_transform(wi);
             wi = normalize(wi);
+            w_eval = wi;
+            w_eval = dot(w_eval, N)<0?normalize(w_eval - 2.0f * dot(w_eval, N) * N):w_eval;
             if(dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
           }
           else{
             //switch between scattering or diffuse reflection
             float diffp = p0/p1;
-            if(rnd(seed)<diffp || prd->fromDiff==true)
+            if(vdcrnd(prd->offset)<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
@@ -752,8 +768,10 @@ namespace DisneyBSDF{
               isSS = false;
               tbn.inverse_transform(wi);
               wi = normalize(wi);
+              w_eval = wi;
+              w_eval = (dot(wo,N)*dot(wi,N)<0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
               if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
             }else
             {
               //go inside
@@ -773,8 +791,10 @@ namespace DisneyBSDF{
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);
+              w_eval = wi;
+              w_eval = (dot(wi,N)>0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
               if(dot(wi,N2)>0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
 
             }
           }
@@ -794,8 +814,10 @@ namespace DisneyBSDF{
             SampleSpecular(woo,wi,mat.roughness,mat.anisotropic,r1,r2);
             tbn.inverse_transform(wi);
             wi = normalize(wi);
+            w_eval = wi;
+            w_eval = (dot(wo,N)*dot(wi,N)<0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
             if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
 
         }else if(r3<p4)//glass
         {
@@ -832,13 +854,14 @@ namespace DisneyBSDF{
 
           tbn.inverse_transform(wi);
           wi = normalize(wi);
+          w_eval = wi;
           minSpecRough = mat.roughness;
           auto isReflection =  dot(wi, N) * dot(wo, N)>0?1:0;
           prd->hit_type = (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT);
           bool sameside2 = (dot(wi, N) * dot(wi, N2))>0.0f;
           if(sameside2 == false)
           {
-            wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
           }
 
         }else if(r3<p5)//cc
@@ -847,14 +870,16 @@ namespace DisneyBSDF{
             SampleSpecular(woo,wi,mat.clearcoatRoughness,0.0f,r1,r2);
             tbn.inverse_transform(wi);
             wi = normalize(wi);
+            w_eval = wi;
+            w_eval = (dot(wo,N)*dot(wi,N)<0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
             if(dot(wo,N2)*dot(wi,N2)<0)
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+                wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
             reflection_fromCC = true;
         }
 
         float pdf, pdf2;
         vec3 rd, rs, rt;
-        reflectance = EvaluateDisney2(vec3(1.0f), mat, wi, wo, T, B, N, N2, thin,
+        reflectance = EvaluateDisney2(vec3(1.0f), mat, w_eval, wo, T, B, N, N2, thin,
                                       is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
         fPdf = pdf>1e-5f?pdf:0.0f;
         reflectance = pdf>1e-5f?reflectance:vec3(0.0f);

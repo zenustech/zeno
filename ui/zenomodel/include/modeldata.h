@@ -4,6 +4,8 @@
 #include <QtWidgets>
 #include "fuckqmap.h"
 #include "zassert.h"
+#include "zeno/core/IObject.h"
+#include "memory"
 
 enum PARAM_CONTROL {
     CONTROL_NONE,
@@ -493,5 +495,7 @@ Q_DECLARE_METATYPE(CURVE_DATA);
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)
+
+Q_DECLARE_METATYPE(std::vector<std::shared_ptr<zeno::IObject>>)
 
 #endif

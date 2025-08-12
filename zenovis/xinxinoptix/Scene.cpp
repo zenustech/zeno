@@ -12,7 +12,7 @@
 #include <vector>
 #include <zeno/utils/orthonormal.h>
 
-void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
+void OptixScene::preload_mesh(std::string const &key, std::string const &mtlid,
     float const *verts, size_t numverts, uint const *tris, size_t numtris,
     std::map<std::string, std::pair<float const *, size_t>> const &vtab,
     int const *matids, std::vector<std::string> const &matNameList)
@@ -39,7 +39,7 @@ void Scene::preload_mesh(std::string const &key, std::string const &mtlid,
     updateGeoType(key, ShaderMark::Mesh);
 }
 
-void Scene::updateDrawObjects(uint16_t sbt_count) {
+void OptixScene::updateDrawObjects(uint16_t sbt_count) {
 
     for(const auto& name : meshesDirty) {
         auto& dat = meshdats[name];
@@ -155,7 +155,7 @@ void Scene::updateDrawObjects(uint16_t sbt_count) {
     meshesDirty.clear();
 }
 
-bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key)
+bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key)
 {
     auto path = texVDB.path;
     auto channel = texVDB.channel;
@@ -215,7 +215,7 @@ bool Scene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combin
     return true;
 }
 
-void Scene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key) {
+void OptixScene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key) {
 
     auto& cg = curveGroupCache[key];
     if (nullptr == cg) {
@@ -250,7 +250,7 @@ void Scene::preloadCurveGroup(std::vector<float3>& points, std::vector<float>& w
     };
 }
 
-void Scene::preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform) {
+void OptixScene::preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform) {
 
     auto lwt = std::filesystem::last_write_time(filePath);
     bool neo = false;
@@ -294,7 +294,7 @@ void Scene::preloadHair(const std::string& name, const std::string& filePath, ui
     updateGeoType( name, ShaderMark(mark) );
 }
 
-void Scene::preload_sphere(const std::string &key, const glm::mat4& transform) 
+void OptixScene::preload_sphere(const std::string &key, const glm::mat4& transform) 
 {
     auto& dsphere = _spheres_[key];
     if (nullptr == dsphere) {
@@ -322,7 +322,7 @@ void Scene::preload_sphere(const std::string &key, const glm::mat4& transform)
     };
 }
 
-void Scene::preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV) {
+void OptixScene::preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV) {
         
     auto& group = _sphere_groups_[key];
     if (nullptr == group) {
@@ -346,7 +346,7 @@ void Scene::preload_sphere_group(const std::string& key, std::vector<zeno::vec3f
     };
 }
 
-bool Scene::preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
+bool OptixScene::preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
 
     auto& vbox = _vboxs_[key];
     if (nullptr == vbox) {

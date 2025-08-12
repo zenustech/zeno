@@ -51,7 +51,7 @@
 
 #include "ShaderBuffer.h"
 #include <zeno/extra/ShaderNode.h>
-
+static bool recordedSimpleRender = false;
 namespace zenovis::optx {
 
 struct CppTimer {
@@ -74,7 +74,10 @@ struct CppTimer {
   private:
     double last, cur;
 };
-
+float norm_infvec2(zeno::vec3f &p1,  zeno::vec3f &p2)
+{
+    return std::max(abs(p1[0] - p2[0]), abs(p1[1] - p2[1]) );
+}
 static CppTimer timer, localTimer;
 static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &verts,
@@ -85,6 +88,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3i> &idxBuffer)
 {
     const bool has_clr = prim->has_attr("clr");
+    float tol = 1e-5;
   //first pass, scan the prim to see if verts require duplication
   std::vector<std::vector<zeno::vec3f>> vert_uv;
   std::vector<std::vector<zeno::vec2i>> idx_mapping;
@@ -113,7 +117,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
         for(int k=0;k<vert_uv[vid].size();k++)
         {
           auto & tester = vert_uv[vid][k];
-          if(tester[0] == uv[0] && tester[1] == uv[1] && tester[2] == uv[2] )
+          if(norm_infvec2(tester, uv)<tol )
           {
             have = true;
           }
@@ -186,7 +190,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
         for(int k=0;k<vert_uv[old_vid].size();k++)
         {
           auto &vuv = vert_uv[old_vid][k];
-          if(vuv[0] == tuv[0] && vuv[1] == tuv[1] && vuv[2] == tuv[2])
+          if(norm_infvec2(tuv, vuv)<tol)
           {
             idxBuffer[i][j] = idx_mapping[old_vid][k][1];
           }
@@ -1011,9 +1015,6 @@ struct GraphicsManager {
         bool changelight = false;
         for (auto const &[key, obj] : objs) {
             if(ins.may_emplace(key)) {
-                const std::string& stamptag = obj->userData().get2<std::string>("stamp-change", "TotalChange");
-                const int& stamptag1 = obj->userData().get2<int>("stamp-base", -1);
-                const std::string& stamptag2 = obj->userData().get2<std::string>("stamp-dataChange-hint", "");
                 changelight = true;
             }
         }
@@ -1081,6 +1082,7 @@ struct GraphicsManager {
                             ud.get2<float>("aperture"),
                             ud.get2<float>("shutter_speed"),
                             ud.get2<float>("iso"),
+                            zeno::getSession().userData().has("optix_image_path")?1:ud.get2<int>("renderRatio"),
                             ud.get2<bool>("aces"),
                             ud.get2<bool>("exposure"),
                             ud.get2<bool>("panorama_camera"),
@@ -1134,6 +1136,7 @@ struct GraphicsManager {
                                 ud.get2<float>("aperture"),
                                 ud.get2<float>("shutter_speed"),
                                 ud.get2<float>("iso"),
+                                zeno::getSession().userData().has("optix_image_path")?1:ud.get2<int>("renderRatio"),
                                 ud.get2<bool>("aces"),
                                 ud.get2<bool>("exposure"),
                                 ud.get2<bool>("panorama_camera"),
@@ -1172,8 +1175,110 @@ struct GraphicsManager {
         // return ins.has_changed();
         return changed;
     }
+    void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {
+        std::unordered_map<std::string, std::shared_ptr<zeno::IObject>> map;
+        for (auto i = 0; i < matrixs.size(); i++) {
+            if (matrixs[i]->userData().get2<std::string>("ResourceType", "") != "Matrixes") {
+                continue;
+            }
+            auto obj_name = matrixs[i]->userData().get2<std::string>("ObjectName", "");
+            if (obj_name == "") {
+                continue;
+            }
+            if (auto mat = std::dynamic_pointer_cast<zeno::PrimitiveObject>(matrixs[i])) {
+                auto count = mat->verts->size() / 4;
+                std::vector<m3r4c> matrix_list(count);
+                std::copy_n((float*)mat->verts.data(), count * 12, (float*)matrix_list.data());
+                defaultScene.load_matrix_list(obj_name, matrix_list);
+            }
+            map[obj_name] = matrixs[i];
+        }
+        for (auto &[k, v]: graphics.m_curr) {
+            if (auto* ptr = std::get_if<DetPrimitive>(&v->det)) {
+                if (ptr == nullptr) {
+                    continue;
+                }
+                if (ptr->primSp == nullptr) {
+                    continue;
+                }
+                auto obj_name = ptr->primSp->userData().get2<std::string>("ObjectName", "");
+                if (map.count(obj_name)) {
+                    auto prim_ptr = std::dynamic_pointer_cast<zeno::PrimitiveObject>(map[obj_name]);
+                    if (ptr->primSp->verts.size() == prim_ptr->verts.size()) {
+                        ptr->primSp->verts = prim_ptr->verts;
+                    }
+                }
+            }
+        }
+
+    }
 };
 
+static std::optional<glm::vec3> hitOnPlane(glm::vec3 ori, glm::vec3 dir, glm::vec3 n, glm::vec3 p) {
+    auto t = glm::dot((p - ori), n) / glm::dot(dir, n);
+    if (t > 0)
+        return ori + dir * t;
+    else
+        return {};
+}
+
+// x, y from [0, 1]
+static glm::vec3 screenPosToRayWS(float x, float y, float fov_degree, glm::vec2 res, glm::quat rot)  {
+    x = (x - 0.5) * 2;
+    y = (y - 0.5) * (-2);
+    float v = std::tan(glm::radians(fov_degree) * 0.5f);
+    float aspect = res.x / res.y;
+    auto dir = glm::normalize(glm::vec3(v * x * aspect, v * y, -1));
+    return rot * dir;
+}
+
+static std::optional<glm::vec3> get_proj_pos_on_plane(
+        Json const &in_msg
+        , float pos_x
+        , float pos_y
+        , zenovis::Camera *camera
+        , glm::vec3 const & pivot
+        , glm::vec3 const & plane_dir
+) {
+    float res_x = in_msg["Resolution"][0];
+    float res_y = in_msg["Resolution"][1];
+    auto ori = camera->getPos();
+    auto fov_degree = camera->m_fov;
+    auto rot = camera->m_rotation;
+    glm::vec3 dir = screenPosToRayWS(
+        pos_x / res_x
+        , pos_y / res_y
+        , fov_degree
+        , {res_x, res_y}
+        , rot
+    );
+    std::optional<glm::vec3> t = hitOnPlane(ori, dir, plane_dir, pivot);
+    return t;
+}
+std::optional<glm::quat> rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis) {
+    start_vec = glm::normalize(start_vec);
+    end_vec = glm::normalize(end_vec);
+    if (glm::length(start_vec - end_vec) < 0.0001) {
+        return std::nullopt;
+    }
+    auto cross_vec = glm::cross(start_vec, end_vec);
+    float direct = 1.0f;
+    if (glm::dot(cross_vec, axis) < 0) {
+        direct = -1.0f;
+    }
+    float angle = acos(glm::clamp(glm::dot(start_vec, end_vec), -1.0f, 1.0f));
+    glm::quat q(glm::rotate(angle * direct, axis));
+    return q;
+}
+
+static glm::vec2 pos_ws2ss(glm::vec3 pos_WS, glm::mat4 const &vp_mat, glm::vec2 resolution) {
+    auto pivot_CS = vp_mat * glm::vec4(pos_WS, 1.0f);
+    glm::vec2 pivot_SS = (pivot_CS / pivot_CS[3]);
+    pivot_SS = pivot_SS * 0.5f + 0.5f;
+    pivot_SS[1] = 1 - pivot_SS[1];
+    pivot_SS = pivot_SS * resolution;
+    return pivot_SS;
+}
 struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
 #ifdef OPTIX_BASE_GL
@@ -1181,12 +1286,498 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 #endif
     Scene *scene;
 
+    std::unordered_map<std::string, std::vector<OptixUtil::TexKey>> shader_tex_stat;
 
     bool lightNeedUpdate = true;
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
-    std::optional<glm::vec3> getClickedPos(int x, int y) override {
+    void outlineInit(Json const &in_msg) override {
+//        zeno::log_error("MessageType: {}", in_msg.dump());
+        if (in_msg["MessageType"] == "Init") {
+            Json message;
+            if (!defaultScene.static_scene_tree.is_null()) {
+                Json scene_tree;
+                scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
+                scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
+                message["StaticSceneTree"] = scene_tree;
+            }
+            if (!defaultScene.dynamic_scene_tree.is_null()) {
+                Json scene_tree;
+                scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
+                scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
+                scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
+                message["DynamicSceneTree"] = scene_tree;
+            }
+
+            if (message.is_null()) {
+                return;
+            }
+
+            message["MessageType"] = "SceneTree";
+            fun(message.dump());
+        }
+        else if (in_msg["MessageType"] == "Select") {
+            auto &link = in_msg["Content"];
+            {
+                std::string object_name = link.back();
+                Json *json = nullptr;
+                if (link[0] == "StaticScene") {
+                    json = &defaultScene.static_scene_tree;
+                }
+                else {
+                    json = &defaultScene.dynamic_scene_tree;
+                }
+                Json &scene_tree = json->operator[]("scene_tree");
+                Json &node_to_matrix = json->operator[]("node_to_matrix");
+                glm::mat4 p_matrix = glm::mat4(1);
+                glm::mat4 l_matrix = glm::mat4(1);
+                for (auto idx = 1; idx < link.size(); idx++) {
+                    auto &node_name = link[idx];
+                    p_matrix = p_matrix * l_matrix;
+                    if (defaultScene.modified_xfroms.count(node_name)) {
+                        l_matrix = defaultScene.modified_xfroms[node_name];
+                        continue;
+                    }
+                    auto matrix_node_json = scene_tree[node_name];
+                    if (matrix_node_json.is_null()) {
+                        break;
+                    }
+                    std::string matrix_name = matrix_node_json["matrix"];
+                    auto mat_json = node_to_matrix[matrix_name][0];
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            int index = i * 3 + j;
+                            l_matrix[i][j] = float(mat_json[index]);
+                        }
+                    }
+                }
+                defaultScene.cur_node = {object_name, l_matrix, p_matrix};
+                {
+                    Json message;
+                    message["MessageType"] = "SetGizmoAxis";
+                    auto g_mat = p_matrix * l_matrix;
+                    message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                    message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                    message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                    message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                    fun(message.dump());
+                }
+            }
+        }
+        else if (in_msg["MessageType"] == "ResetNodeModify") {
+            auto node_name = std::string(in_msg["NodeName"]);
+            defaultScene.modified_xfroms.erase(node_name);
+            std::string mat_name = node_name + "_m";
+            std::vector<glm::mat4> matrixs = {glm::mat4(1)};
+            if (defaultScene.dynamic_scene->node_to_matrix.count(mat_name)) {
+                matrixs = defaultScene.dynamic_scene->node_to_matrix[mat_name];
+                auto prim = defaultScene.dynamic_scene->mats_to_prim(mat_name, matrixs, false, "TotalChange");
+                load_matrix_objects({prim});
+            }
+            if (defaultScene.cur_node.has_value()) {
+                auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+                if (name == node_name) {
+                    lmat = matrixs[0];
+                    {
+                        auto &[_name, _lmat, pmat] = defaultScene.cur_node.value();
+                        Json message;
+                        message["MessageType"] = "SetGizmoAxis";
+                        auto g_mat = pmat * _lmat;
+                        message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                        message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                        message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                        message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                        fun(message.dump());
+                    }
+                }
+            }
+        }
+        else if (in_msg["MessageType"] == "Xform") {
+
+//            zeno::log_info("Axis: {}", in_msg["Axis"]);
+            if (!defaultScene.cur_node.has_value()) {
+                return;
+            }
+            auto &[name, lmat, pmat] = defaultScene.cur_node.value();
+            if (defaultScene.modified_xfroms.count(name) == 0) {
+                defaultScene.modified_xfroms[name] = lmat;
+            }
+            auto g_mat = pmat * defaultScene.modified_xfroms[name];
+            auto pivot = glm::vec3(g_mat * glm::vec4(0, 0, 0, 1));
+
+            const auto x_axis = glm::vec3(1, 0, 0);
+            const auto y_axis = glm::vec3(0, 1, 0);
+            const auto z_axis = glm::vec3(0, 0, 1);
+
+            std::string mode = in_msg["Mode"];
+            bool is_local_space = in_msg["LocalSpace"];
+            std::map<std::string, glm::vec3> axis_mapping = {
+                {"X", {1, 0, 0}},
+                {"Y", {0, 1, 0}},
+                {"Z", {0, 0, 1}},
+                {"XY", {1, 1, 0}},
+                {"YZ", {0, 1, 1}},
+                {"XZ", {1, 0, 1}},
+                {"", {1, 1, 1}},
+                {"XYZ", {1, 1, 1}},
+            };
+
+            glm::mat3 local_mat;
+            local_mat[0] = glm::normalize(glm::vec3(g_mat[0]));
+            local_mat[1] = glm::normalize(glm::vec3(g_mat[1]));
+            local_mat[2] = glm::normalize(glm::vec3(g_mat[2]));
+
+            std::optional<std::pair<std::string, glm::mat4>> result;
+            if (mode == "RotateScreen" || (mode == "Rotate" && in_msg["Axis"]!="X" && in_msg["Axis"]!="Y" && in_msg["Axis"]!="Z") ) {
+                glm::vec3 cam_pos = scene->camera->getPos();
+                glm::vec3 cam_up = scene->camera->get_lodup();
+                auto local_z = glm::normalize(cam_pos - pivot);
+                auto local_x = glm::normalize(glm::cross(cam_up, local_z));
+                auto local_y = glm::normalize(glm::cross(local_z, local_x));
+                auto local_mat = glm::mat3(1);
+                local_mat[0] = local_x;
+                local_mat[1] = local_y;
+                local_mat[2] = local_z;
+
+                {
+                    auto delta_x = float(in_msg["Delta"][0]);
+                    auto delta_y = float(in_msg["Delta"][1]);
+                    glm::mat4 xform = glm::rotate(glm::mat4(1.0f), glm::radians(delta_x), local_y);
+                    xform = glm::rotate(xform, glm::radians(delta_y), local_x);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+            }
+            else if (is_local_space && !(mode == "Translate" && (in_msg["Axis"] == "" || in_msg["Axis"] == "XYZ"))) {
+//                zeno::log_info("Axis: {}", in_msg["Axis"]);
+                if (mode == "Translate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {0, 0, 1}},
+                        {"Y", {0, 0, 1}},
+                        {"Z", {0, 1, 0}},
+                        {"XY", {0, 0, 1}},
+                        {"YZ", {1, 0, 0}},
+                        {"XZ", {0, 1, 0}},
+                    };
+                    glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
+                    if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
+                        selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
+                    }
+                    selected_plane_dir = local_mat * selected_plane_dir;
+                    auto trans_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_start.has_value()) {
+                        return;
+                    }
+                    auto trans_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_end.has_value()) {
+                        return;
+                    }
+                    auto trans = trans_end.value() - trans_start.value();
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    auto proj_trans = glm::vec3();
+                    for (auto i = 0; i < 3; i++) {
+                        if (axis[i]) {
+                            auto temp_axis = glm::vec3();
+                            temp_axis[i] = 1;
+                            temp_axis = local_mat * temp_axis;
+                            proj_trans += glm::dot(trans, temp_axis) * temp_axis;
+                        }
+                    }
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::translate(glm::mat4(1), proj_trans);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Scale") {
+                    auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                    auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto pivot_SS = pos_ws2ss(pivot, vp, resolution);
+                    glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
+                    glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    if(in_msg["Axis"]==""||in_msg["Axis"]=="XYZ")
+                        axis = {1,1,1};
+                    auto start_len = glm::distance(pivot_SS, start_pos_SS);
+                    if (start_len < 1) {
+                        start_len = 1;
+                    }
+                    auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
+                    glm::vec3 scale(1.0f);
+                    for (int i = 0; i < 3; i++) {
+                        if (axis[i] == 1) {
+                            scale[i] = std::max(scale_size, 0.1f);
+                        }
+                    }
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::scale(glm::mat4(1), scale);
+                    auto n_mat = defaultScene.modified_xfroms[name] * xform;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Rotate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", glm::vec3(1, 0, 0)},
+                        {"Y", glm::vec3(0, 1, 0)},
+                        {"Z", glm::vec3(0, 0, 1)},
+                    };
+                    std::string axis = in_msg["Axis"];
+                    if (axis == "X" || axis == "Y" || axis == "Z") {
+                        auto plane_dir = local_mat * selected_plane_dir_mapping[axis];
+                        auto rot_start = get_proj_pos_on_plane(
+                                in_msg, float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1]), scene->camera.get(),
+                                pivot, plane_dir
+                        );
+                        if (!rot_start.has_value()) {
+                            return;
+                        }
+                        auto rot_end = get_proj_pos_on_plane(
+                                in_msg, float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1]), scene->camera.get(),
+                                pivot, plane_dir
+                        );
+                        if (!rot_end.has_value()) {
+                            return;
+                        }
+                        auto start_vec = rot_start.value() - pivot;
+                        auto end_vec = rot_end.value() - pivot;
+                        auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                        if (!rot_quat.has_value()) {
+                            return;
+                        }
+                        glm::mat4 xform = glm::toMat4(rot_quat.value());
+                        auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                        auto trans2local_inv = glm::inverse(trans2local);
+                        g_mat = trans2local_inv * xform * trans2local * g_mat;
+                        auto n_mat = glm::inverse(pmat) * g_mat;
+                        result = {name, n_mat};
+                    }
+                }
+            }
+            else {
+                if (mode == "Translate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {0, 0, 1}},
+                        {"Y", {0, 0, 1}},
+                        {"Z", {0, 1, 0}},
+                        {"XY", {0, 0, 1}},
+                        {"YZ", {1, 0, 0}},
+                        {"XZ", {0, 1, 0}},
+                    };
+                    glm::vec3 selected_plane_dir = scene->camera->get_lodfront();
+                    if (selected_plane_dir_mapping.count(in_msg["Axis"])) {
+                        selected_plane_dir = selected_plane_dir_mapping[in_msg["Axis"]];
+                    }
+                    auto trans_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_start.has_value()) {
+                        return;
+                    }
+                    auto trans_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , selected_plane_dir
+                    );
+                    if (!trans_end.has_value()) {
+                        return;
+                    }
+                    auto trans = trans_end.value() - trans_start.value();
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    trans *= axis;
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::translate(glm::mat4(1), trans);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Scale") {
+                    auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+                    auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
+                    auto pivot_SS = pos_ws2ss(pivot, vp, resolution);
+                    glm::vec2 start_pos_SS = {float(in_msg["LastPos"][0]), float(in_msg["LastPos"][1])};
+                    glm::vec2 end_pos_SS   = {float(in_msg["CurPos"][0]), float(in_msg["CurPos"][1])};
+                    glm::vec3 axis = axis_mapping.at(in_msg["Axis"]);
+                    auto start_len = glm::distance(pivot_SS, start_pos_SS);
+                    if (start_len < 1) {
+                        start_len = 1;
+                    }
+                    auto scale_size = glm::distance(pivot_SS, end_pos_SS) / start_len;
+                    glm::vec3 scale(1.0f);
+                    for (int i = 0; i < 3; i++) {
+                        if (axis[i] == 1) {
+                            scale[i] = std::max(scale_size, 0.1f);
+                        }
+                    }
+                    glm::mat4 xform = glm::mat4(1);
+                    xform = glm::scale(glm::mat4(1), scale);
+                    auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                    auto trans2local_inv = glm::inverse(trans2local);
+                    g_mat = trans2local_inv * xform * trans2local * g_mat;
+                    auto n_mat = glm::inverse(pmat) * g_mat;
+                    result = {name, n_mat};
+                }
+                else if (mode == "Rotate") {
+                    std::map<std::string, glm::vec3> selected_plane_dir_mapping = {
+                        {"X", {1, 0, 0}},
+                        {"Y", {0, 1, 0}},
+                        {"Z", {0, 0, 1}},
+                    };
+                    std::string axis = in_msg["Axis"];
+                    if (axis == "X" || axis == "Y" || axis == "Z") {
+                        auto plane_dir = selected_plane_dir_mapping[axis];
+                        auto rot_start = get_proj_pos_on_plane(
+                            in_msg
+                            , float(in_msg["LastPos"][0])
+                            , float(in_msg["LastPos"][1])
+                            , scene->camera.get()
+                            , pivot
+                            , plane_dir
+                        );
+                        if (!rot_start.has_value()) {
+                            return;
+                        }
+                        auto rot_end = get_proj_pos_on_plane(
+                            in_msg
+                            , float(in_msg["CurPos"][0])
+                            , float(in_msg["CurPos"][1])
+                            , scene->camera.get()
+                            , pivot
+                            , plane_dir
+                        );
+                        if (!rot_end.has_value()) {
+                            return;
+                        }
+                        auto start_vec = rot_start.value() - pivot;
+                        auto end_vec = rot_end.value() - pivot;
+                        auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                        if (!rot_quat.has_value()) {
+                            return;
+                        }
+                        glm::mat4 xform = glm::toMat4(rot_quat.value());
+                        auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
+                        auto trans2local_inv = glm::inverse(trans2local);
+                        g_mat = trans2local_inv * xform * trans2local * g_mat;
+                        auto n_mat = glm::inverse(pmat) * g_mat;
+                        result = {name, n_mat};
+                    }
+                }
+            }
+
+            if (result.has_value()) {
+                std::string name = result.value().first;
+                glm::mat4 n_mat = result.value().second;
+                defaultScene.modified_xfroms[name] = n_mat;
+                auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+                mat_prim->verts.resize(4);
+                mat_prim->verts[0][0] = n_mat[0][0];
+                mat_prim->verts[0][1] = n_mat[1][0];
+                mat_prim->verts[0][2] = n_mat[2][0];
+                mat_prim->verts[1][0] = n_mat[3][0];
+                mat_prim->verts[1][1] = n_mat[0][1];
+                mat_prim->verts[1][2] = n_mat[1][1];
+                mat_prim->verts[2][0] = n_mat[2][1];
+                mat_prim->verts[2][1] = n_mat[3][1];
+                mat_prim->verts[2][2] = n_mat[0][2];
+                mat_prim->verts[3][0] = n_mat[1][2];
+                mat_prim->verts[3][1] = n_mat[2][2];
+                mat_prim->verts[3][2] = n_mat[3][2];
+
+                mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+                mat_prim->userData().set2("ObjectName", name+"_m");
+                load_matrix_objects({mat_prim});
+                {
+                    Json xform_json;
+                    xform_json["MessageType"] = "SetNodeXform";
+                    xform_json["Mode"] = "Set";
+                    xform_json["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+                    xform_json["NodeName"] = name;
+                    xform_json["r0"] = {n_mat[0][0], n_mat[0][1] , n_mat[0][2]};
+                    xform_json["r1"] = {n_mat[1][0], n_mat[1][1] , n_mat[1][2]};
+                    xform_json["r2"] = {n_mat[2][0], n_mat[2][1] , n_mat[2][2]};
+                    xform_json["t"]  = {n_mat[3][0], n_mat[3][1] , n_mat[3][2]};
+                    fun(xform_json.dump());
+                }
+                {
+                    auto &[_name, _lmat, pmat] = defaultScene.cur_node.value();
+                    auto l_matrix = result.value().second;
+                    Json message;
+                    message["MessageType"] = "SetGizmoAxis";
+                    auto g_mat = pmat * l_matrix;
+                    message["r0"] = {g_mat[0][0], g_mat[0][1] , g_mat[0][2]};
+                    message["r1"] = {g_mat[1][0], g_mat[1][1] , g_mat[1][2]};
+                    message["r2"] = {g_mat[2][0], g_mat[2][1] , g_mat[2][2]};
+                    message["t"]  = {g_mat[3][0], g_mat[3][1] , g_mat[3][2]};
+                    fun(message.dump());
+                }
+            }
+        }
+        else if (in_msg["MessageType"] == "NeedSetSceneXform") {
+            Json message;
+            message["MessageType"] = "SetSceneXform";
+            message["NodeKey"] = defaultScene.dynamic_scene_tree["node_key"];
+            Json matrixs;
+            for (const auto &[id, mat]: defaultScene.modified_xfroms) {
+                Json matrix;
+                for (auto i = 0; i < 4; i++) {
+                    for (auto j = 0; j < 3; j++) {
+                        matrix.push_back(mat[i][j]);
+                    }
+                }
+                matrixs[id] = matrix;
+            }
+            message["Matrixs"] = matrixs;
+            if (defaultScene.modified_xfroms.size()) {
+				fun(message.dump());
+            }
+        }
+        else if (in_msg["MessageType"] == "XformPanelInit") {
+            Json message;
+            message["MessageType"] = "XformPanelInitFeedback";
+            Json matrixs;
+            for (const auto &[id, mat]: defaultScene.modified_xfroms) {
+                Json matrix;
+                for (auto i = 0; i < 4; i++) {
+                    for (auto j = 0; j < 3; j++) {
+                        matrix.push_back(mat[i][j]);
+                    }
+                }
+                matrixs[id] = Json::array();
+                matrixs[id].push_back(matrix);
+            }
+            message["Matrixs"] = matrixs;
+            fun(message.dump());
+        }
+    }
+    std::optional<glm::vec3> getClickedPos(float x, float y) override {
         glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
         if (posWS == glm::vec3()) {
             return {};
@@ -1195,7 +1786,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         posWS += cam.m_pos;
         return posWS;
     }
-    std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(int x, int y) override {
+    std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(float x, float y) override {
         auto ids = xinxinoptix::get_click_id(x, y);
         if (ids == glm::uvec4()) {
             return {};
@@ -1231,8 +1822,95 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         char *argv[] = {nullptr};
         xinxinoptix::optixinit(std::size(argv), argv);
     }
+    void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) override {
+        if (matrixs.empty()) {
+            return;
+        }
+        graphicsMan->load_matrix_objects(matrixs);
+        meshNeedUpdate = true;
+    };
+
+    void update_json(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
+        for (auto const&[key, obj]: objs) {
+            Json message;
+            message["MessageType"] = "SceneTree";
+            if (obj == nullptr) {
+                continue;
+            }
+            auto &ud = obj->userData();
+            if (ud.get2<std::string>("ResourceType", "") == "SceneTree") {
+                if (ud.get2<std::string>("SceneTreeType", "") == "static") {
+                    if (!defaultScene.static_scene_tree.is_null()) {
+                        continue;
+                    }
+                    auto content = ud.get2<std::string>("json");
+                    defaultScene.static_scene_tree = Json::parse(content);
+                    Json scene_tree;
+                    scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
+                    scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
+                    message["StaticSceneTree"] = scene_tree;
+                }
+                else if (ud.get2<std::string>("SceneTreeType", "") == "dynamic") {
+                    auto content = ud.get2<std::string>("json");
+                    defaultScene.dynamic_scene_tree = Json::parse(content);
+                    defaultScene.dynamic_scene_tree["node_key"] = key;
+
+                    Json scene_tree;
+                    scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
+                    scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
+                    scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
+                    message["DynamicSceneTree"] = scene_tree;
+
+                    defaultScene.dynamic_scene->from_json(defaultScene.dynamic_scene_tree);
+                }
+                else {
+                    continue;
+                }
+                auto msg_str = message.dump();
+                fun(std::move(msg_str));
+            }
+        }
+        {
+			Json message;
+			message["MessageType"] = "XformPanelInitFeedback";
+			message["Matrixs"] = Json::object();
+			fun(message.dump());
+        }
+    }
+
+
+    void replace_with_modified_matrix() {
+        if (defaultScene.modified_xfroms.empty()) {
+            return;
+        }
+        std::vector<std::shared_ptr<zeno::IObject>> mat_prims;
+        for (auto const&[name, n_mat]: defaultScene.modified_xfroms) {
+            auto mat_prim = std::make_shared<zeno::PrimitiveObject>();
+            mat_prim->verts.resize(4);
+            mat_prim->verts[0][0] = n_mat[0][0];
+            mat_prim->verts[0][1] = n_mat[1][0];
+            mat_prim->verts[0][2] = n_mat[2][0];
+            mat_prim->verts[1][0] = n_mat[3][0];
+            mat_prim->verts[1][1] = n_mat[0][1];
+            mat_prim->verts[1][2] = n_mat[1][1];
+            mat_prim->verts[2][0] = n_mat[2][1];
+            mat_prim->verts[2][1] = n_mat[3][1];
+            mat_prim->verts[2][2] = n_mat[0][2];
+            mat_prim->verts[3][0] = n_mat[1][2];
+            mat_prim->verts[3][1] = n_mat[2][2];
+            mat_prim->verts[3][2] = n_mat[3][2];
+
+            mat_prim->userData().set2("ResourceType", std::string("Matrixes"));
+            mat_prim->userData().set2("ObjectName", name+"_m");
+            mat_prims.push_back(mat_prim);
+        }
+        load_matrix_objects(mat_prims);
+    }
+
 
     void update() override {
+//        zeno::log_error("update");
+        update_json(scene->objectsMan->pairs());
 
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
             || scene->objectsMan->needUpdateLight)
@@ -1248,23 +1926,24 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
-            meshNeedUpdate = matNeedUpdate = true;
-            if (scene->drawOptions->updateMatlOnly)
-            {
-                lightNeedUpdate = meshNeedUpdate = false;
-                matNeedUpdate = true;
-            }
-            if (scene->drawOptions->updateLightCameraOnly)
-            {
-                lightNeedUpdate = true;
-                matNeedUpdate = meshNeedUpdate = false;
-            }
+        }
+        meshNeedUpdate = matNeedUpdate = true;
+        if (scene->drawOptions->updateMatlOnly)
+        {
+            lightNeedUpdate = meshNeedUpdate = false;
+            matNeedUpdate = true;
+        }
+        if (scene->drawOptions->updateLightCameraOnly)
+        {
+            lightNeedUpdate = true;
+            matNeedUpdate = meshNeedUpdate = false;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+        replace_with_modified_matrix();
     }
 
-#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
-#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
+#define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
+#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny,cam.zOptixCameraSettingInfo.renderRatio
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
@@ -1346,6 +2025,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             std::tuple newsizeid{MY_SIZE_ID(cam)};
             if (!oldsizeid || *oldsizeid != newsizeid)
                 sizeNeedUpdate = true;
+            if(scene->drawOptions->simpleRender!=recordedSimpleRender)
+            {
+                sizeNeedUpdate = true;
+                recordedSimpleRender = scene->drawOptions->simpleRender;
+            }
             oldsizeid = newsizeid;
         }
 
@@ -1364,8 +2048,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
-
+            auto scale = zeno::getSession().userData().has("optix_image_path")?1:cam.zOptixCameraSettingInfo.renderRatio;
+            scale = scene->drawOptions->simpleRender?scale:1;
+            xinxinoptix::set_window_size(max(cam.m_nx/scale,1), max(cam.m_ny/scale,1));
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
@@ -1387,6 +2072,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.aperture,
                 cam.zOptixCameraSettingInfo.shutter_speed,
                 cam.zOptixCameraSettingInfo.iso,
+                cam.zOptixCameraSettingInfo.renderRatio,
                 cam.zOptixCameraSettingInfo.aces,
                 cam.zOptixCameraSettingInfo.exposure,
                 cam.zOptixCameraSettingInfo.panorama_camera,
@@ -1759,6 +2445,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         defaultScene = {};
         cached_shaders = {};
         OptixUtil::rtMaterialShaders.clear();
+        {
+            Json message;
+            message["MessageType"] = "CleanupAssets";
+            fun(message.dump());
+        }
     }
 
     void run() {
@@ -1778,6 +2469,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         OptixUtil::rtMaterialShaders.clear();
 
         xinxinoptix::optixCleanup();
+        {
+            Json message;
+            message["MessageType"] = "CleanupAssets";
+            fun(message.dump());
+        }
     }
 
     void cleanupWhenExit() override {

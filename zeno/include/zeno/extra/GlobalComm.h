@@ -10,9 +10,10 @@
 #include <set>
 #include <functional>
 #include <filesystem>
+#include <tinygltf/json.hpp>
 
 namespace zeno {
-
+using Json = nlohmann::json;
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
 
@@ -40,12 +41,15 @@ struct GlobalComm {
 
     std::map<uintptr_t, std::tuple<bool, bool, bool>> sceneLoadedFlag;  //assetneedLoad, run, load
     bool assetsInitialized = false;
+    std::string static_scene_tree;
+    Json static_scene_descriptor;
+    Json dynamic_scene_descriptor;
 
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
     ZENO_API void newFrame();
     ZENO_API void finishFrame();
-    ZENO_API void dumpFrameCache(int frameid, std::string runtype = "RunAll");
+    ZENO_API void dumpFrameCache(int frameid, std::string runtype = "RunAll", bool balways = false);
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API int numOfFinishedFrame();
@@ -68,15 +72,15 @@ struct GlobalComm {
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
     ZENO_API std::string cacheTimeStamp(int frame, bool& exists);
-    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, std::string fileName = "", bool isStampModeInit = false);
+    void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, bool balways, std::string fileName = "", bool isStampModeInit = false);
     bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool loadasset = false);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool switchTimeline, bool loadasset = false);
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
-    static std::string getRunType(std::filesystem::path dir);
+    static std::pair<std::string, bool> getRunType(std::filesystem::path dir);
 private:
     ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp);
 };

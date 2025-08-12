@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
@@ -34,7 +34,7 @@ public:
     std::set<std::string> formulas;
     zany muted_output;
 
-    //bool bTmpCache = false;
+    bool bTmpCache = false;
     std::string objRunType;
 
     ZENO_API INode();

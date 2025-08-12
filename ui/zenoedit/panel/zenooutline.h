@@ -2,7 +2,12 @@
 
 #include <QtWidgets>
 #include <QAbstractItemModel>
+#include <tinygltf/json.hpp>
+#include <glm/glm.hpp>
+#include <optional>
+#include "zeno/extra/SceneAssembler.h"
 
+using Json = nlohmann::json;
 class OutlineItemModel : public QAbstractItemModel
 {
     Q_OBJECT
@@ -18,7 +23,8 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     
     // 自定义数据操作
-    void setupModelData();
+    void setupModelDataFromMessage(Json const& content);
+    void clearModelData();
 
 private:
     struct OutlineItem {
@@ -38,6 +44,7 @@ private:
     };
     
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
+    void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name);
 };
 
 class zenooutline : public QWidget
@@ -48,8 +55,12 @@ public:
     zenooutline(QWidget *parent = nullptr);
     ~zenooutline();
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void setupTreeView();
+    void sendOptixMessage(Json &msg);
     
     QTreeView *m_treeView = nullptr;
     OutlineItemModel *m_model = nullptr;

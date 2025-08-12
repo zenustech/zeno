@@ -5,6 +5,8 @@
 #include <zeno/types/UserData.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/core/Graph.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 
 namespace zeno {
 
@@ -50,6 +52,40 @@ struct Route : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
+            {
+                std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+                    if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                        for (auto o : lst->arr)
+                            setruntype(o, type);
+                    }
+                    else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+                        for (auto [_, o] : dict->lut) {
+                            setruntype(o, type);
+                        }
+                    }
+                    if (obj) {
+                        obj->userData().set2("objRunType", type);
+                    }
+                };
+                if (has_input("RunType:")) {
+                    std::string runttype = get_input2<std::string>("RunType:");
+                    if (runttype == "normal") {
+                        setruntype(obj, "normal");
+                    }
+                    else if (runttype == "lightCamera") {
+                        setruntype(obj, "lightCamera");
+                    }
+                    else if (runttype == "material") {
+                        setruntype(obj, "material");
+                    }
+                    else if (runttype == "matrix") {
+                        //setruntype(obj, "matrix"); //由RenderScene控制这个userdata的设置
+                    }
+                    else {
+                        setruntype(obj, "normal");
+                    }
+                }
+            }
             set_output("output", std::move(obj));
         } else {
             set_output("output", std::make_shared<zeno::DummyObject>());
@@ -60,7 +96,7 @@ struct Route : zeno::INode {
 ZENDEFNODE(Route, {
     {"input"},
     {"output"},
-    {},
+    {{"enum normal lightCamera material", "RunType", "normal"}},
     {"layout"},
 });
 
@@ -76,7 +112,11 @@ struct Stamp : zeno::INode {
                 std::string mode = get_input2<std::string>("stampMode");
                 if (mode == "UnChanged") {
                     if (currframe != beginframe) {
-                        obj = session->globalComm->constructEmptyObj(inputObjType);
+//                        obj = session->globalComm->constructEmptyObj(inputObjType);
+                        std::shared_ptr<IObject> unchangeObj;
+						unchangeObj = session->globalComm->constructEmptyObj(inputObjType);
+						unchangeObj->m_userData = std::move(obj->userData());
+						obj = unchangeObj;
                     }
                     obj->userData().set2("stamp-change", "UnChanged");
                 } else if (mode == "TotalChange") {
@@ -120,41 +160,6 @@ ZENDEFNODE(Stamp, {
         //{"string", "name", ""}
     },
     {"lifecycle"}
-});
-
-struct SetRuntype : zeno::INode {
-    virtual void apply() override {
-        if (has_input("input")) {
-            auto obj = get_input("input");
-            if (has_input("RunType")) {
-                std::string runttype = get_input2<std::string>("RunType");
-                if (runttype == "normal") {
-                    obj->userData().set2("objRunType", "normal");
-                } else if (runttype == "lightCamera") {
-                    obj->userData().set2("objRunType", "lightCamera");
-                } else if (runttype == "material") {
-                    obj->userData().set2("objRunType", "material");
-                } else if (runttype == "matrix") {
-                    obj->userData().set2("objRunType", "matrix");
-                } else {
-                    obj->userData().set2("objRunType", "normal");
-                }
-            }
-            set_output("output", std::move(obj));
-        }
-        else {
-            set_output("output", std::make_shared<zeno::DummyObject>());
-        }
-    }
-};
-
-ZENDEFNODE(SetRuntype, {
-    {"input",
-        {"enum normal lightCamera material matrix", "RunType", "normal"},
-    },
-    {"output"},
-    {},
-    {"lifecycle"},
 });
 
 struct Clone : zeno::INode {

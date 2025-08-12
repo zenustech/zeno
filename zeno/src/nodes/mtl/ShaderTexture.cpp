@@ -167,6 +167,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         texFiltering[] = "NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR";
     virtual int determineType(EmissionPass *em) override {
         auto uvtiling = em->determineType(get_input("uvtiling").get());
+        auto normalScale = em->determineType(get_input("normalScale").get());
+        auto h_scale = em->determineType(get_input("heightScale").get());
         if (has_input("coord")) {
             auto coord = em->determineType(get_input("coord").get());
             if (coord < 2)
@@ -196,19 +198,21 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
                 texture_path = std::filesystem::temp_directory_path().string() + '/' + "heatmap-" + std::to_string(std::rand()) + ".png";
             }
             auto heatmap = get_input<zeno::HeatmapObject>("heatmap");
-            std::vector<uint8_t> col;
-            int width = heatmap->colors.size();
-            int height = width;
-            col.reserve(width * height * 3);
-            for (auto i = 0; i < height; i++) {
-                for (auto & color : heatmap->colors) {
-                    col.push_back(zeno::clamp(int(color[0] * 255.99), 0, 255));
-                    col.push_back(zeno::clamp(int(color[1] * 255.99), 0, 255));
-                    col.push_back(zeno::clamp(int(color[2] * 255.99), 0, 255));
+            if (heatmap && !heatmap->colors.empty()) {
+                std::vector<uint8_t> col;
+                int width = heatmap->colors.size();
+                int height = width;
+                col.reserve(width * height * 3);
+                for (auto i = 0; i < height; i++) {
+                    for (auto & color : heatmap->colors) {
+                        col.push_back(zeno::clamp(int(color[0] * 255.99), 0, 255));
+                        col.push_back(zeno::clamp(int(color[1] * 255.99), 0, 255));
+                        col.push_back(zeno::clamp(int(color[2] * 255.99), 0, 255));
+                    }
                 }
+                stbi_flip_vertically_on_write(false);
+                stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
             }
-            stbi_flip_vertically_on_write(false);
-            stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
         }
         if(!std::filesystem::exists(std::filesystem::u8path(texture_path))){
             //zeno::log_warn("texture file not found!");
@@ -325,6 +329,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             type = "";
         }
         auto uvtiling = em->determineExpr(get_input("uvtiling").get());
+        auto nscale = em->determineExpr(get_input("normalScale").get());
+        auto hscale = em->determineExpr(get_input("heightScale").get());
         std::string coord = "att_uv";
         if (has_input("coord")) {
             coord = em->determineExpr(get_input("coord").get());
@@ -340,9 +346,11 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         }else if (postprocess == "srgb"){
             em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
         }else if (postprocess == "normal_map"){
-            em->emitCode(zeno::format("({}(texture2D(zenotex[{}], vec2({}) * {})) * 2.0f - 1.0f){}", type, texId, coord, uvtiling, suffix));
+            em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], vec2({}) * {})) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
         }else if (postprocess == "1-x"){
             em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
+        }else if (postprocess == "displacement"){
+            em->emitCode(zeno::format("{}(parallex2D(zenotex[{}], vec2({}), {},  vec3(1.0f - attrs._barys.x - attrs._barys.y, attrs._barys.x, attrs._barys.y), vec2(attrs.uv0), vec2(attrs.uv1), vec2(attrs.uv2), attrs.v0, attrs.v1, attrs.v2, attrs.pos, attrs.ray, attrs.N, attrs.isShadowRay, attrs.pOffset, attrs.depth, {})){}",type, texId, coord, uvtiling,hscale,suffix));
         }
     }
 };
@@ -358,8 +366,10 @@ ZENDEFNODE(SmartTexture2D, {
         {"coord"},
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
+        {"float", "normalScale", "1.0"},
+        {"vec4f", "heightScale", "1.0,1.0,0.0,1.0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
-        {"enum raw srgb normal_map 1-x", "post_process", "raw"},
+        {"enum raw srgb normal_map 1-x displacement", "post_process", "raw"},
         {"bool", "blockCompression", "false"}
     },
     {

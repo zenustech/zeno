@@ -252,11 +252,9 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(scene);
 
     bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid && ptr->userData().get2<std::string>("ObjectName", key) != primid) {
-            continue;
-        }
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
+    auto ptr = scene->objectsMan->get(primid);
+    if (ptr.has_value()) {
+        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr.value())) {
             found = true;
             size_t sizeUserData = obj->userData().size();
             size_t num_attrs = obj->num_attrs();
@@ -278,8 +276,8 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
                 .arg(num_uvs);
             pStatusBar->setText(statusInfo);
 
-            //如果条目数过多（比如几千万级别），会导致qheaderview内部计算视图高度时溢出（整型数上限）
-            //这时候要缩小section size.
+            //濡傛灉鏉＄洰鏁拌繃澶氾紙姣斿鍑犲崈涓囩骇鍒級锛屼細瀵艰嚧qheaderview鍐呴儴璁＄畻瑙嗗浘楂樺害鏃舵孩鍑猴紙鏁村瀷鏁颁笂闄愶級
+            //杩欐椂鍊欒缂╁皬section size.
             int adjust_sec_size = 42;
             if (num_vert > 10000000) {
                 int maxVSize = 2000000000;

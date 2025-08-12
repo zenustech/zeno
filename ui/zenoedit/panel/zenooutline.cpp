@@ -1,75 +1,60 @@
-#include "zenooutline.h"
+﻿#include "zenooutline.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "viewport/displaywidget.h"
 #include <zenovis/ObjectsManager.h>
+#include <tinygltf/json.hpp>
+#include "viewport/zenovis.h"
+#include "viewport/displaywidget.h"
+#include "viewport/zoptixviewport.h"
+#include "zeno/utils/string.h"
+
+using Json = nlohmann::json;
 
 // 修改构造函数
 OutlineItemModel::OutlineItemModel(QObject *parent)
     : QAbstractItemModel(parent)
     , rootItem(std::make_unique<OutlineItem>())  // 使用make_unique初始化
 {
-    setupModelData();
 }
 
 OutlineItemModel::~OutlineItemModel()
 {
 }
 
+void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name) {
+    auto sub_node = item->addChild(QString::fromStdString(name));
+    for (auto &value: json[name]["children"]) {
+        set_child_node(json, sub_node, std::string(value));
+    }
+};
 // 修改setupModelData
-void OutlineItemModel::setupModelData()
+void OutlineItemModel::setupModelDataFromMessage(Json const& content)
 {
     beginResetModel();
-    
-    rootItem = std::make_unique<OutlineItem>();  // 重置rootItem
-    auto* meshItem = rootItem->addChild("Mesh");
-    auto* matrixItem = rootItem->addChild("Matrixes");
-    auto* sceneDescItem = rootItem->addChild("SceneDescriptor");
-    auto* othersItem = rootItem->addChild("Others");
 
-    if (auto main = zenoApp->getMainWindow()) {
-        for (auto view : main->viewports()) {
-            if (!view->isGLViewport()) {
-                std::vector<std::string> mesh_names;
-                std::vector<std::string> matrix_names;
-                if (auto vis = view->getZenoVis()) {
-                    if (auto sess = vis->getSession()) {
-                        if (auto scene = sess->get_scene()) {
-                            for (auto& [key, obj] : scene->objectsMan->pairsShared()) {
-                                auto &ud = obj->userData();
-                                if (ud.has("ResourceType")) {
-                                    auto object_name = ud.get2<std::string>("ObjectName", key);
-                                    if (ud.get2<std::string>("ResourceType", "none") == "Mesh") {
-                                        mesh_names.emplace_back(object_name);
-                                    } else if (ud.get2<std::string>("ResourceType", "none") == "Matrixes") {
-                                        matrix_names.emplace_back(object_name);
-                                    } else if (ud.get2<std::string>("ResourceType", "none") == "SceneDescriptor") {
-                                        sceneDescItem->addChild(QString::fromStdString(object_name));
-                                    } else {
-                                        othersItem->addChild(QString::fromStdString(object_name));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                std::sort(mesh_names.begin(), mesh_names.end());
-                for (auto &mesh_name: mesh_names) {
-                    meshItem->addChild(QString::fromStdString(mesh_name));
-                }
-                std::sort(matrix_names.begin(), matrix_names.end());
-                for (auto &matrix_name: matrix_names) {
-                    matrixItem->addChild(QString::fromStdString(matrix_name));
-                }
-                rootItem->children[0]->name = QString::fromStdString("Mesh:" + std::to_string(meshItem->children.size()));
-                rootItem->children[1]->name = QString::fromStdString("Matrixes:" + std::to_string(matrixItem->children.size()));
-                rootItem->children[2]->name = QString::fromStdString("SceneDescriptor:" + std::to_string(sceneDescItem->children.size()));
-                rootItem->children[3]->name = QString::fromStdString("Others:" + std::to_string(othersItem->children.size()));
-                break;
-            }
-        }
+    rootItem = std::make_unique<OutlineItem>();  // 重置rootItem
+    auto* staticSceneItem = rootItem->addChild("StaticScene");
+    auto* dynamicSceneItem = rootItem->addChild("DynamicScene");
+
+    if (content.contains("StaticSceneTree")) {
+        std::string root_name = content["StaticSceneTree"]["root_name"];
+        set_child_node(content["StaticSceneTree"]["scene_tree"], staticSceneItem, root_name);
     }
-    
+    if (content.contains("DynamicSceneTree")) {
+        std::string root_name = content["DynamicSceneTree"]["root_name"];
+        set_child_node(content["DynamicSceneTree"]["scene_tree"], dynamicSceneItem, root_name);
+    }
+
+    endResetModel();
+}
+
+void OutlineItemModel::clearModelData()
+{
+    beginResetModel();
+
+    rootItem = std::make_unique<OutlineItem>();
+
     endResetModel();
 }
 
@@ -127,10 +112,65 @@ zenooutline::zenooutline(QWidget *parent)
     : QWidget(parent)
 {
     setupTreeView();
+
+    if (auto main = zenoApp->getMainWindow()) {
+        for (DisplayWidget* view : main->viewports()) {
+            if (auto optxview = view->optixViewport()) {
+                connect(optxview, &ZOptixViewport::sig_viewportSendToOutline, this, [this](QString content) {
+                    Json msg = Json::parse(content.toStdString());
+                    if (this->m_model) {
+                        if (msg["MessageType"] == "SceneTree") {
+                            this->m_model->setupModelDataFromMessage(msg);
+                        }
+                        else if (msg["MessageType"] == "CleanupAssets") {
+                            this->m_model->clearModelData();
+                        }
+                    }
+                });
+            }
+        }
+    }
+    Json msg;
+    msg["MessageType"] = "Init";
+    sendOptixMessage(msg);
 }
 
 zenooutline::~zenooutline()
 {
+}
+
+bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
+    if (auto main = zenoApp->getMainWindow()) {
+        for (DisplayWidget* view : main->viewports()) {
+            if (ZOptixViewport* optxview = view->optixViewport()) {
+            }
+        }
+    }
+    bool changed = false;
+    if (watched == m_treeView) {
+        auto *treeView = qobject_cast<QTreeView *>(watched);
+        if (treeView) {
+            if (event->type() == QEvent::KeyPress) {
+                if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
+                    if (keyEvent->key() == Qt::Key_F) {
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+    if (changed) {
+        if (auto main = zenoApp->getMainWindow()) {
+            for (DisplayWidget* view : main->viewports()) {
+                if (ZOptixViewport* optxview = view->optixViewport()) {
+                }
+            }
+        }
+        return true;
+    }
+    else {
+        return QObject::eventFilter(watched, event);
+    }
 }
 
 void zenooutline::setupTreeView()
@@ -142,13 +182,12 @@ void zenooutline::setupTreeView()
     m_treeView->setHeaderHidden(true);
     m_treeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_treeView->installEventFilter(this);
     
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_treeView);
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
-    
-    m_treeView->expandAll();
 
     connect(m_treeView, &QTreeView::clicked, this, [this](const QModelIndex &index) {
         if (index.isValid() == false) {
@@ -156,21 +195,42 @@ void zenooutline::setupTreeView()
         }
         QVariant data = m_model->data(index, Qt::DisplayRole);
         auto object_name = data.toString().toStdString();
-        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-        mainWin->onPrimitiveSelected({object_name});
-    });
 
+        std::vector<std::string> link;
+        link.push_back(object_name);
+
+        QModelIndex parentIndex = index.parent();
+        while (parentIndex.isValid()) {
+            QVariant parentData = m_model->data(parentIndex, Qt::DisplayRole);
+            auto parent_name = parentData.toString().toStdString();
+            link.push_back(parent_name);
+            parentIndex = parentIndex.parent();
+        }
+        if (link.size() >= 2) {
+            std::reverse(link.begin(), link.end());
+            if (link[0] == "StaticScene" || link[0] == "DynamicScene") {
+                Json msg;
+                msg["MessageType"] = "Select";
+                msg["Content"] = link;
+
+                sendOptixMessage(msg);
+            }
+        }
+
+        if (ZenoMainWindow* mainWin = zenoApp->getMainWindow()) {
+            mainWin->onPrimitiveSelected({object_name});
+        }
+    });
+}
+
+void zenooutline::sendOptixMessage(Json &msg) {
     if (auto main = zenoApp->getMainWindow()) {
-        for (auto view : main->viewports()) {
-            if (!view->isGLViewport()) {
-                if (auto vis = view->getZenoVis()) {
-                    connect(vis, &Zenovis::objectsUpdated, this, [=](int frame) {
-                        m_model->setupModelData();
-                        m_treeView->expandAll();
-                    });
-                    break;
-                }
+        for (DisplayWidget* view : main->viewports()) {
+            if (ZOptixViewport* optxview = view->optixViewport()) {
+                QString msg_str = QString::fromStdString(msg.dump());
+                emit optxview->sig_sendOptixMessage(msg_str);
             }
         }
     }
+
 }

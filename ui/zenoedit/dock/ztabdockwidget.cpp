@@ -1,4 +1,4 @@
-#include "ztabdockwidget.h"
+﻿#include "ztabdockwidget.h"
 #include <zenoui/comctrl/zdocktabwidget.h>
 #include "zenoapplication.h"
 #include "../panel/zenodatapanel.h"
@@ -6,6 +6,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zenooutline.h"
+#include "../panel/ZenoSceneTreeModify.h"
 #include "../panel/zlogpanel.h"
 #include "../panel/zenocommandparamspanel.h"
 #include "../panel/zenoopenpathpanel.h"
@@ -238,6 +239,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             return new zenooutline;
         }
+        case PANEL_XFORM:
+        {
+            return new ZenoSceneTreeModify;
+        }
     }
     return nullptr;
 }
@@ -296,6 +301,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Outline") || title == "Outline") {
         type = PANEL_OUTLINE;
+    }
+    else if (title == tr("Xform") || title == "Xform") {
+		type = PANEL_XFORM;
     }
     return type;
 }
@@ -549,7 +557,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path"), tr("Outline")};
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path"), tr("Outline"), tr("Xform") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -578,7 +586,8 @@ void ZTabDockWidget::onAddTabClicked()
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
                 case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
                 case 9: m_debugPanel = PANEL_OPEN_PATH; break;
-                case 10: m_debugPanel = PANEL_OUTLINE; break;
+				case 10: m_debugPanel = PANEL_OUTLINE; break;
+				case 11: m_debugPanel = PANEL_XFORM; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

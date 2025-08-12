@@ -7,6 +7,8 @@
 #include <string>
 #include <memory>
 #include <map>
+#include "tinygltf/json.hpp"
+using Json = nlohmann::json;
 
 namespace zenovis {
 
@@ -23,8 +25,12 @@ struct RenderEngine {
     virtual void cleanupWhenExit() = 0;
 
     virtual ~RenderEngine() = default;
-    virtual std::optional<glm::vec3> getClickedPos(int x, int y) { return {}; }
-    virtual std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(int x, int y) { return {}; }
+    virtual std::optional<glm::vec3> getClickedPos(float x, float y) { return {}; }
+    virtual std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(float x, float y) { return {}; }
+    virtual void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {};
+    virtual void outlineInit(Json const &msg) {};
+
+    std::function<void(std::string)> fun = [](std::string){};
 };
 
 class RenderManager {

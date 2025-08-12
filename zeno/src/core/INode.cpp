@@ -1,9 +1,10 @@
-#include <zeno/core/INode.h>
+﻿#include <zeno/core/INode.h>
 #include <zeno/core/Graph.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -114,7 +115,6 @@ ZENO_API void zeno::INode::writeTmpCaches()
 }
 
 ZENO_API void INode::preApply() {
-#if 0
     auto& dc = graph->getDirtyChecker();
     if (!dc.amIDirty(myname) && bTmpCache)
     {
@@ -132,7 +132,7 @@ ZENO_API void INode::preApply() {
             zeno::log_info("remove cache file: {}", path.string());
         }
     }
-#endif
+
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -143,10 +143,10 @@ ZENO_API void INode::preApply() {
         Timer _(myname);
 #endif
         apply();
-#if 0
+
         if (bTmpCache)
             writeTmpCaches();
-#endif
+
         std::function<bool(std::shared_ptr<IObject>)> hasStampUd = [&hasStampUd](std::shared_ptr<IObject> obj) -> bool {
             if (auto l = std::dynamic_pointer_cast<ListObject>(obj)) {
                 for (auto i : l->arr)
@@ -158,8 +158,24 @@ ZENO_API void INode::preApply() {
             }
             return false;
         };
+		std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+			if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+				for (auto o : lst->arr)
+					setruntype(o, type);
+			}
+			else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+				for (auto [_, o] : dict->lut) {
+					setruntype(o, type);
+				}
+			}
+			if (obj) {
+				obj->userData().set2("objRunType", type);
+			}
+		};
         for (auto& [k, obj] : outputs) {
-            obj->userData().set2("objRunType", objRunType);
+            if (!obj->userData().has("objRunType") || obj->userData().get2<std::string>("objRunType").empty()) {
+                setruntype(obj, objRunType);
+            }
             if (!zeno::getSession().userData().has("graphHasStampNode")) {
                 if (hasStampUd(obj)) {
                     zeno::getSession().userData().set2("graphHasStampNode", true);

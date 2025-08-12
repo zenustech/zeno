@@ -405,10 +405,11 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if (prd->test_distance) {
-    
         if(mats.opacity>0.99f) { // it's actually transparency not opacity
+            prd->origin = prd->origin + float3(attrs.pOffset);
             prd->_tmin_ = optixGetRayTmax();
         } else if(rnd(prd->seed)<mats.opacity) {
+            prd->origin = prd->origin + float3(attrs.pOffset);
             prd->_tmin_ = optixGetRayTmax();
         }
         return;
@@ -495,6 +496,8 @@ extern "C" __global__ void __closesthit__radiance()
 
     if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
     {
+        //prd->ray_orig = ray_orig + float3(attrs.pOffset);
+        prd->origin = prd->origin + float3(attrs.pOffset);
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
           //vec3 sigma_t, ss_alpha;
@@ -583,7 +586,7 @@ extern "C" __global__ void __closesthit__radiance()
             isSS = false;
             isDiff = false;
             prd->samplePdf = fPdf;
-            reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+            reflectance = fPdf>0?(reflectance/fPdf):vec3(0.0f);
             prd->done = fPdf>0?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
@@ -595,7 +598,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
         
     prd->samplePdf = fPdf;
-    reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+    reflectance = fPdf>0?(reflectance/fPdf):vec3(0.0f);
     prd->done = fPdf>0?prd->done:true;
     prd->isSS = isSS;
     pdf = 1.0;
@@ -666,10 +669,10 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->pushMat(extinction);
                         prd->isSS = false;
                         prd->scatterDistance = mats.scatterDistance;
-                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->offset2, prd->scatterDistance) : 1e16f;
                     } else {
 
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         //here is the place caused inf ray:fixed
                         auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
                         //what should be the right value???
@@ -716,7 +719,7 @@ extern "C" __global__ void __closesthit__radiance()
                 else //next ray in 3s object
                 {
                     prd->isSS = true;
-                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
             }
         }else{
@@ -732,10 +735,10 @@ extern "C" __global__ void __closesthit__radiance()
                     else if (ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->offset2, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->isSS = true;
                     }
                     prd->attenuation *= trans;
@@ -759,8 +762,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->depth++;
 
-    if(prd->depth>=3)
-        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
+//    if(prd->depth_diff>=3)
+//        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
 
@@ -806,7 +809,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->radiance = {};
     prd->direction = normalize(wi);
-    prd->origin = dot(prd->direction, wldNorm) > 0 ? frontPos : backPos;
+    prd->origin = dot(prd->direction, prd->geometryNormal) > 0 ? frontPos : backPos;
 
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;

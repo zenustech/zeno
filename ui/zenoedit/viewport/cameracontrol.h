@@ -18,6 +18,8 @@ public:
                   std::shared_ptr<zeno::Picker> picker,
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
+    void setScale(int scale);
+    int scale() const {return m_scale; }
     QVector2D res() const { return m_res; }
 
     glm::vec3 getPos() const;
@@ -72,6 +74,7 @@ private:
     QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
     QVector2D m_res;
+    int m_scale = 1;
     QSet<int> m_pressedKeys;
     std::optional<glm::vec3> m_hit_posWS;
 

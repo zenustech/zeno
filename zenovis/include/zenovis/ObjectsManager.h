@@ -15,6 +15,7 @@ struct ObjectsManager : zeno::disable_copy {
     zeno::MapStablizer<zeno::PolymorphicMap<std::map<
         std::string, std::shared_ptr<zeno::IObject>>>> objects;
 
+    std::unordered_map<std::string, std::shared_ptr<zeno::IObject>> cached_mesh;
     std::map<std::string, std::shared_ptr<zeno::IObject>> lightObjects;
     bool needUpdateLight = true;
 

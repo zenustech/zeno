@@ -1,4 +1,4 @@
-#ifndef __ZTAB_DOCKWIDGET_H__
+﻿#ifndef __ZTAB_DOCKWIDGET_H__
 #define __ZTAB_DOCKWIDGET_H__
 
 #include <unordered_set>
@@ -25,7 +25,8 @@ enum PANEL_TYPE
     PANEL_OPTIX_VIEW,
     PANEL_COMMAND_PARAMS,
     PANEL_OPEN_PATH,
-    PANEL_OUTLINE
+    PANEL_OUTLINE,
+    PANEL_XFORM
 };
 
 class ZTabDockWidget : public QDockWidget

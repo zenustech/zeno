@@ -38,6 +38,7 @@
 #include "optixSphere.h"
 #include "optix_types.h"
 #include "zeno/utils/vec.h"
+#include "zeno/extra/SceneAssembler.h"
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
@@ -55,8 +56,9 @@ const m3r4c IdentityMatrix = {
     0,0,1,0 };
 
 const std::string brikey = "BasicRenderInstances";
+using Json = nlohmann::json;
 
-class Scene {
+class OptixScene {
 
 private:
     phmap::parallel_flat_hash_map_m<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
@@ -92,7 +94,7 @@ private:
 
     uint16_t mesh_sbt_max = 0;
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
-
+    
 public:
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
@@ -110,6 +112,12 @@ public:
     }    
 
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
+
+    Json static_scene_tree;
+    Json dynamic_scene_tree;
+    std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
+    std::unordered_map<std::string, glm::mat4> modified_xfroms;
+    std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
 
     inline void preload_scene(const std::string& jsonString) {
         try {
@@ -668,4 +676,4 @@ public:
 };
 
 
-inline Scene defaultScene;
+inline OptixScene defaultScene;

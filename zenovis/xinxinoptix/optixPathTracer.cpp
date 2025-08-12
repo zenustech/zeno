@@ -1568,7 +1568,7 @@ void set_window_size(int nx, int ny) {
     resize_dirty = true;
 }
 
-void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
     state.params.physical_camera_aperture = aperture;
     state.params.physical_camera_shutter_speed = shutter_speed;
     state.params.physical_camera_iso = iso;
@@ -1737,9 +1737,11 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
 std::mutex click_mutex;
 std::condition_variable click_cv;
 
-glm::vec3 get_click_pos(int x, int y) {
+glm::vec3 get_click_pos(float xf, float yf) {
     int w = state.params.width;
     int h = state.params.height;
+    int x = xf * w;
+    int y = yf * h;
 
     std::unique_lock<std::mutex> lock(click_mutex);
     state.params.click_dirty = true;
@@ -1755,9 +1757,11 @@ glm::vec3 get_click_pos(int x, int y) {
     return glm::vec3(click_result.x, click_result.y, click_result.z);
 }
 
-glm::uvec4 get_click_id(int x, int y) {
+glm::uvec4 get_click_id(float xf, float yf) {
     int w = state.params.width;
     int h = state.params.height;
+    int x = xf * w;
+    int y = yf * h;
     
     std::unique_lock<std::mutex> lock(click_mutex);
     state.params.click_dirty = true;

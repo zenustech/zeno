@@ -324,7 +324,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun = new ZToolMenuButton(this);
     m_btnRun->addAction(tr("LoadAsset"), ":/icons/run_all.svg");
     m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
-    m_btnRun->addAction(tr("RunMatrix"), ":/icons/run_all.svg");
+    m_btnRun->addAction(tr("RunMatrix"), ":/icons/run_matrix.svg");
     m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
     m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
     m_btnKill = new ZTextIconButton(tr("Running..."), this);
@@ -611,10 +611,17 @@ void DockContent_Editor::initConnections()
         QString text = m_btnRun->text();
         QColor clr;
         QColor hoverClr;
-        if (text == tr("Run") || text == tr("LoadAsset") || text == tr("RunMatrix"))
+        if (text == tr("Run") || text == tr("LoadAsset"))
         {
             clr = QColor("#1978E6");
             hoverClr = QColor("#599EED");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
+                ":/icons/run_all_btn.svg", "", "");
+        }
+        else if (text == tr("RunMatrix"))
+        {
+            clr = QColor("#668438");
+            hoverClr = QColor("#8CAA64");
             m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all_btn.svg",
                 ":/icons/run_all_btn.svg", "", "");
         }

@@ -47,7 +47,14 @@ struct ToView : zeno::INode {
             if (!p) {
                 log_error("ToView: given object is nullptr");
             } else {
-                auto pp = isStatic && hasViewed ? std::make_shared<DummyObject>() : previewclone(p);
+                const auto& copyuserdata = [](std::shared_ptr<IObject> p)->std::shared_ptr<IObject> {
+                    auto dummy = std::make_shared<DummyObject>();
+                    dummy->userData().set2("stamp-change", p->userData().get2<std::string>("stamp-change", "TotalChange"));
+                    dummy->userData().set2("objRunType", p->userData().get2<std::string>("objRunType", "normal"));
+                    return dummy;
+                };
+
+                auto pp = isStatic && hasViewed ? copyuserdata(p) : previewclone(p);
                 if (!pp) {
                     log_error("ToView: given object doesn't support clone, giving up");
                 } else {

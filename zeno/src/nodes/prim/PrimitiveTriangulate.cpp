@@ -206,6 +206,16 @@ ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim) {
         primPolygonate(prim, true);
     }
     else if (prim->polys.size()) {
+        bool all_is_tri = true;
+        for (auto const &[_start, len]: prim->polys) {
+            if (len != 3) {
+                all_is_tri = false;
+                break;
+            }
+        }
+        if (all_is_tri) {
+            return;
+        }
         int new_poly_count = 0;
         int new_loops_count = 0;
         for (auto [_s, c] : prim->polys) {

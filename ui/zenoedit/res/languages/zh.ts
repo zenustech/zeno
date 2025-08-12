@@ -2559,6 +2559,14 @@
         <source>Open Path</source>
         <translation type="unfinished"></translation>
     </message>
+	<message>
+        <source>Outline</source>
+        <translation type="unfinished">场景大纲</translation>
+    </message>
+	<message>
+        <source>Xform</source>
+        <translation type="unfinished">变换</translation>
+    </message>
 </context>
 <context>
     <name>ZTcpServer</name>

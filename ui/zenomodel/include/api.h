@@ -1,6 +1,7 @@
 #ifndef __ZENO_MODEL_API_H__
 #define __ZENO_MODEL_API_H__
 
+#include <optional>
 #include "enum.h"
 
 //io
@@ -24,11 +25,14 @@ ZENO_ERROR  Zeno_ForkGraph(
 int         Zeno_GetCount();
 ZENO_HANDLE Zeno_GetItem(int idx);
 
+std::optional<ZENO_HANDLE> Zeno_GetNode(ZENO_HANDLE hGraph, const std::string& nodeuuid);
+
 ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string &nodeCls);
 
 ZENO_ERROR Zeno_DeleteNode(ZENO_HANDLE hSubg, ZENO_HANDLE hNode);
 
 ZENO_ERROR Zeno_GetName(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, /*out*/ std::string &ret);
+ZENO_ERROR Zeno_GetNodeUuid(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, /*out*/ std::string &ret);
 
 ZENO_ERROR  Zeno_AddLink(
         ZENO_HANDLE hSubg,
@@ -103,5 +107,20 @@ ZENO_ERROR Zeno_IsOnce(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool& ret);
 ZENO_ERROR Zeno_SetOnce(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn);
 ZENO_ERROR Zeno_GetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, std::pair<float, float>& pt);
 ZENO_ERROR Zeno_SetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, const std::pair<float, float>& pt);
+std::optional<zeno::vec2f> Zeno_GetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode);
+
+std::optional<std::string> Zeno_EmitNode(
+    ZENO_HANDLE hSubg
+    , const std::string &nodeCls
+    , std::vector<std::pair<std::string, ZVARIANT>> inputs
+    , std::vector<std::pair<std::string, ZVARIANT>> params
+);
+ZENO_ERROR Zeno_ConnectNode(
+    ZENO_HANDLE hSubg
+    , std::string const &out_uuid
+    , std::string const &out_socket
+    , std::string const &in_uuid
+    , std::string const &in_socket
+);
 
 #endif
