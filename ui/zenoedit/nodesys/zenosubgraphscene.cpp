@@ -241,6 +241,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new CameraNode(params, 1);
     }
+    else if (descName == "TargetCamera")
+    {
+        return new TargetCameraNode(params);
+    }
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);

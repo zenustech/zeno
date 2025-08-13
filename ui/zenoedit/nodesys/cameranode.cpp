@@ -129,13 +129,20 @@ void CameraNode::onEditClicked()
         // Is CameraNode
         if(CameraPattern == 0) {
             INPUT_SOCKET frame = inputs["frame"];
-            // FIXME Not work
             int frameId = sess->get_curr_frameid();
-            frameId = zeno::getSession().globalState->frameid;
+//            frameId = zeno::getSession().globalState->frameid;
+            {
+                if (ZenoMainWindow* pMainWin = zenoApp->getMainWindow()) {
+                    if (ZTimeline* timeline = pMainWin->timeline()) {
+                        frameId = timeline->value();
+                    }
+                }
+            }
 
             info.name = "frame";
             info.oldValue = frame.info.defaultValue;
-            frame.info.defaultValue = QVariant::fromValue(frameId);
+            info.newValue = QVariant::fromValue(frameId);
+            pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
             INPUT_SOCKET other = inputs["other"];
             std::string other_prop;
@@ -246,3 +253,197 @@ ZGraphicsLayout* LightNode::initCustomParamWidgets()
 
     return pHLayout;
 }
+
+TargetCameraNode::TargetCameraNode(const NodeUtilParam& params, QGraphicsItem* parent)
+    : ZenoNode(params, parent)
+{
+}
+
+TargetCameraNode::~TargetCameraNode()
+{
+
+}
+
+ZGraphicsLayout* TargetCameraNode::initCustomParamWidgets()
+{
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
+    {
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("sync");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
+        pHLayout->addItem(pNameItem);
+
+        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+        pHLayout->addItem(pEditBtn);
+        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+        _param_ctrl param;
+        param.param_name = pNameItem;
+        param.param_control = pEditBtn;
+        param.ctrl_layout = pHLayout;
+        addParam(param);
+    }
+    {
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("TargetPos");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
+        pHLayout->addItem(pNameItem);
+
+        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Get", -1, QSizePolicy::Expanding);
+        pHLayout->addItem(pEditBtn);
+        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onGetClicked()));
+
+        _param_ctrl param;
+        param.param_name = pNameItem;
+        param.param_control = pEditBtn;
+        param.ctrl_layout = pHLayout;
+        addParam(param);
+    }
+
+
+    return pHLayout;
+}
+
+void TargetCameraNode::onEditClicked()
+{
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    ZASSERT_EXIT(
+        inputs.contains("pos")
+        && inputs.contains("refUp")
+        && inputs.contains("target")
+    );
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay)
+    {
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
+        ZASSERT_EXIT(sess);
+
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+
+        UI_VECTYPE vec({ 0., 0., 0. });
+
+        PARAM_UPDATE_INFO info;
+
+        pModel->beginTransaction("update camera info");
+        zeno::scope_exit scope([=]() { pModel->endTransaction(); });
+
+        auto camera = *(scene->camera.get());
+
+        INPUT_SOCKET pos = inputs["pos"];
+        vec = {camera.m_pos[0], camera.m_pos[1], camera.m_pos[2]};
+        info.name = "pos";
+        info.oldValue = pos.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        auto m_lodup = camera.get_lodup();
+        auto m_lodfront = camera.get_lodfront();
+        INPUT_SOCKET up = inputs["refUp"];
+        vec = {m_lodup[0], m_lodup[1], m_lodup[2]};
+        info.name = "refUp";
+        info.oldValue = up.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET view = inputs["view"];
+        vec = {m_lodfront[0], m_lodfront[1], m_lodfront[2]};
+        info.name = "view";
+        info.oldValue = view.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET fov = inputs["fov"];
+        info.name = "fov";
+        info.oldValue = fov.info.defaultValue;
+        info.newValue = QVariant::fromValue(camera.m_fov);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET aperture = inputs["aperture"];
+        info.name = "aperture";
+        info.oldValue = aperture.info.defaultValue;
+        info.newValue = QVariant::fromValue(camera.m_aperture);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET focalPlaneDistance = inputs["focalPlaneDistance"];
+        info.name = "focalPlaneDistance";
+        info.oldValue = focalPlaneDistance.info.defaultValue;
+        info.newValue = QVariant::fromValue(camera.focalPlaneDistance);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+        INPUT_SOCKET frame = inputs["frame"];
+        int frameId = sess->get_curr_frameid();
+        {
+            if (ZenoMainWindow* pMainWin = zenoApp->getMainWindow()) {
+                if (ZTimeline* timeline = pMainWin->timeline()) {
+                    frameId = timeline->value();
+                }
+            }
+        }
+
+        info.name = "frame";
+        info.oldValue = frame.info.defaultValue;
+        info.newValue = QVariant::fromValue(frameId);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+	}
+}
+
+void TargetCameraNode::onGetClicked()
+{
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    ZASSERT_EXIT(
+        inputs.contains("target")
+    );
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay) {
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
+        ZASSERT_EXIT(sess);
+
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+        const auto& cam = scene->camera;
+        auto pivot = cam->getPivot();
+        UI_VECTYPE vec({ pivot[0], pivot[1], pivot[2]});
+
+        PARAM_UPDATE_INFO info;
+
+        pModel->beginTransaction("update camera info");
+        zeno::scope_exit scope([=]() { pModel->endTransaction(); });
+
+        auto camera = *(scene->camera.get());
+
+        INPUT_SOCKET pos = inputs["target"];
+        info.name = "target";
+        info.oldValue = pos.info.defaultValue;
+        info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+    }
+}
+

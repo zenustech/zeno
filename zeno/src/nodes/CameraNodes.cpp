@@ -161,6 +161,11 @@ struct TargetCamera : INode {
         }else{
             camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
         }
+        camera->userData().set2("frame", get_input2<float>("frame"));
+        camera->userData().set2("is_target", int(1));
+        camera->userData().set2("refUp", refUp);
+        camera->userData().set2("target", target);
+        camera->userData().set2("AutoFocus", int(AF));
 
         set_output("camera", std::move(camera));
     }
@@ -177,6 +182,7 @@ ZENO_DEFNODE(TargetCamera)({
         {"float", "aperture", "11"},
         {"bool","AutoFocus","false"},
         {"float", "focalPlaneDistance", "2.0"},
+        {"float", "frame", "0"},
     },
     {
         {"CameraObject", "camera"},
