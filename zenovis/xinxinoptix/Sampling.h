@@ -259,7 +259,7 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
 template<typename T>
 static __host__ __device__ __inline__ T interp(float2 barys, T a, T b, T c)
 {
-    float w0 = 1 - barys.x - barys.y;
+    float w0 = 1.0f - barys.x - barys.y;
     float w1 = barys.x;
     float w2 = barys.y;
     return w0*a + w1*b + w2*c;

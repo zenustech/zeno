@@ -141,8 +141,7 @@ __device__ __inline__ auto EvalVolume(uint32_t& seed, float* m16, float sigma_t,
     
     vin.world2object = m16;
 
-    auto buffers = (void**)params.global_buffers;
-    optixDirectCall<void, const float4*, void**, void*, VolumeOut&>( sbt_data->dc_index, sbt_data->uniforms, buffers, (void*)&vin, out);
+    optixDirectCall<void, void*, VolumeOut&>( sbt_data->dc_index, (void*)&vin, out);
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
@@ -344,10 +343,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
         new_dir = normalize(new_dir);
         scattering = vol_out.albedo;
 
-        if (prd->trace_denoise_normal) {
+        if (prd->denoise) {
             prd->tmp_normal = normalize(-ray_dir + new_dir);
-        }
-        if(prd->trace_denoise_albedo) {
             prd->tmp_albedo = vol_out.albedo;
         }
         break;

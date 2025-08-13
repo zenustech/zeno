@@ -618,7 +618,7 @@ namespace DisneyBSDF{
     bool SampleDisney2(
         unsigned int& seed,
         unsigned int& eventseed,
-        struct MatOutput mat,
+        const MatOutput& mat,
         vec3 T,
         vec3 B,
         vec3 N,
@@ -631,7 +631,7 @@ namespace DisneyBSDF{
         float& rPdf,
         float& fPdf,
         SurfaceEventFlags& flag,
-        int& medium,
+        uint8_t& medium,
         vec3& extinction,
         bool& isDiff,
         bool& isSS,

@@ -12,7 +12,7 @@
 struct CurveGroupAux
 {
     BufferView<float2> strand_u;     // strand_u at segment start per segment
-    GenericBufferView  strand_i;     // strand index per segment
+    BufferView<uint1>  strand_i;     // strand index per segment
     BufferView<uint2>  strand_info;  // info.x = segment base
                                      // info.y = strand length (segments)
 };

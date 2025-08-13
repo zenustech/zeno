@@ -11,7 +11,7 @@ void buildUnitSphereGAS(const OptixDeviceContext& context,  OptixTraversableHand
     float4 sphereVertex = make_float4(0, 0, 0, 1);
 
     xinxinoptix::raii<CUdeviceptr> d_vertex_buffer {};
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.handle ), sizeof( float4) ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_vertex_buffer.handle ), sizeof( float4), 0 ) );
     CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( d_vertex_buffer.handle ), &sphereVertex,
                             sizeof( float4 ), cudaMemcpyHostToDevice ) );
 
@@ -52,7 +52,7 @@ void buildSphereGroupGAS(const OptixDeviceContext &context, SphereGroup& group) 
     {
         auto data_length = sizeof( zeno::vec3f ) * sphere_count;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_vertex_buffer ), data_length) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_vertex_buffer ), data_length, 0 ) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)_vertex_buffer ), group.centerV.data(),
                                 data_length, cudaMemcpyHostToDevice ) );
     }
@@ -60,7 +60,7 @@ void buildSphereGroupGAS(const OptixDeviceContext &context, SphereGroup& group) 
     {
         auto data_length = sizeof( float ) * sphere_count;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_radius_buffer ), data_length) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_radius_buffer ), data_length, 0 ) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)_radius_buffer ), group.radiusV.data(), 
                                 data_length, cudaMemcpyHostToDevice ) );
     }
@@ -93,7 +93,7 @@ void buildSphereGroupGAS(const OptixDeviceContext &context, SphereGroup& group) 
     {
         auto data_length = sizeof( zeno::vec3f ) * sphere_count;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_color_buffer ), data_length) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_color_buffer ), data_length, 0 ) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)_color_buffer ), group.colorV.data(), 
                                 data_length, cudaMemcpyHostToDevice ) );
     }

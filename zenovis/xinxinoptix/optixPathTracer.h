@@ -150,6 +150,11 @@ struct CameraInfo
     float height;   //sensor physical height
 };
 
+struct PickInfo {
+    float3 pos;
+    uint4 meta;
+};
+
 struct Params
 {
     unsigned int subframe_index;
@@ -160,15 +165,19 @@ struct Params
     ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
     ushort3*     frame_buffer_M;
-    float3*      frame_buffer_P;
-    uint4*       frame_buffer_Pick;
+    
+    PickInfo*    pick_buffer;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
     float3*      normal_buffer;
-
-    void* global_buffers;
     
+    float4* d_uniforms;
+    void** global_buffers;
+
+    uint2 click_coord;
+    bool click_dirty;
+
     unsigned int width;
     unsigned int height;
     unsigned int samples_per_launch;
@@ -186,15 +195,6 @@ struct Params
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
-
-    uint32_t firstVolumeOffset;
-    void* volumeBounds;
-
-    uint32_t firstSoloSphereOffset;
-    void* sphereInstAuxLutBuffer;
-
-    uint32_t hairInstOffset;
-    void* hairAux;
 
     void*    dlights_ptr;
     void*    plights_ptr;
@@ -223,11 +223,9 @@ struct Params
     uint32_t skyny;
     float envavg;
 
-    float sky_rot;
-    float sky_rot_x;
-    float sky_rot_y;
-    float sky_rot_z;
     float sky_strength;
+    float4 sky_rotation[3];
+    float4 sky_onitator[3];
 
     float sunLightDirX;
     float sunLightDirY;
@@ -244,10 +242,10 @@ struct Params
     float elapsedTime;
 
     int32_t outside_random_number;
-    bool simpleRender     :1;
     bool show_background  :1;
 
     bool denoise : 1;
+    bool needAOV : 1;
 
     float physical_camera_aperture;
     float physical_camera_shutter_speed;
@@ -273,28 +271,17 @@ struct MissData
 struct HitGroupData
 {
     uint16_t dc_index;
+    float opacity = FLT_MAX;
     uint16_t vol_depth=999;
     float vol_extinction=1.0f;
+
+    bool binaryShadowTestDirectRay;
+    bool binaryShadowTestIndirectRay;
     
     bool equiangular  = false;
     bool multiscatter = false;
 
-#ifdef USE_SHORT
-    ushort3* instPos;
-    ushort3* instNrm;
-    ushort3* instUv;
-    ushort3* instClr;
-    ushort3* instTang;
-#else
-    float3* instPos;
-    float3* instNrm;
-    float3* instUv;
-    float3* instClr;
-    float3* instTang;
-#endif
-    float4* uniforms;
     cudaTextureObject_t textures[32];
-
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];
 };

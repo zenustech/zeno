@@ -19,7 +19,6 @@
 
 #include <vector_types.h>
 #include <zeno/types/NumericObject.h>
-#include <tbb/parallel_for.h>
 
 #include <xinxinoptixapi.h>
 
@@ -37,29 +36,81 @@
 #include "glm/fwd.hpp"
 #include "optixPathTracer.h"
 #include "optixSphere.h"
-#include "TypeCaster.h"
 #include "optix_types.h"
 #include "zeno/utils/vec.h"
 #include "zeno/extra/SceneAssembler.h"
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
+#include "curve/optixCurve.h"
+
+#include "LightsWrapper.h"
+
+#include <parallel_hashmap/phmap.h>
 
 using m3r4c = std::array<float, 12>;
+
+const m3r4c IdentityMatrix = { 
+    1,0,0,0, 
+    0,1,0,0, 
+    0,0,1,0 };
+
 const std::string brikey = "BasicRenderInstances";
 using Json = nlohmann::json;
 
 class OptixScene {
-public:
-    bool camera_changed;
 
-    std::unordered_map<std::string, std::vector<m3r4c>> matrix_map{}; 
+private:
+    phmap::parallel_flat_hash_map_m<std::string, std::function<uint64_t(OptixDeviceContext&)>> dirtyTasks;
+    phmap::parallel_flat_hash_map_m<std::string, std::function<void(const std::string&)>>      cleanTasks;
+    std::set<OptixUtil::TexKey> dirtyTextures;
 
-    inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
-        matrix_map[key] = matrix_list;
-    }
+    phmap::parallel_flat_hash_map_m<std::string, ShaderMark>  geoTypeMap;
+    phmap::parallel_flat_hash_map_m<std::string, glm::mat4> geoMatrixMap;
+    phmap::parallel_flat_hash_map_m<std::string, glm::mat4> renderObjectMatrixMap;
 
     nlohmann::json sceneJson;
+    phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<Hair>> hairCache;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroupWrapper>> hairStateCache;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroup>> curveGroupCache;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroupWrapper>> curveGroupStateCache;
+
+    std::shared_ptr<SceneNode> uniform_sphere_gas;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vboxs_;
+
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<MeshObject>> _meshes_;
+
+    phmap::parallel_node_hash_set_m<std::string> meshesDirty;
+    phmap::parallel_node_hash_map_m<std::string, MeshDat> meshdats;
+    phmap::parallel_flat_hash_set_m<std::string> uniqueMatsForMesh;
+
+    std::unordered_map<std::string, uint64_t> gas_handles;
+
+    uint16_t mesh_sbt_max = 0;
+    std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
+    
+public:
+    phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
+
+    inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
+        shader_indice_table = table;
+
+        for (const auto& [k, v] : shader_indice_table) {
+            const auto& [_, mark] = k;
+            if (mark == ShaderMark::Mesh) mesh_sbt_max = max(mesh_sbt_max, v);
+        }
+    }
+
+    inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
+        matrix_map[key] = std::move(matrix_list);
+    }    
+
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
 
     Json static_scene_tree;
@@ -69,15 +120,16 @@ public:
     std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
 
     inline void preload_scene(const std::string& jsonString) {
-//        bool accept = nlohmann::json::accept(jsonString);
-//        if (!accept) return;
-        
         try {
             sceneJson = nlohmann::json::parse(jsonString);
         }
         catch (...) {
             zeno::log_error("Can not parse json in preload_scene");
         }
+    }
+
+    inline void updateGeoType(const std::string& key, ShaderMark mark) {
+        geoTypeMap.insert( {key, mark} );
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
@@ -92,7 +144,7 @@ public:
             const auto geo_type = checkGeoType(geo_name);
             if (geo_type != ShaderMark::Volume) continue;
 
-            const auto material_str = it.value().value("Material", "Default");
+            const auto material_str = it.value().value("Material", "");
             const auto material_key = std::make_tuple(material_str, geo_type);
 
             auto shader_index = shader_indice_table[material_key];
@@ -138,28 +190,79 @@ public:
         return ShaderMark::Mesh;
     }
 
-    void prepare_mesh_gas(OptixDeviceContext& context) {
+    LightsWrapper lightsWrapper;
 
-        for (auto& [key, mesh] : _meshes_) {
-            if (nullptr == mesh || mesh->vertices.empty()) { continue; }
-            if (!mesh->dirty) { continue; }            
-            
-            mesh->dirty = false;
-            mesh->buildGas(context, _mesh_materials);
+    void prepare_light_ias(OptixDeviceContext& context) {
+
+        std::vector<OptixInstance> optix_instances;
+
+        if (lightsWrapper.lightTrianglesGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 0;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
         }
+
+        if (lightsWrapper.lightPlanesGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 1;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
+        if (lightsWrapper.lightSpheresGas != 0)
+        {
+            OptixInstance opinstance {};
+
+            auto combinedID = std::tuple(std::string("Light"), ShaderMark::Sphere);
+            auto shader_index = shader_indice_table[combinedID];
+
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = 2;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
+            memcpy(opinstance.transform, IdentityMatrix.data(), sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+
+        xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle);
     }
+
+    struct Candidate {
+        uint64_t handle;
+        uint32_t sbt;
+        glm::mat4* matrix{};
+        VisibilityMask vmask;
+    };
 
     inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
         float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
 
-        m3r4c IdentityMatrix = { 
-            1,0,0,0, 
-            0,1,0,0, 
-            0,0,1,0 };
-
         auto gather = [&]() {
 
-            if (std::isinf(cam.x)) return;
+            if (std::isinf(cam.x)) { cam = {}; }
             
             auto CameraSapceMatrix = IdentityMatrix;
             CameraSapceMatrix[3] -= cam.x;
@@ -185,12 +288,23 @@ public:
                 instanced.push_back(opi);
             }
 
+            if (lightsWrapper.lightIasHandle != 0u) {
+                OptixInstance opi {};
+                opi.instanceId = instanced.size();
+                opi.visibilityMask = LightMatMask;
+                opi.traversableHandle = lightsWrapper.lightIasHandle;
+                memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
+                instanced.push_back(opi);
+
+                maxNodeDepth = max(maxNodeDepth, 3u);
+            }
+
             xinxinoptix::buildIAS(context, instanced, bufferRoot, handleRoot);
         };
 
-        if (cam.x != std::numeric_limits<float>::infinity()) { 
+        if (cam.x != std::numeric_limits<float>::infinity() || !sceneJson.contains(brikey) ) { 
             gather();
-            return; 
+            return;
         }
 
         dynamicRenderGroup = 0;
@@ -201,33 +315,46 @@ public:
         //nodeCacheStatic = {};
         //nodeDepthCacheStatic = {};
 
-        prepare_mesh_gas(context);
-        prepare_sphere_gas(context);
-        if (!sceneJson.contains(brikey)) return;
+        if (!dirtyTasks.empty()) {
+            
+            for(auto& [key, task] : dirtyTasks) {
+                auto handle = task(context);
+                gas_handles[key] = handle;
+                gas_to_obj_id[handle] = key;
+            }
+            dirtyTasks.clear();
+        }
+        if (!dirtyTextures.empty()) {
+            for (auto& key : dirtyTextures) {
+                auto& ref = OptixUtil::tex_lut.at(key);
+                if (ref.use_count()==1) {
+                    OptixUtil::removeTexture(key);
+                }
+            }
+            dirtyTextures.clear();
+        }
 
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
+        static const std::vector fallback_keys { "" };
 
-        std::unordered_map<std::string, uint64_t> candidates{};
-        std::unordered_map<std::string, uint32_t> candidates_sbt{};
-        std::unordered_map<std::string, VisibilityMask> candidates_mark{};
-
-        std::unordered_map<std::string, glm::mat4*> candidates_matrix{};
-
-        std::unordered_map<std::string, std::set<std::string>> geo_to_candidate {};
+        std::unordered_map<std::string, Candidate> candidates {};
         
         const auto& bri = sceneJson[brikey];
         for (auto it = bri.begin(); it != bri.end(); ++it) {
             //std::cout << it.key() << " : " << it.value() << "\n";
             const auto candi_name = it.key();
-            candidates.insert({candi_name, 0u});
-            
             const auto geo_name = it.value()["Geom"].template get<std::string>();
+
+            cleanTasks.erase(geo_name);
+
             glm::mat4* matrix_ptr = nullptr;
             const auto geo_type = checkGeoType(geo_name, &matrix_ptr);
 
-            candidates_matrix[candi_name] = matrix_ptr;
+            Candidate candi {};
+            candi.handle = gas_handles[geo_name];
+            candi.matrix = matrix_ptr;
 
-            const auto material_str = it.value().value("Material", "Default");
+            const auto material_str = it.value().value("Material", "");
             auto material_key = std::make_tuple(material_str, geo_type);
 
             uint16_t shader_index = 0u;
@@ -238,12 +365,12 @@ public:
                 shader_visiable = VisibilityMask::DefaultMatMask;
             }
             if (ShaderMark::Mesh == geo_type) {
-                shader_index = 0u;
-                if (_meshes_.count(geo_name)) {
-                    auto mesh = _meshes_[geo_name];
-                    if (mesh->mat_idx.size()==1) {
-                        shader_index = max(shader_index, mesh->mat_idx[0]);
-                    }
+
+                auto mesh = _meshes_[geo_name];
+                if (mesh != nullptr && mesh->mat_idx.size()==1) {
+                    shader_index = mesh->mat_idx[0];
+                } else {
+                    shader_index = 0u;
                 }
                 shader_visiable = VisibilityMask::DefaultMatMask;
                 
@@ -262,54 +389,34 @@ public:
                         shader_visiable = VisibilityMask::NothingMask;
                     } else {
                         auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                        candidates[candi_name] = vdb_ptr->node->handle;
+                        candi.handle = vdb_ptr->node->handle;
                     } //vdb_ptr
                 }
             }
 
-            candidates_sbt.insert( {candi_name, shader_index * RAY_TYPE_COUNT} );
-            candidates_mark.insert( {candi_name, shader_visiable} );
-
-            if (geo_to_candidate.count(geo_name)) {
-                geo_to_candidate[geo_name].insert(candi_name);
-            } else {
-                geo_to_candidate[geo_name] = { candi_name };
-            }
+            candi.sbt = shader_index * RAY_TYPE_COUNT;
+            candi.vmask = shader_visiable;
+            candidates[candi_name] = candi;
         } //bri
 
-        auto prepare = [&](auto& themap) {
-
-            auto iterator = themap.begin();
-            while (iterator != themap.end()) {
-                auto key = iterator->first;
-                if (geo_to_candidate.count(key) == 0) {
-                    iterator = themap.erase(iterator);
-                } else {
-                    for (auto& ele : geo_to_candidate[key]) {
-                        if (candidates[ele] != 0) continue;
-                        candidates[ele] = iterator->second->node->handle;
-                        gas_to_obj_id[candidates[ele]] = key;
-                    }
-                    ++iterator;
-                }
+        if (!cleanTasks.empty()) {
+            for (auto& [k, task] : cleanTasks) {
+                task(k);
+                gas_handles.erase(k);
             }
-        };
-
-        prepare(_meshes_);
-        prepare(_spheres_);
-        prepare(_sphere_groups_);
-        prepare(_vol_boxs);
+            cleanTasks.clear();
+        }
 
         std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                                                 decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
 
-        treeLook = [this, &treeLook, &context, &candidates, &candidates_matrix, &candidates_sbt, &candidates_mark]
+        treeLook = [this, &treeLook, &context, &candidates]
                         (std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                             decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
         {
             if (candidates.count(obj_key)) { //leaf node
-                test_depth = 0;
-                return candidates[obj_key];
+                test_depth = 1;
+                return candidates[obj_key].handle;
             }
 
             if (!renderGroup.contains(obj_key)) { return 0; }
@@ -334,23 +441,23 @@ public:
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
-                const glm::mat4* matrix_ptr = candidates_matrix.count(item_key)>0? candidates_matrix.at(item_key) : nullptr;
-
+               
                 uint sbtOffset = 0u;
-
                 auto vMask = EverythingMask;
+                glm::mat4* matrix_ptr = nullptr;
 
                 if (leaf) {
-                    sbtOffset = candidates_sbt.at(item_key);
-                    vMask = candidates_mark.at(item_key);
+                    auto& candi = candidates.at(item_key);
+                    sbtOffset = candi.sbt;
+                    vMask = candi.vmask;
+                    matrix_ptr = candidates.at(item_key).matrix;
                 }
 
                 if (handle == 0u) { continue; }
 
                 auto& matrix_keys = item.value();
-
                 if (matrix_keys.empty()) {
-                    matrix_keys = { "" };
+                    matrix_keys = fallback_keys;
                 }
 
                 for (auto& matrix_key : matrix_keys.items()) {
@@ -416,8 +523,6 @@ public:
 
                 uint depth = 0;
                 auto handle = treeLook(obj_key, rg, false, depth, nodeCache, nodeDepthCache);
-
-//                std::cout << "Fetching handle: " << handle << std::endl;
             } //rg
 
             std::vector<OptixInstance> instanced {};
@@ -458,7 +563,8 @@ public:
             staticRenderGroup = groupTask("StaticRenderGroups", nodeCacheStatic, nodeDepthCacheStatic);
         }
         dynamicRenderGroup = groupTask("DynamicRenderGroups", nodeCache, nodeDepthCache);
-        maxNodeDepth = 2 + max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
+        maxNodeDepth = max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
+        maxNodeDepth += 1;
         gather();
     }
 
@@ -470,134 +576,39 @@ public:
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
-    
-    std::map<std::string, MeshDat> drawdats;
-
-    std::set<std::string> uniqueMatsForMesh;
-    std::map<std::string, uint16_t> _mesh_materials;
-    std::map<shader_key_t, uint16_t> shader_indice_table;
-
-    std::unordered_map<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
     void preload_mesh(std::string const &key, std::string const &mtlid,
                  float const *verts, size_t numverts, uint const *tris, size_t numtris,
                  std::map<std::string, std::pair<float const *, size_t>> const &vtab,
-                 int const *matids, std::vector<std::string> const &matNameList) 
-    {
-        MeshDat &dat = drawdats[key];
-        dat.dirty = true;
-
-        dat.triMats.assign(matids, matids + numtris);
-        dat.mtlidList = matNameList;
-        dat.mtlid = mtlid;
-        dat.verts.assign(verts, verts + numverts * 3);
-        dat.tris.assign(tris, tris + numtris * 3);
-        //TODO: flatten just here... or in renderengineoptx.cpp
-        for (auto const &[key, fptr]: vtab) {
-            dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
-        }
-
-        uniqueMatsForMesh.insert(dat.mtlid);
-        for(auto& s : dat.mtlidList) {
-            uniqueMatsForMesh.insert(s);
-        }
-        updateGeoType(key, ShaderMark::Mesh);
-    }
+                 int const *matids, std::vector<std::string> const &matNameList);
 
     void unload_object(std::string const &key) {
-        drawdats.erase(key);
+        if (cleanTasks.count(key)==0) return;
+        cleanTasks[key](key);
+        cleanTasks.erase(key);
     }
 
-    void updateStaticDrawObjects();
-    void updateDrawObjects();
+    void updateDrawObjects(uint16_t sbt_count);
 
-    void updateMeshMaterials(std::map<std::string, uint16_t> const &mtlidlut) {
-
-        _mesh_materials = mtlidlut;
-        camera_changed = true;
-        updateDrawObjects();
+    void updateMeshMaterials() {
+        updateDrawObjects(mesh_sbt_max+1);
     }
 
-std::unordered_map<std::string, ShaderMark>  geoTypeMap;
-std::unordered_map<std::string, glm::mat4> geoMatrixMap;
-std::unordered_map<std::string, glm::mat4> renderObjectMatrixMap;
+    void preloadHair(const std::string& name, const std::string& filePath, uint mode, glm::mat4 transform=glm::mat4(1.0f));
+    void preloadCurveGroup(std::vector<float3>& points, std::vector<float>& widths, std::vector<float3>& normals, std::vector<uint>& strands, zeno::CurveType curveType, const std::string& key); 
+    
+    void preload_sphere(const std::string &key, const glm::mat4& transform);
+    void preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV);
 
-void updateGeoType(const std::string& key, ShaderMark mark) {
-    if (geoTypeMap.count(key) > 0) {
-        const auto cached_type = geoTypeMap[key];
-        if (cached_type == mark) return; 
-
-        if (cached_type == ShaderMark::Mesh)
-            _meshes_.erase(key);
-        if (cached_type == ShaderMark::Sphere) {
-            _spheres_.erase(key);
-            _sphere_groups_.erase(key);
-        }
-        if (cached_type == ShaderMark::Volume) {
-            _vol_boxs.erase(key);
-        }
-    }
-    geoTypeMap[key] = mark;
-}
-
-std::shared_ptr<SceneNode> uniform_sphere_gas{};
-std::unordered_map<std::string, std::shared_ptr<SphereTransformed>> _spheres_;
-
-    void preload_sphere_transformed(const std::string &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform) 
-    {
-        auto dsphere = std::make_shared<SphereTransformed>();
-
-        dsphere->materialID = mtlid;
-        dsphere->instanceID = instID;
-
-        auto trans = glm::transpose(transform);
-        dsphere->optix_transform = trans;
-        _spheres_[key] = dsphere;
-
-        geoMatrixMap[key] = trans;
-        updateGeoType(key, ShaderMark::Sphere);
-    }
-
-std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
-
-    void preload_sphere_group(const std::string& key, std::vector<zeno::vec3f>& centerV, std::vector<float>& radiusV, std::vector<zeno::vec3f>& colorV) {
-        
-        auto& group = _sphere_groups_[key];
-        if (nullptr == group) {
-            group = std::make_shared<SphereGroup>();
-            group->node = std::make_shared<SceneNode>();
-        }
-        group->centerV = std::move(centerV);
-        group->radiusV = std::move(radiusV);
-        group->colorV = std::move(colorV);
-
-        updateGeoType(key, ShaderMark::Sphere);
-    }
-
-    void prepare_sphere_gas(OptixDeviceContext& context) {
-
-        if (nullptr == uniform_sphere_gas) {
-            uniform_sphere_gas = std::make_shared<SceneNode>();
-            buildUnitSphereGAS(context, uniform_sphere_gas->handle, uniform_sphere_gas->buffer);
-        }
-        for (auto& [k, v] : _spheres_) {
-            if (!v->dirty) continue;
-
-            v->dirty = false;
-            v->node = uniform_sphere_gas;
-        }
-
-        for (auto& [k, v] : _sphere_groups_) {
-            if (!v->dirty) continue;
-
-            v->dirty = false;
-            buildSphereGroupGAS(context, *v);
-        }
-    }
-
-    std::map<std::string, std::set<ShaderMark>> prepareShaderSet() {
+    auto prepareShaderSet() {
 
         std::map<std::string, std::set<ShaderMark>> shader_key_set;
+
+        uniqueMatsForMesh.insert("");
+        for (auto& mat : uniqueMatsForMesh) {
+            auto& cached = shader_key_set[mat];
+            cached.insert( ShaderMark::Mesh );
+        }
 
         if (sceneJson.contains(brikey)) {
             auto& bri = sceneJson[brikey];
@@ -607,7 +618,7 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
                 std::string geo_name = it.value()["Geom"].template get<std::string>();
                 const auto geo_type = checkGeoType(geo_name);
 
-                const auto material_str = it.value().value("Material", "Default");
+                const auto material_str = it.value().value("Material", "");
                 auto material_key = std::make_tuple(material_str, geo_type);
 
                 if (shader_key_set.count(material_str)==0) {
@@ -617,42 +628,7 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
             }
         }
 
-        for (auto& mat : uniqueMatsForMesh) {
-            auto& cached = shader_key_set[mat];
-            cached.insert( ShaderMark::Mesh );
-        }
         return shader_key_set;
-    }
-
-    std::map<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
-    std::map<std::string, std::shared_ptr<VolumeWrapper>> _vol_boxs;
-
-    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
-
-        auto& volume_ptr = _vol_boxs[key];
-        if (nullptr == volume_ptr) {
-            volume_ptr = std::make_shared<VolumeWrapper>(); 
-        }
-        auto trans = glm::transpose(transform);
-
-        volume_ptr->dirty = true;
-        volume_ptr->bounds = bounds;
-        volume_ptr->transform = trans;
-        //buildVolumeAccel(*volume_ptr, context);
-        updateGeoType(key, ShaderMark::Volume);
-        geoMatrixMap[key] = trans;
-        return true;
-    }
-    
-    bool processVolumeBox(OptixDeviceContext& context) {
-
-        for (const auto& [key, vbox] : _vol_boxs) {
-            if (!vbox->dirty) continue;
-            vbox->dirty = false;
-
-            buildVolumeAccel(*vbox, context);
-        }
-        return true;
     }
 
     void prepareVolumeAssets() {
@@ -694,7 +670,8 @@ std::unordered_map<std::string, std::shared_ptr<SphereGroup>> _sphere_groups_;
             buildVolumeAccel( *vol, OptixUtil::context );
         }
     }
-    
+
+    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform);
     bool preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key);
 };
 

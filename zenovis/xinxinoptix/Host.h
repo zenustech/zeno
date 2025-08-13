@@ -5,7 +5,7 @@
 #endif
 
 #ifndef __inline__
-#define __inline__ /* inline */
+#define __inline__ inline
 #endif
 
 #ifndef __forceinline__

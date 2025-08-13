@@ -2,6 +2,14 @@
 #include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
+#ifndef var
+#define var auto
+#endif
+
+#ifndef let
+#define let auto const
+#endif
+
 __forceinline__ __device__ float to_radians(float degrees) {
     return degrees * M_PIf / 180.0f;
 }
@@ -55,7 +63,15 @@ struct vec3{
         return *ptr;
     }
 
-    __forceinline__ __device__ vec3(const float3 &_v)
+    __forceinline__ __device__ bool operator==(vec3 other) const {
+        return x==other.x && y==other.y && z==other.z;
+    }
+
+    __forceinline__ __device__ bool operator!=(vec3 other) const {
+        return !(*this==other);
+    }
+
+    __forceinline__ __host__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;
         y = _v.y;
@@ -78,6 +94,31 @@ struct vec3{
     __forceinline__ __device__ operator float3() const {
         return make_float3(x, y, z);
     }
+
+    __forceinline__ __device__ vec3& operator*= (float in)
+    {
+        x = x * in;
+        y = y * in;
+        z = z * in;
+        return *this;    
+    }
+
+    __forceinline__ __device__ vec3& operator+= (vec3 in)
+    {
+        x = x + in.x;
+        y = y + in.y;
+        z = z + in.z;
+        return *this;    
+    }
+    
+    __forceinline__ __device__ vec3& operator/= (float in)
+    {
+        x /= in;
+        y /= in;
+        z /= in;
+        return *this;    
+    }
+
     __forceinline__ __device__ vec3 rotX(float a) {
         return vec3(x, cosf(a) * y - sinf(a) * z, sinf(a) * y + cosf(a) * z);
     }
@@ -899,15 +940,9 @@ __forceinline__ __device__ vec4 faceforward(vec4 n, vec4 i, vec4 nref)
 {
     return dot(nref, i) >= 0 ? n : -n;
 }
-__forceinline__ __device__ float length(vec2 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec3 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec4 a)
+
+template <typename T>
+__forceinline__ __device__ float length(T a)
 {
     return sqrtf(dot(a,a));
 }
@@ -968,14 +1003,17 @@ T tex2D(unsigned long long t, float x, float y) {
     return T{};
 }
 #endif
+
 __forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
 {
     return 0.5 * length(cross(v1-v0, v2-v0));
 }
-__forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
+
+template <typename T=float4, typename R=vec4>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
 {
-    float4 res = tex2D<float4>(texObj, uv.x, uv.y);
-    return vec4(res.x, res.y, res.z, res.w);
+    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
+    return *(R*)&tmp;
 }
 __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, vec3 v0,
@@ -1372,4 +1410,101 @@ __forceinline__ __device__ float3 decodeColor(float4 c)
 __forceinline__ __device__ float3 decodeNormal(float4 c)
 {
   return make_float3(c.x, c.y, c.z);
+}
+
+__forceinline__ __device__ bool operator==(float3 a, float3 b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+__forceinline__ __device__ bool operator!=(float3 a, float3 b) {
+    return !(a == b);
+}
+
+struct half3 {
+    half x, y, z;
+    half3() = default;
+    half3(half3& h3) = default;
+
+    half3(half a, half b, half c) {
+        x=a; y=b; z=c;
+    }
+
+    half3(float f) {
+        x = y = z = __float2half(f);
+    }
+
+    half3(float3& f3) {
+        x = f3.x;
+        y = f3.y;
+        z = f3.z;
+    }
+};
+
+__forceinline__ __device__ half3 operator*(half3 a, half3 b)
+{
+    return {__hmul(a.x, b.x), __hmul(a.y, b.y), __hmul(a.z, b.z)};
+}
+
+__forceinline__ __device__ half3 operator*(half3 a, half b)
+{
+    return {__hmul(a.x, b), __hmul(a.y, b), __hmul(a.z, b)};
+}
+
+__forceinline__ __device__ half3 operator*(half b, half3 a)
+{
+    return a * b;
+}
+
+__forceinline__ __device__ half3 operator+(half3 a, half3 b)
+{
+    return {__hadd(a.x, b.x), __hadd(a.y, b.y), __hadd(a.z, b.z)};
+}
+
+__forceinline__ half3 interp(float2 barys, half3 a, half3 b, half3 c) 
+{    
+    half w0 = __float2half(1.f - barys.x - barys.y);
+    half w1 = __float2half(barys.x);
+    half w2 = __float2half(barys.y);
+
+    return w0*a + w1*b + w2*c;
+}
+
+__forceinline__ __device__ float3 decodeHalf(half3 c)
+{
+    return { __half2float(c.x), __half2float(c.y), __half2float(c.z) };
+}
+
+__forceinline__ __device__ half3 float3_to_half3(const float3& in)
+{
+    return {
+        __float2half(in.x), 
+        __float2half(in.y),
+        __float2half(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const half3& in)
+{
+    return {
+        __half2float(in.x),
+        __half2float(in.y),
+        __half2float(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const ushort3& in) 
+{
+    return half3_to_float3(reinterpret_cast<const half3&>(in));
+}
+
+__forceinline__ __device__ ushort1 float_to_half(float in)
+{
+    half x = __float2half(in);
+    return reinterpret_cast<ushort1&>(x);
+}
+
+__forceinline__ __device__ float half_to_float(ushort1 in)
+{
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
 }

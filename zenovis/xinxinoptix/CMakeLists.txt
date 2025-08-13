@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(zenovis PRIVATE
+  ChiefDesignerEXR.cpp
+  ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
@@ -25,6 +27,8 @@ target_sources(zenovis PRIVATE
   LightTree.h
   LightBounds.cpp
   LightBounds.h
+  LightsWrapper.h
+  
   ies/ies.cpp
   ies/ies.h
   TypeCaster.cpp
@@ -47,16 +51,16 @@ target_sources(zenovis PRIVATE
 
   )
 
-file(GLOB hair_src "hair/*.h" "hair/*.cpp")
-target_sources(zenovis PRIVATE ${hair_src})
+file(GLOB curve_src "curve/*.h" "curve/*.cpp")
+target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
-target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
+target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc)
 
 if (ZENO_SYSTEM_OPENVDB)
     message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
 else() # ../../projects/zenvdb/openvdb/nanovdb
-    get_filename_component(NVDB_PATH ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
+    get_filename_component(NVDB_PATH ${CMAKE_SOURCE_DIR}/projects/zenvdb/openvdb/nanovdb ABSOLUTE)
     message(${NVDB_PATH})
 endif()
 
@@ -65,6 +69,11 @@ target_include_directories(zenovis PRIVATE ${NVDB_PATH})
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
+target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/phmap/parallel_hashmap)
+target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/ordered-map/include)
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk)
+target_link_libraries(zenovis PRIVATE OptiXToolkit::CuOmmBaking)
 
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
@@ -137,6 +146,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@HairBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Bevel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@proceduralSky.h
 

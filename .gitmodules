@@ -34,3 +34,12 @@
 [submodule "projects/CUDA/projects/CUDA/zpc_jit"]
 	path = projects/CUDA/zpc_jit
 	url = https://github.com/zenustech/POC_zpc_jit.git
+[submodule "projects/phmap"]
+	path = projects/phmap
+	url = https://github.com/greg7mdp/parallel-hashmap.git
+[submodule "projects/ordered-map"]
+	path = projects/ordered-map
+	url = https://github.com/Tessil/ordered-map.git
+[submodule "projects/optix-toolkit"]
+	path = projects/optix-toolkit
+	url = https://github.com/NVIDIA/optix-toolkit.git

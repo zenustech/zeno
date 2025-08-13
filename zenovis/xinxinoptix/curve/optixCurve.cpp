@@ -28,19 +28,17 @@
 
 #include <cmath>
 #include <cstring>
-#include <iomanip>
-#include <iterator>
 
 #include <sutil/sutil.h>
 #include <sutil/Exception.h>
 
 #include "Util.h"
-#include "optixHair.h"
+#include "optixCurve.h"
 
 #include <tbb/task.h>
 #include <tbb/task_group.h>
 
-void HairState::makeCurveGroupGAS(OptixDeviceContext context, 
+void CurveGroupWrapper::makeCurveGroupGAS(OptixDeviceContext context, 
                                 const std::vector<float3>& points, 
                                 const std::vector<float>& widths,
                                 const std::vector<float3>& normals, 
@@ -141,11 +139,15 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context,
     accelBuildOptions.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accelBuildOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    xinxinoptix::buildXAS(context, accelBuildOptions, buildInput, gasBuffer, gasHandle);
+    if (node == nullptr)
+        node = std::make_shared<SceneNode>();
+
+    size_t aux_size = sizeof(CurveGroupAux);
+    xinxinoptix::buildXAS(context, accelBuildOptions, buildInput, node->buffer, node->handle, aux_size);
     return;
 }
 
-void HairState::makeCurveGroupGAS(OptixDeviceContext context) {
+void CurveGroupWrapper::makeCurveGroupGAS(OptixDeviceContext context) {
     if (nullptr == curveGroup && nullptr == pHair) { return; }
 
     tbb::task_group tgroup;
@@ -167,24 +169,29 @@ void HairState::makeCurveGroupGAS(OptixDeviceContext context) {
     });
 
     tgroup.wait();
+    
+    auto& aux_ref = this->aux;
+    auto aux_offset = this->node->buffer.handle + 128u - sizeof(CurveGroupAux);
+    cudaMemcpy((void*)aux_offset, &aux_ref, sizeof(CurveGroupAux), cudaMemcpyHostToDevice);
 }
 
-void HairState::makeHairGAS(OptixDeviceContext context)
+void CurveGroupWrapper::makeHairGAS(OptixDeviceContext context)
 {
     auto pState = this;
     const Hair* pHair = pState->pHair.get();
-    
-    if (pState->gasHandle) return;
 
-    pState->gasHandle = 0;
-    pState->gasBuffer.reset();
+    if (pState->node == nullptr)
+        pState->node = std::make_shared<SceneNode>();
+        
+    if (pState->node->handle) return;
+
+    pState->node->handle = 0;
+    pState->node->buffer.reset();
 
     makeCurveGroupGAS(context);
-
-    return;
 }
 
-std::vector<float2> HairState::strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+std::vector<float2> CurveGroupWrapper::strandU(zeno::CurveType curveType, const std::vector<uint>& m_strands)
 {
     std::vector<float2> strand_u;
     auto degree = CurveDegree(curveType);
@@ -204,7 +211,7 @@ std::vector<float2> HairState::strandU(zeno::CurveType curveType, const std::vec
     return strand_u;
 }
 
-std::vector<uint2> HairState::strandInfo(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+std::vector<uint2> CurveGroupWrapper::strandInfo(zeno::CurveType curveType, const std::vector<uint>& m_strands)
 {
     std::vector<uint2> strandInfo;
     unsigned int       firstPrimitiveIndex = 0;
@@ -222,7 +229,7 @@ std::vector<uint2> HairState::strandInfo(zeno::CurveType curveType, const std::v
     return strandInfo;
 }
 
-std::vector<uint> HairState::strandIndices(zeno::CurveType curveType, const std::vector<uint>& m_strands)
+std::vector<uint> CurveGroupWrapper::strandIndices(zeno::CurveType curveType, const std::vector<uint>& m_strands)
 {
     std::vector<uint> strandIndices;
     int              strandIndex = 0;
@@ -243,15 +250,15 @@ std::vector<uint> HairState::strandIndices(zeno::CurveType curveType, const std:
     return strandIndices;
 }
 
-void HairState::makeAuxData(const std::vector<uint>& strands)
+void CurveGroupWrapper::makeAuxData(const std::vector<uint>& strands)
 {
     auto pState = this;
     // clear curves_ data
-    cudaFree( reinterpret_cast<void*>( pState->aux.strand_u.data ) );
+    cudaFreeAsync( reinterpret_cast<void*>( pState->aux.strand_u.data ), 0 );
     pState->aux.strand_u.data = 0;
-    cudaFree( reinterpret_cast<void*>( pState->aux.strand_i.data ) );
+    cudaFreeAsync( reinterpret_cast<void*>( pState->aux.strand_i.data ), 0 );
     pState->aux.strand_i.data = 0;
-    cudaFree( reinterpret_cast<void*>( pState->aux.strand_info.data ) );
+    cudaFreeAsync( reinterpret_cast<void*>( pState->aux.strand_info.data ), 0 );
     pState->aux.strand_info.data = 0;
 
     CUdeviceptr strandUs = 0;

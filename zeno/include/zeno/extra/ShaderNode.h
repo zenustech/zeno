@@ -4,6 +4,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/TextureObject.h>
+#include <tinygltf/json.hpp>
 #include <vector>
 #include <string>
 #include <map>

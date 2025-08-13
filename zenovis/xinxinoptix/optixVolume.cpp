@@ -220,7 +220,7 @@ static void processGrid(GridWrapper& grid, const std::string& path)
     // NanoVDB files represent the sparse data-structure as flat arrays that can be
     // uploaded to the device "as-is".
     assert( gridHdl.size() != 0 );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size(), 0 ) );
     CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
 
     grid.max_value = grid.analysis(path);
@@ -261,7 +261,7 @@ void loadGrid( GridWrapper& grid, const std::string& path, const uint index )
 void unloadGrid(GridWrapper& grid) {
     //grid.handle.reset();
     if (0 != grid.deviceptr) {
-        CUDA_CHECK_NOTHROW( cudaFree( reinterpret_cast<void*>( grid.deviceptr ) ) );
+        CUDA_CHECK_NOTHROW( cudaFreeAsync( reinterpret_cast<void*>( grid.deviceptr ), 0 ) );
         grid.deviceptr = 0;
     }
 }
@@ -311,7 +311,7 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 
 		// up to device
         xinxinoptix::raii<CUdeviceptr> d_aabb;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ) ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ), 0 ) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb.handle ), &aabb, 
             sizeof( sutil::Aabb ), cudaMemcpyHostToDevice ) );
 

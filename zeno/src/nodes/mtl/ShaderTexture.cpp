@@ -336,6 +336,11 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             coord = em->determineExpr(get_input("coord").get());
         }
         auto postprocess = get_input2<std::string>("post_process");
+        
+        if (type == "float" && postprocess == "1-x") {
+            em->emitCode(zeno::format("1.0f - texture2D<float,float>(zenotex[{}], vec2({}) * {})", texId, coord, uvtiling));
+            return;
+        }
         if(postprocess == "raw"){
             em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {})){}", type, texId, coord, uvtiling, suffix));
         }else if (postprocess == "srgb"){
