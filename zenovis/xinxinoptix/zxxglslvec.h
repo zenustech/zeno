@@ -1027,7 +1027,7 @@ __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, 
     auto r = normalize(ray);
     // number of depth layers
     float a0 = area(v0,v1,v2);
-    if(a0<=0.0001 || isShadowRay)
+    if(abs(a0)<=0.0001 || isShadowRay)
         return vec4(uv.x, uv.y, 1, 0);
     const float minLayers = 8;
     const float maxLayers = 32;
@@ -1035,21 +1035,27 @@ __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, 
     float height_amp = mix(6.0, 1.0, abs(dot(N, r)));
     float layerDepth = 1.0 / numLayers;
     float currentLayerDepth = 0.0;
+    float dx = sqrt(a0) * 0.1;
     vec3 ddir = r * h.x * layerDepth * height_amp;
-    vec3 p1 = p + ddir;
+    vec3 p1 = (v0+v1+v2)/3 + ddir;
     vec3 p11 = p1 - dot(ddir, N) * N;
+    float a10 = area(p11, v1, v2);
+    float a11 = area(p11, v0, v2);
+
+
     //w, u, v, v0, v1, v2
     //             1
     //        v
     //  0         w
     //      u      2
-    float wp = min(area(p11, v1, v2)/a0, 1.0f);
-    float up = min(area(p11, v0, v2)/a0, 1.0f);
-    float vp = max(1.0 - wp - up, 0.0f);
-    vec3 duvw = vec3(wp - uvw.x, up - uvw.y, vp - uvw.z);
+    float wp = min(a10/a0,1.0f);
+    float up = min(a11/a0,1.0f);
+    float vp = max(1.0 - wp - up,0.0f);
+
+    vec3 duvw = vec3(wp - 0.33333333, up - 0.33333333, vp - 0.33333333) ;
     vec3 current_uvw = uvw;
     vec2 uvp = wp * uv0 + up * uv1 + vp * uv2;
-    vec2 duv = uvp - uv;
+    vec2 duv = (uvp - (uv0 + uv1 + uv2)/3)  ;
     vec2  currentTexCoords = uv;
     float currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
 

@@ -1,4 +1,4 @@
-#include "serialize.h"
+﻿#include "serialize.h"
 #include <zeno/utils/logger.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/modelrole.h>
@@ -446,7 +446,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                     }
                 } else {
                     objruntype = lightCameraNodes.contains(name) ? "lightCamera" :
-                        ((matNodeNames.count(name.toStdString()) != 0) || pGraphsModel->IsSubGraphNode(idx) && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) ?
+                        ((matNodeNames.count(name.toStdString()) != 0) || pGraphsModel->IsSubGraphNode(idx) && pGraphsModel->index(idx.data(ROLE_OBJNAME).toString()).data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) ?
                         "material" : "normal";
                 }
                 if (launchParam.runtype == RunLightCamera && objruntype != "lightCamera" ||

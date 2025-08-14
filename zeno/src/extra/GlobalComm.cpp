@@ -1,4 +1,4 @@
-#include <zeno/extra/GlobalComm.h>
+﻿#include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/utils/log.h>
@@ -166,8 +166,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             //编码obj
             if (stamptag == "UnChanged") {
                 //如果是计算第一帧的lightcamera，material，matrix，输出cache，如果是always运行的lightcamera，material，matrix也输出cache(loadasset全是totalchange不需要考虑)
-                if (frameid == beginFrameNumber && objRunType != "normal" ||
-                    balways && objRunType != "normal") {
+                if (frameid == beginFrameNumber && runtype != "LoadAsset" && runtype != "RunAll" ||
+                    balways && runtype != "LoadAsset" && runtype != "RunAll") {
                 } else {
 					//writer.EndObject();
 					//continue;
@@ -600,7 +600,8 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     //除assetload之外的运行(涉及lightcamera,material,matrix)，如果是UnChanged，需要标记为totalchange以便光追能更新(因为可能改了数据)
     const auto& needMarkAsTotalChange = [&switchTimeline, &runtype](int cachetype, std::string stampchange) -> bool {
         if (!switchTimeline && stampchange == "UnChanged") {
-            if (runtype == "RunAll" && (cachetype == 0 || cachetype == 1 || cachetype == 2) ||
+            if (
+                //runtype == "RunAll" && (cachetype == 0 || cachetype == 1 || cachetype == 2) ||
                 runtype == "RunLightCamera" && cachetype == 0 ||
                 runtype == "RunMaterial" && cachetype == 1 || 
                 runtype == "RunMatrix" && cachetype == 2) {

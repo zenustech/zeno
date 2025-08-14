@@ -1777,6 +1777,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             fun(message.dump());
         }
     }
+	void showBackground(bool bShow) override {
+		xinxinoptix::show_background(bShow);
+	}
     std::optional<glm::vec3> getClickedPos(float x, float y) override {
         glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
         if (posWS == glm::vec3()) {

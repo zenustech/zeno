@@ -19,6 +19,21 @@ private slots:
     void onEditClicked();
 };
 
+class TargetCameraNode : public ZenoNode
+{
+    Q_OBJECT
+public:
+    TargetCameraNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    ~TargetCameraNode();
+
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onEditClicked();
+    void onGetClicked();
+};
+
 class LightNode : public ZenoNode
 {
     Q_OBJECT

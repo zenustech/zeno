@@ -104,84 +104,145 @@ struct CameraEval: zeno::INode {
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
-            frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
+            frameid = std::lround(get_input2<float>("frameid"));
         } else {
             frameid = getGlobalState()->frameid;
         }
 
         auto nodelist = get_input<zeno::ListObject>("nodelist")->get<zeno::CameraObject>();
 
-        zeno::vec3f out_pos;
-        zeno::vec3f out_up;
-        zeno::vec3f out_view;
-        float out_fov;
-        float out_aperture;
-        float out_focalPlaneDistance;
+        std::sort(nodelist.begin(), nodelist.end(), [](const auto &a, const auto &b)-> bool {
+            auto a_frame = a->userData().get2<float>("frame");
+            auto b_frame = b->userData().get2<float>("frame");
+            return a_frame < b_frame;
+        });
 
-        if(nodelist.size() == 1){
-            auto n = nodelist[0];
-            SET_CAMERA_DATA
-        }else{
-            int ff = (int)nodelist[0]->userData().get2<float>("frame");
-            int lf = (int)nodelist[nodelist.size()-1]->userData().get2<float>("frame");
-            if(frameid <= ff){
-                auto n = nodelist[0];
-                SET_CAMERA_DATA
-            }else if(frameid >= lf) {
-                auto n = nodelist[nodelist.size()-1];
-                SET_CAMERA_DATA
-            }else{
+        int target_camera_count = 0;
+        for (const auto &cam: nodelist) {
+            target_camera_count += cam->userData().get2<int>("is_target", 0);
+        }
+        zeno::log_info("target_camera_count: {}", target_camera_count);
+        if (nodelist.size() == target_camera_count) {
+            if (nodelist.size() == 1) {
+                set_output("camera", nodelist[0]);
+            }
+            else if (frameid <= std::lround(nodelist[0]->userData().get2<float>("frame"))) {
+                 set_output("camera", nodelist[0]);
+            }
+            else if (frameid >= std::lround(nodelist.back()->userData().get2<float>("frame"))) {
+                set_output("camera", nodelist.back());
+            }
+            else {
+                auto af = nodelist[0]->userData().get2<int>("AutoFocus", 1);
                 for(int i=1;i<nodelist.size();i++){
-                    auto const & next_node = nodelist[i];
                     auto const & pre_node = nodelist[i-1];
-                    int next_frame = (int)next_node->userData().get2<float>("frame");
-                    int pre_frame = (int)pre_node->userData().get2<float>("frame");
+                    auto const & next_node = nodelist[i];
+                    int pre_frame = std::lround(pre_node->userData().get2<float>("frame"));
+                    int next_frame = std::lround(next_node->userData().get2<float>("frame"));
                     int total_frame = next_frame - pre_frame;
                     float r = ((float)frameid - pre_frame) / total_frame;
 
                     if(frameid <= next_frame){
-                        auto pos = pre_node->pos + (next_node->pos - pre_node->pos) * r;
-                        auto fov = pre_node->fov + (next_node->fov - pre_node->fov) * r;
-                        auto aperture = pre_node->aperture + (next_node->aperture - pre_node->aperture) * r;
-                        auto focalPlane = pre_node->focalPlaneDistance + (next_node->focalPlaneDistance - pre_node->focalPlaneDistance) * r;
+                        auto camera = std::make_unique<zeno::CameraObject>();
 
-                        auto pre_quat = to_quat(pre_node->up, pre_node->view);
-                        auto next_quat = to_quat(next_node->up, next_node->view);
-                        auto quat_lerp = glm::slerp(pre_quat, next_quat, r);
-                        glm::mat3 matrix_lerp = glm::toMat3(quat_lerp); // Convert quaternion to 3x3 matrix
-                        auto right = zeno::vec3f(matrix_lerp[0][0], matrix_lerp[1][0], matrix_lerp[2][0]);
-                        auto up = zeno::vec3f(matrix_lerp[0][1], matrix_lerp[1][1], matrix_lerp[2][1]);
-                        auto view = zeno::vec3f(matrix_lerp[0][2], matrix_lerp[1][2], matrix_lerp[2][2]);
+                        camera->pos = zeno::mix(pre_node->pos, next_node->pos, r);
+                        camera->fov = zeno::mix(pre_node->fov, next_node->fov, r);
+                        camera->aperture = zeno::mix(pre_node->aperture, next_node->aperture, r);
+                        camera->focalPlaneDistance = zeno::mix(pre_node->focalPlaneDistance, next_node->focalPlaneDistance, r);
 
-                        out_pos = (pos);
-                        out_up = (up);
-                        out_view = (-view);
-                        out_fov = (fov);
-                        out_aperture = (aperture);
-                        out_focalPlaneDistance = (focalPlane);
-                        break;
+                        auto pre_target = pre_node->userData().get2<vec3f>("target");
+                        auto next_target = next_node->userData().get2<vec3f>("target");
+                        auto cur_target = zeno::mix(pre_target, next_target, r);
+
+                        camera->view = zeno::normalize(cur_target - camera->pos);
+
+                        auto pre_refUp = pre_node->userData().get2<vec3f>("refUp");
+                        auto next_refUp = next_node->userData().get2<vec3f>("refUp");
+                        auto cur_refUp = zeno::normalize(zeno::mix(pre_refUp, next_refUp, r));
+
+                        auto cur_right = zeno::normalize(zeno::cross(camera->view, cur_refUp));
+                        camera->up = zeno::normalize(zeno::cross(cur_right, camera->view));
+                        if (af) {
+                            camera->focalPlaneDistance = zeno::distance(camera->pos, cur_target);
+                        }
+                        set_output("camera", std::move(camera));
                     }
                 }
             }
         }
+        else {
+            zeno::vec3f out_pos;
+            zeno::vec3f out_up;
+            zeno::vec3f out_view;
+            float out_fov;
+            float out_aperture;
+            float out_focalPlaneDistance;
 
-        auto camera = std::make_unique<zeno::CameraObject>();
+            if(nodelist.size() == 1){
+                auto n = nodelist[0];
+                SET_CAMERA_DATA
+            }else{
+                int ff = (int)nodelist[0]->userData().get2<float>("frame");
+                int lf = (int)nodelist[nodelist.size()-1]->userData().get2<float>("frame");
+                if(frameid <= ff){
+                    auto n = nodelist[0];
+                    SET_CAMERA_DATA
+                }else if(frameid >= lf) {
+                    auto n = nodelist[nodelist.size()-1];
+                    SET_CAMERA_DATA
+                }else{
+                    for(int i=1;i<nodelist.size();i++){
+                        auto const & next_node = nodelist[i];
+                        auto const & pre_node = nodelist[i-1];
+                        int next_frame = (int)next_node->userData().get2<float>("frame");
+                        int pre_frame = (int)pre_node->userData().get2<float>("frame");
+                        int total_frame = next_frame - pre_frame;
+                        float r = ((float)frameid - pre_frame) / total_frame;
 
-        camera->pos = out_pos;
-        camera->up = out_up;
-        camera->view = out_view;
-        camera->fov = out_fov;
-        camera->aperture = out_aperture;
-        camera->focalPlaneDistance = out_focalPlaneDistance;
+                        if(frameid <= next_frame){
+                            auto pos = pre_node->pos + (next_node->pos - pre_node->pos) * r;
+                            auto fov = pre_node->fov + (next_node->fov - pre_node->fov) * r;
+                            auto aperture = pre_node->aperture + (next_node->aperture - pre_node->aperture) * r;
+                            auto focalPlane = pre_node->focalPlaneDistance + (next_node->focalPlaneDistance - pre_node->focalPlaneDistance) * r;
 
-        set_output("camera", std::move(camera));
+                            auto pre_quat = to_quat(pre_node->up, pre_node->view);
+                            auto next_quat = to_quat(next_node->up, next_node->view);
+                            auto quat_lerp = glm::slerp(pre_quat, next_quat, r);
+                            glm::mat3 matrix_lerp = glm::toMat3(quat_lerp); // Convert quaternion to 3x3 matrix
+                            auto right = zeno::vec3f(matrix_lerp[0][0], matrix_lerp[1][0], matrix_lerp[2][0]);
+                            auto up = zeno::vec3f(matrix_lerp[0][1], matrix_lerp[1][1], matrix_lerp[2][1]);
+                            auto view = zeno::vec3f(matrix_lerp[0][2], matrix_lerp[1][2], matrix_lerp[2][2]);
+
+                            out_pos = (pos);
+                            out_up = (up);
+                            out_view = (-view);
+                            out_fov = (fov);
+                            out_aperture = (aperture);
+                            out_focalPlaneDistance = (focalPlane);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            auto camera = std::make_unique<zeno::CameraObject>();
+
+            camera->pos = out_pos;
+            camera->up = out_up;
+            camera->view = out_view;
+            camera->fov = out_fov;
+            camera->aperture = out_aperture;
+            camera->focalPlaneDistance = out_focalPlaneDistance;
+
+            set_output("camera", std::move(camera));
+        }
     }
 };
 
 ZENO_DEFNODE(CameraEval)({
     {
         {"frameid"},
-        {"nodelist"}
+        {"list", "nodelist"}
     },
     {
         {"CameraObject", "camera"},
