@@ -72,8 +72,15 @@ target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
 target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/phmap/parallel_hashmap)
 target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/ordered-map/include)
 
+set(OptiX_ROOT_DIR ${OPTIX_PATH} CACHE PATH "Path to OptiX" FORCE)
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk)
 target_link_libraries(zenovis PRIVATE OptiXToolkit::CuOmmBaking)
+
+get_target_property(_incs CuOmmBaking INTERFACE_INCLUDE_DIRECTORIES)
+list(TRANSFORM _incs REPLACE "^${OptiX_ROOT_DIR}/include$"
+    "$<BUILD_INTERFACE:${OptiX_ROOT_DIR}/include>;$<INSTALL_INTERFACE:include>")
+set_target_properties(CuOmmBaking PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_incs}")
 
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
