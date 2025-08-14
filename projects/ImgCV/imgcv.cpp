@@ -1,7 +1,7 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+//#include <opencv2/highgui.hpp>
 #include <zeno/zeno.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -179,7 +179,7 @@ ZENDEFNODE(CVImageSepRGB, {
     {},
     {"opencv"},
 });
-
+#if 0
 struct CVImageShow : CVINode {
     void apply() override {
         auto image = get_input_image("image");
@@ -222,7 +222,7 @@ ZENDEFNODE(CVWaitKey, {
     {},
     {"opencv"},
 });
-
+#endif
 struct CVImageAdd : CVINode {
     void apply() override {
         auto image1 = get_input_image("image1");
