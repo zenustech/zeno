@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
+if (MSVC)
+    target_compile_options(zenovis PRIVATE /bigobj)
+endif()
+
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(zenovis PRIVATE
   ChiefDesignerEXR.cpp
@@ -69,7 +73,7 @@ target_include_directories(zenovis PRIVATE ${NVDB_PATH})
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
-target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/phmap/parallel_hashmap)
+target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/phmap)
 target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/ordered-map/include)
 
 set(OptiX_ROOT_DIR ${OPTIX_PATH} CACHE PATH "Path to OptiX" FORCE)
