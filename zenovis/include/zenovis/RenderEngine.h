@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <zenovis/Camera.h>
 #include <zenovis/Scene.h>
@@ -29,6 +29,8 @@ struct RenderEngine {
     virtual std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(float x, float y) { return {}; }
     virtual void load_matrix_objects(std::vector<std::shared_ptr<zeno::IObject>> matrixs) {};
     virtual void outlineInit(Json const &msg) {};
+
+    virtual void showBackground(bool bShow) {};
 
     std::function<void(std::string)> fun = [](std::string){};
 };

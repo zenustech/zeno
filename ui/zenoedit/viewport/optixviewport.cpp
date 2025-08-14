@@ -480,7 +480,12 @@ void OptixWorker::onSetBackground(bool bShowBg)
     ZASSERT_EXIT(scene);
     //scene->objectsMan->needUpdateLight = true;
     //scene->drawOptions->simpleRender = true;
-    updateFrame();
+
+    if (auto engine = scene->renderMan->getEngine("optx")) {
+		engine->showBackground(bShowBg);
+	}
+
+    //updateFrame();
 }
 
 void OptixWorker::onSetSampleNumber(int sample_number) {
