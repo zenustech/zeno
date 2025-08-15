@@ -30,6 +30,7 @@ struct SceneTreeNode {
 struct SceneObject : IObjectClone<SceneObject> {
     std::unordered_map <std::string, SceneTreeNode> scene_tree;
     std::unordered_map <std::string, std::vector<glm::mat4>> node_to_matrix;
+    std::unordered_map <std::string, std::vector<int>> node_to_id;
     std::unordered_map <std::string, std::shared_ptr<PrimitiveObject>> prim_list;
     std::string root_name;
     std::string type = "static";
@@ -215,6 +216,15 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             json["node_to_matrix"] = mat_json;
         }
+        {
+            Json id_json;
+            for (auto const &[path, ids]: node_to_id) {
+                for (auto const& id: ids) {
+                    id_json[path].push_back(id);
+                }
+            }
+            json["node_to_id"] = id_json;
+        }
         return json.dump();
     }
 
@@ -244,6 +254,20 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 if (node_to_matrix[path].size() == 0) {
                     node_to_matrix[path].emplace_back(1);
+                }
+            }
+        }
+        {
+            node_to_id.clear();
+            Json const &id_json = json["node_to_id"];
+            for (auto &[path, ids_json]: id_json.items()) {
+                auto count = ids_json.size();
+                for (auto idx = 0; idx < count; idx++) {
+                    auto id_json = ids_json[idx];
+                    node_to_id[path].push_back(int(id_json));
+                }
+                if (node_to_id[path].size() == 0) {
+                    node_to_id[path].emplace_back(0);
                 }
             }
         }
@@ -301,17 +325,12 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::shared_ptr <zeno::ListObject> to_structure() {
         bool use_static = type == "static";
         auto scene = std::make_shared<zeno::ListObject>();
-        auto dict = std::make_shared<PrimitiveObject>();
-        scene->arr.push_back(dict);
         {
             for (auto &[abc_path, p]: prim_list) {
                 scene->arr.push_back(p);
             }
-            int prim_count = prim_list.size();
-            dict->userData().set2("prim_count", prim_count);
         }
         {
-            int matrix_count = 0;
             for (auto &[path, stn]: scene_tree) {
                 std::vector<glm::mat4> matrixs;
                 if (stn.visibility) {
@@ -328,10 +347,11 @@ struct SceneObject : IObjectClone<SceneObject> {
                     object_name = path + "_m";
                 }
                 auto prim = mats_to_prim(object_name, matrixs, use_static, this->matrixMode);
+                if (node_to_id.count(stn.matrix) && node_to_id[stn.matrix].size() == matrixs.size()) {
+                    prim->loops.values = node_to_id[stn.matrix];
+                }
                 scene->arr.push_back(prim);
-                matrix_count += 1;
             }
-            dict->userData().set2("matrix_count", matrix_count);
         }
         {
             auto scene_descriptor = std::make_shared<PrimitiveObject>();

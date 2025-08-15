@@ -440,6 +440,13 @@ static std::vector<glm::mat4> get_xform_from_prim(std::shared_ptr<PrimitiveObjec
     }
     return mats;
 }
+static std::vector<int> get_id_from_prim(std::shared_ptr<PrimitiveObject> prim) {
+    std::vector<int> ids;
+    if (prim->verts.attr_is<int>("id")) {
+        ids = prim->attr<int>("id");
+    }
+    return ids;
+}
 
 static void scene_add_prefix_node(
     std::string prefix_node_name
@@ -818,6 +825,14 @@ struct SetNodeXform : zeno::INode {
                 mats.push_back(matrix);
             }
             node_to_matrix[node + "_m"] = mats;
+            auto ids = get_id_from_prim(get_input2<PrimitiveObject>("xforms"));
+            if (ids.size()) {
+                Json ids_json = Json::array();
+                for (auto id: ids) {
+                    ids_json.push_back(id);
+                }
+                st["node_to_id"][node + "_m"] = ids_json;
+            }
         }
         else {
             auto index = get_input2<int>("index");
@@ -858,6 +873,46 @@ ZENDEFNODE( SetNodeXform, {
         {"vec3f", "r2", "0, 0, 1"},
         {"vec3f", "t", "0, 0, 0"},
         "xforms"
+    },
+    {
+        "scene",
+    },
+    {
+    },
+    {
+        "Scene",
+    },
+});
+
+struct SetNodeId : zeno::INode {
+    void apply() override {
+        auto scene = get_input2<ListObject>("scene");
+        auto node = get_input2<std::string>("node");
+        if (!zeno::starts_with(node, "/")) {
+            node = "/" + node;
+        }
+        auto json_str = scene->arr.back()->userData().get2<std::string>("json");
+        auto st = Json::parse(json_str);
+        auto &node_to_id = st["node_to_id"];
+        {
+            auto index = get_input2<int>("index");
+            auto id = get_input2<int>("id");
+
+            if (node_to_id.contains(node + "_m")) {
+                node_to_id[node + "_m"][index] = id;
+            }
+        }
+        scene->arr.back()->userData().set2("json", st.dump());
+        set_output2("scene", scene);
+    }
+};
+
+ZENDEFNODE( SetNodeId, {
+    {
+        "scene",
+        {"string", "node", ""},
+        {"int", "index", "0"},
+        {"int", "id", "0"},
     },
     {
         "scene",
