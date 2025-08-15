@@ -161,6 +161,12 @@ struct TriangleInput : MatInput {
         tmp = transformNormal(tmp, worldToObject);
         return normalize(tmp);
     }
+
+    inline const float2* uvPtr() const {
+        let gas_ptr = getGasPointer();
+        let uv_ptr  = reinterpret_cast<const float2*>( *(gas_ptr-2) );
+        return uv_ptr;
+    }
     
     inline vec3 uv() const {
         let gas_ptr = getGasPointer();

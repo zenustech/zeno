@@ -350,7 +350,7 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         }else if (postprocess == "1-x"){
             em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
         }else if (postprocess == "displacement"){
-            em->emitCode(zeno::format("{}(parallex2D(zenotex[{}], vec2({}), {},  vec3(1.0f - attrs._barys.x - attrs._barys.y, attrs._barys.x, attrs._barys.y), vec2(attrs.uv0), vec2(attrs.uv1), vec2(attrs.uv2), attrs.v0, attrs.v1, attrs.v2, attrs.pos, attrs.ray, attrs.N, attrs.isShadowRay, attrs.pOffset, attrs.depth, {})){}",type, texId, coord, uvtiling,hscale,suffix));
+            em->emitCode(zeno::format("{}(parallexCall(*(TriangleInput*)&attrs, zenotex[{}], vec2({}), {}, {})){}", type, texId, coord, uvtiling, hscale, suffix));
         }
     }
 };

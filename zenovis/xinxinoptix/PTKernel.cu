@@ -273,6 +273,7 @@ extern "C" __global__ void __raygen__rg()
         do {
             prd.alphaHit = false;
             traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+            ray_origin = prd.origin;
         } while (prd.alphaHit); // skip alpha
         
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )

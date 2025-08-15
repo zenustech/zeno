@@ -9,6 +9,25 @@
 #include "Bevel.h"
 
 //COMMON_CODE
+__device__ __forceinline__ vec4 parallexCall(TriangleInput& attrs, cudaTextureObject_t tex, float2 uv, float2 uvtiling, vec4 h) {
+
+    let pos = attrs.wldPos + params.cam.eye;
+    let v0 = transformPoint(attrs.vertices[0], attrs.objectToWorld) + params.cam.eye;
+    let v1 = transformPoint(attrs.vertices[1], attrs.objectToWorld) + params.cam.eye;
+    let v2 = transformPoint(attrs.vertices[2], attrs.objectToWorld) + params.cam.eye;
+
+    let vidx = attrs.vertex_idx;
+    let uv_ptr = attrs.uvPtr();
+    const auto& uv0 = uv_ptr[vidx.x];
+    const auto& uv1 = uv_ptr[vidx.y];
+    const auto& uv2 = uv_ptr[vidx.z];
+
+    vec3 barys3 = attrs.barys();
+    return parallex2D(tex, uv, uvtiling, barys3,
+                        uv0, uv1, uv2, v0, v1, v2,
+                        pos, -attrs.V, attrs.N,
+                        attrs.isShadowRay, attrs.pOffset, attrs.depth, h);
+}
 
 extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
 
