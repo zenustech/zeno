@@ -443,7 +443,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 #endif
 
-    mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
+    mats.roughness = clamp(mats.roughness, 0.00f,1.0f);
 
     if (prd->denoise) {
 

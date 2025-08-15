@@ -40,8 +40,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_nrm = attrs.N;
     auto att_tang = attrs.T;
 
+    auto att_priIdx = attrs.priIdx;
+    auto att_instId = attrs.instId;
     auto att_instIdx = attrs.instIdx;
-    vec3 att_instPos{}, att_instNrm{}, att_instUv{}, att_instClr{}, att_instTang{};
 
     auto att_rayLength = attrs.rayLength;
     auto att_isBackFace = attrs.isBackFace;
