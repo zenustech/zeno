@@ -71,6 +71,7 @@ private:
 
     nlohmann::json sceneJson;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
+    phmap::parallel_flat_hash_map_m<std::string, std::vector<int>> instance_ids_map{};
 
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<Hair>> hairCache;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<CurveGroupWrapper>> hairStateCache;
@@ -107,8 +108,11 @@ public:
         }
     }
 
-    inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list) {
+    inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
         matrix_map[key] = std::move(matrix_list);
+        if (instance_ids.size() > 0) {
+            instance_ids_map[key] = std::move(instance_ids);
+        }
     }    
 
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
@@ -463,6 +467,9 @@ public:
                 for (auto& matrix_key : matrix_keys.items()) {
 
                     const auto& matrix_list = matrix_map[matrix_key.value()];
+                    const auto id_it = instance_ids_map.find(matrix_key.value());
+                    const auto has_custom_id = id_it != instance_ids_map.end();
+
                     instanced.reserve(instanced.size() + matrix_list.size());
 
                     for (size_t i=0; i<matrix_list.size(); ++i) {
@@ -470,7 +477,9 @@ public:
                         OptixInstance opi {};
 
                         opi.sbtOffset = sbtOffset;
-                        opi.instanceId = i;
+                        if (has_custom_id) {
+                            opi.instanceId = id_it->second[i];
+                        }
                         opi.visibilityMask = vMask;
                         opi.traversableHandle = handle;
 

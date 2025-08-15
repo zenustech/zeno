@@ -82,8 +82,11 @@ struct MatInput {
     OptixPrimitiveType ptype;
     uint64_t gas;
     uint32_t sbtIdx;
+    
     uint32_t priIdx;
+    uint32_t instId;
     uint32_t instIdx;
+
     vec3 ray;
     vec3 pOffset = vec3(0);
     int depth;

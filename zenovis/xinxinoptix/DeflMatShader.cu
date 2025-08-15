@@ -68,7 +68,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.gas = gas;
     attrs.priIdx = primIdx;
     attrs.sbtIdx = sbtGASIndex;
-    attrs.instIdx = optixGetInstanceId();
+    attrs.instId = optixGetInstanceId();
+    attrs.instIdx = optixGetInstanceIndex();
     attrs.rayLength = optixGetRayTmax();
     attrs.isBackFace = optixIsBackFaceHit();
     attrs.seed = prd->seed;
@@ -273,7 +274,8 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.gas = gas;
     attrs.priIdx = primIdx;
     attrs.sbtIdx = sbtGASIndex;
-    attrs.instIdx = optixGetInstanceId();
+    attrs.instId = optixGetInstanceId();
+    attrs.instIdx = optixGetInstanceIndex();
     attrs.rayLength = optixGetRayTmax();
     attrs.isBackFace = optixIsBackFaceHit();
     attrs.seed = prd->seed;
