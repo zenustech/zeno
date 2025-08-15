@@ -1438,11 +1438,11 @@ struct half3 {
         x = y = z = __float2half(f);
     }
 
-    half3(float3& f3) {
-        x = f3.x;
-        y = f3.y;
-        z = f3.z;
-    }
+    // half3(float3& f3) {
+    //     x = __float2half(f3.x);
+    //     y = __float2half(f3.y);
+    //     z = __float2half(f3.z);
+    // }
 };
 
 __forceinline__ __device__ half3 operator*(half3 a, half3 b)

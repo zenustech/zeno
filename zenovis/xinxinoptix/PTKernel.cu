@@ -345,7 +345,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 2){
+            if(prd.depth > 1){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {

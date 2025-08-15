@@ -458,9 +458,7 @@ extern "C" __global__ void __closesthit__radiance()
     mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
-    if(prd->diffDepth>=3)
-        mats.roughness = clamp(mats.roughness, 0.5,0.99);
-    else if(prd->diffDepth>=2)
+    if(prd->diffDepth>=2)
         mats.roughness = clamp(mats.roughness, 0.3,0.99);
     else if(prd->diffDepth>=1)
         mats.roughness = clamp(mats.roughness, 0.2,0.99);

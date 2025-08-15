@@ -30,7 +30,17 @@
 
 #include <vector_types.h>
 #include <sutil/vec_math.h>
+ 
 static __host__ __device__ __inline__  float van_der_corput(unsigned int n, unsigned int base=2) {
+     // keep only lowest 24 bits — higher bits don't survive float precision
+    n &= (1u << 24) - 1u;      // 0xFFFFFF
+    // reverse all bits
+    n = __brev(n);
+    // shift down so reversed 24 bits are in the LSB position
+    n >>= (32 - 24);
+    // scale to [0,1)
+    return n * (1.0f / (1u << 24) ); // 1 / 2^24
+
     n = n%8192;
     float result = 0.0;
     float invdenom = 1.0;
