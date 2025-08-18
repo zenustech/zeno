@@ -729,17 +729,17 @@ __forceinline__ __device__ float saturate(float a)
 
 __forceinline__ __device__ vec2 saturate(vec2 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec2(0.0f), vec2(1.0f));
 }
 
 __forceinline__ __device__ vec3 saturate(vec3 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec3(0.0f), vec3(1.0f));
 }
 
 __forceinline__ __device__ vec4 saturate(vec4 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec4(0.0f), vec4(1.0f));
 }
 
 __forceinline__ __device__ float mix(float a, float b, float c)
@@ -1020,24 +1020,31 @@ __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, 
                                            vec3 v0, vec3 v1, vec3 v2, vec3 p, 
                                            vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset, int depth, vec4 h)
 {
-    if(depth>1)
+    if(depth>1 || isShadowRay)
         return vec4(uv.x, uv.y, 1, 0);
     pOffset = vec3(0);
     auto r = normalize(ray);
     // number of depth layers
     float a0 = area(v0,v1,v2);
-    if(abs(a0)<=0.0001 || isShadowRay)
-        return vec4(uv.x, uv.y, 1, 0);
+
     const float minLayers = 8;
     const float maxLayers = 32;
-    float numLayers = mix(maxLayers, minLayers, abs(dot(N, r)));
-    float height_amp = mix(6.0, 1.0, abs(dot(N, r)));
+    float numLayers = min(8.0f * 1.0f/abs(dot(r,N)), 64.0f);
+    float height_amp = min(1.0f/abs(dot(r,N)), 100.0f);
     float layerDepth = 1.0 / numLayers;
     float currentLayerDepth = 0.0;
-    float dx = sqrt(a0) * 0.1;
+
+    float l0 = length(v1 - v2);
+    float l1 = length(v2 - v0);
+    float l2 = length(v1 - v0);
+    float perimeter = l0 + l1 + l2;
+    vec3 pw = vec3(l0/perimeter, l1/perimeter, l2/perimeter);
+    vec3 incenter = v0 * pw.x + v1 * pw.y + v2 * pw.z;
+    float half_inradius = a0/perimeter;
     vec3 ddir = r * h.x * layerDepth * height_amp;
-    vec3 p1 = (v0+v1+v2)/3 + ddir;
-    vec3 p11 = p1 - dot(ddir, N) * N;
+    float dx = length(ddir)<half_inradius?1.0f:length(ddir)/half_inradius;
+    vec3 p1 = incenter + ddir/dx;
+    vec3 p11 = p1 - dot(ddir/dx, N) * N;
     float a10 = area(p11, v1, v2);
     float a11 = area(p11, v0, v2);
 
@@ -1051,10 +1058,10 @@ __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, 
     float up = min(a11/a0,1.0f);
     float vp = max(1.0 - wp - up,0.0f);
 
-    vec3 duvw = vec3(wp - 0.33333333, up - 0.33333333, vp - 0.33333333) ;
+    vec3 duvw = vec3(wp - pw.x, up - pw.y, vp - pw.z) * dx;
     vec3 current_uvw = uvw;
     vec2 uvp = wp * uv0 + up * uv1 + vp * uv2;
-    vec2 duv = (uvp - (uv0 + uv1 + uv2)/3)  ;
+    vec2 duv = (uvp - (pw.x*uv0 + pw.y*uv1 + pw.z*uv2)) * dx  ;
     vec2  currentTexCoords = uv;
     float currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
 
@@ -1080,9 +1087,10 @@ __forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, 
     vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
     float c = smoothstep(h.z, h.w, abs(dot(r,N)));
-    pOffset = hit?vec3(0,0,0): h.y * h.x * N * height_amp;
-    float opacity = hit? 1.0 : c;
-    return vec4(finalTexCoords.x, finalTexCoords.y, opacity, 0);
+    hit = abs(dot(r,N))>h.w?true:hit;
+    float hito = hit? 1.0f : c;
+    pOffset = hit?vec3(0,0,0): h.y * h.x * N;
+    return vec4(finalTexCoords.x, finalTexCoords.y, hit?1:0, 0);
 }
 /////////////end of geometry math/////////////////////////////////////////////////
 

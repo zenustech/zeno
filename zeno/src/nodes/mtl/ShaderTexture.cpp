@@ -338,17 +338,42 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         auto postprocess = get_input2<std::string>("post_process");
         
         if (type == "float" && postprocess == "1-x") {
-            em->emitCode(zeno::format("1.0f - texture2D<float,float>(zenotex[{}], vec2({}) * {})", texId, coord, uvtiling));
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("1.0f - texture2D<float,float>(zenotex[{}], saturate( vec2({}) * {}) )", texId, coord, uvtiling));
+            }
+            else {
+                em->emitCode(zeno::format("1.0f - texture2D<float,float>(zenotex[{}], vec2({}) * {} )", texId, coord, uvtiling));
+            }
             return;
         }
         if(postprocess == "raw"){
-            em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {})){}", type, texId, coord, uvtiling, suffix));
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("{}(texture2D(zenotex[{}], saturate( vec2({}) * {}) )){}", type, texId, coord, uvtiling, suffix));
+            }
+            else {
+                em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {})){}", type, texId, coord, uvtiling, suffix));
+            }
         }else if (postprocess == "srgb"){
-            em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], saturate(vec2({}) * {}))),2.2f){}", type, texId, coord, uvtiling, suffix));
+            }
+            else {
+                em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
+            }
         }else if (postprocess == "normal_map"){
-            em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], vec2({}) * {})) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], saturate(vec2({}) * {}))) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
+            }
+            else {
+                em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], vec2({}) * {})) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
+            }
         }else if (postprocess == "1-x"){
-            em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], saturate(vec2({}) * {}))){}", type, type, texId, coord, uvtiling, suffix));
+            }
+            else {
+                em->emitCode(zeno::format("{}(1.0) - {}(texture2D(zenotex[{}], vec2({}) * {})){}", type, type, texId, coord, uvtiling, suffix));
+            }
         }else if (postprocess == "displacement"){
             em->emitCode(zeno::format("{}(parallexCall(*(TriangleInput*)&attrs, zenotex[{}], vec2({}), {}, {})){}", type, texId, coord, uvtiling, hscale, suffix));
         }
