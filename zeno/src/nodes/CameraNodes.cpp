@@ -253,6 +253,8 @@ struct ScreenSpaceProjectedGrid : INode {
         float right_scale = std::tan(fov / 2) * ratio * float(width - 1) / float(raw_width - 1);
         float up_scale = std::tan(fov / 2) * float(height - 1) / float(raw_height - 1);
         prim->verts.resize(width * height);
+        auto &valid = prim->verts.add_attr<float>("valid");
+        #pragma omp parallel for
         for (auto j = 0; j <= height - 1; j++) {
             float v = float(j) / float(height - 1) * 2.0f - 1.0f;
             for (auto i = 0; i <= width - 1; i++) {
@@ -262,9 +264,7 @@ struct ScreenSpaceProjectedGrid : INode {
                 auto t = hitOnFloor(pos, ndir, sea_level);
                 if (t > 0 && t * zeno::dot(ndir, dir) < infinite) {
                     prim->verts[j * width + i] = pos + ndir * t;
-                }
-                else {
-                    prim->verts[j * width + i] = pos + dir * infinite;
+                    valid[j * width + i] = 1;
                 }
             }
         }
@@ -276,26 +276,18 @@ struct ScreenSpaceProjectedGrid : INode {
                 auto _1 = j * width + i + 1;
                 auto _2 = j * width + i + 1 + width;
                 auto _3 = j * width + i + width;
-                tris.emplace_back(_0, _1, _2);
-                tris.emplace_back(_0, _2, _3);
+                if (valid[_0] > 0 && valid[_1] > 0 && valid[_2] > 0 ) {
+                    tris.emplace_back(_0, _1, _2);
+                }
+                if (valid[_0] > 0 && valid[_2] > 0 && valid[_3] > 0 ) {
+                    tris.emplace_back(_0, _2, _3);
+                }
             }
         }
         prim->tris.values = tris;
 
-        auto outs = zeno::TempNodeSimpleCaller("PrimitiveClip")
-                .set("prim", std::move(prim))
-                .set2<vec3f>("origin", pos)
-                .set2<vec3f>("direction", view)
-                .set2<float>("distance", infinite * 0.999)
-                .set2<bool>("reverse:", false)
-                .call();
 
-        // Create nodes
-        auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(outs.get("outPrim"));
-        for (auto i = 0; i < new_prim->verts.size(); i++) {
-            new_prim->verts[i][1] = sea_level;
-        }
-        set_output("prim", std::move(new_prim));
+        set_output("prim", std::move(prim));
     }
 };
 
