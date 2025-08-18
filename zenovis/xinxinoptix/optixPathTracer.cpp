@@ -1862,9 +1862,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
     auto &ud = zeno::getSession().userData();
-    if (ud.get2<bool>("viewport-optix-pause", false)) {
-        return;
-    }
+    auto pause = ud.get2<bool>("viewport-optix-pause", false);
 
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
@@ -1874,6 +1872,11 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         std::lock_guard<std::mutex> lock(click_mutex);
         should_notify = state.params.click_dirty;
     }
+
+    if (pause && !should_notify) {
+        return;
+    }
+    state.params.pause = pause;
 
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 

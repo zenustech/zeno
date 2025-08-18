@@ -286,6 +286,8 @@ extern "C" __global__ void __raygen__rg()
             }
             *params.pick_buffer = PickInfo { click_pos, record };
         }
+        if(params.pause) return;
+        
         prd._tmin_ = 0;
         prd._tmax_ = FLT_MAX;
         prd.maxDistance = FLT_MAX;
