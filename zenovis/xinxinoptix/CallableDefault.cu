@@ -18,6 +18,7 @@ __device__ __forceinline__ vec4 parallexCall(TriangleInput& attrs, cudaTextureOb
 
     let vidx = attrs.vertex_idx;
     let uv_ptr = attrs.uvPtr();
+    if (uv_ptr == nullptr) return {};
     const auto& uv0 = uv_ptr[vidx.x];
     const auto& uv1 = uv_ptr[vidx.y];
     const auto& uv2 = uv_ptr[vidx.z];
