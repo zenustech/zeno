@@ -1015,7 +1015,7 @@ __forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
     auto tmp = tex2D<T>(texObj, uv.x, uv.y);
     return *(R*)&tmp;
 }
-__forceinline__ __device__ vec4 parallex2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
+__forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, 
                                            vec3 v0, vec3 v1, vec3 v2, vec3 p, 
                                            vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset, int depth, vec4 h)

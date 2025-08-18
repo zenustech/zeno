@@ -24,7 +24,7 @@ __device__ __forceinline__ vec4 parallexCall(TriangleInput& attrs, cudaTextureOb
     const auto& uv2 = uv_ptr[vidx.z];
 
     vec3 barys3 = attrs.barys();
-    return parallex2D(tex, uv, uvtiling, barys3,
+    return parallax2D(tex, uv, uvtiling, barys3,
                         uv0, uv1, uv2, v0, v1, v2,
                         pos, -attrs.V, attrs.N,
                         attrs.isShadowRay, attrs.pOffset, attrs.depth, h);
