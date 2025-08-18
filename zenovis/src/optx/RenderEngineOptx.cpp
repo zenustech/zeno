@@ -1832,6 +1832,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         graphicsMan->load_matrix_objects(matrixs);
         meshNeedUpdate = true;
+        scene->drawOptions->needRefresh = true;
     };
 
     void update_json(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
