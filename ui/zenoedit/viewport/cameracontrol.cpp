@@ -243,6 +243,10 @@ void CameraControl::resizeTransformHandler(int dir)
 
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
+    auto &ud = zeno::getSession().userData();
+    if (ud.get2<bool>("viewport-optix-pause", false)) {
+        return;
+    }
     auto m_transformer = this->m_transformer.lock();
     bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
     bool alt_pressed = event->modifiers() & Qt::AltModifier;
@@ -402,6 +406,10 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
+    auto &ud = zeno::getSession().userData();
+    if (ud.get2<bool>("viewport-optix-pause", false)) {
+        return;
+    }
     int dy = 0;
     if (event->modifiers() & Qt::AltModifier)
         dy = event->angleDelta().x();
