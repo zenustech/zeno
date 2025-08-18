@@ -9,7 +9,7 @@
 #include "Bevel.h"
 
 //COMMON_CODE
-__device__ __forceinline__ vec4 parallexCall(TriangleInput& attrs, cudaTextureObject_t tex, float2 uv, float2 uvtiling, vec4 h) {
+__device__ __forceinline__ vec4 parallaxCall(TriangleInput& attrs, cudaTextureObject_t tex, float2 uv, float2 uvtiling, vec4 h) {
 
     let pos = attrs.wldPos + params.cam.eye;
     let v0 = transformPoint(attrs.vertices[0], attrs.objectToWorld) + params.cam.eye;
