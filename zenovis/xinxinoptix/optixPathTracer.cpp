@@ -527,23 +527,22 @@ static void createSBT( PathTracerState& state, bool raygen=false)
             }
             if (!shader_ref.parameters.empty())
             {
+                const auto json = shader_ref.parameters;
 
-                const auto& j = shader_ref.parameters;
-
-                if (!j["vol_depth"].is_null()) {
-                    rec.data.vol_depth = j["vol_depth"];
+                if (json["vol_depth"].is_number_integer()) {
+                    rec.data.vol_depth = json["vol_depth"];
                 }
 
-                if (!j["vol_extinction"].is_null()) {
-                    rec.data.vol_extinction = j["vol_extinction"];
+                if (json["vol_extinction"].is_number_float()) {
+                    rec.data.vol_extinction = json["vol_extinction"];
                 }
 
-                if (!j["equiangular"].is_null()) {
-                    rec.data.equiangular = j["equiangular"];
+                if (json["equiangular"].is_boolean()) {
+                    rec.data.equiangular = json["equiangular"];
                 }
 
-                if (!j["multiscatter"].is_null()) {
-                    rec.data.multiscatter = j["multiscatter"];
+                if (json["multiscatter"].is_boolean()) {
+                    rec.data.multiscatter = json["multiscatter"];
                 }
             }
 
