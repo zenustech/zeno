@@ -178,6 +178,11 @@ extern "C" __global__ void __closesthit__radiance_volume()
     {
         t1 = testPRD.maxDistance;
         surface_inside = true;
+
+        if (prd->depth == 0) {
+            prd->_tmax_ = testPRD.maxDistance;
+            prd->record = testPRD.record;
+        }
     }
 
     const float t_max = fmaxf(0.f, t1 - t0); // world space
