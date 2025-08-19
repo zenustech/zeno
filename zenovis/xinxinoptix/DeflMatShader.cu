@@ -413,7 +413,10 @@ extern "C" __global__ void __closesthit__radiance()
         } else if(rnd(prd->seed)<mats.opacity) {
             prd->origin = prd->origin + float3(attrs.pOffset);
             prd->_tmin_ = optixGetRayTmax();
-        }
+        } else {
+            prd->done = true;
+            prd->maxDistance = optixGetRayTmax();
+        } 
         return;
     }
 
