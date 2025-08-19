@@ -1018,7 +1018,7 @@ __forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
 __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, 
                                            vec3 v0, vec3 v1, vec3 v2, vec3 p, 
-                                           vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset, int depth, vec4 h)
+                                           vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset, int depth, vec4 h, bool forced_hit)
 {
     if(depth>1 || isShadowRay)
         return vec4(uv.x, uv.y, 1, 0);
@@ -1087,8 +1087,8 @@ __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, 
     vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
     float c = smoothstep(h.z, h.w, abs(dot(r,N)));
-    hit = abs(dot(r,N))>h.w?true:hit;
-    float hito = hit? 1.0f : c;
+    hit = forced_hit?true:hit;
+
     pOffset = hit?vec3(0,0,0): h.y * h.x * N;
     return vec4(finalTexCoords.x, finalTexCoords.y, hit?1:0, 0);
 }
