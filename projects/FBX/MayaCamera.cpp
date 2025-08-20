@@ -166,6 +166,7 @@ struct CameraEval: zeno::INode {
                             camera->focalPlaneDistance = zeno::distance(camera->pos, cur_target);
                         }
                         set_output("camera", std::move(camera));
+                        break;
                     }
                 }
             }
