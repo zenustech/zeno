@@ -476,9 +476,9 @@ static void createSBT( PathTracerState& state, bool raygen=false)
             if (!shader_ref.parameters.empty()) {
 
                 const auto& json = shader_ref.parameters;
-                auto& jopacity = json["opacity"];
-                if (!jopacity.is_null() && jopacity.is_number_float()) {
-                    rec.data.opacity = jopacity;
+
+                if (json.contains("opacity")) {
+                    rec.data.opacity = json["opacity"].template get<float>();
                 } else {
                     rec.data.opacity = FLT_MAX;
                 }
@@ -529,19 +529,19 @@ static void createSBT( PathTracerState& state, bool raygen=false)
             {
                 const auto json = shader_ref.parameters;
 
-                if (json["vol_depth"].is_number_integer()) {
+                if (json.contains("vol_depth")) {
                     rec.data.vol_depth = json["vol_depth"];
                 }
 
-                if (json["vol_extinction"].is_number_float()) {
+                if (json.contains("vol_extinction")) {
                     rec.data.vol_extinction = json["vol_extinction"];
                 }
 
-                if (json["equiangular"].is_boolean()) {
+                if (json.contains("equiangular")) {
                     rec.data.equiangular = json["equiangular"];
                 }
 
-                if (json["multiscatter"].is_boolean()) {
+                if (json.contains("multiscatter")) {
                     rec.data.multiscatter = json["multiscatter"];
                 }
             }
