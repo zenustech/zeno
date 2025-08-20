@@ -1274,11 +1274,18 @@ struct OptixShaderWrapper
     raii<OptixProgramGroup> callable_prog_group {};
    
     std::vector<uint64_t>                  texs {};
-    bool                                has_vdb {};
     std::vector<std::string>               vbds {};
 
     nlohmann::json                    parameters{};
     std::map<std::string, std::string>   macros {};
+
+    bool isVol() const {
+        return macros.count("_volu_");
+    }
+
+    bool isHomoVol() const {
+        return macros.count("_homo_");
+    }
 
     OptixShaderWrapper() = default;
     ~OptixShaderWrapper() = default;

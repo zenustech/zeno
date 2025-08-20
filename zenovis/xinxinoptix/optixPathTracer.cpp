@@ -464,13 +464,11 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     for( int j = 0; j < shader_count; ++j ) {
 
         auto& shader_ref = OptixUtil::rtMaterialShaders[j];
-        const auto has_vdb = shader_ref.has_vdb;
-
         const uint sbt_idx = RAY_TYPE_COUNT * j;
 
         OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prog_group, &callable_records[j] ) );
 
-        if (!has_vdb) {
+        if (!shader_ref.isVol()) {
 
             HitGroupRecord rec = {};
             if (!shader_ref.parameters.empty()) {
@@ -1438,7 +1436,12 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         rtShader.macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
-            rtShader.has_vdb = true; 
+            rtShader.macros["_volu_"] = true;
+
+            if (rtShader.parameters.contains("vol_depth")) {
+                auto vol_depth = rtShader.parameters["vol_depth"];
+                rtShader.macros["_homo_"] = vol_depth == 0;
+            }
         }
 
         auto& texs = shaders[i]->texs;

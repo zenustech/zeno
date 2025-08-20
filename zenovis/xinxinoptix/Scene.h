@@ -379,7 +379,7 @@ public:
                 shader_visiable = VisibilityMask::DefaultMatMask;
                 
             } else if (ShaderMark::Volume == geo_type) {
-                shader_visiable = VisibilityMask::VolumeMatMask;
+                shader_visiable = VisibilityMask::VolumeMaskHeterogeneous;
                 
                 auto shader_index = shader_indice_table[material_key];
 
@@ -395,7 +395,9 @@ public:
                         auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
                         candi.handle = vdb_ptr->node->handle;
                     } //vdb_ptr
-                }
+                } 
+                if (shader_ref.isHomoVol())
+                    shader_visiable = VisibilityMask::VolumeMaskAnalytics;
             }
 
             candi.sbt = shader_index * RAY_TYPE_COUNT;

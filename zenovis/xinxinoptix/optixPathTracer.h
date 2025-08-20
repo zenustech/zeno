@@ -19,7 +19,9 @@ enum VisibilityMask {
     NothingMask    = 0u,
     DefaultMatMask = 1u << 0,
     LightMatMask   = 1u << 1,
-    VolumeMatMask  = 1u << 2,
+    VolumeMaskAnalytics     = 1u << 2,
+    VolumeMaskHeterogeneous = 1u << 3,
+    VolumeMatMask = VolumeMaskAnalytics | VolumeMaskHeterogeneous,
     EverythingMask = 255u
 }; 
 

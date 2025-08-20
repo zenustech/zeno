@@ -357,6 +357,7 @@ extern "C" __global__ void __raygen__rg()
             }
             
             _attenuation = prd.attenuation;
+            _mask_ &= ~VolumeMaskAnalytics;
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         }
         seed = prd.seed;
