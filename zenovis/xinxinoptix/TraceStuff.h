@@ -44,8 +44,6 @@ enum medium{
 struct VolumePRD {
     float t0;
     float t1;
-
-    bool afterSingleScatter = false;
 };
 
 struct ShadowPRD {
@@ -273,13 +271,6 @@ static __forceinline__ __device__ TypePRD* getPRD()
 extern "C" {
 extern __constant__ Params params;
 }
-
-
-static __forceinline__ __device__ void setPayloadOcclusion( bool occluded )
-{
-    optixSetPayload_0( static_cast<unsigned int>( occluded ) );
-}
-
 
 struct Onb
 {

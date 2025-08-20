@@ -243,12 +243,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
             //dt = -logf(1.0 - prd->rndf() *(1-tmp)) / homo_out.density;
         }
 
-        if (prd->vol.afterSingleScatter) {
-
-            dt = t_max;
-            prd->vol.afterSingleScatter = false;
-        }
-
         if (dt >= t_max) {
             
             cihouVolumeEdge();
@@ -265,10 +259,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 float2 uu = { prd->rndf(), prd->rndf() };
                 auto pdf = hg.sample(-ray_dir, new_dir, uu);              
                 prd->samplePdf = pdf;
-            } else {
-
-                prd->vol.afterSingleScatter = true;
-                prd->_mask_ = VolumeMatMask;
             }
         }
 
@@ -299,6 +289,12 @@ extern "C" __global__ void __closesthit__radiance_volume()
         DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
         //prd->radiance += prd->emission;
         prd->radiance = prd->radiance * weight;
+
+        if (!sbt_data->multiscatter) {
+            transmittance = expf(-homo_out.extinction * (t_max-dt) );
+            prd->updateAttenuation( transmittance );
+            prd->_mask_ = EverythingMask ^ VolumeMatMask;
+        }
         return;
     }
 
