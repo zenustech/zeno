@@ -595,14 +595,14 @@ struct MergeMultiScenes : zeno::INode {
         main_scene->root_name = get_input2<std::string>("root_name");
         main_scene->type = get_input2<std::string>("type");
         main_scene->matrixMode = get_input2<std::string>("matrixMode");
+        if (zeno::starts_with(main_scene->root_name, "/") == false) {
+            main_scene->root_name = "/" + main_scene->root_name;
+        }
         {
             SceneTreeNode root_node;
             root_node.matrix = main_scene->root_name + "_m";
             main_scene->node_to_matrix[root_node.matrix] = {glm::mat4(1)};
             main_scene->scene_tree[main_scene->root_name] = root_node;
-        }
-        if (zeno::starts_with(main_scene->root_name, "/") == false) {
-            main_scene->root_name = "/" + main_scene->root_name;
         }
         std::unordered_map<std::string, int> sub_root_names;
         if (has_input("scene_list")) {
