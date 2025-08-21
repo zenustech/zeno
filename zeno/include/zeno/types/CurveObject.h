@@ -78,9 +78,9 @@ struct CurveData : private _CurveDataDetails {
 
     struct Range {
         float xFrom{0};
-        float xTo{0};
+        float xTo{1};
         float yFrom{0};
-        float yTo{0};
+        float yTo{1};
     };
 
     std::vector<float> cpbases;
