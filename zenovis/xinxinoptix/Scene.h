@@ -106,6 +106,9 @@ public:
             const auto& [_, mark] = k;
             if (mark == ShaderMark::Mesh) mesh_sbt_max = max(mesh_sbt_max, v);
         }
+        for (const auto &[key, value]: shader_indice_table) {
+            dc_index_to_mat[value] = std::get<0>(key);
+        }
     }
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
@@ -116,6 +119,7 @@ public:
     }    
 
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
+    std::unordered_map<uint64_t, std::string> dc_index_to_mat;
 
     Json static_scene_tree;
     Json dynamic_scene_tree;

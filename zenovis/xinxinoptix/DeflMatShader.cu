@@ -522,7 +522,7 @@ extern "C" __global__ void __closesthit__radiance()
     if (prd->depth==0) {
         prd->_tmax_ = optixGetRayTmax();
         *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
-        prd->record.z = sbtGASIndex;
+        prd->record.z = dc_index;
         prd->record.w = primIdx;
     }
 

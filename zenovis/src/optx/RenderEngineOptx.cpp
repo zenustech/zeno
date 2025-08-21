@@ -1790,7 +1790,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         posWS += cam.m_pos;
         return posWS;
     }
-    std::optional<std::tuple<std::string, uint32_t, uint32_t>> getClickedId(float x, float y) override {
+    std::optional<std::tuple<std::string, std::string, uint32_t>> getClickedId(float x, float y) override {
         auto ids = xinxinoptix::get_click_id(x, y);
         if (ids == glm::uvec4()) {
             return {};
@@ -1798,7 +1798,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         uint64_t obj_id = *reinterpret_cast<uint64_t *>(&ids);
         if (defaultScene.gas_to_obj_id.count(obj_id)) {
             auto name = defaultScene.gas_to_obj_id.at(obj_id);
-            return std::tuple<std::string, uint32_t, uint32_t>(name, ids[2], ids[3]);
+            auto mat_name = std::string();
+            if (defaultScene.dc_index_to_mat.count(ids[2])) {
+                mat_name = defaultScene.dc_index_to_mat[ids[2]];
+            }
+            return std::tuple<std::string, std::string, uint32_t>(name, mat_name, ids[3]);
         }
         return {};
     }
