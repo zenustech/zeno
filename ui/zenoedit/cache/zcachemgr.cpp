@@ -1,7 +1,9 @@
-#include "zcachemgr.h"
+﻿#include "zcachemgr.h"
 #include "zassert.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GlobalComm.h>
+#include "settings/zsettings.h"
+#include <regex>
 
 
 ZCacheMgr::ZCacheMgr()
@@ -33,7 +35,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
     }
     else {
         //QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-        QString eternalFolder = "zeno__cache__file__storage__path";
+        QString eternalFolder = "zeno__cache__file__storage__path_" + QString::number(QCoreApplication::applicationPid());
         QDir enternalFullPath = QDir::cleanPath(dirCacheRoot.absoluteFilePath(eternalFolder));
         if (enternalFullPath.exists()) {
             QFileInfo enternalFullPathinfo(dirCacheRoot.absoluteFilePath(eternalFolder));
@@ -165,4 +167,38 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
 void ZCacheMgr::removeObjTmpCacheDir()
 {
     m_objTmpCacheDir.remove();
+}
+
+void ZCacheMgr::procExitCleanUp()
+{
+	QSettings settings(zsCompanyName, zsEditor);
+	bool autoClean = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
+	bool autoRemove = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
+    removeObjTmpCacheDir();
+	if (autoClean || autoRemove)
+	{
+        cleanCacheDir();
+	}
+}
+
+std::vector<std::filesystem::path> ZCacheMgr::historyCacheList(QDir dirCacheRoot)
+{
+    std::vector<std::filesystem::path> lst;
+
+    QFileInfo dirInfo(dirCacheRoot.absolutePath());
+	if (dirCacheRoot.exists() && dirInfo.isDir() && dirInfo.isReadable()) {
+        auto lastAbsoluteCacheDir = lastRunCachePath.absolutePath();
+		std::regex pattern("^zeno__cache__file__storage__path_\\d+$");
+        dirCacheRoot.setFilter(QDir::AllDirs | QDir::Hidden | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+		for (const QFileInfo& fileInfo : dirCacheRoot.entryInfoList()) {
+			if (fileInfo.isDir()) {
+				QString dirName = fileInfo.fileName();
+				QString absoluteDir = fileInfo.absoluteFilePath();
+				if (std::regex_match(dirName.toStdString(), pattern) && lastAbsoluteCacheDir != absoluteDir) {
+                    lst.push_back(std::filesystem::absolute(std::filesystem::path(absoluteDir.toStdString())));
+				}
+			}
+		}
+	}
+    return lst;
 }

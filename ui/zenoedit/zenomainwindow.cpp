@@ -1,4 +1,4 @@
-#include "launch/livehttpserver.h"
+﻿#include "launch/livehttpserver.h"
 #include "launch/livetcpserver.h"
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
@@ -1373,15 +1373,8 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     killProgram();
     killOptix();
 
-    QSettings settings(zsCompanyName, zsEditor);
-    bool autoClean = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
-    bool autoRemove = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-    mgr->removeObjTmpCacheDir();
-    if (autoClean || autoRemove)
-    {
-        mgr->cleanCacheDir();
-    }
+	std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    mgr->procExitCleanUp();
 
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
