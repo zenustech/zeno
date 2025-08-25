@@ -293,6 +293,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         return;
     resize_dirty = false;
 
+
     output_buffer.resize( params.width, params.height );
 
     auto count = params.width * params.height;
@@ -345,8 +346,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     ) );
                     
         //timer.tick();
-        
-        OPTIX_CHECK( optixLaunch(
+                optixLaunch(
                     OptixUtil::pipeline,
                     0,
                     (CUdeviceptr)state.d_params.handle,
@@ -354,9 +354,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     &state.sbt,
                     state.params.width,
                     state.params.height,
-                    1
-                    ) );
-
+                    1);
         //timer.tock("frame time");
         //output_buffer.unmap();
 }

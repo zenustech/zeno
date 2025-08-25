@@ -91,7 +91,11 @@ vec3 PhysicalCamera(vec3 in,
   mapped = in * exposure;
   return  enableExposure? (enableACES? ACESFilm(mapped):mapped ) : (enableACES? ACESFilm(in) : in);
 }
+__inline__ __device__ bool isBadVector(const float3 & vector) {
 
+    bool bad = !isfinite(vector.x) || !isfinite(vector.y) || !isfinite(vector.z);
+    return bad? true : lengthSquared(vector) == 0.0f;
+}
 extern "C" __global__ void __raygen__rg()
 {
     const auto w = params.width;
@@ -178,7 +182,7 @@ extern "C" __global__ void __raygen__rg()
 
         // Under camer local space, cam.eye as origin, cam.right as X axis, cam.up as Y axis, cam.front as Z axis.
         float3 eye_shake     = r1 * (cosf(r0) * make_float3(1.0f,0.0f,0.0f) + sinf(r0) * make_float3(0.0f,1.0f,0.0f)); // r1 * ( cos(r0) , sin(r0) , 0 );
-        float3 focal_plane_center = make_float3(cam.vertical_shift*cam.height, cam.horizontal_shift*cam.width, cam.focal_length);
+        float3 focal_plane_center = make_float3(cam.horizontal_shift*cam.width, cam.vertical_shift*cam.height, cam.focal_length);
         float3 old_direction =   focal_plane_center + make_float3(cam.width * 0.5f * d.x, cam.height * 0.5f * d.y, 0.0f);
         float3 tile_normal =  make_float3(sin_pitch*sin_yaw, - cos_yaw * sin_pitch, cos_pitch);
 
@@ -326,7 +330,7 @@ extern "C" __global__ void __raygen__rg()
                 auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
-                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(40));
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
             #if __AOV__
@@ -355,10 +359,15 @@ extern "C" __global__ void __raygen__rg()
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
             }
-            
+
             _attenuation = prd.attenuation;
-            _mask_ &= ~VolumeMaskAnalytics;
+            if(prd.depth > 1)
+                _mask_ &= ~VolumeMaskAnalytics;
+            //if(isfinite(ray_origin.x) && isfinite(ray_origin.y) && isfinite(ray_origin.z))
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+            //else
+                //;
+
         }
         seed = prd.seed;
     }

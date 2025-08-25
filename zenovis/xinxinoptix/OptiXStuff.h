@@ -151,7 +151,7 @@ inline void createContext()
 #else
     options.logCallbackLevel          = 4;
 #endif
-    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
+    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 

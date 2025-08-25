@@ -258,6 +258,11 @@ vec3 bezierOffset(vec3 P, vec3 A, vec3 B, vec3 C, vec3 nA, vec3 nB, vec3 nC, vec
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
+//    if(!  (isfinite(prd->origin.x)&&isfinite(prd->origin.y)&&isfinite(prd->origin.z)) )
+//    {
+//        prd->done = true;
+//        return;
+//    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();

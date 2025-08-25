@@ -1089,7 +1089,7 @@ __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, 
     float c = smoothstep(h.z, h.w, abs(dot(r,N)));
     hit = forced_hit?true:hit;
 
-    pOffset = hit?vec3(0,0,0): h.y * h.x * N;
+    pOffset = {};//hit?vec3(0,0,0): h.y * h.x * N;
     return vec4(finalTexCoords.x, finalTexCoords.y, hit?1:0, 0);
 }
 /////////////end of geometry math/////////////////////////////////////////////////

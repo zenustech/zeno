@@ -182,7 +182,7 @@ struct ShaderVolumeHomogeneous : INode {
         auto mtl = std::make_shared<MaterialObject>();
 
         auto extinction = get_input2<zeno::vec3f>("extinction");
-        extinction = clamp(extinction, 1e-5, 1e+5);
+            extinction = clamp(extinction, 1e-10, 1e+5);
 
         auto albedo     = get_input2<zeno::vec3f>("albedo");
         auto anisotropy = get_input2<float>("anisotropy");

@@ -231,12 +231,19 @@ extern "C" __global__ void __closesthit__radiance_volume()
         } else {
 
             auto total_transmittance = expf(-homo_out.extinction * t_max);
-            dt = -logf(1.0f - prd->rndf() * (1.0f - average(total_transmittance))) / average(homo_out.extinction);
-
+            //dt = -logf(1.0f - prd->rndf() * (1.0f - average(total_transmittance))) / average(homo_out.extinction);
+            double x = 1.0 - prd->rndf() * (1.0 - average(total_transmittance));
+            dt = -log(x) / average(homo_out.extinction);
             auto cdf = 1.0f - total_transmittance;
             auto pdf = expf(-homo_out.extinction * dt) * homo_out.extinction;
-
-            weight = cdf / pdf;
+            auto e = homo_out.extinction;
+            //cdf / pdf = [ 1.0 - exp(-extinction * t_max) ] / [exp( - extinction * dt) * extinction]
+            //L'H?pital's law:
+            //lim extinction->0   cdf/pdf = [ t_max * e(-extinction * t_max) ] / [ -dt * exp( - extinction * dt) * extinction + exp( - extinction * dt )  ]
+            //weight = cdf / pdf;
+            weight.x = e.x>1e-4?cdf.x/pdf.x:(t_max * expf(-e.x * t_max))/(-dt*expf(-e.x*dt)*e.x + expf(-e.x*dt));
+            weight.y = e.y>1e-4?cdf.y/pdf.y:(t_max * expf(-e.y * t_max))/(-dt*expf(-e.y*dt)*e.y + expf(-e.y*dt));
+            weight.z = e.z>1e-4?cdf.z/pdf.z:(t_max * expf(-e.z * t_max))/(-dt*expf(-e.z*dt)*e.z + expf(-e.z*dt));
             weight *= homo_out.extinction;
 
             //auto tmp = expf(-t_max * homo_out.density);
