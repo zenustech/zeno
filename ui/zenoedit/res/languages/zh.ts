@@ -3510,6 +3510,10 @@ All Files (*)</source>
         <source>Prim: </source>
         <translation>图元对象： </translation>
     </message>
+	<message>
+        <source>Material id: </source>
+        <translation>材质ID： </translation>
+    </message>
     <message>
         <source>enable sort</source>
         <translation type="unfinished"></translation>

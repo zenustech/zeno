@@ -2254,12 +2254,12 @@ void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelInd
     }
 }
 
-void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
+void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids, std::string mtlid, bool selecFromOpitx) {
     //dispatch to all property panel.
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* dock : docks) {
         if (dock->isVisible())
-            dock->onPrimitiveSelected(primids);
+            dock->onPrimitiveSelected(primids, mtlid, selecFromOpitx);
     }
 }
 

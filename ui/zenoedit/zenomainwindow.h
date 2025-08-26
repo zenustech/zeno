@@ -1,4 +1,4 @@
-#ifndef __ZENO_MAINWINDOW_H__
+﻿#ifndef __ZENO_MAINWINDOW_H__
 #define __ZENO_MAINWINDOW_H__
 
 #include <unordered_set>
@@ -158,7 +158,7 @@ public slots:
     void importGraph(bool bPreset = false);
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-    void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
+    void onPrimitiveSelected(const std::unordered_set<std::string>& primids, std::string mtlid = "", bool selecFromOpitx = false);
     void updateViewport(const QString& action = "");
     void onRunFinished();
     void onFeedBack();

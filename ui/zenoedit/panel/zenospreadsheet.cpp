@@ -19,6 +19,7 @@
 #include "nodesys/zenonode.h"
 #include "settings/zenosettingsmanager.h"
 #include <zenomodel/include/uihelper.h>
+#include "viewport/optixviewport.h"
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -32,26 +33,21 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     setPalette(palette);
     setAutoFillBackground(true);
 
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    //setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-    QHBoxLayout* pTitleLayout = new QHBoxLayout;
+	QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
     QLabel* pPrim = new QLabel(tr("Prim: "));
     pPrim->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrim);
-
     pPrimName->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrimName);
+    pPrimName->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     m_checkSortingEnabled = new QCheckBox(this);
     m_checkSortingEnabled->setProperty("cssClass", "proppanel");
     m_checkSortingEnabled->setText(tr("enable sort"));
-    pTitleLayout->addWidget(m_checkSortingEnabled);
     m_checkStringMapping = new QCheckBox(this);
     m_checkStringMapping->setProperty("cssClass", "proppanel");
     m_checkStringMapping->setText(tr("String mapping"));
-    pTitleLayout->addWidget(m_checkStringMapping);
-
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
@@ -64,9 +60,35 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMode->addItem("UVs");
     pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
+
+    //允许无限窄
+    pPrim->setMinimumWidth(1);
+    pPrimName->setMinimumWidth(1);
+    m_checkSortingEnabled->setMinimumWidth(1);
+    m_checkStringMapping->setMinimumWidth(1);
+    pMode->setMinimumWidth(1);
+
+    pTitleLayout->addWidget(pPrim);
+    pTitleLayout->addWidget(pPrimName);
+    pTitleLayout->addStretch();
+    pTitleLayout->addWidget(m_checkSortingEnabled);
+    pTitleLayout->addWidget(m_checkStringMapping);
     pTitleLayout->addWidget(pMode);
 
+    QHBoxLayout* pTitleLayout2 = new QHBoxLayout;
+    pMat = new QLabel(tr("Material id: "));
+    pMat->setProperty("cssClass", "proppanel");
+    pMtlid->setProperty("cssClass", "proppanel");
+    pMtlid->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    pMat->setMinimumWidth(1);
+    pMtlid->setMinimumWidth(1);
+    pTitleLayout2->addWidget(pMat);
+    pTitleLayout2->addWidget(pMtlid);
+    pTitleLayout2->addStretch();
+
     pMainLayout->addLayout(pTitleLayout);
+    pMainLayout->addLayout(pTitleLayout2);
 
     auto sortModel = new QSortFilterProxyModel(this);
     sortModel->setSourceModel(dataModel);
@@ -76,12 +98,13 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     prim_attr_view->setSortingEnabled(false);
     prim_attr_view->setProperty("cssClass", "proppanel");
     prim_attr_view->setModel(sortModel);
-    prim_attr_view->installEventFilter(this);
-    pMainLayout->addWidget(prim_attr_view);
+	prim_attr_view->installEventFilter(this);
+	pMainLayout->addWidget(prim_attr_view);
 
 //    pStatusBar->setAlignment(Qt::AlignRight);
-    pStatusBar->setProperty("cssClass", "proppanel");
-    pMainLayout->addWidget(pStatusBar);
+	pStatusBar->setProperty("cssClass", "proppanel");
+    pStatusBar->setMinimumWidth(1);
+	pMainLayout->addWidget(pStatusBar);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZERROR_EXIT(pWin);
@@ -252,10 +275,22 @@ void ZenoSpreadsheet::clear() {
    pPrimName->clear();
     this->dataModel->setModelData(nullptr);
     pStatusBar->clear();
+
+    pMtlid->clear();
+    pMat->hide();
+    pMtlid->hide();
 }
 
-void ZenoSpreadsheet::setPrim(std::string primid) {
+void ZenoSpreadsheet::setPrim(std::string primid, std::string mtlid, bool selecFromOpitx) {
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
+    pMtlid->setText(QString(mtlid.c_str()));
+    if (!selecFromOpitx) {
+        pMat->hide();
+        pMtlid->hide();
+    } else {
+        pMat->show();
+        pMtlid->show();
+    }
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
@@ -269,6 +304,15 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(pZenovis);
     auto scene = pZenovis->getSession()->get_scene();
     ZASSERT_EXIT(scene);
+    for (auto view : views) {//views[0]的objectsMan可能未被加载
+        pZenovis = view->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+        if (scene->objectsMan->objects.size() != 0) {
+            break;
+        }
+    }
 
     bool found = false;
     auto ptr = scene->objectsMan->get(primid);
