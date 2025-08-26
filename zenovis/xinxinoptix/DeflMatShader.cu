@@ -794,7 +794,7 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     ShadowPRD shadowPRD {};
-    shadowPRD.seed = prd->seed;
+    shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
     shadowPRD.depth = prd->depth;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;

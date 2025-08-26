@@ -280,7 +280,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         }
 
         ShadowPRD shadowPRD {};
-        shadowPRD.seed = prd->seed;
+        shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
         shadowPRD.origin = new_orig; //camera sapce
         shadowPRD.attanuation = vec3(1.0f);
         
@@ -375,7 +375,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     scattering = vol_out.albedo;
 
     ShadowPRD shadowPRD {};
-    shadowPRD.seed = prd->seed;
+    shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
     shadowPRD.origin = new_orig; //camera sapce
     shadowPRD.attanuation = vec3(1.0f);
     
