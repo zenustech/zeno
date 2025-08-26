@@ -1449,11 +1449,12 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             auto tid = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
             rtShader.texs.push_back(tid);
         }
-
-        auto& vdbs = shaders[i]->vdb_keys;
-        for (int j=0; j<shaders[i]->vdb_keys.size(); ++j)
+        
+        const auto& vdbs = shaders[i]->vdb_keys;
+        rtShader.vbds.resize(vdbs.size());
+        for (int j=0; j<vdbs.size(); ++j)
         {
-            rtShader.vbds.push_back(vdbs[j]);
+            rtShader.vbds[j] = vdbs[j];
         }
 }); //_compile_group
     } //for
