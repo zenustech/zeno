@@ -124,6 +124,17 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             }
         }
     }
+    else if (event->button() == Qt::RightButton) {
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            if (!m_hit_posWS.has_value()) {
+                auto &cam = scene->camera;
+                m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
+                if (m_hit_posWS.has_value()) {
+                    scene->camera->setPivot(m_hit_posWS.value());
+                }
+            }
+        }
+    }
     auto m_picker = this->m_picker.lock();
     auto m_transformer = this->m_transformer.lock();
     int button = Qt::NoButton;
