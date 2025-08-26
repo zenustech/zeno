@@ -8,9 +8,11 @@
 #include <zenomodel/include/uihelper.h>
 #include "variantptr.h"
 
-ZForkSubgraphDlg::ZForkSubgraphDlg(const QMap<QString, QString>& subgs, QWidget* parent)
+ZForkSubgraphDlg::ZForkSubgraphDlg(const QMap<QString, QString>& subgs, QPointF startPos, QModelIndex subgIdx, QWidget* parent)
     : ZFramelessDialog(parent)
     , m_subgsMap(subgs)
+    , m_startPos(startPos)
+    , m_subgIdx(subgIdx)
 {
     initUi();
     QString path = ":/icons/zeno-logo.png";
@@ -201,8 +203,6 @@ void ZForkSubgraphDlg::onOkClicked()
     QMap<QString, QMap<QString, QVariant>> matValueMap;
     if (!m_importPath.isEmpty())
         matValueMap = readFile();
-    QPointF pos = m_nodeIndex.data(ROLE_OBJPOS).toPointF();
-    const auto& sugIdx = m_nodeIndex.data(ROLE_SUBGRAPH_IDX).toModelIndex();
     for (int row = 0; row < count; row++)
     {
         QString subgName = m_pTableWidget->item(row, 0)->data(Qt::DisplayRole).toString();
@@ -210,7 +210,7 @@ void ZForkSubgraphDlg::onOkClicked()
         QString mtlid = m_pTableWidget->item(row, 2)->data(Qt::DisplayRole).toString();
         QString old_mtlid = m_pTableWidget->item(row, 2)->data(Qt::UserRole).toString();
         
-        const QModelIndex& index = pGraphsModel->forkMaterial(sugIdx, pGraphsModel->index(subgName), name, mtlid, old_mtlid);
+        const QModelIndex& index = pGraphsModel->forkMaterial(m_subgIdx, pGraphsModel->index(subgName), name, mtlid, old_mtlid);
         if (!index.isValid())
         {
             QMessageBox::warning(this, tr("warring"), tr("fork preset subgraph '%1' failed.").arg(name));
@@ -219,7 +219,7 @@ void ZForkSubgraphDlg::onOkClicked()
         
         int currC = row / rowNum + 1;
         int currR = row % rowNum;
-        QPointF newPos(pos.x() + currC * 600, pos.y() + currR * 600);
+        QPointF newPos(m_startPos.x() + currC * 600, m_startPos.y() + currR * 600);
         pGraphsModel->ModelSetData(index, newPos, ROLE_OBJPOS);
 
         if (!matValueMap.contains(old_mtlid))
@@ -257,9 +257,4 @@ void ZForkSubgraphDlg::onOkClicked()
         }
     }
     accept();
-}
-
-void ZForkSubgraphDlg::setNodeIdex(const QModelIndex& index)
-{
-    m_nodeIndex = index;
 }

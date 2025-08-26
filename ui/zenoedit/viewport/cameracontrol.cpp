@@ -1,4 +1,4 @@
-#include <zenovis/RenderEngine.h>
+﻿#include <zenovis/RenderEngine.h>
 #include "cameracontrol.h"
 #include "zenovis.h"
 //#include <zenovis/Camera.h>
@@ -501,51 +501,94 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
 
 void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
 {
-    auto pos = event->pos();
-    auto m_picker = this->m_picker.lock();
-    if (!m_picker)
-        return;
-    auto scene = m_zenovis->getSession()->get_scene();
-    auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
-    if (!picked_prim.empty()) {
-        auto primList = scene->objectsMan->pairs();
-        QString mtlid;
+    ZASSERT_EXIT(m_zenovis);
+    if (qobject_cast<ViewportWidget*>(m_zenovis->parent()))
+    {
+        auto pos = event->pos();
+        auto m_picker = this->m_picker.lock();
+        if (!m_picker)
+	        return;
+        auto scene = m_zenovis->getSession()->get_scene();
+        auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
+        if (!picked_prim.empty()) {
+	        auto primList = scene->objectsMan->pairs();
+	        QString mtlid;
         for (auto const &[key, ptr]: primList) {
-            if (picked_prim == key) {
+				if (picked_prim == key) {
                 auto &ud = ptr->userData();
-                mtlid = QString::fromStdString(ud.get2<std::string>("mtlid", ""));
+					mtlid = QString::fromStdString(ud.get2<std::string>("mtlid", ""));
                 std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
-            }
-        }
+				}
+			}
 
-        QString subgraph_name;
-        QString obj_node_name;
-        int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
-        if (type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL && !mtlid.isEmpty())
-        {
-            auto graphsMgm = zenoApp->graphsManagment();
-            IGraphsModel* pModel = graphsMgm->currentModel();
+			QString subgraph_name;
+			QString obj_node_name;
+			int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
+			if (type == SUBGRAPH_TYPE::SUBGRAPH_METERIAL && !mtlid.isEmpty())
+			{
+				auto graphsMgm = zenoApp->graphsManagment();
+				IGraphsModel* pModel = graphsMgm->currentModel();
 
-            const auto& lst = pModel->subgraphsIndice(SUBGRAPH_METERIAL);
-            for (const auto& index : lst)
-            {
-                if (index.data(ROLE_MTLID).toString() == mtlid)
-                    subgraph_name = index.data(ROLE_OBJNAME).toString();
-            }
-        }
-        if (subgraph_name.isEmpty())
-        {
-            auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
-            subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
-            obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
-        }
+				const auto& lst = pModel->subgraphsIndice(SUBGRAPH_METERIAL);
+				for (const auto& index : lst)
+				{
+					if (index.data(ROLE_MTLID).toString() == mtlid)
+						subgraph_name = index.data(ROLE_OBJNAME).toString();
+				}
+			}
+			if (subgraph_name.isEmpty())
+			{
+				auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
+				subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
+				obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+			}
 
-        ZenoMainWindow *pWin = zenoApp->getMainWindow();
-        if (pWin) {
-            ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
-            if (pEditor)
-                pEditor->activateTab(subgraph_name, "", obj_node_name);
-        }
+			ZenoMainWindow *pWin = zenoApp->getMainWindow();
+			if (pWin) {
+				ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
+				if (pEditor)
+					pEditor->activateTab(subgraph_name, "", obj_node_name);
+			}
+		}
+    }else{//光追窗口
+		auto scene = m_zenovis->getSession()->get_scene();
+		auto& cam = scene->camera;
+		auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+		if (ids.has_value()) {
+			auto [obj_id, mat_id, prim_id] = ids.value();
+            ZASSERT_EXIT(!mat_id.empty());
+			if (IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel())
+			{
+				for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
+				{
+                    auto s = subgIdx.data(ROLE_OBJNAME).toString();
+					if (subgIdx.data(ROLE_MTLID).toString() == QString::fromStdString(mat_id))
+					{
+						if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                            if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+								pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                                return;
+                            }
+						}
+					}
+				}
+                QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
+                for (auto item : resLst)
+                {
+					INPUT_SOCKETS inputs = item.targetIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+					if (inputs.find("mtlid") != inputs.end()) {
+						if (inputs["mtlid"].info.defaultValue.toString() == QString::fromStdString(mat_id)) {
+							if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+								if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+									pEditor->activateTab(item.subgIdx.data(ROLE_OBJNAME).toString(), "", item.targetIdx.data(ROLE_OBJID).toString(), false, false);
+									return;
+								}
+							}
+						}
+					}
+                }
+			}
+		}
     }
 }
 

@@ -2582,6 +2582,10 @@
         <source>Cache information was deleted during recording.</source>
         <translation type="unfinished">录制过程已删除缓存信息</translation>
     </message>
+	<message>
+        <source>Cache folder is not empty, do you want to clear it?</source>
+        <translation type="unfinished">缓存文件夹不为空，是否清除？</translation>
+    </message>
 </context>
 <context>
     <name>ZTextureBar</name>
@@ -3570,8 +3574,12 @@ All Files (*)</source>
         <translation type="unfinished">删除子图</translation>
     </message>
     <message>
-        <source>Do you want to delete the subgraph &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <source>Do you want to delete the subgraph %1</source>
+        <translation type="unfinished">是否删除子图 %1</translation>
+    </message>
+	<message>
+        <source>Delete the remaining subgraphs</source>
+        <translation type="unfinished">删除剩余子图</translation>
     </message>
 </context>
 <context>

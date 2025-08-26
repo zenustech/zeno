@@ -1,4 +1,4 @@
-#ifndef __ZENO_GRAPHS_EDITOR_H__
+﻿#ifndef __ZENO_GRAPHS_EDITOR_H__
 #define __ZENO_GRAPHS_EDITOR_H__
 
 #include <QtWidgets>
@@ -29,7 +29,7 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
-    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
+    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false, bool focusWithSelect = true);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
     ZenoSubGraphView* getCurrentSubGraphView();

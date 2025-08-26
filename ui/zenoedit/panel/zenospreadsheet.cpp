@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by zh on 2022/6/27.
 //
 
@@ -15,6 +15,8 @@
 #include "viewport/displaywidget.h"
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphscene.h"
+#include "nodesys/zenonode.h"
 #include "settings/zenosettingsmanager.h"
 #include <zenomodel/include/uihelper.h>
 
@@ -140,7 +142,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     {
         QString mtlid = index.data(Qt::DisplayRole).toString();
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        if (pGraphsModel)
+        if (pGraphsModel && !mtlid.isEmpty())
         {
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
             {
@@ -151,11 +153,28 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                     if (pWin) {
                         ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_METERIAL);
                         ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-                        if (pEditor)
+                        if (pEditor) {
                             pEditor->activateTab(subgraph_name, "", "");
+                            return;
+                        }
                     }
                 }
             }
+			QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
+			for (auto item : resLst)
+			{
+				INPUT_SOCKETS inputs = item.targetIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+				if (inputs.find("mtlid") != inputs.end()) {
+					if (inputs["mtlid"].info.defaultValue.toString() == mtlid) {
+						if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+							if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+								pEditor->activateTab(item.subgIdx.data(ROLE_OBJNAME).toString(), "", item.targetIdx.data(ROLE_OBJID).toString(), false, false);
+								return;
+							}
+						}
+					}
+				}
+			}
         }
     }
     //QMimeData* pMimeData = new QMimeData;
@@ -230,7 +249,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 }
 
 void ZenoSpreadsheet::clear() {
-    pPrimName->clear();
+   pPrimName->clear();
     this->dataModel->setModelData(nullptr);
     pStatusBar->clear();
 }
@@ -374,7 +393,23 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             pMenu->addMenu(pPresetMenu);
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
             const auto& nodeIdx = pGraphsModel->nodeIndex(pPrimName->text());
-            ZASSERT_EXIT(nodeIdx.isValid(), false);
+            QModelIndex sugIdx = pGraphsModel->index("main");
+            QPointF pos(0, 0);
+            if (nodeIdx.isValid()) {//来自gl窗口
+                sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+            } else {//来自光追窗口
+                auto main = zenoApp->getMainWindow();
+                ZASSERT_EXIT(main, false);
+                auto editor = main->getAnyEditor();
+                ZASSERT_EXIT(editor, false);
+                auto subgraphView = editor->getCurrentSubGraphView();
+                ZASSERT_EXIT(subgraphView, false);
+                auto* subgraphScene = subgraphView->scene();
+                ZASSERT_EXIT(subgraphScene, false);
+                auto rec = subgraphScene->nodesBoundingRect();
+				pos = rec.bottomLeft();;
+            }
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
                 QString name = subgIdx.data(ROLE_OBJNAME).toString();
@@ -387,17 +422,14 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     map[mat] = pAction->text();
                 }
 
-                ZForkSubgraphDlg dlg(map, this);
-                dlg.setNodeIdex(nodeIdx);
+                ZForkSubgraphDlg dlg(map, pos, sugIdx, this);
                 dlg.exec();
                 });
             }
 
             connect(newSubGraph, &QAction::triggered, this, [=]() {
-                QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
                 for (const auto& mtlid : matLst)
                 {
-                    const auto& sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
                     if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, pos + QPointF(600, 0)))
                         QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
                 }
@@ -438,8 +470,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     }
                     
                 }
-                ZForkSubgraphDlg dlg(map, this);
-                dlg.setNodeIdex(nodeIdx);
+                ZForkSubgraphDlg dlg(map, pos, sugIdx, this);
                 dlg.exec();
             });
             

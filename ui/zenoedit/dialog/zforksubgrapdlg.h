@@ -1,4 +1,4 @@
-#ifndef __ZFORKSUBGRAPHDLG_H__
+﻿#ifndef __ZFORKSUBGRAPHDLG_H__
 #define __ZFORKSUBGRAPHDLG_H__
 
 #include <QtWidgets>
@@ -10,8 +10,8 @@ class ZForkSubgraphDlg : public ZFramelessDialog
 {
     Q_OBJECT
 public:
-    ZForkSubgraphDlg(const QMap<QString, QString>   & subgs, QWidget* parent = nullptr);
-    void setNodeIdex(const QModelIndex& index);
+    ZForkSubgraphDlg(const QMap<QString, QString>   & subgs, QPointF startPos, QModelIndex subgIdx, QWidget* parent = nullptr);
+
 signals:
 private slots:
     void onOkClicked();
@@ -25,7 +25,9 @@ private:
     QString m_importPath;
     QPushButton* m_pImportBtn;
     QMap<QString, STMatchMatInfo> m_matchInfo;
-    QModelIndex m_nodeIndex;
+
+    QPointF m_startPos;
+    QModelIndex m_subgIdx;
 };
 
 #endif
