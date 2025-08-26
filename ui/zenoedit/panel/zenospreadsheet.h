@@ -12,7 +12,7 @@ class ZenoSpreadsheet : public QWidget {
     Q_OBJECT
 
     QLabel* pStatusBar = new QLabel();
-    QLabel* pPrimName = new QLabel();
+    QLineEdit* pPrimName = new QLineEdit();
     QLabel* pMtlid = new QLabel();
     QLabel* pMat;
 

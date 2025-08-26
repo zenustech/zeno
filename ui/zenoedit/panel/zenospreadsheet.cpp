@@ -40,7 +40,8 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     QLabel* pPrim = new QLabel(tr("Prim: "));
     pPrim->setProperty("cssClass", "proppanel");
     pPrimName->setProperty("cssClass", "proppanel");
-    pPrimName->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    pPrimName->setReadOnly(true);
+    //pPrimName->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     m_checkSortingEnabled = new QCheckBox(this);
     m_checkSortingEnabled->setProperty("cssClass", "proppanel");
@@ -68,27 +69,22 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     m_checkStringMapping->setMinimumWidth(1);
     pMode->setMinimumWidth(1);
 
-    pTitleLayout->addWidget(pPrim);
-    pTitleLayout->addWidget(pPrimName);
-    pTitleLayout->addStretch();
-    pTitleLayout->addWidget(m_checkSortingEnabled);
-    pTitleLayout->addWidget(m_checkStringMapping);
-    pTitleLayout->addWidget(pMode);
-
-    QHBoxLayout* pTitleLayout2 = new QHBoxLayout;
     pMat = new QLabel(tr("Material id: "));
     pMat->setProperty("cssClass", "proppanel");
     pMtlid->setProperty("cssClass", "proppanel");
     pMtlid->setTextInteractionFlags(Qt::TextSelectableByMouse);
-
     pMat->setMinimumWidth(1);
     pMtlid->setMinimumWidth(1);
-    pTitleLayout2->addWidget(pMat);
-    pTitleLayout2->addWidget(pMtlid);
-    pTitleLayout2->addStretch();
+
+    pTitleLayout->addWidget(pPrim);
+	pTitleLayout->addWidget(pPrimName);
+	pTitleLayout->addWidget(pMat);
+	pTitleLayout->addWidget(pMtlid);
+    pTitleLayout->addWidget(m_checkSortingEnabled);
+    pTitleLayout->addWidget(m_checkStringMapping);
+    pTitleLayout->addWidget(pMode);
 
     pMainLayout->addLayout(pTitleLayout);
-    pMainLayout->addLayout(pTitleLayout2);
 
     auto sortModel = new QSortFilterProxyModel(this);
     sortModel->setSourceModel(dataModel);

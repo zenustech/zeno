@@ -183,6 +183,12 @@ void ZCacheMgr::procExitCleanUp()
 
 std::vector<std::filesystem::path> ZCacheMgr::historyCacheList(QDir dirCacheRoot)
 {
+    static bool cleared = false;
+    if (cleared) {
+        return {};
+    }
+    cleared = true;
+
     std::vector<std::filesystem::path> lst;
 
     QFileInfo dirInfo(dirCacheRoot.absolutePath());
