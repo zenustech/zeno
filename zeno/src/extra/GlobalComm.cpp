@@ -1245,7 +1245,8 @@ ZENO_API bool GlobalComm::removeCache(int frame)
         for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
         {
             std::string filePath = entry.path().string();
-            if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
+            std::string fileName = entry.path().filename().string();
+            if (std::filesystem::is_directory(entry.path()) || (filePath.substr(filePath.size() - 9) != ".zencache" && fileName != "runInfo.txt" && fileName != "stampInfo.txt"))
             {
                 hasZencacheOnly = false;
                 break;
@@ -1258,10 +1259,17 @@ ZENO_API bool GlobalComm::removeCache(int frame)
             zeno::log_info("remove dir: {}", dirToRemove);
         }
     }
-    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)))
     {
-        std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
-        zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+        std::filesystem::path dataDir = std::filesystem::u8path(cacheFramePath + "/data");
+        if (std::filesystem::exists(dataDir)) {
+            std::filesystem::remove_all(dataDir);
+            zeno::log_info("remove dir: {}", dataDir);
+        }
+        if (std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath))) {
+            std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
+            zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+        }
     }
     return true;
 }

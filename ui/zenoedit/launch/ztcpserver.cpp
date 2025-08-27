@@ -108,12 +108,20 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         ZASSERT_EXIT(mgr);
 		auto historyCacheList = mgr->historyCacheList(dirCacheRoot);
 		if (!historyCacheList.empty()) {
-			QMessageBox::StandardButton reply = QMessageBox::question(nullptr, tr("ZenCache"), tr("Cache folder is not empty, do you want to clear it?"), QMessageBox::Yes | QMessageBox::No);
-			if (reply == QMessageBox::Yes) {
-				for (auto path : historyCacheList) {
-					std::filesystem::remove_all(path);
-				}
-			}
+            if (param.fromCmd) {
+                if (param.cmdRmHistoryCacheBeforeRun) {
+                    for (auto path : historyCacheList) {
+                        std::filesystem::remove_all(path);
+                    }
+                }
+            } else {
+                QMessageBox::StandardButton reply = QMessageBox::question(nullptr, tr("ZenCache"), tr("Cache folder is not empty, do you want to clear it?"), QMessageBox::Yes | QMessageBox::No);
+                if (reply == QMessageBox::Yes) {
+                    for (auto path : historyCacheList) {
+                        std::filesystem::remove_all(path);
+                    }
+                }
+            }
 		}
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir, param.autoCleanCacheInCacheRoot);
         ZASSERT_EXIT(ret);
