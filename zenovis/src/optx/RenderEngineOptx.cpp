@@ -1,4 +1,4 @@
-#include <tuple>
+﻿#include <tuple>
 #include <unordered_map>
 #include <vcruntime_string.h>
 #include <vector_types.h>
@@ -1444,8 +1444,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 {
                     auto delta_x = float(in_msg["Delta"][0]);
                     auto delta_y = float(in_msg["Delta"][1]);
-                    glm::mat4 xform = glm::rotate(glm::mat4(1.0f), glm::radians(delta_x), local_y);
-                    xform = glm::rotate(xform, glm::radians(delta_y), local_x);
+                    glm::mat4 xform = glm::rotate(glm::mat4(1.0f), glm::radians(delta_x * 0.5f), local_y);
+                    xform = glm::rotate(xform, glm::radians(delta_y * 0.5f), local_x);
                     auto trans2local = glm::translate(glm::mat4(1), glm::vec3(-pivot));
                     auto trans2local_inv = glm::inverse(trans2local);
                     g_mat = trans2local_inv * xform * trans2local * g_mat;
@@ -1510,7 +1510,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     auto n_mat = glm::inverse(pmat) * g_mat;
                     result = {name, n_mat};
                 }
-                else if (mode == "Scale") {
+                else if (mode == "Scale" || mode == "EasyScale") {
+                    if (mode == "Scale" && in_msg["Axis"] == "") {
+                        return;
+                    }
                     auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
                     auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
                     auto pivot_SS = pos_ws2ss(pivot, vp, resolution);
@@ -1620,7 +1623,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     auto n_mat = glm::inverse(pmat) * g_mat;
                     result = {name, n_mat};
                 }
-                else if (mode == "Scale") {
+                else if (mode == "Scale" || mode == "EasyScale") {
+                    if (mode == "Scale" && in_msg["Axis"] == "") {
+                        return;
+                    }
                     auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
                     auto resolution = glm::vec2(float(in_msg["Resolution"][0]), float(in_msg["Resolution"][1]));
                     auto pivot_SS = pos_ws2ss(pivot, vp, resolution);

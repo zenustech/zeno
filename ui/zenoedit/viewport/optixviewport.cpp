@@ -1038,7 +1038,7 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
             mode = "";
         }
         else if(uKey == Qt::Key_E) {
-            mode = "Scale";
+            mode = (mode != "EasyScale")? "EasyScale": "Scale";
         }
         else if(uKey == Qt::Key_R) {
             mode = (mode == "Rotate")? "RotateScreen": "Rotate";
@@ -1235,7 +1235,7 @@ static void draw_display_axis(QPainter &painter, QPainter &painter2, glm::vec2 r
 
 static void draw_scale_axis(QPainter &painter, QPainter &painter2, glm::vec2 resolution, glm::mat4 vp_mat
                , glm::vec3 center_WS, glm::vec3 e0, glm::vec3 e1, glm::vec3 e2
-               , float axis_len, const std::string &try_axis
+               , float axis_len, const std::string &try_axis, bool easy
 ) {
     auto x_axis_tip_WS = center_WS + e0 * axis_len;
     auto y_axis_tip_WS = center_WS + e1 * axis_len;
@@ -1250,19 +1250,17 @@ static void draw_scale_axis(QPainter &painter, QPainter &painter2, glm::vec2 res
     auto l_g_color = QColor(50, 255, 50);
     auto l_b_color = QColor(50, 50, 255);
     auto white_color = QColor(255, 255, 255);
+    if (!easy) {
+        draw_axis(painter, painter2, resolution, vp_mat, center_WS, e0, e1, e2, axis_len, try_axis,QColor(1, 3, 1), QColor(1, 3, 2),QColor(1, 3, 3));
 
-    draw_axis(painter, painter2, resolution, vp_mat, center_WS, e0, e1, e2, axis_len, try_axis,QColor(1, 3, 1), QColor(1, 3, 2),QColor(1, 3, 3));
-//    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, x_axis_tip_WS, try_axis == "X"? l_r_color: r_color, 2, QColor(1, 3, 1));
-//    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, y_axis_tip_WS, try_axis == "Y"? l_g_color: g_color, 2, QColor(1, 3, 2));
-//    draw_3d_segment_to_screen(painter, painter2, resolution, vp_mat, center_WS, z_axis_tip_WS, try_axis == "Z"? l_b_color: b_color, 2, QColor(1, 3, 3));
+        auto x_plane_tip_WS = center_WS + e1 * axis_len + e2 * axis_len;
+        auto y_plane_tip_WS = center_WS + e0 * axis_len + e2 * axis_len;
+        auto z_plane_tip_WS = center_WS + e0 * axis_len + e1 * axis_len;
 
-    auto x_plane_tip_WS = center_WS + e1 * axis_len + e2 * axis_len;
-    auto y_plane_tip_WS = center_WS + e0 * axis_len + e2 * axis_len;
-    auto z_plane_tip_WS = center_WS + e0 * axis_len + e1 * axis_len;
-
-    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, x_plane_tip_WS, try_axis == "YZ"? l_r_color: r_color, 5, QColor(1, 3, 5));
-    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, y_plane_tip_WS, try_axis == "XZ"? l_g_color: g_color, 5, QColor(1, 3, 6));
-    draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, z_plane_tip_WS, try_axis == "XY"? l_b_color: b_color, 5, QColor(1, 3, 7));
+        draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, x_plane_tip_WS, try_axis == "YZ"? l_r_color: r_color, 5, QColor(1, 3, 5));
+        draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, y_plane_tip_WS, try_axis == "XZ"? l_g_color: g_color, 5, QColor(1, 3, 6));
+        draw_3d_point_to_screen(painter, painter2, resolution, vp_mat, z_plane_tip_WS, try_axis == "XY"? l_b_color: b_color, 5, QColor(1, 3, 7));
+    }
 
     draw_2d_circle(painter, painter2, resolution, vp_mat, center_WS, try_axis == "XYZ"? white_color: gray_color, 50, 4, QColor(1, 3, 4));
 }
@@ -1335,7 +1333,10 @@ void ZOptixViewport::drawAxis(QImage &img) {
         draw_translate_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
     }
     else if (mode == "Scale") {
-        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, false);
+    }
+    else if (mode == "EasyScale") {
+        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, true);
     }
 
     painter.end();
