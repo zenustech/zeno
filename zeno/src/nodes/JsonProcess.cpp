@@ -878,9 +878,7 @@ ZENDEFNODE(CreateJson, {
          "json"
      },
  });
-
-struct JsonErase : zeno::INode {
-    void access(Json &json, std::vector<std::string> &names, int index) {
+void access(Json &json, std::vector<std::string> &names, int index) {
         auto name = names[index];
         if (index == names.size() - 1) {
             json.erase(name);
@@ -893,6 +891,11 @@ struct JsonErase : zeno::INode {
             access(json[name], names, index + 1);
         }
     }
+
+
+
+struct JsonErase : zeno::INode {
+
     void apply() override {
         auto json = get_input<JsonObject>("json");
         auto path = get_input2<std::string>("path");

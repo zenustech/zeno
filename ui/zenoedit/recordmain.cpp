@@ -406,7 +406,7 @@ int record_main(const QCoreApplication& app)
                         else if (doc.HasMember("frame")) {
                             ZASSERT_EXIT(doc["frame"].IsInt());
                             int frame = doc["frame"].GetInt();
-                            std::cout << "\n[record] frame " << frame << " recording is finished.\n ProgressToDeadLine : "<< (int)(100 * (float)(frame+1-param.iSFrame)/(float)param.iFrame) << " %\n" << std::flush;
+                            std::cout << "\n[record] frame " << frame << " recording is finished.\nProgress: "<< (int)(100 * (float)(frame+1-param.iSFrame)/(float)param.iFrame) <<"%\n"<< std::flush;
                         }
                     }
                 }

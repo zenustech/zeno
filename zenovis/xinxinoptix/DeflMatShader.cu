@@ -832,7 +832,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->lightmask = DefaultMatMask;
     shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
-    if(prd->hit_type==DIFFUSE_HIT && prd->depth <=1 ) {
+    if(prd->hit_type==DIFFUSE_HIT && prd->diffDepth <=1 ) {
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
             DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);

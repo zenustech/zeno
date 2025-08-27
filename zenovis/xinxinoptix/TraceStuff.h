@@ -141,7 +141,7 @@ struct RadiancePRD
         //return pcg_rng(this->seed); 
     }
     __device__ __forceinline__ float vdcrndf() {
-        return vdcrnd(this->seed);
+        return vdcrnd(this->offset2);
     }
 
     __device__ __forceinline__ vec3 sigma_s() {

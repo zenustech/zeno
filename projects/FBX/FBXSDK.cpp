@@ -1269,6 +1269,107 @@ ZENDEFNODE(NewFBXResolveTexPath, {
     {"FBXSDK"},
 });
 
+struct ResolveTexPath : INode {
+    void StringSplitReverse(std::string str, const char split, std::vector<std::string> & ostrs)
+    {
+        std::istringstream iss(str);
+        std::string token;
+        std::vector<std::string> res(0);
+        while(getline(iss, token, split))
+        {
+            res.push_back(token);
+        }
+        ostrs.resize(0);
+        for(int i=res.size()-1; i>=0;i--)
+        {
+            ostrs.push_back(res[i]);
+        }
+    }
+    void formPath(std::vector<std::string> &tokens)
+    {
+        for(int i=1; i<tokens.size();i++)
+        {
+            tokens[i] = tokens[i] + '/' + tokens[i-1];
+        }
+    }
+    std::optional<std::string> findFile(std::string HintPath, std::string origPath)
+    {
+        std::string oPath;
+        {
+            auto orig_path = fs::u8path(origPath);
+            std::error_code ec;
+            if (std::filesystem::exists(orig_path, ec)) {
+                oPath = origPath;
+            }
+        }
+        std::vector<std::string> paths;
+        StringSplitReverse(origPath, '/', paths);
+        formPath(paths);
+        for(int i=0; i<paths.size(); i++)
+        {
+            auto filename = HintPath + '/' + paths[i];
+            auto cur_path = fs::u8path(filename);
+            std::error_code ec;
+            if(std::filesystem::exists(cur_path, ec))
+            {
+                oPath = filename;
+                return oPath;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::string> deep_search(const std::string &cur_folder, const std::string &tex_path_str) {
+        auto try_path = findFile(cur_folder, tex_path_str);
+        if (try_path.has_value()) {
+            return try_path;
+        }
+        else {
+            try {
+                for (const auto& entry : fs::directory_iterator(cur_folder)) {
+                    if (entry.is_directory()) {
+                        auto dir_name = entry.path().filename().string();
+                        auto sub_folder = cur_folder + '/' + dir_name;
+                        auto temp_path = deep_search(sub_folder, tex_path_str);
+                        if (temp_path.has_value()) {
+                            return temp_path;
+                        }
+                    }
+                }
+            } catch (const fs::filesystem_error& e) {
+                zeno::log_error("{}", e.what());
+            }
+            return std::nullopt;
+        }
+    }
+
+    void apply() override {
+        auto tex_path_str = get_input2<std::string>("tex_path");
+        tex_path_str = zeno::replace_all(tex_path_str, "\\", "/");
+
+        std::string hint_directory = get_input2<std::string>("HintDirectory");
+        std::string oPath;
+        auto temp_path = deep_search(hint_directory, tex_path_str);
+        if (temp_path.has_value()) {
+            oPath = temp_path.value();
+        }
+
+        set_output2("real_path", oPath);
+    }
+};
+
+ZENDEFNODE(ResolveTexPath, {
+    {
+       {"string", "tex_path"},
+       {"string", "HintDirectory"},
+    },
+    {
+        "real_path",
+    },
+    {},
+    {"FBXSDK"},
+});
+
 static int GetSkeletonFromBindPose(FbxManager* lSdkManager, FbxScene* lScene, std::shared_ptr<PrimitiveObject>& prim) {
     auto pose_count = lScene->GetPoseCount();
     bool found_bind_pose = false;

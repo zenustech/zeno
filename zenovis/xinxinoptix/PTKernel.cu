@@ -361,7 +361,7 @@ extern "C" __global__ void __raygen__rg()
             }
 
             _attenuation = prd.attenuation;
-            if(prd.depth > 1)
+            if(prd.diffDepth > 1)
                 _mask_ &= ~VolumeMaskAnalytics;
             //if(isfinite(ray_origin.x) && isfinite(ray_origin.y) && isfinite(ray_origin.z))
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
