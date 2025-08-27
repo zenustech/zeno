@@ -1,4 +1,4 @@
-#ifndef __CORE_LAUNCHER_H__
+﻿#ifndef __CORE_LAUNCHER_H__
 #define __CORE_LAUNCHER_H__
 
 #include <QtWidgets>
@@ -26,10 +26,13 @@ struct LAUNCH_PARAM {
     int cacheNum = 1;
     bool autoRmCurcache = false;    //auto remove cache when recording
     bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
+    bool cmdRmHistoryCacheBeforeRun = false;   //remove history cache before run
     QString zsgPath;
     int projectFps = 24;
     QString paramPath;
     QString paramBase64;
+
+    bool fromCmd = false;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

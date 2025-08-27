@@ -1,4 +1,4 @@
-#include "AudioFile.h"
+﻿#include "AudioFile.h"
 #include "zeno/extra/assetDir.h"
 #define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
@@ -91,6 +91,7 @@ int record_main(const QCoreApplication& app)
         {"videoname", "videoname", "export video's name", "output.mp4"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path", ""},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"rmhistorycache", "removeHistoryCache", "remove all history cache before run"},
         {"paramsPath", "paramsPath", "paramsPath"},
         {"paramsBase64", "paramsBase64", "paramsBase64"},
         {"paramsJson", "paramsJson", "paramsJson"},
@@ -122,6 +123,7 @@ int record_main(const QCoreApplication& app)
     LAUNCH_PARAM launchparam;
     QFileInfo fp(param.sZsgPath);
     launchparam.zsgPath = fp.absolutePath();
+    launchparam.fromCmd = true;
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
@@ -167,6 +169,9 @@ int record_main(const QCoreApplication& app)
             int count = calcFrameCountByAudio(param.audioPath.toStdString(), 24);
             param.iFrame = count;
         }
+    }
+    if (cmdParser.isSet("rmhistorycache")) {
+        launchparam.cmdRmHistoryCacheBeforeRun = cmdParser.value("rmhistorycache").toInt();
     }
 
     //parse render params:
