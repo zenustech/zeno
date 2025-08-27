@@ -1449,14 +1449,12 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             auto tid = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
             rtShader.texs.push_back(tid);
         }
-
-        auto& vdbk = shaders[i]->vdb_keys;
-        rtShader.vbds = {};
-        rtShader.vbds.reserve(vdbk.size());
-        auto& vdbs = shaders[i]->vdb_keys;
-        for (int j=0; j<shaders[i]->vdb_keys.size(); ++j)
+        
+        const auto& vdbs = shaders[i]->vdb_keys;
+        rtShader.vbds.resize(vdbs.size());
+        for (int j=0; j<vdbs.size(); ++j)
         {
-            rtShader.vbds.push_back(vdbs[j]);
+            rtShader.vbds[j] = vdbs[j];
         }
 }); //_compile_group
     } //for
@@ -1565,9 +1563,11 @@ void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno
   float sy = (float)t[1]/(float)dy;
 }
 void set_window_size(int nx, int ny) {
+    camera_changed = true;
+
+    if (nx == state.params.width && ny == state.params.height) return;
     state.params.width = nx;
     state.params.height = ny;
-    camera_changed = true;
     resize_dirty = true;
 }
 
@@ -1849,7 +1849,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
-    updateState( *output_buffer_o, state.params, true );
+    updateState( *output_buffer_o, state.params, enable_output_aov );
 
     if (denoise) {
         auto w = state.params.width;

@@ -272,7 +272,7 @@ void cleanupVolume( VolumeWrapper& volume )
     for (auto grid : volume.grids) {
         unloadGrid(*grid);
     }
-    volume ={};
+    volume = {};
 }
 
 void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context )

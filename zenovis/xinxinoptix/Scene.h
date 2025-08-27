@@ -164,8 +164,9 @@ public:
                 volmats.insert(shader_index);
 
                 auto vdb_key = shader_ref.vbds.front();
-                auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
+                if (_vdb_grids_cached.count(vdb_key) == 0) continue;
 
+                auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
                 if (vdb_ptr->dirty == false) continue;
 
                 auto ibox = vdb_ptr->grids.front()->indexedBox();

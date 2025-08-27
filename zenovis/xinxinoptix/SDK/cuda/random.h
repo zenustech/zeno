@@ -145,9 +145,9 @@ static __host__ __device__ __inline__ float rnd(unsigned int &seed)
 	auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
 	auto tmp = (word >> 22u) ^ word;
 
-    return (float)tmp / (float)0xffffffff;
-//    float val = van_der_corput(seed);
-//    return val;
+    return (tmp >> 8) * (1.0f / 16777216.0f);
+
+//  return (float)tmp / (float)0xffffffff;
 }
 static __host__ __device__ __inline__ float vdcrnd(unsigned int &seed)
 {
