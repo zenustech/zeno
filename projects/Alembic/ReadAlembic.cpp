@@ -702,6 +702,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
+    read_user_data(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
