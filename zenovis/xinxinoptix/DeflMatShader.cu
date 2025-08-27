@@ -34,6 +34,10 @@ __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
+__inline__ __device__ bool isfinite(const float3& vector) {
+    return isfinite(vector.x) && isfinite(vector.y) && isfinite(vector.z);
+}
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
     auto rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -252,7 +256,7 @@ vec3 bezierOffset(vec3 P, vec3 A, vec3 B, vec3 C, vec3 nA, vec3 nB, vec3 nC, vec
     tmpu = tmpu - dotu*nA;
     tmpv = tmpv - dotv*nB;
     tmpw = tmpw - dotw*nC;
-    return P + uvw.x*tmpu + uvw.y*tmpv + uvw.z*tmpw;
+    return uvw.x*tmpu + uvw.y*tmpv + uvw.z*tmpw;
 }
 
 extern "C" __global__ void __closesthit__radiance()
@@ -439,14 +443,15 @@ extern "C" __global__ void __closesthit__radiance()
         float3 n1 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.y ]) );
         float3 n2 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.z ]) );
 
-        bezierOff = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3) - (*(vec3*)&objPos);
-        const auto local_len = length(bezierOff);
+        const auto offset = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3);
+        const auto local_len = length(offset);
 
         if (local_len > 0) {
 
             auto tmp = optixTransformNormalFromObjectToWorldSpace(bezierOff);
             auto len = local_len/length(tmp); len = len * len;
             bezierOff = mats.shadowTerminatorOffset * len * tmp;
+            if (!isfinite(bezierOff)) bezierOff = {};
         }
     }
 #endif
