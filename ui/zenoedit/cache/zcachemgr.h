@@ -1,7 +1,8 @@
-#ifndef __ZCACHEMGR_H__
+﻿#ifndef __ZCACHEMGR_H__
 #define __ZCACHEMGR_H__
 
 #include <QtWidgets>
+#include <filesystem>
 
 class ZCacheMgr
 {
@@ -27,6 +28,9 @@ public:
     void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
     void removeObjTmpCacheDir();
+
+    void procExitCleanUp();
+    std::vector<std::filesystem::path> historyCacheList(QDir dirCacheRoot);
 
 private:
     QTemporaryDir m_objTmpCacheDir;

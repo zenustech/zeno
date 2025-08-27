@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by zh on 2022/6/27.
 //
 
@@ -12,13 +12,15 @@ class ZenoSpreadsheet : public QWidget {
     Q_OBJECT
 
     QLabel* pStatusBar = new QLabel();
-    QLabel* pPrimName = new QLabel();
+    QLineEdit* pPrimName = new QLineEdit();
+    QLabel* pMtlid = new QLabel();
+    QLabel* pMat;
 
 public:
     ZenoSpreadsheet(QWidget* parent = nullptr);
     PrimAttrTableModel *dataModel = nullptr;
     void clear();
-    void setPrim(std::string primid);
+    void setPrim(std::string primid, std::string mtlid = "", bool selecFromOpitx = false);
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 private:

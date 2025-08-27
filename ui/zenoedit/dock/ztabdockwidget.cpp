@@ -373,7 +373,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
     }
 }
 
-void ZTabDockWidget::onPrimitiveSelected(const std::unordered_set<std::string>& primids)
+void ZTabDockWidget::onPrimitiveSelected(const std::unordered_set<std::string>& primids, std::string mtlid, bool selecFromOpitx)
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
@@ -381,7 +381,7 @@ void ZTabDockWidget::onPrimitiveSelected(const std::unordered_set<std::string>& 
         if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
             if (primids.size() == 1) {
-                panel->setPrim(*primids.begin());
+                panel->setPrim(*primids.begin(), mtlid, selecFromOpitx);
             }
             else {
                 panel->clear();

@@ -1,4 +1,4 @@
-#include "zenographseditor.h"
+﻿#include "zenographseditor.h"
 #include "zenosubnetlistview.h"
 #include <comctrl/ztoolbutton.h>
 #include "zenoapplication.h"
@@ -549,7 +549,7 @@ ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
     return nullptr;
 }
 
-void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
+void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError, bool focusWithSelect)
 {
 	auto graphsMgm = zenoApp->graphsManagment();
 	IGraphsModel* pModel = graphsMgm->currentModel();
@@ -601,9 +601,11 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
-    pView->resetPath(path, subGraphName, objId, isError);
+    pView->resetPath(path, subGraphName, objId, isError, focusWithSelect);
 
-    m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
+    if (focusWithSelect) {
+        m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
+    }
 }
 
 void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {

@@ -45,7 +45,7 @@ public:
     ZenoGraphsEditor* getAnyEditor() const;
     void setCurrentWidget(PANEL_TYPE type);
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-    void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
+    void onPrimitiveSelected(const std::unordered_set<std::string>& primids, std::string mtlid = "", bool selecFromOpitx = false);
     void onUpdateViewport(const QString& action);
     void updateLights();
     void cleanupView();

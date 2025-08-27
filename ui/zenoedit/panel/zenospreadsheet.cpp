@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by zh on 2022/6/27.
 //
 
@@ -15,8 +15,11 @@
 #include "viewport/displaywidget.h"
 #include "dialog/zforksubgrapdlg.h"
 #include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphscene.h"
+#include "nodesys/zenonode.h"
 #include "settings/zenosettingsmanager.h"
 #include <zenomodel/include/uihelper.h>
+#include "viewport/optixviewport.h"
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     dataModel = new PrimAttrTableModel();
@@ -30,26 +33,22 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     setPalette(palette);
     setAutoFillBackground(true);
 
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    //setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-    QHBoxLayout* pTitleLayout = new QHBoxLayout;
+	QHBoxLayout* pTitleLayout = new QHBoxLayout;
 
     QLabel* pPrim = new QLabel(tr("Prim: "));
     pPrim->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrim);
-
     pPrimName->setProperty("cssClass", "proppanel");
-    pTitleLayout->addWidget(pPrimName);
+    pPrimName->setReadOnly(true);
+    //pPrimName->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     m_checkSortingEnabled = new QCheckBox(this);
     m_checkSortingEnabled->setProperty("cssClass", "proppanel");
     m_checkSortingEnabled->setText(tr("enable sort"));
-    pTitleLayout->addWidget(m_checkSortingEnabled);
     m_checkStringMapping = new QCheckBox(this);
     m_checkStringMapping->setProperty("cssClass", "proppanel");
     m_checkStringMapping->setText(tr("String mapping"));
-    pTitleLayout->addWidget(m_checkStringMapping);
-
 
     ZComboBox* pMode = new ZComboBox();
     pMode->addItem("Vertex");
@@ -62,6 +61,27 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     pMode->addItem("UVs");
     pMode->addItem("UserData");
     pMode->setProperty("cssClass", "proppanel");
+
+    //允许无限窄
+    pPrim->setMinimumWidth(1);
+    pPrimName->setMinimumWidth(1);
+    m_checkSortingEnabled->setMinimumWidth(1);
+    m_checkStringMapping->setMinimumWidth(1);
+    pMode->setMinimumWidth(1);
+
+    pMat = new QLabel(tr("Material id: "));
+    pMat->setProperty("cssClass", "proppanel");
+    pMtlid->setProperty("cssClass", "proppanel");
+    pMtlid->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    pMat->setMinimumWidth(1);
+    pMtlid->setMinimumWidth(1);
+
+    pTitleLayout->addWidget(pPrim);
+	pTitleLayout->addWidget(pPrimName);
+	pTitleLayout->addWidget(pMat);
+	pTitleLayout->addWidget(pMtlid);
+    pTitleLayout->addWidget(m_checkSortingEnabled);
+    pTitleLayout->addWidget(m_checkStringMapping);
     pTitleLayout->addWidget(pMode);
 
     pMainLayout->addLayout(pTitleLayout);
@@ -74,12 +94,13 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     prim_attr_view->setSortingEnabled(false);
     prim_attr_view->setProperty("cssClass", "proppanel");
     prim_attr_view->setModel(sortModel);
-    prim_attr_view->installEventFilter(this);
-    pMainLayout->addWidget(prim_attr_view);
+	prim_attr_view->installEventFilter(this);
+	pMainLayout->addWidget(prim_attr_view);
 
 //    pStatusBar->setAlignment(Qt::AlignRight);
-    pStatusBar->setProperty("cssClass", "proppanel");
-    pMainLayout->addWidget(pStatusBar);
+	pStatusBar->setProperty("cssClass", "proppanel");
+    pStatusBar->setMinimumWidth(1);
+	pMainLayout->addWidget(pStatusBar);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZERROR_EXIT(pWin);
@@ -140,7 +161,7 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
     {
         QString mtlid = index.data(Qt::DisplayRole).toString();
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        if (pGraphsModel)
+        if (pGraphsModel && !mtlid.isEmpty())
         {
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
             {
@@ -151,11 +172,28 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                     if (pWin) {
                         ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_METERIAL);
                         ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-                        if (pEditor)
+                        if (pEditor) {
                             pEditor->activateTab(subgraph_name, "", "");
+                            return;
+                        }
                     }
                 }
             }
+			QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
+			for (auto item : resLst)
+			{
+				INPUT_SOCKETS inputs = item.targetIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+				if (inputs.find("mtlid") != inputs.end()) {
+					if (inputs["mtlid"].info.defaultValue.toString() == mtlid) {
+						if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+							if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+								pEditor->activateTab(item.subgIdx.data(ROLE_OBJNAME).toString(), "", item.targetIdx.data(ROLE_OBJID).toString(), false, false);
+								return;
+							}
+						}
+					}
+				}
+			}
         }
     }
     //QMimeData* pMimeData = new QMimeData;
@@ -230,13 +268,25 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 }
 
 void ZenoSpreadsheet::clear() {
-    pPrimName->clear();
+   pPrimName->clear();
     this->dataModel->setModelData(nullptr);
     pStatusBar->clear();
+
+    pMtlid->clear();
+    pMat->hide();
+    pMtlid->hide();
 }
 
-void ZenoSpreadsheet::setPrim(std::string primid) {
+void ZenoSpreadsheet::setPrim(std::string primid, std::string mtlid, bool selecFromOpitx) {
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
+    pMtlid->setText(QString(mtlid.c_str()));
+    if (!selecFromOpitx) {
+        pMat->hide();
+        pMtlid->hide();
+    } else {
+        pMat->show();
+        pMtlid->show();
+    }
 
     ZenoMainWindow* pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
@@ -250,6 +300,15 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
     ZASSERT_EXIT(pZenovis);
     auto scene = pZenovis->getSession()->get_scene();
     ZASSERT_EXIT(scene);
+    for (auto view : views) {//views[0]的objectsMan可能未被加载
+        pZenovis = view->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+        if (scene->objectsMan->objects.size() != 0) {
+            break;
+        }
+    }
 
     bool found = false;
     auto ptr = scene->objectsMan->get(primid);
@@ -374,7 +433,23 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
             pMenu->addMenu(pPresetMenu);
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
             const auto& nodeIdx = pGraphsModel->nodeIndex(pPrimName->text());
-            ZASSERT_EXIT(nodeIdx.isValid(), false);
+            QModelIndex sugIdx = pGraphsModel->index("main");
+            QPointF pos(0, 0);
+            if (nodeIdx.isValid()) {//来自gl窗口
+                sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+            } else {//来自光追窗口
+                auto main = zenoApp->getMainWindow();
+                ZASSERT_EXIT(main, false);
+                auto editor = main->getAnyEditor();
+                ZASSERT_EXIT(editor, false);
+                auto subgraphView = editor->getCurrentSubGraphView();
+                ZASSERT_EXIT(subgraphView, false);
+                auto* subgraphScene = subgraphView->scene();
+                ZASSERT_EXIT(subgraphScene, false);
+                auto rec = subgraphScene->nodesBoundingRect();
+				pos = rec.bottomLeft();;
+            }
             for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_PRESET))
             {
                 QString name = subgIdx.data(ROLE_OBJNAME).toString();
@@ -387,17 +462,14 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     map[mat] = pAction->text();
                 }
 
-                ZForkSubgraphDlg dlg(map, this);
-                dlg.setNodeIdex(nodeIdx);
+                ZForkSubgraphDlg dlg(map, pos, sugIdx, this);
                 dlg.exec();
                 });
             }
 
             connect(newSubGraph, &QAction::triggered, this, [=]() {
-                QPointF pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
                 for (const auto& mtlid : matLst)
                 {
-                    const auto& sugIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
                     if (!pGraphsModel->newMaterialSubgraph(sugIdx, mtlid, pos + QPointF(600, 0)))
                         QMessageBox::warning(nullptr, tr("Info"), tr("Create material subgraph '%1' failed.").arg(mtlid));
                 }
@@ -438,8 +510,7 @@ bool ZenoSpreadsheet::eventFilter(QObject* watched, QEvent* event)
                     }
                     
                 }
-                ZForkSubgraphDlg dlg(map, this);
-                dlg.setNodeIdex(nodeIdx);
+                ZForkSubgraphDlg dlg(map, pos, sugIdx, this);
                 dlg.exec();
             });
             

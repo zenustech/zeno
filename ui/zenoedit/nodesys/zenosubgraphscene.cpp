@@ -1,4 +1,4 @@
-#include "zenosubgraphscene.h"
+﻿#include "zenosubgraphscene.h"
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
@@ -1178,6 +1178,8 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 {
                     pGraphsModel->removeLink(linkIdx, true);
                 }
+
+                bool applyToAllSubgMaterial = false;
                 for (QPersistentModelIndex nodeIdx : nodes)
                 {
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
@@ -1185,10 +1187,27 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                     const QModelIndex& idx = pGraphsModel->index(cls);
                     if (idx.isValid() && idx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_METERIAL)
                     {
-                        int button = QMessageBox::question(nullptr, tr("Delete Subgraph"), tr("Do you want to delete the subgraph '%1'").arg(cls));
-                        if (button == QMessageBox::Yes) {
+                        if (applyToAllSubgMaterial) {
                             pGraphsModel->removeSubGraph(cls);
                             continue;
+                        } else {
+                            QMessageBox msgBox(nullptr);
+                            msgBox.setWindowTitle(tr("Delete Subgraph"));
+                            msgBox.setText(tr("Do you want to delete the subgraph %1").arg(cls));
+                            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                            QCheckBox* checkBox = new QCheckBox(tr("Delete the remaining subgraphs"));
+                            checkBox->setChecked(false);
+                            msgBox.setCheckBox(checkBox);
+                            int button = msgBox.exec();
+
+                            applyToAllSubgMaterial = checkBox->isChecked();
+                            if (button == QMessageBox::Yes) {
+                                pGraphsModel->removeSubGraph(cls);
+                                continue;
+                            }
+                            else {
+                                continue;
+                            }
                         }
                     }
                     pGraphsModel->removeNode(id, m_subgIdx, true);

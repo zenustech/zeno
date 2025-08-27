@@ -1,4 +1,4 @@
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+﻿#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 #include <cstdio>
 #include <cstring>
 #include "ztcpserver.h"
@@ -91,11 +91,30 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         QDir dirCacheRoot(cacheRootdir);
         if (!QFileInfo(cacheRootdir).isDir() && !param.tempDir)
         {
+            if (ZenoMainWindow* mainwin = zenoApp->getMainWindow()) {
+				auto docks = mainwin->findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+				for (ZTabDockWidget* pDock : docks) {
+					for (int i = 0; i < pDock->count(); i++) {
+						if (DockContent_Editor* pDockEditor = qobject_cast<DockContent_Editor*>(pDock->widget(i))) {
+                            pDockEditor->runFinished();//running按钮设置回去
+						}
+					}
+				}
+            }
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
+		auto historyCacheList = mgr->historyCacheList(dirCacheRoot);
+		if (!historyCacheList.empty()) {
+			QMessageBox::StandardButton reply = QMessageBox::question(nullptr, tr("ZenCache"), tr("Cache folder is not empty, do you want to clear it?"), QMessageBox::Yes | QMessageBox::No);
+			if (reply == QMessageBox::Yes) {
+				for (auto path : historyCacheList) {
+					std::filesystem::remove_all(path);
+				}
+			}
+		}
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir, param.autoCleanCacheInCacheRoot);
         ZASSERT_EXIT(ret);
         cachedir = mgr->cachePath();
