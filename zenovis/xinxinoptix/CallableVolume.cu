@@ -261,7 +261,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
 
     auto att_isBackFace = false;
     auto att_isShadowRay = attrs.isShadowRay;
-    
+    float albedoAmp = 1.0f;
 #ifdef __FORWARD__
     //GENERATED_BEGIN_MARK
     
@@ -275,6 +275,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
     vec3 emission = tmp / 50.f;
     vec3 albedo = tmp;
     auto extinction = vec3(1.0f);
+
 #endif // _FALLBACK_
 
 #if _USING_NANOVDB_
@@ -282,6 +283,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
     output.albedo = clamp(albedo, 0.0f, 1.0f);
     output.anisotropy = clamp(anisotropy, -1.0f, 1.0f);
     output.extinction = extinction;
+    output.albedoAmp = albedoAmp;
 
     output.density = fmaxf(density, 0.0f);
     output.emission = fmaxf(emission, vec3(0.0f));

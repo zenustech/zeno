@@ -102,12 +102,12 @@ std::shared_ptr<zeno::CurveObject> createCurvePoint(std::vector<float> &t, std::
         float extrap = (t[i] - t[i-1])>0?(t[i+1] - t[i] )/(t[i] - t[i-1]):0;
         zeno::vec2f R = zeno::vec2f(t[i], y[i]) + extrap * ( zeno::vec2f(t[i], y[i]) - zeno::vec2f(t[i-1], y[i-1]));
         zeno::vec2f T = 0.5f * (R + zeno::vec2f(t[i+1],y[i+1]));
-        c1[i] = (0.45*zeno::vec2f(t[i], y[i]) + 0.55*T);
+        c1[i] = (2.0*zeno::vec2f(t[i], y[i]) + 1.0*T)/3.0f;
     }
     for(size_t i=1;i<=N-2;i++)
     {
         zeno::vec2f dir = zeno::vec2f(t[i], y[i]) - c1[i];
-        float l = (t[i] - t[i-1])*0.55;
+        float l = (t[i] - t[i-1])/3.0f;
         float amp = abs(dir[0])>0.0f?l/abs(dir[0]):0.0f;
         c2[i] = zeno::vec2f(t[i], y[i]) + amp * dir;
     }
@@ -117,7 +117,7 @@ std::shared_ptr<zeno::CurveObject> createCurvePoint(std::vector<float> &t, std::
     }
     return curve;
 }
-struct CameraEval: zeno::INode {
+struct CameraEval : zeno::INode {
 
     std::shared_ptr<zeno::CurveObject> curve_x = {};
     std::shared_ptr<zeno::CurveObject> curve_y = {};

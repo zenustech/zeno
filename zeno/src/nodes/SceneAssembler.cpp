@@ -197,19 +197,23 @@ static void get_local_matrix_map(
     for (auto i = 0; i < json["children_name"].size(); i++) {
         std::string child_name = json["children_name"][i];
         std::string child_path = node_path + '/' + child_name;
-        if (json[child_name].contains("instance_source_path")) {
-            stn.children.push_back(json[child_name]["instance_source_path"]);
-        }
-        else {
-            stn.children.push_back(child_path);
+        if(json.contains(child_name)) {
+            if (json[child_name].contains("instance_source_path")) {
+                stn.children.push_back(json[child_name]["instance_source_path"]);
+            }
+            else {
+                stn.children.push_back(child_path);
+            }
         }
     }
     scene->scene_tree[node_path] = stn;
 
     for (auto i = 0; i < json["children_name"].size(); i++) {
         std::string child_name = json["children_name"][i];
-        if (!json[child_name].contains("instance_source_path")) {
-            get_local_matrix_map(json[child_name], node_path, scene);
+        if(json.contains(child_name)) {
+            if (!json[child_name].contains("instance_source_path")) {
+                get_local_matrix_map(json[child_name], node_path, scene);
+            }
         }
     }
 }

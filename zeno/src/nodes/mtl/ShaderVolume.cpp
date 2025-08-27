@@ -186,6 +186,7 @@ struct ShaderVolumeHomogeneous : INode {
 
         auto albedo     = get_input2<zeno::vec3f>("albedo");
         auto anisotropy = get_input2<float>("anisotropy");
+        auto albedoAmp = get_input2<float>("albedoAmp");
 
         std::stringstream ss {};
         ss << std::setprecision(9);
@@ -193,6 +194,7 @@ struct ShaderVolumeHomogeneous : INode {
         ss << std::setprecision(9);
         ss << "auto density  = 0.0f;\n";
         ss << "vec3 emission = vec3(0.0f);   \n";
+        ss << "albedoAmp = float(" << albedoAmp << ");\n";
         ss << "vec3 albedo = vec3(" << albedo[0] << "," << albedo[1] << "," << albedo[2] << "); \n";
         ss << "vec3 extinction = vec3(" << extinction[0] << "," << extinction[1] << "," << extinction[2] << "); \n";
 
@@ -226,7 +228,7 @@ ZENDEFNODE(ShaderVolumeHomogeneous, {
         {"colorvec3f", "albedo", "1,1,1"},
         {"vec3f", "extinction", "0.01,0.01,0.01"},
         {"float", "anisotropy", "0"},
-        
+        {"float", "albedoAmp", "1.0"},
         {"bool", "debug", "false"},
         {"bool", "multiscatter", "false"},
         {"string", "mtlid", "VolMat1"},

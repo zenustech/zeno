@@ -215,7 +215,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
     const float _SKY_PROB_ = params.skyLightProbablity();
 
     float scatterPDF = 1.f;
-    float UF = prd->rndf();
+    float UF = prd->vdcrndf();
 
     if(UF >= _SKY_PROB_) {
 
@@ -444,7 +444,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
                     (*taskAux)(emission * tmp);
                 }// TypeAux
 
-                prd->radiance = radianceNoShadow * light_attenuation; // with shadow
+                prd->radiance += radianceNoShadow * light_attenuation; // with shadow
         } 
     
     } else {

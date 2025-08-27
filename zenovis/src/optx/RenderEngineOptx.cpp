@@ -1926,6 +1926,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         {
             graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
+            matNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
             scene->drawOptions->needRefresh = true;
         }
@@ -1945,7 +1946,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (scene->drawOptions->updateLightCameraOnly)
         {
             lightNeedUpdate = true;
-            matNeedUpdate = meshNeedUpdate = false;
+            matNeedUpdate = true;
+            meshNeedUpdate = false;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
         replace_with_modified_matrix();
@@ -2089,7 +2091,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.pupillary_distance
             );
         }
-        bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", false);
+        bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
         second_matNeedUpdate = second_matNeedUpdate || cached_shaders.empty();
         if ((meshNeedUpdate || matNeedUpdate || staticNeedUpdate) && second_matNeedUpdate) {
 

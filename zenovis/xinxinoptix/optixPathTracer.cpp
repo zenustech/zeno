@@ -1450,6 +1450,9 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             rtShader.texs.push_back(tid);
         }
 
+        auto& vdbk = shaders[i]->vdb_keys;
+        rtShader.vbds = {};
+        rtShader.vbds.reserve(vdbk.size());
         auto& vdbs = shaders[i]->vdb_keys;
         for (int j=0; j<shaders[i]->vdb_keys.size(); ++j)
         {

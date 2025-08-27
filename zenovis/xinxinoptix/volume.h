@@ -34,6 +34,7 @@ struct VolumeOut {
 
     float3 albedo;
     float3 extinction;
+    float albedoAmp;
     
     float anisotropy;
     float3 emission;

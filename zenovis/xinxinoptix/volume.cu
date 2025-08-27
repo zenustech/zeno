@@ -226,7 +226,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
             dt = -logf(1.0f-prob) / average(homo_out.extinction);
 
             auto pdf = expf(-homo_out.extinction * dt) * homo_out.extinction;
-            weight = (homo_out.extinction * homo_out.albedo ) / pdf;
+            weight = (homo_out.extinction * homo_out.albedo * homo_out.albedoAmp ) / pdf;
 
         } else {
 
@@ -288,14 +288,25 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
             pbrt::HenyeyGreenstein hg(homo_out.anisotropy);
             thisPDF = hg.p(_wo_, _wi_);
-            return homo_out.albedo * thisPDF;
+            return homo_out.albedo  * homo_out.albedoAmp * thisPDF;
         };
-
+        int sampleN = prd->depth<1?4:1;
         prd->depth += 1;
         prd->lightmask = VolumeMatMask;
-        DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+
+        float l = length(new_orig);
+        float r = l * 0.0001;
+
+        for(int i=0;i<sampleN;i++) {
+            float2 uu = { prd->rndf(), prd->rndf() };
+            float2 dir = pbrt::SampleUniformDiskConcentric(uu);
+            Onb  tbn = Onb(vec3(ray_dir));
+            vec3 ddir = tbn.m_tangent * dir.x + tbn.m_binormal * dir.y;
+            float3 perturb = {ddir.x, ddir.y, ddir.z};
+            DirectLighting<true>(prd, shadowPRD, new_orig  + perturb * r + params.cam.eye, ray_dir, evalBxDF);
+        }
         //prd->radiance += prd->emission;
-        prd->radiance = prd->radiance * weight;
+        prd->radiance = prd->radiance / ((float)sampleN) * weight;
 
         if (!sbt_data->multiscatter) {
             transmittance = expf(-homo_out.extinction * (t_max-dt) );
