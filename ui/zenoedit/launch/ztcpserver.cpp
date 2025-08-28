@@ -106,7 +106,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
-		auto historyCacheList = mgr->historyCacheList(dirCacheRoot);
+		auto historyCacheList = mgr->historyCacheList(dirCacheRoot, param.tempDir);
 		if (!historyCacheList.empty()) {
             if (param.fromCmd) {
                 if (param.cmdRmHistoryCacheBeforeRun) {

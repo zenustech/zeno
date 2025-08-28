@@ -30,7 +30,7 @@ public:
     void removeObjTmpCacheDir();
 
     void procExitCleanUp();
-    std::vector<std::filesystem::path> historyCacheList(QDir dirCacheRoot);
+    std::vector<std::filesystem::path> historyCacheList(QDir dirCacheRoot, bool isTemp);
 
 private:
     QTemporaryDir m_objTmpCacheDir;

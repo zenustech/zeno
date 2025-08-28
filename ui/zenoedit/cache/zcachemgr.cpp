@@ -181,8 +181,11 @@ void ZCacheMgr::procExitCleanUp()
 	}
 }
 
-std::vector<std::filesystem::path> ZCacheMgr::historyCacheList(QDir dirCacheRoot)
+std::vector<std::filesystem::path> ZCacheMgr::historyCacheList(QDir dirCacheRoot, bool isTemp)
 {
+    if (isTemp) {
+        return {};
+    }
     static bool cleared = false;
     if (cleared) {
         return {};

@@ -25,8 +25,8 @@ struct LAUNCH_PARAM {
     QString objCacheDir = "";
     int cacheNum = 1;
     bool autoRmCurcache = false;    //auto remove cache when recording
-    bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
-    bool cmdRmHistoryCacheBeforeRun = false;   //remove history cache before run
+    bool autoCleanCacheInCacheRoot = true;    //点击运行/退出时自动清理cache
+    bool cmdRmHistoryCacheBeforeRun = false;   //运行前清理历史cache
     QString zsgPath;
     int projectFps = 24;
     QString paramPath;
