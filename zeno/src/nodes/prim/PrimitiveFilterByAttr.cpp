@@ -83,14 +83,14 @@ static std::variant
 struct PrimitiveFilterByAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    auto attrName = get_param<std::string>("attrName");
-    auto acceptIf = get_param<std::string>("acceptIf");
-    auto vecSelType = get_param<std::string>("vecSelType");
+    auto attrName = get_input2<std::string>("attrName");
+    auto acceptIf = get_input2<std::string>("acceptIf");
+    auto vecSelType = get_input2<std::string>("vecSelType");
     auto valueObj = get_input<NumericObject>("value");
     
     std::vector<int> revamp;
     revamp.reserve(prim->size());
-    prim->attr_visit(attrName, [&] (auto const &attr) {
+    prim->attr_visit<std::variant<vec3f, float, int>>(attrName, [&] (auto const &attr) {
         using T = std::decay_t<decltype(attr[0])>;
         auto value = valueObj->get<T>();
         std::visit([&] (auto op, auto aop) {
@@ -113,7 +113,7 @@ struct PrimitiveFilterByAttr : INode {
     auto old_prim_size = prim->size();
     prim->resize(revamp.size());
 
-    if (get_param<bool>("mockTopos") && (0
+    if (get_input2<bool>("mockTopos") && (0
             || prim->tris.size()
             || prim->quads.size()
             || prim->lines.size()
@@ -242,17 +242,17 @@ struct PrimitiveFilterByAttr : INode {
 
 ZENDEFNODE(PrimitiveFilterByAttr,
     { /* inputs: */ {
-    "prim",
-    {"NumericObject", "value", "0"},
+        "prim",
+        {"NumericObject", "value", "0"},
+        {"string", "attrName", "rad"},
+        {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
+        {"enum any all", "vecSelType", "all"},
+        {"bool", "mockTopos", "1"},
     }, /* outputs: */ {
-    "prim",
+        "prim",
     }, /* params: */ {
-    {"string", "attrName", "rad"},
-    {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
-    {"enum any all", "vecSelType", "all"},
-    {"bool", "mockTopos", "1"},
     }, /* category: */ {
-    "primitive",
+        "primitive",
     }});
 
 
