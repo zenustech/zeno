@@ -852,6 +852,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
     }
     ICompoundProperty arbattrs = subd.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
+    read_user_data(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = subd.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
 
@@ -948,6 +949,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
+    read_user_data(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
     return prim;
@@ -1006,6 +1008,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes2(prim, arbattrs, iSS, read_done);
+    read_user_data(prim, arbattrs, iSS, read_done);
     ICompoundProperty usrData = mesh.getUserProperties();
     read_user_data(prim, usrData, iSS, read_done);
     return prim;
