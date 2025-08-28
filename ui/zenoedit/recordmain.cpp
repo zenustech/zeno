@@ -91,7 +91,7 @@ int record_main(const QCoreApplication& app)
         {"videoname", "videoname", "export video's name", "output.mp4"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path", ""},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
-        {"rmhistorycache", "removeHistoryCache", "remove all history cache before run"},
+        {"clearHistoryCache", "clearHistoryCache", "remove all history cache before run"},
         {"paramsPath", "paramsPath", "paramsPath"},
         {"paramsBase64", "paramsBase64", "paramsBase64"},
         {"paramsJson", "paramsJson", "paramsJson"},
@@ -170,8 +170,8 @@ int record_main(const QCoreApplication& app)
             param.iFrame = count;
         }
     }
-    if (cmdParser.isSet("rmhistorycache")) {
-        launchparam.cmdRmHistoryCacheBeforeRun = cmdParser.value("rmhistorycache").toInt();
+    if (cmdParser.isSet("clearHistoryCache")) {
+        launchparam.cmdRmHistoryCacheBeforeRun = cmdParser.value("clearHistoryCache").toInt();
     }
 
     //parse render params:
@@ -289,7 +289,7 @@ int record_main(const QCoreApplication& app)
             args.append(zenCacheDir);
 
             args.append("--cacheautorm");
-            args.append("1");
+            args.append(QString::number(launchparam.autoRmCurcache));
 
             args.append("--optixShowBackground");
             args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
