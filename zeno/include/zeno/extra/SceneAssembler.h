@@ -42,12 +42,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             return std::nullopt;
         }
         SceneTreeNode stn = scene_tree.at(node_name);
-        std::vector<glm::mat4> local_mat;
-        if (node_to_matrix.count(node_name + "_m")) {
-            local_mat = node_to_matrix[node_name];
-        }
-        if (local_mat.empty()) {
-            local_mat = {glm::mat4(1)};
+        std::vector<glm::mat4> local_mat = {glm::mat4(1)};
+        if (node_to_matrix.count(stn.matrix)) {
+            local_mat = node_to_matrix[stn.matrix];
         }
         std::vector<glm::mat4> global_mat;
         for (const auto &pm: parent_mat) {
@@ -112,12 +109,9 @@ struct SceneObject : IObjectClone<SceneObject> {
                 return std::nullopt;
             }
             SceneTreeNode stn = scene_tree.at(node_name);
-            std::vector<glm::mat4> local_mat;
-            if (node_to_matrix.count(node_name + "_m")) {
-                local_mat = node_to_matrix[node_name];
-            }
-            if (local_mat.empty()) {
-                local_mat = {glm::mat4(1)};
+            std::vector<glm::mat4> local_mat = {glm::mat4(1)};
+            if (node_to_matrix.count(stn.matrix)) {
+                local_mat = node_to_matrix[stn.matrix];
             }
             std::vector<glm::mat4> global_mat;
             for (const auto &pm: parent_mat) {

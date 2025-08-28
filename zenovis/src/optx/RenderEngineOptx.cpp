@@ -1318,6 +1318,27 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             message["MessageType"] = "SceneTree";
             fun(message.dump());
         }
+        else if (in_msg["MessageType"] == "Focus") {
+            auto const & link = defaultScene.cur_link;
+            if (link.size() <= 1 || link[0] != "DynamicScene" || defaultScene.dynamic_scene == nullptr) {
+                return;
+            }
+            std::vector<std::string> path = link;
+            path.erase(path.begin());
+
+            zeno::log_info("link: {}", link);
+            zeno::log_info("path: {}", path);
+            for (auto i = 0; i < path.size(); i++) {
+                zeno::log_info("{}: {}", i, path[i]);
+            }
+            auto res = defaultScene.dynamic_scene->get_node_bbox(path);
+            if (res.has_value()) {
+                zeno::log_info("found: {}, {}", res.value().first, res.value().second);
+            }
+            else {
+                zeno::log_info("not found");
+            }
+        }
         else if (in_msg["MessageType"] == "Select") {
             auto &link = in_msg["Content"];
             {
@@ -1328,6 +1349,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
                 else {
                     json = &defaultScene.dynamic_scene_tree;
+                }
+                {
+                    defaultScene.cur_link.clear();
+                    for (auto i = 0; i < link.size(); i++) {
+                        defaultScene.cur_link.emplace_back(link[i]);
+                    }
                 }
                 Json &scene_tree = json->operator[]("scene_tree");
                 Json &node_to_matrix = json->operator[]("node_to_matrix");

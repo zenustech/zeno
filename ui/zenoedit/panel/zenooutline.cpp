@@ -153,7 +153,9 @@ bool zenooutline::eventFilter(QObject *watched, QEvent *event) {
             if (event->type() == QEvent::KeyPress) {
                 if (auto *keyEvent = dynamic_cast<QKeyEvent *>(event)) {
                     if (keyEvent->key() == Qt::Key_F) {
-                        changed = true;
+                        Json msg;
+                        msg["MessageType"] = "Focus";
+                        sendOptixMessage(msg);
                     }
                 }
             }
