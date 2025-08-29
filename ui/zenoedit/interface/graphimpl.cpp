@@ -47,7 +47,8 @@ static QVariant parseValue(PyObject* v, const QString& type, const QVariant& def
     else if (type.startsWith("vec"))
     {
         PyObject* obj;
-        if (PyArg_Parse(v, "O", &obj) && Py_TYPE(obj)->tp_name == "list")
+        PyArg_Parse(v, "O", &obj);
+        if (strcmp(Py_TYPE(obj)->tp_name, "list") == 0)
         {
             bool bError = false;
             if (defVal.canConvert<UI_VECTYPE>())
@@ -252,6 +253,19 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
         }
     }
     
+    if (PyTuple_Size(arg) == 2) {
+        PyObject* _arg_dispName = PyTuple_GET_ITEM(arg, 1);
+        char* dispName = nullptr;
+        if (!PyArg_Parse(_arg_dispName, "s", &dispName))
+        {
+            PyErr_SetString(PyExc_Exception, "args error");
+            PyErr_WriteUnraisable(Py_None);
+            return Py_None;
+        }
+        const QString& qDispName = QString::fromUtf8(dispName);
+        pModel->setCustomName(self->subgIdx, nodeIdx, qDispName);
+    }
+
     //const QModelIndex& nodeIdx = pModel->index(ident, self->subgIdx);
     std::string _subgName = subgName.toStdString();
     std::string _ident = ident.toStdString();
@@ -260,6 +274,47 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
     PyObject* result = PyObject_CallObject((PyObject*)&ZNodeType, argList);
     Py_DECREF(argList);
     return result;
+}
+
+static PyObject*
+Graph_forkAndCreateNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
+{
+    char* _fork_subgraph, * _new_fork_name;
+    if (!PyArg_ParseTuple(arg, "ss", &_fork_subgraph, &_new_fork_name))
+    {
+        PyErr_SetString(PyExc_Exception, "args error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    const QString& graphName = self->subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& fork_subgraph = QString::fromUtf8(_fork_subgraph);
+    const QString& new_fork_name = QString::fromUtf8(_new_fork_name);
+
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    NODE_DATA fakeNodeData = pModel->forkOnlySubgraph(self->subgIdx, fork_subgraph);
+    if (fakeNodeData.isEmpty()) {
+        PyErr_SetString(PyExc_Exception, "fork error");
+        PyErr_WriteUnraisable(Py_None);
+        return Py_None;
+    }
+
+    //fork出来的子图的名字
+    QString new_fork_subgraph_name = fakeNodeData[ROLE_OBJNAME].toString();
+    const QByteArray& bytes = new_fork_subgraph_name.toUtf8();
+    const char* c = bytes.data();
+    PyObject* new_arg= Py_BuildValue("s", c);
+
+    //用户想设置的名字
+    const QByteArray& bytes2 = new_fork_name.toUtf8();
+    const char* c2 = bytes2.data();
+    PyObject* new_arg2 = Py_BuildValue("s", c2);
+
+    PyObject* tuple = PyTuple_New(2);
+    PyTuple_SetItem(tuple, 0, new_arg);
+    PyTuple_SetItem(tuple, 1, new_arg2);
+
+    return Graph_createNode(self, tuple, kw);
 }
 
 static PyObject*
@@ -479,6 +534,7 @@ static PyMethodDef GraphMethods[] = {
     {"node", (PyCFunction)Graph_getNode, METH_VARARGS, "Get the node from the graph"},
     {"addLink", (PyCFunction)Graph_addLink, METH_VARARGS, "Add link"},
     {"removeLink", (PyCFunction)Graph_removeLink, METH_VARARGS, "remove link"},
+    {"forkAndCreate", (PyCFunction)Graph_forkAndCreateNode, METH_VARARGS|METH_KEYWORDS, "fork subgraph and create an instance of it"},
     {NULL, NULL, 0, NULL}
 };
 

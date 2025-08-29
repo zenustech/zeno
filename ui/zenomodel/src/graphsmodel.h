@@ -44,6 +44,7 @@ public:
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
+    NODE_DATA forkOnlySubgraph(const QModelIndex& subgIdx, const QString& fork_subgraph_name) override;
     QModelIndex forkMaterial(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx, const QString&subgName, const QString& mtlid, const QString& mtlid_old) override;
     void removeGraph(int idx) override;
     bool isDirty() const override;
