@@ -347,6 +347,7 @@ struct SceneObject : IObjectClone<SceneObject> {
                     object_name = path + "_m";
                 }
                 auto prim = mats_to_prim(object_name, matrixs, use_static, this->matrixMode);
+                prim->userData().set2("MatrixPriority", -1);
                 if (node_to_id.count(stn.matrix) && node_to_id[stn.matrix].size() == matrixs.size()) {
                     prim->loops.values = node_to_id[stn.matrix];
                 }

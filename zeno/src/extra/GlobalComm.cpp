@@ -935,6 +935,39 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                     view_objects.m_curr[zeno::format(pattern, i)] = new_list->arr[i];
                 }
             }
+            {
+                std::unordered_map<std::string, std::vector<std::string>> matrixes;
+                for (const auto&[key, obj]: view_objects.m_curr) {
+                    if (obj->userData().get2<std::string>("ResourceType", "") == "Matrixes") {
+                        auto obj_name = obj->userData().get2<std::string>("ObjectName", "");
+                        if (obj_name == "") {
+                            continue;
+                        }
+                        matrixes[obj_name].push_back(key);
+                    }
+                }
+                for (auto &[obj_name, keys]: matrixes) {
+                    if (keys.size() <= 1) {
+                        continue;
+                    }
+                    std::string max_priority_obj_name = keys[0];
+                    int max_priority = view_objects.m_curr[keys[0]]->userData().get2<int>("MatrixPriority", 0);
+                    for (auto i = 1; i < keys.size(); i++) {
+                        auto key = keys[i];
+                        int priority = view_objects.m_curr[keys[i]]->userData().get2<int>("MatrixPriority", 0);
+                        if (priority > max_priority) {
+                            max_priority = priority;
+                            max_priority_obj_name = key;
+                        }
+                    }
+                    for (auto i = 0; i < keys.size(); i++) {
+                        auto key = keys[i];
+                        if (key != max_priority_obj_name) {
+                            view_objects.m_curr[keys[i]]->userData().set2<std::string>("ResourceType", "DeleteMatrix");
+                        }
+                    }
+                }
+            }
             m_frames[frameIdx].view_objects = view_objects;
         }
         {

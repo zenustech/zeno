@@ -320,9 +320,11 @@ public:
         nodeCache = {};
         nodeDepthCache = {};
 
-        //staticRenderGroup = 0;
-        //nodeCacheStatic = {};
-        //nodeDepthCacheStatic = {};
+        //if (false) {
+//            staticRenderGroup = 0;
+//            nodeCacheStatic = {};
+//            nodeDepthCacheStatic = {};
+        //}
 
         if (!dirtyTasks.empty()) {
             

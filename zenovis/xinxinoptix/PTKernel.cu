@@ -112,12 +112,58 @@ extern "C" __global__ void __raygen__rg()
     int seedy = idx.y/4, seedx = idx.x/8;
     int sid = (idx.y%4) * 8 + idx.x%8;
 
-    unsigned int seed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
-    unsigned int seed1 = pcg_hash((idx.y * w + idx.x) * 8192) + params.outside_random_number + subframe_index;
+    unsigned int seed0;
+    unsigned int seed;
+    unsigned int eventseed;
+    unsigned int seed1;
+
+    //seed0 is fixed for a pixel, at subframe_index = 0:
+    seed0 = tea<4>( idx.y * w + idx.x, 0) + params.outside_random_number;
+    seed0 = pcg_hash(seed0);
+    rnd(seed0);
+
+    //seed changes every subframe
+    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
     seed = pcg_hash(seed);
-    unsigned int eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
-    seed += params.outside_random_number;
-    eventseed += params.outside_random_number;
+    rnd(seed);
+
+    //eventseed, which is used for sobol random number per pixel
+    //shall be simply seed0 + subframe_index, because it shall come at
+    //squence!!
+    eventseed = seed0 + subframe_index;
+
+    //vdcseed, which is used for vdc sequence permulation, shall
+    //stay fixed for subframes of a pixel!
+    unsigned int vdcseed = seed0;
+
+    //vdc offset, which is used to draw elements from the vdc sequence
+    //shall increase exactly as the subframe_index!
+    seed1 = seed0 + subframe_index;
+
+//    if(subframe_index==0) {
+//        seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
+//        seed = pcg_hash(seed);
+//        rnd(seed);
+//        rnd(seed);
+////        unsigned int k = params.outside_random_number%10;
+////        for(int i=0;i<k;i++) rnd(seed);
+//
+//        //eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
+//        //seed += params.outside_random_number;
+//        eventseed = seed;
+//        seed1 = seed;
+//        seed0 = seed;
+//        params.seed_buffer[idx.y * w + idx.x] = make_uint3(seed,seed,seed);
+//
+//    }
+//    seed1 = seed0 + subframe_index;
+//    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
+//    seed = pcg_hash(seed);
+//    rnd(seed);
+//    rnd(seed);
+//    eventseed = seed0 + subframe_index;
+
+
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     float physical_aperture = 0.0f;
@@ -149,7 +195,7 @@ extern "C" __global__ void __raygen__rg()
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = sobolRnd(subframe_index,0,eventseed);
+        float2 subpixel_jitter = mmd(eventseed);
 //        subpixel_jitter.x = pcg_rng(seed);
 //        subpixel_jitter.y = pcg_rng(seed);
 
@@ -158,7 +204,7 @@ extern "C" __global__ void __raygen__rg()
             ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
             ) - 1.0f;
 
-        float2 r01 = sobolRnd(subframe_index,1,eventseed);
+        float2 r01 = {rnd(seed), rnd(seed)};
 
         float r0 = r01.x * 2.0f * M_PIf;
         float r1 = sqrtf(r01.y) * physical_aperture;
@@ -237,8 +283,10 @@ extern "C" __global__ void __raygen__rg()
         }
 
         RadiancePRD prd;
+        prd.vdcseed = vdcseed;
         prd.offset = seed1;
         prd.offset2 = seed1;
+        prd.offset3 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
 
         prd.emission     = make_float3(0.f);
@@ -350,7 +398,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 1){
+            if(prd.depth > 3){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
@@ -369,7 +417,9 @@ extern "C" __global__ void __raygen__rg()
                 //;
 
         }
-        seed = prd.seed;
+//        seed = prd.seed;
+//        seed1 = prd.offset;
+//        eventseed = prd.eventseed;
     }
     while( --i );
     aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
@@ -436,6 +486,7 @@ extern "C" __global__ void __raygen__rg()
     }
 
     params.accum_buffer[ image_index ] = accum_color;
+    //params.seed_buffer[ image_index ] = {seed1, seed, eventseed};
 
     #if __AOV__
         params.accum_buffer_D[ image_index ] = accum_color_d;
@@ -526,11 +577,11 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance(prd->offset2, prd->scatterDistance);
+        prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
         prd->maxDistance =
-            DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
         prd->channelPDF = channelPDF;
     }
 

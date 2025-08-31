@@ -2078,7 +2078,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_int_distribution<int32_t> dis(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max());
+            std::uniform_int_distribution<unsigned int> dis(std::numeric_limits<unsigned int>::min(), std::numeric_limits<unsigned int>::max());
 
             xinxinoptix::set_outside_random_number(dis(gen));
         
@@ -2100,6 +2100,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
         second_matNeedUpdate = second_matNeedUpdate || cached_shaders.empty();
         if ((meshNeedUpdate || matNeedUpdate || staticNeedUpdate) && second_matNeedUpdate) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<unsigned int> dis(std::numeric_limits<unsigned int>::min(), std::numeric_limits<unsigned int>::max());
+
+            xinxinoptix::set_outside_random_number(dis(gen));
 
             std::unordered_map<shader_key_t, uint16_t, ByShaderKey> ShaderKeyIndex{};
 

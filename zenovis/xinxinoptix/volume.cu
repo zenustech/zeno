@@ -288,7 +288,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
             pbrt::HenyeyGreenstein hg(homo_out.anisotropy);
             thisPDF = hg.p(_wo_, _wi_);
-            return homo_out.albedo  * homo_out.albedoAmp * thisPDF;
+            return homo_out.albedo  * homo_out.albedoAmp;
         };
         int sampleN = prd->depth<1?4:1;
         prd->depth += 1;

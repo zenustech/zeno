@@ -172,19 +172,18 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float SampleDistance2(unsigned int &seed, vec3 a/*throughput * alpha*/, const vec3& sigma_t, vec3& channelPDF)
     {
-        float r0 = vdcrnd(seed);
+        float r0 = rnd(seed);
         int channel = volume_sample_channel(a, r0, channelPDF);
         channel = clamp(channel, 0, 2);
         float c = sigma_t[channel];
         
-        float s = -log(max(1.0f-vdcrnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
+        float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
         return s;
     }
 
     static __inline__ __device__
     float SampleDistance(unsigned int &seed, float scatterDistance){
-        //float r = vdcrnd(offset);
-        return -logf(max(1.0f-vdcrnd(seed),_FLT_MIN_)) * scatterDistance;
+        return -logf(max(1.0f-rnd(seed),_FLT_MIN_)) * scatterDistance;
 
     }
 
@@ -350,7 +349,7 @@ namespace DisneyBSDF{
             bool reflection_fromCC = false)
 
     {
-        mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
+        //.mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
         //bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
 //        if(reflectance == true)
 //        {
@@ -653,11 +652,11 @@ namespace DisneyBSDF{
         float eta = dot(woo, N)>0?mat.ior:1.0f/mat.ior;
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         world2local(woo, T, B, N);
-        float2 r = sobolRnd(params.subframe_index,prd->depth+2, prd->eventseed);
-        float r1 = r.x;
-        float r2 = r.y;
-//        float r1 = rnd(seed);
-//        float r2 = rnd(seed);
+        //float2 r = sobolRnd(params.subframe_index,prd->depth+2, prd->eventseed);
+        //float r1 = r.x;
+        //float r2 = r.y;
+        float r1 = rnd(seed);
+        float r2 = rnd(seed);
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -710,7 +709,13 @@ namespace DisneyBSDF{
         float p4 = p3 + glassPr;
         float p5 = p4 + clearCtPr;
 
-        float r3 = vdcrnd(prd->offset);
+        //finally got this clear, each seed can represent a whole different permutation of the whole van der corput sequence
+        //and offset is the "index" to "take" the random number from van der corput
+        //as a result, for i'th ray in a pixel, its offset shall be subframe_index, and scrumble seed shall change between
+        //events
+        float r3 = vdcrnd(prd->offset, prd->vdcseed);
+        float r4 = rnd(prd->seed);
+        float r5 = rnd(prd->seed);
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
         tbn.m_binormal = B;
@@ -758,7 +763,7 @@ namespace DisneyBSDF{
           else{
             //switch between scattering or diffuse reflection
             float diffp = p0/p1;
-            if(vdcrnd(prd->offset)<diffp || prd->fromDiff==true)
+            if(r4<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
@@ -831,8 +836,8 @@ namespace DisneyBSDF{
           wm = entering?wm:-wm;
 
           float F = BRDFBasics::DielectricFresnel(abs(dot(wm, woo)), entering?mat.ior:1.0f/mat.ior);
-          float p = vdcrnd(prd->offset);
-          if(p<F)//reflection
+
+          if(r5<F)//reflection
           {
             wi = normalize(reflect(-normalize(woo),wm));
           }else //refraction

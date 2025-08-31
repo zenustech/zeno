@@ -409,10 +409,12 @@ extern "C" __global__ void __closesthit__radiance()
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index , rt_data->textures, attrs );
     prd->mask_value = mats.mask_value;
     prd->geometryNormal = attrs.wldNorm;
-
-    if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
+    bool geoNormalFlipped = false;
+    if(mats.doubleSide>0.5f || mats.thin>0.5f) {
+        auto before = prd->geometryNormal;
         //mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
         prd->geometryNormal  = faceforward( prd->geometryNormal , -ray_dir, prd->geometryNormal  );
+        //geoNormalFlipped = dot(before, prd->geometryNormal)<0;
     }
 
     if (prd->test_distance) {
@@ -429,7 +431,7 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    shadingNorm = mats.nrm;
+    shadingNorm = geoNormalFlipped?-mats.nrm:mats.nrm;
 
 #if (_P_TYPE_!=0)
     mats.smoothness = 0;
@@ -438,7 +440,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
         let nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
-
+        float c = geoNormalFlipped?-1.0f:1.0f;
         float3 n0 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.x ]) );
         float3 n1 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.y ]) );
         float3 n2 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.z ]) );
@@ -467,10 +469,10 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->tmp_normal = shadingNorm;
     }
-
+    mats.subsurface = prd->depth>1?0:mats.subsurface;
     bool next_ray_is_going_inside = false;
     mats.sssParam = mats.subsurface>0 ? mats.subsurface*mats.sssParam : mats.sssParam;
-    mats.subsurface = mats.subsurface>0 ? 1 : 0;
+    //mats.subsurface = mats.subsurface>0 ? 1 : 0;
 
     /* MODME */
     if(prd->diffDepth>=2)
@@ -551,7 +553,7 @@ extern "C" __global__ void __closesthit__radiance()
     float fPdf = 0.0f;
     float rrPdf = 0.0f;
 
-    float3 T = attrs.T;
+    float3 T = geoNormalFlipped?-attrs.T:attrs.T;
     float3 B = attrs.B;
     float3 N = shadingNorm;
 
@@ -682,10 +684,10 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->pushMat(extinction);
                         prd->isSS = false;
                         prd->scatterDistance = mats.scatterDistance;
-                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->offset2, prd->scatterDistance) : 1e16f;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
 
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         //here is the place caused inf ray:fixed
                         auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
                         //what should be the right value???
@@ -732,7 +734,7 @@ extern "C" __global__ void __closesthit__radiance()
                 else //next ray in 3s object
                 {
                     prd->isSS = true;
-                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
             }
         }else{
@@ -748,10 +750,10 @@ extern "C" __global__ void __closesthit__radiance()
                     else if (ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->offset2, sigma_t, sigma_t, channelPDF) : 1e16f;
+                        prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->offset2, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->isSS = true;
                     }
                     prd->attenuation *= trans;
@@ -805,14 +807,15 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
     float3 frontPos, backPos;
-    if (wldOffset > 0) {
-        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset );
+    float3 sfrontPos, sbackPos;
+    if (abs(wldOffset) > 0) {
+        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, abs(wldOffset));
     } else {
         frontPos = wldPos;
         backPos = wldPos;
     }
 
-    shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
+    shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? sfrontPos : sbackPos;
     shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
     
     auto shadingP = frontPos + params.cam.eye; // world space

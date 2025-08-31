@@ -119,7 +119,7 @@ void buildLightTree();
 void configPipeline(bool dirty);
 
 void set_window_size(int nx, int ny);
-void set_outside_random_number(int32_t outside_random_number);
+void set_outside_random_number(unsigned int outside_random_number);
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture);
 void set_physical_camera_param(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance);
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);

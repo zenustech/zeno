@@ -30,7 +30,87 @@
 
 #include <vector_types.h>
 #include <sutil/vec_math.h>
- 
+static __host__ __device__ __inline__ unsigned int J(unsigned int i)
+{
+    i=( i<<16)|(i>>16);
+    i=((i&0x00FF00FF)<<8)|((i&0xFF00FF00)>>8);
+    i=((i&0x0F0F0F0F)<<4)|((i&0xF0F0F0F0)>>4);
+    i=((i&0x33333333)<<2)|((i&0xCCCCCCCC)>>2);
+    i=((i&0x55555555)<<1)|((i&0xAAAAAAAA)>>1);
+    return i;
+}
+static __host__ __device__ __inline__ unsigned int P(unsigned int v)
+{
+    v^=v<<16;
+	v^=(v&0x00FF00FF)<<8;
+	v^=(v&0x0F0F0F0F)<<4;
+	v^=(v&0x33333333)<<2;
+	v^=(v&0x55555555)<<1;
+	return v;
+}
+
+static __host__ __device__ __inline__ unsigned int JPJ(unsigned int v)
+{
+    v^=v>>16;
+    v^=(v&0xFF00FF00)>>8;
+    v^=(v&0xF0F0F0F0)>>4;
+    v^=(v&0xCCCCCCCC)>>2;
+    v^=(v&0xAAAAAAAA)>>1;
+    return v;
+}
+static __host__ __device__ __inline__ unsigned int JPJ(unsigned int v, int m)
+{
+    return (JPJ(v >> (32 - m)) << (32 - m)) | (v & (0xFFFFFFFF >> m));
+}
+static __host__ __device__ __inline__ unsigned int mmdX(unsigned int x, int m)
+{
+    unsigned int v = JPJ(x >> (32 - m));
+    int padding = (m - 6) >> 1;
+    v ^= (v & (0x10 << padding)) >> 1;
+    return (v << (32 - m)) | (x & (0xFFFFFFFF >> m));
+}
+static __host__ __device__ __inline__ unsigned int mmdY(unsigned int y, int m)
+{
+    unsigned int v = JPJ(y >> (32 - m));
+    int padding = (m - 6) >> 1;
+    v ^= (
+            ((v & (0x30 << padding)) >> 1) ^
+            ((v & (0x08 << padding)) >> 2)
+         );
+    return (v << (32 - m)) | (y & (0xFFFFFFFF >> m));
+}
+static __device__ __inline__
+float2 hammersley(unsigned int &index)
+{
+    index &= 0xFFFFFFFF;
+    unsigned int x = J(index);
+    unsigned int y = P(x);
+    uint2 p = {JPJ(x,12), JPJ(y,12)};
+    float c = 1.0f/(float)(0xFFFFFFFF);
+    index++;
+    return make_float2((float)p.x*c, (float)p.y*c);
+}
+static __device__ __inline__
+float2 mmd(unsigned int &index)
+{
+    index &= 0xFFFFFFFF;
+    unsigned int x = J(index);
+    unsigned int y = P(x);
+    uint2 p = {mmdX(x,12), mmdY(y,12)};
+    float c = 1.0f/(float)(0xFFFFFFFF);
+    index++;
+    return make_float2((float)p.x*c, (float)p.y*c);
+}
+static __host__ __device__ __inline__
+float radicalInverse_VdC(unsigned int bits)
+{
+	bits = (bits << 16u) | (bits >> 16u);
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+	return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+}
 static __host__ __device__ __inline__  float van_der_corput(unsigned int n, unsigned int base=2) {
      // keep only lowest 24 bits — higher bits don't survive float precision
     n &= (1u << 24) - 1u;      // 0xFFFFFF
@@ -140,6 +220,7 @@ static __host__ __device__ __inline__ unsigned int lcg32(unsigned int &prev)
 // Generate random float in [0, 1)
 static __host__ __device__ __inline__ float rnd(unsigned int &seed)
 {
+
     auto state = seed;
 	seed = seed * 747796405u + 2891336453u;
 	auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -147,12 +228,13 @@ static __host__ __device__ __inline__ float rnd(unsigned int &seed)
 
     return (tmp >> 8) * (1.0f / 16777216.0f);
 
-//  return (float)tmp / (float)0xffffffff;
+  return (float)tmp / (float)0xffffffff;
 }
-static __host__ __device__ __inline__ float vdcrnd(unsigned int &seed)
+static __host__ __device__ __inline__ float vdcrnd(unsigned int index, unsigned int &seed)
 {
-    seed += 1;
-    float val = van_der_corput(seed);
+    unsigned int scrambled = index ^ seed;
+    float val = van_der_corput(scrambled);
+    rnd(seed);
     return val;
 }
 

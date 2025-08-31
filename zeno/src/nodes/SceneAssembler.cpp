@@ -289,6 +289,52 @@ ZENDEFNODE( FormSceneTree, {
         "Scene",
     },
 });
+struct ConvertXformToMatrix : zeno::INode {
+    void apply() override {
+        auto xform = get_input2<PrimitiveObject>("xform");
+        AttrVector<vec3f> verts(xform->verts.size() * 4);
+        {
+            auto& t_attr = xform->verts.values;
+            auto& r0_attr = xform->verts.attr<vec3f>("r0");
+            auto& r1_attr = xform->verts.attr<vec3f>("r1");
+            auto& r2_attr = xform->verts.attr<vec3f>("r2");
+            for (auto i = 0; i < xform->verts.size(); i++) {
+                auto r0 = r0_attr[i];
+                auto r1 = r1_attr[i];
+                auto r2 = r2_attr[i];
+                auto t = t_attr[i];
+                verts[0 + i * 4][0] = r0[0];
+                verts[0 + i * 4][1] = r1[0];
+                verts[0 + i * 4][2] = r2[0];
+                verts[1 + i * 4][0] = t[0];
+                verts[1 + i * 4][1] = r0[1];
+                verts[1 + i * 4][2] = r1[1];
+                verts[2 + i * 4][0] = r2[1];
+                verts[2 + i * 4][1] = t[1];
+                verts[2 + i * 4][2] = r0[2];
+                verts[3 + i * 4][0] = r1[2];
+                verts[3 + i * 4][1] = r2[2];
+                verts[3 + i * 4][2] = t[2];
+            }
+
+        }
+        xform->verts = verts;
+
+        set_output2("matrix", xform);
+    }
+};
+ZENDEFNODE(ConvertXformToMatrix, {
+	{
+		"xform",
+	},
+	{
+		{"matrix"},
+	},
+	{},
+	{
+		"Scene",
+	},
+	});
 
 /*
 static std::vector<std::string> splitPath(const std::string& path) {

@@ -215,7 +215,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
     const float _SKY_PROB_ = params.skyLightProbablity();
 
     float scatterPDF = 1.f;
-    float UF = prd->vdcrndf();
+    float UF = prd->rndf();
 
     if(UF >= _SKY_PROB_) {
 
@@ -555,7 +555,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
 
             float2 skyuv = {};
             vec3 sample_dir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
-                                                            params.skynx, params.skyny, vdcrnd(prd->offset), envpdf, skyuv)
+                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf, skyuv)
                                     : BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                     params.sunSoftness * 0.0f);
             float samplePDF;

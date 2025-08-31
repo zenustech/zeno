@@ -161,6 +161,7 @@ struct Params
 {
     unsigned int subframe_index;
     float3*      accum_buffer;
+    //uint3*        seed_buffer;
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
     float3*      accum_buffer_T;
@@ -244,7 +245,7 @@ struct Params
     float sunSoftness;
     float elapsedTime;
 
-    int32_t outside_random_number;
+    unsigned int outside_random_number;
     bool show_background  :1;
 
     bool denoise : 1;

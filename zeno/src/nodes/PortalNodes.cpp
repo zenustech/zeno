@@ -79,7 +79,7 @@ struct Route : zeno::INode {
                         setruntype(obj, "material");
                     }
                     else if (runttype == "matrix") {
-                        //setruntype(obj, "matrix"); //由RenderScene控制这个userdata的设置
+                        setruntype(obj, "matrix");
                     }
                     else {
                         setruntype(obj, "normal");
@@ -96,7 +96,7 @@ struct Route : zeno::INode {
 ZENDEFNODE(Route, {
     {"input"},
     {"output"},
-    {{"enum normal lightCamera material", "RunType", "normal"}},
+    {{"enum normal lightCamera material matrix", "RunType", "normal"}},
     {"layout"},
 });
 
