@@ -57,6 +57,7 @@ public:
 	 fork subnet node indexed by subnetNodeIdx under subgIdx. 
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
+	virtual NODE_DATA forkOnlySubgraph(const QModelIndex& subgIdx, const QString& fork_subgraph_name) = 0;
     virtual QModelIndex forkMaterial(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx, const QString& subgName, const QString& mtlid, const QString& mtlid_old) = 0;
 
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;

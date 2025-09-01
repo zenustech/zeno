@@ -90,7 +90,8 @@ public slots:
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onViewParamInserted(const QModelIndex& parent, int first, int last);
     void onViewParamAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-
+    void onCustomNameChanged2(const QString& newName);
+    void onCustomNameChanged();
     void onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
 
@@ -123,9 +124,6 @@ protected:
 
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
-
-private slots:
-    void onCustomNameChanged();
 
 private:
     void _drawBorderWangStyle(QPainter* painter);

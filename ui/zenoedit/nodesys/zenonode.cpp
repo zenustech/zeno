@@ -2092,6 +2092,33 @@ void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex)
     }
 }
 
+void ZenoNode::onCustomNameChanged2(const QString& newName)
+{
+    m_NameItem->setTextInteractionFlags(Qt::NoTextInteraction);
+    QString newText = newName;
+    QString name = m_index.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    pModel->getDescriptor(name, desc);
+    QString category;
+    if (!desc.categories.isEmpty())
+        category = desc.categories[0];
+
+    if (newText == name)
+        newText = "";
+    if (!pModel)
+        return;
+
+    if (newText.isEmpty())
+        return;
+
+    m_NameItem->setText(newText);
+    m_pCategoryItem->setText(category);
+    m_NameItem->setDefaultTextColor(QColor(255, 255, 255));
+    ZGraphicsLayout::updateHierarchy(m_NameItem);
+    ZGraphicsLayout::updateHierarchy(m_pCategoryItem);
+}
+
 void ZenoNode::onCustomNameChanged()
 {
     m_NameItem->setTextInteractionFlags(Qt::NoTextInteraction);

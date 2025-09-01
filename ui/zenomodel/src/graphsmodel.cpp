@@ -919,6 +919,20 @@ void GraphsModel::removeGraph(int idx)
     markDirty();
 }
 
+NODE_DATA GraphsModel::forkOnlySubgraph(const QModelIndex& subgIdx, const QString& fork_subgraph_name)
+{
+    SubGraphModel* pModel = subGraph(fork_subgraph_name);
+    ZASSERT_EXIT(pModel, NODE_DATA());
+    if (pModel->forkLocked())
+    {
+        zeno::log_error("{} fork behavior is locked", fork_subgraph_name.toStdString());
+        return NODE_DATA();
+    }
+
+    NODE_DATA subnetData = _fork(fork_subgraph_name);
+    return subnetData;
+}
+
 QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &subnetNodeIdx)
 {
     const QString& subnetName = subnetNodeIdx.data(ROLE_OBJNAME).toString();
