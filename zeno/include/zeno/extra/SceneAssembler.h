@@ -37,7 +37,11 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::string matrixMode = "TotalChange";
 
     // return value is in world space
-    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::string& node_name, const std::vector<glm::mat4> &parent_mat) {
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
+            const std::string& node_name
+            , const std::vector<glm::mat4> &parent_mat
+            , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+    ) {
         if (scene_tree.count(node_name) == 0) {
             return std::nullopt;
         }
@@ -54,23 +58,21 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
         std::vector<glm::vec3> bbox_points;
         for (const auto &mesh: stn.meshes) {
-            if (prim_list.count(mesh) == 0) {
+            if (mesh_bbox.count(mesh) == 0) {
                 continue;
             }
-            auto prim = prim_list[mesh];
-            if (prim->userData().has<vec3f>("_bboxMin")) {
-                auto bmin_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
-                auto bmax_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
+            {
+                auto [bmin_OS, bmax_OS] = mesh_bbox.at(mesh);
                 for (const auto &gm: global_mat) {
                     auto bmin_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
-                    auto bmax_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
+                    auto bmax_WS = glm::vec3(gm * glm::vec4(bmax_OS, 1));
                     bbox_points.emplace_back(bmin_WS);
                     bbox_points.emplace_back(bmax_WS);
                 }
             }
         }
         for (const auto &child: stn.children) {
-            auto bboxWS = get_node_bbox(child, global_mat);
+            auto bboxWS = get_node_bbox(child, global_mat, mesh_bbox);
             if (bboxWS.has_value()) {
                 bbox_points.emplace_back(bboxWS->first);
                 bbox_points.emplace_back(bboxWS->second);
@@ -98,7 +100,10 @@ struct SceneObject : IObjectClone<SceneObject> {
             return std::pair{bmin, bmax};
         }
     }
-    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::vector<std::string> &links) {
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
+            const std::vector<std::string> &links
+            , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+    ) {
         if (links.empty()) {
             return std::nullopt;
         }
@@ -121,7 +126,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             parent_mat = global_mat;
         }
-        return get_node_bbox(links.back(), parent_mat);
+        return get_node_bbox(links.back(), parent_mat, mesh_bbox);
     }
 
     std::string

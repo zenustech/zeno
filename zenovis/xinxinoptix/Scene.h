@@ -97,6 +97,7 @@ private:
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
     
 public:
+    phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {

@@ -360,6 +360,16 @@ struct GraphicsManager {
                 const auto [stamp_base, stamp_change] = stamp_work(prim_in_lslislSp->userData());
                 if (stamp_change == "unchanged") { return; }
 
+                if (prim_in0->userData().get2<std::string>("ObjectName", "").size()) {
+                    auto obj_name = prim_in0->userData().get2<std::string>("ObjectName");
+                    auto &ud = prim_in0->userData();
+                    if (ud.has<zeno::vec3f>("_bboxMin") && ud.has<zeno::vec3f>("_bboxMax")) {
+                        defaultScene.mesh_bbox[obj_name] = {
+                                zeno::bit_cast<glm::vec3>(ud.get2<zeno::vec3f>("_bboxMin")),
+                                zeno::bit_cast<glm::vec3>(ud.get2<zeno::vec3f>("_bboxMax")),
+                        };
+                    }
+                }
                 if ( prim_in->userData().has("ShaderAttributes") ) {
                     auto attritbutes  = prim_in->userData().get2<std::string>("ShaderAttributes");
 
@@ -1331,9 +1341,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             for (auto i = 0; i < path.size(); i++) {
                 zeno::log_info("{}: {}", i, path[i]);
             }
-            auto res = defaultScene.dynamic_scene->get_node_bbox(path);
+            std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
+            for (const auto &[key, value]: defaultScene.mesh_bbox) {
+                mesh_bbox[key] = value;
+            }
+            auto res = defaultScene.dynamic_scene->get_node_bbox(path, mesh_bbox);
             if (res.has_value()) {
                 zeno::log_info("found: {}, {}", res.value().first, res.value().second);
+                auto dist = glm::distance(res.value().first, res.value().second) * 2;
+                auto center = (res.value().first + res.value().second) * 0.5f;
+                scene->camera->focusCamera(center.x, center.y, center.z, dist);
             }
             else {
                 zeno::log_info("not found");
@@ -2143,7 +2160,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             for (auto const &[key, obj]: graphicsMan->graphics){
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
                     auto matkey = mtldet->mtlidkey;
-                    if(matMap.find(matkey)!=matMap.end())
+                    if(matMap.count(matkey))
                     {
                         auto idx = order[matkey];
                         auto curr_idx = graphicsMan->objOrder[key];
