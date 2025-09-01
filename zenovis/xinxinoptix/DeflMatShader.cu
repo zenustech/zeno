@@ -809,13 +809,13 @@ extern "C" __global__ void __closesthit__radiance()
     float3 frontPos, backPos;
     float3 sfrontPos, sbackPos;
     if (abs(wldOffset) > 0) {
-        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, abs(wldOffset));
+        SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset);
     } else {
         frontPos = wldPos;
         backPos = wldPos;
     }
 
-    shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? sfrontPos : sbackPos;
+    shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
     shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
     
     auto shadingP = frontPos + params.cam.eye; // world space
