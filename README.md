@@ -38,11 +38,16 @@ Aside of its simulation Tools, ZENO provides necessary visualization nodes for u
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `graphs/` folder).
 
 ## New
-
-Multi Importance Sampling
-
-<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202307/multi_importace_sampling.jpg" width="640" position="left">
-
+### ZENO SceneAssembler
+[![ZENO SceneAssembler](docs/d30bfe2d5f7b83fb2d071772d2b748d1804d7456.jpg)](https://www.bilibili.com/video/BV1RpaszxEED)
+### ZENO SceneAssembler操作
+[![ZENO SceneAssembler操作](docs/58130c46108e70a272ebb390c06f96a9b18d9ccc.jpg)](https://www.bilibili.com/video/BV19WaszREn8)
+### ZENO SceneAssemble更新偷跑
+[![ZENO SceneAssemble更新偷跑](docs/03a4f0f31ff6fb06025286b1f880705b5ce27505.jpg)](https://www.bilibili.com/video/BV19WaszREmz)
+### ZENO SceneAssembler更新偷跑
+[![ZENO SceneAssemble更新偷跑](docs/1b9469658dd744991a42c1d5c655b4c260af0765.jpg)](https://www.bilibili.com/video/BV1gmaHzkEuz)
+### 泽森科工MegaScene技术展示
+[![泽森科工MegaScene技术展示](docs/693b705728fa8c4d9630bd31552e81bc93fe7adf.jpg)](https://www.bilibili.com/video/BV13yaHzyEhL)
 ## Gallery
 
 Fig.1 - Cloth simulation
@@ -75,7 +80,9 @@ Fig.7 - Human rendering
 <img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202304/face.png" width="640" position="left">
 
 
-https://user-images.githubusercontent.com/25457920/234779878-a2f43b2f-5b9b-463b-950b-8842dad0c651.MP4
+Fig.8 -Multi Importance Sampling
+
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202307/multi_importace_sampling.jpg" width="640" position="left">
 
 
 
