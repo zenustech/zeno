@@ -166,9 +166,9 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             //编码obj
             if (stamptag == "UnChanged") {
                 //如果是计算第一帧的lightcamera，material，matrix，输出cache，如果是always运行的lightcamera，material，matrix也输出cache(loadasset全是totalchange不需要考虑)
-                if (frameid == beginFrameNumber && runtype != "LoadAsset" && runtype != "RunAll" ||
-                    balways && runtype != "LoadAsset" && runtype != "RunAll") {
-                } else {
+                //if (frameid == beginFrameNumber && runtype != "LoadAsset" && runtype != "RunAll" ||
+                //    balways && runtype != "LoadAsset" && runtype != "RunAll") {
+                //} else {
 					//writer.EndObject();
 					//continue;
 					std::shared_ptr<IObject> unchangeObj;
@@ -184,7 +184,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 					}
 					unchangeObj->m_userData = std::move(obj->userData());
                     obj = unchangeObj;
-                }
+                //}
             }
             else if (stamptag == "DataChange") {
                 int baseframe = obj->userData().get2<int>("stamp-base", -1);
@@ -525,14 +525,44 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
     if (file) {
         std::stringstream buffer;
         buffer << file.rdbuf();
-        rapidjson::Document doc;
+        rapidjson::Document doc, datadoc;
         doc.Parse(buffer.str().c_str());
         if (doc.IsObject()) {
             std::vector<rapidjson::Value> list(4);
-            list[0] = doc.GetObject()["lightCameraObj"].GetObject();
-            list[1] = doc.GetObject()["materialObj"].GetObject();
-            list[2] = doc.GetObject()["matrixObj"].GetObject();
-            list[3] = doc.GetObject()["normalObj"].GetObject();
+            if (!switchTimeline && !loadasset) {//不是loadasset的运行分开加载stampinfo
+                auto datadir = std::filesystem::u8path(cachedir) / "data";
+                std::ifstream datafile(datadir / "stampInfo.txt");
+                if (datafile) {
+                    std::stringstream databuffer;
+                    databuffer << datafile.rdbuf();
+                    datadoc.Parse(databuffer.str().c_str());
+                    if (datadoc.IsObject()) {
+                        if (runtype == "RunAll") {
+                            list[0] = datadoc.GetObject()["lightCameraObj"].GetObject();
+                            list[1] = datadoc.GetObject()["materialObj"].GetObject();
+                            list[2] = datadoc.GetObject()["matrixObj"].GetObject();
+                        } else if (runtype == "RunLightCamera") {
+							list[0] = datadoc.GetObject()["lightCameraObj"].GetObject();
+							list[1] = doc.GetObject()["materialObj"].GetObject();
+							list[2] = doc.GetObject()["matrixObj"].GetObject();
+                        } else if (runtype == "RunMaterial") {
+							list[0] = doc.GetObject()["lightCameraObj"].GetObject();
+							list[1] = datadoc.GetObject()["materialObj"].GetObject();
+							list[2] = doc.GetObject()["matrixObj"].GetObject();
+                        } else if (runtype == "RunMatrix") {
+							list[0] = doc.GetObject()["lightCameraObj"].GetObject();
+							list[1] = doc.GetObject()["materialObj"].GetObject();
+							list[2] = datadoc.GetObject()["matrixObj"].GetObject();
+                        }
+					    list[3] = doc.GetObject()["normalObj"].GetObject();
+                    }
+                }
+            } else {
+                list[0] = doc.GetObject()["lightCameraObj"].GetObject();
+                list[1] = doc.GetObject()["materialObj"].GetObject();
+                list[2] = doc.GetObject()["matrixObj"].GetObject();
+                list[3] = doc.GetObject()["normalObj"].GetObject();
+            }
             if (runtype == "RunAll" || runtype == "LoadAsset") {
                 for (auto& val : list) {
                     for (const auto& node : val.GetObject()) {
@@ -610,14 +640,39 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         }
         return false;
     };
-    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &runtype, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return false;
 
-        cachepath[0] = dir / "lightCameraObj.zencache";
-        cachepath[1] = dir / "materialObj.zencache";
-        cachepath[2] = dir / "matrixObj.zencache";
-        cachepath[3] = dir / "normalObj.zencache";
+        if (!switchTimeline && !loadasset) {//不是loadasset的运行分开加载stampinfo
+			auto datadir = std::filesystem::u8path(cachedir) / "data";
+			if (runtype == "RunAll") {
+                cachepath[0] = datadir / "lightCameraObj.zencache";
+                cachepath[1] = datadir / "materialObj.zencache";
+                cachepath[2] = datadir / "matrixObj.zencache";
+			}
+			else if (runtype == "RunLightCamera") {
+                cachepath[0] = datadir / "lightCameraObj.zencache";
+                cachepath[1] = dir / "materialObj.zencache";
+                cachepath[2] = dir / "matrixObj.zencache";
+			}
+			else if (runtype == "RunMaterial") {
+                cachepath[0] = dir / "lightCameraObj.zencache";
+                cachepath[1] = datadir / "materialObj.zencache";
+                cachepath[2] = dir / "matrixObj.zencache";
+			}
+			else if (runtype == "RunMatrix") {
+                cachepath[0] = dir / "lightCameraObj.zencache";
+                cachepath[1] = dir / "materialObj.zencache";
+                cachepath[2] = datadir / "matrixObj.zencache";
+			}
+			cachepath[3] = dir / "normalObj.zencache";
+        } else {
+            cachepath[0] = dir / "lightCameraObj.zencache";
+            cachepath[1] = dir / "materialObj.zencache";
+            cachepath[2] = dir / "matrixObj.zencache";
+            cachepath[3] = dir / "normalObj.zencache";
+        }
 
         for (int i = 0; i < cachepath.size(); i++)
         {
@@ -1003,7 +1058,7 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
         }
         log_debug("dumping frame {}", frameid);
 
-        if (frameid == beginFrameNumber && runtype == "LoadAsset") {
+        if (frameid == beginFrameNumber) {
             std::filesystem::path stampInfoPath = std::filesystem::u8path(cacheFramePath + "/data") / "stampInfo.txt";
             bool hasStampNode = zeno::getSession().userData().has("graphHasStampNode") || std::filesystem::exists(stampInfoPath);
             if (hasStampNode) {
