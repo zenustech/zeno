@@ -288,6 +288,31 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
     }
 
+    static std::vector<glm::mat4> prim_to_mats(std::shared_ptr<PrimitiveObject> &prim) {
+        size_t count = prim->verts.size() / 4;
+        std::vector<glm::mat4> matrixs(count);
+        for (auto i = 0; i < count; i++) {
+            auto &matrix = matrixs[i];
+            auto r0 = matrix[0];
+            auto r1 = matrix[1];
+            auto r2 = matrix[2];
+            auto t = matrix[3];
+            r0[0] = prim->verts[0 + i * 4][0];
+            r1[0] = prim->verts[0 + i * 4][1];
+            r2[0] = prim->verts[0 + i * 4][2];
+            t[0]  = prim->verts[1 + i * 4][0];
+            r0[1] = prim->verts[1 + i * 4][1];
+            r1[1] = prim->verts[1 + i * 4][2];
+            r2[1] = prim->verts[2 + i * 4][0];
+            t[1]  = prim->verts[2 + i * 4][1];
+            r0[2] = prim->verts[2 + i * 4][2];
+            r1[2] = prim->verts[3 + i * 4][0];
+            r2[2] = prim->verts[3 + i * 4][1];
+            t[2]  = prim->verts[3 + i * 4][2];
+        }
+        return matrixs;
+    }
+
     static std::shared_ptr<PrimitiveObject> mats_to_prim(std::string &obj_name, std::vector<glm::mat4> &matrixs, bool use_static, const std::string& matrixMode) {
         auto prim = std::make_shared<PrimitiveObject>();
         prim->verts.resize(4 * matrixs.size());
