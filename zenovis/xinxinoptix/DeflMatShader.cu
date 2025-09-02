@@ -417,6 +417,15 @@ extern "C" __global__ void __closesthit__radiance()
         //geoNormalFlipped = dot(before, prd->geometryNormal)<0;
     }
 
+    auto record_info = [&] () {
+        if (prd->depth==0) {
+            prd->_tmax_ = optixGetRayTmax();
+            *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
+            prd->record.z = dc_index;
+            prd->record.w = primIdx;
+        }
+    };
+
     if (prd->test_distance) {
         if(mats.opacity>0.99f) { // it's actually transparency not opacity
             prd->origin = prd->origin + float3(attrs.pOffset);
@@ -427,6 +436,7 @@ extern "C" __global__ void __closesthit__radiance()
         } else {
             prd->done = true;
             prd->maxDistance = optixGetRayTmax();
+            record_info();
         } 
         return;
     }
@@ -530,13 +540,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->countEmitted = false;
         return;
     }
-    
-    if (prd->depth==0) {
-        prd->_tmax_ = optixGetRayTmax();
-        *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
-        prd->record.z = dc_index;
-        prd->record.w = primIdx;
-    }
+
+    record_info();
 
     if(prd->depth==0&&mats.flatness>0.5)
     {
