@@ -17,3 +17,6 @@ CMakeUserPresets.json
 .vim_localrc
 CMakeLists.txt.user
 compile_commands.json
+/RelDbInfo
+/out
+/projects/FBX/FBXSDK

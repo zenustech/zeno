@@ -43,3 +43,6 @@
 [submodule "projects/optix-toolkit"]
 	path = projects/optix-toolkit
 	url = https://github.com/NVIDIA/optix-toolkit.git
+[submodule "ui/3rdparty/qwt"]
+	path = ui/3rdparty/qwt
+	url = https://github.com/legobadman/qwt.git
