@@ -617,6 +617,7 @@ struct GraphicsManager {
 
                     std::vector<int> instance_ids = prim_in->loops.values;
                     defaultScene.load_matrix_list(reName, matrix_list, instance_ids);
+                    defaultScene.load_matrix_list_to_glm(reName, prim_in);
                     return;
                 }
 
@@ -1201,6 +1202,7 @@ struct GraphicsManager {
                 std::vector<m3r4c> matrix_list(count);
                 std::copy_n((float*)mat->verts.data(), count * 12, (float*)matrix_list.data());
                 defaultScene.load_matrix_list(obj_name, matrix_list, {});
+                defaultScene.load_matrix_list_to_glm(obj_name, mat.get());
             }
             map[obj_name] = matrixs[i];
         }
