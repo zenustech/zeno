@@ -2163,6 +2163,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             };
             
             if ( matNeedUpdate ) {
+                if (lightNeedUpdate) {
+                    ShaderDirty = true;
+                }
                 required_shader_names = defaultScene.prepareShaderSet();
 
                 dirtyShaderNames.clear();
