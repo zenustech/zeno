@@ -112,7 +112,7 @@ public:
             dc_index_to_mat[value] = std::get<0>(key);
         }
     }
-    inline std::vector<glm::mat4> load_matrix_list_to_glm(const std::string &key, zeno::PrimitiveObject *prim) {
+    inline void load_matrix_list_to_glm(const std::string &key, zeno::PrimitiveObject *prim) {
         size_t count = prim->verts.size() / 4;
         std::vector<glm::mat4> matrixs(count);
         for (auto i = 0; i < count; i++) {
