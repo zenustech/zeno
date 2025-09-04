@@ -71,7 +71,6 @@ private:
 
     nlohmann::json sceneJson;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
-    phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<int>> instance_ids_map{};
 
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<Hair>> hairCache;
@@ -99,6 +98,7 @@ private:
     
 public:
     phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
+    phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
@@ -114,13 +114,17 @@ public:
     }
     inline void load_matrix_list_to_glm(const std::string &key, zeno::PrimitiveObject *prim) {
         size_t count = prim->verts.size() / 4;
+        if (count == 0) {
+            return;
+        }
         std::vector<glm::mat4> matrixs(count);
         for (auto i = 0; i < count; i++) {
             auto &matrix = matrixs[i];
-            auto r0 = matrix[0];
-            auto r1 = matrix[1];
-            auto r2 = matrix[2];
-            auto t = matrix[3];
+            matrix[3][3] = 1;
+            auto &r0 = matrix[0];
+            auto &r1 = matrix[1];
+            auto &r2 = matrix[2];
+            auto &t = matrix[3];
             r0[0] = prim->verts[0 + i * 4][0];
             r1[0] = prim->verts[0 + i * 4][1];
             r2[0] = prim->verts[0 + i * 4][2];

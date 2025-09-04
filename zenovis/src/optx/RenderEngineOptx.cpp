@@ -1338,24 +1338,19 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             std::vector<std::string> path = link;
             path.erase(path.begin());
 
-            zeno::log_info("link: {}", link);
-            zeno::log_info("path: {}", path);
-            for (auto i = 0; i < path.size(); i++) {
-                zeno::log_info("{}: {}", i, path[i]);
-            }
             std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
             for (const auto &[key, value]: defaultScene.mesh_bbox) {
                 mesh_bbox[key] = value;
             }
-            auto res = defaultScene.dynamic_scene->get_node_bbox(path, mesh_bbox);
+            std::unordered_map<std::string, std::vector<glm::mat4>> node_2_matrix;
+            for (const auto &[key, value]: defaultScene.glm_matrix_map) {
+                node_2_matrix[key] = value;
+            }
+            auto res = defaultScene.dynamic_scene->get_node_bbox(path, mesh_bbox, node_2_matrix);
             if (res.has_value()) {
-                zeno::log_info("found: {}, {}", res.value().first, res.value().second);
                 auto dist = glm::distance(res.value().first, res.value().second) * 2;
                 auto center = (res.value().first + res.value().second) * 0.5f;
                 scene->camera->focusCamera(center.x, center.y, center.z, dist);
-            }
-            else {
-                zeno::log_info("not found");
             }
         }
         else if (in_msg["MessageType"] == "Select") {

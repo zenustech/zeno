@@ -41,14 +41,15 @@ struct SceneObject : IObjectClone<SceneObject> {
             const std::string& node_name
             , const std::vector<glm::mat4> &parent_mat
             , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+            , const std::unordered_map<std::string, std::vector<glm::mat4>> &node_2_matrix
     ) {
         if (scene_tree.count(node_name) == 0) {
             return std::nullopt;
         }
         SceneTreeNode stn = scene_tree.at(node_name);
         std::vector<glm::mat4> local_mat = {glm::mat4(1)};
-        if (node_to_matrix.count(stn.matrix)) {
-            local_mat = node_to_matrix[stn.matrix];
+        if (node_2_matrix.count(stn.matrix)) {
+            local_mat = node_2_matrix.at(stn.matrix);
         }
         std::vector<glm::mat4> global_mat;
         for (const auto &pm: parent_mat) {
@@ -72,7 +73,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
         }
         for (const auto &child: stn.children) {
-            auto bboxWS = get_node_bbox(child, global_mat, mesh_bbox);
+            auto bboxWS = get_node_bbox(child, global_mat, mesh_bbox, node_2_matrix);
             if (bboxWS.has_value()) {
                 bbox_points.emplace_back(bboxWS->first);
                 bbox_points.emplace_back(bboxWS->second);
@@ -103,6 +104,7 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
             const std::vector<std::string> &links
             , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+            , const std::unordered_map<std::string, std::vector<glm::mat4>> &node_2_matrix
     ) {
         if (links.empty()) {
             return std::nullopt;
@@ -115,8 +117,8 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             SceneTreeNode stn = scene_tree.at(node_name);
             std::vector<glm::mat4> local_mat = {glm::mat4(1)};
-            if (node_to_matrix.count(stn.matrix)) {
-                local_mat = node_to_matrix[stn.matrix];
+            if (node_2_matrix.count(stn.matrix)) {
+                local_mat = node_2_matrix.at(stn.matrix);
             }
             std::vector<glm::mat4> global_mat;
             for (const auto &pm: parent_mat) {
@@ -126,7 +128,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             parent_mat = global_mat;
         }
-        return get_node_bbox(links.back(), parent_mat, mesh_bbox);
+        return get_node_bbox(links.back(), parent_mat, mesh_bbox, node_2_matrix);
     }
 
     std::string
