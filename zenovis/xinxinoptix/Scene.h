@@ -97,6 +97,8 @@ private:
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
     
 public:
+    phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
+    phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
@@ -109,6 +111,34 @@ public:
         for (const auto &[key, value]: shader_indice_table) {
             dc_index_to_mat[value] = std::get<0>(key);
         }
+    }
+    inline void load_matrix_list_to_glm(const std::string &key, zeno::PrimitiveObject *prim) {
+        size_t count = prim->verts.size() / 4;
+        if (count == 0) {
+            return;
+        }
+        std::vector<glm::mat4> matrixs(count);
+        for (auto i = 0; i < count; i++) {
+            auto &matrix = matrixs[i];
+            matrix[3][3] = 1;
+            auto &r0 = matrix[0];
+            auto &r1 = matrix[1];
+            auto &r2 = matrix[2];
+            auto &t = matrix[3];
+            r0[0] = prim->verts[0 + i * 4][0];
+            r1[0] = prim->verts[0 + i * 4][1];
+            r2[0] = prim->verts[0 + i * 4][2];
+            t[0]  = prim->verts[1 + i * 4][0];
+            r0[1] = prim->verts[1 + i * 4][1];
+            r1[1] = prim->verts[1 + i * 4][2];
+            r2[1] = prim->verts[2 + i * 4][0];
+            t[1]  = prim->verts[2 + i * 4][1];
+            r0[2] = prim->verts[2 + i * 4][2];
+            r1[2] = prim->verts[3 + i * 4][0];
+            r2[2] = prim->verts[3 + i * 4][1];
+            t[2]  = prim->verts[3 + i * 4][2];
+        }
+        glm_matrix_map[key] = matrixs;
     }
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
@@ -126,6 +156,7 @@ public:
     std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
     std::unordered_map<std::string, glm::mat4> modified_xfroms;
     std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
+    std::vector<std::string> cur_link;
 
     inline void preload_scene(const std::string& jsonString) {
         try {
