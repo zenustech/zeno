@@ -262,11 +262,6 @@ vec3 bezierOffset(vec3 P, vec3 A, vec3 B, vec3 C, vec3 nA, vec3 nB, vec3 nC, vec
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-//    if(!  (isfinite(prd->origin.x)&&isfinite(prd->origin.y)&&isfinite(prd->origin.z)) )
-//    {
-//        prd->done = true;
-//        return;
-//    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -417,30 +412,24 @@ extern "C" __global__ void __closesthit__radiance()
         //geoNormalFlipped = dot(before, prd->geometryNormal)<0;
     }
 
-    auto record_info = [&] () {
-        if (prd->depth==0) {
-            prd->_tmax_ = optixGetRayTmax();
-            *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
-            prd->record.z = dc_index;
-            prd->record.w = primIdx;
-        }
-    };
-
-    if (prd->test_distance) {
-        if(mats.opacity>0.99f) { // it's actually transparency not opacity
-            prd->origin = prd->origin + float3(attrs.pOffset);
-            prd->_tmin_ = optixGetRayTmax();
-        } else if(rnd(prd->seed)<mats.opacity) {
-            prd->origin = prd->origin + float3(attrs.pOffset);
-            prd->_tmin_ = optixGetRayTmax();
-        } else {
-            prd->done = true;
-            prd->maxDistance = optixGetRayTmax();
-            record_info();
-        } 
+    if( mats.opacity > rnd(prd->seed)) { // it's actually transparency not opacity
+        prd->alphaHit = true;
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
+    prd->_tmax_ = optixGetRayTmax();
 
+    if (prd->depth==0) {
+        *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
+        prd->record.z = dc_index;
+        prd->record.w = primIdx;
+
+        if (prd->test_distance) {
+            prd->done = true;
+            prd->maxDistance = optixGetRayTmax();
+            return;
+        }
+    }
     shadingNorm = geoNormalFlipped?-mats.nrm:mats.nrm;
 
 #if (_P_TYPE_!=0)
@@ -540,8 +529,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->countEmitted = false;
         return;
     }
-
-    record_info();
 
     if(prd->depth==0&&mats.flatness>0.5)
     {

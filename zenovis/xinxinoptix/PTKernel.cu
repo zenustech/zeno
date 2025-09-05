@@ -140,30 +140,6 @@ extern "C" __global__ void __raygen__rg()
     //shall increase exactly as the subframe_index!
     seed1 = seed0 + subframe_index;
 
-//    if(subframe_index==0) {
-//        seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//        seed = pcg_hash(seed);
-//        rnd(seed);
-//        rnd(seed);
-////        unsigned int k = params.outside_random_number%10;
-////        for(int i=0;i<k;i++) rnd(seed);
-//
-//        //eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
-//        //seed += params.outside_random_number;
-//        eventseed = seed;
-//        seed1 = seed;
-//        seed0 = seed;
-//        params.seed_buffer[idx.y * w + idx.x] = make_uint3(seed,seed,seed);
-//
-//    }
-//    seed1 = seed0 + subframe_index;
-//    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//    seed = pcg_hash(seed);
-//    rnd(seed);
-//    rnd(seed);
-//    eventseed = seed0 + subframe_index;
-
-
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     float physical_aperture = 0.0f;
@@ -417,9 +393,9 @@ extern "C" __global__ void __raygen__rg()
                 //;
 
         }
-//        seed = prd.seed;
-//        seed1 = prd.offset;
-//        eventseed = prd.eventseed;
+        seed = prd.seed;
+        seed1 = prd.offset;
+        eventseed = prd.eventseed;
     }
     while( --i );
     aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
@@ -486,7 +462,6 @@ extern "C" __global__ void __raygen__rg()
     }
 
     params.accum_buffer[ image_index ] = accum_color;
-    //params.seed_buffer[ image_index ] = {seed1, seed, eventseed};
 
     #if __AOV__
         params.accum_buffer_D[ image_index ] = accum_color_d;

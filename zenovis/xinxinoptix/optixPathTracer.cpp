@@ -159,7 +159,6 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
-    //raii<CUdeviceptr> seed_buffer_p;
     raii<CUdeviceptr> albedo_buffer_p;
     raii<CUdeviceptr> normal_buffer_p;
 
@@ -264,9 +263,6 @@ static void initLaunchParams( PathTracerState& state )
 
     state.accum_buffer_p.resize(byte_size);
     params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-
-    //state.seed_buffer_p.resize(byte_size);
-    //params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
     //state.params.samples_per_launch = samples_per_launch;
@@ -302,7 +298,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
 
     auto count = params.width * params.height;
     state.accum_buffer_p.resize( sizeof(float3) * count );
-    //state.seed_buffer_p.resize(sizeof(uint3)*count);
 
     if (!enable_aov) { count = 0; }
 
@@ -316,7 +311,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.pick_buffer.resize(sizeof(PickInfo));
 
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-    //state.params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
