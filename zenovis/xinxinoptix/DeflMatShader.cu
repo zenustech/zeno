@@ -415,6 +415,19 @@ extern "C" __global__ void __closesthit__radiance()
     if( mats.opacity > rnd(prd->seed)) { // it's actually transparency not opacity
         prd->alphaHit = true;
         prd->_tmin_ = optixGetRayTmax();
+
+        prd->origin = prd->origin + float3(attrs.pOffset);
+        if (prd->test_distance) return; 
+        
+        if (prd->curMatIdx > 0) {
+            vec3 sigma_t, ss_alpha;
+            prd->readMat(sigma_t, ss_alpha);
+            if (ss_alpha.x < 0.0f) { // is inside Glass
+                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+            } else {
+                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+            }
+        }
         return;
     }
     prd->_tmax_ = optixGetRayTmax();
@@ -507,28 +520,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->countEmitted = false;
-
-    if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
-    {
-        //prd->ray_orig = ray_orig + float3(attrs.pOffset);
-        prd->origin = prd->origin + float3(attrs.pOffset);
-        if (prd->curMatIdx > 0) {
-          vec3 sigma_t, ss_alpha;
-          //vec3 sigma_t, ss_alpha;
-          prd->readMat(sigma_t, ss_alpha);
-          if (ss_alpha.x < 0.0f) { // is inside Glass
-            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-          } else {
-            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-          }
-        }
-        //you shall pass!
-        prd->radiance = make_float3(0.0f);
-        prd->_tmin_ = optixGetRayTmax();
-        prd->alphaHit = true;
-        prd->countEmitted = false;
-        return;
-    }
 
     if(prd->depth==0&&mats.flatness>0.5)
     {
