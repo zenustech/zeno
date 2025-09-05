@@ -44,6 +44,10 @@ enum medium{
 struct VolumePRD {
     float t0;
     float t1;
+
+    float homo_t0;
+    float homo_t1;
+    uint homo_matid;
 };
 
 struct CommonPRD {
