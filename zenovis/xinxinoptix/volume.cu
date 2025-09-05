@@ -384,9 +384,13 @@ extern "C" __global__ void __closesthit__radiance_volume()
     }
 
     scattering = vol_out.albedo;
+    
+    prd->depth += 1;
+    prd->lightmask = VolumeMatMask;
 
     ShadowPRD shadowPRD {};
     shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
+    shadowPRD.depth = prd->depth;
     shadowPRD.origin = new_orig; //camera sapce
     shadowPRD.attanuation = vec3(1.0f);
     
@@ -397,10 +401,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
         return scattering * thisPDF;
     };
 
-    prd->depth += 1;
-    prd->lightmask = VolumeMatMask;
-    DirectLighting<true>(prd, shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
-    
+    DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+    prd->radiance = shadowPRD.radiance;
     prd->radiance += prd->emission;
     
     return;

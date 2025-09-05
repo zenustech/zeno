@@ -292,6 +292,9 @@ extern "C" __global__ void __raygen__rg()
         prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
+    #if __AOV__ 
+        prd.__aov__ = true;
+    #endif
     #if DENOISE 
         prd.denoise = true;
     #endif
