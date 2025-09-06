@@ -115,7 +115,7 @@ struct ShaderBinaryMath : ShaderNodeClone<ShaderBinaryMath> {
             else if (t1 == 1)
                 throw zeno::Exception("distance only work for vectors");
             else
-                return t1;
+                return 1;
 
         } else if (t1 == 1) {
             return t2;

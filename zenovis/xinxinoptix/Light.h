@@ -207,14 +207,15 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
-void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadingP, const float3& ray_dir, 
+void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& ray_dir, 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
-
     const float _SKY_PROB_ = params.skyLightProbablity();
 
     float scatterPDF = 1.f;
+
+    auto prd = &shadowPRD;
     float UF = prd->rndf();
 
     if(UF >= _SKY_PROB_) {
@@ -236,8 +237,8 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
         uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
 
-        bool enabled = light.mask & prd->lightmask;
-        if (!enabled) { return; }
+        // bool enabled = light.mask & prd->lightmask;
+        // if (!enabled) { return; }
 
         lightPickProb *= pick.prob;
         LightSampleRecord lsr;
@@ -375,7 +376,7 @@ void DirectLighting(RadiancePRD *prd, ShadowPRD& shadowPRD, const float3& shadin
                 case zeno::LightShape::TriangleMesh: {
                     float3* normalBuffer = reinterpret_cast<float3*>(params.triangleLightNormalBuffer);
                     float2* coordsBuffer = reinterpret_cast<float2*>(params.triangleLightCoordsBuffer);
-                    light.triangle.SampleAsLight(&lsr, uu, shadingP, prd->geometryNormal, normalBuffer, coordsBuffer); break;
+                    light.triangle.SampleAsLight(&lsr, uu, shadingP, *(float3*)&SN, normalBuffer, coordsBuffer); break;
                 }
                 default: break;
             }

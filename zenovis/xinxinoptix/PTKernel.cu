@@ -10,6 +10,8 @@
 #include "proceduralSky.h"
 
 #include <cuda_fp16.h>
+#include <volume.h>
+#include <Light.h>
 
 #ifndef __CUDACC_RTC__
 #define __AOV__ 1
@@ -96,6 +98,57 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
     bool bad = !isfinite(vector.x) || !isfinite(vector.y) || !isfinite(vector.z);
     return bad? true : lengthSquared(vector) == 0.0f;
 }
+
+void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& _attenuation) {
+    
+    const auto& vol = prd.vol;
+    // if (vol.homo_t1 <= vol.homo_t0) return;
+    // if (_tmax_ <= vol.homo_t0) return;
+    
+    float tmax = fminf(_tmax_, vol.homo_t1) - vol.homo_t0;
+
+    VolumeOut homo_out;
+    optixDirectCall<void, void*, VolumeOut&>( prd.vol.homo_matid, nullptr, homo_out);
+
+    const auto& extinction = homo_out.extinction;
+    auto seed = prd.seed;
+
+    auto total_transmittance = expf(-extinction * tmax);
+    float x = 1.0 - rnd(seed) * (1.0 - average(total_transmittance));
+    float dt = -logf(x) / average(extinction);
+    auto cdf = 1.0f - total_transmittance;
+    auto pdf = expf(-extinction * dt) * extinction;
+    auto weight = cdf / pdf;
+
+    const auto& e = extinction;
+    weight.x = e.x>1e-4? weight.x : (tmax * expf(-e.x * tmax))/(-dt*expf(-e.x*dt)*e.x + expf(-e.x*dt));
+    weight.y = e.y>1e-4? weight.y : (tmax * expf(-e.y * tmax))/(-dt*expf(-e.y*dt)*e.y + expf(-e.y*dt));
+    weight.z = e.z>1e-4? weight.z : (tmax * expf(-e.z * tmax))/(-dt*expf(-e.z*dt)*e.z + expf(-e.z*dt));
+
+    weight *= extinction;
+
+    let new_orig = ray_origin + (prd.vol.homo_t0 + dt) * ray_dir;
+
+    ShadowPRD shadowPRD {};
+    shadowPRD.seed = seed ^ 0x9e3779b9u;
+    
+    shadowPRD.depth = prd.depth;
+    shadowPRD.origin = new_orig;
+    shadowPRD.attanuation = vec3(1.0f);
+
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
+        pbrt::HenyeyGreenstein hg(homo_out.anisotropy);
+        thisPDF = hg.p(_wo_, _wi_);
+        return homo_out.albedo * thisPDF * homo_out.albedoAmp;
+    };
+
+    DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+    shadowPRD.radiance *= weight;
+
+    result += _attenuation * shadowPRD.radiance * expf(-extinction * dt);
+    _attenuation *= expf(-extinction * tmax);
+};
+
 extern "C" __global__ void __raygen__rg()
 {
     const auto w = params.width;
@@ -139,30 +192,6 @@ extern "C" __global__ void __raygen__rg()
     //vdc offset, which is used to draw elements from the vdc sequence
     //shall increase exactly as the subframe_index!
     seed1 = seed0 + subframe_index;
-
-//    if(subframe_index==0) {
-//        seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//        seed = pcg_hash(seed);
-//        rnd(seed);
-//        rnd(seed);
-////        unsigned int k = params.outside_random_number%10;
-////        for(int i=0;i<k;i++) rnd(seed);
-//
-//        //eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
-//        //seed += params.outside_random_number;
-//        eventseed = seed;
-//        seed1 = seed;
-//        seed0 = seed;
-//        params.seed_buffer[idx.y * w + idx.x] = make_uint3(seed,seed,seed);
-//
-//    }
-//    seed1 = seed0 + subframe_index;
-//    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//    seed = pcg_hash(seed);
-//    rnd(seed);
-//    rnd(seed);
-//    eventseed = seed0 + subframe_index;
-
 
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
@@ -316,6 +345,9 @@ extern "C" __global__ void __raygen__rg()
         prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
+    #if __AOV__ 
+        prd.__aov__ = true;
+    #endif
     #if DENOISE 
         prd.denoise = true;
     #endif
@@ -341,7 +373,7 @@ extern "C" __global__ void __raygen__rg()
         if(params.pause) return;
         
         prd._tmin_ = 0;
-        prd._tmax_ = FLT_MAX;
+        //prd._tmax_ = FLT_MAX;
         prd.maxDistance = FLT_MAX;
         
         float3 m = prd.mask_value;
@@ -368,7 +400,12 @@ extern "C" __global__ void __raygen__rg()
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
 
+            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0)
+                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, result, _attenuation);
+            
+            prd.vol = {};
             prd._tmin_ = 0;
+            prd._tmax_ = FLT_MAX;
             prd._mask_ = EverythingMask;
 
             ray_origin = prd.origin;
@@ -411,11 +448,7 @@ extern "C" __global__ void __raygen__rg()
             _attenuation = prd.attenuation;
             if(prd.diffDepth > 1)
                 _mask_ &= ~VolumeMaskAnalytics;
-            //if(isfinite(ray_origin.x) && isfinite(ray_origin.y) && isfinite(ray_origin.z))
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-            //else
-                //;
-
         }
         seed = prd.seed;
 //        seed1 = prd.offset;
@@ -486,7 +519,6 @@ extern "C" __global__ void __raygen__rg()
     }
 
     params.accum_buffer[ image_index ] = accum_color;
-    //params.seed_buffer[ image_index ] = {seed1, seed, eventseed};
 
     #if __AOV__
         params.accum_buffer_D[ image_index ] = accum_color_d;

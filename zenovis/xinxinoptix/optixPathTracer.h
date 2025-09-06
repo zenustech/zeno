@@ -161,7 +161,6 @@ struct Params
 {
     unsigned int subframe_index;
     float3*      accum_buffer;
-    //uint3*        seed_buffer;
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
     float3*      accum_buffer_T;

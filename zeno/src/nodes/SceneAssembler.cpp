@@ -232,7 +232,7 @@ struct FormSceneTree : zeno::INode {
                 if (bbox.has_value()) {
                     vec3f bmin = {};
                     vec3f bmax = {};
-                    std::tie(bmax, bmax) = bbox.value();
+                    std::tie(bmin, bmax) = bbox.value();
                     prim->userData().setLiterial("_bboxMin", bmin);
                     prim->userData().setLiterial("_bboxMax", bmax);
                 }
@@ -1030,7 +1030,7 @@ struct MakeSceneNode : zeno::INode {
         if (bbox.has_value()) {
             vec3f bmin = {};
             vec3f bmax = {};
-            std::tie(bmax, bmax) = bbox.value();
+            std::tie(bmin, bmax) = bbox.value();
             prim->userData().setLiterial("_bboxMin", bmin);
             prim->userData().setLiterial("_bboxMax", bmax);
         }

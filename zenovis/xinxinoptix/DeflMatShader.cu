@@ -263,14 +263,19 @@ vec3 bezierOffset(vec3 P, vec3 A, vec3 B, vec3 C, vec3 nA, vec3 nB, vec3 nC, vec
     return uvw.x*tmpu + uvw.y*tmpv + uvw.z*tmpw;
 }
 
+static __forceinline__ __device__
+vec3 FMA(vec3 a, vec3 b, vec3 c) {
+    return {
+        fmaf(a.x, b.x, c.x),
+        fmaf(a.y, b.y, c.y),
+        fmaf(a.z, b.z, c.z)
+    };
+    //return a * b + c;
+};
+
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-//    if(!  (isfinite(prd->origin.x)&&isfinite(prd->origin.y)&&isfinite(prd->origin.z)) )
-//    {
-//        prd->done = true;
-//        return;
-//    }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
@@ -310,15 +315,6 @@ extern "C" __global__ void __closesthit__radiance()
     const float c0 = 5.9604644775390625E-8f;
     const float c1 = 1.788139769587360206060111522674560546875E-7f;
     const float c2 = 1.19209317972490680404007434844970703125E-7f;
-
-    auto FMA = [](vec3 a, vec3 b, vec3 c) -> vec3 {
-        return {
-            fmaf(a.x, b.x, c.x),
-            fmaf(a.y, b.y, c.y),
-            fmaf(a.z, b.z, c.z)
-        };
-        //return a * b + c;
-    };
 
 #if (_P_TYPE_==2)
 
@@ -424,30 +420,37 @@ extern "C" __global__ void __closesthit__radiance()
         //geoNormalFlipped = dot(before, prd->geometryNormal)<0;
     }
 
-    auto record_info = [&] () {
-        if (prd->depth==0) {
-            prd->_tmax_ = optixGetRayTmax();
-            *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
-            prd->record.z = dc_index;
-            prd->record.w = primIdx;
-        }
-    };
+    if( mats.opacity > rnd(prd->seed)) { // it's actually transparency not opacity
+        prd->alphaHit = true;
+        prd->_tmin_ = optixGetRayTmax();
 
-    if (prd->test_distance) {
-        if(mats.opacity>0.99f) { // it's actually transparency not opacity
-            prd->origin = prd->origin + float3(attrs.pOffset);
-            prd->_tmin_ = optixGetRayTmax();
-        } else if(rnd(prd->seed)<mats.opacity) {
-            prd->origin = prd->origin + float3(attrs.pOffset);
-            prd->_tmin_ = optixGetRayTmax();
-        } else {
-            prd->done = true;
-            prd->maxDistance = optixGetRayTmax();
-            record_info();
-        } 
+        prd->origin = prd->origin + float3(attrs.pOffset);
+        if (prd->test_distance) return; 
+        
+        if (prd->curMatIdx > 0) {
+            vec3 sigma_t, ss_alpha;
+            prd->readMat(sigma_t, ss_alpha);
+            if (ss_alpha.x < 0.0f) { // is inside Glass
+                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+            } else {
+                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+            }
+        }
         return;
     }
+    prd->_tmax_ = optixGetRayTmax();
 
+    if (prd->depth==0) {
+        *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
+        prd->record.z = dc_index;
+        prd->record.w = primIdx;
+
+        if (prd->test_distance) {
+            prd->done = true;
+            prd->maxDistance = optixGetRayTmax();
+            return;
+        }
+    }
     shadingNorm = geoNormalFlipped?-mats.nrm:mats.nrm;
 
 #if (_P_TYPE_!=0)
@@ -525,30 +528,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->countEmitted = false;
-
-    if(mats.opacity > 0.99f || rnd(prd->seed)<mats.opacity)
-    {
-        //prd->ray_orig = ray_orig + float3(attrs.pOffset);
-        prd->origin = prd->origin + float3(attrs.pOffset);
-        if (prd->curMatIdx > 0) {
-          vec3 sigma_t, ss_alpha;
-          //vec3 sigma_t, ss_alpha;
-          prd->readMat(sigma_t, ss_alpha);
-          if (ss_alpha.x < 0.0f) { // is inside Glass
-            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-          } else {
-            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-          }
-        }
-        //you shall pass!
-        prd->radiance = make_float3(0.0f);
-        prd->_tmin_ = optixGetRayTmax();
-        prd->alphaHit = true;
-        prd->countEmitted = false;
-        return;
-    }
-
-    record_info();
 
     if(prd->depth==0&&mats.flatness>0.5)
     {
@@ -865,19 +844,25 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->hit_type==DIFFUSE_HIT && prd->diffDepth <=1 ) {
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
-            DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+            DirectLighting<true>(shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
         }
-        prd->radiance *= 1.0f/diffuse_sample_count;
-        auxRadiance   *= 1.0f/diffuse_sample_count;
-        prd->aov[0] *= auxRadiance;
-        prd->aov[1] *= auxRadiance;
-        prd->aov[2] *= auxRadiance;
+        float weight = 1.0f / diffuse_sample_count;
+        prd->radiance = shadowPRD.radiance * weight;
+        if (prd->__aov__) {
+            auxRadiance *= weight;
+            prd->aov[0] *= auxRadiance;
+            prd->aov[1] *= auxRadiance;
+            prd->aov[2] *= auxRadiance;
+        }
     }
     else {
-        DirectLighting<true>(prd, shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
-        prd->aov[0] *= auxRadiance;
-        prd->aov[1] *= auxRadiance;
-        prd->aov[2] *= auxRadiance;
+        DirectLighting<true>(shadowPRD, shadingP, ray_dir, evalBxDF, &taskAux, dummy_prt);
+        prd->radiance = shadowPRD.radiance;
+        if (prd->__aov__) {
+            prd->aov[0] *= auxRadiance;
+            prd->aov[1] *= auxRadiance;
+            prd->aov[2] *= auxRadiance;
+        }
     }
     if(mats.shadowReceiver > 0.5f)
     {
