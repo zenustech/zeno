@@ -150,4 +150,114 @@ ZENDEFNODE(ShaderUniformAttr, {
                                 {"shader"},
                             });
 
+struct SHParamToUniform : zeno::INode {
+    virtual void apply() override {
+        auto prim = std::make_shared<PrimitiveObject>();
+        if (has_input("SHPrim")) {
+            auto prim_in = get_input<zeno::PrimitiveObject>("SHPrim");
+            auto& databuffer = prim->add_attr<zeno::vec4f>("buffer");
+            size_t sh_verts_count = prim_in->verts.size();
+            prim->verts.resize(sh_verts_count*14);
+            std::vector<float> & op = prim_in->attr<float>("opacity");
+            std::vector<zeno::vec3f> & scale = prim_in->attr<zeno::vec3f>("scale");
+            std::vector<zeno::vec3f> & pos = prim_in->attr<zeno::vec3f>("pos");
+            //std::vector<zeno::vec4f> & rotate = prim_in->attr<zeno::vec4f>("rotate");
+        #pragma omp parallel for
+            for(auto i=0;i<sh_verts_count;i++){
+                for(int j=0;j<12;j++){
+                    zeno::vec4f tmp;
+                    for(int k=0;k<4;k++){
+                        char c_str[10] = "";
+                        snprintf(c_str, 10, "SH_%d", j*4 + k);
+                        std::vector<float> &data = prim_in->attr<float>(c_str);
+                        tmp[k] = data[i];
+                    }
+                    databuffer[i*14 + j] = tmp;
+                }
+                databuffer[i*14 + 12] = zeno::vec4f(op[i],pos[i][0],pos[i][1],pos[i][2]);
+                //databuffer[i*14 + 13] = rotate[i];
+
+            }
+
+
+            prim->userData().set2("ShaderUniforms", 2);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(SHParamToUniform, {
+    {
+        {"SHPrim"},
+    },
+    {
+        {"prim"},
+    },
+    {},
+    {"shader"},
+});
+struct EvalSHColor : ShaderNodeClone<EvalSHColor> {
+    virtual int determineType(EmissionPass *em) override {
+        em->determineType(get_input("idx").get());
+        em->determineType(get_input("dir").get());
+        return TypeHint.at("vec3");
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string idx = em->determineExpr(get_input("idx").get());
+        std::string dir = em->determineExpr(get_input("dir").get());
+        int level = get_input2<int>("SH-Level");
+        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ "vec3(params.cam.eye)" + ",attrs.World2ObjectMat"+")"+")";
+        printf("Emitcode : %s \n",code.c_str());
+        std::string test="vec3(1,0,0)";
+
+        return em->emitCode(code);
+    }
+};
+
+ZENDEFNODE(EvalSHColor, {
+                                {
+                                    {"int", "idx", "0"},
+                                    {"int", "SH-Level", "0"},
+                                    {"vec3", "dir", "0,0,0"}
+                                },
+                                {
+                                    {"vec3", "out"},
+                                },
+                                {},
+                                {"shader"},
+                            });
+
+struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
+    virtual int determineType(EmissionPass *em) override {
+        em->determineType(get_input("idx").get());
+        em->determineType(get_input("pos").get());
+        return TypeHint.at("float");
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string idx = em->determineExpr(get_input("idx").get());
+        std::string pos = em->determineExpr(get_input("pos").get());
+        float clamp = get_input2<float>("clamp_radius");
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+std::to_string(clamp)+","+pos+ ","+"attrs.World2ObjectMat" + "))" ;
+
+        printf("Emitcode : %s \n",code.c_str());
+
+        return em->emitCode(code);
+    }
+};
+
+ZENDEFNODE(EvalGSOpacity, {
+                                {
+                                    {"int", "idx", "0"},
+                                    {"vec3", "pos", "0,0,0"},
+                                    {"float", "clamp_radius", "4"}
+                                },
+                                {
+                                    {"vec3", "out"},
+                                },
+                                {},
+                                {"shader"},
+                            });
+
 }

@@ -136,6 +136,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #endif
 
     attrs.isShadowRay = true;
+    mat4 World2Object(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
+    attrs.World2ObjectMat = (float*)&World2Object;
+    optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
+    attrs.World2ObjectMat[15] = 1.0f;
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>( dc_index, rt_data->textures, attrs );
     shadingNorm = mats.nrm;
     shadingNorm = faceforward( shadingNorm, -ray_dir, shadingNorm );
@@ -405,7 +409,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
-
+    mat4 World2Object(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
+    attrs.World2ObjectMat = (float*)&World2Object;
+    optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
+    attrs.World2ObjectMat[15] = 1.0f;
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index , rt_data->textures, attrs );
     prd->mask_value = mats.mask_value;
     prd->geometryNormal = attrs.wldNorm;
@@ -549,7 +556,22 @@ extern "C" __global__ void __closesthit__radiance()
         prd->done = true;
         return;
     }
-    
+    if(mats.emissionOnly > 0.5f){
+        if (prd->curMatIdx > 0) {
+          vec3 sigma_t, ss_alpha;
+          //vec3 sigma_t, ss_alpha;
+          prd->readMat(sigma_t, ss_alpha);
+          if (ss_alpha.x < 0.0f) { // is inside Glass
+            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+          } else {
+            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+          }
+        }
+        //prd->attenuation2 = prd->attenuation;
+        prd->radiance += mats.emission;
+        prd->done = true;
+        return;
+    }
     float is_refl;
     float3 inDir = ray_dir;
     vec3 wi = vec3(0.0f);

@@ -157,6 +157,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
+    float mat_emissionOnly = 0.0f;
     float mat_displacement = 0.0f;
     float mat_shadowReceiver = 0.0f;
     float mat_shadowTerminatorOffset = 0.0f;
@@ -213,6 +214,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.thin = mat_thin;
     mats.doubleSide = mat_doubleSide;
     mats.shadowReceiver = mat_shadowReceiver;
+    mats.emissionOnly = mat_emissionOnly;
     mats.shadowTerminatorOffset = mat_shadowTerminatorOffset;
 
     mats.smoothness = mat_smoothness;

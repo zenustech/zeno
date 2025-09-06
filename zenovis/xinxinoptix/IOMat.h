@@ -50,6 +50,7 @@ struct MatOutput {
     float displacement;
     float shadowReceiver;
     float shadowTerminatorOffset;
+    float emissionOnly;
     float isHair;
     vec3  mask_value;
 
@@ -101,6 +102,7 @@ struct MatInput {
     float2 barys2;
     float3* vertices;
     uint3 vertex_idx;
+    float* World2ObjectMat;
 
     float4 objectToWorld[3];
     float4 worldToObject[3];

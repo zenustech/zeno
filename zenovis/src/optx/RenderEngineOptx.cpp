@@ -765,6 +765,14 @@ struct GraphicsManager {
                     {
                         shaderUniforms[i] = make_float4(prim_in->verts[i][0],prim_in->verts[i][1],prim_in->verts[i][2],0);
                     }
+                }else if(prim_in->userData().get2<int>("ShaderUniforms", 0)==2 ){
+                    std::vector<zeno::vec4f> &databuffer = prim_in->attr<zeno::vec4f>("buffer");
+                    shaderUniforms.resize(databuffer.size());
+                    for(int i=0;i<databuffer.size();i++)
+                    {
+                        shaderUniforms[i] = make_float4(databuffer[i][0],databuffer[i][1],databuffer[i][2],databuffer[i][3]);
+                    }
+
                 }
             }
         }
