@@ -12,6 +12,7 @@
 #include <cuda_fp16.h>
 #include <volume.h>
 #include <Light.h>
+#include <HUD.h>
 
 #ifndef __CUDACC_RTC__
 #define __AOV__ 1
@@ -439,7 +440,7 @@ extern "C" __global__ void __raygen__rg()
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
-                    prd.done=true;
+                    break;
                 } else {
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
@@ -537,7 +538,10 @@ extern "C" __global__ void __raygen__rg()
     if (need_tone_mapping) {
         accum_color = ACESFilm(accum_color);
     }
-    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
+    auto& pixel = params.frame_buffer[image_index];
+    pixel = makeSRGB( accum_color, 2.2f, dither);
+
+    drawHUD((uchar3*)&pixel, params.frame_time, uv/make_float2(w/16, 20));
 }
 
 extern "C" __global__ void __miss__radiance()

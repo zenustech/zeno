@@ -345,7 +345,9 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     cudaMemcpyHostToDevice
                     ) );
                     
-        //timer.tick();
+        struct timespec t_begin;
+        std::timespec_get(&t_begin, TIME_UTC);
+
                 optixLaunch(
                     OptixUtil::pipeline,
                     0,
@@ -355,7 +357,11 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     state.params.width,
                     state.params.height,
                     1);
-        //timer.tock("frame time");
+
+        struct timespec t_end;
+        std::timespec_get(&t_end, TIME_UTC);
+        state.params.frame_time = (t_end.tv_nsec - t_begin.tv_nsec) / 1000000;
+        
         //output_buffer.unmap();
 }
 

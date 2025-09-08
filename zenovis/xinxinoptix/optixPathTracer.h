@@ -160,6 +160,7 @@ struct PickInfo {
 struct Params
 {
     unsigned int subframe_index;
+    uint16_t     frame_time;
     float3*      accum_buffer;
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
