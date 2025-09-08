@@ -161,7 +161,7 @@ void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, 
             }
         }
         else {
-            log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            //log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
         }
     }
     else if (scope == GeometryScope::kFacevaryingScope) {
@@ -193,7 +193,7 @@ void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, 
             }
         }
         else {
-            log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            //log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
         }
     }
     else {
@@ -271,13 +271,13 @@ void attr_from_data(std::shared_ptr<PrimitiveObject> prim, GeometryScope scope, 
         }
         else {
             if (scope == GeometryScope::kVaryingScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
             else if (scope == GeometryScope::kVertexScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
             else if (scope == GeometryScope::kUnknownScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
         }
     }
@@ -292,7 +292,7 @@ void attr_from_data_vec(std::shared_ptr<PrimitiveObject> prim, GeometryScope sco
             }
         }
         else {
-            log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            //log_warn("[alembic] can not load {} attr {}: {} in kUniformScope scope.", typeid(data[0]).name(), attr_name, data.size());
         }
     }
     else if (scope == GeometryScope::kFacevaryingScope) {
@@ -303,7 +303,7 @@ void attr_from_data_vec(std::shared_ptr<PrimitiveObject> prim, GeometryScope sco
             }
         }
         else {
-            log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+            //log_warn("[alembic] can not load {} attr {}: {} in kFacevaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
         }
     }
     else {
@@ -327,13 +327,13 @@ void attr_from_data_vec(std::shared_ptr<PrimitiveObject> prim, GeometryScope sco
         }
         else {
             if (scope == GeometryScope::kVaryingScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kVaryingScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
             else if (scope == GeometryScope::kVertexScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kVertexScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
             else if (scope == GeometryScope::kUnknownScope) {
-                log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
+                //log_warn("[alembic] can not load {} attr {}: {} in kUnknownScope scope.", typeid(data[0]).name(), attr_name, data.size());
             }
         }
     }
@@ -540,7 +540,7 @@ static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundPrope
         }
         else {
             if (!read_done) {
-                log_warn("[alembic] can not load user data {}..", p.getName());
+                //log_warn("[alembic] can not load user data {}..", p.getName());
             }
         }
     }

@@ -314,7 +314,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
     Sdc::SchemeType refinetfactype = OpenSubdiv::Sdc::SCHEME_CATMARK;
     Sdc::Options refineofactptions;
-    refineofactptions.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_ONLY);
+    refineofactptions.SetVtxBoundaryInterpolation(Sdc::Options::VTX_BOUNDARY_EDGE_AND_CORNER);
     // Instantiate a Far::TopologyRefiner from the descriptor
     using Factory = Far::TopologyRefinerFactory<Far::TopologyDescriptor>;
     std::unique_ptr<Far::TopologyRefiner> refiner(

@@ -22,6 +22,8 @@ struct EdgeInfo {
     char mask = 0;
     int index = -1;
     int edge_array_idx = -1;
+    int face_idx0 = -1;
+    int face_idx1 = -1;
 };
 struct PairHashCompare {
     static size_t hash(const std::pair<int, int>& key) {
@@ -37,7 +39,7 @@ struct PairHash {
     std::size_t operator()(const std::pair<T1, T2>& p) const {
         auto h1 = std::hash<T1>{}(p.first);
         auto h2 = std::hash<T2>{}(p.second);
-        // �򵥵Ĺ�ϣ��Ϸ�ʽ�����ܻ��ͻ���������ڴ���������
+
         return h1 ^ (h2 << 1);
     }
 };
@@ -712,8 +714,73 @@ ZENDEFNODE(PrimDisplacement,
 }, /* category: */ {
     "primitive",
 }});
-
-
+struct PrimEdgeCrease : INode {
+    void apply() override {
+        auto origin_prim = get_input2<PrimitiveObject>("prim");
+        auto &polys = origin_prim->polys;
+        auto &loops = origin_prim->loops;
+        std::unordered_map<std::pair<int,int>,EdgeInfo, PairHash> edges;
+        int num_lines = 0;
+        auto &face_n = polys.add_attr<zeno::vec3f>("face_N");
+        for(int i=0;i<polys.size();i++)
+        {
+            zeno::vec2i poly_idx = polys[i];
+            zeno::vec3f v0 = origin_prim->verts[loops[poly_idx[0] + 0]];
+            zeno::vec3f v1 = origin_prim->verts[loops[poly_idx[0] + 1]];
+            zeno::vec3f v2 = origin_prim->verts[loops[poly_idx[0] + 2]];
+            face_n[i] = normalize(cross(v1-v0,v2-v1));
+            for(int j=0;j<poly_idx[1]-1;j++)
+            {
+                int vert0 = loops[poly_idx[0] + j];
+                int vert1 = loops[poly_idx[0] + j + 1];
+                std::pair<int,int> e = { max(vert0,vert1), min(vert0,vert1) };
+                if(edges.find(e)!=edges.end())
+                {
+                    edges[e].face_idx1 = i;
+                }else{
+                    num_lines++;
+                    EdgeInfo ei;
+                    ei.face_idx0 = i;
+                    edges[e] = ei;
+                }
+            }
+        }
+        origin_prim->lines.resize(num_lines);
+        auto &edge_crease_weight = origin_prim->lines.add_attr<float>("edge_crease_weight");
+        int line_idx = 0;
+        for(auto &key_val:edges)
+        {
+            float c=0.0f;
+            auto e = key_val.first;
+            auto ei = key_val.second;
+            if(ei.face_idx0==-1 || ei.face_idx1==-1)
+            {
+                c = 1.0f;
+            }
+            else{
+                int f0 = ei.face_idx0;
+                int f1 = ei.face_idx1;
+                auto n0 = face_n[f0];
+                auto n1 = face_n[f1];
+                if(dot(n1,n0)<=0.0001)
+                    c = 1.0f;
+            }
+            origin_prim->lines[line_idx] = zeno::vec2i(key_val.first.first,key_val.first.second);
+            edge_crease_weight[line_idx] = c;
+            line_idx++;
+        }
+        set_output("oPrim", origin_prim);
+    }
+};
+ZENDEFNODE(PrimEdgeCrease,
+{ /* inputs: */ {
+    "prim",
+}, /* outputs: */ {
+    "oPrim",
+}, /* params: */ {
+}, /* category: */ {
+    "primitive",
+}});
 struct PrimDice : INode {
     void apply() override {
         auto origin_prim = get_input2<PrimitiveObject>("prim");
