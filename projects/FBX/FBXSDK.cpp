@@ -501,17 +501,38 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
 //    zeno::log_info("s {} {} {}", s[0], s[1], s[2]);
 //    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
 
+    FbxAMatrix Geometry;
+    {
+        FbxVector4 Translation, Rotation, Scaling;
+        Translation = pNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+        Rotation = pNode->GetGeometricRotation(FbxNode::eSourcePivot);
+        Scaling = pNode->GetGeometricScaling(FbxNode::eSourcePivot);
+        Geometry.SetT(Translation);
+        Geometry.SetR(Rotation);
+        Geometry.SetS(Scaling);
+        FbxAMatrix PivotGeometry;
+        FbxVector4 RotationPivot = pNode->GetRotationPivot(FbxNode::eSourcePivot);
+        FbxVector4 FullPivot;
+        FullPivot[0] = -RotationPivot[0];
+        FullPivot[1] = -RotationPivot[1];
+        FullPivot[2] = -RotationPivot[2];
+        PivotGeometry.SetT(FullPivot);
+        Geometry = Geometry * PivotGeometry;
+    }
+
     int numVertices = pMesh->GetControlPointsCount();
     FbxVector4* vertices = pMesh->GetControlPoints();
     prim->verts.resize(numVertices);
 
     for (int i = 0; i < numVertices; ++i) {
         if (apply_transform) {
-            auto pos = bindMatrix.MultT( FbxVector4(vertices[i][0], vertices[i][1], vertices[i][2], 1.0));
+            auto pos = Geometry.MultT( FbxVector4(vertices[i][0], vertices[i][1], vertices[i][2], 1.0));
+            pos = bindMatrix.MultT(pos);
             prim->verts[i] = vec3f(pos[0], pos[1], pos[2]);
         }
         else {
-            prim->verts[i] = vec3f(vertices[i][0], vertices[i][1], vertices[i][2]);
+            auto pos = Geometry.MultT( FbxVector4(vertices[i][0], vertices[i][1], vertices[i][2], 1.0));
+            prim->verts[i] = vec3f(pos[0], pos[1], pos[2]);
         }
     }
 
