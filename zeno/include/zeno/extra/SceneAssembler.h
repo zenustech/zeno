@@ -365,9 +365,11 @@ struct SceneObject : IObjectClone<SceneObject> {
             for (const auto &[path, prim]: prim_list) {
                 BasicRenderInstances[path]["Geom"] = path;
                 BasicRenderInstances[path]["Material"] = "Default";
-                auto vol_mat = prim->userData().get2<std::string>("vol_mat", "");
-                if (vol_mat.size()) {
-                    BasicRenderInstances[path]["Material"] = vol_mat;
+
+                const bool vbox = prim->userData().get2<bool>("vbox", false);
+                if (vbox) {
+                    auto mtlid = prim->userData().get2<std::string>("mtlid", "");
+                    BasicRenderInstances[path]["Material"] = mtlid;
                 }
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
