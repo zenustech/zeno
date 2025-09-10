@@ -78,7 +78,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("metalColor", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("specular", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),//for disney principled model specular shall be 0.5
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),

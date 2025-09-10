@@ -296,7 +296,8 @@ static __forceinline__ __device__ vec3 sampleSkyTexture(vec2 uv, float upperBoun
 {
     vec3 col = texture2D<float4, vec3>(params.sky_texture, uv);
     vec3 col_safe = clamp(col, vec3(0.0f), vec3(upperBound));
-    pdf = luminance(col) / params.envavg;// (2.0f * M_PIf * M_PIf);
+    float sintheta = abs(sin(uv.y * M_PIf));
+    pdf = luminance(col) / params.envavg ;
     return mix(col, col_safe, isclamp) * params.sky_strength;
 }
 

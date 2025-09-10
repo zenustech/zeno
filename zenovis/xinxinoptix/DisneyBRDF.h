@@ -97,13 +97,19 @@ static __inline__ __device__ vec3 sampleUniformHemiSphere(unsigned int &seed)
 static __inline__ __device__  vec3 CosineSampleHemisphere(float r1, float r2)
 {
   vec3 dir;
-  float phi = 2.0f * M_PIf * r1;
-  float cosTheta = sqrtf(r2), sinTheta = sqrtf(1.0f - r2);
-//  float r = sqrt(r1);
-//  float phi = 2.0f * 3.1415926f  * r2;
-  dir.x = cosf(phi) * sinTheta;
-  dir.y = sinf(phi) * sinTheta;
-  dir.z = cosTheta;
+//  float phi = 2.0f * M_PIf * r1;
+//  float cosTheta = sqrtf(r2), sinTheta = sqrtf(1.0f - r2);
+////  float r = sqrt(r1);
+////  float phi = 2.0f * 3.1415926f  * r2;
+//  dir.x = cosf(phi) * sinTheta;
+//  dir.y = sinf(phi) * sinTheta;
+//  dir.z = cosTheta;
+    float radius = sqrtf(r1);
+    float angle = 2.0f * M_PIf * r2;
+    float x = radius * cosf(angle);
+    float y = radius * sinf(angle);
+    float z = sqrtf(1.0f - r1);
+    dir = vec3(x,y,z);
   return dir;
 }
 static __inline__ __device__  vec3 UniformSampleHemisphere(float r1, float r2)
@@ -423,7 +429,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = L.z*H.z>0? 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen : vec3(0.0);
+  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen * sheen: vec3(0.0);
 
   return res;
 }
