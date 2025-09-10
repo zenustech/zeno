@@ -274,7 +274,7 @@ struct CreateVolumeBox : zeno::INode {
         for (auto& transform : transforms) {
 
             auto prim = std::make_shared<zeno::PrimitiveObject>();
-            prim->userData().set2("vol_mat", get_input2<std::string>("vol_mat", ""));
+            prim->userData().set2("mtlid", get_input2<std::string>("vol_mat", ""));
 
             float dummy[] = {-0.5f, 0.5f};
 
