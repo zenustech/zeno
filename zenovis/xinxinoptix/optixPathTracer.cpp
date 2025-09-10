@@ -344,9 +344,6 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
                     ) );
-                    
-        struct timespec t_begin;
-        std::timespec_get(&t_begin, TIME_UTC);
 
                 optixLaunch(
                     OptixUtil::pipeline,
@@ -357,12 +354,6 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     state.params.width,
                     state.params.height,
                     1);
-
-        struct timespec t_end;
-        std::timespec_get(&t_end, TIME_UTC);
-        state.params.frame_time = (t_end.tv_nsec - t_begin.tv_nsec) / 1000000;
-        
-        //output_buffer.unmap();
 }
 
 
@@ -1888,7 +1879,12 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     if (pause && !should_notify) {
         return;
     }
+
+    if (ud.has("optix_image_path")) {
+        state.params.frame_time = 0;
+    }
     state.params.pause = pause;
+
     timer.tick();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
@@ -1896,13 +1892,15 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
+    //cudaStreamSynchronize(0);
     output_buffer_o->unmap();
+    timer.tock();
+    state.params.frame_time = timer.elapsed();
 
     if (should_notify) {
         state.params.click_dirty = false;
         click_cv.notify_all();
     }
-    timer.tock("render time:");
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif

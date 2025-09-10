@@ -541,7 +541,9 @@ extern "C" __global__ void __raygen__rg()
     auto& pixel = params.frame_buffer[image_index];
     pixel = makeSRGB( accum_color, 2.2f, dither);
 
-    drawHUD((uchar3*)&pixel, params.frame_time, uv/make_float2(w/16, 20));
+    if (params.frame_time > 0) {
+        drawHUD((uchar3*)&pixel, params.frame_time, uv/make_float2(w/16, 20));
+    }
 }
 
 extern "C" __global__ void __miss__radiance()
