@@ -1889,7 +1889,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         return;
     }
     state.params.pause = pause;
-    timer.tick();
+//    timer.tick();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
@@ -1902,7 +1902,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.params.click_dirty = false;
         click_cv.notify_all();
     }
-    timer.tock("render time:");
+//    timer.tock("render time:");
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif

@@ -24,7 +24,12 @@ OutlineItemModel::~OutlineItemModel()
 
 void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name) {
     auto sub_node = item->addChild(QString::fromStdString(name));
+    std::vector<std::string> children;
     for (auto &value: json[name]["children"]) {
+        children.emplace_back(std::string(value));
+    }
+    std::sort(children.begin(), children.end());
+    for (auto &value: children) {
         set_child_node(json, sub_node, std::string(value));
     }
 };
