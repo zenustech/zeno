@@ -1665,7 +1665,7 @@ struct NewFBXImportAnimation : INode {
 
         int stack_index = int(std::find(clip_names.begin(), clip_names.end(), clip_name) - clip_names.begin());
         if (stack_index == clip_names.size()) {
-            zeno::log_info("FBX: Can not find default clip name, use first");
+//            zeno::log_info("FBX: Can not find default clip name, use first");
             stack_index = 0;
         }
 //        zeno::log_info("stack_index: {}", stack_index);
@@ -1750,7 +1750,7 @@ struct NewFBXImportAnimation : INode {
             ud.set2("boneName_count", int(bone_names.size()));
             for (auto i = 0; i < bone_names.size(); i++) {
                 ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
-                zeno::log_info("boneName: {}", bone_names[i]);
+//                zeno::log_info("boneName: {}", bone_names[i]);
             }
         }
 
@@ -2329,7 +2329,7 @@ static std::vector<int> TopologicalSorting(std::map<int, int> bone_connects, zen
         for (auto i = 0; i < ordering.size(); i++) {
             auto bi = ordering[i];
             auto bone_name = skeleton->userData().get2<std::string>(format("boneName_{}", bi));
-            zeno::log_info("{}: {}: {}", i, bi, bone_name);
+//            zeno::log_info("{}: {}: {}", i, bi, bone_name);
         }
     }
     return ordering;
@@ -2346,7 +2346,7 @@ struct NewFBXRigPose : INode {
                     Transformations[boneNameMapping[n->boneName]] = n;
                 }
                 else {
-                    zeno::log_warn("{} missing", n->boneName);
+//                    zeno::log_warn("{} missing", n->boneName);
                 }
             }
         }
@@ -2416,7 +2416,7 @@ struct NewFBXBoneDeform : INode {
             auto index = std::find(_new.begin(), _new.end(), old[i]) - _new.begin();
             if (index == _new.size()) {
                 index = -1;
-                zeno::log_info("connot find bone: {}, {}", i, old[i]);
+//                zeno::log_info("connot find bone: {}, {}", i, old[i]);
             }
             mapping.push_back(index);
         }
@@ -2905,18 +2905,15 @@ std::pair<vec3f, vec3f> twoBoneIK(
         auto lower_limb_length = zeno::length(joint - end);
         auto desired_length = zeno::length(root_to_effect);
         if (desired_length < abs(upper_limb_length - lower_limb_length)) {
-            zeno::log_info("A");
             output_joint = root + normalize(root_to_effect) * abs(upper_limb_length - lower_limb_length);
             output_end = root + normalize(root_to_effect) * upper_limb_length;
         }
         else if (desired_length > upper_limb_length + lower_limb_length) {
-            zeno::log_info("B");
 
             output_joint = root + normalize(root_to_effect) * upper_limb_length;
             output_end = root + normalize(root_to_effect) * (upper_limb_length + lower_limb_length);
         }
         else {
-            zeno::log_info("C");
 
             vec3f to_pole = normalize(cross(cross(root_to_effect, root_to_jointTarget), root_to_effect));
             float cos_theta = (sqr(upper_limb_length) + sqr(desired_length) - sqr(lower_limb_length)) / (2.0f * upper_limb_length * desired_length);
@@ -3457,7 +3454,7 @@ struct IkSolver : INode {
                     zLimit[index] = item->zLimit;
                 }
                 else {
-                    zeno::log_warn("joint limit: joint {} missing", item->boneName);
+//                    zeno::log_warn("joint limit: joint {} missing", item->boneName);
                 }
             }
         }
@@ -3478,7 +3475,7 @@ struct IkSolver : INode {
             auto items = get_input<zeno::ListObject>("IkChains")->getRaw<IkChainsItemObject>();
             for (auto &item: items) {
                 if (boneNameMapping.count(item->endEffectorName) == 0) {
-                    log_warn("Not find ik endEffector: {}", item->endEffectorName);
+//                    log_warn("Not find ik endEffector: {}", item->endEffectorName);
                     continue;
                 }
                 endEffectorIDs.push_back(boneNameMapping[item->endEffectorName]);
