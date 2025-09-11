@@ -570,19 +570,63 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
             ZASSERT_EXIT(!mat_id.empty());
 			if (IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel())
 			{
-				for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
+                QVector<QPersistentModelIndex> subgExceptMat;
+				for (const auto& subgIdx : pGraphsModel->subgraphsIndice())
 				{
-                    auto s = subgIdx.data(ROLE_OBJNAME).toString();
-					if (subgIdx.data(ROLE_MTLID).toString() == QString::fromStdString(mat_id))
-					{
-						if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                    if (subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) {
+                        if (subgIdx.data(ROLE_MTLID).toString() == QString::fromStdString(mat_id))
+					    {
+						    if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                                if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+								    pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                                    return;
+                                }
+						    }
+					    }
+                        for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++) {
+                            auto nodeidx = pGraphsModel->index(i, subgIdx);
+                            if (nodeidx.data(ROLE_OBJNAME).toString() == "SubInput") {
+                                PARAMS_INFO params = nodeidx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+                                if (params["name"].value.toString().toLower() == QString("matname") &&
+                                    params["defl"].value.toString() == QString::fromStdString(mat_id)) {
+                                    if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                                        if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+                                            pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", nodeidx.data(ROLE_OBJID).toString(), false, false);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        subgExceptMat.push_back(subgIdx);
+                    }
+				}
+                for (const auto& subgIdx : subgExceptMat) {
+                    if (subgIdx.data(ROLE_OBJNAME).toString() == QString::fromStdString(mat_id)) {
+                        if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
                             if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
-								pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                                pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
                                 return;
                             }
-						}
-					}
-				}
+                        }
+                    }
+                    for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++) {
+                        auto nodeidx = pGraphsModel->index(i, subgIdx);
+                        if (nodeidx.data(ROLE_OBJNAME).toString() == "SubInput") {
+                            PARAMS_INFO params = nodeidx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+                            if (params["name"].value.toString().toLower() == QString("matname") &&
+                                params["defl"].value.toString() == QString::fromStdString(mat_id)) {
+                                if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                                    if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+                                        pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", nodeidx.data(ROLE_OBJID).toString(), false, false);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
                 for (auto item : resLst)
                 {
