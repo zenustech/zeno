@@ -15,11 +15,11 @@ enum struct VolumeEmissionScaleType {
     Raw, Density, Absorption
 };
 
-//PLACEHOLDER
+#ifndef __FORWARD__
 using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 #define VolumeEmissionScale VolumeEmissionScaleType::Raw
-//PLACEHOLDER
+#endif
 
 #define _USING_NANOVDB_ true
 

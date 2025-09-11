@@ -1403,19 +1403,8 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
 OptixUtil::_compile_group.run([&shaders, i] () {
 
-        auto marker = std::string("//PLACEHOLDER");
-        auto marker_length = marker.length();
-
         auto& callable_string = shaders[i]->callable;
-        auto start_marker = callable_string.find(marker);
-
-        if (start_marker != std::string::npos) {
-            auto end_marker = callable_string.find(marker, start_marker + marker_length);
-
-            callable_string.replace(start_marker, marker_length, "/*PLACEHOLDER");
-            callable_string.replace(end_marker, marker_length, "PLACEHOLDER*/");
-        }
-
+        
         std::shared_ptr<OptixUtil::OptixShaderCore> shaderCore = nullptr;
         auto key = std::tuple{shaders[i]->filename, shaders[i]->mark};
 

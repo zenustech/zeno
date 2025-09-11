@@ -1,4 +1,4 @@
-﻿#include <tuple>
+#include <tuple>
 #include <unordered_map>
 #include <vcruntime_string.h>
 #include <vector_types.h>
@@ -2192,8 +2192,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 auto default_shader = std::make_shared<ShaderPrepared>();
                 default_shader->mark = mark;
                 default_shader->matid = "";
-                default_shader->filename = _default_shader_template.name;
-                default_shader->callable = _default_callable_template.shadtmpl;
+                if (mark==ShaderMark::Volume) {
+                    default_shader->filename = _volume_shader_template.name;
+                    default_shader->callable = _volume_callable_template.shadtmpl;
+                } else {
+                    default_shader->filename = _default_shader_template.name;
+                    default_shader->callable = _default_callable_template.shadtmpl;
+                }
                 return default_shader;
             };
 
