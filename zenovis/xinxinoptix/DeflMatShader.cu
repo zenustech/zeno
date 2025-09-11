@@ -580,7 +580,7 @@ extern "C" __global__ void __closesthit__radiance()
     flag = DisneyBSDF::scatterEvent;
 
     if(prd->depth>1 && mats.roughness>0.4) mats.specular = 0.0f;
-    while(DisneyBSDF::SampleDisney2(
+    while(DisneyBSDF::SampleDisney3(
                 prd->seed,
                 prd->eventseed,
                 mats,
@@ -794,7 +794,7 @@ extern "C" __global__ void __closesthit__radiance()
         auto& rs = reinterpret_cast<vec3&>(prd->aov[1]);
         auto& rt = reinterpret_cast<vec3&>(prd->aov[2]);
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney3(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
