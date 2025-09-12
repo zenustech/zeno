@@ -131,7 +131,7 @@ struct RadiancePRD : CommonPRD {
     vec3 ss_alpha {};
 
     uint8_t medium;
-    uint8_t curMatIdx;
+    uint8_t curMatIdx=0;
 
     half3 sigma_t_queue[8];
     half3 ss_alpha_queue[8];
@@ -160,17 +160,16 @@ struct RadiancePRD : CommonPRD {
         float c = dot(d, vec3(1,1,1));
         if(curMatIdx<7 && c > 1e-6f )
         {
-
+            curMatIdx++;
             sigma_t_queue[curMatIdx] = float3_to_half3(extinction);
             ss_alpha_queue[curMatIdx] = float3_to_half3(ss_alpha);
-            curMatIdx++;
         }
         return curMatIdx;
     }
 
     __device__ void readMat(vec3& sigma_t, vec3& ss_alpha) {
 
-        auto idx = max(min(curMatIdx-1, 7),0);
+        auto idx = min(curMatIdx, 7);
 
         sigma_t = half3_to_float3(sigma_t_queue[idx]);
         ss_alpha = half3_to_float3(ss_alpha_queue[idx]);
