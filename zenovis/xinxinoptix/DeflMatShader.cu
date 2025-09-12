@@ -725,22 +725,29 @@ extern "C" __global__ void __closesthit__radiance()
                 } else {
                     trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                 }
-
+//                printf("%f,%f,%f\n",trans.x, trans.y, trans.z);
                 prd->attenuation *= trans;
-                
-                prd->popMat(sigma_t, ss_alpha);
-
-                prd->medium = (prd->curMatIdx==0)? DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
-
-                if(ss_alpha.x < 0.0f) 
+                if(prd->curMatIdx>0)
                 {
+                    prd->popMat(sigma_t, ss_alpha);
+
+                    prd->medium = (prd->curMatIdx == 0) ? DisneyBSDF::PhaseFunctions::vacuum
+                                                        : DisneyBSDF::PhaseFunctions::isotropic;
+
+                    if (ss_alpha.x < 0.0f || prd->curMatIdx == 0) {
+                        prd->isSS = false;
+                        prd->maxDistance = 1e16;
+                    } else //next ray in 3s object
+                    {
+                        prd->isSS = true;
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha,
+                                                                       sigma_t, prd->channelPDF);
+                    }
+                }else
+                {
+                    prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
                     prd->isSS = false;
                     prd->maxDistance = 1e16;
-                }
-                else //next ray in 3s object
-                {
-                    prd->isSS = true;
-                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
             }
         }else{
@@ -814,7 +821,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     float3 frontPos, backPos;
     float3 sfrontPos, sbackPos;
-    if (abs(wldOffset) > 0) {
+    if (wldOffset > 0) {
         SelfIntersectionAvoidance::offsetSpawnPoint( frontPos, backPos, wldPos, prd->geometryNormal, wldOffset);
     } else {
         frontPos = wldPos;
@@ -832,6 +839,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = {};
     prd->direction = normalize(wi);
     prd->origin = dot(prd->direction, prd->geometryNormal) > 0 ? frontPos : backPos;
+    prd->_tmin_ = 0.0f;
+
 
     float3 radianceNoShadow = {};
     float3* dummy_prt = nullptr;
@@ -873,9 +882,9 @@ extern "C" __global__ void __closesthit__radiance()
       prd->done = true;
     }
 
-    prd->direction = normalize(wi);
-
-    prd->origin = dot(prd->direction, prd->geometryNormal) < 0.0f ? backPos : frontPos;
+//    prd->direction = normalize(wi);
+//
+//    prd->origin = dot(prd->direction, prd->geometryNormal) > 0.0f ? frontPos : backPos;
 
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
