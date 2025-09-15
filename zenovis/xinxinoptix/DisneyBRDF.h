@@ -429,7 +429,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen * sheen: vec3(0.0);
+  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen: vec3(0.0);
 
   return res;
 }

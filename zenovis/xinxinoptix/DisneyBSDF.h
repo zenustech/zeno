@@ -607,6 +607,8 @@ namespace DisneyBSDF{
         fPdf = 0.0f;
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         // Onb tbn = Onb(N);
+        vec3 wi_world = wi;
+        vec3 wo_world = wo;
         world2local(wi, T, B, N);
         world2local(wo, T, B, N);
         //world2local(N2, T, B, N);
@@ -673,11 +675,11 @@ namespace DisneyBSDF{
             wm = normalize(wi + wo);
           if(diffPr > 0.0f){
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf);
-            d = d * (1.0f - mat.subsurface) * dielectricWt;
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(mix(mat.basecolor, mat.sssColor, mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf);
+            d = d * 1.0f / (1.0f + mat.subsurface) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf * dielectricWt * (1.0f - mat.subsurface);
+            fPdf += tmpPdf * dielectricWt * 1.0f / (1.0f + mat.subsurface);
           }
           if(metalPr>0.0f){
             vec3 ks = vec3(1.0f);
@@ -739,7 +741,7 @@ namespace DisneyBSDF{
               if(thin)
               {
                 vec3 t = sqrt(mix(mat.transColor, mat.diffractColor, mat.diffraction)) * glassWt / (1e-6+abs(wi.z));
-                float F = BRDFBasics::DielectricFresnel(abs(wo.z), entering?mat.ior:1.0f/mat.ior);
+                float F = BRDFBasics::DielectricFresnel(abs(wo.z), mat.ior);
                 float tmpPdf = reflectance ? (1.0f-F) : 0.0f;
                 t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
@@ -767,26 +769,26 @@ namespace DisneyBSDF{
             }
 
         }
-        if(mat.subsurface > 0.0f && (reflectance || dot(wo,N2) < 0.0f || thin)){
-          bool trans = (dot(wi, N2) * dot(wo, N2)<0) && (wi.z * wo.z<0);
+        if(mat.subsurface > 0.0f && (reflectance || dot(wo_world,N2) < 0.0f || thin)){
+          bool trans = (wi.z * wo.z) < 0;
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
           float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
           vec3 transmit = vec3(1.0f);
           if(thin) {
-            vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+            vec3 color = mat.sssColor;
             vec3 sigma_t, alpha;
             CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
             vec3 channelPDF = vec3(1.0f/3.0f);
             transmit = Transmission2(sigma_t * alpha, sigma_t,
                                   channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
           }
-          // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * mat.subsurface * dielectricWt;
+
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  *  (1.0f - 1.0f / (1.0f + mat.subsurface)) * dielectricWt;
           dterm = dterm + d;
           f = f + d;
-          fPdf += tmpPdf  * mat.subsurface * dielectricWt;
+          fPdf += tmpPdf  *  (1.0f - 1.0f / (1.0f + mat.subsurface)) * dielectricWt;
 
         }
         dterm = dterm * abs(wi.z);
@@ -1220,6 +1222,7 @@ namespace DisneyBSDF{
 
         if(r3<p0){
           prd->hit_type = DIFFUSE_HIT;
+          isDiff = true;
           if(woo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
             wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
@@ -1234,7 +1237,7 @@ namespace DisneyBSDF{
           }
           else{
             //switch between scattering or diffuse reflection
-            float diffp = 1.0f - mat.subsurface;
+            float diffp = 1.0f / (1.0f + mat.subsurface);
             if(rnd(prd->seed)<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
@@ -1253,18 +1256,18 @@ namespace DisneyBSDF{
             {
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-              wi.z = min(-0.2f, wi.z);
+              //wi.z = min(-0.2f, wi.z);
               wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
-              vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+              vec3 color = mat.sssColor;
               color = clamp(color, vec3(0.05), vec3(0.99));
               vec3 sssRadius = mat.sssParam * mat.subsurface;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
+                CalculateExtinction2(0.5*color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);

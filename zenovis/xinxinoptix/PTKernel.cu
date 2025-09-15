@@ -313,6 +313,7 @@ extern "C" __global__ void __raygen__rg()
         }
 
         RadiancePRD prd;
+        prd.print_info = params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y;
         prd.vdcseed = vdcseed;
         prd.offset = seed1;
         prd.offset2 = seed1;
@@ -352,6 +353,10 @@ extern "C" __global__ void __raygen__rg()
     #if DENOISE 
         prd.denoise = true;
     #endif
+        rnd(prd.seed);
+        vdcrnd(prd.offset, prd.vdcseed);
+        vdcrnd(prd.offset, prd.vdcseed);
+        vdcrnd(prd.offset, prd.vdcseed);
 
         // Primary Ray
         auto _attenuation = prd.attenuation;
@@ -359,7 +364,7 @@ extern "C" __global__ void __raygen__rg()
             prd.alphaHit = false;
             traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
-        
+
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
         {
             float3 click_pos {0,0,0};
@@ -416,7 +421,7 @@ extern "C" __global__ void __raygen__rg()
                 auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
-                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10.0f));
 
                 result += prd.depth>1?clampped:temp_radiance;
             #if __AOV__
@@ -442,7 +447,7 @@ extern "C" __global__ void __raygen__rg()
                 if(rnd(prd.seed) > RRprob) {
                     break;
                 } else {
-                    prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
+                    prd.attenuation = prd.attenuation / RRprob;
                 }
             }
 
@@ -556,7 +561,7 @@ extern "C" __global__ void __miss__radiance()
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
     prd->countEmitted = false;
-    
+    prd->radiance *= 0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
         float envPdf = 0.0f;
@@ -578,7 +583,7 @@ extern "C" __global__ void __miss__radiance()
 
         envPdf *= params.skyLightProbablity();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 2.0f);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
@@ -603,14 +608,17 @@ extern "C" __global__ void __miss__radiance()
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax() - prd->_tmin_);
     } else {
-        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, false);
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->origin += prd->direction * optixGetRayTmax();
+    prd->attenuation2*= transmittance;
+    prd->origin += prd->direction * ( optixGetRayTmax() - prd->_tmin_);
+    prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
+
 
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;

@@ -82,11 +82,12 @@ struct RadiancePRD : CommonPRD {
     unsigned int offset2 = 0;
     unsigned int offset3 = 0;
     unsigned int vdcseed = 0;
-    
+    bool         print_info = false;
     float3       radiance;
     float3       aov[3];
     float3       emission;
     float3       attenuation;
+    float3       attenuation2;
     float3       origin;
     float3       direction;
 
@@ -158,7 +159,7 @@ struct RadiancePRD : CommonPRD {
         auto cached = this->extinction();
         vec3 d = abs(cached - extinction);
         float c = dot(d, vec3(1,1,1));
-        if(curMatIdx<7 && c > 1e-6f )
+        if(curMatIdx<7)
         {
             curMatIdx++;
             sigma_t_queue[curMatIdx] = float3_to_half3(extinction);
