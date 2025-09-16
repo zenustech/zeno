@@ -70,9 +70,9 @@ namespace {
 
 static struct LuzhPleaseDontTouch {
     ~LuzhPleaseDontTouch() {
-        auto log = Timer::getLog();
-        if (!log.empty())
-            std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
+        //auto log = Timer::getLog();
+        //if (!log.empty())
+            //std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
     }
 } luzhPleaseDontTouch;
 

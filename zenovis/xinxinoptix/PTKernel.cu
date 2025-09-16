@@ -410,7 +410,7 @@ extern "C" __global__ void __raygen__rg()
                 homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, result, _attenuation);
             
             prd.vol = {};
-            prd._tmin_ = 0;
+            prd._tmin_ = _tmin_;
             prd._tmax_ = FLT_MAX;
             prd._mask_ = EverythingMask;
 

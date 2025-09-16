@@ -573,6 +573,9 @@ static void prim_interp(PrimitiveObject *origin_prim,  PrimitiveObject *prim) {
     });
 
 
+    if (!origin_prim->loops.has_attr("uvs")) {
+        return;
+    }
     auto &parentIDs = prim->polys.attr<int>("parentID");
     auto &ouv = origin_prim->loops.attr<int>("uvs");
     auto &bw = prim->loops.attr<vec3f>("bw");
@@ -722,6 +725,11 @@ struct PrimEdgeCrease : INode {
         std::unordered_map<std::pair<int,int>,EdgeInfo, PairHash> edges;
         int num_lines = 0;
         auto &face_n = polys.add_attr<zeno::vec3f>("face_N");
+        auto sharp_thres = get_input2<float>("sharp_threshold");
+        auto corner_thres = get_input2<float>("corner_threshold");
+        auto &verts = origin_prim->verts;
+        auto &verts_e1 = origin_prim->verts.add_attr<vec3f>("e1");
+        auto &verts_e2 = origin_prim->verts.add_attr<vec3f>("e2");
         for(int i=0;i<polys.size();i++)
         {
             zeno::vec2i poly_idx = polys[i];
@@ -747,7 +755,9 @@ struct PrimEdgeCrease : INode {
         }
         origin_prim->lines.resize(num_lines);
         auto &edge_crease_weight = origin_prim->lines.add_attr<float>("edge_crease_weight");
+        auto &vert_crease_weight = origin_prim->verts.add_attr<float>("vert_crease_weight");
         int line_idx = 0;
+
         for(auto &key_val:edges)
         {
             float c=0.0f;
@@ -755,19 +765,44 @@ struct PrimEdgeCrease : INode {
             auto ei = key_val.second;
             if(ei.face_idx0==-1 || ei.face_idx1==-1)
             {
-                c = 1.0f;
+                //this is a naked edge
+                int vid0 = e.first;
+                int vid1 = e.second;
+                auto e = zeno::normalize(verts[vid0]-verts[vid1]);
+                if(length(verts_e1[vid0])==0)
+                {
+                    verts_e1[vid0] = e;
+                }else{
+                    verts_e2[vid0] = e;
+                }
+
+                if(length(verts_e1[vid1])==0)
+                {
+                    verts_e1[vid1] = e;
+                }else{
+                    verts_e2[vid1] = e;
+                }
+
+                c = 0.0f;
             }
             else{
                 int f0 = ei.face_idx0;
                 int f1 = ei.face_idx1;
                 auto n0 = face_n[f0];
                 auto n1 = face_n[f1];
-                if(dot(n1,n0)<=0.0001)
-                    c = 1.0f;
+                c = dot(n1,n0);
             }
             origin_prim->lines[line_idx] = zeno::vec2i(key_val.first.first,key_val.first.second);
-            edge_crease_weight[line_idx] = c;
+            edge_crease_weight[line_idx] = c<sharp_thres?10:0;
             line_idx++;
+        }
+        for(int i=0;i<verts.size();i++)
+        {
+            auto e1 = verts_e1[i];
+            auto e2 = verts_e2[i];
+            vert_crease_weight[i] = 0;
+            if(length(e1)>0 && length(e2)>0)
+                vert_crease_weight[i] = dot(e1,e2)>-corner_thres?10.0f:0;
         }
         set_output("oPrim", origin_prim);
     }
@@ -775,6 +810,8 @@ struct PrimEdgeCrease : INode {
 ZENDEFNODE(PrimEdgeCrease,
 { /* inputs: */ {
     "prim",
+    {"float","sharp_threshold","0.6"},
+    {"float","corner_threshold","0.1"},
 }, /* outputs: */ {
     "oPrim",
 }, /* params: */ {
