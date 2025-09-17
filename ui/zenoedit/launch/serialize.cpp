@@ -418,6 +418,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
 		if (bView && (opts & OPT_VIEW))
         {
+            if (!ident.contains('/')) {
+                AddStringList({ "viewId", ident}, writer);
+            }
             QString objruntype("normal");   //按runtype分类
             if (launchParam.runtype == RunMatrix) { //matrix特殊处理
                 if (name == "Route") {

@@ -2468,6 +2468,10 @@
         <source>Trans to Preset Subgrah</source>
         <translation type="unfinished">转为预设子图</translation>
     </message>
+	<message>
+        <source>Trans to Material Subgrah</source>
+        <translation type="unfinished">转为材质子图</translation>
+    </message>
     <message>
         <source>Fork unlocked</source>
         <translation type="unfinished">Fork解锁</translation>
