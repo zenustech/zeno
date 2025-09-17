@@ -276,7 +276,7 @@ vec3 FMA(vec3 a, vec3 b, vec3 c) {
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
-
+    prd->radiance = make_float3(0,0,0);
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
@@ -423,7 +423,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     if( mats.opacity > rnd(prd->seed)) { // it's actually transparency not opacity
         prd->alphaHit = true;
-        float travel_dist = optixGetRayTmax() - prd->_tmin_;
+        //float travel_dist = optixGetRayTmax() - prd->_tmin_;
         prd->_tmin_ = optixGetRayTmax();
 
 
@@ -434,11 +434,11 @@ extern "C" __global__ void __closesthit__radiance()
             vec3 sigma_t, ss_alpha;
             prd->readMat(sigma_t, ss_alpha);
             if (ss_alpha.x < 0.0f) { // is inside Glass
-                auto decay = DisneyBSDF::Transmission(sigma_t, travel_dist);
+                auto decay = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                 prd->attenuation *= decay;
                 CUR_TOTAL_TRANS  *= decay;
             } else {
-                auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, travel_dist, true);
+                auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                 prd->attenuation *= decay;
                 CUR_TOTAL_TRANS  *= decay;
             }

@@ -405,7 +405,6 @@ extern "C" __global__ void __raygen__rg()
         {
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
-
             if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0)
                 homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, result, _attenuation);
             
@@ -451,10 +450,15 @@ extern "C" __global__ void __raygen__rg()
                 }
             }
 
-            _attenuation = prd.attenuation;
+
             if(prd.diffDepth > 1)
                 _mask_ &= ~VolumeMaskAnalytics;
-            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+            prd._tmin_ = _tmin_;
+            do {
+                _attenuation = prd.attenuation;
+                prd.alphaHit = false;
+                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+            }while(prd.alphaHit);
         }
         seed = prd.seed;
 //        seed1 = prd.offset;
