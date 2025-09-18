@@ -24,6 +24,7 @@
 #include <zeno/utils/CppTimer.h>
 #include <zeno/utils/fileio.h>
 #include <zeno/extra/SceneAssembler.h>
+#include <zeno/utils/Timer.h>
 
 #ifdef __linux__
     #include<unistd.h>
@@ -1419,6 +1420,11 @@ ZENO_API std::string GlobalComm::cacheTimeStamp(int frame, bool& exists)
         }
     }
     return "";
+}
+
+ZENO_API std::string GlobalComm::getBenchmarkLog()
+{
+    return Timer::getLog();
 }
 
 }

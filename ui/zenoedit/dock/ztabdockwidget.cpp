@@ -6,6 +6,7 @@
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zenooutline.h"
+#include "../panel/zenoBenchmark.h"
 #include "../panel/ZenoSceneTreeModify.h"
 #include "../panel/zlogpanel.h"
 #include "../panel/zenocommandparamspanel.h"
@@ -243,6 +244,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             return new ZenoSceneTreeModify;
         }
+        case PANEL_BENCHMARK:
+        {
+            return new zenoBenchmark;
+        }
     }
     return nullptr;
 }
@@ -304,6 +309,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Xform") || title == "Xform") {
 		type = PANEL_XFORM;
+    }
+    else if (title == tr("BenchMark")) {
+        type = PANEL_BENCHMARK;
     }
     return type;
 }
@@ -557,7 +565,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path"), tr("Outline"), tr("Xform") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Image"), tr("Optix"), tr("Command Params"), tr("Open Path"), tr("Outline"), tr("Xform"), tr("BenchMark") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -587,7 +595,8 @@ void ZTabDockWidget::onAddTabClicked()
                 case 8: m_debugPanel = PANEL_COMMAND_PARAMS; break;
                 case 9: m_debugPanel = PANEL_OPEN_PATH; break;
 				case 10: m_debugPanel = PANEL_OUTLINE; break;
-				case 11: m_debugPanel = PANEL_XFORM; break;
+                case 11: m_debugPanel = PANEL_XFORM; break;
+                case 12: m_debugPanel = PANEL_BENCHMARK; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

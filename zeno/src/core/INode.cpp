@@ -139,49 +139,25 @@ ZENO_API void INode::preApply() {
 
     log_debug("==> enter {}", myname);
     {
-#ifdef ZENO_BENCHMARKING
-        Timer _(myname);
-#endif
-        apply();
+        if (bEnableTimer) {
+    #ifdef ZENO_BENCHMARKING
+            Timer _(myname);
+    #endif
+            apply();
 
-        if (bTmpCache)
-            writeTmpCaches();
+            if (bTmpCache)
+                writeTmpCaches();
 
-        std::function<bool(std::shared_ptr<IObject>)> hasStampUd = [&hasStampUd](std::shared_ptr<IObject> obj) -> bool {
-            if (auto l = std::dynamic_pointer_cast<ListObject>(obj)) {
-                for (auto i : l->arr)
-                    if (hasStampUd(i))
-                        return true;
-            } else {
-                if (obj->userData().has("stamp-change"))
-                    return true;
-            }
-            return false;
-        };
-		std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
-			if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
-				for (auto o : lst->arr)
-					setruntype(o, type);
-			}
-			else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
-				for (auto [_, o] : dict->lut) {
-					setruntype(o, type);
-				}
-			}
-			if (obj) {
-				obj->userData().set2("objRunType", type);
-			}
-		};
-        for (auto& [k, obj] : outputs) {
-            if (!obj->userData().has("objRunType") || obj->userData().get2<std::string>("objRunType").empty()) {
-                setruntype(obj, objRunType);
-            }
-            if (!zeno::getSession().userData().has("graphHasStampNode")) {
-                if (hasStampUd(obj)) {
-                    zeno::getSession().userData().set2("graphHasStampNode", true);
-                }
-            }
+            handleObjruntypeStampUd();
+        } else {
+            apply();
+
+            if (bTmpCache)
+                writeTmpCaches();
+
+            handleObjruntypeStampUd();
         }
+
     }
     log_debug("==> leave {}", myname);
 }
@@ -254,6 +230,48 @@ ZENO_API zany INode::resolveInput(std::string const& id) {
         if (inputs.find(id_) == inputs.end())
             id_.push_back(':');
         return get_input(id_);
+    }
+}
+
+ZENO_API void INode::handleObjruntypeStampUd()
+{
+    std::function<bool(std::shared_ptr<IObject>)> hasStampUd = [&hasStampUd](std::shared_ptr<IObject> obj) -> bool {
+        if (auto l = std::dynamic_pointer_cast<ListObject>(obj)) {
+            for (auto i : l->arr)
+                if (hasStampUd(i))
+                    return true;
+        }
+        else {
+            if (obj->userData().has("stamp-change"))
+                return true;
+        }
+        return false;
+        };
+    std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setruntype = [&setruntype](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+        if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+            for (auto o : lst->arr)
+                setruntype(o, type);
+        }
+        else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+            for (auto [_, o] : dict->lut) {
+                setruntype(o, type);
+            }
+        }
+        if (obj) {
+            obj->userData().set2("objRunType", type);
+        }
+        };
+    if (!objRunType.empty()) {
+        for (auto& [k, obj] : outputs) {
+            if (!obj->userData().has("objRunType") || obj->userData().get2<std::string>("objRunType").empty()) {
+                setruntype(obj, objRunType);
+            }
+            if (!zeno::getSession().userData().has("graphHasStampNode")) {
+                if (hasStampUd(obj)) {
+                    zeno::getSession().userData().set2("graphHasStampNode", true);
+                }
+            }
+        }
     }
 }
 

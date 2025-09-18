@@ -131,6 +131,8 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else if (cmd == "viewId") {
                 auto ident = std::string(di[1].GetString());
                 zeno::getSession().globalComm->allViewNodes += ident + ' ';
+            } else if (cmd == "enableTimer") {
+                g->setEnableTimer(di[1].GetString());
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

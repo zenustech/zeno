@@ -7,6 +7,7 @@
 #include "util/apphelper.h"
 #include "variantptr.h"
 #include "settings/zsettings.h"
+#include "panel/zenoBenchmark.h"
 #include <QSet>
 
 using namespace JsonHelper;
@@ -146,6 +147,17 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         if (!configDoc.IsObject()) {
             zeno::log_error("paramsBase64 is corrupted");
+        }
+    }
+
+    bool monitorAllNodes = false;
+    std::string monitoredNodes;
+    if (auto main = zenoApp->getMainWindow()) {
+        if (auto benchmark = main->getAnyBenchmark()) {
+            monitoredNodes = benchmark->monitoredNodes();
+            if (monitoredNodes.empty()) {
+                monitorAllNodes = true;
+            }
         }
     }
 
@@ -503,6 +515,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (opts & OPT_CACHE)
         {
             AddStringList({ "cacheToDisk", ident }, writer);
+        }
+
+        if (monitorAllNodes || monitoredNodes.find(ident.split('/', Qt::SkipEmptyParts).last().toStdString()) != std::string::npos) {
+            AddStringList({ "enableTimer", ident }, writer);
         }
     }
 }

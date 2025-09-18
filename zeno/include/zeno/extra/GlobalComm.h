@@ -74,6 +74,7 @@ struct GlobalComm {
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
     ZENO_API std::string cacheTimeStamp(int frame, bool& exists);
+    ZENO_API std::string getBenchmarkLog();
     void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, bool balways, std::string fileName = "", bool isStampModeInit = false);
     bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 

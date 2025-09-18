@@ -1,4 +1,4 @@
-#ifdef ZENO_MULTIPROCESS
+﻿#ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -22,6 +22,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
 #include "launch/ztcpserver.h"
+#include "panel/zenoBenchmark.h"
 
 namespace {
 
@@ -178,6 +179,12 @@ struct PacketProc {
                 }
             }
 
+        } else if (action == "benchmark") {
+            if (auto main = zenoApp->getMainWindow()) {
+                if (auto benchmark = main->getAnyBenchmark()) {
+                    benchmark->setBenchMarkData(std::string(buf, len));
+                }
+            }
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
             zeno::getSession().globalStatus->fromJson(statJson);

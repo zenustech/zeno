@@ -2571,6 +2571,10 @@
         <source>Xform</source>
         <translation type="unfinished">变换</translation>
     </message>
+	<message>
+        <source>BenchMark</source>
+        <translation type="unfinished">运行时间</translation>
+    </message>
 </context>
 <context>
     <name>ZTcpServer</name>
@@ -3561,6 +3565,28 @@ All Files (*)</source>
     <message>
         <source>String mapping</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>zenoBenchmark</name>
+    <message>
+        <source>monitor nodes</source>
+        <translation>监控节点</translation>
+    </message>
+	<message>
+        <source>reset</source>
+        <translation>重置</translation>
+    </message>
+	<message>
+        <source>monitor selected nodes</source>
+        <translation>监控选中节点</translation>
+    </message>
+</context>
+<context>
+<name>ZenoSceneTreeModify</name>
+    <message>
+        <source>Sync to node</source>
+        <translation>同步到节点</translation>
     </message>
 </context>
 <context>

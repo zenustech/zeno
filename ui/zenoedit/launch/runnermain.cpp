@@ -1,4 +1,4 @@
-#ifdef ZENO_MULTIPROCESS
+﻿#ifdef ZENO_MULTIPROCESS
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -265,6 +265,10 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         if (session->globalStatus->failed())
             return onfail();
     }
+
+    auto benchmarkLog = session->globalComm->getBenchmarkLog();
+    send_packet("{\"action\":\"benchmark\"}", benchmarkLog.data(), benchmarkLog.size());
+
     return 0;
 }
 
