@@ -600,6 +600,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         }
     }
     if (pMesh->GetElementUVCount() > 0) {
+        zeno::log_info("GetElementUVCount: {}", pMesh->GetElementUVCount());
         auto* arr = pMesh->GetElementUV(0);
         std::string name = "uv";
         if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
@@ -633,6 +634,45 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
                 auto x = arr->GetDirectArray().GetAt(i)[0];
                 auto y = arr->GetDirectArray().GetAt(i)[1];
                 prim->uvs[i] = vec2f(x, y);
+            }
+        }
+        if (pMesh->GetElementUVCount() > 1) {
+            prim->append_uvs.resize(pMesh->GetElementUVCount() - 1);
+            for (auto j = 1; j < pMesh->GetElementUVCount(); j++) {
+                auto* arr = pMesh->GetElementUV(j);
+                if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
+                    std::string name = format("uv_{}", j);
+                    auto &attr = prim->verts.add_attr<vec3f>(name);
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        int pIndex = i;
+                        if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                            pIndex = arr->GetIndexArray().GetAt(i);
+                        }
+                        auto x = arr->GetDirectArray().GetAt(pIndex)[0];
+                        auto y = arr->GetDirectArray().GetAt(pIndex)[1];
+                        attr[i] = vec3f(x, y, 0);
+                    }
+                }
+                else if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByPolygonVertex) {
+                    if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eDirect) {
+                        auto &uvs = prim->loops.add_attr<int>(format("uvs_{}", j));
+                        std::iota(uvs.begin(), uvs.end(), 0);
+                        prim->append_uvs[j-1].resize(prim->loops.size());
+                    }
+                    else if (arr->GetReferenceMode() == FbxLayerElement::EReferenceMode::eIndexToDirect) {
+                        auto &uvs = prim->loops.add_attr<int>(format("uvs_{}", j));
+                        for (auto i = 0; i < prim->loops.size(); i++) {
+                            uvs[i] = arr->GetIndexArray().GetAt(i);
+                        }
+                        int count = arr->GetDirectArray().GetCount();
+                        prim->append_uvs[j-1].resize(count);
+                    }
+                    for (auto i = 0; i < prim->append_uvs[j-1].size(); i++) {
+                        auto x = arr->GetDirectArray().GetAt(i)[0];
+                        auto y = arr->GetDirectArray().GetAt(i)[1];
+                        prim->append_uvs[j-1][i] = vec2f(x, y);
+                    }
+                }
             }
         }
     }
