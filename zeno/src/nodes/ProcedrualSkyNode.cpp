@@ -81,6 +81,41 @@ ZENDEFNODE(HDRSky, {
     },
     {
     },
+    {"deprecated"},
+});
+
+struct HDRSky2 : INode {
+    void apply() override {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        std::string path = "";
+        if (has_input2<std::string>("path")) {
+             path = get_input2<std::string>("path");
+             std::string native_path = std::filesystem::u8path(path).string();
+             if (!path.empty() && !file_exists(native_path)) {
+                 throw zeno::makeError("HDRSky file not exists");
+             }
+        }
+        prim->userData().set2("isRealTimeObject", 1);
+        prim->userData().set2("HDRSky", path);
+        prim->userData().set2("evnTexRotation", 0);
+        prim->userData().set2("evnTex3DRotation", get_input2<zeno::vec3f>("rotation3d"));
+        prim->userData().set2("evnTexStrength", get_input2<float>("strength"));
+        prim->userData().set2("enable", 1);
+        set_output("HDRSky", prim);
+    }
+};
+
+ZENDEFNODE(HDRSky2, {
+    {
+        {"readpath", "path"},
+        {"vec3f", "rotation3d", "0,0,0"},
+        {"float", "strength", "1"},
+    },
+    {
+        {"HDRSky"},
+    },
+    {
+    },
     {"shader"},
 });
 

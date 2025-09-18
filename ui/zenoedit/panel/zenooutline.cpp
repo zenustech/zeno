@@ -39,6 +39,7 @@ void OutlineItemModel::setupModelDataFromMessage(Json const& content)
     beginResetModel();
 
     rootItem = std::make_unique<OutlineItem>();  // 重置rootItem
+    auto* lights = rootItem->addChild("Lights");
     auto* staticSceneItem = rootItem->addChild("StaticScene");
     auto* dynamicSceneItem = rootItem->addChild("DynamicScene");
 
@@ -49,6 +50,16 @@ void OutlineItemModel::setupModelDataFromMessage(Json const& content)
     if (content.contains("DynamicSceneTree")) {
         std::string root_name = content["DynamicSceneTree"]["root_name"];
         set_child_node(content["DynamicSceneTree"]["scene_tree"], dynamicSceneItem, root_name);
+    }
+    if (content.contains("Lights")) {
+        std::vector<std::string> children;
+        for (auto &value: content["Lights"]) {
+            children.emplace_back(std::string(value));
+        }
+        std::sort(children.begin(), children.end());
+        for (auto &value: children) {
+            lights->addChild(QString::fromStdString(value));
+        }
     }
 
     endResetModel();
@@ -220,6 +231,12 @@ void zenooutline::setupTreeView()
                 msg["MessageType"] = "Select";
                 msg["Content"] = link;
 
+                sendOptixMessage(msg);
+            }
+            else if (zeno::str_contains(link.back(), "HDRSKY")) {
+                Json msg;
+                msg["MessageType"] = "HDRSKY";
+                msg["Content"] = link.back();
                 sendOptixMessage(msg);
             }
         }

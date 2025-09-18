@@ -1053,13 +1053,23 @@ struct GraphicsManager {
 
         return changelight;
     }
-    bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
+    std::vector<std::string> load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
+        std::vector<std::string> light_names;
         xinxinoptix::unload_light();
         bool sky_found = false;
 
         for (auto const &[key, obj] : objs) {
             if(load_lights(key, obj.get())) {
                 sky_found = true;
+            }
+            if (
+                    obj
+                    || obj->userData().get2<int>("isL", 0) == 1
+                    || obj->userData().get2<int>("ProceduralSky", 0) == 1
+                    || obj->userData().get2<int>("HDRSky", 0) == 1
+                    || obj->userData().get2<int>("SkyComposer", 0) == 1
+            ) {
+                light_names.emplace_back(key.substr(0, key.find(':')));
             }
         }
 //        zeno::log_info("sky_found : {}", sky_found);
@@ -1080,7 +1090,7 @@ struct GraphicsManager {
             }
         }
 
-        return true;
+        return light_names;
     }
 
     bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
@@ -1330,6 +1340,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
                 message["DynamicSceneTree"] = scene_tree;
             }
+            message["Lights"] = defaultScene.lights_name;
 
             if (message.is_null()) {
                 return;
@@ -1931,14 +1942,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     continue;
                 }
                 auto msg_str = message.dump();
-                fun(std::move(msg_str));
+//                fun(std::move(msg_str));
             }
-        }
-        {
-			Json message;
-			message["MessageType"] = "XformPanelInitFeedback";
-			message["Matrixs"] = Json::object();
-			fun(message.dump());
         }
     }
 
@@ -1979,11 +1984,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
             || scene->objectsMan->needUpdateLight)
         {
-            graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
+            defaultScene.lights_name = graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
             matNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
             scene->drawOptions->needRefresh = true;
+        }
+
+        if (scene->objectsMan->objects.size()) {
+            Json message;
+            message["MessageType"] = "XformPanelInitFeedback";
+            message["Matrixs"] = Json::object();
+            fun(message.dump());
         }
 
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {

@@ -1046,6 +1046,9 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
         else if(uKey == Qt::Key_T) {
             mode = "Translate";
         }
+        else if (uKey == Qt::Key_H) {
+            mode = "SkyRot";
+        }
 //        zeno::log_info("{} -> {}", old_mode, mode);
     }
 }
@@ -1301,20 +1304,30 @@ void ZOptixViewport::drawAxis(QImage &img) {
     gizmo_id_buffer = QImage(img.size(), img.format());
     gizmo_id_buffer.fill(Qt::black);
 
-    if (!axis_coord.has_value()) {
-        return;
-    }
-
-    auto center_WS = glm::vec3(axis_coord.value()[3]);
     float axis_len = 1.0f / 10.0f;
-    auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
-    auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
-    auto y_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[1]));
-    auto z_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[2]));
     auto res = m_camera->res();
     auto resolution = glm::vec2(res.x(), res.y());
     auto scene = m_zenovis->getSession()->get_scene();
     auto vp_mat = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
+
+    if (!axis_coord.has_value()) {
+        if (mode == "SkyRot") {
+            auto center_WS = m_camera->getPos() + m_camera->getViewDir() * 5.0f;
+            auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
+            QPainter painter(&img);
+            QPainter painter2(&gizmo_id_buffer);
+            draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
+            painter.end();
+            painter2.end();
+        }
+        return;
+    }
+
+    auto center_WS = glm::vec3(axis_coord.value()[3]);
+    auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
+    auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
+    auto y_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[1]));
+    auto z_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[2]));
 
     QPainter painter(&img);
 
@@ -1337,6 +1350,9 @@ void ZOptixViewport::drawAxis(QImage &img) {
     }
     else if (mode == "EasyScale") {
         draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, true);
+    }
+    else if (mode == "SkyRot") {
+        draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
     }
 
     painter.end();
