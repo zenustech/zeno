@@ -69,8 +69,8 @@ struct ShaderBufferRead : ShaderNodeClone<ShaderBufferRead> {
         auto in = em->determineExpr(buffer);
         auto type = get_input2<std::string>("type");
         auto offset = em->determineExpr(get_input("offset").get());
-
         em->emitCode("buffer_read<" + type + ">("+ in + "," + offset + ")" );
+
     }
 };
 
