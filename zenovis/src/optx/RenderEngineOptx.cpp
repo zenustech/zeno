@@ -1455,6 +1455,51 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         }
         else if (in_msg["MessageType"] == "Xform") {
+            std::string mode = in_msg["Mode"];
+            if (mode == "SkyRot") {
+                auto selected_plane_dir_mapping = std::map<std::string, glm::vec3> {
+                    {"X", {1, 0, 0}},
+                    {"Y", {0, 1, 0}},
+                    {"Z", {0, 0, 1}},
+                };
+                std::string axis = in_msg["Axis"];
+                if (axis == "X" || axis == "Y" || axis == "Z") {
+                    auto pivot = scene->camera->getPos() + scene->camera->get_lodfront() * 5.0f;
+                    auto plane_dir = selected_plane_dir_mapping[axis];
+                    auto rot_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_start.has_value()) {
+                        return;
+                    }
+                    auto rot_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_end.has_value()) {
+                        return;
+                    }
+                    auto start_vec = rot_start.value() - pivot;
+                    auto end_vec = rot_end.value() - pivot;
+                    auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                    if (!rot_quat.has_value()) {
+                        return;
+                    }
+                    glm::mat4 xform = glm::toMat4(rot_quat.value());
+                    auto angle_degrees = glm::degrees(2.0f * std::acos(rot_quat.value().w));
+                    zeno::log_info("angle_degrees: {}", angle_degrees);
+                    return;
+                }
+            }
 
 //            zeno::log_info("Axis: {}", in_msg["Axis"]);
             if (!defaultScene.cur_node.has_value()) {
@@ -1471,7 +1516,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             const auto y_axis = glm::vec3(0, 1, 0);
             const auto z_axis = glm::vec3(0, 0, 1);
 
-            std::string mode = in_msg["Mode"];
             bool is_local_space = in_msg["LocalSpace"];
             std::map<std::string, glm::vec3> axis_mapping = {
                 {"X", {1, 0, 0}},
