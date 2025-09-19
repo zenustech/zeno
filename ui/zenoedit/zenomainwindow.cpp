@@ -2056,6 +2056,8 @@ bool ZenoMainWindow::saveQuit() {
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());
+    zeno::getSession().userData().del("paramPathEditLastSelectPath");
+
     return true;
 }
 

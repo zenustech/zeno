@@ -1,4 +1,4 @@
-#include <zeno/zeno.h>
+﻿#include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/types/DummyObject.h>
@@ -107,6 +107,20 @@ struct Stamp : zeno::INode {
             auto obj = get_input("input");
             auto session = &zeno::getSession();
             if (has_input("stampMode")) {
+                std::function<void(std::shared_ptr<zeno::IObject>, const std::string&)> setStampMode = [&setStampMode](std::shared_ptr<zeno::IObject>const& obj, const std::string& type) {
+                    if (auto lst = std::dynamic_pointer_cast<zeno::ListObject>(obj)) {
+                        for (auto o : lst->arr)
+                            setStampMode(o, type);
+                    }
+                    else if (auto dict = std::dynamic_pointer_cast<zeno::DictObject>(obj)) {
+                        for (auto [_, o] : dict->lut) {
+                            setStampMode(o, type);
+                        }
+                    }
+                    if (obj) {
+                        obj->userData().set2("stamp-change", type);
+                    }
+                };
                 int currframe = session->globalState->frameid;
                 int beginframe = session->globalComm->beginFrameNumber;
                 std::string mode = get_input2<std::string>("stampMode");
@@ -118,16 +132,17 @@ struct Stamp : zeno::INode {
 						unchangeObj->m_userData = std::move(obj->userData());
 						obj = unchangeObj;
                     }
-                    obj->userData().set2("stamp-change", "UnChanged");
+                    setStampMode(obj, "UnChanged");
                 } else if (mode == "TotalChange") {
-                    obj->userData().set2("stamp-change", "TotalChange");
-                } else if (mode == "DataChange") {
-                    obj->userData().set2("stamp-change", "DataChange");
-                    std::string changehint = get_input2<std::string>("changeHint");
-                    obj->userData().set2("stamp-dataChange-hint", changehint);
-                } else if (mode == "ShapeChange") {
-                    obj->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
-                }
+                    setStampMode(obj, "TotalChange");
+                } 
+                //else if (mode == "DataChange") {
+                //    obj->userData().set2("stamp-change", "DataChange");
+                //    std::string changehint = get_input2<std::string>("changeHint");
+                //    obj->userData().set2("stamp-dataChange-hint", changehint);
+                //} else if (mode == "ShapeChange") {
+                //    obj->userData().set2("stamp-change", "TotalChange");//shapechange暂时全部按Totalchange处理
+                //}
             }
             inputObjType = session->globalComm->getObjType(obj);
             auto &ud = obj->userData();
@@ -150,7 +165,8 @@ struct Stamp : zeno::INode {
 ZENDEFNODE(Stamp, {
     {
         "input",
-        {"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
+        //{"enum UnChanged DataChange ShapeChange TotalChange", "stampMode", "UnChanged"},
+        {"enum UnChanged TotalChange", "stampMode", "UnChanged"},
         {"enum Mesh Matrixes SceneDescriptor", "ResourceType", "Mesh"},
         {"string", "ObjectName", ""},
         {"string", "changeHint", ""}

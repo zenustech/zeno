@@ -72,6 +72,8 @@ private:
 
     QCheckBox* m_filterCb;
     QLineEdit* m_filterEdit;
+    QLabel* m_serachLabel;
+    QLineEdit* m_searchEdit;
     QListView *m_nodeListView;
     QTableView *m_benchmarkTableView;
     QCompleter *m_completer;

@@ -231,16 +231,26 @@ void zenoBenchmark::setupUI() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);  // 减少外边距
 
-    QHBoxLayout* topButtomLayout = new QHBoxLayout();
+    QHBoxLayout* topLayout = new QHBoxLayout();
 
     // 过滤节点输入框
     m_filterCb = new QCheckBox(this);
     m_filterCb->setProperty("cssClass", "proppanel");
-    m_filterCb->setText(tr("monitor nodes"));
+    m_filterCb->setText(tr("filter nodes"));
     m_filterCb->setMinimumWidth(1);
 
-    topButtomLayout->addWidget(m_filterCb);
-    topButtomLayout->addStretch();
+    m_serachLabel = new QLabel;
+    m_serachLabel->setText(tr("search"));
+    m_serachLabel->setProperty("cssClass", "proppanel");
+    m_serachLabel->setMinimumWidth(1);
+    m_searchEdit = new QLineEdit;
+    m_searchEdit->setProperty("cssClass", "proppanel");
+    m_searchEdit->setMinimumWidth(1);
+
+    topLayout->addWidget(m_filterCb);
+    topLayout->addStretch();
+    topLayout->addWidget(m_serachLabel);
+    topLayout->addWidget(m_searchEdit);
     
     // 创建分割器
     QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
@@ -272,7 +282,7 @@ void zenoBenchmark::setupUI() {
     // 清除列表按钮
     m_clearListButton = new QPushButton(tr("reset"));
     m_clearListButton->setProperty("cssClass", "shadowButton");
-    m_filterSelectedNodesButton = new QPushButton(tr("monitor selected nodes"));
+    m_filterSelectedNodesButton = new QPushButton(tr("filter selected nodes"));
     m_filterSelectedNodesButton->setProperty("cssClass", "shadowButton");
     QHBoxLayout* clearListButtonLayout = new QHBoxLayout();
     clearListButtonLayout->addWidget(m_filterSelectedNodesButton);
@@ -318,7 +328,7 @@ void zenoBenchmark::setupUI() {
     splitter->setChildrenCollapsible(false);
     
     // 将分割器添加到主布局
-    mainLayout->addLayout(topButtomLayout);
+    mainLayout->addLayout(topLayout);
     mainLayout->addWidget(splitter);
     
     setLayout(mainLayout);
@@ -351,6 +361,15 @@ void zenoBenchmark::setupConnections() {
             }
         }
         });
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+        m_tableProxyModel->setFilterKeyColumn(5);
+        m_tableProxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+        if (text.isEmpty()) {
+            m_tableProxyModel->setFilterFixedString("");
+        } else {
+            m_tableProxyModel->setFilterFixedString(text);
+        }
+    });
 }
 
 void zenoBenchmark::onFilterTextChanged(const QString &text) {

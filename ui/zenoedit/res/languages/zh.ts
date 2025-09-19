@@ -3570,16 +3570,20 @@ All Files (*)</source>
 <context>
     <name>zenoBenchmark</name>
     <message>
-        <source>monitor nodes</source>
-        <translation>监控节点</translation>
+        <source>search</source>
+        <translation>搜索</translation>
+    </message>
+	<message>
+        <source>filter nodes</source>
+        <translation>过滤节点</translation>
     </message>
 	<message>
         <source>reset</source>
         <translation>重置</translation>
     </message>
 	<message>
-        <source>monitor selected nodes</source>
-        <translation>监控选中节点</translation>
+        <source>filter selected nodes</source>
+        <translation>过滤选中节点</translation>
     </message>
 </context>
 <context>
