@@ -3,6 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/log.h>
+#include <zeno/utils/string.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,19 +15,40 @@ ZENO_API void primDecodeUVs(PrimitiveObject *prim) {
 }
 
 // 'smart loop_uvs' to 'veryqianqiang vert.attr(uv)'
-ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim) {
-    if (prim->loops.size() && prim->has_attr("uvs")) {
-        auto &loop_uvs = prim->loops.attr<int>("uvs");
-        auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv"); // todo: support vec2f in attr...
-        /*attr_uv.resize(prim->loop_uvs.size());*/
-        for (size_t i = 0; i < loop_uvs.size(); i++) {
-            auto uv = prim->uvs[loop_uvs[i]];
-            int vertid = prim->loops[i];
-            vert_uv[vertid] = {uv[0], uv[1], 0};
-            // uv may overlap and conflict at edges, but doesn't matter
-            // this node is veryqianqiang after all, just to serve ZFX pw
+ZENO_API void primLoopUVsToVerts(PrimitiveObject *prim, std::vector<std::string> attrs) {
+    if (prim->loops->empty()) {
+        return;
+    }
+    for (auto attr: attrs) {
+        if (attr == "uvs") {
+            if (prim->loops.has_attr("uvs")) {
+                auto &loop_uvs = prim->loops.attr<int>("uvs");
+                auto &vert_uv = prim->verts.add_attr<zeno::vec3f>("uv"); // todo: support vec2f in attr...
+                /*attr_uv.resize(prim->loop_uvs.size());*/
+                for (size_t i = 0; i < loop_uvs.size(); i++) {
+                    auto uv = prim->uvs[loop_uvs[i]];
+                    int vertid = prim->loops[i];
+                    vert_uv[vertid] = {uv[0], uv[1], 0};
+                    // uv may overlap and conflict at edges, but doesn't matter
+                    // this node is veryqianqiang after all, just to serve ZFX pw
+                }
+                prim->loops.erase_attr("uvs");
+            }
         }
-        prim->loops.erase_attr("uvs");
+        else {
+            if(prim->loops.has_attr(attr)) {
+                prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    if (key == attr) {
+                        using T = std::decay_t<decltype(arr[0])>;
+                        auto &attr = prim->verts.add_attr<T>(key);
+                        for (auto i = 0; i < prim->loops.size(); i++) {
+                            int vertid = prim->loops[i];
+                            attr[vertid] = arr[i];
+                        }
+                    }
+                });
+            }
+        }
     }
 }
 
@@ -54,7 +76,9 @@ ZENO_DEFNODE(PrimDecodeUVs)({
 struct PrimLoopUVsToVerts : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        primLoopUVsToVerts(prim.get());
+        auto attrs_str = get_input2<std::string>("attrs");
+        auto attrs = zeno::split_str(attrs_str);
+        primLoopUVsToVerts(prim.get(), attrs);
         set_output("prim", std::move(prim));
     }
 };
@@ -62,6 +86,7 @@ struct PrimLoopUVsToVerts : INode {
 ZENO_DEFNODE(PrimLoopUVsToVerts)({
     {
         "prim",
+        {"string", "attrs", "uvs"},
     },
     {
         "prim",
