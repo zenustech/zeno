@@ -13,7 +13,6 @@ struct TraceOneStep : INode {
     auto steps = get_input<NumericObject>("steps")->get<int>();
     auto prim = get_input<PrimitiveObject>("prim");
     auto vecField = get_input<VDBFloat3Grid>("vecField");
-    auto size = get_input<NumericObject>("size")->get<int>();
     auto dt = get_input<NumericObject>("dt")->get<float>();
     auto maxlength = std::numeric_limits<float>::infinity();
     if(has_input("maxlength"))
@@ -21,6 +20,7 @@ struct TraceOneStep : INode {
       maxlength = get_input<NumericObject>("maxlength")->get<float>();
     }
     
+    const auto size = prim->size();
     for(auto s=0;s<steps;s++){
       prim->resize(prim->size()+size);
       auto &pos = prim->attr<vec3f>("pos");
@@ -52,10 +52,17 @@ struct TraceOneStep : INode {
   }
 };
 
-ZENDEFNODE(TraceOneStep, {
-                                     {"prim", "dt", "size", "steps", "maxlength", "vecField"},
-                                     {"prim"},
-                                     {},
-                                     {"openvdb"},
-                                 });
+ZENO_DEFNODE(TraceOneStep)(
+    { /* inputs: */ {
+        "prim",
+        "vecField",
+        "maxlength",
+        {"float", "dt", "0.01"},
+        {"int", "steps", "1"},
+    }, /* outputs: */ {
+        "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+        "openvdb",
+    } });
 }
