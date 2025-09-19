@@ -48,10 +48,14 @@ struct ShaderBufferGroup {
         for (const auto& [name, ref] : buffers) {
 
             auto found = source.find(name) != std::string::npos;
-            if (!found) continue;
+            if (!found) {
+
+                continue;
+            }
 
             macro[name+"_buffer"] = "buffers["+  std::to_string(i) +"]"; 
             macro[name+"_bfsize"] = std::to_string(ref->size);
+
         }
         return macro;
     }

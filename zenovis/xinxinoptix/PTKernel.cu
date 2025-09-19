@@ -100,7 +100,7 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
     return bad? true : lengthSquared(vector) == 0.0f;
 }
 
-void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& _attenuation) {
+void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
     
     const auto& vol = prd.vol;
     // if (vol.homo_t1 <= vol.homo_t0) return;
@@ -146,8 +146,8 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
     shadowPRD.radiance *= weight;
 
-    result += _attenuation * shadowPRD.radiance * expf(-extinction * dt);
-    _attenuation *= expf(-extinction * tmax);
+    result = shadowPRD.radiance * expf(-extinction * dt);
+    attenuation = expf(-extinction * tmax);
 };
 
 extern "C" __global__ void __raygen__rg()
@@ -405,8 +405,16 @@ extern "C" __global__ void __raygen__rg()
         {
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
-            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0)
-                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, result, _attenuation);
+
+            float3 vol_lighting;
+            float3 vol_attenuation;
+            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);
+                result += vol_lighting * _attenuation;
+
+                _attenuation *= vol_attenuation;
+                prd.attenuation *= vol_attenuation;
+            }
             
             prd.vol = {};
             prd._tmin_ = _tmin_;

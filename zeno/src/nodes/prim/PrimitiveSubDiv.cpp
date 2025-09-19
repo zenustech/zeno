@@ -98,14 +98,27 @@ void form_edge(PrimitiveObject *prim, std::unordered_map<std::pair<int, int>, Ed
     edge_split_mask2.resize(prim->verts.size());
 
     edge_flatten_info.reserve(prim->polys.size()*3);
-
-    for (int i=0;i<prim->polys.size();i++)  {
-        if(tri_new[i]==0)
+    for (int i=0;i<prim->polys.size();i++)
+    {
+        tri_edges[i] = {-1,-1,-1};
+    }
+    std::vector<int> indexes(0);
+    indexes.reserve(tri_new.size());
+    for(int i=0;i<tri_new.size();i++)
+    {
+        if(tri_new[i]==1)
         {
-            tri_edges[i] = {-1,-1,-1};
-            continue;
+            indexes.push_back(i);
         }
+    }
 
+    for (int j=0;j<indexes.size();j++)  {
+//        if(tri_new[i]==0)
+//        {
+//            tri_edges[i] = {-1,-1,-1};
+//            continue;
+//        }
+        int i = indexes[j];
         auto [start, _len] = prim->polys[i];
         auto vert_id0 = prim->loops[start + 0];
         auto vert_id1 = prim->loops[start + 1];
@@ -165,55 +178,110 @@ void form_edge(PrimitiveObject *prim, std::unordered_map<std::pair<int, int>, Ed
 }
 bool in_screen(float nx, float ny, glm::vec2 &pix)
 {
-    return pix[0]>-0.5*nx && pix[0]<0.5*nx && pix[1]>-0.5*ny && pix[1]<0.5*ny;
+    return pix.x>=0&&pix.x<=nx && pix.y>=0 && pix.y<=ny;
 }
 int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, glm::mat4 const&view, float &t, int iter) {
     auto nx = res[0];
     auto ny = res[1];
-    auto ratio = float(nx) / float(ny);
-    auto denorm = cam->fnear * tan(cam->fov / 2);
-    auto v0_vS = glm::vec3(view * glm::vec4(v0[0], v0[1], v0[2], 1));
-    auto v1_vS = glm::vec3(view * glm::vec4(v1[0], v1[1], v1[2], 1));
-    //zeno::log_info("view {} v0:{}", v0, bit_cast<vec3f>(v0_vS));
-    //zeno::log_info("view {} v1:{}", v1, bit_cast<vec3f>(v1_vS));
-    if (v0_vS[2] > -cam->fnear*0.5 && v1_vS[2] > -cam->fnear*0.5) {
+    glm::mat4 p = glm::perspective(glm::radians(cam->fov), (float)res[0]/(float)res[1], cam->fnear, cam->ffar);
+    glm::vec4 p1_mv = view * glm::vec4(glm::vec3(v0[0],v0[1],v0[2]), 1.0f);
+    glm::vec4 p2_mv = view * glm::vec4(glm::vec3(v1[0],v1[1],v1[2]), 1.0f);
+    if(p1_mv.z>-cam->fnear)
+        p1_mv.z = -cam->fnear;
+    if(p2_mv.z>-cam->fnear)
+        p2_mv.z = -cam->fnear;
+    // 2. Transform the 3D vertices to clip space
+    glm::vec4 p1_clip = p * p1_mv;
+    glm::vec4 p2_clip = p * p2_mv;
+
+    glm::vec3 p1_ndc = glm::vec3(p1_clip) / p1_clip.w;
+    glm::vec3 p2_ndc = glm::vec3(p2_clip) / p2_clip.w;
+
+    glm::vec2 p1_screen;
+    p1_screen.x = (p1_ndc.x + 1.0f) / 2.0f * (float)res[0];
+    p1_screen.y = (1.0f - p1_ndc.y) / 2.0f * (float)res[1];
+
+    glm::vec2 p2_screen;
+    p2_screen.x = (p2_ndc.x + 1.0f) / 2.0f * (float)res[0];
+    p2_screen.y = (1.0f - p2_ndc.y) / 2.0f * (float)res[1];
+
+    float screen_length = glm::distance(p1_screen, p2_screen);
+
+    if(p1_clip.w<=0&&p2_clip.w<=0
+    ||(p1_ndc.x<-1.0&&p2_ndc.x<-1.0)
+    ||(p1_ndc.y<-1.0&&p2_ndc.y<-1.0)
+    ||(p1_ndc.x> 1.0&&p2_ndc.x> 1.0)
+    ||(p1_ndc.y> 1.0&&p2_ndc.y> 1.0))
         return 0;
-    }
-    if (v0_vS[2] * v1_vS[2] < 0 && abs(v0_vS[2] * v1_vS[2])>0.0001 && iter<20) {
-        //��ʵ�ڲ�����Ϊɶ������ô��Ҫ�� �����Ű����ĵ��Ͳ�work�ˣ� Ȼ�����ұ����������Ӧ���й�ϵ������
-        t = v0_vS[2] / (v0_vS[2] - v1_vS[2]);
-        return 1;
-    }
-    if(v0_vS[2] <=0 && v1_vS[2] <=0) {
-        auto _y0 = v0_vS[1] * cam->fnear / (abs(v0_vS[2]) + 0.0001);
-        auto _x0 = v0_vS[0] * cam->fnear / (abs(v0_vS[2]) + 0.0001);
-        auto _y1 = v1_vS[1] * cam->fnear / (abs(v1_vS[2]) + 0.0001);
-        auto _x1 = v1_vS[0] * cam->fnear / (abs(v1_vS[2]) + 0.0001);
 
-        if (abs(_y0) > denorm * 1.1 && abs(_y1) > denorm * 1.1 && _y0 * _y1 > 0) {
+    if( (p1_clip.w<=0&&p2_clip.w>0)
+          ||(p1_clip.w>0&&p2_clip.w<=0)
+          ||(p1_ndc.x<=-1.0&&p2_ndc.x>-1.0)
+          ||(p1_ndc.x>-1.0&&p2_ndc.x<=-1.0)
+          ||(p1_ndc.x>= 1.0&&p2_ndc.x< 1.0)
+          ||(p1_ndc.x< 1.0&&p2_ndc.x>= 1.1)
+          ||(p1_ndc.y<=-1.0&&p2_ndc.y>-1.0)
+          ||(p1_ndc.y>-1.0&&p2_ndc.y<=-1.0)
+          ||(p1_ndc.y>= 1.0&&p2_ndc.y< 1.0)
+          ||(p1_ndc.y< 1.0&&p2_ndc.y>= 1.0)) {
+        if(screen_length<factor)
             return 0;
-        }
-        if (abs(_x0) > denorm * ratio * 1.1 && abs(_x1) > denorm * ratio * 1.1 && _x0 * _x1 > 0) {
-            return 0;
-        }
-        auto pix_y0 = _y0 * float(ny) * 0.5 / denorm;
-        auto pix_x0 = _x0 * float(ny) * 0.5 / denorm;
-
-        auto pix_y1 = _y1 * float(ny) * 0.5 / denorm;
-        auto pix_x1 = _x1 * float(ny) * 0.5 / denorm;
-
-        auto pix_0 = glm::vec2(pix_x0, pix_y0);
-        auto pix_1 = glm::vec2(pix_x1, pix_y1);
-        if (glm::distance(pix_0, pix_1) > factor) {
-            if(in_screen(nx, ny, pix_0) && in_screen(nx, ny, pix_1)) {
-                return 2;
-            }
-            else
-                return 1;
-        }
+        else
+            return 1;
     }
+    if(screen_length > factor)
+    {
 
+        if(in_screen(nx, ny, p1_screen) && in_screen(nx, ny, p2_screen)) {
+            return 2;
+        }
+        else
+            return 1;
+    }
     return 0;
+//    auto ratio = float(nx) / float(ny);
+//    auto denorm = cam->fnear * tan(cam->fov / 2);
+//    auto v0_vS = glm::vec3(view * glm::vec4(v0[0], v0[1], v0[2], 1));
+//    auto v1_vS = glm::vec3(view * glm::vec4(v1[0], v1[1], v1[2], 1));
+//    //zeno::log_info("view {} v0:{}", v0, bit_cast<vec3f>(v0_vS));
+//    //zeno::log_info("view {} v1:{}", v1, bit_cast<vec3f>(v1_vS));
+//    if (v0_vS[2] > -cam->fnear*0.5 && v1_vS[2] > -cam->fnear*0.5) {
+//        return 0;
+//    }
+//    if (v0_vS[2] * v1_vS[2] < 0 && abs(v0_vS[2] * v1_vS[2])>0.0001 && iter<20) {
+//        t = v0_vS[2] / (v0_vS[2] - v1_vS[2]);
+//        return 1;
+//    }
+//    if(v0_vS[2] <=0 && v1_vS[2] <=0) {
+//        auto _y0 = v0_vS[1] * cam->fnear / (abs(v0_vS[2]) + 0.0001);
+//        auto _x0 = v0_vS[0] * cam->fnear / (abs(v0_vS[2]) + 0.0001);
+//        auto _y1 = v1_vS[1] * cam->fnear / (abs(v1_vS[2]) + 0.0001);
+//        auto _x1 = v1_vS[0] * cam->fnear / (abs(v1_vS[2]) + 0.0001);
+//
+//        if (abs(_y0) > denorm * 1.1 && abs(_y1) > denorm * 1.1 && _y0 * _y1 > 0) {
+//            return 0;
+//        }
+//        if (abs(_x0) > denorm * ratio * 1.1 && abs(_x1) > denorm * ratio * 1.1 && _x0 * _x1 > 0) {
+//            return 0;
+//        }
+//        auto pix_y0 = _y0 * float(ny) * 0.5 / denorm;
+//        auto pix_x0 = _x0 * float(ny) * 0.5 / denorm;
+//
+//        auto pix_y1 = _y1 * float(ny) * 0.5 / denorm;
+//        auto pix_x1 = _x1 * float(ny) * 0.5 / denorm;
+//
+//        auto pix_0 = glm::vec2(pix_x0, pix_y0);
+//        auto pix_1 = glm::vec2(pix_x1, pix_y1);
+//        if (glm::distance(pix_0, pix_1) > factor) {
+//            if(in_screen(nx, ny, pix_0) && in_screen(nx, ny, pix_1)) {
+//                return 2;
+//            }
+//            else
+//                return 1;
+//        }
+//    }
+
+//return 0;
 }
 
 int rank_edges(PrimitiveObject *prim, std::unordered_map<std::pair<int, int>, EdgeInfo, PairHash> &edge_split_mask, std::vector<EdgeInfo> &edge_flatten_info,
@@ -300,14 +368,14 @@ float findScreenSpaceMidpointT(
 }
 
 void emit_vert(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, int edgeSum, CameraObject* cam, double nx, double ny, std::vector<float> &T) {
-    AttrVector<vec3f> prim_new_verts;
-    prim_new_verts.resize(prim->verts.size() + edgeSum);
-    prim->verts.forall_attr([&](auto const &key, auto &arr) {
-        using T = std::decay_t<decltype(arr[0])>;
-        auto &attr = prim_new_verts.add_attr<T>(key);
-        std::copy_n(arr.begin(), arr.size(), attr.data());
-    });
-
+//    AttrVector<vec3f> prim_new_verts;
+//    prim_new_verts.resize(prim->verts.size() + edgeSum);
+//    prim->verts.forall_attr([&](auto const &key, auto &arr) {
+//        using T = std::decay_t<decltype(arr[0])>;
+//        auto &attr = prim_new_verts.add_attr<T>(key);
+//        std::copy_n(arr.begin(), arr.size(), attr.data());
+//    });
+    prim->verts.resize(prim->verts.size() + edgeSum);
     auto cview = glm::lookAt(bit_cast<glm::vec3>(cam->pos), bit_cast<glm::vec3>(cam->pos + cam->view), bit_cast<glm::vec3>(cam->up));
     auto cproj = glm::perspective(glm::radians(cam->fov), float(nx/ny), cam->fnear, cam->ffar);
     auto vp = cproj * cview;
@@ -328,7 +396,7 @@ void emit_vert(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
     });
     prim->verts.forall_attr([&](auto const &key, auto &arr) {
         using T = std::decay_t<decltype(arr[0])>;
-        auto &attr = prim_new_verts.add_attr<T>(key);
+        auto &attr = prim->verts.attr<T>(key);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, edge_flatten_info.size()),
             [&](const tbb::blocked_range<size_t>& r) {
             for (size_t i = r.begin(); i != r.end(); ++i) {
@@ -344,7 +412,7 @@ void emit_vert(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
     });
 
 
-    prim->verts = std::move(prim_new_verts);
+    //prim->verts = std::move(prim_new_verts);
 }
 char count_tris(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, std::vector<vec3i> &tri_edges, int idx) {
     char count = 1;
@@ -859,6 +927,8 @@ struct PrimDice : INode {
             zeno::log_warn("iter_count:{} >= maxIterNum:{}", iter_count, maxIterNum);
         }
         prim->loops.add_attr<zeno::vec3f>("bw");
+        auto &from_idx_array = prim->polys.attr<int>("parentID");
+        auto &loops_bw_array = prim->loops.attr<zeno::vec3f>("bw");
         tbb::parallel_for(tbb::blocked_range<size_t>(0, prim->polys.size()),
         [&](const tbb::blocked_range<size_t>& r) {
             for (size_t i = r.begin(); i != r.end(); ++i) {
@@ -867,7 +937,7 @@ struct PrimDice : INode {
                 auto new_v1_idx = prim->loops[tri[0] + 1];
                 auto new_v2_idx = prim->loops[tri[0] + 2];
 
-                int from_idx = prim->polys.attr<int>("parentID")[i];
+                int from_idx = from_idx_array[i];
                 auto from_tri = origin_prim->polys[from_idx];
                 auto from_v0_idx = origin_prim->loops[from_tri[0]];
                 auto from_v1_idx = origin_prim->loops[from_tri[0] + 1];
@@ -885,12 +955,14 @@ struct PrimDice : INode {
                 zeno::vec3f bw1 = findBarycentric(new_v1, from_v0, from_v1, from_v2);
                 zeno::vec3f bw2 = findBarycentric(new_v2, from_v0, from_v1, from_v2);
 
-                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 0] = bw0;
-                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 1] = bw1;
-                prim->loops.attr<zeno::vec3f>("bw")[3 * i + 2] = bw2;
+                loops_bw_array[3 * i + 0] = bw0;
+                loops_bw_array[3 * i + 1] = bw1;
+                loops_bw_array[3 * i + 2] = bw2;
             }
         });
+
         prim_interp(origin_prim.get(), prim.get());
+
 
         set_output2("out", prim);
     }

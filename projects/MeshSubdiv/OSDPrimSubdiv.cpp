@@ -192,14 +192,21 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         corner_index[i] = i;
     }
     if (edgeCreaseAttr.size()) {
-        auto const &crease = prim->lines.attr<float>(edgeCreaseAttr);
-        auto const &corner = prim->verts.attr<float>(cornerAttr);
-        desc.numCreases = crease.size();
-        desc.creaseVertexIndexPairs = reinterpret_cast<int const *>(prim->lines.data());
-        desc.creaseWeights = crease.data();
-        desc.numCorners = prim->verts.size();
-        desc.cornerVertexIndices=corner_index.data();
-        desc.cornerWeights = corner.data();
+        if(prim->lines.has_attr(edgeCreaseAttr)) {
+            auto const &crease = prim->lines.attr<float>(edgeCreaseAttr);
+            desc.numCreases = crease.size();
+            desc.creaseVertexIndexPairs = reinterpret_cast<int const *>(prim->lines.data());
+            desc.creaseWeights = crease.data();
+
+        }
+    }
+    if(cornerAttr.size()){
+        if(prim->lines.has_attr(cornerAttr)) {
+            auto const &corner = prim->verts.attr<float>(cornerAttr);
+            desc.numCorners = prim->verts.size();
+            desc.cornerVertexIndices = corner_index.data();
+            desc.cornerWeights = corner.data();
+        }
     }
 
     std::vector<Far::TopologyDescriptor::FVarChannel> channels;
@@ -773,8 +780,8 @@ ZENO_DEFNODE(OSDPrimSubdiv)
     {
         "prim",
         {"int", "levels", "2"},
-        {"string", "edgeCreaseAttr", ""},
-        {"string","cornerAttr",""},
+        {"string", "edgeCreaseAttr", "edge_crease_weight"},
+        {"string","cornerAttr","vert_crease_weight"},
         {"bool", "triangulate", "1"},
         {"bool", "asQuadFaces", "1"},
         {"bool", "hasLoopUVs", "1"},
