@@ -774,7 +774,7 @@ namespace DisneyBSDF{
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
-          float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
+          float tmpPdf = trans? abs(wi.z) : 0.0f;//0.5/M_PIf:0.0f;
           vec3 transmit = vec3(1.0f);
           if(thin) {
             vec3 color = mat.sssColor;
