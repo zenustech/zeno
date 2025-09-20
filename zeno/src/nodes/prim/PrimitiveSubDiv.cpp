@@ -795,6 +795,7 @@ struct PrimEdgeCrease : INode {
         auto &face_n = polys.add_attr<zeno::vec3f>("face_N");
         auto sharp_thres = get_input2<float>("sharp_threshold");
         auto corner_thres = get_input2<float>("corner_threshold");
+        corner_thres = max(corner_thres,0.001);
         auto &verts = origin_prim->verts;
         auto &verts_e1 = origin_prim->verts.add_attr<vec3f>("e1");
         auto &verts_e2 = origin_prim->verts.add_attr<vec3f>("e2");
@@ -805,10 +806,10 @@ struct PrimEdgeCrease : INode {
             zeno::vec3f v1 = origin_prim->verts[loops[poly_idx[0] + 1]];
             zeno::vec3f v2 = origin_prim->verts[loops[poly_idx[0] + 2]];
             face_n[i] = normalize(cross(v1-v0,v2-v1));
-            for(int j=0;j<poly_idx[1]-1;j++)
+            for(int j=0;j<poly_idx[1];j++)
             {
                 int vert0 = loops[poly_idx[0] + j];
-                int vert1 = loops[poly_idx[0] + j + 1];
+                int vert1 = loops[poly_idx[0] + (j + 1)%poly_idx[1]];
                 std::pair<int,int> e = { max(vert0,vert1), min(vert0,vert1) };
                 if(edges.find(e)!=edges.end())
                 {
@@ -839,9 +840,9 @@ struct PrimEdgeCrease : INode {
                 auto e = zeno::normalize(verts[vid0]-verts[vid1]);
                 if(length(verts_e1[vid0])==0)
                 {
-                    verts_e1[vid0] = e;
+                    verts_e1[vid0] = -e;
                 }else{
-                    verts_e2[vid0] = e;
+                    verts_e2[vid0] = -e;
                 }
 
                 if(length(verts_e1[vid1])==0)
@@ -868,9 +869,13 @@ struct PrimEdgeCrease : INode {
         {
             auto e1 = verts_e1[i];
             auto e2 = verts_e2[i];
-            vert_crease_weight[i] = 0;
-            if(length(e1)>0 && length(e2)>0)
-                vert_crease_weight[i] = dot(e1,e2)>-corner_thres?10.0f:0;
+            if(length(e1)>0 && length(e2)>0) {
+                vert_crease_weight[i] = dot(e1, e2) > -corner_thres ? 10 : 0;
+            }else
+            {
+                vert_crease_weight[i] = 0;
+            }
+
         }
         set_output("oPrim", origin_prim);
     }

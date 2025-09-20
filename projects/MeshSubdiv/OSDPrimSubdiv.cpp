@@ -201,7 +201,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         }
     }
     if(cornerAttr.size()){
-        if(prim->lines.has_attr(cornerAttr)) {
+        if(prim->verts.has_attr(cornerAttr)) {
             auto const &corner = prim->verts.attr<float>(cornerAttr);
             desc.numCorners = prim->verts.size();
             desc.cornerVertexIndices = corner_index.data();
