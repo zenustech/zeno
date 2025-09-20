@@ -898,10 +898,12 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->lightmask = DefaultMatMask;
+
     shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
     if(prd->hit_type==DIFFUSE_HIT && prd->diffDepth <=1 ) {
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
+            shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor) * 0.01f:make_float3(0,0,0);
             DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count;
@@ -914,6 +916,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
     else {
+        shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor) * 0.01f:make_float3(0,0,0);
         DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
         float3 weight = CUR_TOTAL_TRANS;
         prd->radiance = shadowPRD.radiance * weight;
