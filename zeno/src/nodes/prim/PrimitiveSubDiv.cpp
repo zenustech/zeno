@@ -180,17 +180,8 @@ bool in_screen(float nx, float ny, glm::vec2 &pix)
 {
     return pix.x>=0&&pix.x<=nx && pix.y>=0 && pix.y<=ny;
 }
-int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, glm::mat4 const&view, float &t, int iter) {
-    auto nx = res[0];
-    auto ny = res[1];
-    glm::mat4 p = glm::perspective(glm::radians(cam->fov), (float)res[0]/(float)res[1], cam->fnear, cam->ffar);
-    glm::vec4 p1_mv = view * glm::vec4(glm::vec3(v0[0],v0[1],v0[2]), 1.0f);
-    glm::vec4 p2_mv = view * glm::vec4(glm::vec3(v1[0],v1[1],v1[2]), 1.0f);
-    if(p1_mv.z>-cam->fnear)
-        p1_mv.z = -cam->fnear;
-    if(p2_mv.z>-cam->fnear)
-        p2_mv.z = -cam->fnear;
-    // 2. Transform the 3D vertices to clip space
+float compute_screen_length(const glm::vec4 &p1_mv, const glm::vec4 &p2_mv, const glm::mat4 &p, const vec2i &res)
+{
     glm::vec4 p1_clip = p * p1_mv;
     glm::vec4 p2_clip = p * p2_mv;
 
@@ -205,7 +196,37 @@ int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, 
     p2_screen.x = (p2_ndc.x + 1.0f) / 2.0f * (float)res[0];
     p2_screen.y = (1.0f - p2_ndc.y) / 2.0f * (float)res[1];
 
-    float screen_length = glm::distance(p1_screen, p2_screen);
+    return glm::distance(p1_screen, p2_screen);
+}
+int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, glm::mat4 const&view, float &t, int iter) {
+    auto nx = res[0];
+    auto ny = res[1];
+    glm::mat4 p = glm::perspective(glm::radians(cam->fov), (float)res[0]/(float)res[1], cam->fnear, cam->ffar);
+    glm::vec4 p1_mv = view * glm::vec4(glm::vec3(v0[0],v0[1],v0[2]), 1.0f);
+    glm::vec4 p2_mv = view * glm::vec4(glm::vec3(v1[0],v1[1],v1[2]), 1.0f);
+    float z1 = p1_mv.z;
+    float z2 = p2_mv.z;
+    if(p1_mv.z>-cam->fnear)
+        p1_mv.z = -cam->fnear;
+    if(p2_mv.z>-cam->fnear)
+        p2_mv.z = -cam->fnear;
+
+    // 2. Transform the 3D vertices to clip space
+    glm::vec4 p1_clip = p * p1_mv;
+    glm::vec4 p2_clip = p * p2_mv;
+
+    glm::vec3 p1_ndc = glm::vec3(p1_clip) / p1_clip.w;
+    glm::vec3 p2_ndc = glm::vec3(p2_clip) / p2_clip.w;
+
+    glm::vec2 p1_screen;
+    p1_screen.x = (p1_ndc.x + 1.0f) / 2.0f * (float)res[0];
+    p1_screen.y = (1.0f - p1_ndc.y) / 2.0f * (float)res[1];
+
+    glm::vec2 p2_screen;
+    p2_screen.x = (p2_ndc.x + 1.0f) / 2.0f * (float)res[0];
+    p2_screen.y = (1.0f - p2_ndc.y) / 2.0f * (float)res[1];
+    float screen_length = max(abs(p1_screen.x - p2_screen.x), abs(p1_screen.y - p2_screen.y));//glm::distance(p1_screen,p2_screen);
+
 
     if(p1_clip.w<=0&&p2_clip.w<=0
     ||(p1_ndc.x<-1.0&&p2_ndc.x<-1.0)
@@ -227,7 +248,7 @@ int edge_score2(vec3f v0, vec3f v1, CameraObject* cam, vec2i res, float factor, 
         if(screen_length<factor)
             return 0;
         else
-            return 1;
+            return (z1<=-cam->fnear&&z2<=-cam->fnear)?2:1;
     }
     if(screen_length > factor)
     {
@@ -324,21 +345,26 @@ int rank_edges(PrimitiveObject *prim, std::unordered_map<std::pair<int, int>, Ed
     return sum;
 }
 
-glm::vec3 projectToNDC(const glm::vec3& P, const glm::mat4& mvp) {
+glm::vec2 projectToNDC(const glm::vec3& P, const glm::mat4& mvp, glm::vec2 res) {
     glm::vec4 clip = mvp * glm::vec4(P, 1.0f);
-    return glm::vec3(clip) / clip.w;
+    glm::vec3 ndc = glm::vec3(clip) / clip.w;
+    glm::vec2 p1_screen;
+    p1_screen.x = (ndc.x + 1.0f) / 2.0f * (float)res[0];
+    p1_screen.y = (1.0f - ndc.y) / 2.0f * (float)res[1];
+    return p1_screen;
 }
 
 float findScreenSpaceMidpointT(
     const glm::vec3& A,
     const glm::vec3& B,
     const glm::mat4& mvp,
+    glm::vec2 res,
     float epsilon = 0.1f,
     int maxIterations = 200
 ) {
-    glm::vec3 ndcA = projectToNDC(A, mvp);
-    glm::vec3 ndcB = projectToNDC(B, mvp);
-    glm::vec3 targetNDC = (ndcA + ndcB) * 0.5f;
+    glm::vec2 ndcA = projectToNDC(A, mvp, res);
+    glm::vec2 ndcB = projectToNDC(B, mvp, res);
+    glm::vec2 targetNDC = (ndcA + ndcB) * 0.5f;
 
     float t_min = 0.0f;
     float t_max = 1.0f;
@@ -349,7 +375,7 @@ float findScreenSpaceMidpointT(
 
         glm::vec3 P = A + t_mid * (B - A);
 
-        glm::vec3 ndcP = projectToNDC(P, mvp);
+        glm::vec2 ndcP = projectToNDC(P, mvp, res);
 
         float current_dist = glm::distance(glm::vec2(ndcP), glm::vec2(targetNDC));
 
@@ -389,7 +415,7 @@ void emit_vert(PrimitiveObject *prim, std::vector<EdgeInfo> &edge_flatten_info, 
                 auto v1 = prim->verts[edge_flatten_info[i].v1];
                 float t = 0.5;
                 if(edge_flatten_info[i].mask==2)
-                    t = findScreenSpaceMidpointT(bit_cast<glm::vec3>(v0), bit_cast<glm::vec3>(v1), vp);
+                    t = findScreenSpaceMidpointT(bit_cast<glm::vec3>(v0), bit_cast<glm::vec3>(v1), vp, {nx, ny});
                 temp_t[i] = t;
             }
         }
