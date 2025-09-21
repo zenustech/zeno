@@ -878,8 +878,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
+    shadowPRD.origin = (isSS&&istransmission&&mats.thin<0.5&&mats.subsurface>0)?frontPos : shadowPRD.origin;
     shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
-    
     auto shadingP = frontPos + params.cam.eye; // world space
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
         shadingP = backPos + params.cam.eye;
@@ -903,7 +903,7 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->hit_type==DIFFUSE_HIT && prd->diffDepth <=1 ) {
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
-            shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor) * 0.01f:make_float3(0,0,0);
+            shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
             DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count;
@@ -916,7 +916,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
     else {
-        shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor) * 0.01f:make_float3(0,0,0);
+        shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
         DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
         float3 weight = CUR_TOTAL_TRANS;
         prd->radiance = shadowPRD.radiance * weight;
