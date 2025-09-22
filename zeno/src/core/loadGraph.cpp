@@ -1,10 +1,12 @@
-#include <zeno/core/Graph.h>
+﻿#include <zeno/core/Graph.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/extra/DirtyChecker.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/core/Session.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/zeno_p.h>
@@ -126,6 +128,11 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 g->setTempCache(di[1].GetString());
             } else if (cmd == "objRunType") {
                 g->setObjRunType(di[1].GetString(), di[2].GetString());
+            } else if (cmd == "viewId") {
+                auto ident = std::string(di[1].GetString());
+                zeno::getSession().globalComm->allViewNodes += ident + ' ';
+            } else if (cmd == "enableTimer") {
+                g->setEnableTimer(di[1].GetString());
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

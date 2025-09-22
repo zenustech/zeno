@@ -258,7 +258,7 @@ void ZenoSceneTreeModify::initUi()
 	QVBoxLayout* mainlayout = new QVBoxLayout(this);
 
 	QHBoxLayout* ptitalLayout = new QHBoxLayout(this);
-	QPushButton* synctonode = new QPushButton("Sync to node");
+	QPushButton* synctonode = new QPushButton(tr("Sync to node"));
 	ptitalLayout->addStretch();
 	ptitalLayout->addWidget(synctonode);
 

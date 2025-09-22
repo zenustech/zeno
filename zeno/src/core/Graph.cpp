@@ -1,4 +1,4 @@
-#include <zeno/core/Graph.h>
+﻿#include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
@@ -158,6 +158,11 @@ ZENO_API void Graph::setTempCache(std::string const& id)
 ZENO_API void Graph::setObjRunType(std::string const& id, std::string const& type)
 {
     safe_at(nodes, id, "node name")->objRunType = type;
+}
+
+ZENO_API void Graph::setEnableTimer(std::string const& id)
+{
+    safe_at(nodes, id, "node name")->bEnableTimer = true;
 }
 
 ZENO_API INode* Graph::getNode(std::string const& id)

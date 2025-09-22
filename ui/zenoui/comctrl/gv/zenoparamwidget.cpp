@@ -1,4 +1,4 @@
-#include "zenoparamwidget.h"
+﻿#include "zenoparamwidget.h"
 #include "zenosocketitem.h"
 #include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
@@ -305,7 +305,12 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         QString dirPath;
         bool bMarkZsg = false;
 
-        if (filePath.isEmpty()) {
+        auto lastSelectPath = QString::fromStdString(zeno::getSession().userData().get2<std::string>("paramPathEditLastSelectPath", ""));
+        if (!lastSelectPath.isEmpty())
+        {
+            dirPath = lastSelectPath;
+        }
+        else if (filePath.isEmpty()) {
             dirPath = zsgDir;
             bMarkZsg = true;
         }
@@ -335,6 +340,8 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             if (QMessageBox::question(nullptr, tr("zsg path"), tr("Whether to use $ZSG replace zsg file path?")) == QMessageBox::Yes)
                 path.replace(zsgDir, "=$ZSG");
         }
+
+        zeno::getSession().userData().set2("paramPathEditLastSelectPath", path.toStdString());
 
         setText(path);
     }

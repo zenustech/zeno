@@ -14,6 +14,7 @@
 #include "panel/zenoproppanel.h"
 #include "panel/zenospreadsheet.h"
 #include "panel/zlogpanel.h"
+#include "panel/zenoBenchmark.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
@@ -1246,6 +1247,23 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
     return nullptr;
 }
 
+zenoBenchmark* ZenoMainWindow::getAnyBenchmark() const
+{
+    for (auto dock : findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly))
+    {
+        if (!dock->isVisible())
+            continue;
+        for (int i = 0; i < dock->count(); i++)
+        {
+            if (zenoBenchmark* benchmark = qobject_cast<zenoBenchmark*>(dock->widget(i)))
+            {
+                return benchmark;
+            }
+        }
+    }
+    return nullptr;
+}
+
 void ZenoMainWindow::onRunFinished()
 {
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
@@ -2038,6 +2056,8 @@ bool ZenoMainWindow::saveQuit() {
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());
+    zeno::getSession().userData().del("paramPathEditLastSelectPath");
+
     return true;
 }
 

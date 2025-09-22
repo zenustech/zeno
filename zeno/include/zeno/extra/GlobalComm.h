@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <zeno/core/IObject.h>
 #include <zeno/utils/PolymorphicMap.h>
@@ -45,6 +45,8 @@ struct GlobalComm {
     Json static_scene_descriptor;
     Json dynamic_scene_descriptor;
 
+    std::string allViewNodes;  //当运行灯光相机材质矩阵时，当前图中所有view的节点名
+
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
     ZENO_API void newFrame();
@@ -72,15 +74,16 @@ struct GlobalComm {
     ZENO_API bool removeCache(int frame);
     ZENO_API void removeCachePath();
     ZENO_API std::string cacheTimeStamp(int frame, bool& exists);
+    ZENO_API std::string getBenchmarkLog();
     void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string runtype, bool balways, std::string fileName = "", bool isStampModeInit = false);
     bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::string& runtype, std::string fileName = "");
 
     //stamp相关
     static int getObjType(std::shared_ptr<IObject> obj);
     static std::shared_ptr<IObject> constructEmptyObj(int type);
-    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool switchTimeline, bool loadasset = false);
+    bool fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool switchTimeline, bool loadasset = false, std::string currViewNodes = "");
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
-    static std::pair<std::string, bool> getRunType(std::filesystem::path dir);
+    static std::tuple<std::string, bool, std::string> getRunType(std::filesystem::path dir);
 private:
     ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp);
 };

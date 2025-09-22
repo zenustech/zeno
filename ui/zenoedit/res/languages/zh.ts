@@ -2468,6 +2468,10 @@
         <source>Trans to Preset Subgrah</source>
         <translation type="unfinished">转为预设子图</translation>
     </message>
+	<message>
+        <source>Trans to Material Subgrah</source>
+        <translation type="unfinished">转为材质子图</translation>
+    </message>
     <message>
         <source>Fork unlocked</source>
         <translation type="unfinished">Fork解锁</translation>
@@ -2566,6 +2570,10 @@
 	<message>
         <source>Xform</source>
         <translation type="unfinished">变换</translation>
+    </message>
+	<message>
+        <source>BenchMark</source>
+        <translation type="unfinished">运行时间</translation>
     </message>
 </context>
 <context>
@@ -3557,6 +3565,32 @@ All Files (*)</source>
     <message>
         <source>String mapping</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>zenoBenchmark</name>
+    <message>
+        <source>search</source>
+        <translation>搜索</translation>
+    </message>
+	<message>
+        <source>filter nodes</source>
+        <translation>过滤节点</translation>
+    </message>
+	<message>
+        <source>reset</source>
+        <translation>重置</translation>
+    </message>
+	<message>
+        <source>filter selected nodes</source>
+        <translation>过滤选中节点</translation>
+    </message>
+</context>
+<context>
+<name>ZenoSceneTreeModify</name>
+    <message>
+        <source>Sync to node</source>
+        <translation>同步到节点</translation>
     </message>
 </context>
 <context>

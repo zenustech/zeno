@@ -1,4 +1,4 @@
-#ifdef ZENO_BENCHMARKING
+﻿#ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/cformat.h>
@@ -65,19 +65,6 @@ std::string Timer::getLog() {
     }
     return res;
 }
-
-namespace {
-
-static struct LuzhPleaseDontTouch {
-    ~LuzhPleaseDontTouch() {
-        //auto log = Timer::getLog();
-        //if (!log.empty())
-            //std::printf("ZENO benchmark (us):\n%s\n", log.c_str());
-    }
-} luzhPleaseDontTouch;
-
-}
-
 
 #if 0
 TimerAtexitHelper::~TimerAtexitHelper() {
