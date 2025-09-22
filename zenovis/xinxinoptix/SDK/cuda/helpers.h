@@ -48,7 +48,7 @@ using uint64 = uint64_t;
 
 template<typename T>
 __forceinline__ __device__ T buffer_read(uint64_t ptr, int offset) {
-    return *(reinterpret_cast<T*>(ptr) + offset);
+    return (reinterpret_cast<T*>(ptr))[offset];
 }
 
 __forceinline__ __device__ float3 toSRGB( const float3& c, float gamma )

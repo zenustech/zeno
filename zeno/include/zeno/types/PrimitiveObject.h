@@ -112,19 +112,13 @@ static void takeOutTriangle(std::vector<zeno::vec3f> & verts, std::vector<int> &
         takeOutTriangle(verts, poly, reflexMark, triangles);
     }
 }
-static void polygonDecompose(std::vector<zeno::vec3f> & verts, std::vector<int> &poly,
-                             std::vector<vec3i> & triangles)
-{
-    triangles.resize(0);
+static std::vector<vec3i> polygonDecompose(std::vector<zeno::vec3f> & verts, std::vector<int> &poly) {
     std::vector<char> reflexMark;
     auto n = polyNormal(verts, poly);
     markReflex(verts, poly, reflexMark, n);
-    for (int i=0;i<reflexMark.size();i++) {
-    
-        //printf("r: %d\n", reflexMark[i] );
-    }
+    std::vector<vec3i> triangles;
     takeOutTriangle(verts, poly, reflexMark, triangles);
-
+    return triangles;
 }
 
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {

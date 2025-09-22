@@ -170,65 +170,87 @@ std::shared_ptr<zeno::ListObject> scene_tree_to_structure(SceneObject* sceneSour
     return scene;
 }
 #endif
-static void get_local_matrix_map(
-    Json &json
-    , std::string parent_path
-    , std::shared_ptr<SceneObject> scene
-) {
-    SceneTreeNode stn;
-    std::string node_name = json["node_name"];
-    std::string node_path = parent_path + '/' + node_name;
-    Json r0 = json["r0"];
-    Json r1 = json["r1"];
-    Json r2 = json["r2"];
-    Json t = json["t"];
-    glm::mat4 mat;
-    mat[0] = {float(r0[0]), float(r0[1]), float(r0[2]), 0.0f};
-    mat[1] = {float(r1[0]), float(r1[1]), float(r1[2]), 0.0f};
-    mat[2] = {float(r2[0]), float(r2[1]), float(r2[2]), 0.0f};
-    mat[3] = {float(t[0]),  float(t[1]),  float(t[2]),  1.0f};
-    scene->node_to_matrix[node_path+"_m"].push_back(mat);
-    stn.matrix = node_path+"_m";
-    stn.visibility = json["visibility"] == 0? 0 : 1;
-    if (json.contains("mesh")) {
-        stn.meshes.push_back(node_path + "/" + std::string(json["mesh"]));
-    }
-
-    for (auto i = 0; i < json["children_name"].size(); i++) {
-        std::string child_name = json["children_name"][i];
-        std::string child_path = node_path + '/' + child_name;
-        if(json.contains(child_name)) {
-            if (json[child_name].contains("instance_source_path")) {
-                stn.children.push_back(json[child_name]["instance_source_path"]);
-            }
-            else {
-                stn.children.push_back(child_path);
-            }
-        }
-    }
-    scene->scene_tree[node_path] = stn;
-
-    for (auto i = 0; i < json["children_name"].size(); i++) {
-        std::string child_name = json["children_name"][i];
-        if(json.contains(child_name)) {
-            if (!json[child_name].contains("instance_source_path")) {
-                get_local_matrix_map(json[child_name], node_path, scene);
-            }
-        }
-    }
-}
 
 struct FormSceneTree : zeno::INode {
     int inputObjType = 0;
+    std::map<std::string, glm::mat4> local_xforms;
+    void get_local_matrix_map(
+            Json &json
+            , std::string parent_path
+            , std::shared_ptr<SceneObject> scene
+    ) {
+        SceneTreeNode stn;
+        std::string node_name = json["node_name"];
+        std::string node_path = parent_path + '/' + node_name;
+        Json r0 = json["r0"];
+        Json r1 = json["r1"];
+        Json r2 = json["r2"];
+        Json t = json["t"];
+        glm::mat4 mat;
+        mat[0] = {float(r0[0]), float(r0[1]), float(r0[2]), 0.0f};
+        mat[1] = {float(r1[0]), float(r1[1]), float(r1[2]), 0.0f};
+        mat[2] = {float(r2[0]), float(r2[1]), float(r2[2]), 0.0f};
+        mat[3] = {float(t[0]),  float(t[1]),  float(t[2]),  1.0f};
+        stn.matrix = node_path+"_m";
+        stn.visibility = json["visibility"] == 0? 0 : 1;
+        if (json.contains("mesh")) {
+            auto mesh_name = node_path + "/" + std::string(json["mesh"]);
+            stn.meshes.push_back(mesh_name);
+            if (local_xforms.count(mesh_name)) {
+                mat = mat * local_xforms[mesh_name];
+            }
+        }
+        scene->node_to_matrix[node_path+"_m"].push_back(mat);
+
+        for (auto i = 0; i < json["children_name"].size(); i++) {
+            std::string child_name = json["children_name"][i];
+            std::string child_path = node_path + '/' + child_name;
+            if(json.contains(child_name)) {
+                if (json[child_name].contains("instance_source_path")) {
+                    stn.children.push_back(json[child_name]["instance_source_path"]);
+                }
+                else {
+                    stn.children.push_back(child_path);
+                }
+            }
+        }
+        scene->scene_tree[node_path] = stn;
+
+        for (auto i = 0; i < json["children_name"].size(); i++) {
+            std::string child_name = json["children_name"][i];
+            if(json.contains(child_name)) {
+                if (!json[child_name].contains("instance_source_path")) {
+                    get_local_matrix_map(json[child_name], node_path, scene);
+                }
+            }
+        }
+    }
     void apply() override {
+        auto centralize = get_input2<bool>("centralize");
         auto sceneTree = std::make_shared<SceneObject>();
         auto scene_json = get_input2<JsonObject>("scene_info");
         sceneTree->root_name = "/ABC";
         auto prim_list = get_input2<ListObject>("prim_list");
-//        zeno::log_info("prim_list: {}", prim_list->arr.size());
         for (auto p: prim_list->arr) {
+            auto abc_path = p->userData().get2<std::string>("abcpath_0");
             if (auto prim = std::dynamic_pointer_cast<PrimitiveObject>(p)) {
                 auto bbox = zeno::primBoundingBox2(prim.get());
+                if (centralize && bbox.has_value()) {
+                    vec3f bmin = {};
+                    vec3f bmax = {};
+                    std::tie(bmin, bmax) = bbox.value();
+                    auto center = (bmin + bmax) * 0.5;
+                    bmin -= center;
+                    bmax -= center;
+                    bbox = {bmin, bmax};
+                    for (auto &p: prim->verts) {
+                        p -= center;
+                    }
+                    auto local_xform = glm::mat4(1);
+                    local_xform[3] = {center[0], center[1], center[2], 1};
+                    local_xforms[abc_path] = local_xform;
+                }
+
                 if (bbox.has_value()) {
                     vec3f bmin = {};
                     vec3f bmax = {};
@@ -237,7 +259,6 @@ struct FormSceneTree : zeno::INode {
                     prim->userData().setLiterial("_bboxMax", bmax);
                 }
             }
-            auto abc_path = p->userData().get2<std::string>("abcpath_0");
             {
                 auto session = &zeno::getSession();
                 int currframe = session->globalState->frameid;
@@ -280,6 +301,7 @@ ZENDEFNODE( FormSceneTree, {
         {"enum static dynamic", "type", "dynamic"},
         {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"bool", "flattened", "1"},
+        {"bool", "centralize", "0"},
     },
     {
         {"scene"},
@@ -1027,6 +1049,21 @@ struct MakeSceneNode : zeno::INode {
         scene_tree->matrixMode = get_input2<std::string>("matrixMode");
         auto prim = get_input2<PrimitiveObject>("prim");
         auto bbox = zeno::primBoundingBox2(prim.get());
+
+        auto local_xform = glm::mat4(1);
+        if (get_input2<bool>("centralize") && bbox.has_value()) {
+            vec3f bmin = {};
+            vec3f bmax = {};
+            std::tie(bmin, bmax) = bbox.value();
+            auto center = (bmin + bmax) * 0.5;
+            bmin -= center;
+            bmax -= center;
+            bbox = {bmin, bmax};
+            for (auto &p: prim->verts) {
+                p -= center;
+            }
+            local_xform[3] = {center[0], center[1], center[2], 1};
+        }
         if (bbox.has_value()) {
             vec3f bmin = {};
             vec3f bmax = {};
@@ -1047,7 +1084,7 @@ struct MakeSceneNode : zeno::INode {
             root_node.children.push_back(node_name);
             prim_node.matrix = node_name + "_m";
             scene_tree->scene_tree[node_name] = prim_node;
-            scene_tree->node_to_matrix[prim_node.matrix] = {glm::mat4(1)};
+            scene_tree->node_to_matrix[prim_node.matrix] = {local_xform};
         }
 
         scene_tree->scene_tree[scene_tree->root_name] = root_node;
@@ -1066,6 +1103,7 @@ ZENDEFNODE( MakeSceneNode, {
         {"enum static dynamic", "type", "dynamic"},
         {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"string", "root_name", "/ABC"},
+        {"bool", "centralize", "0"},
         {"xforms"},
     },
     {

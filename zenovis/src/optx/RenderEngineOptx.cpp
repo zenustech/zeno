@@ -2523,6 +2523,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         defaultScene = {};
         cached_shaders = {};
+        globalShaderBufferGroup.reset();
+        
         OptixUtil::rtMaterialShaders.clear();
         {
             Json message;

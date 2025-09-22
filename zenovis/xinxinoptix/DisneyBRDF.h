@@ -429,7 +429,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen * sheen: vec3(0.0);
+  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen: vec3(0.0);
 
   return res;
 }
@@ -468,6 +468,7 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
   return (L.z * V.z <= 0.0f)?vec3(0.0):F * D * G2 / (4.0f * L.z * V.z);
 }
 
+
 static __inline__ __device__
 vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
 {
@@ -485,11 +486,10 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
   float denom = LDotH * eta + VDotH;
   denom *= denom;
-  float eta2 = eta * eta;
   float jacobian = abs(LDotH) / (denom + 1e-5f);
 
-  pdf = G1 * max(0.0f, VDotH) * D * jacobian / abs(V.z);
-  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
+  pdf = G1 * abs(VDotH) * D * jacobian / abs(V.z);
+  return baseColor * (vec3(1.0f) - F)
          * D * G2 * abs(VDotH) * jacobian /
          abs(L.z * V.z);
 }

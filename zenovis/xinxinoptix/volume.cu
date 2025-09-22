@@ -165,7 +165,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     RadiancePRD testPRD {};
     testPRD.done = false;
     testPRD.seed = prd->seed;
-    testPRD.depth == 0;
+    testPRD.depth = 0;
     testPRD._tmin_ = t0;
     testPRD.maxDistance = NextFloatUp(t1);
     testPRD.test_distance = true;

@@ -64,7 +64,7 @@ static T generic_get(Value const &x) {
                 }
             }
         }
-        log_warn("unknown type encountered in generic_get");
+        //log_warn("unknown type encountered in generic_get");
         return cast(0);
     }
 }
