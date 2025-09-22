@@ -301,7 +301,7 @@ namespace DisneyBSDF{
 
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
       auto result = (hit? transmittance : (sigma_s * transmittance)) / (dot(pdf, channelPDF) + 1e-6f);
-      //result = clamp(result,vec3(0.0f),vec3(1.0f));
+      result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
     
