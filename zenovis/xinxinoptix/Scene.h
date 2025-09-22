@@ -157,6 +157,7 @@ public:
     std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
     std::unordered_map<std::string, glm::mat4> modified_xfroms;
     std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;
+    std::string cur_sky;
     std::vector<std::string> cur_link;
 
     inline void preload_scene(const std::string& jsonString) {

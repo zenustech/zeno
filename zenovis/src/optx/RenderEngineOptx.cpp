@@ -1376,6 +1376,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             auto &link = in_msg["Content"];
             {
                 std::string object_name = link.back();
+                if (link[0] == "Lights") {
+                    defaultScene.cur_node = {};
+                    defaultScene.cur_sky = link.back();
+                    return;
+                }
+                else {
+                    defaultScene.cur_sky.clear();
+                }
                 Json *json = nullptr;
                 if (link[0] == "StaticScene") {
                     json = &defaultScene.static_scene_tree;
@@ -1497,6 +1505,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     glm::mat4 xform = glm::toMat4(rot_quat.value());
                     auto angle_degrees = glm::degrees(2.0f * std::acos(rot_quat.value().w));
                     zeno::log_info("angle_degrees: {}", angle_degrees);
+                    zeno::log_info("LastPos: {}", in_msg["LastPos"].dump());
+                    zeno::log_info("CurPos: {}", in_msg["CurPos"].dump());
                     return;
                 }
             }
