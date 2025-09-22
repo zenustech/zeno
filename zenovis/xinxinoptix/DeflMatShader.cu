@@ -512,14 +512,14 @@ extern "C" __global__ void __closesthit__radiance()
 //    {
 //        printf("hit and from sss,depth:%d; Attenuation_in : %f,%f,%f; \n ", prd->depth,prd->attenuation.x, prd->attenuation.y, prd->attenuation.z);
 //    }
-        mats.basecolor = vec3(1.0f);
-        mats.roughness = 1.0f;
+        //mats.basecolor = vec3(1.0f);
+        mats.roughness = max(mats.roughness , 0.1f);
         mats.anisotropic = 0.0f;
         mats.sheen = 0.0f;
         mats.clearcoat = 0.0f;
         mats.specTrans = 0.0f;
         mats.specular = 0.0f;
-        mats.ior = 1.0f;
+        //mats.ior = 1.0f;
         if(mats.subsurface==0.0f){
             prd->samplePdf = 1.0f;
             prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
@@ -734,6 +734,7 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         //here is the place caused inf ray:fixed
                         auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
+
                         //what should be the right value???
                         prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
@@ -762,6 +763,7 @@ extern "C" __global__ void __closesthit__radiance()
                     trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax()-prd->_tmin_);
                 } else {
                     trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
+
                 }
 //                printf("%f,%f,%f\n",trans.x, trans.y, trans.z);
                 prd->attenuation *= trans;
@@ -888,6 +890,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radiance = {};
     prd->direction = normalize(wi);
     prd->origin = dot(prd->direction, prd->geometryNormal) > 0 ? frontPos : backPos;
+
     prd->_tmin_ = 0.0f;
 
 
@@ -904,7 +907,10 @@ extern "C" __global__ void __closesthit__radiance()
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
             shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
-            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
+            mats.subsurface = coming_out_from_sss?0:mats.subsurface;
+            mats.specular = coming_out_from_sss?1:mats.specular;
+            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count;
         prd->radiance = shadowPRD.radiance * weight;
@@ -917,7 +923,10 @@ extern "C" __global__ void __closesthit__radiance()
     }
     else {
         shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
-        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-ray_dir:ray_dir, evalBxDF, &taskAux, dummy_prt);
+        mats.subsurface = coming_out_from_sss?0:mats.subsurface;
+        mats.specular = coming_out_from_sss?1:mats.specular;
+        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+
         float3 weight = CUR_TOTAL_TRANS;
         prd->radiance = shadowPRD.radiance * weight;
         if (prd->__aov__) {

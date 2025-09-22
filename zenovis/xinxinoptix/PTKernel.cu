@@ -406,9 +406,10 @@ extern "C" __global__ void __raygen__rg()
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
 
-            float3 vol_lighting;
-            float3 vol_attenuation;
+
             if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+                float3 vol_lighting;
+                float3 vol_attenuation;
                 homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);
                 result += vol_lighting * _attenuation;
 
@@ -621,6 +622,7 @@ extern "C" __global__ void __miss__radiance()
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
         transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax() - prd->_tmin_);
+
     } else {
         transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, false);
     }
