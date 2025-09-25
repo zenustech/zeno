@@ -60,6 +60,21 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         log_critical("can not create path: {}", dir);
     }
 
+    auto otherNecessObjs = zeno::getSession().userData().get2<std::string>("otherNecessObjs", "");
+    if (otherNecessObjs.empty()) {
+        std::ifstream runinfoFile(dir / "runInfo.txt", std::ios::binary);
+        if (runinfoFile.is_open()) {
+            rapidjson::Document doc;
+            std::stringstream buffer;
+            buffer << runinfoFile.rdbuf();
+            doc.Parse(buffer.str().c_str());
+            auto obj = doc.GetObject();
+            if (obj.HasMember("otherNecessObjs")) {
+                otherNecessObjs = obj["otherNecessObjs"].GetString();
+            }
+        }
+    }
+
     rapidjson::StringBuffer runinfoStrBuf;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> runinfowriter(runinfoStrBuf);
     runinfowriter.StartObject();
@@ -69,6 +84,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     runinfowriter.Bool(balways);
     runinfowriter.Key("viewNodes");
     runinfowriter.String(allViewNodes.c_str());
+    runinfowriter.Key("otherNecessObjs");
+    runinfowriter.String(otherNecessObjs.c_str());
     runinfowriter.EndObject();
     std::string strRuninfo = runinfoStrBuf.GetString();
     std::filesystem::path runInfoPath = dir / "runInfo.txt";
@@ -899,7 +916,11 @@ std::tuple<std::string, bool, std::string> GlobalComm::getRunType(std::filesyste
             std::get<1>(runinfo) = obj["always"].GetBool();
         }
         if (obj.HasMember("viewNodes")) {
-            std::get<2>(runinfo) = obj["viewNodes"].GetString();
+            std::string otherNecessObjs;
+            if (obj.HasMember("otherNecessObjs")) {
+                otherNecessObjs = obj["otherNecessObjs"].GetString();
+            }
+            std::get<2>(runinfo) = obj["viewNodes"].GetString() + otherNecessObjs;
         }
     }
     return runinfo;
@@ -1061,6 +1082,9 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                 auto json_key = zeno::format("GeneratedJson:{}", std::rand());
     //            zeno::file_put_content("E:/fuck/Generated.json", ud.get2<std::string>("Scene"));
                 m_frames[frameIdx].view_objects.m_curr[json_key] = scene_descriptor;
+
+                //fix:要视为需要加载的对象
+                zeno::getSession().userData().set2("otherNecessObjs", json_key);
             }
         }
         log_debug("dumping frame {}", frameid);
@@ -1188,7 +1212,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                         std::get<2>(flag) = true;
                     }
                     //runtype = runtype != "LoadAsset" && runtype != "RunAll" ? "RunAll" : runtype; //切帧要加载新帧的全部
-                    bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, true);
+                    bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, true, false, currViewNodes);
                     if (!ret)
                         return nullptr;
                 }
@@ -1224,7 +1248,11 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                     if (frameid == beginFrameNumber) {
                         std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>> baseframeinfo;
                         m_frames[frameIdx].view_objects.m_curr.clear();
-                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, true);
+
+                        auto runinfo = getRunType(std::filesystem::u8path(cacheFramePath) / std::to_string(1000000 + frameid).substr(1));
+                        runtype = std::get<0>(runinfo);
+                        std::string currViewNodes = std::get<2>(runinfo);
+                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, true, false, currViewNodes);
                         if (!ret)
                             return nullptr;
                         m_inCacheFrames[frameid] = baseframeinfo;
