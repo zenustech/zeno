@@ -337,6 +337,7 @@ extern "C" __global__ void __raygen__rg()
 
         prd.depth = 0;
         prd.diffDepth = 0;
+        prd.alphaDepth = 0;
         prd.isSS = false;
         prd.curMatIdx = 0;
         prd.test_distance = false;

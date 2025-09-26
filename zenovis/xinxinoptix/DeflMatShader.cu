@@ -420,11 +420,13 @@ extern "C" __global__ void __closesthit__radiance()
         prd->geometryNormal  = faceforward( prd->geometryNormal , -ray_dir, prd->geometryNormal  );
         //geoNormalFlipped = dot(before, prd->geometryNormal)<0;
     }
-
+    prd->done = prd->alphaDepth>5?true:prd->done;
     if( mats.opacity > rnd(prd->seed)) { // it's actually transparency not opacity
         prd->alphaHit = true;
         float travel_dist = optixGetRayTmax() - prd->_tmin_;
         prd->_tmin_ = optixGetRayTmax();
+        prd->alphaDepth += mats.emissionOnly>0.5?1:0;
+
 
 
         prd->origin = prd->origin;
@@ -472,8 +474,10 @@ extern "C" __global__ void __closesthit__radiance()
         float3 n1 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.y ]) );
         float3 n2 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.z ]) );
 
-        const auto offset = bezierOffset(objPos, v0, v1, v2, n0, n1, n2, barys3);
-        const auto local_len = length(offset);
+        const auto localpos = (1-barys.x-barys.y)*v0 + barys.x * v1 + barys.y * v2;
+        const auto offset = bezierOffset(localpos, v0, v1, v2, n0, n1, n2, barys3);
+        bezierOff = float3(offset);
+        const auto local_len = length(bezierOff);
 
         if (local_len > 0) {
 
@@ -668,7 +672,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?12:prd->max_depth;
 
-    if (mats.thin>0.5 && prd->curMatIdx==0)
+    if (isSS && mats.thin>0.5 && prd->curMatIdx==0)
     {
         isSS = false; // thin SSS
         prd->max_depth = 4;
