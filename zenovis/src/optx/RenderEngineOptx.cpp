@@ -1503,7 +1503,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         return;
                     }
                     glm::mat4 xform = glm::toMat4(rot_quat.value());
-                    auto angle_degrees = glm::degrees(2.0f * std::acos(rot_quat.value().w));
+                    auto angle_degrees = 2.0f * std::acos(rot_quat.value().w);
+                    glm::vec3 angle_vec = glm::vec3(0);
+                    if (axis == "X") {
+                        angle_vec[0] = angle_degrees * glm::sign(rot_quat.value().x) * (-1);
+                    }
+                    if (axis == "Y") {
+                        angle_vec[1] = angle_degrees * glm::sign(rot_quat.value().y) * (-1);
+                    }
+                    if (axis == "Z") {
+                        angle_vec[2] = angle_degrees * glm::sign(rot_quat.value().z) * (-1);
+                    }
+                    xinxinoptix::realtime_rotate_sky(angle_vec);
+                    scene->drawOptions->needRefresh = true;
+
                     zeno::log_info("angle_degrees: {}", angle_degrees);
                     zeno::log_info("LastPos: {}", in_msg["LastPos"].dump());
                     zeno::log_info("CurPos: {}", in_msg["CurPos"].dump());
