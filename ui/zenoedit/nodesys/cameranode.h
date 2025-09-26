@@ -17,6 +17,7 @@ protected:
 
 private slots:
     void onEditClicked();
+    void onFocalGetClicked();
 };
 
 class TargetCameraNode : public ZenoNode
@@ -32,6 +33,7 @@ protected:
 private slots:
     void onEditClicked();
     void onGetClicked();
+    void onFocalGetClicked();
 };
 
 class LightNode : public ZenoNode
