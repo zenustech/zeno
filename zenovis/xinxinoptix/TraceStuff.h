@@ -88,9 +88,10 @@ struct RadiancePRD : CommonPRD {
     float3       aov[3];
     float3       emission;
     float3       attenuation;
-    float3       attenuation2;
+    float3       sssAttenBegin;
     float3       origin;
     float3       direction;
+
 
     float3 tmp_albedo {};
     float3 tmp_normal {};

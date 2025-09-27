@@ -118,7 +118,19 @@ namespace DisneyBSDF{
         float sigma_t_prime = 1.0f / fmaxf(radius, 1e-16f);
         sigma_t = sigma_t_prime / (1.0f - g);
     }
+    static __inline__ __device__
+    void ComputeScatteringCoefficientFromAlbedo(const float A, const float d,
+                                                   float & sigma_t,
+                                                   float & alpha)
+                                                   {
+      /* Compute attenuation and scattering coefficients from albedo. */
+      const float a =
+          1.0f - exp(A * (-5.09406f + A * (2.61188f - A * 4.31805f)));
+      const float s = 1.9f - A + 3.5f * sqrtf(A - 0.8f);
 
+      sigma_t = 1.0f / max(d * s, 1e-16f);
+      alpha = a;
+    }
     static __inline__ __device__
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
@@ -301,7 +313,7 @@ namespace DisneyBSDF{
 
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
       auto result = (hit? transmittance : (sigma_s * transmittance)) / (dot(pdf, channelPDF) + 1e-6f);
-      result = clamp(result,vec3(0.0f),vec3(1.0f));
+      //result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
     
@@ -674,7 +686,7 @@ namespace DisneyBSDF{
         if(reflect){
             wm = normalize(wi + wo);
           if(diffPr > 0.0f){
-            float F = mix(BRDFBasics::SchlickWeight(abs(HoV)), 1.0f, 0.45f);
+            float F = mix(BRDFBasics::SchlickWeight(abs(HoV)), 1.0f, 0.04f);
             float sss_wt = (1.0f - mat.subsurface);
             float diffp = sss_wt + mat.subsurface * F;
             sssp = 1.0f - diffp;
@@ -781,12 +793,13 @@ namespace DisneyBSDF{
           float tmpPdf = trans? abs(wi.z) : 0.0f;//0.5/M_PIf:0.0f;
           vec3 transmit = vec3(1.0f);
           if(thin) {
-            vec3 color = mat.sssColor;
-            vec3 sigma_t, alpha;
-            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
-            vec3 channelPDF = vec3(1.0f/3.0f);
-            transmit = Transmission2(sigma_t * alpha, sigma_t,
-                                  channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
+//            vec3 color = mat.sssColor;
+//            vec3 sigma_t, alpha;
+//            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
+//            vec3 channelPDF = vec3(1.0f/3.0f);
+//            transmit = Transmission2(sigma_t * alpha, sigma_t,
+//                                  channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
+              transmit = clamp(mat.sssParam * mat.sssColor, vec3(0), vec3(1)) * abs(wi.z);
           }
 
           vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
@@ -1009,7 +1022,7 @@ namespace DisneyBSDF{
             {
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-              wi.z = min(-0.2f, wi.z);
+              wi.z = min(-0.01f, wi.z);
               wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
@@ -1227,7 +1240,7 @@ namespace DisneyBSDF{
         if(r3<p0){
           prd->hit_type = DIFFUSE_HIT;
           isDiff = true;
-          if(woo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
+          if(mat.thin<0.5 && woo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
             wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
             flag = transmissionEvent;
@@ -1235,9 +1248,10 @@ namespace DisneyBSDF{
             tbn.inverse_transform(wi);
             wi = normalize(wi);
             w_eval = wi;
-            w_eval = dot(w_eval, N)<0?normalize(w_eval - 2.0f * dot(w_eval, N) * N):w_eval;
+            //w_eval = dot(w_eval, N)<0?normalize(w_eval - 2.0f * dot(w_eval, N) * N):w_eval;
             if(dot(wi,N2)<0)
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
+            w_eval = wi;
           }
           else{
             //switch between scattering or diffuse reflection
@@ -1246,7 +1260,7 @@ namespace DisneyBSDF{
             vec3 swo = woo.z>0?woo:-woo;
             vec3 wm = mat.roughness<0.01?vec3(0,0,1):BRDFBasics::SampleGGXVNDF(swo, ax, ay, r1, r2);
 
-            float F = mix(BRDFBasics::SchlickWeight(abs(dot(wm, woo))), 1.0f, 0.45f);
+            float F = mix(BRDFBasics::SchlickWeight(abs(dot(wm, woo))), 1.0f, 0.06f);
             float sss_wt = (1.0f - mat.subsurface);
             float diffp = sss_wt + mat.subsurface * F;
             if(rnd(prd->seed)<diffp || prd->fromDiff==true)
@@ -1260,9 +1274,10 @@ namespace DisneyBSDF{
               tbn.inverse_transform(wi);
               wi = normalize(wi);
               w_eval = wi;
-              w_eval = (dot(wo,N)*dot(wi,N)<0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
+              //w_eval = (dot(wo,N)*dot(wi,N)<0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
               if(dot(wo,N2)*dot(wi,N2)<0)
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
+              w_eval = wi;
             }else
             {
               //go inside
@@ -1283,9 +1298,10 @@ namespace DisneyBSDF{
               tbn.inverse_transform(wi);
               wi = normalize(wi);
               w_eval = wi;
-              w_eval = (dot(wi,N)>0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
+              //w_eval = (dot(wi,N)>0)?normalize(wi - 2.0f * dot(wi, N) * N):w_eval;
               if(dot(wi,N2)>0)
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
+              w_eval = wi;
 
             }
           }

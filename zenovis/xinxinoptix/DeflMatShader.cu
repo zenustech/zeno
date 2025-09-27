@@ -734,13 +734,14 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->scatterDistance = mats.scatterDistance;
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
-
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->sssAttenBegin = prd->attenuation;
+                        prd->attenuation *= vec3(1.0f)/clamp(mats.sssColor,0.05,1.0);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         //here is the place caused inf ray:fixed
-                        auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
-
-                        //what should be the right value???
-                        prd->maxDistance = max(prd->maxDistance, 10/min_sg);
+//                        auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
+//
+//                        //what should be the right value???
+//                        prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
                         // already calculated in BxDF
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
@@ -794,7 +795,7 @@ extern "C" __global__ void __closesthit__radiance()
                     } else //next ray in 3s object
                     {
                         prd->isSS = true;
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha,
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha,
                                                                        sigma_t, prd->channelPDF);
                     }
                 }else
@@ -820,7 +821,7 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->isSS = true;
                     }
                     prd->attenuation *= trans;

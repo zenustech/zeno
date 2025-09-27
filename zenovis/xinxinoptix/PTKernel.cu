@@ -629,7 +629,7 @@ extern "C" __global__ void __miss__radiance()
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->attenuation2*= transmittance;
+
     prd->origin += prd->direction * ( optixGetRayTmax() - prd->_tmin_);
     prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
@@ -642,7 +642,7 @@ extern "C" __global__ void __miss__radiance()
     } else
     {
         prd->maxDistance =
-            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, channelPDF);
         prd->channelPDF = channelPDF;
     }
 
