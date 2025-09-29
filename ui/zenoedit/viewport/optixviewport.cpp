@@ -615,10 +615,14 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             mat[3] = { t[0],  t[1],  t[2], 1.0f};
             this->axis_coord = mat;
         }
+        else if (message["MessageType"] == "HDRSky2") {
+            this->hdr_sky_2 = message["Content"];
+        }
         else if (message["MessageType"] == "CleanupAssets") {
             this->mode = "";
             this->axis = "";
             this->try_axis = "";
+            this->hdr_sky_2 = "";
             this->local_space = true;
             this->axis_coord = std::nullopt;
         }
@@ -1310,7 +1314,7 @@ void ZOptixViewport::drawAxis(QImage &img) {
     auto scene = m_zenovis->getSession()->get_scene();
     auto vp_mat = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
 
-    if (!axis_coord.has_value()) {
+    if (hdr_sky_2.size()) {
         if (mode == "SkyRot") {
             auto center_WS = m_camera->getPos() + m_camera->getViewDir() * 5.0f;
             auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
@@ -1320,41 +1324,40 @@ void ZOptixViewport::drawAxis(QImage &img) {
             painter.end();
             painter2.end();
         }
-        return;
+    }
+    else if (axis_coord.has_value()) {
+        auto center_WS = glm::vec3(axis_coord.value()[3]);
+        auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
+        auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
+        auto y_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[1]));
+        auto z_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[2]));
+
+        QPainter painter(&img);
+
+        QPainter painter2(&gizmo_id_buffer);
+
+        if (mode=="") {
+            //draw_display_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len);
+        }
+        else if (mode == "Rotate") {
+            draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+        }
+        else if (mode == "RotateScreen") {
+            draw_rotation_screen_axis(painter, painter2, resolution, vp_mat, center_WS, try_axis);
+        }
+        else if (mode == "Translate") {
+            draw_translate_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
+        }
+        else if (mode == "Scale") {
+            draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, false);
+        }
+        else if (mode == "EasyScale") {
+            draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, true);
+        }
+
+        painter.end();
+        painter2.end();
+
     }
 
-    auto center_WS = glm::vec3(axis_coord.value()[3]);
-    auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
-    auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
-    auto y_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[1]));
-    auto z_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[2]));
-
-    QPainter painter(&img);
-
-    QPainter painter2(&gizmo_id_buffer);
-
-    if (mode=="") {
-        //draw_display_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len);
-    }
-    else if (mode == "Rotate") {
-        draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
-    }
-    else if (mode == "RotateScreen") {
-        draw_rotation_screen_axis(painter, painter2, resolution, vp_mat, center_WS, try_axis);
-    }
-    else if (mode == "Translate") {
-        draw_translate_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis);
-    }
-    else if (mode == "Scale") {
-        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, false);
-    }
-    else if (mode == "EasyScale") {
-        draw_scale_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len, try_axis, true);
-    }
-    else if (mode == "SkyRot") {
-        draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
-    }
-
-    painter.end();
-    painter2.end();
 }

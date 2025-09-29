@@ -233,9 +233,9 @@ void zenooutline::setupTreeView()
 
                 sendOptixMessage(msg);
             }
-            else if (zeno::str_contains(link.back(), "HDRSKY")) {
+            else if (zeno::str_contains(link.back(), "HDRSky2")) {
                 Json msg;
-                msg["MessageType"] = "HDRSKY";
+                msg["MessageType"] = "HDRSky2";
                 msg["Content"] = link.back();
                 sendOptixMessage(msg);
             }

@@ -166,6 +166,7 @@ private:
     bool local_space = true;
     QImage gizmo_id_buffer;
     std::optional<glm::mat4> axis_coord;
+    std::string hdr_sky_2;
     void drawAxis(QImage &img);
     const std::map<int, std::string> gizmo_type_to_axis =  {
         {0, ""},
