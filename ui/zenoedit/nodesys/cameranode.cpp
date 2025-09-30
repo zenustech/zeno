@@ -46,6 +46,25 @@ ZGraphicsLayout* CameraNode::initCustomParamWidgets()
     param.ctrl_layout = pHLayout;
     addParam(param);
 
+    {
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("focal");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
+        pHLayout->addItem(pNameItem);
+
+        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Get", -1, QSizePolicy::Expanding);
+        pHLayout->addItem(pEditBtn);
+        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onFocalGetClicked()));
+
+        _param_ctrl param;
+        param.param_name = pNameItem;
+        param.param_control = pEditBtn;
+        param.ctrl_layout = pHLayout;
+        addParam(param);
+    }
+
     return pHLayout;
 }
 
@@ -162,6 +181,47 @@ void CameraNode::onEditClicked()
             // Here
         }
 	}
+}
+
+void CameraNode::onFocalGetClicked()
+{
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay) {
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
+        ZASSERT_EXIT(sess);
+
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+        const auto& cam = scene->camera;
+        auto pivot = cam->getPivot();
+        auto cam_pos = cam->getPos();
+        auto ray_vec = pivot - cam_pos;
+        auto cam_view_dir = glm::normalize(cam->get_lodfront());
+        auto distance = glm::dot(ray_vec, cam_view_dir);
+
+        PARAM_UPDATE_INFO info;
+
+        pModel->beginTransaction("update camera info");
+        zeno::scope_exit scope([=]() { pModel->endTransaction(); });
+
+        INPUT_SOCKET pos = inputs["focalPlaneDistance"];
+        info.name = "focalPlaneDistance";
+        info.oldValue = pos.info.defaultValue;
+        info.newValue = QVariant::fromValue(distance);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+    }
 }
 
 LightNode::LightNode(const NodeUtilParam &params, int pattern, QGraphicsItem *parent)
@@ -304,6 +364,24 @@ ZGraphicsLayout* TargetCameraNode::initCustomParamWidgets()
         addParam(param);
     }
 
+    {
+        ZSimpleTextItem* pNameItem = new ZSimpleTextItem("focal");
+        pNameItem->setBrush(m_renderParams.socketClr.color());
+        pNameItem->setFont(m_renderParams.socketFont);
+        pNameItem->updateBoundingRect();
+
+        pHLayout->addItem(pNameItem);
+
+        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Get", -1, QSizePolicy::Expanding);
+        pHLayout->addItem(pEditBtn);
+        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onFocalGetClicked()));
+
+        _param_ctrl param;
+        param.param_name = pNameItem;
+        param.param_control = pEditBtn;
+        param.ctrl_layout = pHLayout;
+        addParam(param);
+    }
 
     return pHLayout;
 }
@@ -437,12 +515,50 @@ void TargetCameraNode::onGetClicked()
         pModel->beginTransaction("update camera info");
         zeno::scope_exit scope([=]() { pModel->endTransaction(); });
 
-        auto camera = *(scene->camera.get());
-
         INPUT_SOCKET pos = inputs["target"];
         info.name = "target";
         info.oldValue = pos.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
+        pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+    }
+}
+void TargetCameraNode::onFocalGetClicked()
+{
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay) {
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
+        ZASSERT_EXIT(sess);
+
+        auto scene = sess->get_scene();
+        ZASSERT_EXIT(scene);
+        const auto& cam = scene->camera;
+        auto pivot = cam->getPivot();
+        auto cam_pos = cam->getPos();
+        auto ray_vec = pivot - cam_pos;
+        auto cam_view_dir = glm::normalize(cam->get_lodfront());
+        auto distance = glm::dot(ray_vec, cam_view_dir);
+
+        PARAM_UPDATE_INFO info;
+
+        pModel->beginTransaction("update camera info");
+        zeno::scope_exit scope([=]() { pModel->endTransaction(); });
+
+        INPUT_SOCKET pos = inputs["focalPlaneDistance"];
+        info.name = "focalPlaneDistance";
+        info.oldValue = pos.info.defaultValue;
+        info.newValue = QVariant::fromValue(distance);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
     }
 }
