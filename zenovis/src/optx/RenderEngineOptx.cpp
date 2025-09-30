@@ -942,9 +942,15 @@ struct GraphicsManager {
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
-                float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                if (prim_in->userData().has("evnTexRotation")) {
+                    float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                    xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
+                }
+                else {
+                    xinxinoptix::update_hdr_sky(evnTex3DRotation, evnTexStrength);
+                }
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
                     OptixUtil::sky_tex = path;
@@ -953,7 +959,6 @@ struct GraphicsManager {
                 }
                 OptixUtil::setSkyTexture(OptixUtil::sky_tex.value());
 
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
 
                 if (OptixUtil::portal_delayed.has_value()) {
@@ -1518,10 +1523,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     fun(message.dump());
 
                     scene->drawOptions->needRefresh = true;
-
-                    zeno::log_info("angle_degrees: {}", angle_degrees);
-                    zeno::log_info("LastPos: {}", in_msg["LastPos"].dump());
-                    zeno::log_info("CurPos: {}", in_msg["CurPos"].dump());
                     return;
                 }
             }

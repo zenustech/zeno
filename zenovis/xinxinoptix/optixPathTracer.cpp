@@ -68,7 +68,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "LightBounds.h"
@@ -777,6 +777,23 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
     auto ptr = glm::value_ptr(tmp);
     memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
     
+    tmp = glm::transpose(glm::inverse(rotation));
+    ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
+}
+void update_hdr_sky(zeno::vec3f sky_rot3d, float sky_strength) {
+
+    state.params.sky_strength = sky_strength;
+    auto glm_sky_rot3d = zeno::bit_cast<glm::vec3>(sky_rot3d);
+    glm_sky_rot3d = glm::radians(glm_sky_rot3d);
+
+    auto q = glm::quat(glm_sky_rot3d);
+    glm::mat4 rotation = glm::toMat4(q);
+
+    auto tmp = glm::transpose(rotation);
+    auto ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
+
     tmp = glm::transpose(glm::inverse(rotation));
     ptr = glm::value_ptr(tmp);
     memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);

@@ -661,7 +661,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             auto y = float(message["Content"][1]);
             auto z = float(message["Content"][2]);
             if (hdr_sky_2.size()) {
-                zeno::log_info("{}: {}, {}, {}", hdr_sky_2, x, y, z);
                 modify_hdrsky_value(hdr_sky_2, {x, y, z});
             }
         }

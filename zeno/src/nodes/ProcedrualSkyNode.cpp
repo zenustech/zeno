@@ -97,7 +97,6 @@ struct HDRSky2 : INode {
         }
         prim->userData().set2("isRealTimeObject", 1);
         prim->userData().set2("HDRSky", path);
-        prim->userData().set2("evnTexRotation", 0);
         prim->userData().set2("evnTex3DRotation", get_input2<zeno::vec3f>("rotation3d"));
         prim->userData().set2("evnTexStrength", get_input2<float>("strength"));
         prim->userData().set2("enable", 1);
