@@ -197,19 +197,19 @@ namespace DisneyBSDF{
     static __inline__ __device__
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
-//        vec3 r = radius;
-//        setup_subsurface_radius(eta, albedo, r, fixedRadius);
-//        subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
-//        subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
-//        subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
-        //sigma_s = sigma_t * alpha;
         vec3 r = radius;
-        vec3 sigma_s;
-        bssrdf_burley_setup(albedo, radius, true, true, r);
-        compute_scattering_coeff_from_albedo(albedo.x, r.x, sigma_t.x,sigma_s.x);
-        compute_scattering_coeff_from_albedo(albedo.y, r.y, sigma_t.y,sigma_s.y);
-        compute_scattering_coeff_from_albedo(albedo.z, r.z, sigma_t.z,sigma_s.z);
-        alpha = sigma_s/sigma_t;
+        setup_subsurface_radius(eta, albedo, r, fixedRadius);
+        subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
+        subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
+        subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
+        //sigma_s = sigma_t * alpha;
+//        vec3 r = radius;
+//        vec3 sigma_s;
+//        bssrdf_burley_setup(albedo, radius, true, true, r);
+//        compute_scattering_coeff_from_albedo(albedo.x, r.x, sigma_t.x,sigma_s.x);
+//        compute_scattering_coeff_from_albedo(albedo.y, r.y, sigma_t.y,sigma_s.y);
+//        compute_scattering_coeff_from_albedo(albedo.z, r.z, sigma_t.z,sigma_s.z);
+//        alpha = sigma_s/sigma_t;
 
     }
 
@@ -1337,7 +1337,7 @@ namespace DisneyBSDF{
 
             float F = mix(BRDFBasics::SchlickWeight(abs(dot(wm, woo))), 1.0f, 0.06f);
             float sss_wt = (1.0f - mat.subsurface);
-            float diffp = mix(1.0f, 0.5f, mat.subsurface);
+            float diffp = mix(1.0f, 0.0f, mat.subsurface);
             if(rnd(prd->seed)<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
@@ -1362,7 +1362,7 @@ namespace DisneyBSDF{
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mat.sssColor;
-              color = clamp(color, vec3(0.2), vec3(0.95));
+              color = clamp(color, vec3(0.01), vec3(0.99));
               vec3 sssRadius = mat.subsurface * mat.sssParam;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;

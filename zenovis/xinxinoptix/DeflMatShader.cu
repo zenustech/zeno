@@ -525,7 +525,7 @@ extern "C" __global__ void __closesthit__radiance()
         mats.specular = 0.0f;
         //mats.ior = 1.0f;
         if(mats.subsurface==0.0f){
-            prd->samplePdf = 1.0f;
+            prd->samplePdf = 0.0f;
             prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
             prd->readMat(prd->sigma_t, prd->ss_alpha);
             auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, true);
@@ -534,6 +534,7 @@ extern "C" __global__ void __closesthit__radiance()
             //prd->origin = P;
             prd->direction = ray_dir;
             prd->_tmin_ = optixGetRayTmax();
+            prd->done = true;
             return;
         }
         if(mats.subsurface>0.0f && dot(normalize(ray_dir), shadingNorm)<0.0f){
@@ -737,7 +738,24 @@ extern "C" __global__ void __closesthit__radiance()
                     } else {
                         prd->sssAttenBegin = prd->attenuation;
                         prd->sssDirBegin = ray_dir;
+
                         prd->attenuation *= vec3(1.0f);
+                        float min_alpha = 0.2f;
+                        if(prd->ss_alpha.x<min_alpha)
+                        {
+                            prd->attenuation.x *= prd->ss_alpha.x / min_alpha;
+                            prd->ss_alpha.x = min_alpha;
+                        }
+                        if(prd->ss_alpha.y<min_alpha)
+                        {
+                            prd->attenuation.y *= prd->ss_alpha.y / min_alpha;
+                            prd->ss_alpha.y = min_alpha;
+                        }
+                        if(prd->ss_alpha.z<min_alpha)
+                        {
+                            prd->attenuation.z *= prd->ss_alpha.z / min_alpha;
+                            prd->ss_alpha.z = min_alpha;
+                        }
                         //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,prd->sigma_t*prd->ss_alpha, prd->sigma_t,prd->seed,prd->channelPDF);
                         going_in_to_sss = true;

@@ -30,6 +30,8 @@ struct ShaderTernaryMath : ShaderNodeClone<ShaderTernaryMath> {
         auto t1 = em->determineType(in1.get());
         auto t2 = em->determineType(in2.get());
         auto t3 = em->determineType(in3.get());
+        if(op == "clamp")
+            return t1;
 
         if (t1 == 1 && t2 == t3) {
             return t2;
