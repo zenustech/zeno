@@ -1376,14 +1376,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             auto &link = in_msg["Content"];
             {
                 std::string object_name = link.back();
-                if (link[0] == "Lights") {
-                    defaultScene.cur_node = {};
-                    defaultScene.cur_sky = link.back();
-                    return;
-                }
-                else {
-                    defaultScene.cur_sky.clear();
-                }
                 Json *json = nullptr;
                 if (link[0] == "StaticScene") {
                     json = &defaultScene.static_scene_tree;

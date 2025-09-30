@@ -1350,18 +1350,17 @@ void ZOptixViewport::drawAxis(QImage &img) {
     auto scene = m_zenovis->getSession()->get_scene();
     auto vp_mat = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
 
-    if (hdr_sky_2.size()) {
-        if (mode == "SkyRot") {
-            auto center_WS = m_camera->getPos() + m_camera->getViewDir() * 5.0f;
-            auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
-            QPainter painter(&img);
-            QPainter painter2(&gizmo_id_buffer);
-            draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
-            painter.end();
-            painter2.end();
-        }
+    if (hdr_sky_2.size() && mode == "SkyRot") {
+        auto center_WS = m_camera->getPos() + m_camera->getViewDir() * 5.0f;
+        auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
+        QPainter painter(&img);
+        QPainter painter2(&gizmo_id_buffer);
+        draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
+        painter.end();
+        painter2.end();
+        return;
     }
-    else if (axis_coord.has_value()) {
+    if (axis_coord.has_value()) {
         auto center_WS = glm::vec3(axis_coord.value()[3]);
         auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
         auto x_axis_dir = glm::normalize(glm::vec3(axis_coord.value()[0]));
