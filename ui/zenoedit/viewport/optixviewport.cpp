@@ -538,8 +538,19 @@ static void modify_hdrsky_value(const std::string &node_uuid, glm::vec3 rot_valu
     if (!multilinestrIdx.isValid()) {
         return;
     }
-    zeno::log_info("found!!!!!!!!!!!!!!!!!!!!!!");
-
+    zeno::scope_exit scope([=]() { pModel->endTransaction(); });
+    INPUT_SOCKETS inputs = multilinestrIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+    PARAM_UPDATE_INFO info;
+    UI_VECTYPE vec({
+       rot_value[0]
+       , rot_value[1]
+       , rot_value[2]
+    });
+    INPUT_SOCKET rotation3d = inputs["rotation3d"];
+    info.name = "rotation3d";
+    info.oldValue = rotation3d.info.defaultValue;
+    info.newValue = QVariant::fromValue(vec);
+    pModel->updateSocketDefl(QString::fromStdString(node_uuid), info, subgIdx, true);
 }
 
 void OptixWorker::onSetData(
