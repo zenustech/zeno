@@ -166,7 +166,7 @@ void unload_light();
 void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed,
                            float sunLightIntensity, float colorTemperatureMix, float colorTemperature);
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength);
-void realtime_rotate_sky(glm::vec3 angle_vec);
+glm::vec3 realtime_rotate_sky(glm::vec3 angle_vec);
 void using_hdr_sky(bool enable);
 void show_background(bool enable);
 

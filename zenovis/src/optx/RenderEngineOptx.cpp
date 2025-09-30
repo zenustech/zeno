@@ -1514,7 +1514,17 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     if (axis == "Z") {
                         angle_vec[2] = angle_degrees * glm::sign(rot_quat.value().z) * (-1);
                     }
-                    xinxinoptix::realtime_rotate_sky(angle_vec);
+                    auto euler_angles = xinxinoptix::realtime_rotate_sky(angle_vec);
+                    euler_angles = glm::degrees(euler_angles);
+                    Json message;
+                    message["MessageType"] = "SetHDRSky2";
+                    message["Content"] = {
+                        euler_angles[0],
+                        euler_angles[1],
+                        euler_angles[2],
+                    };
+                    fun(message.dump());
+
                     scene->drawOptions->needRefresh = true;
 
                     zeno::log_info("angle_degrees: {}", angle_degrees);

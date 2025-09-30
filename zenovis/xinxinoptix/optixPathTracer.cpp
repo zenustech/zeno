@@ -782,7 +782,7 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
     memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
 }
 
-void realtime_rotate_sky(glm::vec3 rot_value) {
+glm::vec3 realtime_rotate_sky(glm::vec3 rot_value) {
     glm::mat4 tmp(1.0f);
     auto ptr = glm::value_ptr(tmp);
     memcpy(ptr, state.params.sky_rotation, sizeof(float)*12);
@@ -790,6 +790,8 @@ void realtime_rotate_sky(glm::vec3 rot_value) {
     rotation = glm::rotate(rotation, rot_value[0], {1, 0, 0});
     rotation = glm::rotate(rotation, rot_value[1], {0, 1, 0});
     rotation = glm::rotate(rotation, rot_value[2], {0, 0, 1});
+    glm::quat q2 = glm::quat_cast(rotation);
+    glm::vec3 euler2 = glm::eulerAngles(q2);
     {
         auto tmp = glm::transpose(rotation);
         auto ptr = glm::value_ptr(tmp);
@@ -799,6 +801,7 @@ void realtime_rotate_sky(glm::vec3 rot_value) {
         ptr = glm::value_ptr(tmp);
         memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
     }
+    return euler2;
 }
 
 void using_hdr_sky(bool enable) {

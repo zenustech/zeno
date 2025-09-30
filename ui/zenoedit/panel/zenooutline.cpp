@@ -238,6 +238,13 @@ void zenooutline::setupTreeView()
                 msg["MessageType"] = "HDRSky2";
                 msg["Content"] = link.back();
                 sendOptixMessage(msg);
+                if (auto main = zenoApp->getMainWindow()) {
+                    for (DisplayWidget* view : main->viewports()) {
+                        if (ZOptixViewport* optxview = view->optixViewport()) {
+                            optxview->hdr_sky_2 = link.back();
+                        }
+                    }
+                }
             }
         }
 

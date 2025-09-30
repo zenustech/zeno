@@ -128,6 +128,9 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
         else if (json["MessageType"] == "SetGizmoAxis") {
             emit sig_sendToOptixViewport(QString::fromStdString(content));
         }
+        else if (json["MessageType"] == "SetHDRSky2") {
+            emit sig_sendToOptixViewport(QString::fromStdString(content));
+        }
         else {
             emit sig_sendToOutline(QString::fromStdString(content));
         }
@@ -514,6 +517,30 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
         engine->outlineInit(msg);
     }
 }
+static void modify_hdrsky_value(const std::string &node_uuid, glm::vec3 rot_value) {
+    if (node_uuid.empty()) {
+        return;
+    }
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+    auto editor = main->getAnyEditor();
+    ZASSERT_EXIT(editor);
+    auto view = editor->getCurrentSubGraphView();
+    ZASSERT_EXIT(view);
+    auto scene = view->scene();
+    ZASSERT_EXIT(scene);
+
+    IGraphsModel* pModel = GraphsManagment::instance().currentModel();
+    ZASSERT_EXIT(pModel);
+    QModelIndex subgIdx = scene->subGraphIndex();
+    ZASSERT_EXIT(subgIdx.isValid());
+    QModelIndex multilinestrIdx = pModel->index(QString::fromStdString(node_uuid), subgIdx);
+    if (!multilinestrIdx.isValid()) {
+        return;
+    }
+    zeno::log_info("found!!!!!!!!!!!!!!!!!!!!!!");
+
+}
 
 void OptixWorker::onSetData(
     float aperture,
@@ -617,6 +644,15 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         }
         else if (message["MessageType"] == "HDRSky2") {
             this->hdr_sky_2 = message["Content"];
+        }
+        else if (message["MessageType"] == "SetHDRSky2") {
+            auto x = float(message["Content"][0]);
+            auto y = float(message["Content"][1]);
+            auto z = float(message["Content"][2]);
+            if (hdr_sky_2.size()) {
+                zeno::log_info("{}: {}, {}, {}", hdr_sky_2, x, y, z);
+                modify_hdrsky_value(hdr_sky_2, {x, y, z});
+            }
         }
         else if (message["MessageType"] == "CleanupAssets") {
             this->mode = "";
