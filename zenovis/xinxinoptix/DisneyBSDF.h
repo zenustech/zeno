@@ -118,28 +118,99 @@ namespace DisneyBSDF{
         float sigma_t_prime = 1.0f / fmaxf(radius, 1e-16f);
         sigma_t = sigma_t_prime / (1.0f - g);
     }
-    static __inline__ __device__
-    void ComputeScatteringCoefficientFromAlbedo(const float A, const float d,
-                                                   float & sigma_t,
-                                                   float & alpha)
-                                                   {
-      /* Compute attenuation and scattering coefficients from albedo. */
-      const float a =
-          1.0f - exp(A * (-5.09406f + A * (2.61188f - A * 4.31805f)));
-      const float s = 1.9f - A + 3.5f * sqrtf(A - 0.8f);
+    static __inline__ __device__  float burley_fitting(float A)
+    {
+        return 1.9f - A + 3.5f * (A - 0.8f) * (A - 0.8f);
+    }
+    static __inline__ __device__  float burley_fitting5(float A)
+    {
+        return 1.85f - A + 7.0f * fabs((A - 0.8f) * (A - 0.8f) * (A - 0.8f));
+    }
+    static __inline__ __device__  void bssrdf_burley_setup(const vec3 &albedo, const vec3 &radius, const bool scale_mfp, const int mode, vec3 & radius_out)
+    {
+        vec3 l = scale_mfp ? 0.25f * radius / M_PIf : radius;
+        vec3 A = albedo;
+        vec3 s;
+        if (mode ==0)
+        {
+            s = vec3(burley_fitting(A.x), burley_fitting(A.y), burley_fitting(A.z));
+        } else {
+            s = vec3(burley_fitting5(A.x), burley_fitting5(A.y), burley_fitting5(A.z));
+        }
 
-      sigma_t = 1.0f / max(d * s, 1e-16f);
-      alpha = a;
+        radius_out = l/s;
+    }
+    static __inline__ __device__  void bssrdf_setup(const bool burley_radius, const bool scale_mfp,
+                                        const bool use_eq5, vec3 & weight, vec3 &albedo,
+                                        vec3 &radius, vec3 &diffuse_weight)
+    {
+        diffuse_weight = vec3(0);
+        const float bssrdf_min_radius(1e-8f);
+        vec3 kd(0);
+
+        int bssrdf_channels = 3;
+        for(int i=0;i<3;i++)
+        {
+            if(radius[i]<bssrdf_min_radius)
+            {
+                kd[i] = weight[i];
+                weight[i] = 0;
+                radius[i] = 0;
+                bssrdf_channels--;
+            }
+        }
+
+        if(bssrdf_channels < 3)
+        {
+            diffuse_weight = kd;
+        }
+
+        if(bssrdf_channels > 0)
+        {
+            if(burley_radius){
+                vec3 updated_radius;
+                bssrdf_burley_setup(albedo, radius, scale_mfp, use_eq5, updated_radius);
+                radius = updated_radius;
+            }
+        }
+
+    }
+    static __inline__ __device__ void compute_scattering_coeff_from_albedo(float A, float d, float &sigma_s, float &sigma_t)
+    {
+        float a = 1.0f - expf(A * (-5.09406f + A * (2.61188f - A * 4.31805f)));
+        float s = 1.9f - A + 3.5f * pow(A - 0.8f, 2.0f);
+
+        sigma_t = 1.0f / max(d * s, 1e-16f);
+        sigma_s = sigma_t * a;
+    }
+    static __inline__ __device__ void compute_scattering_coeff(const vec3 &weight,
+                                                               const vec3& albedo,
+                                                               const vec3& radius,
+                                                               vec3& sigma_t,
+                                                               vec3& sigma_s, vec3& throughput)
+    {
+        compute_scattering_coeff_from_albedo(albedo.x, radius.x, sigma_t.x,sigma_s.x);
+        compute_scattering_coeff_from_albedo(albedo.y, radius.y, sigma_t.y,sigma_s.y);
+        compute_scattering_coeff_from_albedo(albedo.z, radius.z, sigma_t.z,sigma_s.z);
+        throughput = safe_divide_spectrum(weight, albedo);
     }
     static __inline__ __device__
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
-        vec3 r = radius;
-        setup_subsurface_radius(eta, albedo, r, fixedRadius);
-        subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
-        subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
-        subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
+//        vec3 r = radius;
+//        setup_subsurface_radius(eta, albedo, r, fixedRadius);
+//        subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
+//        subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
+//        subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
+        vec3 r = radius;
+        vec3 sigma_s;
+        bssrdf_burley_setup(albedo, radius, true, true, r);
+        compute_scattering_coeff_from_albedo(albedo.x, r.x, sigma_t.x,sigma_s.x);
+        compute_scattering_coeff_from_albedo(albedo.y, r.y, sigma_t.y,sigma_s.y);
+        compute_scattering_coeff_from_albedo(albedo.z, r.z, sigma_t.z,sigma_s.z);
+        alpha = sigma_s/sigma_t;
+
     }
 
     static __inline__ __device__
@@ -189,7 +260,7 @@ namespace DisneyBSDF{
         channel = clamp(channel, 0, 2);
         float c = sigma_t[channel];
         
-        float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-5f);
+        float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-12f);
         return s;
     }
 
@@ -312,7 +383,7 @@ namespace DisneyBSDF{
       vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
 
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
-      auto result = (hit? transmittance : (sigma_s * transmittance)) / (dot(pdf, channelPDF) + 1e-6f);
+      auto result = (hit? transmittance : (sigma_s * transmittance)) / dot(pdf, channelPDF);
       //result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
@@ -686,16 +757,13 @@ namespace DisneyBSDF{
         if(reflect){
             wm = normalize(wi + wo);
           if(diffPr > 0.0f){
-            float F = mix(BRDFBasics::SchlickWeight(abs(HoV)), 1.0f, 0.04f);
-            float sss_wt = (1.0f - mat.subsurface);
-            float diffp = sss_wt + mat.subsurface * F;
-            sssp = 1.0f - diffp;
+
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             vec3 d = BRDFBasics::EvalDisneyDiffuse(mat.basecolor, mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf);
-            d = d * diffp * dielectricWt;
+            d = d * dielectricWt;
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf * diffp;
+            fPdf += tmpPdf;
           }
           if(metalPr>0.0f){
             vec3 ks = vec3(1.0f);
@@ -1252,6 +1320,13 @@ namespace DisneyBSDF{
             if(dot(wi,N2)<0)
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
             w_eval = wi;
+            float pdf, pdf2;
+            vec3 rd, rs, rt;
+            reflectance = EvaluateDisney3(vec3(1.0f), mat, w_eval, prd->sssDirBegin, T, B, N, N2, thin,
+                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
+            fPdf = pdf>1e-5f?pdf:0.0f;
+            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+            return true;
           }
           else{
             //switch between scattering or diffuse reflection
@@ -1262,7 +1337,7 @@ namespace DisneyBSDF{
 
             float F = mix(BRDFBasics::SchlickWeight(abs(dot(wm, woo))), 1.0f, 0.06f);
             float sss_wt = (1.0f - mat.subsurface);
-            float diffp = sss_wt + mat.subsurface * F;
+            float diffp = mix(1.0f, 0.5f, mat.subsurface);
             if(rnd(prd->seed)<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
@@ -1282,13 +1357,13 @@ namespace DisneyBSDF{
             {
               //go inside
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-              //wi.z = min(-0.2f, wi.z);
+              wi.z = min(-0.1f, wi.z);
               wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mat.sssColor;
-              color = clamp(color, vec3(0.05), vec3(0.95));
-              vec3 sssRadius = mat.sssParam;
+              color = clamp(color, vec3(0.2), vec3(0.95));
+              vec3 sssRadius = mat.subsurface * mat.sssParam;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;
               if (isSS) {
@@ -1303,6 +1378,9 @@ namespace DisneyBSDF{
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
               w_eval = wi;
 
+              fPdf = 1.0f;
+              reflectance = vec3(1.0f);
+              return true;
             }
           }
 
@@ -1393,4 +1471,226 @@ namespace DisneyBSDF{
         return true;
     }
 
+
+
+
+    //the bsdf part of surface behavior
+    struct PrincipledBSDF{
+      bool enable_diffuse   = false;
+      vec3 diffuse_weight = vec3(0.f);
+
+      bool enable_subsurface   = false;
+      vec3 subsurface_weight = vec3(0.f);
+      vec3 subsurface_albedo = vec3(0.f);
+      vec3 subsurface_radius = vec3(0.f);
+
+      // specular
+      bool enable_specular   = false;
+      vec3 specular_weight = vec3(0.f);
+      float alpha_x          = 1.f;
+      float alpha_y          = 1.f;
+      float ior              = 1.5f;
+      vec3 specular_color  = vec3(0.f);
+
+      // clearcoat
+      bool enable_clearcoat   = false;
+      vec3 clearcoat_weight = vec3(0.f);
+      float clearcoat_alpha_x = 1.f;
+      float clearcoat_alpha_y = 1.f;
+      float clearcoat_ior     = 1.5f;
+      vec3 clearcoat_color  = vec3(0.0f);
+    };
+    struct BSDFSampleWeight {
+        float diffuse_sample_weight;
+        float subsurface_sample_weight;
+        float specular_sample_weight;
+        float clearcoat_sample_weight;
+    };
+
+    static __inline__ __device__  vec3 SpecularColor(const vec3 &wi, const vec3 &wo, const vec3 &specular_color, const float ior)
+    {
+        vec3 h = normalize(wo + wi);
+        float f0 = BRDFBasics::DielectricFresnel(1.0, ior);
+        float fh = (BRDFBasics::DielectricFresnel(dot(h, wo), ior) - f0) / (1.0f - f0);
+        return mix(specular_color, vec3(1.0f), fh);
+    }
+    static __inline__ __device__ void FetchClosureSampleWeight(const vec3&wo, const PrincipledBSDF& bsdf, BSDFSampleWeight& w, MatOutput &mat)
+    {
+        w.diffuse_sample_weight = bsdf.enable_diffuse?RgbToY(bsdf.diffuse_weight):0;
+
+        w.subsurface_sample_weight = bsdf.enable_subsurface?RgbToY(bsdf.subsurface_weight):0;
+
+        w.specular_sample_weight = bsdf.enable_specular?RgbToY(bsdf.specular_weight * SpecularColor(wo*vec3(-1,-1,1), wo, bsdf.specular_color, bsdf.ior)):0;
+
+        w.clearcoat_sample_weight = bsdf.enable_clearcoat?RgbToY(bsdf.clearcoat_weight * SpecularColor(wo*vec3(-1,-1,1), wo, bsdf.clearcoat_color, bsdf.clearcoat_ior)):0;
+
+        float sum = 0.0f;
+        sum += w.diffuse_sample_weight;
+        sum += w.subsurface_sample_weight;
+        sum += w.specular_sample_weight;
+        sum += w.clearcoat_sample_weight;
+
+        w.diffuse_sample_weight/=sum;
+        w.subsurface_sample_weight/=sum;
+        w.specular_sample_weight/=sum;
+        w.clearcoat_sample_weight/=sum;
+    }
+
+
+    static __inline__ __device__ float sample_scatter_distance(const vec3 throughput,const vec3 sigma_s, const vec3 sigma_t,
+                                                               unsigned int & seed, vec3 & channel_pdf)
+    {
+        vec3 albedo = safe_divide_spectrum(sigma_s, sigma_t);
+        int channel = volume_sample_channel(albedo*throughput, rnd(seed), channel_pdf);
+        const float sample_sigma_t = sigma_t[channel];
+        float distance = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / sample_sigma_t;
+        return distance;
+    }
+//    static __inline__ __device__ bool randomwalk_subsurface(const vec3 &weight,
+//                                                            const vec3 &albedo,
+//                                                            const vec3 &radius,
+//                                                            const vec3 &indir,
+//                                                            const vec3 &inpos,
+//                                                            unsigned int &seed,
+//                                                            vec3 &wo, vec3 &throughput_out,
+//                                                            int & scatter_bounces)
+//    {
+//        scatter_bounces = 0;
+//        vec3 dir = indir;
+//
+//        vec3 sigma_t;
+//        vec3 sigma_s;
+//        vec3 throughput = vec3(1);
+//
+//        compute_scattering_coeff(weight,albedo, radius,sigma_t,sigma_s,throughput);
+//
+//        vec3 tmpdir = indir;
+//        vec3 tmppos = inpos;
+//        float max_distance = 1e16;
+//        bool hit = false;
+//        for(int bounce=0;bounce<128;bounce++)
+//        {
+//            if(bounce > 0)
+//            {
+//                if(false)
+//                {
+//                    //HG sample placeholder
+//                }else{
+//                    tmpdir = SampleScatterDirection(seed);
+//                }
+//            }
+//
+//            vec3 channel_pdf;
+//            float max_dist = sample_scatter_distance(throughput,sigma_s, sigma_t,seed,channel_pdf);
+//
+//            hit = false;//traceFirstHit(ray)
+//            float t = hit?optixGetRayTmax():max_dist;
+//
+//            vec3 transmittance = Transmission(sigma_t,t);
+//
+//            if(hit)
+//            {
+//                float pdf = dot(channel_pdf, transmittance);
+//                throughput = throughput * transmittance / pdf;
+//                break;
+//            } else
+//            {
+//                float pdf = dot(channel_pdf, sigma_t * transmittance);
+//                throughput = throughput * (sigma_s * transmittance) / pdf;
+//            }
+//
+//            {
+//                float p = saturate(max(max(throughput.x, throughput.y),throughput.z));
+//                if(rnd(seed)>=p)
+//                {
+//                    break;
+//                }
+//                throughput = throughput / p;
+//            }
+//
+//            tmppos = tmppos + t * tmpdir;
+//            scatter_bounces++;
+//        }//end of randomwalk tracing
+//        if(!hit)
+//        {
+//            return false;
+//        }
+//        bool hit_back_face = false;//how to detect
+//        if(hit_back_face)//hit a back face
+//        {
+//            return false;
+//        }
+//        wo = vec3(1);//from object space back to world space;
+//        throughput_out = throughput;
+//    }
+    static __inline__ __device__  void MatToBsdf(const MatOutput &mat, PrincipledBSDF& bsdf)
+    {
+        const vec3 weight = vec3(1.0f);
+        float closure_weight_cutoff = 1e-3;
+
+        float _diffuse_weight  = (1.0f - saturate(mat.metallic)) * (1.0f - saturate(mat.specTrans));
+        float _final_transmit  = saturate(mat.specTrans) * (1.0f - saturate(mat.metallic));
+        float _specular_weight = (1.0f - _final_transmit);
+
+        {
+            vec3 mixed_ss_base_color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
+            bsdf.enable_diffuse = false;
+            if(dot(mixed_ss_base_color, vec3(1.0f))/3.0f>closure_weight_cutoff){
+                if(mat.subsurface < closure_weight_cutoff &&
+                  _diffuse_weight > closure_weight_cutoff)
+                {
+                    bsdf.enable_diffuse = true;
+                    bsdf.diffuse_weight = weight * mat.basecolor * _diffuse_weight;
+                } else if(mat.subsurface > closure_weight_cutoff)
+                {
+                    bsdf.enable_subsurface = true;
+                    vec3 subsurface_weight = weight * mixed_ss_base_color * _diffuse_weight;
+                    bsdf.subsurface_weight = subsurface_weight;
+                    bsdf.subsurface_albedo = mixed_ss_base_color;
+                    bsdf.subsurface_radius = mat.sssParam;
+
+                    vec3 add_diffuse_weight = vec3(0);
+
+                    bssrdf_setup(
+                            true, mat.sssFxiedRadius, true,
+                            bsdf.subsurface_weight, bsdf.subsurface_albedo,
+                            bsdf.subsurface_radius, add_diffuse_weight);
+
+                    if(!is_black(add_diffuse_weight))
+                    {
+                        bsdf.enable_diffuse = true;
+                        bsdf.diffuse_weight += add_diffuse_weight;
+                    }
+                }
+            }
+        }
+
+        bsdf.enable_specular = false;
+        if (_specular_weight > closure_weight_cutoff &&
+            (mat.specular > closure_weight_cutoff || mat.metallic > closure_weight_cutoff))
+        {
+            bsdf.enable_specular = true;
+            bsdf.specular_weight = weight * _specular_weight;
+            bsdf.ior = (2.0f / (1.0f - sqrtf(0.08f * saturate(mat.specular)))) - 1.0f;
+            float aspect = sqrtf(1.0f - mat.anisotropic * 0.9f);
+            float roughness2 = mat.roughness * mat.roughness;
+            bsdf.alpha_x = roughness2 / aspect;
+            bsdf.alpha_y = roughness2 * aspect;
+
+            vec3 rho_specular = RgbToY(mat.basecolor)>0.0f?mat.basecolor/RgbToY(mat.basecolor):vec3(0);
+            bsdf.specular_color = mix(0.08f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+        }
+
+        bsdf.enable_clearcoat = false;
+        if(mat.clearcoat > closure_weight_cutoff)
+        {
+            bsdf.enable_clearcoat = true;
+            bsdf.clearcoat_weight = vec3(0.25f * mat.clearcoat);
+            bsdf.clearcoat_alpha_x = mat.clearcoatRoughness * mat.clearcoatRoughness;
+            bsdf.clearcoat_alpha_y = bsdf.clearcoat_alpha_x;
+
+            bsdf.clearcoat_color = vec3(0.04);
+            bsdf.clearcoat_ior = mat.clearcoatIOR;
+        }
+    }
 }

@@ -658,6 +658,7 @@ extern "C" __global__ void __closesthit__radiance()
 //        printf("after sample,depth:%d; reflectance : %f,%f,%f; \n ", prd->depth,reflectance.x, reflectance.y, reflectance.z);
 //    }
     bool coming_out_from_sss = false;
+    bool going_in_to_sss = false;
     
     bool inToOut = false;
     bool outToIn = false;
@@ -670,12 +671,12 @@ extern "C" __global__ void __closesthit__radiance()
     }
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
 
-    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?12:prd->max_depth;
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?16:prd->max_depth;
 
     if (isSS && mats.thin>0.5 && prd->curMatIdx==0)
     {
         isSS = false; // thin SSS
-        prd->max_depth = 4;
+        //prd->max_depth = 4;
     }
 
 
@@ -735,8 +736,11 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
                         prd->sssAttenBegin = prd->attenuation;
-                        prd->attenuation *= vec3(1.0f)/clamp(mats.sssColor,0.05,1.0);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->sssDirBegin = ray_dir;
+                        prd->attenuation *= vec3(1.0f);
+                        //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,prd->sigma_t*prd->ss_alpha, prd->sigma_t,prd->seed,prd->channelPDF);
+                        going_in_to_sss = true;
                         //here is the place caused inf ray:fixed
 //                        auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
 //
@@ -756,7 +760,7 @@ extern "C" __global__ void __closesthit__radiance()
 
                 outToIn = false;
                 inToOut = true;
-                float3 trans;
+                float3 trans = make_float3(1,1,1);
                 vec3 sigma_t, ss_alpha;
                 prd->readMat(sigma_t, ss_alpha);
 
@@ -795,8 +799,10 @@ extern "C" __global__ void __closesthit__radiance()
                     } else //next ray in 3s object
                     {
                         prd->isSS = true;
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha,
-                                                                       sigma_t, prd->channelPDF);
+                        //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha,
+                                                                       //sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,
+                                                                               sigma_t*ss_alpha, sigma_t,prd->seed,prd->channelPDF);
                     }
                 }else
                 {
@@ -821,7 +827,8 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, prd->channelPDF);
+                        //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,sigma_t*ss_alpha, sigma_t,prd->seed,prd->channelPDF);
                         prd->isSS = true;
                     }
                     prd->attenuation *= trans;
@@ -910,13 +917,13 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->hit_type==DIFFUSE_HIT && prd->diffDepth <=1 ) {
         uint8_t diffuse_sample_count = 1;
         for (auto i=0; i<diffuse_sample_count; ++i) {
-            shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
+            //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.01f:make_float3(0,0,0);
             mats.subsurface = coming_out_from_sss?0:mats.subsurface;
-            mats.specular = coming_out_from_sss?1:mats.specular;
-            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+            mats.specular = coming_out_from_sss?0:mats.specular;
+            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?prd->sssDirBegin:ray_dir, evalBxDF, &taskAux, dummy_prt);
 
         }
-        float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count;
+        float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;
         if (prd->__aov__) {
             auxRadiance = auxRadiance * vec3(weight);
@@ -926,12 +933,12 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
     else {
-        shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
+        //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
-        mats.specular = coming_out_from_sss?1:mats.specular;
-        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+        mats.specular = coming_out_from_sss?0:mats.specular;
+        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?prd->sssDirBegin:ray_dir, evalBxDF, &taskAux, dummy_prt);
 
-        float3 weight = CUR_TOTAL_TRANS;
+        float3 weight = CUR_TOTAL_TRANS * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;
         if (prd->__aov__) {
             prd->aov[0] *= auxRadiance * vec3(weight);
