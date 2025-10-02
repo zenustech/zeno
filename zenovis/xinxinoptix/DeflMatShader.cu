@@ -432,19 +432,19 @@ extern "C" __global__ void __closesthit__radiance()
         prd->origin = prd->origin;
         if (prd->test_distance) return; 
         
-        if (prd->curMatIdx > 0) {
-            vec3 sigma_t, ss_alpha;
-            prd->readMat(sigma_t, ss_alpha);
-            if (ss_alpha.x < 0.0f) { // is inside Glass
-                auto decay = DisneyBSDF::Transmission(sigma_t, travel_dist);
-                prd->attenuation *= decay;
-                CUR_TOTAL_TRANS  *= decay;
-            } else {
-                auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF,travel_dist, true);
-                prd->attenuation *= decay;
-                CUR_TOTAL_TRANS  *= decay;
-            }
-        }
+//        if (prd->curMatIdx > 0) {
+//            vec3 sigma_t, ss_alpha;
+//            prd->readMat(sigma_t, ss_alpha);
+//            if (ss_alpha.x < 0.0f) { // is inside Glass
+//                auto decay = DisneyBSDF::Transmission(sigma_t, travel_dist);
+//                prd->attenuation *= decay;
+//                CUR_TOTAL_TRANS  *= decay;
+//            } else {
+//                auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF,travel_dist, true);
+//                prd->attenuation *= decay;
+//                CUR_TOTAL_TRANS  *= decay;
+//            }
+//        }
         return;
     }
     prd->_tmax_ = optixGetRayTmax();
@@ -525,10 +525,10 @@ extern "C" __global__ void __closesthit__radiance()
         mats.specular = 0.0f;
         //mats.ior = 1.0f;
         if(mats.subsurface==0.0f){
-            prd->samplePdf = 0.0f;
+            prd->samplePdf = 1.0f;
             prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
             prd->readMat(prd->sigma_t, prd->ss_alpha);
-            auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, true);
+            auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             prd->attenuation *= trans;
             CUR_TOTAL_TRANS  *= trans;
             //prd->origin = P;
@@ -560,11 +560,11 @@ extern "C" __global__ void __closesthit__radiance()
           //vec3 sigma_t, ss_alpha;
           prd->readMat(sigma_t, ss_alpha);
           if (ss_alpha.x < 0.0f) { // is inside Glass
-            auto decay = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax()-prd->_tmin_);
+            auto decay = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
             prd->attenuation  *= decay;
             CUR_TOTAL_TRANS   *= decay;
           } else {
-            auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
+            auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             prd->attenuation *= decay;
             CUR_TOTAL_TRANS  *= decay;
           }
@@ -672,7 +672,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
 
-    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?16:prd->max_depth;
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
 
     if (isSS && mats.thin>0.5 && prd->curMatIdx==0)
     {
@@ -719,11 +719,11 @@ extern "C" __global__ void __closesthit__radiance()
                         //vec3 sigma_t, ss_alpha;0
                         prd->readMat(sigma_t, ss_alpha);
                         if (ss_alpha.x < 0.0f) { // is inside Glass
-                            auto decay = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax()-prd->_tmin_);
+                            auto decay = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                             prd->attenuation  *= decay;
                             CUR_TOTAL_TRANS   *= decay;
                         } else {
-                            auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
+                            auto decay = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                             prd->attenuation  *= decay;
                             CUR_TOTAL_TRANS   *= decay;
                         }
@@ -787,9 +787,9 @@ extern "C" __global__ void __closesthit__radiance()
                     trans = vec3(1.0f); 
                 }
                 else if (ss_alpha.x<0.0f) { // Glass
-                    trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax()-prd->_tmin_);
+                    trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                 } else {
-                    trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
+                    trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
 
                 }
 //                printf("%f,%f,%f\n",trans.x, trans.y, trans.z);
@@ -840,11 +840,11 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = 1e16f;
                     }
                     else if (ss_alpha.x<0.0f) { // Glass
-                        trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax()-prd->_tmin_);
+                        trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
-                        trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax()-prd->_tmin_, true);
+                        trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,sigma_t*ss_alpha, sigma_t,prd->seed,prd->channelPDF);
                         prd->isSS = true;

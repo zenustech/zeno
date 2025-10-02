@@ -622,15 +622,15 @@ extern "C" __global__ void __miss__radiance()
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax() - prd->_tmin_);
+        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
 
     } else {
-        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, false);
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
 
-    prd->origin += prd->direction * ( optixGetRayTmax() - prd->_tmin_);
+    prd->origin += prd->direction * ( optixGetRayTmax());
     prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 

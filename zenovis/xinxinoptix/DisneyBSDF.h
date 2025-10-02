@@ -58,7 +58,7 @@ namespace DisneyBSDF{
     {
     	if (fixedRadius) {
 			radius = radius * 0.25f / M_PIf;
-			return;
+
 		}
 
         float inv_eta = 1.0f/eta;
@@ -175,12 +175,13 @@ namespace DisneyBSDF{
         }
 
     }
-    static __inline__ __device__ void compute_scattering_coeff_from_albedo(float A, float d, float &sigma_s, float &sigma_t)
+    static __inline__ __device__ void compute_scattering_coeff_from_albedo(float A, float d, float g, float &sigma_s, float &sigma_t)
     {
         float a = 1.0f - expf(A * (-5.09406f + A * (2.61188f - A * 4.31805f)));
         float s = 1.9f - A + 3.5f * pow(A - 0.8f, 2.0f);
 
         sigma_t = 1.0f / max(d * s, 1e-16f);
+        sigma_t = sigma_t / (abs( 1 + g ) + 0.001);
         sigma_s = sigma_t * a;
     }
     static __inline__ __device__ void compute_scattering_coeff(const vec3 &weight,
@@ -189,19 +190,22 @@ namespace DisneyBSDF{
                                                                vec3& sigma_t,
                                                                vec3& sigma_s, vec3& throughput)
     {
-        compute_scattering_coeff_from_albedo(albedo.x, radius.x, sigma_t.x,sigma_s.x);
-        compute_scattering_coeff_from_albedo(albedo.y, radius.y, sigma_t.y,sigma_s.y);
-        compute_scattering_coeff_from_albedo(albedo.z, radius.z, sigma_t.z,sigma_s.z);
+        compute_scattering_coeff_from_albedo(albedo.x, radius.x, 0, sigma_s.x,sigma_t.x);
+        compute_scattering_coeff_from_albedo(albedo.y, radius.y, 0, sigma_s.y,sigma_t.y);
+        compute_scattering_coeff_from_albedo(albedo.z, radius.z, 0, sigma_s.z,sigma_t.z);
         throughput = safe_divide_spectrum(weight, albedo);
     }
     static __inline__ __device__
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
         vec3 r = radius;
-        setup_subsurface_radius(eta, albedo, r, fixedRadius);
-        subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
-        subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
-        subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
+        setup_subsurface_radius(eta, albedo, r, true);
+        vec3 sigma_s;
+        //bssrdf_burley_setup(albedo, radius, true, 1, r);
+        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
+        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
+        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
+        alpha = sigma_s/sigma_t;
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
@@ -210,7 +214,6 @@ namespace DisneyBSDF{
 //        compute_scattering_coeff_from_albedo(albedo.y, r.y, sigma_t.y,sigma_s.y);
 //        compute_scattering_coeff_from_albedo(albedo.z, r.z, sigma_t.z,sigma_s.z);
 //        alpha = sigma_s/sigma_t;
-
     }
 
     static __inline__ __device__
@@ -379,11 +382,26 @@ namespace DisneyBSDF{
     static __inline__ __device__
         vec3 Transmission2(const vec3& sigma_s, const vec3& sigma_t, const vec3& channelPDF, float t, bool hit)
     {
-      vec3 transmittance;
-      vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
-
+//      vec3 transmittance;
+//      vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
+//
+//      return (hit?transmittance:sigma_s*transmittance)/dot(pdf, channelPDF);
+      //vec3 apdf = abs(transmittance);
+      vec3 t_tmp = vec3(1.0f);
+      if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
+      {
+          t_tmp = exp(vec3(-sigma_t.x+sigma_t.x, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
+      }
+      if(sigma_t.y<sigma_t.x && sigma_t.y<sigma_t.z)
+      {
+          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -sigma_t.y+sigma_t.y, -sigma_t.z+sigma_t.y)*t);
+      }
+      if(sigma_t.z<sigma_t.x && sigma_t.z<sigma_t.y)
+      {
+          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -sigma_t.z+sigma_t.z)*t);
+      }
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
-      auto result = (hit? transmittance : (sigma_s * transmittance)) / dot(pdf, channelPDF);
+      auto result = hit? (t_tmp / dot(t_tmp, channelPDF)) : ((sigma_s * t_tmp)/dot(sigma_t*t_tmp, channelPDF));
       //result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
@@ -1362,7 +1380,7 @@ namespace DisneyBSDF{
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mat.sssColor;
-              color = clamp(color, vec3(0.01), vec3(0.99));
+              //color = clamp(color, vec3(0.2), vec3(0.99));
               vec3 sssRadius = mat.subsurface * mat.sssParam;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;
