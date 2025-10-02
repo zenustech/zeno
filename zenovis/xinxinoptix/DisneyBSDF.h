@@ -387,6 +387,9 @@ namespace DisneyBSDF{
 //
 //      return (hit?transmittance:sigma_s*transmittance)/dot(pdf, channelPDF);
       //vec3 apdf = abs(transmittance);
+      vec3 T = Transmission(sigma_t, t);
+      if(max(max(T.x, T.y), T.z)<1e-12)
+          return vec3(0);
       vec3 t_tmp = vec3(1.0f);
       if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
       {
@@ -654,7 +657,7 @@ namespace DisneyBSDF{
           if(thin) {
             vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
             vec3 sigma_t, alpha;
-            CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
+            CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.25f, mat.sssFxiedRadius);
             vec3 channelPDF = vec3(1.0f/3.0f);
             transmit = Transmission2(sigma_t * alpha, sigma_t,
                                   channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);

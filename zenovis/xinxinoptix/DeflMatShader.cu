@@ -740,22 +740,22 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->sssDirBegin = ray_dir;
 
                         prd->attenuation *= vec3(1.0f);
-                        float min_alpha = 0.2f;
-                        if(prd->ss_alpha.x<min_alpha)
-                        {
-                            prd->attenuation.x *= prd->ss_alpha.x / min_alpha;
-                            prd->ss_alpha.x = min_alpha;
-                        }
-                        if(prd->ss_alpha.y<min_alpha)
-                        {
-                            prd->attenuation.y *= prd->ss_alpha.y / min_alpha;
-                            prd->ss_alpha.y = min_alpha;
-                        }
-                        if(prd->ss_alpha.z<min_alpha)
-                        {
-                            prd->attenuation.z *= prd->ss_alpha.z / min_alpha;
-                            prd->ss_alpha.z = min_alpha;
-                        }
+//                        float min_alpha = 0.2f;
+//                        if(prd->ss_alpha.x<min_alpha)
+//                        {
+//                            prd->attenuation.x *= prd->ss_alpha.x / min_alpha;
+//                            prd->ss_alpha.x = min_alpha;
+//                        }
+//                        if(prd->ss_alpha.y<min_alpha)
+//                        {
+//                            prd->attenuation.y *= prd->ss_alpha.y / min_alpha;
+//                            prd->ss_alpha.y = min_alpha;
+//                        }
+//                        if(prd->ss_alpha.z<min_alpha)
+//                        {
+//                            prd->attenuation.z *= prd->ss_alpha.z / min_alpha;
+//                            prd->ss_alpha.z = min_alpha;
+//                        }
                         //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,prd->sigma_t*prd->ss_alpha, prd->sigma_t,prd->seed,prd->channelPDF);
                         going_in_to_sss = true;
