@@ -44,19 +44,19 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto dc_index = rt_data->dc_index;
 
     auto prd = getPRD<ShadowPRD>();
-    prd->radiance = make_float3(0,0,0);
+    //prd->radiance = make_float3(0,0,0);
     bool opaque = rt_data->opacity == +1.0f;
     bool useomm = rt_data->opacity == -1.0f;
     
     auto skip = opaque;
     if (useomm) {
-        skip |= prd->depth<=1 && rt_data->binaryShadowTestDirectRay;
-        skip |= prd->depth>=2 && rt_data->binaryShadowTestIndirectRay;
+        skip |= prd->depth <= 1 && rt_data->binaryShadowTestDirectRay;
+        skip |= prd->depth >= 2 && rt_data->binaryShadowTestIndirectRay;
     }
-    if ( skip ) {
-        prd->attanuation = {};
-        optixTerminateRay();
-        return;
+    if (skip) {
+            prd->attanuation = {};
+            optixTerminateRay();
+            return;
     }
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
@@ -141,6 +141,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
     attrs.World2ObjectMat[15] = 1.0f;
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>( dc_index, rt_data->textures, attrs );
+
     shadingNorm = mats.nrm;
     shadingNorm = faceforward( shadingNorm, -ray_dir, shadingNorm );
     
@@ -939,7 +940,6 @@ extern "C" __global__ void __closesthit__radiance()
             mats.subsurface = coming_out_from_sss?0:mats.subsurface;
             mats.specular = coming_out_from_sss?0:mats.specular;
             DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?prd->sssDirBegin:ray_dir, evalBxDF, &taskAux, dummy_prt);
-
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;

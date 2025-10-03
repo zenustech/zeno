@@ -211,7 +211,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
-    const float _SKY_PROB_ = params.skyLightProbablity();
+    const float _SKY_PROB_ = 0.5;
 
     float scatterPDF = 1.f;
 
@@ -448,7 +448,8 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                 prd->radiance += radianceNoShadow * light_attenuation; // with shadow
         } 
     
-    } else {
+    }
+    else{
 
         auto shadeTask = [&](float3 sampleDir, float samplePDF, float3 illum, const bool mis) {
 
@@ -458,6 +459,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                         0, // tmin
                         FLT_MAX, // tmax,
                         &shadowPRD);
+
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(shadowPRD.attanuation) == 0.0f) return;
 
@@ -483,7 +485,6 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             if constexpr (!detail::is_void<TypeAux>::value) {
                 (*taskAux)(illum * tmp * shadowPRD.attanuation);
             }// TypeAux
-
             prd->radiance += radianceNoShadow * shadowPRD.attanuation; // with shadow
         }; // shadeTask
 

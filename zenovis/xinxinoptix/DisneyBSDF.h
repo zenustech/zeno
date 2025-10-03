@@ -784,7 +784,7 @@ namespace DisneyBSDF{
             d = d * dielectricWt;
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf;
+            fPdf += tmpPdf * dielectricWt;
           }
           if(metalPr>0.0f){
             vec3 ks = vec3(1.0f);
