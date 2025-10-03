@@ -657,7 +657,7 @@ namespace DisneyBSDF{
           if(thin) {
             vec3 color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
             vec3 sigma_t, alpha;
-            CalculateExtinction2(color, mat.subsurface * mat.sssParam, sigma_t, alpha, 1.25f, mat.sssFxiedRadius);
+            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.25f, mat.sssFxiedRadius);
             vec3 channelPDF = vec3(1.0f/3.0f);
             transmit = Transmission2(sigma_t * alpha, sigma_t,
                                   channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
@@ -1384,7 +1384,7 @@ namespace DisneyBSDF{
               flag = transmissionEvent;
               vec3 color = mat.sssColor;
               //color = clamp(color, vec3(0.2), vec3(0.99));
-              vec3 sssRadius = mat.subsurface * mat.sssParam;
+              vec3 sssRadius = mat.sssParam;
               RadiancePRD *prd = getPRD();
               prd->ss_alpha = color;
               if (isSS) {
