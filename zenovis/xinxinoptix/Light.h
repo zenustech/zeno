@@ -211,7 +211,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
-    const float _SKY_PROB_ = 0.5;
+    const float _SKY_PROB_ = 0.5;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
 
     float scatterPDF = 1.f;
 
