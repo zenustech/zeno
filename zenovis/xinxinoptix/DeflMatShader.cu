@@ -44,7 +44,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto dc_index = rt_data->dc_index;
 
     auto prd = getPRD<ShadowPRD>();
-    //prd->radiance = make_float3(0,0,0);
+    prd->radiance = make_float3(0,0,0);
     bool opaque = rt_data->opacity == +1.0f;
     bool useomm = rt_data->opacity == -1.0f;
     

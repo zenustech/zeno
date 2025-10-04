@@ -450,6 +450,17 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
     
     }
     else{
+        auto dlights = reinterpret_cast<DistantLightList*>(params.dlights_ptr);
+        auto plights = reinterpret_cast<PortalLightList*>(params.plights_ptr);
+        float dlight_wt = nullptr != dlights && dlights->COUNT()>0?1.0f:0.0f;
+        float plight_wt = plights != nullptr && plights->COUNT()>0?1.0f:0.0f;
+        float elight_wt = params.sky_strength>0?1.0f:0.0f;
+        float total_wt = dlight_wt + plight_wt + elight_wt;
+        if(total_wt==0) return;
+        float dlight_pr = dlight_wt/total_wt;
+        float plight_pr = plight_wt/total_wt;
+        float elight_pr = elight_wt/total_wt;
+        float selectp = prd->rndf();
 
         auto shadeTask = [&](float3 sampleDir, float samplePDF, float3 illum, const bool mis) {
 
@@ -508,27 +519,28 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             return min;
         };
 
-        auto dlights = reinterpret_cast<DistantLightList*>(params.dlights_ptr);
+
         
-        if (nullptr != dlights && dlights->COUNT()) {
+        if (nullptr != dlights && dlights->COUNT() && selectp<dlight_pr) {
 
             auto idx = binsearch(dlights->cdf, 0, dlights->COUNT());
             auto& dlight = dlights->list[idx];
             auto dlight_dir = reinterpret_cast<vec3&>(dlight.direction);
 
             auto sample_dir = BRDFBasics::halfPlaneSample(prd->seed, dlight_dir, dlight.angle/180.0f);
-            auto sample_prob = _SKY_PROB_ / dlights->COUNT();
+            auto sample_prob = _SKY_PROB_ / dlights->COUNT() * dlight_pr;
 
             if (dlight.intensity > 0) {
                 auto ccc = dlight.color * dlight.intensity;
                 auto illum = reinterpret_cast<float3&>(ccc);
                 shadeTask(sample_dir, sample_prob, illum, false);
             }
+            return;
         }
         
-        auto plights = reinterpret_cast<PortalLightList*>(params.plights_ptr);
 
-        if (plights != nullptr && plights->COUNT()) {
+
+        if (plights != nullptr && plights->COUNT() && selectp>dlight_pr && selectp<(dlight_pr + plight_pr)) {
 
             uint idx = binsearch(plights->cdf, 0, plights->COUNT());
             auto plight = &plights->list[idx];
@@ -539,7 +551,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             
             plight->sample(lsr, reinterpret_cast<const Vector3f&>(shadingP), uu, color);
             
-            lsr.PDF *= plights->pdf[idx] * _SKY_PROB_;
+            lsr.PDF *= plights->pdf[idx] * _SKY_PROB_ * plight_pr;
             if (lsr.PDF > 0) {
                 //auto suv = sphereUV(lsr.dir, true);
                 //color = (vec3)texture2D(params.sky_texture, vec2(suv.x, suv.y));
@@ -548,6 +560,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             return;
         }
 
+        if(selectp>(dlight_pr + plight_pr)&&selectp<1)
         { // SKY
             bool hasenv = params.skynx | params.skyny;
             hasenv = params.usingHdrSky && hasenv;
@@ -562,10 +575,11 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                                                     params.sunSoftness * 0.0f);
             float samplePDF;
             float3 illum = sampleSkyTexture(skyuv, 100, 0, samplePDF);
-            samplePDF *= _SKY_PROB_;
+            samplePDF *= _SKY_PROB_ * elight_pr;
             if(samplePDF <= 0.0f) { return; }
 
             shadeTask(sample_dir, samplePDF, M_PIf*illum, true);
+            return;
         }
     }
 };

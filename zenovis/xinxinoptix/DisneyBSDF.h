@@ -698,7 +698,7 @@ namespace DisneyBSDF{
             bool reflection_fromCC = false)
 
     {
-        mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
+        //mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
         //bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
 //        if(reflectance == true)
 //        {
@@ -784,7 +784,7 @@ namespace DisneyBSDF{
             d = d * dielectricWt;
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf * dielectricWt;
+            fPdf += tmpPdf * diffPr;
           }
           if(metalPr>0.0f){
             vec3 ks = vec3(1.0f);
@@ -800,7 +800,7 @@ namespace DisneyBSDF{
             s = s * (tmpPdf>0.0f? 1.0f:0.0f);
             sterm = sterm + s;
             f = f + s;
-            fPdf += tmpPdf * metalWt;
+            fPdf += tmpPdf * metalPr;
           }
 
           if(ccPr>0.0f){
@@ -819,7 +819,7 @@ namespace DisneyBSDF{
             tmpPdf *= (mat.clearcoatRoughness<=0.01 && reflectance==false)? 0.0f:1.0f;
             sterm = sterm + s;
             f =  f + s;
-            fPdf += tmpPdf * ccWt;
+            fPdf += tmpPdf * ccPr;
           }
 
         }
@@ -841,7 +841,7 @@ namespace DisneyBSDF{
               s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
-              fPdf += tmpPdf * glassWt;
+              fPdf += tmpPdf * glassPr;
             } else {
               if(thin)
               {
@@ -851,7 +851,7 @@ namespace DisneyBSDF{
                 t = t * (tmpPdf>0.0f?1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
-                fPdf += tmpPdf * glassWt;
+                fPdf += tmpPdf * glassPr;
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
                 float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0f/mat.ior);
@@ -868,7 +868,7 @@ namespace DisneyBSDF{
                 tterm = tterm + t;
                 f = f + t;
 
-                fPdf += tmpPdf * glassWt;
+                fPdf += tmpPdf * glassPr;
 
               }
             }
@@ -894,7 +894,7 @@ namespace DisneyBSDF{
           vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
           dterm = dterm + d;
           f = f + d;
-          fPdf += tmpPdf  *  sssp * dielectricWt;
+          fPdf += tmpPdf  *  sssp * diffPr;
 
         }
         dterm = dterm * abs(wi.z);
