@@ -675,13 +675,6 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
 
-    if (isSS && mats.thin>0.5 && prd->curMatIdx==0)
-    {
-        isSS = false; // thin SSS
-        //prd->max_depth = 4;
-    }
-
-
 
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
@@ -881,7 +874,8 @@ extern "C" __global__ void __closesthit__radiance()
         auto& rd = reinterpret_cast<vec3&>(prd->aov[0]);
         auto& rs = reinterpret_cast<vec3&>(prd->aov[1]);
         auto& rt = reinterpret_cast<vec3&>(prd->aov[2]);
-
+        mats.subsurface = coming_out_from_sss?0:mats.subsurface;
+        mats.specular = coming_out_from_sss?0:mats.specular;
         float3 lbrdf = DisneyBSDF::EvaluateDisney3(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
@@ -939,7 +933,7 @@ extern "C" __global__ void __closesthit__radiance()
             //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.01f:make_float3(0,0,0);
             mats.subsurface = coming_out_from_sss?0:mats.subsurface;
             mats.specular = coming_out_from_sss?0:mats.specular;
-            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?prd->sssDirBegin:ray_dir, evalBxDF, &taskAux, dummy_prt);
+            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;
@@ -954,7 +948,7 @@ extern "C" __global__ void __closesthit__radiance()
         //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
         mats.specular = coming_out_from_sss?0:mats.specular;
-        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?prd->sssDirBegin:ray_dir, evalBxDF, &taskAux, dummy_prt);
+        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
 
         float3 weight = CUR_TOTAL_TRANS * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;

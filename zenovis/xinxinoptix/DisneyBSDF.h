@@ -774,17 +774,17 @@ namespace DisneyBSDF{
           f = f + h;
           return f * abs(wi.z);
         }
-        float sssp=1.0f;
+        float sssp=mat.subsurface;
         if(reflect){
             wm = normalize(wi + wo);
           if(diffPr > 0.0f){
 
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             vec3 d = BRDFBasics::EvalDisneyDiffuse(mat.basecolor, mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf);
-            d = d * dielectricWt;
+            d = d * (1.0f - sssp) * dielectricWt;
             dterm = dterm + d;
             f = f + d;
-            fPdf += tmpPdf * diffPr;
+            fPdf += tmpPdf * (1.0f - sssp) * diffPr;
           }
           if(metalPr>0.0f){
             vec3 ks = vec3(1.0f);
@@ -876,22 +876,21 @@ namespace DisneyBSDF{
         }
         if(mat.subsurface > 0.0f && (reflectance || dot(wo_world,N2) < 0.0f || thin)){
           bool trans = (wi.z * wo.z) < 0;
-          float FL = BRDFBasics::SchlickWeight(abs(wi.z));
-          float FV = BRDFBasics::SchlickWeight(abs(wo.z));
-          float term = wo.z>0?FV:FL;
-          float tmpPdf = trans? abs(wi.z) : 0.0f;//0.5/M_PIf:0.0f;
+          float tmpPdf = trans? abs(wi.z)/M_PIf : 0.0f;//0.5/M_PIf:0.0f;
           vec3 transmit = vec3(1.0f);
           if(thin) {
+              vec3 wm = normalize(wi - wo);
 //            vec3 color = mat.sssColor;
 //            vec3 sigma_t, alpha;
 //            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
 //            vec3 channelPDF = vec3(1.0f/3.0f);
 //            transmit = Transmission2(sigma_t * alpha, sigma_t,
 //                                  channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
-              transmit = clamp(mat.sssParam * mat.sssColor, vec3(0), vec3(1)) * abs(wi.z);
+                vec3 d = BRDFBasics::EvalDisneyDiffuse(mat.basecolor, mat.subsurface, mat.roughness, mat.sheen,Csheen, -wo, wi, wm, tmpPdf);
+              transmit = clamp(mat.sssParam * d, vec3(0), vec3(1));
           }
 
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt ;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf  *  sssp * diffPr;
@@ -1343,10 +1342,15 @@ namespace DisneyBSDF{
             w_eval = wi;
             float pdf, pdf2;
             vec3 rd, rs, rt;
-            reflectance = EvaluateDisney3(vec3(1.0f), mat, w_eval, prd->sssDirBegin, T, B, N, N2, thin,
+            MatOutput mat_new = mat;
+            mat_new.specular = 0;
+            mat_new.subsurface = 0;
+            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, -wo, T, B, N, N2, thin,
                                           is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
             fPdf = pdf>1e-5f?pdf:0.0f;
             reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+//            reflectance = vec3(1.0f);
+//            fPdf = 1.0f;
             return true;
           }
           else{
@@ -1377,8 +1381,8 @@ namespace DisneyBSDF{
             }else
             {
               //go inside
-              wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
-              wi.z = min(-0.1f, wi.z);
+              wi = -BRDFBasics::CosineSampleHemisphere(r1, r2);
+              //wi.z = min(-0.1f, wi.z);
               wi = normalize(wi);
               isSS = true;
               flag = transmissionEvent;
@@ -1399,9 +1403,17 @@ namespace DisneyBSDF{
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
               w_eval = wi;
 
-              fPdf = 1.0f;
-              reflectance = vec3(1.0f);
-              return true;
+              float pdf, pdf2;
+            vec3 rd, rs, rt;
+            MatOutput mat_new = mat;
+            mat_new.specular = 0;
+            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
+                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
+            fPdf = pdf>1e-5f?pdf:0.0f;
+            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+//            reflectance = vec3(1.0f);
+//            fPdf = 1.0f;
+            return true;
             }
           }
 
