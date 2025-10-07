@@ -9,7 +9,7 @@ float PowerHeuristic(float a, float b, float beta = 2.0f)
 {
     float t  = powf(a, beta);
     float t2 = powf(b, beta);
-    return t / (t2 + t + 1e-6f);
+    return pow(t / (t2 + t), 1.0f/beta);
   
 }
 static __inline__ __device__  float fresnel(float cosT){
@@ -430,6 +430,7 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
 
   pdf = abs(L.z) / M_PIf;
   res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor * FDL * FDV + Fsheen: vec3(0.0);
+  //res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor: vec3(0.0);
 
   return res;
 }

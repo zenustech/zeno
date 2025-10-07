@@ -45,6 +45,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -1092,6 +1093,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
+
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
             newTexture = std::make_shared<cuTexture>();

@@ -597,14 +597,14 @@ extern "C" __global__ void __miss__radiance()
 
         envPdf *= params.skyLightProbablity();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf,1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
         misWeight = prd->depth>=1?misWeight:1.0f;
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
         
-        prd->radiance = misWeight * skysample;
+        prd->radiance = skysample*misWeight;
 
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);

@@ -211,7 +211,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
-    const float _SKY_PROB_ = 0.5;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
+    const float _SKY_PROB_ = params.num_lights>0?0.5:1.0f;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
 
     float scatterPDF = 1.f;
 
@@ -479,13 +479,13 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             float tmp = 1.0f / samplePDF;
 
             if (mis) {
-                float misWeight = BRDFBasics::PowerHeuristic(samplePDF, scatterPDF);
+                float misWeight = BRDFBasics::PowerHeuristic(samplePDF, scatterPDF, 1.0);
                 misWeight = misWeight>0.0f?misWeight:1.0f;
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
                 misWeight = samplePDF>1e-5f?misWeight:0.0f;
 
                 tmp *= misWeight;
-            } 
+            }
 
             float3 radianceNoShadow = illum * tmp * bxdf_value; 
 
@@ -528,12 +528,12 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             auto dlight_dir = reinterpret_cast<vec3&>(dlight.direction);
 
             auto sample_dir = BRDFBasics::halfPlaneSample(prd->seed, dlight_dir, dlight.angle/180.0f);
-            auto sample_prob = _SKY_PROB_ / dlights->COUNT() * dlight_pr;
+            auto sample_prob = 1.0f / dlights->COUNT();
 
             if (dlight.intensity > 0) {
                 auto ccc = dlight.color * dlight.intensity;
                 auto illum = reinterpret_cast<float3&>(ccc);
-                shadeTask(sample_dir, sample_prob, illum, false);
+                shadeTask(sample_dir, sample_prob, illum / ( _SKY_PROB_ * dlight_pr), false);
             }
             return;
         }
@@ -551,11 +551,11 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
             
             plight->sample(lsr, reinterpret_cast<const Vector3f&>(shadingP), uu, color);
             
-            lsr.PDF *= plights->pdf[idx] * _SKY_PROB_ * plight_pr;
+            lsr.PDF *= plights->pdf[idx];
             if (lsr.PDF > 0) {
                 //auto suv = sphereUV(lsr.dir, true);
                 //color = (vec3)texture2D(params.sky_texture, vec2(suv.x, suv.y));
-                shadeTask(lsr.dir, lsr.PDF, color * params.sky_strength, false);
+                shadeTask(lsr.dir, lsr.PDF, color * params.sky_strength/ ( _SKY_PROB_ * plight_pr), false);
             }
             return;
         }
@@ -575,10 +575,10 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
                                                     params.sunSoftness * 0.0f);
             float samplePDF;
             float3 illum = sampleSkyTexture(skyuv, 100, 0, samplePDF);
-            samplePDF *= _SKY_PROB_ * elight_pr;
+            samplePDF *= 1.0f;
             if(samplePDF <= 0.0f) { return; }
 
-            shadeTask(sample_dir, samplePDF, M_PIf*illum, true);
+            shadeTask(sample_dir, samplePDF, illum/( _SKY_PROB_ * elight_pr), true);
             return;
         }
     }
