@@ -153,6 +153,7 @@ public:
 
     Json static_scene_tree;
     Json dynamic_scene_tree;
+    std::vector<std::string> lights_name;
     std::shared_ptr<zeno::SceneObject> dynamic_scene = std::make_shared<zeno::SceneObject>();
     std::unordered_map<std::string, glm::mat4> modified_xfroms;
     std::optional<std::tuple<std::string, glm::mat4, glm::mat4>> cur_node;

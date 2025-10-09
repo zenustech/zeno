@@ -942,9 +942,15 @@ struct GraphicsManager {
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
-                float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
+                if (prim_in->userData().has("evnTexRotation")) {
+                    float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
+                    xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
+                }
+                else {
+                    xinxinoptix::update_hdr_sky(evnTex3DRotation, evnTexStrength);
+                }
                 bool enableHdr = prim_in->userData().get2<bool>("enable");
                 if (!path.empty()) {
                     OptixUtil::sky_tex = path;
@@ -953,7 +959,6 @@ struct GraphicsManager {
                 }
                 OptixUtil::setSkyTexture(OptixUtil::sky_tex.value());
 
-                xinxinoptix::update_hdr_sky(evnTexRotation, evnTex3DRotation, evnTexStrength);
                 xinxinoptix::using_hdr_sky(enableHdr);
 
                 if (OptixUtil::portal_delayed.has_value()) {
@@ -1053,13 +1058,23 @@ struct GraphicsManager {
 
         return changelight;
     }
-    bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
+    std::vector<std::string> load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
+        std::vector<std::string> light_names;
         xinxinoptix::unload_light();
         bool sky_found = false;
 
         for (auto const &[key, obj] : objs) {
             if(load_lights(key, obj.get())) {
                 sky_found = true;
+            }
+            if (
+                    obj
+                    || obj->userData().get2<int>("isL", 0) == 1
+                    || obj->userData().get2<int>("ProceduralSky", 0) == 1
+                    || obj->userData().get2<int>("HDRSky", 0) == 1
+                    || obj->userData().get2<int>("SkyComposer", 0) == 1
+            ) {
+                light_names.emplace_back(key.substr(0, key.find(':')));
             }
         }
 //        zeno::log_info("sky_found : {}", sky_found);
@@ -1080,7 +1095,7 @@ struct GraphicsManager {
             }
         }
 
-        return true;
+        return light_names;
     }
 
     bool load_static_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
@@ -1330,6 +1345,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
                 message["DynamicSceneTree"] = scene_tree;
             }
+            message["Lights"] = defaultScene.lights_name;
 
             if (message.is_null()) {
                 return;
@@ -1444,6 +1460,72 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         }
         else if (in_msg["MessageType"] == "Xform") {
+            std::string mode = in_msg["Mode"];
+            if (mode == "SkyRot") {
+                auto selected_plane_dir_mapping = std::map<std::string, glm::vec3> {
+                    {"X", {1, 0, 0}},
+                    {"Y", {0, 1, 0}},
+                    {"Z", {0, 0, 1}},
+                };
+                std::string axis = in_msg["Axis"];
+                if (axis == "X" || axis == "Y" || axis == "Z") {
+                    auto pivot = scene->camera->getPos() + scene->camera->get_lodfront() * 5.0f;
+                    auto plane_dir = selected_plane_dir_mapping[axis];
+                    auto rot_start = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["LastPos"][0])
+                        , float(in_msg["LastPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_start.has_value()) {
+                        return;
+                    }
+                    auto rot_end = get_proj_pos_on_plane(
+                        in_msg
+                        , float(in_msg["CurPos"][0])
+                        , float(in_msg["CurPos"][1])
+                        , scene->camera.get()
+                        , pivot
+                        , plane_dir
+                    );
+                    if (!rot_end.has_value()) {
+                        return;
+                    }
+                    auto start_vec = rot_start.value() - pivot;
+                    auto end_vec = rot_end.value() - pivot;
+                    auto rot_quat = rotate(start_vec, end_vec, plane_dir);
+                    if (!rot_quat.has_value()) {
+                        return;
+                    }
+                    glm::mat4 xform = glm::toMat4(rot_quat.value());
+                    auto angle_degrees = 2.0f * std::acos(rot_quat.value().w);
+                    glm::vec3 angle_vec = glm::vec3(0);
+                    if (axis == "X") {
+                        angle_vec[0] = angle_degrees * glm::sign(rot_quat.value().x) * (-1);
+                    }
+                    if (axis == "Y") {
+                        angle_vec[1] = angle_degrees * glm::sign(rot_quat.value().y) * (-1);
+                    }
+                    if (axis == "Z") {
+                        angle_vec[2] = angle_degrees * glm::sign(rot_quat.value().z) * (-1);
+                    }
+                    auto euler_angles = xinxinoptix::realtime_rotate_sky(angle_vec);
+                    euler_angles = glm::degrees(euler_angles);
+                    Json message;
+                    message["MessageType"] = "SetHDRSky2";
+                    message["Content"] = {
+                        euler_angles[0],
+                        euler_angles[1],
+                        euler_angles[2],
+                    };
+                    fun(message.dump());
+
+                    scene->drawOptions->needRefresh = true;
+                    return;
+                }
+            }
 
 //            zeno::log_info("Axis: {}", in_msg["Axis"]);
             if (!defaultScene.cur_node.has_value()) {
@@ -1460,7 +1542,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             const auto y_axis = glm::vec3(0, 1, 0);
             const auto z_axis = glm::vec3(0, 0, 1);
 
-            std::string mode = in_msg["Mode"];
             bool is_local_space = in_msg["LocalSpace"];
             std::map<std::string, glm::vec3> axis_mapping = {
                 {"X", {1, 0, 0}},
@@ -1931,14 +2012,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     continue;
                 }
                 auto msg_str = message.dump();
-                fun(std::move(msg_str));
+//                fun(std::move(msg_str));
             }
-        }
-        {
-			Json message;
-			message["MessageType"] = "XformPanelInitFeedback";
-			message["Matrixs"] = Json::object();
-			fun(message.dump());
         }
     }
 
@@ -1979,11 +2054,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(graphicsMan->need_update_light(scene->objectsMan->pairs())
             || scene->objectsMan->needUpdateLight)
         {
-            graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
+            defaultScene.lights_name = graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
             matNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
             scene->drawOptions->needRefresh = true;
+        }
+
+        if (scene->objectsMan->objects.size()) {
+            Json message;
+            message["MessageType"] = "XformPanelInitFeedback";
+            message["Matrixs"] = Json::object();
+            fun(message.dump());
         }
 
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
